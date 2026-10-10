@@ -1,0 +1,21 @@
+{
+  "name": "exiled-survivors",
+  "private": true,
+  "version": "0.0.1",
+  "type": "module",
+  "description": "Vampire Survivors style top-down survival game (Phaser 3 + Vite + TypeScript)",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "phaser": "^4.2.1"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.5",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.4"
+  }
+}
