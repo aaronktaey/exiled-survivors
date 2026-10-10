@@ -27,4 +27,10 @@ const config: Phaser.Types.Core.GameConfig = {
   scene: [BootScene, GameScene],
 };
 
-new Phaser.Game(config);
+const game = new Phaser.Game(config);
+
+// Console handle for poking at the running game while developing.
+// `import.meta.env.DEV` is false in builds, so this drops out of the bundle.
+if (import.meta.env.DEV) {
+  (window as Window & { game?: Phaser.Game }).game = game;
+}
