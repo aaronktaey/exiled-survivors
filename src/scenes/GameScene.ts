@@ -101,7 +101,6 @@ export class GameScene extends Phaser.Scene {
       const id = weapon.definition.id;
       weapon.update(delta, {
         origin: this.player,
-        facing: this.player.facing,
         enemies: this.spawner.group,
         damage: this.progression.statsFor(id).damage,
         cooldownMs: this.progression.cooldownMsFor(id),

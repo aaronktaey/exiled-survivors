@@ -18,8 +18,6 @@ export interface Weapon {
 export interface WeaponContext {
   /** Where attacks originate — normally the player. */
   readonly origin: Phaser.GameObjects.Components.Transform;
-  /** Unit vector the player last moved along; melee swings this way. */
-  readonly facing: Phaser.Math.Vector2;
   /** Candidate targets. */
   readonly enemies: Phaser.Physics.Arcade.Group;
   /** Damage per hit, from Progression. */

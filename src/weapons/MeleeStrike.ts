@@ -3,11 +3,11 @@ import Phaser from 'phaser';
 import { COLORS, DEPTH, MELEE } from '@/config';
 import type { Enemy } from '@/entities/Enemy';
 import { SKILLS } from '@/weapons/skills';
-import type { Weapon, WeaponContext } from '@/weapons/Weapon';
+import { findNearest, type Weapon, type WeaponContext } from '@/weapons/Weapon';
 
 /**
- * The starting attack: a short swing in the direction the player faces,
- * hitting everything inside the arc at once. Tags: 물리 · 공격 · 근접.
+ * The starting attack: swings at the nearest enemy in reach, hitting
+ * everything caught in the arc around it. Tags: 물리 · 공격 · 근접.
  */
 export class MeleeStrike implements Weapon {
   public readonly definition = SKILLS.meleeStrike;
@@ -27,13 +27,20 @@ export class MeleeStrike implements Weapon {
       return;
     }
 
+    const target = findNearest(context.origin, context.enemies, MELEE.reach);
+    if (!target) {
+      // Hold the charge so the first enemy to step into reach is hit at once.
+      this.sinceSwingMs = context.cooldownMs;
+      return;
+    }
+
     this.sinceSwingMs = 0;
-    this.swing(context);
+    this.swing(context, target);
   }
 
-  private swing(context: WeaponContext): void {
-    const { origin, facing } = context;
-    const angle = Math.atan2(facing.y, facing.x);
+  private swing(context: WeaponContext, target: Phaser.GameObjects.Components.Transform): void {
+    const { origin } = context;
+    const angle = Phaser.Math.Angle.Between(origin.x, origin.y, target.x, target.y);
     const halfArc = MELEE.arcRadians / 2;
 
     this.showFlash(origin.x, origin.y, angle, halfArc);
