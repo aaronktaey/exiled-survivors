@@ -24,6 +24,10 @@ export interface WeaponContext {
   readonly damage: number;
   /** Milliseconds between attacks, from Progression. */
   readonly cooldownMs: number;
+  /** How far the skill reaches, in px, from Progression. */
+  readonly range: number;
+  /** Projectile travel speed in px/s, from Progression. Melee ignores it. */
+  readonly projectileSpeed: number;
   /** Applies damage and resolves the kill (gem and skill drops). */
   readonly hit: (enemy: Enemy, amount: number) => void;
 }

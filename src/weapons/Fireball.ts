@@ -29,7 +29,7 @@ export class Fireball implements Weapon {
       return;
     }
 
-    const target = findNearest(context.origin, context.enemies, WEAPON.rangePx);
+    const target = findNearest(context.origin, context.enemies, context.range);
     if (!target) {
       // Hold the charge so the first enemy to wander in is hit immediately.
       this.sinceShotMs = context.cooldownMs;
@@ -47,6 +47,10 @@ export class Fireball implements Weapon {
     }
 
     const angle = Phaser.Math.Angle.Between(context.origin.x, context.origin.y, target.x, target.y);
-    bolt.launch(context.origin.x, context.origin.y, angle, context.damage);
+    bolt.launch(context.origin.x, context.origin.y, angle, {
+      damage: context.damage,
+      speed: context.projectileSpeed,
+      range: context.range,
+    });
   }
 }

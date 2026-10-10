@@ -1,9 +1,9 @@
 import Phaser from 'phaser';
 
-import { STATS, xpToNextLevel } from '@/config';
+import { SKILL_BASE, STATS, UPGRADE_STEP, xpToNextLevel } from '@/config';
 import type { SkillDefinition, SkillId } from '@/weapons/skills';
 
-export type UpgradeId = 'damage' | 'attackSpeed';
+export type UpgradeId = 'damage' | 'attackSpeed' | 'range' | 'projectileSpeed';
 
 export interface UpgradeOption {
   readonly id: UpgradeId;
@@ -11,19 +11,44 @@ export interface UpgradeOption {
   readonly detail: string;
 }
 
-/** Damage and rate are tracked per skill, so an upgrade only hits its own. */
-export interface SkillStats {
-  damage: number;
-  /** Attacks per second. Each "공격속도 +1" adds exactly 1. */
-  attackSpeed: number;
-}
+/** Every stat is tracked per skill, so an upgrade only hits its own. */
+export type SkillStats = Record<UpgradeId, number>;
 
-/** The two picks offered, worded for whichever skill is being upgraded. */
+/**
+ * The picks offered, worded for whichever skill is being upgraded. Melee
+ * skills get damage and rate; a 투사체 skill also flies, so it can trade for
+ * reach and for how fast the shot gets there.
+ */
 export function upgradeOptionsFor(skill: SkillDefinition): readonly UpgradeOption[] {
-  return [
-    { id: 'damage', label: '공격력 +1', detail: `${skill.name}의 피해가 1 늘어납니다` },
-    { id: 'attackSpeed', label: '공격속도 +1', detail: `${skill.name}의 초당 공격 횟수가 1 늘어납니다` },
+  const options: UpgradeOption[] = [
+    {
+      id: 'damage',
+      label: `공격력 +${UPGRADE_STEP.damage}`,
+      detail: `${skill.name}의 피해가 ${UPGRADE_STEP.damage} 늘어납니다`,
+    },
+    {
+      id: 'attackSpeed',
+      label: `공격속도 +${UPGRADE_STEP.attackSpeed}`,
+      detail: `${skill.name}의 초당 공격 횟수가 ${UPGRADE_STEP.attackSpeed} 늘어납니다`,
+    },
   ];
+
+  if (skill.tags.includes('투사체')) {
+    options.push(
+      {
+        id: 'range',
+        label: `사정거리 +${UPGRADE_STEP.range}`,
+        detail: `${skill.name}의 사정거리가 ${UPGRADE_STEP.range}px 늘어납니다`,
+      },
+      {
+        id: 'projectileSpeed',
+        label: `투사체 속도 +${UPGRADE_STEP.projectileSpeed}`,
+        detail: `${skill.name}가 초당 ${UPGRADE_STEP.projectileSpeed}px 더 빠르게 날아갑니다`,
+      },
+    );
+  }
+
+  return options;
 }
 
 /**
@@ -43,11 +68,11 @@ export class Progression extends Phaser.Events.EventEmitter {
     return xpToNextLevel(this.level);
   }
 
-  /** Live stats for a skill, created at base values on first use. */
+  /** Live stats for a skill, created at its base values on first use. */
   public statsFor(skill: SkillId): SkillStats {
     let existing = this.stats.get(skill);
     if (!existing) {
-      existing = { damage: STATS.baseDamage, attackSpeed: STATS.baseAttackSpeed };
+      existing = { ...SKILL_BASE[skill] };
       this.stats.set(skill, existing);
     }
     return existing;
@@ -69,11 +94,6 @@ export class Progression extends Phaser.Events.EventEmitter {
   }
 
   public apply(skill: SkillId, upgrade: UpgradeId): void {
-    const target = this.statsFor(skill);
-    if (upgrade === 'damage') {
-      target.damage += 1;
-    } else {
-      target.attackSpeed += 1;
-    }
+    this.statsFor(skill)[upgrade] += UPGRADE_STEP[upgrade];
   }
 }

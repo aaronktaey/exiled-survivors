@@ -19,9 +19,14 @@ const RIGHT_CODES = ['KeyD', 'ArrowRight'];
 /** Confirm stays inside WASD/arrows; Enter and Space are extras. */
 const CONFIRM_CODES = ['KeyW', 'ArrowUp', 'KeyS', 'ArrowDown', 'Enter', 'Space'];
 
-const CARD_WIDTH = 260;
+/** Cards shrink from this to fit however many options a skill offers. */
+const CARD_MAX_WIDTH = 260;
 const CARD_HEIGHT = 170;
-const CARD_GAP = 40;
+const CARD_GAP = 24;
+/** Keeps the row clear of the screen edges at four cards. */
+const SIDE_MARGIN = 28;
+/** Below this width the card is too narrow for the full-size label. */
+const WIDE_CARD = 240;
 
 interface CardView {
   readonly option: UpgradeOption;
@@ -85,11 +90,17 @@ export class UpgradeScene extends Phaser.Scene {
       .setOrigin(0.5)
       .setDepth(DEPTH.ui);
 
+    // A projectile skill offers four picks, a melee one two, so the row is
+    // sized from the count rather than from a fixed card width.
     const options = upgradeOptionsFor(SKILLS[this.payload.skill]);
-    const span = CARD_WIDTH + CARD_GAP;
+    const cardWidth = Math.min(
+      CARD_MAX_WIDTH,
+      (width - SIDE_MARGIN * 2 - CARD_GAP * (options.length - 1)) / options.length,
+    );
+    const span = cardWidth + CARD_GAP;
     this.cards = options.map((option, index) => {
       const x = centerX + (index - (options.length - 1) / 2) * span;
-      return this.buildCard(x, cardY, option);
+      return this.buildCard(x, cardY, cardWidth, option);
     });
 
     // Caret that slides to whichever card is under the pointer.
@@ -120,15 +131,17 @@ export class UpgradeScene extends Phaser.Scene {
     this.input.keyboard?.on('keydown', this.onKeyDown, this);
   }
 
-  private buildCard(x: number, y: number, option: UpgradeOption): CardView {
-    const panel = this.add.rectangle(x, y, CARD_WIDTH, CARD_HEIGHT, COLORS.panel, 1).setDepth(DEPTH.ui);
+  private buildCard(x: number, y: number, cardWidth: number, option: UpgradeOption): CardView {
+    const panel = this.add.rectangle(x, y, cardWidth, CARD_HEIGHT, COLORS.panel, 1).setDepth(DEPTH.ui);
     panel.setStrokeStyle(2, COLORS.panelEdge, 1);
 
     const label = this.add
       .text(x, y - 36, option.label, {
         fontFamily: 'system-ui, sans-serif',
-        fontSize: '26px',
+        fontSize: cardWidth >= WIDE_CARD ? '26px' : '19px',
         color: COLORS.text,
+        align: 'center',
+        wordWrap: { width: cardWidth - 20 },
       })
       .setOrigin(0.5)
       .setDepth(DEPTH.ui);
@@ -139,7 +152,7 @@ export class UpgradeScene extends Phaser.Scene {
         fontSize: '13px',
         color: COLORS.muted,
         align: 'center',
-        wordWrap: { width: CARD_WIDTH - 40 },
+        wordWrap: { width: cardWidth - 32 },
       })
       .setOrigin(0.5)
       .setDepth(DEPTH.ui);

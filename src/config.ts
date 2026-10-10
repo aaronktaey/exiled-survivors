@@ -150,7 +150,7 @@ export const ENEMY = {
   size: 16,
   speed: 70,
   speedVariance: 0.25,
-  maxHp: 3,
+  maxHp: 30,
   contactDamage: 1,
 } as const;
 
@@ -176,8 +176,6 @@ export const HUD = {
 } as const;
 
 export const MELEE = {
-  /** How far the swing reaches from the player's centre. */
-  reach: 88,
   /** Full width of the swing arc, in radians. */
   arcRadians: Math.PI * 0.8,
   /** How long the swing flash stays on screen. */
@@ -214,20 +212,43 @@ export const SKILL_LABEL = {
 
 export const WEAPON = {
   size: 8,
-  projectileSpeed: 460,
-  /** Projectiles vanish after this long, so strays do not pile up. */
+  /** Hard cap on a projectile's life, so strays never pile up. */
   lifespanMs: 1400,
   maxProjectiles: 240,
-  /** Enemies beyond this are ignored when picking a target. */
-  rangePx: 520,
+  /**
+   * A shot may overfly its skill's range by this factor before it fizzles,
+   * so a target that backs off at the edge of range is still caught.
+   */
+  rangeOvershoot: 1.2,
 } as const;
 
-/** Starting values for the two stats the level-up screen upgrades. */
+/** A skill's stat line. Upgrades move these; BALANCE scales damage on top. */
+export interface SkillBaseStats {
+  readonly damage: number;
+  /** Attacks per second. */
+  readonly attackSpeed: number;
+  /** How far the skill reaches to pick a target, in px. */
+  readonly range: number;
+  /** Projectile travel speed in px/s. Ignored by melee skills. */
+  readonly projectileSpeed: number;
+}
+
+/** Where every skill starts before a single upgrade is picked. */
+export const SKILL_BASE: Record<SkillId, SkillBaseStats> = {
+  meleeStrike: { damage: 10, attackSpeed: 1.5, range: 44, projectileSpeed: 0 },
+  fireball: { damage: 10, attackSpeed: 1.5, range: 100, projectileSpeed: 230 },
+};
+
+/** How much one pick of each upgrade adds. Keys match SkillBaseStats. */
+export const UPGRADE_STEP = {
+  damage: 1,
+  attackSpeed: 1,
+  range: 10,
+  projectileSpeed: 20,
+} as const;
+
 export const STATS = {
-  baseDamage: 1,
-  /** Shots per second. Each "공격속도 +1" adds exactly 1 to this. */
-  baseAttackSpeed: 1.5,
-  /** Floor on the resulting cooldown, so the stat cannot outrun the frame. */
+  /** Floor on the resulting cooldown, so attack speed cannot outrun the frame. */
   minCooldownMs: 50,
 } as const;
 

@@ -6,6 +6,15 @@ import { DEPTH, ICONS, TEXTURES, TIMING, WEAPON } from '@/config';
  * A single shot. Pooled by the weapon's group, so instances are reused
  * rather than allocated every cooldown.
  */
+/** What a shot needs to know at launch, all of it from the skill's stats. */
+export interface LaunchSpec {
+  readonly damage: number;
+  /** px per second. */
+  readonly speed: number;
+  /** How far the firing skill reaches, in px. */
+  readonly range: number;
+}
+
 export class Projectile extends Phaser.Physics.Arcade.Image {
   public damage = 0;
   private remainingMs = 0;
@@ -16,9 +25,12 @@ export class Projectile extends Phaser.Physics.Arcade.Image {
     this.setDisplaySize(ICONS.projectile.size, ICONS.projectile.size);
   }
 
-  public launch(x: number, y: number, angle: number, damage: number): void {
-    this.damage = damage;
-    this.remainingMs = WEAPON.lifespanMs;
+  public launch(x: number, y: number, angle: number, spec: LaunchSpec): void {
+    this.damage = spec.damage;
+    // Fizzle at the edge of the skill's range (plus a little overshoot), so a
+    // shorter range really is shorter instead of just a smaller target radius.
+    const travelMs = ((spec.range * WEAPON.rangeOvershoot) / spec.speed) * 1000;
+    this.remainingMs = Math.min(WEAPON.lifespanMs, travelMs);
 
     this.enableBody(true, x, y, true, true);
     this.setDisplaySize(ICONS.projectile.size, ICONS.projectile.size);
@@ -27,7 +39,7 @@ export class Projectile extends Phaser.Physics.Arcade.Image {
     this.setRotation(angle);
     this.scene.physics.velocityFromRotation(
       angle,
-      WEAPON.projectileSpeed,
+      spec.speed,
       (this.body as Phaser.Physics.Arcade.Body).velocity,
     );
   }

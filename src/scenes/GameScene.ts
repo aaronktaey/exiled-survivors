@@ -130,11 +130,14 @@ export class GameScene extends Phaser.Scene {
     // Each weapon runs on its own stats, so upgrades stay on their skill.
     for (const weapon of this.weapons) {
       const id = weapon.definition.id;
+      const stats = this.progression.statsFor(id);
       weapon.update(dt, {
         origin: this.player,
         enemies: this.spawner.group,
         damage: this.damageOf(id),
         cooldownMs: this.progression.cooldownMsFor(id),
+        range: stats.range,
+        projectileSpeed: stats.projectileSpeed,
         hit: this.combat.hit,
       });
     }
@@ -166,8 +169,9 @@ export class GameScene extends Phaser.Scene {
   }
 
   /**
-   * Picking a skill up grants it the first time, and either way opens its
-   * own upgrade choice — so repeat drops are still worth walking over.
+   * The first pickup simply grants the skill at its base stats. Every later
+   * one opens that skill's own upgrade choice, so repeat drops stay worth
+   * walking over.
    */
   private onSkillCollected(skill: SkillId): void {
     const isNew = !this.owned.has(skill);
@@ -175,7 +179,10 @@ export class GameScene extends Phaser.Scene {
 
     const name = SKILLS[skill].name;
     this.announce(isNew ? `${name} 획득` : `${name} 강화`);
-    this.queueChoice({ title: name, subtitle: isNew ? '획득' : '강화', skill });
+
+    if (!isNew) {
+      this.queueChoice({ title: name, subtitle: '강화', skill });
+    }
   }
 
   /** Droppable skills keep dropping; a repeat drop upgrades instead. */
