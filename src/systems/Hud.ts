@@ -8,7 +8,13 @@ const MARGIN = 16;
 const BAR_WIDTH = 200;
 const BAR_HEIGHT = 10;
 
-/** Fixed-to-camera run readout: health, XP, level, stats and the clock. */
+export interface LoadoutEntry {
+  readonly name: string;
+  readonly damage: number;
+  readonly attackSpeed: number;
+}
+
+/** Fixed-to-camera run readout: health, XP, level, per-skill stats, clock. */
 export class Hud {
   private readonly bars: Phaser.GameObjects.Graphics;
   private readonly statsLabel: Phaser.GameObjects.Text;
@@ -38,7 +44,8 @@ export class Hud {
       .text(MARGIN, MARGIN + BAR_HEIGHT * 2 + 34, '', {
         fontFamily: 'system-ui, sans-serif',
         fontSize: '14px',
-        color: COLORS.accent,
+        color: COLORS.text,
+        lineSpacing: 4,
       })
       .setScrollFactor(0)
       .setDepth(DEPTH.ui);
@@ -54,7 +61,7 @@ export class Hud {
       .setDepth(DEPTH.ui);
   }
 
-  public update(delta: number, enemies: number, skills: string): void {
+  public update(delta: number, enemies: number, loadout: ReadonlyArray<LoadoutEntry>): void {
     this.elapsedMs += delta;
 
     const total = Math.floor(this.elapsedMs / 1000);
@@ -62,12 +69,10 @@ export class Hud {
     const ss = String(total % 60).padStart(2, '0');
     this.clockLabel.setText(`${mm}:${ss}`);
 
-    const { level, damage, attackSpeed } = this.progression;
-    this.statsLabel.setText(
-      `Lv ${level}    공격력 ${damage}    공격속도 ${attackSpeed.toFixed(1)}/s    적 ${enemies}`,
+    this.statsLabel.setText(`Lv ${this.progression.level}    적 ${enemies}`);
+    this.skillsLabel.setText(
+      loadout.map((s) => `${s.name}  공격력 ${s.damage}  공속 ${s.attackSpeed.toFixed(1)}/s`),
     );
-
-    this.skillsLabel.setText(skills);
 
     this.drawBars();
   }

@@ -3,7 +3,7 @@ import Phaser from 'phaser';
 import { COLORS, DEPTH, SKILL_DROP, TEXTURES, WORLD } from '@/config';
 import { Player } from '@/entities/Player';
 import { GameOverScene, type GameOverData } from '@/scenes/GameOverScene';
-import { LevelUpScene, type LevelUpData } from '@/scenes/LevelUpScene';
+import { UpgradeScene, type UpgradeChoiceData } from '@/scenes/UpgradeScene';
 import { CombatSystem, Hud, Progression, SpawnDirector, type UpgradeId } from '@/systems';
 import { VirtualJoystick, prefersTouchControls } from '@/systems/VirtualJoystick';
 import {
@@ -16,6 +16,13 @@ import {
   type SkillId,
   type Weapon,
 } from '@/weapons';
+
+/** One queued upgrade popup, from a level-up or a skill pickup. */
+interface ChoiceRequest {
+  readonly title: string;
+  readonly subtitle: string;
+  readonly skill: SkillId;
+}
 
 /** The run itself: player, spawning, weapons, pickups and progression. */
 export class GameScene extends Phaser.Scene {
@@ -31,8 +38,8 @@ export class GameScene extends Phaser.Scene {
   private owned = new Set<SkillId>();
 
   private elapsedMs = 0;
-  /** Level-ups earned while the popup was already open. */
-  private pendingLevelUps = 0;
+  /** Popups earned while one was already open. */
+  private pendingChoices: ChoiceRequest[] = [];
   private choosing = false;
   private over = false;
 
@@ -42,7 +49,7 @@ export class GameScene extends Phaser.Scene {
 
   public create(): void {
     this.elapsedMs = 0;
-    this.pendingLevelUps = 0;
+    this.pendingChoices = [];
     this.choosing = false;
     this.over = false;
     this.weapons = [];
@@ -60,7 +67,7 @@ export class GameScene extends Phaser.Scene {
     this.spawner = new SpawnDirector(this, this.player);
     this.combat = new CombatSystem(this, this.player, this.spawner.group, this.progression, {
       rollSkillDrop: () => this.rollSkillDrop(),
-      onSkillCollected: (skill) => this.acquire(skill),
+      onSkillCollected: (skill) => this.onSkillCollected(skill),
     });
     this.hud = new Hud(this, this.player, this.progression);
 
@@ -89,19 +96,20 @@ export class GameScene extends Phaser.Scene {
     this.player.update();
     this.spawner.update(delta);
 
-    const context = {
-      origin: this.player,
-      facing: this.player.facing,
-      enemies: this.spawner.group,
-      damage: this.progression.damage,
-      cooldownMs: this.progression.cooldownMs,
-      hit: this.combat.hit,
-    };
+    // Each weapon runs on its own stats, so upgrades stay on their skill.
     for (const weapon of this.weapons) {
-      weapon.update(delta, context);
+      const id = weapon.definition.id;
+      weapon.update(delta, {
+        origin: this.player,
+        facing: this.player.facing,
+        enemies: this.spawner.group,
+        damage: this.progression.statsFor(id).damage,
+        cooldownMs: this.progression.cooldownMsFor(id),
+        hit: this.combat.hit,
+      });
     }
 
-    this.hud.update(delta, this.spawner.alive, this.ownedNames());
+    this.hud.update(delta, this.spawner.alive, this.loadout());
   }
 
   private createFloor(): void {
@@ -124,21 +132,35 @@ export class GameScene extends Phaser.Scene {
     if (weapon.projectiles) {
       this.combat.registerProjectiles(weapon.projectiles, this.spawner.group);
     }
-
-    this.announce(`${SKILLS[skill].name} 획득`);
   }
 
+  /**
+   * Picking a skill up grants it the first time, and either way opens its
+   * own upgrade choice — so repeat drops are still worth walking over.
+   */
+  private onSkillCollected(skill: SkillId): void {
+    const isNew = !this.owned.has(skill);
+    this.acquire(skill);
+
+    const name = SKILLS[skill].name;
+    this.announce(isNew ? `${name} 획득` : `${name} 강화`);
+    this.queueChoice({ title: name, subtitle: isNew ? '획득' : '강화', skill });
+  }
+
+  /** Droppable skills keep dropping; a repeat drop upgrades instead. */
   private rollSkillDrop(): SkillDefinition | null {
-    const candidates = DROPPABLE_SKILLS.filter((skill) => !this.owned.has(skill.id));
-    if (candidates.length === 0 || Math.random() >= SKILL_DROP.chance) {
+    if (DROPPABLE_SKILLS.length === 0 || Math.random() >= SKILL_DROP.chance) {
       return null;
     }
 
-    return candidates[Math.floor(Math.random() * candidates.length)] ?? null;
+    return DROPPABLE_SKILLS[Math.floor(Math.random() * DROPPABLE_SKILLS.length)] ?? null;
   }
 
-  private ownedNames(): string {
-    return this.weapons.map((weapon) => weapon.definition.name).join(' · ');
+  private loadout(): ReadonlyArray<{ name: string; damage: number; attackSpeed: number }> {
+    return this.weapons.map((weapon) => {
+      const stats = this.progression.statsFor(weapon.definition.id);
+      return { name: weapon.definition.name, damage: stats.damage, attackSpeed: stats.attackSpeed };
+    });
   }
 
   /** Brief banner, used when a skill is picked up. */
@@ -164,37 +186,42 @@ export class GameScene extends Phaser.Scene {
     });
   }
 
-  private onLevelUp(): void {
-    this.pendingLevelUps += 1;
+  /** Level-up points are spent on the basic attack only. */
+  private onLevelUp(level: number): void {
+    this.queueChoice({ title: 'LEVEL UP', subtitle: `Lv ${level}`, skill: 'meleeStrike' });
+  }
+
+  private queueChoice(request: ChoiceRequest): void {
+    this.pendingChoices.push(request);
     if (!this.choosing) {
-      this.openLevelUp();
+      this.openNextChoice();
     }
   }
 
-  private openLevelUp(): void {
-    if (this.over || this.pendingLevelUps <= 0) {
+  private openNextChoice(): void {
+    const request = this.pendingChoices.shift();
+    if (this.over || !request) {
       return;
     }
 
-    this.pendingLevelUps -= 1;
     this.choosing = true;
     // Freeze the arena so enemies do not close in while choosing.
     this.physics.pause();
 
-    const data: LevelUpData = {
-      level: this.progression.level,
-      onPick: (upgrade) => this.onUpgradePicked(upgrade),
+    const data: UpgradeChoiceData = {
+      ...request,
+      onPick: (upgrade) => this.onUpgradePicked(request.skill, upgrade),
     };
-    this.scene.launch(LevelUpScene.KEY, data);
+    this.scene.launch(UpgradeScene.KEY, data);
   }
 
-  private onUpgradePicked(upgrade: UpgradeId): void {
-    this.progression.apply(upgrade);
+  private onUpgradePicked(skill: SkillId, upgrade: UpgradeId): void {
+    this.progression.apply(skill, upgrade);
     this.choosing = false;
 
-    if (this.pendingLevelUps > 0) {
+    if (this.pendingChoices.length > 0) {
       // Let the scene manager finish stopping the popup before relaunching it.
-      this.time.delayedCall(0, () => this.openLevelUp());
+      this.time.delayedCall(0, () => this.openNextChoice());
       return;
     }
 

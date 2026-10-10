@@ -1,11 +1,16 @@
 import Phaser from 'phaser';
 
 import { COLORS, DEPTH } from '@/config';
-import { UPGRADES, type UpgradeId, type UpgradeOption } from '@/systems/Progression';
+import { upgradeOptionsFor, type UpgradeId, type UpgradeOption } from '@/systems/Progression';
 import { prefersTouchControls } from '@/systems/VirtualJoystick';
+import { SKILLS, type SkillId } from '@/weapons/skills';
 
-export interface LevelUpData {
-  readonly level: number;
+export interface UpgradeChoiceData {
+  /** Headline — "LEVEL UP" for a level, the skill's name for a pickup. */
+  readonly title: string;
+  readonly subtitle: string;
+  /** Which skill the chosen upgrade is spent on. */
+  readonly skill: SkillId;
   readonly onPick: (upgrade: UpgradeId) => void;
 }
 
@@ -26,18 +31,19 @@ interface CardView {
 }
 
 /**
- * Overlay shown on level-up. A pointer moves between the cards on left/right
- * and up/down confirms, so the whole game stays playable on WASD and the
- * arrow keys alone.
+ * Upgrade picker, shown both on level-up (spends on the basic attack) and on
+ * a skill pickup (spends on that skill). A pointer moves between the cards
+ * on left/right and up/down confirms, so the game stays playable on WASD and
+ * the arrow keys alone; cards are also tappable.
  *
  * Key repeats are dropped and input is locked briefly on open, so a direction
  * already held for movement cannot move the pointer or confirm by accident.
  */
-export class LevelUpScene extends Phaser.Scene {
-  public static readonly KEY = 'LevelUpScene';
+export class UpgradeScene extends Phaser.Scene {
+  public static readonly KEY = 'UpgradeScene';
   private static readonly INPUT_LOCK_MS = 260;
 
-  private payload!: LevelUpData;
+  private payload!: UpgradeChoiceData;
   private cards: CardView[] = [];
   private pointer!: Phaser.GameObjects.Triangle;
   private selected = 0;
@@ -45,10 +51,10 @@ export class LevelUpScene extends Phaser.Scene {
   private picked = false;
 
   public constructor() {
-    super(LevelUpScene.KEY);
+    super(UpgradeScene.KEY);
   }
 
-  public init(data: LevelUpData): void {
+  public init(data: UpgradeChoiceData): void {
     this.payload = data;
     this.picked = false;
     this.selected = 0;
@@ -62,7 +68,7 @@ export class LevelUpScene extends Phaser.Scene {
     this.add.rectangle(0, 0, width, height, 0x05070b, 0.72).setOrigin(0, 0).setDepth(DEPTH.ui);
 
     this.add
-      .text(centerX, height / 2 - 150, 'LEVEL UP', {
+      .text(centerX, height / 2 - 150, this.payload.title, {
         fontFamily: 'system-ui, sans-serif',
         fontSize: '42px',
         color: COLORS.text,
@@ -71,7 +77,7 @@ export class LevelUpScene extends Phaser.Scene {
       .setDepth(DEPTH.ui);
 
     this.add
-      .text(centerX, height / 2 - 108, `Lv ${this.payload.level}`, {
+      .text(centerX, height / 2 - 108, this.payload.subtitle, {
         fontFamily: 'system-ui, sans-serif',
         fontSize: '18px',
         color: COLORS.accent,
@@ -79,9 +85,10 @@ export class LevelUpScene extends Phaser.Scene {
       .setOrigin(0.5)
       .setDepth(DEPTH.ui);
 
+    const options = upgradeOptionsFor(SKILLS[this.payload.skill]);
     const span = CARD_WIDTH + CARD_GAP;
-    this.cards = UPGRADES.map((option, index) => {
-      const x = centerX + (index - (UPGRADES.length - 1) / 2) * span;
+    this.cards = options.map((option, index) => {
+      const x = centerX + (index - (options.length - 1) / 2) * span;
       return this.buildCard(x, cardY, option);
     });
 
@@ -91,11 +98,16 @@ export class LevelUpScene extends Phaser.Scene {
       .setDepth(DEPTH.ui);
 
     this.add
-      .text(centerX, height / 2 + 150, prefersTouchControls() ? '원하는 쪽을 터치하세요' : '← → 이동   ↑ ↓ 선택   (WASD 동일)', {
-        fontFamily: 'system-ui, sans-serif',
-        fontSize: '14px',
-        color: COLORS.muted,
-      })
+      .text(
+        centerX,
+        height / 2 + 150,
+        prefersTouchControls() ? '원하는 쪽을 터치하세요' : '← → 이동   ↑ ↓ 선택   (WASD 동일)',
+        {
+          fontFamily: 'system-ui, sans-serif',
+          fontSize: '14px',
+          color: COLORS.muted,
+        },
+      )
       .setOrigin(0.5)
       .setDepth(DEPTH.ui);
 
@@ -104,7 +116,7 @@ export class LevelUpScene extends Phaser.Scene {
     // A fresh scene's `time.now` is still 0 in create(), so compare against
     // a flag the clock flips instead of a precomputed timestamp.
     this.unlocked = false;
-    this.time.delayedCall(LevelUpScene.INPUT_LOCK_MS, () => { this.unlocked = true; });
+    this.time.delayedCall(UpgradeScene.INPUT_LOCK_MS, () => { this.unlocked = true; });
     this.input.keyboard?.on('keydown', this.onKeyDown, this);
   }
 

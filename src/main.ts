@@ -3,7 +3,7 @@ import Phaser from 'phaser';
 import './style.css';
 
 import { COLORS, GAME_HEIGHT, GAME_WIDTH } from '@/config';
-import { BootScene, GameOverScene, GameScene, LevelUpScene } from '@/scenes';
+import { BootScene, GameOverScene, GameScene, UpgradeScene } from '@/scenes';
 
 const config: Phaser.Types.Core.GameConfig = {
   type: Phaser.AUTO,
@@ -26,7 +26,7 @@ const config: Phaser.Types.Core.GameConfig = {
       debug: false,
     },
   },
-  scene: [BootScene, GameScene, LevelUpScene, GameOverScene],
+  scene: [BootScene, GameScene, UpgradeScene, GameOverScene],
 };
 
 const game = new Phaser.Game(config);

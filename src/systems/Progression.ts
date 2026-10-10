@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 
 import { STATS, xpToNextLevel } from '@/config';
+import type { SkillDefinition, SkillId } from '@/weapons/skills';
 
 export type UpgradeId = 'damage' | 'attackSpeed';
 
@@ -10,14 +11,23 @@ export interface UpgradeOption {
   readonly detail: string;
 }
 
-/** The two picks offered on every level-up. */
-export const UPGRADES: readonly UpgradeOption[] = [
-  { id: 'damage', label: '공격력 +1', detail: '탄환 하나가 주는 피해가 1 늘어납니다' },
-  { id: 'attackSpeed', label: '공격속도 +1', detail: '초당 발사 수가 1 늘어납니다' },
-] as const;
+/** Damage and rate are tracked per skill, so an upgrade only hits its own. */
+export interface SkillStats {
+  damage: number;
+  /** Attacks per second. Each "공격속도 +1" adds exactly 1. */
+  attackSpeed: number;
+}
+
+/** The two picks offered, worded for whichever skill is being upgraded. */
+export function upgradeOptionsFor(skill: SkillDefinition): readonly UpgradeOption[] {
+  return [
+    { id: 'damage', label: '공격력 +1', detail: `${skill.name}의 피해가 1 늘어납니다` },
+    { id: 'attackSpeed', label: '공격속도 +1', detail: `${skill.name}의 초당 공격 횟수가 1 늘어납니다` },
+  ];
+}
 
 /**
- * Tracks XP, level and the two upgradeable stats.
+ * Tracks XP and level, and owns each skill's stats.
  * Emits 'levelup' with the new level when a threshold is crossed.
  */
 export class Progression extends Phaser.Events.EventEmitter {
@@ -25,16 +35,26 @@ export class Progression extends Phaser.Events.EventEmitter {
 
   public level = 1;
   public xp = 0;
-  public damage = STATS.baseDamage;
-  public attackSpeed = STATS.baseAttackSpeed;
+
+  private readonly stats = new Map<SkillId, SkillStats>();
 
   /** XP required to leave the current level. */
   public get xpToNext(): number {
     return xpToNextLevel(this.level);
   }
 
-  public get cooldownMs(): number {
-    return Math.max(STATS.minCooldownMs, 1000 / this.attackSpeed);
+  /** Live stats for a skill, created at base values on first use. */
+  public statsFor(skill: SkillId): SkillStats {
+    let existing = this.stats.get(skill);
+    if (!existing) {
+      existing = { damage: STATS.baseDamage, attackSpeed: STATS.baseAttackSpeed };
+      this.stats.set(skill, existing);
+    }
+    return existing;
+  }
+
+  public cooldownMsFor(skill: SkillId): number {
+    return Math.max(STATS.minCooldownMs, 1000 / this.statsFor(skill).attackSpeed);
   }
 
   public addXp(amount: number): void {
@@ -48,11 +68,12 @@ export class Progression extends Phaser.Events.EventEmitter {
     }
   }
 
-  public apply(upgrade: UpgradeId): void {
+  public apply(skill: SkillId, upgrade: UpgradeId): void {
+    const target = this.statsFor(skill);
     if (upgrade === 'damage') {
-      this.damage += 1;
+      target.damage += 1;
     } else {
-      this.attackSpeed += 1;
+      target.attackSpeed += 1;
     }
   }
 }
