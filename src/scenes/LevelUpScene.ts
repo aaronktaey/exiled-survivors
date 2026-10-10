@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 
 import { COLORS, DEPTH } from '@/config';
 import { UPGRADES, type UpgradeId, type UpgradeOption } from '@/systems/Progression';
+import { prefersTouchControls } from '@/systems/VirtualJoystick';
 
 export interface LevelUpData {
   readonly level: number;
@@ -90,7 +91,7 @@ export class LevelUpScene extends Phaser.Scene {
       .setDepth(DEPTH.ui);
 
     this.add
-      .text(centerX, height / 2 + 150, '← → 이동   ↑ ↓ 선택   (WASD 동일)', {
+      .text(centerX, height / 2 + 150, prefersTouchControls() ? '원하는 쪽을 터치하세요' : '← → 이동   ↑ ↓ 선택   (WASD 동일)', {
         fontFamily: 'system-ui, sans-serif',
         fontSize: '14px',
         color: COLORS.muted,
@@ -131,7 +132,25 @@ export class LevelUpScene extends Phaser.Scene {
       .setOrigin(0.5)
       .setDepth(DEPTH.ui);
 
+    // Touch (and mouse) players pick by tapping the card directly.
+    panel.setInteractive({ useHandCursor: true });
+    panel.on(Phaser.Input.Events.GAMEOBJECT_POINTER_DOWN, () => this.onCardTapped(option.id));
+
     return { option, panel, label, x };
+  }
+
+  private onCardTapped(upgrade: UpgradeId): void {
+    if (this.picked || !this.unlocked) {
+      return;
+    }
+
+    const index = this.cards.findIndex((card) => card.option.id === upgrade);
+    if (index >= 0) {
+      this.selected = index;
+      this.refresh(true);
+    }
+
+    this.pick(upgrade);
   }
 
   private move(step: number): void {

@@ -6,3 +6,4 @@ export { SpawnDirector } from '@/systems/SpawnDirector';
 export { CombatSystem } from '@/systems/CombatSystem';
 export { Progression, UPGRADES, type UpgradeId, type UpgradeOption } from '@/systems/Progression';
 export { Hud } from '@/systems/Hud';
+export { VirtualJoystick, prefersTouchControls, type AnalogInput } from '@/systems/VirtualJoystick';

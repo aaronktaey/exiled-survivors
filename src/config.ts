@@ -29,6 +29,7 @@ export const COLORS = {
   hpFill: 0xe0564a,
   xpFill: 0x7ef0b0,
   barTrack: 0x222a38,
+  stick: 0xf4f1e8,
 } as const;
 
 export const DEPTH = {
@@ -94,6 +95,20 @@ export const STATS = {
   baseAttackSpeed: 1.5,
   /** Floor on the resulting cooldown, so the stat cannot outrun the frame. */
   minCooldownMs: 50,
+} as const;
+
+export const JOYSTICK = {
+  /** Radius of the outer ring. */
+  baseRadius: 56,
+  thumbRadius: 26,
+  /** Distance from the bottom-left corner to the ring's centre. */
+  margin: 96,
+  /** Touches this far from the ring's centre still grab it. */
+  grabRadius: 150,
+  /** Below this tilt the stick reads as centred, to kill thumb jitter. */
+  deadZone: 0.18,
+  baseAlpha: 0.18,
+  thumbAlpha: 0.38,
 } as const;
 
 export const XP = {

@@ -5,6 +5,7 @@ import { Player } from '@/entities/Player';
 import { GameOverScene, type GameOverData } from '@/scenes/GameOverScene';
 import { LevelUpScene, type LevelUpData } from '@/scenes/LevelUpScene';
 import { CombatSystem, Hud, Progression, SpawnDirector, type UpgradeId } from '@/systems';
+import { VirtualJoystick, prefersTouchControls } from '@/systems/VirtualJoystick';
 import { BoltWeapon } from '@/weapons';
 
 /** The run itself: player, spawning, weapons, pickups and progression. */
@@ -53,6 +54,11 @@ export class GameScene extends Phaser.Scene {
       this.progression,
     );
     this.hud = new Hud(this, this.player, this.progression);
+
+    // Touch devices get a thumb stick; a mouse-and-keyboard session does not.
+    if (prefersTouchControls()) {
+      this.player.attachAnalog(new VirtualJoystick(this));
+    }
 
     this.progression.on(Progression.LEVEL_UP, this.onLevelUp, this);
     this.player.once(Player.DIED, this.onPlayerDied, this);
@@ -149,7 +155,7 @@ export class GameScene extends Phaser.Scene {
       .setDepth(DEPTH.ui);
 
     const hint = this.add
-      .text(camera.width / 2, camera.height / 2 + 32, 'WASD · 방향키로 이동 — 공격은 자동', {
+      .text(camera.width / 2, camera.height / 2 + 32, prefersTouchControls() ? '스틱을 끌어 이동 — 공격은 자동' : 'WASD · 방향키로 이동 — 공격은 자동', {
         fontFamily: 'system-ui, sans-serif',
         fontSize: '18px',
         color: COLORS.accent,

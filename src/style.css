@@ -13,6 +13,10 @@ body {
   height: 100%;
   background: #0b0d12;
   overflow: hidden;
+  overscroll-behavior: none;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
 }
 
 #game-root {
@@ -24,4 +28,6 @@ body {
 
 #game-root canvas {
   display: block;
+  /* Keep touch drags driving the joystick instead of scrolling or zooming. */
+  touch-action: none;
 }

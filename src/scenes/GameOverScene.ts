@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 
 import { COLORS, DEPTH } from '@/config';
+import { prefersTouchControls } from '@/systems/VirtualJoystick';
 
 export interface GameOverData {
   readonly level: number;
@@ -57,7 +58,7 @@ export class GameOverScene extends Phaser.Scene {
       .setDepth(DEPTH.ui);
 
     this.add
-      .text(centerX, height / 2 + 56, '아무 이동키나 눌러 다시 시작', {
+      .text(centerX, height / 2 + 56, prefersTouchControls() ? '화면을 터치해 다시 시작' : '아무 이동키나 눌러 다시 시작', {
         fontFamily: 'system-ui, sans-serif',
         fontSize: '15px',
         color: COLORS.muted,
@@ -70,6 +71,14 @@ export class GameOverScene extends Phaser.Scene {
     this.unlocked = false;
     this.time.delayedCall(GameOverScene.INPUT_LOCK_MS, () => { this.unlocked = true; });
     this.input.keyboard?.on('keydown', this.onKeyDown, this);
+    this.input.on(Phaser.Input.Events.POINTER_DOWN, this.onPointerDown, this);
+  }
+
+  private onPointerDown(): void {
+    if (this.done || !this.unlocked) {
+      return;
+    }
+    this.restart();
   }
 
   private onKeyDown(event: KeyboardEvent): void {
@@ -80,8 +89,13 @@ export class GameOverScene extends Phaser.Scene {
       return;
     }
 
+    this.restart();
+  }
+
+  private restart(): void {
     this.done = true;
     this.input.keyboard?.off('keydown', this.onKeyDown, this);
+    this.input.off(Phaser.Input.Events.POINTER_DOWN, this.onPointerDown, this);
 
     const { onRestart } = this.payload;
     this.scene.stop();

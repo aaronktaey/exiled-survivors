@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 
 import { DEPTH, PLAYER, TEXTURES } from '@/config';
+import type { AnalogInput } from '@/systems/VirtualJoystick';
 
 type WasdKeys = Record<'W' | 'A' | 'S' | 'D', Phaser.Input.Keyboard.Key>;
 
@@ -16,6 +17,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   private readonly cursors?: Phaser.Types.Input.Keyboard.CursorKeys;
   private readonly wasd?: WasdKeys;
   private readonly heading = new Phaser.Math.Vector2();
+  private analog?: AnalogInput;
   private invulnerableUntil = 0;
 
   public constructor(scene: Phaser.Scene, x: number, y: number) {
@@ -39,6 +41,11 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     return this.hp > 0;
   }
 
+  /** Adds a second direction source (the touch stick) beside the keyboard. */
+  public attachAnalog(source: AnalogInput): void {
+    this.analog = source;
+  }
+
   public override update(): void {
     const right = this.isDown(this.cursors?.right, this.wasd?.D);
     const left = this.isDown(this.cursors?.left, this.wasd?.A);
@@ -46,11 +53,17 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     const up = this.isDown(this.cursors?.up, this.wasd?.W);
 
     this.heading.set(Number(right) - Number(left), Number(down) - Number(up));
+
+    // Keys win when both are live; the stick is analogue, so a partial tilt
+    // moves proportionally slower.
+    let speed = PLAYER.speed;
     if (this.heading.lengthSq() > 0) {
-      this.heading.normalize().scale(PLAYER.speed);
+      this.heading.normalize();
+    } else if (this.analog) {
+      speed = PLAYER.speed * this.analog.read(this.heading);
     }
 
-    this.setVelocity(this.heading.x, this.heading.y);
+    this.setVelocity(this.heading.x * speed, this.heading.y * speed);
   }
 
   public takeDamage(amount: number): void {
