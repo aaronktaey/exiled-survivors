@@ -3,7 +3,7 @@ import Phaser from 'phaser';
 import './style.css';
 
 import { COLORS, GAME_HEIGHT, GAME_WIDTH } from '@/config';
-import { BootScene, GameScene } from '@/scenes';
+import { BootScene, GameOverScene, GameScene, LevelUpScene } from '@/scenes';
 
 const config: Phaser.Types.Core.GameConfig = {
   type: Phaser.AUTO,
@@ -11,7 +11,9 @@ const config: Phaser.Types.Core.GameConfig = {
   width: GAME_WIDTH,
   height: GAME_HEIGHT,
   backgroundColor: COLORS.background,
-  pixelArt: true,
+  // No pixel-art assets yet, and nearest-neighbour upscaling under Scale.FIT
+  // chews up the HUD and menu text. Revisit when real sprites land.
+  antialias: true,
   scale: {
     mode: Phaser.Scale.FIT,
     autoCenter: Phaser.Scale.CENTER_BOTH,
@@ -24,7 +26,7 @@ const config: Phaser.Types.Core.GameConfig = {
       debug: false,
     },
   },
-  scene: [BootScene, GameScene],
+  scene: [BootScene, GameScene, LevelUpScene, GameOverScene],
 };
 
 const game = new Phaser.Game(config);

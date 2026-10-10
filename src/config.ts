@@ -14,10 +14,18 @@ export const WORLD = {
 export const COLORS = {
   background: '#0b0d12',
   text: '#f4f1e8',
+  muted: '#8b93a7',
   accent: '#e0564a',
   grid: 0x1a1f2b,
   player: 0x8fd3ff,
   enemy: 0xe0564a,
+  projectile: 0xffe9a3,
+  gem: 0x7ef0b0,
+  panel: 0x141924,
+  panelEdge: 0x2b3445,
+  hpFill: 0xe0564a,
+  xpFill: 0x7ef0b0,
+  barTrack: 0x222a38,
 } as const;
 
 export const DEPTH = {
@@ -35,29 +43,60 @@ export const TEXTURES = {
   grid: 'tex-grid',
   player: 'tex-player',
   enemy: 'tex-enemy',
+  projectile: 'tex-projectile',
+  gem: 'tex-gem',
 } as const;
 
 export const PLAYER = {
   size: 20,
   speed: 220,
+  maxHp: 20,
+  /** Invulnerability after taking a hit, so contact does not drain instantly. */
+  invulnerableMs: 600,
+  /** XP gems within this range drift toward the player. */
+  pickupRadius: 110,
+  pickupSpeed: 420,
 } as const;
 
 export const ENEMY = {
   size: 16,
-  /** Base chase speed; each enemy gets a small random multiplier on top. */
   speed: 70,
   speedVariance: 0.25,
+  maxHp: 3,
+  contactDamage: 1,
 } as const;
 
 export const SPAWN = {
-  /** Delay between spawns at the start of a run, in ms. */
   startIntervalMs: 900,
-  /** Floor the interval ramps down to. */
   minIntervalMs: 180,
-  /** How much of the gap to the floor is closed each minute. */
   rampPerMinute: 0.55,
-  /** Hard cap so the arcade physics step stays cheap. */
   maxAlive: 220,
-  /** Spawned this far beyond the camera corner, so they walk into view. */
   offscreenMargin: 80,
+} as const;
+
+export const WEAPON = {
+  size: 8,
+  projectileSpeed: 460,
+  /** Projectiles vanish after this long, so strays do not pile up. */
+  lifespanMs: 1400,
+  maxProjectiles: 240,
+  /** Enemies beyond this are ignored when picking a target. */
+  rangePx: 520,
+} as const;
+
+/** Starting values for the two stats the level-up screen upgrades. */
+export const STATS = {
+  baseDamage: 1,
+  /** Shots per second. Each "공격속도 +1" adds exactly 1 to this. */
+  baseAttackSpeed: 1.5,
+  /** Floor on the resulting cooldown, so the stat cannot outrun the frame. */
+  minCooldownMs: 50,
+} as const;
+
+export const XP = {
+  size: 8,
+  perEnemy: 1,
+  /** XP needed for level N is base + step * (N - 1). */
+  base: 5,
+  step: 3,
 } as const;

@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 
-import { COLORS, ENEMY, PLAYER, TEXTURES } from '@/config';
+import { COLORS, ENEMY, PLAYER, TEXTURES, WEAPON, XP } from '@/config';
 import { GameScene } from '@/scenes/GameScene';
 
 const GRID_TILE = 64;
@@ -25,6 +25,8 @@ export class BootScene extends Phaser.Scene {
     this.createGridTexture();
     this.createSquareTexture(TEXTURES.player, PLAYER.size, COLORS.player);
     this.createSquareTexture(TEXTURES.enemy, ENEMY.size, COLORS.enemy);
+    this.createSquareTexture(TEXTURES.projectile, WEAPON.size, COLORS.projectile);
+    this.createSquareTexture(TEXTURES.gem, XP.size, COLORS.gem);
 
     this.scene.start(GameScene.KEY);
   }

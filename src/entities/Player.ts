@@ -9,9 +9,14 @@ type WasdKeys = Record<'W' | 'A' | 'S' | 'D', Phaser.Input.Keyboard.Key>;
  * they are not faster than cardinal movement.
  */
 export class Player extends Phaser.Physics.Arcade.Sprite {
+  public static readonly DIED = 'player-died';
+
+  public hp: number = PLAYER.maxHp;
+
   private readonly cursors?: Phaser.Types.Input.Keyboard.CursorKeys;
   private readonly wasd?: WasdKeys;
   private readonly heading = new Phaser.Math.Vector2();
+  private invulnerableUntil = 0;
 
   public constructor(scene: Phaser.Scene, x: number, y: number) {
     super(scene, x, y, TEXTURES.player);
@@ -30,6 +35,10 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     }
   }
 
+  public get isAlive(): boolean {
+    return this.hp > 0;
+  }
+
   public override update(): void {
     const right = this.isDown(this.cursors?.right, this.wasd?.D);
     const left = this.isDown(this.cursors?.left, this.wasd?.A);
@@ -42,6 +51,31 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     }
 
     this.setVelocity(this.heading.x, this.heading.y);
+  }
+
+  public takeDamage(amount: number): void {
+    const now = this.scene.time.now;
+    if (!this.isAlive || now < this.invulnerableUntil) {
+      return;
+    }
+
+    this.hp = Math.max(0, this.hp - amount);
+    this.invulnerableUntil = now + PLAYER.invulnerableMs;
+
+    // Blink for the duration of the i-frames.
+    this.scene.tweens.add({
+      targets: this,
+      alpha: 0.25,
+      duration: PLAYER.invulnerableMs / 6,
+      yoyo: true,
+      repeat: 2,
+      onComplete: () => this.setAlpha(1),
+    });
+
+    if (!this.isAlive) {
+      this.setVelocity(0, 0);
+      this.emit(Player.DIED);
+    }
   }
 
   private isDown(...keys: ReadonlyArray<Phaser.Input.Keyboard.Key | undefined>): boolean {

@@ -1,6 +1,6 @@
 /**
- * Weapons: one file per weapon (whip, magic wand, garlic aura, ...).
- * A weapon owns its cooldown, level scaling and how it spawns hitboxes.
- * Each is re-exported here.
+ * Weapons: one file per weapon (bolt, whip, garlic aura, ...).
+ * A weapon owns its cooldown, scaling and how it spawns hitboxes.
  */
-export {};
+export { BoltWeapon } from '@/weapons/BoltWeapon';
+export { findNearest, type Weapon, type WeaponContext } from '@/weapons/Weapon';

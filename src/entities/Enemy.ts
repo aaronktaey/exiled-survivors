@@ -7,6 +7,8 @@ import { DEPTH, ENEMY, TEXTURES } from '@/config';
  * other behaviours get their own files alongside this one.
  */
 export class Enemy extends Phaser.Physics.Arcade.Sprite {
+  public hp: number = ENEMY.maxHp;
+
   private readonly speed: number;
   private target?: Phaser.GameObjects.Components.Transform;
 
@@ -23,6 +25,20 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
 
   public chase(target: Phaser.GameObjects.Components.Transform): void {
     this.target = target;
+  }
+
+  /** Returns true when this hit killed it. */
+  public takeDamage(amount: number): boolean {
+    this.hp -= amount;
+
+    if (this.hp > 0) {
+      // Brief white flash so hits read at a glance.
+      this.setTint(0xffffff).setTintMode(Phaser.TintModes.FILL);
+      this.scene.time.delayedCall(60, () => this.clearTint());
+      return false;
+    }
+
+    return true;
   }
 
   public override update(): void {
