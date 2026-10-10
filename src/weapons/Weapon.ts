@@ -1,23 +1,33 @@
 import Phaser from 'phaser';
 
+import type { Enemy } from '@/entities/Enemy';
+import type { SkillDefinition } from '@/weapons/skills';
+
 /**
  * Contract every weapon follows: it owns its own cooldown and whatever
  * hitboxes it spawns, and the scene just ticks it once per frame.
  */
 export interface Weapon {
+  readonly definition: SkillDefinition;
+  /** Present on weapons that spawn projectiles, so collisions can be wired. */
+  readonly projectiles?: Phaser.Physics.Arcade.Group;
   /** Advance the cooldown and fire if it is ready. */
   update(delta: number, context: WeaponContext): void;
 }
 
 export interface WeaponContext {
-  /** Where shots originate — normally the player. */
+  /** Where attacks originate — normally the player. */
   readonly origin: Phaser.GameObjects.Components.Transform;
-  /** Candidate targets to aim at. */
+  /** Unit vector the player last moved along; melee swings this way. */
+  readonly facing: Phaser.Math.Vector2;
+  /** Candidate targets. */
   readonly enemies: Phaser.Physics.Arcade.Group;
   /** Damage per hit, from Progression. */
   readonly damage: number;
-  /** Milliseconds between shots, from Progression. */
+  /** Milliseconds between attacks, from Progression. */
   readonly cooldownMs: number;
+  /** Applies damage and resolves the kill (gem and skill drops). */
+  readonly hit: (enemy: Enemy, amount: number) => void;
 }
 
 /** Nearest active enemy within range, or undefined if the field is clear. */

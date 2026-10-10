@@ -1,42 +1,77 @@
 import Phaser from 'phaser';
 
-import { ENEMY, WEAPON, XP } from '@/config';
+import { ENEMY, SKILL_DROP, WEAPON, XP } from '@/config';
 import { Enemy } from '@/entities/Enemy';
 import { Player } from '@/entities/Player';
 import { Projectile } from '@/entities/Projectile';
+import { SkillDrop } from '@/entities/SkillDrop';
 import { XpGem } from '@/entities/XpGem';
 import type { Progression } from '@/systems/Progression';
+import type { SkillDefinition, SkillId } from '@/weapons/skills';
+
+export interface CombatHooks {
+  /** Picks a skill to drop on a kill, or null to drop nothing. */
+  readonly rollSkillDrop: () => SkillDefinition | null;
+  /** Called when the player walks over a dropped skill. */
+  readonly onSkillCollected: (skill: SkillId) => void;
+}
 
 /**
- * Wires the overlaps that make the loop work: shots hurt enemies, enemies
- * hurt the player, and gems get picked up.
+ * Resolves everything that touches: melee and projectile damage, enemy
+ * contact, and pickups. Weapons call `hit` so kills follow one path.
  */
 export class CombatSystem {
   public readonly gems: Phaser.Physics.Arcade.Group;
+  public readonly skillDrops: Phaser.Physics.Arcade.Group;
 
+  private readonly scene: Phaser.Scene;
   private readonly player: Player;
   private readonly progression: Progression;
+  private readonly hooks: CombatHooks;
 
   public constructor(
     scene: Phaser.Scene,
     player: Player,
     enemies: Phaser.Physics.Arcade.Group,
-    projectiles: Phaser.Physics.Arcade.Group,
     progression: Progression,
+    hooks: CombatHooks,
   ) {
+    this.scene = scene;
     this.player = player;
     this.progression = progression;
+    this.hooks = hooks;
 
     this.gems = scene.physics.add.group({
       classType: XpGem,
-      maxSize: SPAWNED_GEM_CAP,
+      maxSize: WEAPON.maxProjectiles,
       runChildUpdate: true,
     });
 
-    scene.physics.add.overlap(projectiles, enemies, this.onProjectileHit, undefined, this);
+    this.skillDrops = scene.physics.add.group({
+      classType: SkillDrop,
+      maxSize: SKILL_DROP.maxOnGround,
+    });
+
     scene.physics.add.overlap(player, enemies, this.onEnemyTouch, undefined, this);
     scene.physics.add.overlap(player, this.gems, this.onGemTouch, undefined, this);
+    scene.physics.add.overlap(player, this.skillDrops, this.onSkillTouch, undefined, this);
   }
+
+  /** Wires a newly acquired projectile weapon into enemy collisions. */
+  public registerProjectiles(projectiles: Phaser.Physics.Arcade.Group, enemies: Phaser.Physics.Arcade.Group): void {
+    this.scene.physics.add.overlap(projectiles, enemies, this.onProjectileHit, undefined, this);
+  }
+
+  /** Single entry point for damage, so every kill drops the same things. */
+  public hit = (enemy: Enemy, amount: number): void => {
+    if (!enemy.active) {
+      return;
+    }
+
+    if (enemy.takeDamage(amount)) {
+      this.killEnemy(enemy);
+    }
+  };
 
   private onProjectileHit: Phaser.Types.Physics.Arcade.ArcadePhysicsCallback = (a, b) => {
     const bolt = a as unknown as Projectile;
@@ -46,10 +81,7 @@ export class CombatSystem {
     }
 
     bolt.despawn();
-
-    if (enemy.takeDamage(bolt.damage)) {
-      this.killEnemy(enemy);
-    }
+    this.hit(enemy, bolt.damage);
   };
 
   private onEnemyTouch: Phaser.Types.Physics.Arcade.ArcadePhysicsCallback = (_player, b) => {
@@ -71,14 +103,28 @@ export class CombatSystem {
     this.progression.addXp(gem.value);
   };
 
+  private onSkillTouch: Phaser.Types.Physics.Arcade.ArcadePhysicsCallback = (_player, b) => {
+    const drop = b as unknown as SkillDrop;
+    if (!drop.active) {
+      return;
+    }
+
+    const { skillId } = drop;
+    drop.collect();
+    this.hooks.onSkillCollected(skillId);
+  };
+
   private killEnemy(enemy: Enemy): void {
     const { x, y } = enemy;
     enemy.destroy();
 
     const gem = this.gems.get() as XpGem | null;
     gem?.drop(x, y, XP.perEnemy, this.player);
+
+    const skill = this.hooks.rollSkillDrop();
+    if (skill) {
+      const drop = this.skillDrops.get() as SkillDrop | null;
+      drop?.drop(x, y, skill);
+    }
   }
 }
-
-/** Roughly one gem per projectile in flight is plenty of headroom. */
-const SPAWNED_GEM_CAP = WEAPON.maxProjectiles;

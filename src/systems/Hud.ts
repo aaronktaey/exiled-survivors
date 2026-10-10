@@ -12,6 +12,7 @@ const BAR_HEIGHT = 10;
 export class Hud {
   private readonly bars: Phaser.GameObjects.Graphics;
   private readonly statsLabel: Phaser.GameObjects.Text;
+  private readonly skillsLabel: Phaser.GameObjects.Text;
   private readonly clockLabel: Phaser.GameObjects.Text;
   private readonly player: Player;
   private readonly progression: Progression;
@@ -33,6 +34,15 @@ export class Hud {
       .setScrollFactor(0)
       .setDepth(DEPTH.ui);
 
+    this.skillsLabel = scene.add
+      .text(MARGIN, MARGIN + BAR_HEIGHT * 2 + 34, '', {
+        fontFamily: 'system-ui, sans-serif',
+        fontSize: '14px',
+        color: COLORS.accent,
+      })
+      .setScrollFactor(0)
+      .setDepth(DEPTH.ui);
+
     this.clockLabel = scene.add
       .text(scene.scale.width - MARGIN, MARGIN, '', {
         fontFamily: 'system-ui, sans-serif',
@@ -44,7 +54,7 @@ export class Hud {
       .setDepth(DEPTH.ui);
   }
 
-  public update(delta: number, enemies: number): void {
+  public update(delta: number, enemies: number, skills: string): void {
     this.elapsedMs += delta;
 
     const total = Math.floor(this.elapsedMs / 1000);
@@ -56,6 +66,8 @@ export class Hud {
     this.statsLabel.setText(
       `Lv ${level}    공격력 ${damage}    공격속도 ${attackSpeed.toFixed(1)}/s    적 ${enemies}`,
     );
+
+    this.skillsLabel.setText(skills);
 
     this.drawBars();
   }

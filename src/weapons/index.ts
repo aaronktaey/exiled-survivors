@@ -1,6 +1,16 @@
 /**
- * Weapons: one file per weapon (bolt, whip, garlic aura, ...).
- * A weapon owns its cooldown, scaling and how it spawns hitboxes.
+ * Weapons: one file per skill. A weapon owns its cooldown, its scaling and
+ * how it spawns hitboxes; `skills.ts` holds the shared definitions and tags.
  */
-export { BoltWeapon } from '@/weapons/BoltWeapon';
+export { MeleeStrike } from '@/weapons/MeleeStrike';
+export { Fireball } from '@/weapons/Fireball';
 export { findNearest, type Weapon, type WeaponContext } from '@/weapons/Weapon';
+export {
+  SKILLS,
+  ALL_SKILLS,
+  DROPPABLE_SKILLS,
+  STARTING_SKILLS,
+  type SkillDefinition,
+  type SkillId,
+  type SkillTag,
+} from '@/weapons/skills';

@@ -2,13 +2,15 @@ import Phaser from 'phaser';
 
 import { WEAPON } from '@/config';
 import { Projectile } from '@/entities/Projectile';
+import { SKILLS } from '@/weapons/skills';
 import { findNearest, type Weapon, type WeaponContext } from '@/weapons/Weapon';
 
 /**
- * Starting weapon: fires automatically at the nearest enemy in range.
- * Damage and rate come from Progression, so upgrades take effect immediately.
+ * Drop-only skill: lobs a homing-free bolt at the nearest enemy in range.
+ * Tags: 투사체 · 원거리 · 주문 · 화염.
  */
-export class BoltWeapon implements Weapon {
+export class Fireball implements Weapon {
+  public readonly definition = SKILLS.fireball;
   public readonly projectiles: Phaser.Physics.Arcade.Group;
 
   private sinceShotMs = 0;

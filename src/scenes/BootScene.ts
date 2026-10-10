@@ -1,7 +1,8 @@
 import Phaser from 'phaser';
 
-import { COLORS, ENEMY, PLAYER, TEXTURES, WEAPON, XP } from '@/config';
+import { COLORS, ENEMY, PLAYER, SKILL_LABEL, TEXTURES, WEAPON, XP } from '@/config';
 import { GameScene } from '@/scenes/GameScene';
+import { ALL_SKILLS, type SkillDefinition } from '@/weapons/skills';
 
 const GRID_TILE = 64;
 
@@ -25,8 +26,12 @@ export class BootScene extends Phaser.Scene {
     this.createGridTexture();
     this.createSquareTexture(TEXTURES.player, PLAYER.size, COLORS.player);
     this.createSquareTexture(TEXTURES.enemy, ENEMY.size, COLORS.enemy);
-    this.createSquareTexture(TEXTURES.projectile, WEAPON.size, COLORS.projectile);
+    this.createSquareTexture(TEXTURES.projectile, WEAPON.size, COLORS.fireball);
     this.createSquareTexture(TEXTURES.gem, XP.size, COLORS.gem);
+
+    for (const skill of ALL_SKILLS) {
+      this.createSkillLabelTexture(skill);
+    }
 
     this.scene.start(GameScene.KEY);
   }
@@ -52,5 +57,33 @@ export class BootScene extends Phaser.Scene {
 
     graphics.generateTexture(key, size, size);
     graphics.destroy();
+  }
+
+  /**
+   * Bakes the plate a dropped skill sits on, sized to its name. The name
+   * itself is a Text drawn on top by SkillDrop — DynamicTexture, which would
+   * let the whole label be one texture, bakes empty on Phaser 4 here.
+   */
+  private createSkillLabelTexture(skill: SkillDefinition): void {
+    const { borderWidth, paddingX, paddingY } = SKILL_LABEL;
+
+    // Measure the name, then throw the probe away.
+    const probe = this.add.text(0, 0, skill.name, {
+      fontFamily: 'system-ui, sans-serif',
+      fontSize: SKILL_LABEL.fontSize,
+      color: SKILL_LABEL.text,
+    });
+    const width = Math.ceil(probe.width) + paddingX * 2;
+    const height = Math.ceil(probe.height) + paddingY * 2;
+    probe.destroy();
+
+    const plate = this.add.graphics();
+    plate.fillStyle(SKILL_LABEL.background, 1);
+    plate.fillRect(0, 0, width, height);
+    plate.lineStyle(borderWidth, SKILL_LABEL.border, 1);
+    plate.strokeRect(borderWidth / 2, borderWidth / 2, width - borderWidth, height - borderWidth);
+
+    plate.generateTexture(skill.labelTexture, width, height);
+    plate.destroy();
   }
 }

@@ -17,6 +17,8 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   private readonly cursors?: Phaser.Types.Input.Keyboard.CursorKeys;
   private readonly wasd?: WasdKeys;
   private readonly heading = new Phaser.Math.Vector2();
+  /** Last direction actually moved; melee swings along this. */
+  public readonly facing = new Phaser.Math.Vector2(1, 0);
   private analog?: AnalogInput;
   private invulnerableUntil = 0;
 
@@ -61,6 +63,10 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
       this.heading.normalize();
     } else if (this.analog) {
       speed = PLAYER.speed * this.analog.read(this.heading);
+    }
+
+    if (this.heading.lengthSq() > 0) {
+      this.facing.copy(this.heading);
     }
 
     this.setVelocity(this.heading.x * speed, this.heading.y * speed);

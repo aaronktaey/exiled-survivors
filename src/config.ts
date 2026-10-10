@@ -30,6 +30,8 @@ export const COLORS = {
   xpFill: 0x7ef0b0,
   barTrack: 0x222a38,
   stick: 0xf4f1e8,
+  meleeArc: 0xdfe7f5,
+  fireball: 0xffa63d,
 } as const;
 
 export const DEPTH = {
@@ -39,6 +41,8 @@ export const DEPTH = {
   player: 30,
   projectiles: 40,
   vfx: 50,
+  /** Ground item labels read above the crowd. */
+  skillDrop: 60,
   ui: 100,
 } as const;
 
@@ -76,6 +80,32 @@ export const SPAWN = {
   rampPerMinute: 0.55,
   maxAlive: 220,
   offscreenMargin: 80,
+} as const;
+
+export const MELEE = {
+  /** How far the swing reaches from the player's centre. */
+  reach: 88,
+  /** Full width of the swing arc, in radians. */
+  arcRadians: Math.PI * 0.8,
+  /** How long the swing flash stays on screen. */
+  flashMs: 150,
+} as const;
+
+export const SKILL_DROP = {
+  /** Chance that killing an enemy drops a skill the player does not own. */
+  chance: 0.03,
+  maxOnGround: 24,
+} as const;
+
+/** Ground label for a dropped skill, baked into a texture at boot. */
+export const SKILL_LABEL = {
+  text: '#FE0000',
+  background: 0xffffff,
+  border: 0xfe0000,
+  borderWidth: 2,
+  paddingX: 10,
+  paddingY: 6,
+  fontSize: '16px',
 } as const;
 
 export const WEAPON = {
