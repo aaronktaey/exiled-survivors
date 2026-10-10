@@ -1,0 +1,177 @@
+import Phaser from 'phaser';
+
+import { COLORS, DEBUG, DEPTH, TIMING } from '@/config';
+
+/** Counts the overlay reads each frame. */
+export interface DebugCounts {
+  readonly enemies: number;
+  readonly enemyPool: number;
+  readonly projectiles: number;
+  readonly gems: number;
+  readonly drops: number;
+  readonly damageNumbers: number;
+}
+
+/** Developer actions the overlay can trigger. */
+export interface DebugActions {
+  readonly counts: () => DebugCounts;
+  /** Spawn a burst of enemies; returns how many actually spawned. */
+  readonly stressSpawn: (count: number) => number;
+  readonly clearEnemies: () => void;
+  readonly grantLevel: () => void;
+  readonly dropSkill: () => void;
+  /** Returns the new state. */
+  readonly toggleInvulnerable: () => boolean;
+}
+
+const KEYS = 'F1,F2,F3,F4,F5,F6';
+
+/**
+ * F1 overlay: frame timings and live object counts, plus the dev keys used
+ * to put the systems under load. Hidden by default and skipped entirely
+ * while hidden, so it costs nothing in a normal run.
+ */
+export class DebugOverlay {
+  private readonly scene: Phaser.Scene;
+  private readonly actions: DebugActions;
+  private readonly label: Phaser.GameObjects.Text;
+
+  private shown = false;
+  private invulnerable = false;
+  private lastNote = '';
+
+  /** Rolling frame-time window, in ms. */
+  private readonly samples: number[] = [];
+  private sampleAt = 0;
+  private refreshMs = 0;
+
+  public constructor(scene: Phaser.Scene, actions: DebugActions) {
+    this.scene = scene;
+    this.actions = actions;
+
+    this.label = scene.add
+      .text(16, 70, '', {
+        fontFamily: 'ui-monospace, monospace',
+        fontSize: '13px',
+        color: COLORS.debugText,
+        backgroundColor: 'rgba(5, 7, 11, 0.72)',
+        padding: { x: 8, y: 6 },
+        lineSpacing: 3,
+      })
+      .setScrollFactor(0)
+      .setDepth(DEPTH.ui)
+      .setVisible(false);
+
+    const keyboard = scene.input.keyboard;
+    if (!keyboard) {
+      return;
+    }
+
+    // Stop the browser acting on the function keys (F1 opens help).
+    keyboard.addCapture(KEYS);
+    keyboard.on('keydown-F1', this.toggle, this);
+    keyboard.on('keydown-F2', this.onStress, this);
+    keyboard.on('keydown-F3', this.onClear, this);
+    keyboard.on('keydown-F4', this.onLevel, this);
+    keyboard.on('keydown-F5', this.onDrop, this);
+    keyboard.on('keydown-F6', this.onInvulnerable, this);
+  }
+
+  public get visible(): boolean {
+    return this.shown;
+  }
+
+  /** Takes the raw, unclamped delta so the readout shows real frame cost. */
+  public update(rawDelta: number): void {
+    this.samples[this.sampleAt] = rawDelta;
+    this.sampleAt = (this.sampleAt + 1) % DEBUG.sampleFrames;
+
+    if (!this.shown) {
+      return;
+    }
+
+    // Redraw a few times a second; the text itself is the expensive part.
+    this.refreshMs -= rawDelta;
+    if (this.refreshMs > 0) {
+      return;
+    }
+    this.refreshMs = 120;
+
+    this.label.setText(this.compose());
+  }
+
+  private compose(): string[] {
+    let total = 0;
+    let worst = 0;
+    for (const sample of this.samples) {
+      total += sample;
+      if (sample > worst) {
+        worst = sample;
+      }
+    }
+    const avg = this.samples.length > 0 ? total / this.samples.length : 0;
+    const c = this.actions.counts();
+
+    return [
+      `FPS ${this.scene.game.loop.actualFps.toFixed(1)}   frame ${avg.toFixed(1)}ms avg / ${worst.toFixed(1)}ms peak`,
+      `delta cap ${TIMING.maxDeltaMs}ms`,
+      `enemies ${c.enemies} (pool ${c.enemyPool})   projectiles ${c.projectiles}   gems ${c.gems}`,
+      `drops ${c.drops}   damage numbers ${c.damageNumbers}`,
+      '',
+      `F2 +${DEBUG.stressSpawnCount} enemies   F3 clear enemies   F4 level up`,
+      `F5 drop skill   F6 invulnerable: ${this.invulnerable ? 'ON' : 'OFF'}   F1 close`,
+      this.lastNote,
+    ];
+  }
+
+  private toggle(): void {
+    this.shown = !this.shown;
+    this.label.setVisible(this.shown);
+    this.refreshMs = 0;
+  }
+
+  private onStress(): void {
+    if (!this.shown) {
+      return;
+    }
+    const spawned = this.actions.stressSpawn(DEBUG.stressSpawnCount);
+    this.note(`spawned ${spawned} enemies`);
+  }
+
+  private onClear(): void {
+    if (!this.shown) {
+      return;
+    }
+    this.actions.clearEnemies();
+    this.note('cleared enemies');
+  }
+
+  private onLevel(): void {
+    if (!this.shown) {
+      return;
+    }
+    this.actions.grantLevel();
+    this.note('granted a level');
+  }
+
+  private onDrop(): void {
+    if (!this.shown) {
+      return;
+    }
+    this.actions.dropSkill();
+    this.note('dropped a skill');
+  }
+
+  private onInvulnerable(): void {
+    if (!this.shown) {
+      return;
+    }
+    this.invulnerable = this.actions.toggleInvulnerable();
+    this.note(`invulnerable ${this.invulnerable ? 'on' : 'off'}`);
+  }
+
+  private note(message: string): void {
+    this.lastNote = `> ${message}`;
+    this.refreshMs = 0;
+  }
+}

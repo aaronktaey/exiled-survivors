@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 
-import { DEPTH, TEXTURES, WEAPON } from '@/config';
+import { DEPTH, TEXTURES, TIMING, WEAPON } from '@/config';
 
 /**
  * A single shot. Pooled by the weapon's group, so instances are reused
@@ -32,7 +32,7 @@ export class Projectile extends Phaser.Physics.Arcade.Image {
   }
 
   public override update(_time: number, delta: number): void {
-    this.remainingMs -= delta;
+    this.remainingMs -= Math.min(delta, TIMING.maxDeltaMs);
     if (this.remainingMs <= 0) {
       this.despawn();
     }

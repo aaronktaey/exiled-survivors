@@ -72,6 +72,11 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     this.drawHealthBar();
   }
 
+  /** Debug switch: holds i-frames open indefinitely. */
+  public setInvulnerable(on: boolean): void {
+    this.invulnerableUntil = on ? Number.MAX_SAFE_INTEGER : 0;
+  }
+
   public takeDamage(amount: number): void {
     const now = this.scene.time.now;
     if (!this.isAlive || now < this.invulnerableUntil) {

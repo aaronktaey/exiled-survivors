@@ -4,6 +4,9 @@
  */
 export { SpawnDirector } from '@/systems/SpawnDirector';
 export { CombatSystem } from '@/systems/CombatSystem';
+export { Separation } from '@/systems/Separation';
+export { DamageNumbers } from '@/systems/DamageNumbers';
+export { DebugOverlay, type DebugActions, type DebugCounts } from '@/systems/DebugOverlay';
 export {
   Progression,
   upgradeOptionsFor,

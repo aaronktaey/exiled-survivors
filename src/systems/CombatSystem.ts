@@ -6,6 +6,7 @@ import { Player } from '@/entities/Player';
 import { Projectile } from '@/entities/Projectile';
 import { SkillDrop } from '@/entities/SkillDrop';
 import { XpGem } from '@/entities/XpGem';
+import type { DamageNumbers } from '@/systems/DamageNumbers';
 import type { Progression } from '@/systems/Progression';
 import type { SkillDefinition, SkillId } from '@/weapons/skills';
 
@@ -27,6 +28,7 @@ export class CombatSystem {
   private readonly scene: Phaser.Scene;
   private readonly player: Player;
   private readonly progression: Progression;
+  private readonly damageNumbers: DamageNumbers;
   private readonly hooks: CombatHooks;
 
   public constructor(
@@ -34,11 +36,13 @@ export class CombatSystem {
     player: Player,
     enemies: Phaser.Physics.Arcade.Group,
     progression: Progression,
+    damageNumbers: DamageNumbers,
     hooks: CombatHooks,
   ) {
     this.scene = scene;
     this.player = player;
     this.progression = progression;
+    this.damageNumbers = damageNumbers;
     this.hooks = hooks;
 
     this.gems = scene.physics.add.group({
@@ -63,11 +67,19 @@ export class CombatSystem {
     this.scene.physics.add.overlap(projectiles, enemies, this.onProjectileHit, undefined, this);
   }
 
+  /** Places a drop directly — used by the spawner's roll and by debug keys. */
+  public dropSkillAt(x: number, y: number, skill: SkillDefinition): void {
+    const drop = this.skillDrops.get() as SkillDrop | null;
+    drop?.drop(x, y, skill);
+  }
+
   /** Single entry point for damage, so every kill drops the same things. */
   public hit = (enemy: Enemy, amount: number): void => {
     if (!enemy.active) {
       return;
     }
+
+    this.damageNumbers.spawn(enemy.x, enemy.y - 10, amount);
 
     if (enemy.takeDamage(amount)) {
       this.killEnemy(enemy);
@@ -117,15 +129,15 @@ export class CombatSystem {
 
   private killEnemy(enemy: Enemy): void {
     const { x, y } = enemy;
-    enemy.destroy();
+    // Pooled: back to the spawner's pool rather than destroyed.
+    enemy.recycle();
 
     const gem = this.gems.get() as XpGem | null;
     gem?.drop(x, y, XP.perEnemy, this.player);
 
     const skill = this.hooks.rollSkillDrop();
     if (skill) {
-      const drop = this.skillDrops.get() as SkillDrop | null;
-      drop?.drop(x, y, skill);
+      this.dropSkillAt(x, y, skill);
     }
   }
 }

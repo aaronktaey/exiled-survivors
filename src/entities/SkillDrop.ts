@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 
-import { DEPTH, SKILL_DROP, SKILL_LABEL, SKILL_ORB, TEXTURES } from '@/config';
+import { DEPTH, SKILL_DROP, SKILL_LABEL, SKILL_ORB, TEXTURES, TIMING } from '@/config';
 import { SKILLS, type SkillDefinition, type SkillId } from '@/weapons/skills';
 
 /**
@@ -87,13 +87,15 @@ export class SkillDrop extends Phaser.Physics.Arcade.Image {
       return;
     }
 
-    this.remainingMs -= delta;
+    const dt = Math.min(delta, TIMING.maxDeltaMs);
+
+    this.remainingMs -= dt;
     if (this.remainingMs <= 0) {
       this.hide();
       return;
     }
 
-    this.updateBlink(delta);
+    this.updateBlink(dt);
   }
 
   /**

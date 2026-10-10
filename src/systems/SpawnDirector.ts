@@ -1,11 +1,14 @@
 import Phaser from 'phaser';
 
-import { Enemy } from '@/entities/Enemy';
 import { SPAWN, WORLD } from '@/config';
+import { Enemy } from '@/entities/Enemy';
 
 /**
  * Decides when and where enemies appear. Spawns just outside the camera on a
  * ring around the player, and tightens the interval as the run goes on.
+ *
+ * Enemies are pooled: a kill disables one and the next spawn takes it back,
+ * so a long run does not churn sprites and bodies.
  */
 export class SpawnDirector {
   public readonly group: Phaser.Physics.Arcade.Group;
@@ -19,13 +22,18 @@ export class SpawnDirector {
     this.scene = scene;
     this.target = target;
 
-    this.group = scene.physics.add.group({ runChildUpdate: true });
-    // Stop packs from stacking into a single point.
-    scene.physics.add.collider(this.group, this.group);
+    this.group = scene.physics.add.group({ classType: Enemy, runChildUpdate: true });
+    // No enemy-vs-enemy collider: Separation nudges the crowd apart instead,
+    // which costs a fraction of full collision resolution at these counts.
   }
 
   public get alive(): number {
     return this.group.countActive(true);
+  }
+
+  /** Total sprites held by the pool, alive or waiting. */
+  public get pooled(): number {
+    return this.group.getLength();
   }
 
   /** Current gap between spawns, shrinking toward SPAWN.minIntervalMs. */
@@ -49,7 +57,29 @@ export class SpawnDirector {
     }
   }
 
-  private spawnOne(): void {
+  /** Spawns `count` enemies at once, ignoring the usual cadence. */
+  public spawnBurst(count: number): number {
+    let spawned = 0;
+    for (let i = 0; i < count; i++) {
+      if (!this.spawnOne()) {
+        break;
+      }
+      spawned++;
+    }
+    return spawned;
+  }
+
+  /** Recycles every live enemy. */
+  public clear(): void {
+    for (const child of this.group.getChildren()) {
+      const enemy = child as Enemy;
+      if (enemy.active) {
+        enemy.recycle();
+      }
+    }
+  }
+
+  private spawnOne(): boolean {
     const camera = this.scene.cameras.main;
     // Half-diagonal of the view, so the ring clears even the screen corners.
     const radius = Math.hypot(camera.width, camera.height) / 2 + SPAWN.offscreenMargin;
@@ -58,8 +88,12 @@ export class SpawnDirector {
     const x = Phaser.Math.Clamp(this.target.x + Math.cos(angle) * radius, 0, WORLD.width);
     const y = Phaser.Math.Clamp(this.target.y + Math.sin(angle) * radius, 0, WORLD.height);
 
-    const enemy = new Enemy(this.scene, x, y);
-    enemy.chase(this.target);
-    this.group.add(enemy);
+    const enemy = this.group.get(x, y) as Enemy | null;
+    if (!enemy) {
+      return false;
+    }
+
+    enemy.spawn(x, y, this.target);
+    return true;
   }
 }

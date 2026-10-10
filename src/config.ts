@@ -19,6 +19,38 @@ export const BALANCE = {
   } as Record<SkillId, number>,
 };
 
+/** Frame pacing. Everything in game logic runs off a clamped delta. */
+export const TIMING = {
+  /** Upper bound on the delta handed to game logic, in ms. */
+  maxDeltaMs: 50,
+} as const;
+
+/** Enemies push each other apart instead of running full collisions. */
+export const SEPARATION = {
+  /** Enemies closer than this get nudged apart. */
+  radius: 14,
+  /** Fraction of the overlap resolved per frame; 1 separates immediately. */
+  strength: 0.5,
+  /** Spatial-hash cell size. Must be >= radius for the 3x3 lookup to be sound. */
+  cellSize: 28,
+} as const;
+
+export const DAMAGE_NUMBERS = {
+  /** Pooled up front; the oldest is recycled once they are all in use. */
+  poolSize: 96,
+  lifespanMs: 650,
+  /** Upward drift, px per second. */
+  riseSpeed: 54,
+  fontSize: '13px',
+} as const;
+
+export const DEBUG = {
+  /** Enemies added per press of the stress-test key. */
+  stressSpawnCount: 100,
+  /** Frames averaged for the frame-time readout. */
+  sampleFrames: 60,
+} as const;
+
 export const GAME_WIDTH = 960;
 export const GAME_HEIGHT = 540;
 
@@ -49,6 +81,8 @@ export const COLORS = {
   barTrack: 0x222a38,
   stick: 0xf4f1e8,
   meleeArc: 0xdfe7f5,
+  damageText: '#ffe9a3',
+  debugText: '#7ef0b0',
   fireball: 0xffa63d,
 } as const;
 

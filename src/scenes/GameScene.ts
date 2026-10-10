@@ -1,10 +1,19 @@
 import Phaser from 'phaser';
 
-import { BALANCE, COLORS, DEPTH, SKILL_DROP, TEXTURES, WORLD } from '@/config';
+import { BALANCE, COLORS, DEPTH, SKILL_DROP, TEXTURES, TIMING, WORLD } from '@/config';
 import { Player } from '@/entities/Player';
 import { GameOverScene, type GameOverData } from '@/scenes/GameOverScene';
 import { UpgradeScene, type UpgradeChoiceData } from '@/scenes/UpgradeScene';
-import { CombatSystem, Hud, Progression, SpawnDirector, type UpgradeId } from '@/systems';
+import {
+  CombatSystem,
+  DamageNumbers,
+  DebugOverlay,
+  Hud,
+  Progression,
+  Separation,
+  SpawnDirector,
+  type UpgradeId,
+} from '@/systems';
 import { VirtualJoystick, prefersTouchControls } from '@/systems/VirtualJoystick';
 import {
   DROPPABLE_SKILLS,
@@ -33,6 +42,9 @@ export class GameScene extends Phaser.Scene {
   private combat!: CombatSystem;
   private progression!: Progression;
   private hud!: Hud;
+  private separation!: Separation;
+  private damageNumbers!: DamageNumbers;
+  private debug!: DebugOverlay;
 
   private weapons: Weapon[] = [];
   private owned = new Set<SkillId>();
@@ -42,6 +54,7 @@ export class GameScene extends Phaser.Scene {
   private pendingChoices: ChoiceRequest[] = [];
   private choosing = false;
   private over = false;
+  private invulnerable = false;
 
   public constructor() {
     super(GameScene.KEY);
@@ -52,6 +65,7 @@ export class GameScene extends Phaser.Scene {
     this.pendingChoices = [];
     this.choosing = false;
     this.over = false;
+    this.invulnerable = false;
     this.weapons = [];
     this.owned = new Set<SkillId>();
 
@@ -65,11 +79,21 @@ export class GameScene extends Phaser.Scene {
 
     this.progression = new Progression();
     this.spawner = new SpawnDirector(this, this.player);
-    this.combat = new CombatSystem(this, this.player, this.spawner.group, this.progression, {
-      rollSkillDrop: () => this.rollSkillDrop(),
-      onSkillCollected: (skill) => this.onSkillCollected(skill),
-    });
+    this.separation = new Separation(this.spawner.group);
+    this.damageNumbers = new DamageNumbers(this);
+    this.combat = new CombatSystem(
+      this,
+      this.player,
+      this.spawner.group,
+      this.progression,
+      this.damageNumbers,
+      {
+        rollSkillDrop: () => this.rollSkillDrop(),
+        onSkillCollected: (skill) => this.onSkillCollected(skill),
+      },
+    );
     this.hud = new Hud(this, this.progression);
+    this.debug = new DebugOverlay(this, this.debugActions());
 
     for (const skill of STARTING_SKILLS) {
       this.acquire(skill);
@@ -87,19 +111,26 @@ export class GameScene extends Phaser.Scene {
   }
 
   public override update(_time: number, delta: number): void {
+    // The overlay wants the real cost of the frame, not the clamped value.
+    this.debug.update(delta);
+
     if (this.over || this.choosing) {
       return;
     }
 
-    this.elapsedMs += delta;
+    // One long frame (a tab regaining focus, a GC pause) must not teleport
+    // the world, so every system downstream runs on a clamped delta.
+    const dt = Math.min(delta, TIMING.maxDeltaMs);
+    this.elapsedMs += dt;
 
     this.player.update();
-    this.spawner.update(delta);
+    this.spawner.update(dt);
+    this.separation.update();
 
     // Each weapon runs on its own stats, so upgrades stay on their skill.
     for (const weapon of this.weapons) {
       const id = weapon.definition.id;
-      weapon.update(delta, {
+      weapon.update(dt, {
         origin: this.player,
         enemies: this.spawner.group,
         damage: this.damageOf(id),
@@ -108,7 +139,8 @@ export class GameScene extends Phaser.Scene {
       });
     }
 
-    this.hud.update(delta, this.spawner.alive, this.loadout());
+    this.damageNumbers.update(dt);
+    this.hud.update(dt, this.spawner.alive, this.loadout());
   }
 
   private createFloor(): void {
@@ -192,6 +224,33 @@ export class GameScene extends Phaser.Scene {
       duration: 700,
       onComplete: () => label.destroy(),
     });
+  }
+
+  private debugActions() {
+    return {
+      counts: () => ({
+        enemies: this.spawner.alive,
+        enemyPool: this.spawner.pooled,
+        projectiles: this.weapons.reduce((n, w) => n + (w.projectiles?.countActive(true) ?? 0), 0),
+        gems: this.combat.gems.countActive(true),
+        drops: this.combat.skillDrops.countActive(true),
+        damageNumbers: this.damageNumbers.activeCount,
+      }),
+      stressSpawn: (count: number) => this.spawner.spawnBurst(count),
+      clearEnemies: () => this.spawner.clear(),
+      grantLevel: () => this.progression.addXp(this.progression.xpToNext),
+      dropSkill: () => {
+        const skill = DROPPABLE_SKILLS[0];
+        if (skill) {
+          this.combat.dropSkillAt(this.player.x + 60, this.player.y, skill);
+        }
+      },
+      toggleInvulnerable: () => {
+        this.invulnerable = !this.invulnerable;
+        this.player.setInvulnerable(this.invulnerable);
+        return this.invulnerable;
+      },
+    };
   }
 
   /** Level-up points are spent on the basic attack only. */
