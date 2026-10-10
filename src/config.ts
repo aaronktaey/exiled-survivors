@@ -139,7 +139,7 @@ export const SKILL_LABEL = {
   borderWidth: 1,
   paddingX: 5,
   paddingY: 3,
-  fontSize: "12px",
+  fontSize: "24px",
   /** Gap between the orb on the ground and the plate above it. */
   gap: 5,
 } as const;
