@@ -41,6 +41,8 @@ export const DEPTH = {
   player: 30,
   projectiles: 40,
   vfx: 50,
+  /** The player's health bar sits above the crowd it is fighting. */
+  healthBar: 55,
   /** Ground item labels read above the crowd. */
   skillDrop: 60,
   ui: 100,
@@ -80,6 +82,19 @@ export const SPAWN = {
   rampPerMinute: 0.55,
   maxAlive: 220,
   offscreenMargin: 80,
+} as const;
+
+export const HUD = {
+  margin: 16,
+  /** XP bar spans the full width along the very bottom edge. */
+  xpBarHeight: 10,
+  /** Health bar floats just above the player sprite. */
+  healthBar: {
+    width: 20,
+    height: 2,
+    /** Gap between the sprite's top edge and the bar. */
+    gap: 6,
+  },
 } as const;
 
 export const MELEE = {

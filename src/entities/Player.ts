@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 
-import { DEPTH, PLAYER, TEXTURES } from '@/config';
+import { COLORS, DEPTH, HUD, PLAYER, TEXTURES } from '@/config';
 import type { AnalogInput } from '@/systems/VirtualJoystick';
 
 type WasdKeys = Record<'W' | 'A' | 'S' | 'D', Phaser.Input.Keyboard.Key>;
@@ -17,6 +17,8 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   private readonly cursors?: Phaser.Types.Input.Keyboard.CursorKeys;
   private readonly wasd?: WasdKeys;
   private readonly heading = new Phaser.Math.Vector2();
+  /** Thin health bar that rides just above the sprite. */
+  private readonly healthBar: Phaser.GameObjects.Graphics;
   private analog?: AnalogInput;
   private invulnerableUntil = 0;
 
@@ -28,6 +30,9 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
 
     this.setDepth(DEPTH.player);
     this.setCollideWorldBounds(true);
+
+    this.healthBar = scene.add.graphics().setDepth(DEPTH.healthBar);
+    this.drawHealthBar();
 
     // Keyboard is absent on touch-only devices; movement just stays idle there.
     const keyboard = scene.input.keyboard;
@@ -64,6 +69,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     }
 
     this.setVelocity(this.heading.x * speed, this.heading.y * speed);
+    this.drawHealthBar();
   }
 
   public takeDamage(amount: number): void {
@@ -85,10 +91,33 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
       onComplete: () => this.setAlpha(1),
     });
 
+    this.drawHealthBar();
+
     if (!this.isAlive) {
       this.setVelocity(0, 0);
       this.emit(Player.DIED);
     }
+  }
+
+  private drawHealthBar(): void {
+    const { width, height, gap } = HUD.healthBar;
+    const left = this.x - width / 2;
+    const top = this.y - PLAYER.size / 2 - gap - height;
+    const ratio = Phaser.Math.Clamp(this.hp / PLAYER.maxHp, 0, 1);
+
+    this.healthBar.clear();
+    this.healthBar.fillStyle(COLORS.barTrack, 1);
+    this.healthBar.fillRect(left, top, width, height);
+
+    if (ratio > 0) {
+      this.healthBar.fillStyle(COLORS.hpFill, 1);
+      this.healthBar.fillRect(left, top, width * ratio, height);
+    }
+  }
+
+  public override destroy(fromScene?: boolean): void {
+    this.healthBar.destroy(fromScene);
+    super.destroy(fromScene);
   }
 
   private isDown(...keys: ReadonlyArray<Phaser.Input.Keyboard.Key | undefined>): boolean {

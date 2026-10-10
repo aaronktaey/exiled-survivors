@@ -1,12 +1,7 @@
 import Phaser from 'phaser';
 
-import { COLORS, DEPTH, PLAYER } from '@/config';
-import type { Player } from '@/entities/Player';
+import { COLORS, DEPTH, HUD } from '@/config';
 import type { Progression } from '@/systems/Progression';
-
-const MARGIN = 16;
-const BAR_WIDTH = 200;
-const BAR_HEIGHT = 10;
 
 export interface LoadoutEntry {
   readonly name: string;
@@ -14,25 +9,32 @@ export interface LoadoutEntry {
   readonly attackSpeed: number;
 }
 
-/** Fixed-to-camera run readout: health, XP, level, per-skill stats, clock. */
+/**
+ * Camera-fixed run readout: level and loadout top-left, clock top-centre,
+ * and a full-width XP bar along the bottom edge.
+ *
+ * Health is not here — it rides above the player, drawn by Player itself.
+ */
 export class Hud {
-  private readonly bars: Phaser.GameObjects.Graphics;
+  private readonly xpBar: Phaser.GameObjects.Graphics;
   private readonly statsLabel: Phaser.GameObjects.Text;
   private readonly skillsLabel: Phaser.GameObjects.Text;
   private readonly clockLabel: Phaser.GameObjects.Text;
-  private readonly player: Player;
   private readonly progression: Progression;
+  private readonly viewWidth: number;
+  private readonly viewHeight: number;
 
   private elapsedMs = 0;
 
-  public constructor(scene: Phaser.Scene, player: Player, progression: Progression) {
-    this.player = player;
+  public constructor(scene: Phaser.Scene, progression: Progression) {
     this.progression = progression;
+    this.viewWidth = scene.scale.width;
+    this.viewHeight = scene.scale.height;
 
-    this.bars = scene.add.graphics().setScrollFactor(0).setDepth(DEPTH.ui);
+    this.xpBar = scene.add.graphics().setScrollFactor(0).setDepth(DEPTH.ui);
 
     this.statsLabel = scene.add
-      .text(MARGIN, MARGIN + BAR_HEIGHT * 2 + 14, '', {
+      .text(HUD.margin, HUD.margin, '', {
         fontFamily: 'system-ui, sans-serif',
         fontSize: '14px',
         color: COLORS.muted,
@@ -41,7 +43,7 @@ export class Hud {
       .setDepth(DEPTH.ui);
 
     this.skillsLabel = scene.add
-      .text(MARGIN, MARGIN + BAR_HEIGHT * 2 + 34, '', {
+      .text(HUD.margin, HUD.margin + 22, '', {
         fontFamily: 'system-ui, sans-serif',
         fontSize: '14px',
         color: COLORS.text,
@@ -51,12 +53,12 @@ export class Hud {
       .setDepth(DEPTH.ui);
 
     this.clockLabel = scene.add
-      .text(scene.scale.width - MARGIN, MARGIN, '', {
+      .text(this.viewWidth / 2, HUD.margin - 4, '', {
         fontFamily: 'system-ui, sans-serif',
-        fontSize: '18px',
+        fontSize: '20px',
         color: COLORS.text,
       })
-      .setOrigin(1, 0)
+      .setOrigin(0.5, 0)
       .setScrollFactor(0)
       .setDepth(DEPTH.ui);
   }
@@ -74,25 +76,20 @@ export class Hud {
       loadout.map((s) => `${s.name}  공격력 ${s.damage}  공속 ${s.attackSpeed.toFixed(1)}/s`),
     );
 
-    this.drawBars();
+    this.drawXpBar();
   }
 
-  private drawBars(): void {
-    const hpRatio = Phaser.Math.Clamp(this.player.hp / PLAYER.maxHp, 0, 1);
-    const xpRatio = Phaser.Math.Clamp(this.progression.xp / this.progression.xpToNext, 0, 1);
+  private drawXpBar(): void {
+    const ratio = Phaser.Math.Clamp(this.progression.xp / this.progression.xpToNext, 0, 1);
+    const top = this.viewHeight - HUD.xpBarHeight;
 
-    this.bars.clear();
-    this.drawBar(MARGIN, hpRatio, COLORS.hpFill);
-    this.drawBar(MARGIN + BAR_HEIGHT + 4, xpRatio, COLORS.xpFill);
-  }
-
-  private drawBar(y: number, ratio: number, color: number): void {
-    this.bars.fillStyle(COLORS.barTrack, 1);
-    this.bars.fillRect(MARGIN, y, BAR_WIDTH, BAR_HEIGHT);
+    this.xpBar.clear();
+    this.xpBar.fillStyle(COLORS.barTrack, 1);
+    this.xpBar.fillRect(0, top, this.viewWidth, HUD.xpBarHeight);
 
     if (ratio > 0) {
-      this.bars.fillStyle(color, 1);
-      this.bars.fillRect(MARGIN, y, BAR_WIDTH * ratio, BAR_HEIGHT);
+      this.xpBar.fillStyle(COLORS.xpFill, 1);
+      this.xpBar.fillRect(0, top, this.viewWidth * ratio, HUD.xpBarHeight);
     }
   }
 }

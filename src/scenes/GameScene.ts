@@ -69,7 +69,7 @@ export class GameScene extends Phaser.Scene {
       rollSkillDrop: () => this.rollSkillDrop(),
       onSkillCollected: (skill) => this.onSkillCollected(skill),
     });
-    this.hud = new Hud(this, this.player, this.progression);
+    this.hud = new Hud(this, this.progression);
 
     for (const skill of STARTING_SKILLS) {
       this.acquire(skill);
