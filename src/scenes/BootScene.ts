@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 
-import { COLORS, ENEMY, PLAYER, SKILL_LABEL, SKILL_ORB, TEXTURES, WEAPON, XP } from '@/config';
+import { AUDIO, COLORS, ENEMY, PLAYER, SKILL_LABEL, SKILL_ORB, TEXTURES, WEAPON, XP } from '@/config';
 import { GameScene } from '@/scenes/GameScene';
 import { ALL_SKILLS, type SkillDefinition } from '@/weapons/skills';
 
@@ -18,8 +18,9 @@ export class BootScene extends Phaser.Scene {
   }
 
   public preload(): void {
-    // Real asset loading goes here, e.g.:
-    // this.load.image('player', 'assets/player.png');
+    this.load.audio(AUDIO.skillDrop.key, `${import.meta.env.BASE_URL}${AUDIO.skillDrop.file}`);
+
+    // Sprites are still generated at runtime; real art loads here too.
   }
 
   public create(): void {

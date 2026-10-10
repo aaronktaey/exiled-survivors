@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 
-import { ENEMY, WEAPON, XP } from '@/config';
+import { AUDIO, ENEMY, WEAPON, XP } from '@/config';
 import { Enemy } from '@/entities/Enemy';
 import { Player } from '@/entities/Player';
 import { Projectile } from '@/entities/Projectile';
@@ -70,7 +70,20 @@ export class CombatSystem {
   /** Places a drop directly — used by the spawner's roll and by debug keys. */
   public dropSkillAt(x: number, y: number, skill: SkillDefinition): void {
     const drop = this.skillDrops.get() as SkillDrop | null;
-    drop?.drop(x, y, skill);
+    if (!drop) {
+      return;
+    }
+
+    drop.drop(x, y, skill);
+    this.playDropSound();
+  }
+
+  private playDropSound(): void {
+    const { key, volume, seek } = AUDIO.skillDrop;
+    // Stay quiet rather than warn if the clip failed to load.
+    if (this.scene.cache.audio.exists(key)) {
+      this.scene.sound.play(key, { volume, seek });
+    }
   }
 
   /** Single entry point for damage, so every kill drops the same things. */

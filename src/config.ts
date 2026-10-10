@@ -44,6 +44,20 @@ export const DAMAGE_NUMBERS = {
   fontSize: '13px',
 } as const;
 
+/**
+ * Sound effects. Paths go through BASE_URL so they resolve both on the dev
+ * server (/) and on the Pages project site (/exiled-survivors/).
+ */
+export const AUDIO = {
+  skillDrop: {
+    key: 'sfx-skill-drop',
+    file: 'assets/bulletcasing.wav',
+    volume: 0.6,
+    /** The clip opens with ~1s of silence; start just before the impact. */
+    seek: 0.95,
+  },
+} as const;
+
 export const DEBUG = {
   /** Enemies added per press of the stress-test key. */
   stressSpawnCount: 100,
