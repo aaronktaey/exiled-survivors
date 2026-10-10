@@ -1,4 +1,4 @@
-import type { SkillId } from '@/weapons/skills';
+import type { SkillId } from "@/weapons/skills";
 
 /**
  * Central game constants. Keep tunable numbers here so systems and weapons
@@ -29,10 +29,10 @@ export const WORLD = {
 } as const;
 
 export const COLORS = {
-  background: '#0b0d12',
-  text: '#f4f1e8',
-  muted: '#8b93a7',
-  accent: '#e0564a',
+  background: "#0b0d12",
+  text: "#f4f1e8",
+  muted: "#8b93a7",
+  accent: "#e0564a",
   /** Same accent as a number, for shapes (text takes the string form). */
   accentFill: 0xe0564a,
   grid: 0x1a1f2b,
@@ -68,12 +68,12 @@ export const DEPTH = {
 
 /** Texture keys generated at boot — placeholder art until real sprites land. */
 export const TEXTURES = {
-  grid: 'tex-grid',
-  player: 'tex-player',
-  enemy: 'tex-enemy',
-  projectile: 'tex-projectile',
-  gem: 'tex-gem',
-  skillOrb: 'tex-skill-orb',
+  grid: "tex-grid",
+  player: "tex-player",
+  enemy: "tex-enemy",
+  projectile: "tex-projectile",
+  gem: "tex-gem",
+  skillOrb: "tex-skill-orb",
 } as const;
 
 export const PLAYER = {
@@ -133,13 +133,13 @@ export const SKILL_DROP = {
 
 /** Ground label for a dropped skill, baked into a texture at boot. */
 export const SKILL_LABEL = {
-  text: '#FE0000',
+  text: "#FE0000",
   background: 0xffffff,
   border: 0xfe0000,
   borderWidth: 1,
   paddingX: 5,
   paddingY: 3,
-  fontSize: '8px',
+  fontSize: "12px",
   /** Gap between the orb on the ground and the plate above it. */
   gap: 5,
 } as const;
@@ -199,5 +199,8 @@ export const XP_CURVE = {
 /** XP needed to leave `level`. Grows ~geometrically: 5, 11, 20, 34, 52, ... */
 export function xpToNextLevel(level: number): number {
   const { A, K, B, R, SCALE } = XP_CURVE;
-  return Math.max(1, Math.round(A * Math.pow(level + K, B) * Math.pow(R, level) * SCALE));
+  return Math.max(
+    1,
+    Math.round(A * Math.pow(level + K, B) * Math.pow(R, level) * SCALE),
+  );
 }
