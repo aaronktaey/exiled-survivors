@@ -114,7 +114,19 @@ export const JOYSTICK = {
 export const XP = {
   size: 8,
   perEnemy: 1,
-  /** XP needed for level N is base + step * (N - 1). */
-  base: 5,
-  step: 3,
 } as const;
+
+/** PoE 경험치 곡선 근사식 (모양 유지, 크기는 SCALE로 조절) */
+export const XP_CURVE = {
+  A: 41.5,
+  K: 1.75,
+  B: 2.41,
+  R: 1.0483,
+  SCALE: 0.01, // 1.0 = PoE 원본 수치
+} as const;
+
+/** XP needed to leave `level`. Grows ~geometrically: 5, 11, 20, 34, 52, ... */
+export function xpToNextLevel(level: number): number {
+  const { A, K, B, R, SCALE } = XP_CURVE;
+  return Math.max(1, Math.round(A * Math.pow(level + K, B) * Math.pow(R, level) * SCALE));
+}

@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 
-import { STATS, XP } from '@/config';
+import { STATS, xpToNextLevel } from '@/config';
 
 export type UpgradeId = 'damage' | 'attackSpeed';
 
@@ -30,7 +30,7 @@ export class Progression extends Phaser.Events.EventEmitter {
 
   /** XP required to leave the current level. */
   public get xpToNext(): number {
-    return XP.base + XP.step * (this.level - 1);
+    return xpToNextLevel(this.level);
   }
 
   public get cooldownMs(): number {
