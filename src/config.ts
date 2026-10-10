@@ -1,7 +1,24 @@
+import type { SkillId } from '@/weapons/skills';
+
 /**
  * Central game constants. Keep tunable numbers here so systems and weapons
  * read from one place instead of hard-coding values at their call sites.
  */
+
+/**
+ * Difficulty dials. Scale enemy toughness and each skill's damage from one
+ * place, without touching the base numbers further down.
+ */
+export const BALANCE = {
+  /** Multiplies every enemy's max HP. */
+  enemyHpScale: 1,
+  /** Multiplies each skill's damage, on top of its upgraded value. */
+  damageScale: {
+    meleeStrike: 1,
+    fireball: 1,
+  } as Record<SkillId, number>,
+};
+
 export const GAME_WIDTH = 960;
 export const GAME_HEIGHT = 540;
 
@@ -23,6 +40,7 @@ export const COLORS = {
   enemy: 0xe0564a,
   projectile: 0xffe9a3,
   gem: 0x7ef0b0,
+  skillOrb: 0xffc14d,
   panel: 0x141924,
   panelActive: 0x1e2636,
   panelEdge: 0x2b3445,
@@ -55,6 +73,7 @@ export const TEXTURES = {
   enemy: 'tex-enemy',
   projectile: 'tex-projectile',
   gem: 'tex-gem',
+  skillOrb: 'tex-skill-orb',
 } as const;
 
 export const PLAYER = {
@@ -90,8 +109,8 @@ export const HUD = {
   xpBarHeight: 10,
   /** Health bar floats just above the player sprite. */
   healthBar: {
-    width: 20,
-    height: 2,
+    width: 60,
+    height: 6,
     /** Gap between the sprite's top edge and the bar. */
     gap: 6,
   },
@@ -117,10 +136,17 @@ export const SKILL_LABEL = {
   text: '#FE0000',
   background: 0xffffff,
   border: 0xfe0000,
-  borderWidth: 2,
-  paddingX: 10,
-  paddingY: 6,
-  fontSize: '16px',
+  borderWidth: 1,
+  paddingX: 5,
+  paddingY: 3,
+  fontSize: '8px',
+  /** Gap between the orb on the ground and the plate above it. */
+  gap: 5,
+} as const;
+
+/** The pickup itself — a gem-sized object the label floats over. */
+export const SKILL_ORB = {
+  size: 12,
 } as const;
 
 export const WEAPON = {

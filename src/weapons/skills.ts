@@ -17,13 +17,13 @@ export interface SkillDefinition {
 export const SKILLS: Record<SkillId, SkillDefinition> = {
   meleeStrike: {
     id: 'meleeStrike',
-    name: '기본 공격',
+    name: '타격',
     tags: ['물리', '공격', '근접'],
     labelTexture: 'tex-label-meleeStrike',
   },
   fireball: {
     id: 'fireball',
-    name: '파이어볼',
+    name: '화염구',
     tags: ['투사체', '원거리', '주문', '화염'],
     labelTexture: 'tex-label-fireball',
   },

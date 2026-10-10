@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 
-import { COLORS, ENEMY, PLAYER, SKILL_LABEL, TEXTURES, WEAPON, XP } from '@/config';
+import { COLORS, ENEMY, PLAYER, SKILL_LABEL, SKILL_ORB, TEXTURES, WEAPON, XP } from '@/config';
 import { GameScene } from '@/scenes/GameScene';
 import { ALL_SKILLS, type SkillDefinition } from '@/weapons/skills';
 
@@ -28,6 +28,7 @@ export class BootScene extends Phaser.Scene {
     this.createSquareTexture(TEXTURES.enemy, ENEMY.size, COLORS.enemy);
     this.createSquareTexture(TEXTURES.projectile, WEAPON.size, COLORS.fireball);
     this.createSquareTexture(TEXTURES.gem, XP.size, COLORS.gem);
+    this.createSquareTexture(TEXTURES.skillOrb, SKILL_ORB.size, COLORS.skillOrb);
 
     for (const skill of ALL_SKILLS) {
       this.createSkillLabelTexture(skill);

@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 
-import { COLORS, DEPTH, SKILL_DROP, TEXTURES, WORLD } from '@/config';
+import { BALANCE, COLORS, DEPTH, SKILL_DROP, TEXTURES, WORLD } from '@/config';
 import { Player } from '@/entities/Player';
 import { GameOverScene, type GameOverData } from '@/scenes/GameOverScene';
 import { UpgradeScene, type UpgradeChoiceData } from '@/scenes/UpgradeScene';
@@ -102,7 +102,7 @@ export class GameScene extends Phaser.Scene {
       weapon.update(delta, {
         origin: this.player,
         enemies: this.spawner.group,
-        damage: this.progression.statsFor(id).damage,
+        damage: this.damageOf(id),
         cooldownMs: this.progression.cooldownMsFor(id),
         hit: this.combat.hit,
       });
@@ -155,10 +155,19 @@ export class GameScene extends Phaser.Scene {
     return DROPPABLE_SKILLS[Math.floor(Math.random() * DROPPABLE_SKILLS.length)] ?? null;
   }
 
+  /** Upgraded damage after the balance dial for that skill. */
+  private damageOf(skill: SkillId): number {
+    return this.progression.statsFor(skill).damage * (BALANCE.damageScale[skill] ?? 1);
+  }
+
   private loadout(): ReadonlyArray<{ name: string; damage: number; attackSpeed: number }> {
     return this.weapons.map((weapon) => {
-      const stats = this.progression.statsFor(weapon.definition.id);
-      return { name: weapon.definition.name, damage: stats.damage, attackSpeed: stats.attackSpeed };
+      const id = weapon.definition.id;
+      return {
+        name: weapon.definition.name,
+        damage: this.damageOf(id),
+        attackSpeed: this.progression.statsFor(id).attackSpeed,
+      };
     });
   }
 

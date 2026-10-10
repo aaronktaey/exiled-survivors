@@ -1,13 +1,13 @@
 import Phaser from 'phaser';
 
-import { DEPTH, ENEMY, TEXTURES } from '@/config';
+import { BALANCE, DEPTH, ENEMY, TEXTURES } from '@/config';
 
 /**
  * A basic chaser: walks straight at its target every frame. Variants with
  * other behaviours get their own files alongside this one.
  */
 export class Enemy extends Phaser.Physics.Arcade.Sprite {
-  public hp: number = ENEMY.maxHp;
+  public hp: number = Math.max(1, Math.round(ENEMY.maxHp * BALANCE.enemyHpScale));
 
   private readonly speed: number;
   private target?: Phaser.GameObjects.Components.Transform;
