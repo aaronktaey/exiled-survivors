@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 
-import { ENEMY, SKILL_DROP, WEAPON, XP } from '@/config';
+import { ENEMY, WEAPON, XP } from '@/config';
 import { Enemy } from '@/entities/Enemy';
 import { Player } from '@/entities/Player';
 import { Projectile } from '@/entities/Projectile';
@@ -47,9 +47,10 @@ export class CombatSystem {
       runChildUpdate: true,
     });
 
+    // No cap: drops expire on their own timer instead of being refused.
     this.skillDrops = scene.physics.add.group({
       classType: SkillDrop,
-      maxSize: SKILL_DROP.maxOnGround,
+      runChildUpdate: true,
     });
 
     scene.physics.add.overlap(player, enemies, this.onEnemyTouch, undefined, this);

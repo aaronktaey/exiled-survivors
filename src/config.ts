@@ -126,9 +126,18 @@ export const MELEE = {
 } as const;
 
 export const SKILL_DROP = {
-  /** Chance that killing an enemy drops a skill the player does not own. */
+  /** Chance that killing an enemy drops a skill. */
   chance: 0.03,
-  maxOnGround: 24,
+  /** How long a dropped skill stays on the ground. XP gems never expire. */
+  lifespanMs: 60_000,
+  /** Final stretch, during which it blinks a warning before vanishing. */
+  warningMs: 10_000,
+  /** Blink period at the start of the warning, and at the very end. */
+  blinkSlowMs: 700,
+  blinkFastMs: 80,
+  /** Radius of the halo that blinks behind the orb. */
+  glowRadius: 12,
+  glowAlpha: 0.65,
 } as const;
 
 /** Ground label for a dropped skill, baked into a texture at boot. */
