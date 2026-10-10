@@ -1,0 +1,9 @@
+Icons from "Raven Fantasy Icons (Free)" by Caio / Clockwork Raven Studios.
+https://www.patreon.com/clockworkravenstudios
+
+Only the three icons used by the game are included here, taken from the
+pack's 32x32 separated files:
+
+  xp-gem.png     fb167
+  fireball.png   fb993
+  skill-orb.png  fb1080

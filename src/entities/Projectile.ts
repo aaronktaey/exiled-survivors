@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 
-import { DEPTH, TEXTURES, TIMING, WEAPON } from '@/config';
+import { DEPTH, ICONS, TEXTURES, TIMING, WEAPON } from '@/config';
 
 /**
  * A single shot. Pooled by the weapon's group, so instances are reused
@@ -13,6 +13,7 @@ export class Projectile extends Phaser.Physics.Arcade.Image {
   public constructor(scene: Phaser.Scene, x: number, y: number) {
     super(scene, x, y, TEXTURES.projectile);
     this.setDepth(DEPTH.projectiles);
+    this.setDisplaySize(ICONS.projectile.size, ICONS.projectile.size);
   }
 
   public launch(x: number, y: number, angle: number, damage: number): void {
@@ -20,6 +21,10 @@ export class Projectile extends Phaser.Physics.Arcade.Image {
     this.remainingMs = WEAPON.lifespanMs;
 
     this.enableBody(true, x, y, true, true);
+    this.setDisplaySize(ICONS.projectile.size, ICONS.projectile.size);
+    this.body?.setSize(ICONS.projectile.size, ICONS.projectile.size, true);
+    // Point the flame along its flight path.
+    this.setRotation(angle);
     this.scene.physics.velocityFromRotation(
       angle,
       WEAPON.projectileSpeed,

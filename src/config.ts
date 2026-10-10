@@ -48,6 +48,17 @@ export const DAMAGE_NUMBERS = {
  * Sound effects. Paths go through BASE_URL so they resolve both on the dev
  * server (/) and on the Pages project site (/exiled-survivors/).
  */
+/**
+ * Hand-picked icons from the Raven Fantasy pack (see assets/icons/CREDITS.txt).
+ * Sprites are 32x32 and drawn down to `size`; the rest of the art is still
+ * generated at boot.
+ */
+export const ICONS = {
+  gem: { file: 'assets/icons/xp-gem.png', size: 14 },
+  projectile: { file: 'assets/icons/fireball.png', size: 16 },
+  skillOrb: { file: 'assets/icons/skill-orb.png', size: 22 },
+} as const;
+
 export const AUDIO = {
   skillDrop: {
     key: 'sfx-skill-drop',
@@ -199,11 +210,6 @@ export const SKILL_LABEL = {
   fontSize: "24px",
   /** Gap between the orb on the ground and the plate above it. */
   gap: 5,
-} as const;
-
-/** The pickup itself — a gem-sized object the label floats over. */
-export const SKILL_ORB = {
-  size: 12,
 } as const;
 
 export const WEAPON = {

@@ -29,3 +29,8 @@ Thumbs.db
 # misc
 .cache/
 coverage/
+
+# Raw art pack source — only the handful of icons under assets/icons/ ships.
+# Keeping the 6.5k-file pack here also slows local builds, since Vite copies
+# everything in public/; move it out of public/ if that becomes annoying.
+public/assets/Free - Raven Fantasy Icons/

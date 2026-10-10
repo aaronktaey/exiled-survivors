@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 
-import { AUDIO, COLORS, ENEMY, PLAYER, SKILL_LABEL, SKILL_ORB, TEXTURES, WEAPON, XP } from '@/config';
+import { AUDIO, COLORS, ENEMY, ICONS, PLAYER, SKILL_LABEL, TEXTURES } from '@/config';
 import { GameScene } from '@/scenes/GameScene';
 import { ALL_SKILLS, type SkillDefinition } from '@/weapons/skills';
 
@@ -18,18 +18,19 @@ export class BootScene extends Phaser.Scene {
   }
 
   public preload(): void {
-    this.load.audio(AUDIO.skillDrop.key, `${import.meta.env.BASE_URL}${AUDIO.skillDrop.file}`);
+    const base = import.meta.env.BASE_URL;
 
-    // Sprites are still generated at runtime; real art loads here too.
+    this.load.audio(AUDIO.skillDrop.key, `${base}${AUDIO.skillDrop.file}`);
+
+    this.load.image(TEXTURES.gem, `${base}${ICONS.gem.file}`);
+    this.load.image(TEXTURES.projectile, `${base}${ICONS.projectile.file}`);
+    this.load.image(TEXTURES.skillOrb, `${base}${ICONS.skillOrb.file}`);
   }
 
   public create(): void {
     this.createGridTexture();
     this.createSquareTexture(TEXTURES.player, PLAYER.size, COLORS.player);
     this.createSquareTexture(TEXTURES.enemy, ENEMY.size, COLORS.enemy);
-    this.createSquareTexture(TEXTURES.projectile, WEAPON.size, COLORS.fireball);
-    this.createSquareTexture(TEXTURES.gem, XP.size, COLORS.gem);
-    this.createSquareTexture(TEXTURES.skillOrb, SKILL_ORB.size, COLORS.skillOrb);
 
     for (const skill of ALL_SKILLS) {
       this.createSkillLabelTexture(skill);

@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 
-import { DEPTH, SKILL_DROP, SKILL_LABEL, SKILL_ORB, TEXTURES, TIMING } from '@/config';
+import { DEPTH, ICONS, SKILL_DROP, SKILL_LABEL, TEXTURES, TIMING } from '@/config';
 import { SKILLS, type SkillDefinition, type SkillId } from '@/weapons/skills';
 
 /**
@@ -28,6 +28,7 @@ export class SkillDrop extends Phaser.Physics.Arcade.Image {
   public constructor(scene: Phaser.Scene, x: number, y: number) {
     super(scene, x, y, TEXTURES.skillOrb);
     this.setDepth(DEPTH.pickups);
+    this.setDisplaySize(ICONS.skillOrb.size, ICONS.skillOrb.size);
 
     this.glow = scene.add
       .circle(x, y, SKILL_DROP.glowRadius, SKILL_LABEL.border, SKILL_DROP.glowAlpha)
@@ -62,6 +63,8 @@ export class SkillDrop extends Phaser.Physics.Arcade.Image {
     this.blinkPhase = 0;
 
     this.enableBody(true, x, y, true, true);
+    this.setDisplaySize(ICONS.skillOrb.size, ICONS.skillOrb.size);
+    this.body?.setSize(ICONS.skillOrb.size, ICONS.skillOrb.size, true);
     this.setVelocity(0, 0);
 
     this.plate.setTexture(skill.labelTexture);
@@ -71,11 +74,17 @@ export class SkillDrop extends Phaser.Physics.Arcade.Image {
     this.label.setVisible(true);
     this.glow.setVisible(false);
 
-    // Small pop so a drop stands out against the static grid.
-    const targets = [this, this.plate, this.label];
-    this.scene.tweens.killTweensOf(targets);
-    targets.forEach((target) => target.setScale(0.6));
-    this.scene.tweens.add({ targets, scale: 1, duration: 180, ease: 'Back.easeOut' });
+    // Small pop so a drop stands out against the static grid. The orb is a
+    // 32px icon drawn smaller, so its pop has to end at that scale, not 1.
+    const orbScale = this.scaleX;
+    const plateTargets = [this.plate, this.label];
+    this.scene.tweens.killTweensOf([this, ...plateTargets]);
+
+    this.setScale(orbScale * 0.6);
+    plateTargets.forEach((target) => target.setScale(0.6));
+
+    this.scene.tweens.add({ targets: this, scale: orbScale, duration: 180, ease: 'Back.easeOut' });
+    this.scene.tweens.add({ targets: plateTargets, scale: 1, duration: 180, ease: 'Back.easeOut' });
   }
 
   public collect(): void {
@@ -137,7 +146,7 @@ export class SkillDrop extends Phaser.Physics.Arcade.Image {
 
   /** Centres the plate (and its text) just above the orb. */
   private layout(x: number, y: number): void {
-    const plateY = y - SKILL_ORB.size / 2 - SKILL_LABEL.gap - this.plate.height / 2;
+    const plateY = y - ICONS.skillOrb.size / 2 - SKILL_LABEL.gap - this.plate.height / 2;
     this.glow.setPosition(x, y);
     this.plate.setPosition(x, plateY);
     this.label.setPosition(x, plateY);
