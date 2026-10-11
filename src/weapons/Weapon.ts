@@ -28,26 +28,33 @@ export interface WeaponContext {
   readonly range: number;
   /** Projectile travel speed in px/s, from Progression. Melee ignores it. */
   readonly projectileSpeed: number;
+  /** Extra enemies an arc jumps to, from Progression. Ignored if it cannot chain. */
+  readonly chainCount: number;
   /** Applies damage and resolves the kill (gem and skill drops). */
   readonly hit: (enemy: Enemy, amount: number) => void;
 }
 
-/** Nearest active enemy within range, or undefined if the field is clear. */
-export function findNearest(
-  from: Phaser.GameObjects.Components.Transform,
+/**
+ * Nearest active enemy within range of a point, or undefined if none is.
+ * `exclude` lets a chaining skill skip the enemies it has already hit.
+ */
+export function findNearestEnemy(
+  x: number,
+  y: number,
   enemies: Phaser.Physics.Arcade.Group,
   rangePx: number,
-): Phaser.GameObjects.Components.Transform | undefined {
-  let best: Phaser.GameObjects.Components.Transform | undefined;
+  exclude?: ReadonlySet<Enemy>,
+): Enemy | undefined {
+  let best: Enemy | undefined;
   let bestDistance = rangePx;
 
   for (const child of enemies.getChildren()) {
-    const enemy = child as Phaser.Physics.Arcade.Sprite;
-    if (!enemy.active) {
+    const enemy = child as Enemy;
+    if (!enemy.active || exclude?.has(enemy)) {
       continue;
     }
 
-    const distance = Phaser.Math.Distance.Between(from.x, from.y, enemy.x, enemy.y);
+    const distance = Phaser.Math.Distance.Between(x, y, enemy.x, enemy.y);
     if (distance < bestDistance) {
       bestDistance = distance;
       best = enemy;
@@ -55,4 +62,13 @@ export function findNearest(
   }
 
   return best;
+}
+
+/** Nearest active enemy within range of a game object. */
+export function findNearest(
+  from: Phaser.GameObjects.Components.Transform,
+  enemies: Phaser.Physics.Arcade.Group,
+  rangePx: number,
+): Enemy | undefined {
+  return findNearestEnemy(from.x, from.y, enemies, rangePx);
 }

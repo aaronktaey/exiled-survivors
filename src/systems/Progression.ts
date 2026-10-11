@@ -3,7 +3,7 @@ import Phaser from 'phaser';
 import { SKILL_BASE, STATS, UPGRADE_STEP, xpToNextLevel } from '@/config';
 import type { SkillDefinition, SkillId } from '@/weapons/skills';
 
-export type UpgradeId = 'damage' | 'attackSpeed' | 'range' | 'projectileSpeed';
+export type UpgradeId = 'damage' | 'attackSpeed' | 'range' | 'projectileSpeed' | 'chainCount';
 
 export interface UpgradeOption {
   readonly id: UpgradeId;
@@ -15,9 +15,10 @@ export interface UpgradeOption {
 export type SkillStats = Record<UpgradeId, number>;
 
 /**
- * The picks offered, worded for whichever skill is being upgraded. Melee
- * skills get damage and rate; a 투사체 skill also flies, so it can trade for
- * reach and for how fast the shot gets there.
+ * The picks offered, worded for whichever skill is being upgraded. Every
+ * skill gets damage and rate; a 투사체 skill also flies, so it can trade for
+ * reach and for how fast the shot gets there, and a 연쇄 skill can buy one
+ * more enemy to jump to.
  */
 export function upgradeOptionsFor(skill: SkillDefinition): readonly UpgradeOption[] {
   const options: UpgradeOption[] = [
@@ -32,6 +33,14 @@ export function upgradeOptionsFor(skill: SkillDefinition): readonly UpgradeOptio
       detail: `${skill.name}의 초당 공격 횟수가 ${UPGRADE_STEP.attackSpeed} 늘어납니다`,
     },
   ];
+
+  if (skill.tags.includes('연쇄')) {
+    options.push({
+      id: 'chainCount',
+      label: `연쇄 횟수 +${UPGRADE_STEP.chainCount}`,
+      detail: `${skill.name}가 ${UPGRADE_STEP.chainCount}명에게 더 옮겨붙습니다`,
+    });
+  }
 
   if (skill.tags.includes('투사체')) {
     options.push(

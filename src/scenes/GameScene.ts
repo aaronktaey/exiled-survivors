@@ -16,8 +16,10 @@ import {
 } from '@/systems';
 import { VirtualJoystick, prefersTouchControls } from '@/systems/VirtualJoystick';
 import {
+  ChainLightning,
   DROPPABLE_SKILLS,
   Fireball,
+  LEVEL_UP_SKILL,
   MeleeStrike,
   SKILLS,
   STARTING_SKILLS,
@@ -25,6 +27,13 @@ import {
   type SkillId,
   type Weapon,
 } from '@/weapons';
+
+/** How each skill turns into the weapon that runs it. */
+const WEAPONS: Record<SkillId, (scene: Phaser.Scene) => Weapon> = {
+  meleeStrike: (scene) => new MeleeStrike(scene),
+  fireball: (scene) => new Fireball(scene),
+  chainLightning: (scene) => new ChainLightning(scene),
+};
 
 /** One queued upgrade popup, from a level-up or a skill pickup. */
 interface ChoiceRequest {
@@ -55,6 +64,8 @@ export class GameScene extends Phaser.Scene {
   private choosing = false;
   private over = false;
   private invulnerable = false;
+  /** Round-robin cursor for the debug drop key. */
+  private nextDebugDrop = 0;
 
   public constructor() {
     super(GameScene.KEY);
@@ -138,6 +149,7 @@ export class GameScene extends Phaser.Scene {
         cooldownMs: this.progression.cooldownMsFor(id),
         range: stats.range,
         projectileSpeed: stats.projectileSpeed,
+        chainCount: stats.chainCount,
         hit: this.combat.hit,
       });
     }
@@ -160,7 +172,7 @@ export class GameScene extends Phaser.Scene {
     }
     this.owned.add(skill);
 
-    const weapon: Weapon = skill === 'fireball' ? new Fireball(this) : new MeleeStrike(this);
+    const weapon = WEAPONS[skill](this);
     this.weapons.push(weapon);
 
     if (weapon.projectiles) {
@@ -247,7 +259,8 @@ export class GameScene extends Phaser.Scene {
       clearEnemies: () => this.spawner.clear(),
       grantLevel: () => this.progression.addXp(this.progression.xpToNext),
       dropSkill: () => {
-        const skill = DROPPABLE_SKILLS[0];
+        const skill = DROPPABLE_SKILLS[this.nextDebugDrop % DROPPABLE_SKILLS.length];
+        this.nextDebugDrop += 1;
         if (skill) {
           this.combat.dropSkillAt(this.player.x + 60, this.player.y, skill);
         }
@@ -262,7 +275,7 @@ export class GameScene extends Phaser.Scene {
 
   /** Level-up points are spent on the basic attack only. */
   private onLevelUp(level: number): void {
-    this.queueChoice({ title: 'LEVEL UP', subtitle: `Lv ${level}`, skill: 'meleeStrike' });
+    this.queueChoice({ title: 'LEVEL UP', subtitle: `Lv ${level}`, skill: LEVEL_UP_SKILL });
   }
 
   private queueChoice(request: ChoiceRequest): void {

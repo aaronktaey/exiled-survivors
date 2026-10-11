@@ -16,6 +16,7 @@ export const BALANCE = {
   damageScale: {
     meleeStrike: 1,
     fireball: 1,
+    chainLightning: 1,
   } as Record<SkillId, number>,
 };
 
@@ -109,6 +110,9 @@ export const COLORS = {
   damageText: '#ffe9a3',
   debugText: '#7ef0b0',
   fireball: 0xffa63d,
+  /** Bright core of a lightning arc, over a wider soft glow. */
+  lightning: 0xdff1ff,
+  lightningGlow: 0x5ea8ff,
 } as const;
 
 export const DEPTH = {
@@ -182,6 +186,19 @@ export const MELEE = {
   flashMs: 150,
 } as const;
 
+/** The instant arc 연쇄번개 draws as it walks through a crowd. */
+export const LIGHTNING = {
+  /** How far the arc may jump from one victim to the next. */
+  chainRadius: 120,
+  /** How long the bolt stays on screen. */
+  flashMs: 170,
+  /** Zig-zag resolution, and how far each kink strays from a straight line. */
+  segments: 7,
+  jitter: 14,
+  coreWidth: 2,
+  glowWidth: 6,
+} as const;
+
 export const SKILL_DROP = {
   /** Chance that killing an enemy drops a skill. */
   chance: 0.03,
@@ -231,12 +248,16 @@ export interface SkillBaseStats {
   readonly range: number;
   /** Projectile travel speed in px/s. Ignored by melee skills. */
   readonly projectileSpeed: number;
+  /** Extra enemies an arc jumps to after the first. Ignored unless it chains. */
+  readonly chainCount: number;
 }
 
 /** Where every skill starts before a single upgrade is picked. */
 export const SKILL_BASE: Record<SkillId, SkillBaseStats> = {
-  meleeStrike: { damage: 10, attackSpeed: 1.5, range: 44, projectileSpeed: 0 },
-  fireball: { damage: 10, attackSpeed: 1.5, range: 100, projectileSpeed: 230 },
+  meleeStrike: { damage: 10, attackSpeed: 1.5, range: 44, projectileSpeed: 0, chainCount: 0 },
+  fireball: { damage: 10, attackSpeed: 1.5, range: 100, projectileSpeed: 230, chainCount: 0 },
+  // Slower than the other two, because one cast lands on three enemies.
+  chainLightning: { damage: 10, attackSpeed: 1, range: 160, projectileSpeed: 0, chainCount: 2 },
 };
 
 /** How much one pick of each upgrade adds. Keys match SkillBaseStats. */
@@ -245,6 +266,7 @@ export const UPGRADE_STEP = {
   attackSpeed: 1,
   range: 10,
   projectileSpeed: 20,
+  chainCount: 1,
 } as const;
 
 export const STATS = {
