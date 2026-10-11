@@ -3,7 +3,13 @@ import Phaser from 'phaser';
 import { SKILL_BASE, STATS, UPGRADE_STEP, xpToNextLevel } from '@/config';
 import type { SkillDefinition, SkillId } from '@/weapons/skills';
 
-export type UpgradeId = 'damage' | 'attackSpeed' | 'range' | 'projectileSpeed' | 'chainCount';
+export type UpgradeId =
+  | 'damage'
+  | 'attackSpeed'
+  | 'range'
+  | 'projectileSpeed'
+  | 'chainCount'
+  | 'pierceCount';
 
 export interface UpgradeOption {
   readonly id: UpgradeId;
@@ -15,49 +21,51 @@ export interface UpgradeOption {
 export type SkillStats = Record<UpgradeId, number>;
 
 /**
- * The picks offered, worded for whichever skill is being upgraded. Every
- * skill gets damage and rate; a 투사체 skill also flies, so it can trade for
- * reach and for how fast the shot gets there, and a 연쇄 skill can buy one
- * more enemy to jump to.
+ * Korean subject particle: 이 after a final consonant, 가 after a vowel —
+ * 얼음창이 but 화염구가.
+ */
+function subjectParticle(name: string): string {
+  const syllable = name.charCodeAt(name.length - 1) - 0xac00;
+  const hasFinalConsonant = syllable >= 0 && syllable <= 11171 && syllable % 28 !== 0;
+  return hasFinalConsonant ? '이' : '가';
+}
+
+/** How each upgrade is worded, for whichever skill is being upgraded. */
+const OPTION_TEXT: Record<UpgradeId, (name: string) => Omit<UpgradeOption, 'id'>> = {
+  damage: (name) => ({
+    label: `공격력 +${UPGRADE_STEP.damage}`,
+    detail: `${name}의 피해가 ${UPGRADE_STEP.damage} 늘어납니다`,
+  }),
+  attackSpeed: (name) => ({
+    label: `공격속도 +${UPGRADE_STEP.attackSpeed}`,
+    detail: `${name}의 초당 공격 횟수가 ${UPGRADE_STEP.attackSpeed} 늘어납니다`,
+  }),
+  range: (name) => ({
+    label: `사정거리 +${UPGRADE_STEP.range}`,
+    detail: `${name}의 사정거리가 ${UPGRADE_STEP.range}px 늘어납니다`,
+  }),
+  projectileSpeed: (name) => ({
+    label: `투사체 속도 +${UPGRADE_STEP.projectileSpeed}`,
+    detail: `${name}${subjectParticle(name)} 초당 ${UPGRADE_STEP.projectileSpeed}px 더 빠르게 날아갑니다`,
+  }),
+  chainCount: (name) => ({
+    label: `연쇄 횟수 +${UPGRADE_STEP.chainCount}`,
+    detail: `${name}${subjectParticle(name)} ${UPGRADE_STEP.chainCount}명에게 더 옮겨붙습니다`,
+  }),
+  pierceCount: (name) => ({
+    label: `관통 횟수 +${UPGRADE_STEP.pierceCount}`,
+    detail: `${name}${subjectParticle(name)} ${UPGRADE_STEP.pierceCount}명을 더 꿰뚫고 지나갑니다`,
+  }),
+};
+
+/**
+ * The picks offered, in the order the skill lists them. Which upgrades a
+ * skill can take is part of its definition, because two skills can share a
+ * tag without sharing a stat — 얼음창 flies like 화염구 but trades for
+ * 관통 횟수 instead of reach.
  */
 export function upgradeOptionsFor(skill: SkillDefinition): readonly UpgradeOption[] {
-  const options: UpgradeOption[] = [
-    {
-      id: 'damage',
-      label: `공격력 +${UPGRADE_STEP.damage}`,
-      detail: `${skill.name}의 피해가 ${UPGRADE_STEP.damage} 늘어납니다`,
-    },
-    {
-      id: 'attackSpeed',
-      label: `공격속도 +${UPGRADE_STEP.attackSpeed}`,
-      detail: `${skill.name}의 초당 공격 횟수가 ${UPGRADE_STEP.attackSpeed} 늘어납니다`,
-    },
-  ];
-
-  if (skill.tags.includes('연쇄')) {
-    options.push({
-      id: 'chainCount',
-      label: `연쇄 횟수 +${UPGRADE_STEP.chainCount}`,
-      detail: `${skill.name}가 ${UPGRADE_STEP.chainCount}명에게 더 옮겨붙습니다`,
-    });
-  }
-
-  if (skill.tags.includes('투사체')) {
-    options.push(
-      {
-        id: 'range',
-        label: `사정거리 +${UPGRADE_STEP.range}`,
-        detail: `${skill.name}의 사정거리가 ${UPGRADE_STEP.range}px 늘어납니다`,
-      },
-      {
-        id: 'projectileSpeed',
-        label: `투사체 속도 +${UPGRADE_STEP.projectileSpeed}`,
-        detail: `${skill.name}가 초당 ${UPGRADE_STEP.projectileSpeed}px 더 빠르게 날아갑니다`,
-      },
-    );
-  }
-
-  return options;
+  return skill.upgrades.map((id) => ({ id, ...OPTION_TEXT[id](skill.name) }));
 }
 
 /**

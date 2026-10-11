@@ -19,6 +19,7 @@ import {
   ChainLightning,
   DROPPABLE_SKILLS,
   Fireball,
+  IceSpear,
   LEVEL_UP_SKILL,
   MeleeStrike,
   SKILLS,
@@ -33,6 +34,7 @@ const WEAPONS: Record<SkillId, (scene: Phaser.Scene) => Weapon> = {
   meleeStrike: (scene) => new MeleeStrike(scene),
   fireball: (scene) => new Fireball(scene),
   chainLightning: (scene) => new ChainLightning(scene),
+  iceSpear: (scene) => new IceSpear(scene),
 };
 
 /** One queued upgrade popup, from a level-up or a skill pickup. */
@@ -150,6 +152,7 @@ export class GameScene extends Phaser.Scene {
         range: stats.range,
         projectileSpeed: stats.projectileSpeed,
         chainCount: stats.chainCount,
+        pierceCount: stats.pierceCount,
         hit: this.combat.hit,
       });
     }

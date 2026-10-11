@@ -17,6 +17,7 @@ export const BALANCE = {
     meleeStrike: 1,
     fireball: 1,
     chainLightning: 1,
+    iceSpear: 1,
   } as Record<SkillId, number>,
 };
 
@@ -113,6 +114,8 @@ export const COLORS = {
   /** Bright core of a lightning arc, over a wider soft glow. */
   lightning: 0xdff1ff,
   lightningGlow: 0x5ea8ff,
+  iceSpear: 0x9fe8ff,
+  iceSpearEdge: 0x3f8fd0,
 } as const;
 
 export const DEPTH = {
@@ -135,8 +138,30 @@ export const TEXTURES = {
   player: "tex-player",
   enemy: "tex-enemy",
   projectile: "tex-projectile",
+  iceShard: "tex-ice-shard",
   gem: "tex-gem",
   skillOrb: "tex-skill-orb",
+} as const;
+
+/** How each projectile skill's shot is drawn. Width runs along its flight. */
+export const SHOTS = {
+  fireball: {
+    texture: TEXTURES.projectile,
+    width: ICONS.projectile.size,
+    height: ICONS.projectile.size,
+  },
+  iceSpear: { texture: TEXTURES.iceShard, width: 22, height: 8 },
+} as const;
+
+/** The 냉각 debuff 얼음창 leaves on whatever it passes through. */
+export const CHILL = {
+  /** Fraction of move speed taken away while it lasts. */
+  slowFactor: 0.15,
+  /** How long it lasts after the hit that applied it, in ms. */
+  durationMs: 2000,
+  /** Tint worn while chilled, so a slowed enemy is readable at a glance. */
+  // Teal rather than sky blue: the player square is already light blue.
+  tint: 0x45cfc6,
 } as const;
 
 export const PLAYER = {
@@ -250,14 +275,18 @@ export interface SkillBaseStats {
   readonly projectileSpeed: number;
   /** Extra enemies an arc jumps to after the first. Ignored unless it chains. */
   readonly chainCount: number;
+  /** Extra enemies a shot passes through after the first. 0 stops on contact. */
+  readonly pierceCount: number;
 }
 
 /** Where every skill starts before a single upgrade is picked. */
 export const SKILL_BASE: Record<SkillId, SkillBaseStats> = {
-  meleeStrike: { damage: 10, attackSpeed: 1.5, range: 44, projectileSpeed: 0, chainCount: 0 },
-  fireball: { damage: 10, attackSpeed: 1.5, range: 100, projectileSpeed: 230, chainCount: 0 },
+  meleeStrike: { damage: 10, attackSpeed: 1.5, range: 44, projectileSpeed: 0, chainCount: 0, pierceCount: 0 },
+  fireball: { damage: 10, attackSpeed: 1.5, range: 100, projectileSpeed: 230, chainCount: 0, pierceCount: 0 },
   // Slower than the other two, because one cast lands on three enemies.
-  chainLightning: { damage: 10, attackSpeed: 1, range: 160, projectileSpeed: 0, chainCount: 2 },
+  chainLightning: { damage: 10, attackSpeed: 1, range: 160, projectileSpeed: 0, chainCount: 2, pierceCount: 0 },
+  // Longer reach than 화염구 and a faster shot, but it casts less often.
+  iceSpear: { damage: 10, attackSpeed: 1, range: 180, projectileSpeed: 320, chainCount: 0, pierceCount: 2 },
 };
 
 /** How much one pick of each upgrade adds. Keys match SkillBaseStats. */
@@ -267,6 +296,7 @@ export const UPGRADE_STEP = {
   range: 10,
   projectileSpeed: 20,
   chainCount: 1,
+  pierceCount: 1,
 } as const;
 
 export const STATS = {

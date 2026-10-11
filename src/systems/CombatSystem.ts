@@ -100,14 +100,30 @@ export class CombatSystem {
   };
 
   private onProjectileHit: Phaser.Types.Physics.Arcade.ArcadePhysicsCallback = (a, b) => {
-    const bolt = a as unknown as Projectile;
+    const shot = a as unknown as Projectile;
     const enemy = b as unknown as Enemy;
-    if (!bolt.active || !enemy.active) {
+    if (!shot.active || !enemy.active) {
       return;
     }
 
-    bolt.despawn();
-    this.hit(enemy, bolt.damage);
+    // A piercing shot overlaps the same body for several frames on its way
+    // through; only the frame that books the hit does anything.
+    if (!shot.registerHit(enemy)) {
+      return;
+    }
+
+    if (shot.chillMs > 0) {
+      enemy.chill(shot.chillMs);
+    }
+
+    // Spend the pierce before the hit: a kill recycles the enemy, and the
+    // shot has to know whether it is done either way.
+    const carriesOn = shot.consumePierce();
+    this.hit(enemy, shot.damage);
+
+    if (!carriesOn) {
+      shot.despawn();
+    }
   };
 
   private onEnemyTouch: Phaser.Types.Physics.Arcade.ArcadePhysicsCallback = (_player, b) => {

@@ -30,6 +30,8 @@ export interface WeaponContext {
   readonly projectileSpeed: number;
   /** Extra enemies an arc jumps to, from Progression. Ignored if it cannot chain. */
   readonly chainCount: number;
+  /** Extra enemies a shot passes through, from Progression. 0 stops on contact. */
+  readonly pierceCount: number;
   /** Applies damage and resolves the kill (gem and skill drops). */
   readonly hit: (enemy: Enemy, amount: number) => void;
 }

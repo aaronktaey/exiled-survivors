@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 
-import { AUDIO, COLORS, ENEMY, ICONS, PLAYER, SKILL_LABEL, TEXTURES } from '@/config';
+import { AUDIO, COLORS, ENEMY, ICONS, PLAYER, SHOTS, SKILL_LABEL, TEXTURES } from '@/config';
 import { GameScene } from '@/scenes/GameScene';
 import { ALL_SKILLS, type SkillDefinition } from '@/weapons/skills';
 
@@ -31,6 +31,7 @@ export class BootScene extends Phaser.Scene {
     this.createGridTexture();
     this.createSquareTexture(TEXTURES.player, PLAYER.size, COLORS.player);
     this.createSquareTexture(TEXTURES.enemy, ENEMY.size, COLORS.enemy);
+    this.createShardTexture();
 
     for (const skill of ALL_SKILLS) {
       this.createSkillLabelTexture(skill);
@@ -59,6 +60,28 @@ export class BootScene extends Phaser.Scene {
     graphics.fillRect(0, 0, size, size);
 
     graphics.generateTexture(key, size, size);
+    graphics.destroy();
+  }
+
+  /** The ice shard: a diamond, long along the axis it is fired down. */
+  private createShardTexture(): void {
+    const { width, height } = SHOTS.iceSpear;
+    const graphics = this.add.graphics();
+
+    // Phaser 4 wants real Vector2s here; Geom.Point is gone.
+    const points = [
+      new Phaser.Math.Vector2(0, height / 2),
+      new Phaser.Math.Vector2(width * 0.35, 0),
+      new Phaser.Math.Vector2(width, height / 2),
+      new Phaser.Math.Vector2(width * 0.35, height),
+    ];
+
+    graphics.fillStyle(COLORS.iceSpear, 1);
+    graphics.fillPoints(points, true);
+    graphics.lineStyle(1, COLORS.iceSpearEdge, 1);
+    graphics.strokePoints(points, true);
+
+    graphics.generateTexture(TEXTURES.iceShard, width, height);
     graphics.destroy();
   }
 
