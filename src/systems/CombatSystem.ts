@@ -1,7 +1,8 @@
 import Phaser from 'phaser';
 
-import { AUDIO, ENEMY, WEAPON, XP } from '@/config';
+import { AUDIO, WEAPON, type EnemyShotSpec } from '@/config';
 import { Enemy } from '@/entities/Enemy';
+import { EnemyShot } from '@/entities/EnemyShot';
 import { Player } from '@/entities/Player';
 import { Projectile } from '@/entities/Projectile';
 import { SkillDrop } from '@/entities/SkillDrop';
@@ -24,6 +25,8 @@ export interface CombatHooks {
 export class CombatSystem {
   public readonly gems: Phaser.Physics.Arcade.Group;
   public readonly skillDrops: Phaser.Physics.Arcade.Group;
+  /** Everything the shooting kinds have thrown at the player. */
+  public readonly enemyShots: Phaser.Physics.Arcade.Group;
 
   private readonly scene: Phaser.Scene;
   private readonly player: Player;
@@ -57,7 +60,14 @@ export class CombatSystem {
       runChildUpdate: true,
     });
 
+    this.enemyShots = scene.physics.add.group({
+      classType: EnemyShot,
+      maxSize: WEAPON.maxProjectiles,
+      runChildUpdate: true,
+    });
+
     scene.physics.add.overlap(player, enemies, this.onEnemyTouch, undefined, this);
+    scene.physics.add.overlap(player, this.enemyShots, this.onEnemyShotHit, undefined, this);
     scene.physics.add.overlap(player, this.gems, this.onGemTouch, undefined, this);
     scene.physics.add.overlap(player, this.skillDrops, this.onSkillTouch, undefined, this);
   }
@@ -66,6 +76,12 @@ export class CombatSystem {
   public registerProjectiles(projectiles: Phaser.Physics.Arcade.Group, enemies: Phaser.Physics.Arcade.Group): void {
     this.scene.physics.add.overlap(projectiles, enemies, this.onProjectileHit, undefined, this);
   }
+
+  /** Fires one enemy bolt. Handed to every enemy that can shoot. */
+  public fireEnemyShot = (x: number, y: number, angle: number, spec: EnemyShotSpec): void => {
+    const shot = this.enemyShots.get() as EnemyShot | null;
+    shot?.fire(x, y, angle, spec);
+  };
 
   /** Places a drop directly — used by the spawner's roll and by debug keys. */
   public dropSkillAt(x: number, y: number, skill: SkillDefinition): void {
@@ -132,7 +148,18 @@ export class CombatSystem {
       return;
     }
 
-    this.player.takeDamage(ENEMY.contactDamage);
+    // Each kind hits for its own weight: a 거구 costs far more to stand in.
+    this.player.takeDamage(enemy.contactDamage);
+  };
+
+  private onEnemyShotHit: Phaser.Types.Physics.Arcade.ArcadePhysicsCallback = (_player, b) => {
+    const shot = b as unknown as EnemyShot;
+    if (!shot.active) {
+      return;
+    }
+
+    shot.despawn();
+    this.player.takeDamage(shot.damage);
   };
 
   private onGemTouch: Phaser.Types.Physics.Arcade.ArcadePhysicsCallback = (_player, b) => {
@@ -158,11 +185,13 @@ export class CombatSystem {
 
   private killEnemy(enemy: Enemy): void {
     const { x, y } = enemy;
+    // Read the reward before recycling, which resets the kind.
+    const worth = enemy.xpValue;
     // Pooled: back to the spawner's pool rather than destroyed.
     enemy.recycle();
 
     const gem = this.gems.get() as XpGem | null;
-    gem?.drop(x, y, XP.perEnemy, this.player);
+    gem?.drop(x, y, worth, this.player);
 
     const skill = this.hooks.rollSkillDrop();
     if (skill) {

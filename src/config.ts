@@ -97,6 +97,11 @@ export const COLORS = {
   grid: 0x1a1f2b,
   player: 0x8fd3ff,
   enemy: 0xe0564a,
+  enemyBrute: 0xb44bd1,
+  enemyRunner: 0xf2b134,
+  enemyShooter: 0x5fc27e,
+  /** Enemy fire, kept well away from any colour the player's own shots use. */
+  enemyShot: 0xff7a9c,
   projectile: 0xffe9a3,
   gem: 0x7ef0b0,
   skillOrb: 0xffc14d,
@@ -137,6 +142,10 @@ export const TEXTURES = {
   grid: "tex-grid",
   player: "tex-player",
   enemy: "tex-enemy",
+  enemyBrute: "tex-enemy-brute",
+  enemyRunner: "tex-enemy-runner",
+  enemyShooter: "tex-enemy-shooter",
+  enemyShot: "tex-enemy-shot",
   projectile: "tex-projectile",
   iceShard: "tex-ice-shard",
   gem: "tex-gem",
@@ -175,6 +184,7 @@ export const PLAYER = {
   pickupSpeed: 420,
 } as const;
 
+/** Shared defaults; the plain chaser is built from these. */
 export const ENEMY = {
   size: 16,
   speed: 70,
@@ -182,6 +192,111 @@ export const ENEMY = {
   maxHp: 30,
   contactDamage: 1,
 } as const;
+
+export type EnemyKind = 'grunt' | 'brute' | 'runner' | 'shooter';
+
+/** What a shooting enemy throws. */
+export interface EnemyShotSpec {
+  readonly damage: number;
+  /** px per second. */
+  readonly speed: number;
+  readonly cooldownMs: number;
+  /** It opens fire once the player is this close. */
+  readonly range: number;
+  /** And stops closing here, so it keeps its distance and shoots. */
+  readonly standoff: number;
+  readonly size: number;
+  readonly lifespanMs: number;
+}
+
+export interface EnemyKindSpec {
+  readonly id: EnemyKind;
+  readonly name: string;
+  readonly texture: string;
+  readonly size: number;
+  readonly color: number;
+  readonly maxHp: number;
+  readonly speed: number;
+  readonly contactDamage: number;
+  /** XP its gem is worth. */
+  readonly xp: number;
+  /** Only the kinds that shoot have one. */
+  readonly shot?: EnemyShotSpec;
+}
+
+/**
+ * The enemy roster. Every number an enemy behaves by lives here, so a new
+ * kind is a new entry rather than a new class — they all chase, and the
+ * only branch in Enemy is whether the kind shoots.
+ */
+export const ENEMY_KINDS: Record<EnemyKind, EnemyKindSpec> = {
+  grunt: {
+    id: 'grunt',
+    name: '일반',
+    texture: TEXTURES.enemy,
+    size: ENEMY.size,
+    color: COLORS.enemy,
+    maxHp: ENEMY.maxHp,
+    speed: ENEMY.speed,
+    contactDamage: ENEMY.contactDamage,
+    xp: 1,
+  },
+  brute: {
+    id: 'brute',
+    name: '거구',
+    texture: TEXTURES.enemyBrute,
+    size: 26,
+    color: COLORS.enemyBrute,
+    maxHp: 120,
+    speed: 42,
+    contactDamage: 3,
+    xp: 4,
+  },
+  runner: {
+    id: 'runner',
+    name: '질주',
+    texture: TEXTURES.enemyRunner,
+    size: 12,
+    color: COLORS.enemyRunner,
+    maxHp: 15,
+    speed: 160,
+    contactDamage: 1,
+    xp: 2,
+  },
+  shooter: {
+    id: 'shooter',
+    name: '사수',
+    texture: TEXTURES.enemyShooter,
+    size: 16,
+    color: COLORS.enemyShooter,
+    maxHp: 24,
+    speed: 50,
+    contactDamage: 1,
+    xp: 3,
+    shot: {
+      damage: 2,
+      speed: 230,
+      cooldownMs: 2000,
+      range: 300,
+      // Outside 타격 and 화염구, inside 연쇄번개 and 얼음창: walk it down or
+      // bring something with reach.
+      standoff: 140,
+      size: 8,
+      lifespanMs: 2600,
+    },
+  },
+};
+
+/**
+ * Weighted spawn table. A kind only joins the draw once the run is old
+ * enough for it, so the first minute stays readable.
+ */
+export const SPAWN_TABLE: readonly { kind: EnemyKind; weight: number; unlockMs: number }[] = [
+  { kind: 'grunt', weight: 60, unlockMs: 0 },
+  { kind: 'runner', weight: 22, unlockMs: 25_000 },
+  { kind: 'shooter', weight: 16, unlockMs: 50_000 },
+  { kind: 'brute', weight: 12, unlockMs: 75_000 },
+];
 
 export const SPAWN = {
   startIntervalMs: 900,

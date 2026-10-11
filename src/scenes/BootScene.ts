@@ -1,6 +1,15 @@
 import Phaser from 'phaser';
 
-import { AUDIO, COLORS, ENEMY, ICONS, PLAYER, SHOTS, SKILL_LABEL, TEXTURES } from '@/config';
+import {
+  AUDIO,
+  COLORS,
+  ENEMY_KINDS,
+  ICONS,
+  PLAYER,
+  SHOTS,
+  SKILL_LABEL,
+  TEXTURES,
+} from '@/config';
 import { GameScene } from '@/scenes/GameScene';
 import { ALL_SKILLS, type SkillDefinition } from '@/weapons/skills';
 
@@ -30,7 +39,10 @@ export class BootScene extends Phaser.Scene {
   public create(): void {
     this.createGridTexture();
     this.createSquareTexture(TEXTURES.player, PLAYER.size, COLORS.player);
-    this.createSquareTexture(TEXTURES.enemy, ENEMY.size, COLORS.enemy);
+    for (const kind of Object.values(ENEMY_KINDS)) {
+      this.createSquareTexture(kind.texture, kind.size, kind.color);
+    }
+    this.createSquareTexture(TEXTURES.enemyShot, 8, COLORS.enemyShot);
     this.createShardTexture();
 
     for (const skill of ALL_SKILLS) {

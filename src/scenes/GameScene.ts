@@ -91,7 +91,10 @@ export class GameScene extends Phaser.Scene {
     this.cameras.main.startFollow(this.player, true, 0.12, 0.12);
 
     this.progression = new Progression();
-    this.spawner = new SpawnDirector(this, this.player);
+    // The hook is called later, during play, by which point combat exists.
+    this.spawner = new SpawnDirector(this, this.player, {
+      fireShot: (x, y, angle, spec) => this.combat.fireEnemyShot(x, y, angle, spec),
+    });
     this.separation = new Separation(this.spawner.group);
     this.damageNumbers = new DamageNumbers(this);
     this.combat = new CombatSystem(
@@ -253,12 +256,15 @@ export class GameScene extends Phaser.Scene {
       counts: () => ({
         enemies: this.spawner.alive,
         enemyPool: this.spawner.pooled,
+        byKind: this.spawner.aliveByKind,
+        enemyShots: this.combat.enemyShots.countActive(true),
         projectiles: this.weapons.reduce((n, w) => n + (w.projectiles?.countActive(true) ?? 0), 0),
         gems: this.combat.gems.countActive(true),
         drops: this.combat.skillDrops.countActive(true),
         damageNumbers: this.damageNumbers.activeCount,
       }),
       stressSpawn: (count: number) => this.spawner.spawnBurst(count),
+      spawnOneOfEach: () => this.spawner.spawnOneOfEach(),
       clearEnemies: () => this.spawner.clear(),
       grantLevel: () => this.progression.addXp(this.progression.xpToNext),
       dropSkill: () => {

@@ -1,11 +1,13 @@
 import Phaser from 'phaser';
 
-import { COLORS, DEBUG, DEPTH, TIMING } from '@/config';
+import { COLORS, DEBUG, DEPTH, ENEMY_KINDS, TIMING, type EnemyKind } from '@/config';
 
 /** Counts the overlay reads each frame. */
 export interface DebugCounts {
   readonly enemies: number;
   readonly enemyPool: number;
+  readonly byKind: Record<EnemyKind, number>;
+  readonly enemyShots: number;
   readonly projectiles: number;
   readonly gems: number;
   readonly drops: number;
@@ -17,6 +19,8 @@ export interface DebugActions {
   readonly counts: () => DebugCounts;
   /** Spawn a burst of enemies; returns how many actually spawned. */
   readonly stressSpawn: (count: number) => number;
+  /** One of every kind, next to the player. */
+  readonly spawnOneOfEach: () => number;
   readonly clearEnemies: () => void;
   readonly grantLevel: () => void;
   readonly dropSkill: () => void;
@@ -24,7 +28,7 @@ export interface DebugActions {
   readonly toggleInvulnerable: () => boolean;
 }
 
-const KEYS = 'F1,F2,F3,F4,F5,F6';
+const KEYS = 'F1,F2,F3,F4,F5,F6,F7';
 
 /**
  * F1 overlay: frame timings and live object counts, plus the dev keys used
@@ -75,6 +79,7 @@ export class DebugOverlay {
     keyboard.on('keydown-F4', this.onLevel, this);
     keyboard.on('keydown-F5', this.onDrop, this);
     keyboard.on('keydown-F6', this.onInvulnerable, this);
+    keyboard.on('keydown-F7', this.onSpawnEach, this);
   }
 
   public get visible(): boolean {
@@ -116,12 +121,21 @@ export class DebugOverlay {
       `FPS ${this.scene.game.loop.actualFps.toFixed(1)}   frame ${avg.toFixed(1)}ms avg / ${worst.toFixed(1)}ms peak`,
       `delta cap ${TIMING.maxDeltaMs}ms`,
       `enemies ${c.enemies} (pool ${c.enemyPool})   projectiles ${c.projectiles}   gems ${c.gems}`,
+      `  ${this.kindBreakdown(c)}   enemy shots ${c.enemyShots}`,
       `drops ${c.drops}   damage numbers ${c.damageNumbers}`,
       '',
       `F2 +${DEBUG.stressSpawnCount} enemies   F3 clear enemies   F4 level up`,
-      `F5 drop skill   F6 invulnerable: ${this.invulnerable ? 'ON' : 'OFF'}   F1 close`,
+      `F5 drop skill   F6 invulnerable: ${this.invulnerable ? 'ON' : 'OFF'}   F7 one of each`,
+      'F1 close',
       this.lastNote,
     ];
+  }
+
+  /** "일반 12  질주 3  사수 1  거구 0" */
+  private kindBreakdown(counts: DebugCounts): string {
+    return (Object.keys(ENEMY_KINDS) as EnemyKind[])
+      .map((kind) => `${ENEMY_KINDS[kind].name} ${counts.byKind[kind] ?? 0}`)
+      .join('  ');
   }
 
   private toggle(): void {
@@ -160,6 +174,14 @@ export class DebugOverlay {
     }
     this.actions.dropSkill();
     this.note('dropped a skill');
+  }
+
+  private onSpawnEach(): void {
+    if (!this.shown) {
+      return;
+    }
+    const spawned = this.actions.spawnOneOfEach();
+    this.note(`spawned ${spawned} enemies, one of each kind`);
   }
 
   private onInvulnerable(): void {
