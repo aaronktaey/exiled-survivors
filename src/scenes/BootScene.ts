@@ -5,6 +5,7 @@ import {
   COLORS,
   ENEMY_KINDS,
   ICONS,
+  SKILL_ICONS,
   PLAYER,
   POTION,
   SHOTS,
@@ -39,6 +40,10 @@ export class BootScene extends Phaser.Scene {
     this.load.image(TEXTURES.gem, `${base}${ICONS.gem.file}`);
     this.load.image(TEXTURES.projectile, `${base}${ICONS.projectile.file}`);
     this.load.image(TEXTURES.skillOrb, `${base}${ICONS.skillOrb.file}`);
+
+    for (const icon of Object.values(SKILL_ICONS)) {
+      this.load.image(icon.key, `${base}${icon.file}`);
+    }
   }
 
   public create(): void {

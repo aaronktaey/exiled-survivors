@@ -71,8 +71,8 @@ export const ko: Strings = {
   hud: {
     level: 'Lv {level}',
     enemies: '적 {count}',
-    damage: '공격력 {damage}',
-    rate: '공속 {rate}/s',
+    hit: '단일피해 {damage}',
+    dps: 'DPS {dps}',
   },
 
   game: {
@@ -113,9 +113,18 @@ export const ko: Strings = {
     attackSpeed: { label: '공격속도 +{n}', detail: '{skill}의 초당 공격 횟수가 {n} 늘어납니다' },
     range: { label: '사정거리 +{n}', detail: '{skill}의 사정거리가 {n}px 늘어납니다' },
     projectileSpeed: { label: '투사체 속도 +{n}', detail: '{skill}{이가} 초당 {n}px 더 빠르게 날아갑니다' },
+    orbitSpeed: { label: '회전 속도 +{n}', detail: '{skill}{이가} 초당 {n}px 더 빠르게 공전합니다' },
     chainCount: { label: '연쇄 횟수 +{n}', detail: '{skill}{이가} {n}명에게 더 옮겨붙습니다' },
     pierceCount: { label: '관통 횟수 +{n}', detail: '{skill}{이가} {n}명을 더 꿰뚫고 지나갑니다' },
     orbCount: { label: '구체 수 +{n}', detail: '{skill}{이가} {n}개 더 공전합니다' },
+  },
+
+  guideChapters: {
+    goal: '목표',
+    controls: '조작',
+    growth: '성장',
+    skills: '스킬',
+    enemies: '적',
   },
 
   guide: {
@@ -157,7 +166,7 @@ export const ko: Strings = {
     },
     skills: {
       heading: '스킬',
-      stats: '   피해 {damage} · 초당 {rate}회 · 사거리 {range}px',
+      stats: '   단일피해 {damage} · 초당 {rate}회 · DPS {dps} · 사거리 {range}px',
       upgrades: '   강화: {picks}',
       starter: '시작 스킬',
     },

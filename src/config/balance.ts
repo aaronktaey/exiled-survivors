@@ -321,72 +321,129 @@ export interface SkillBaseStats {
   readonly pierceCount: number;
   /** Orbs kept in the air. Only the skills that orbit have any. */
   readonly orbCount: number;
+  /** How fast an orbit travels, in px per second. Only the skills that orbit. */
+  readonly orbitSpeed: number;
 }
 
 /** Where every skill starts before a single upgrade is picked. */
+/**
+ * Where every skill starts.
+ *
+ * The damage numbers are chosen backwards from damage per second, measured
+ * against a plain enemy's health (ENEMY.maxHp): a single-target skill does
+ * about half of one per second, and the two that hit a crowd do about a
+ * third. DPS_TARGET records that intent, and the tests check the stat lines
+ * still land on it.
+ */
+export const DPS_TARGET = {
+  /** Fraction of a plain enemy's health per second, for a single-target skill. */
+  single: 0.5,
+  /** And for one that sweeps several at once. */
+  crowd: 1 / 3,
+  /** What one upgrade is worth, as a fraction of the skill's starting DPS. */
+  upgradeShare: 0.2,
+} as const;
+
 export const SKILL_BASE: Record<SkillId, SkillBaseStats> = {
+  // 15 damage once a second: half a plain enemy per second.
   meleeStrike: {
-    damage: 10,
+    damage: 15,
     attackSpeed: 1,
     range: 66,
     projectileSpeed: 0,
     chainCount: 0,
     pierceCount: 0,
     orbCount: 0,
+    orbitSpeed: 0,
   },
   fireball: {
-    damage: 20,
+    damage: 15,
     attackSpeed: 1,
     range: 100,
     projectileSpeed: 230,
     chainCount: 0,
     pierceCount: 0,
     orbCount: 0,
+    orbitSpeed: 0,
   },
-  // Slower than the other two, because one cast lands on three enemies.
+  // Two enemies a cast at 0.8 casts a second: a third of an enemy per second.
   chainLightning: {
-    damage: 10,
+    damage: 6,
     attackSpeed: 0.8,
     range: 160,
     projectileSpeed: 0,
     chainCount: 1,
     pierceCount: 0,
     orbCount: 0,
+    orbitSpeed: 0,
   },
-  // Longer reach than 화염구 and a faster shot, but it casts less often.
+  // It stops at the first body now; what it leaves behind is the 냉각.
   iceSpear: {
     damage: 10,
     attackSpeed: 1,
     range: 180,
     projectileSpeed: 320,
     chainCount: 0,
-    pierceCount: 2,
+    pierceCount: 0,
     orbCount: 0,
+    orbitSpeed: 0,
   },
   // An orbit rather than a shot: range is how far out the orbs ride,
-  // projectileSpeed how fast they travel around, and attackSpeed how often
-  // one orb may hit the same enemy again.
+  // orbitSpeed how fast they travel around, and attackSpeed how often one
+  // orb may hit the same enemy again.
   voidOrb: {
-    damage: 10,
-    attackSpeed: 2,
+    damage: 5,
+    attackSpeed: 1.5,
     range: 90,
-    projectileSpeed: 200,
+    projectileSpeed: 0,
     chainCount: 0,
     pierceCount: 0,
     orbCount: 2,
+    orbitSpeed: 200,
   },
 };
 
 /** How much one pick of each upgrade adds. Keys match SkillBaseStats. */
+/**
+ * What one pick of each upgrade adds, by default.
+ *
+ * The two that move damage per second — damage and attack speed — are set
+ * per skill in UPGRADE_STEP_BY_SKILL, so each pick is worth about
+ * DPS_TARGET.upgradeShare of where that skill started. The others are
+ * utility or structure and are the same for everyone; adding a chain or an
+ * orb is worth more than a fifth by its nature.
+ */
 export const UPGRADE_STEP = {
   damage: 1,
-  attackSpeed: 1,
+  attackSpeed: 0.2,
   range: 10,
   projectileSpeed: 20,
+  orbitSpeed: 40,
   chainCount: 1,
   pierceCount: 1,
   orbCount: 1,
 } as const;
+
+/** Per-skill overrides, where the DPS maths asks for a different step. */
+export const UPGRADE_STEP_BY_SKILL: Partial<
+  Record<SkillId, Partial<Record<keyof typeof UPGRADE_STEP, number>>>
+> = {
+  meleeStrike: { damage: 3 },
+  fireball: { damage: 3 },
+  chainLightning: { damage: 1, attackSpeed: 0.15 },
+  iceSpear: { damage: 2 },
+  voidOrb: { damage: 1 },
+};
+
+/** How much one pick of `upgrade` adds to `skill`. */
+export function upgradeStep(skill: SkillId, upgrade: keyof typeof UPGRADE_STEP): number {
+  return UPGRADE_STEP_BY_SKILL[skill]?.[upgrade] ?? UPGRADE_STEP[upgrade];
+}
+
+/** Ceilings on the upgrades that add structure rather than numbers. */
+export const UPGRADE_CAP: Partial<Record<keyof typeof UPGRADE_STEP, number>> = {
+  chainCount: 7,
+};
 
 export const STATS = {
   /** Floor on the resulting cooldown, so attack speed cannot outrun the frame. */

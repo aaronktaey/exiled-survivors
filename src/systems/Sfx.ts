@@ -17,9 +17,11 @@ const readyAt = new Map<SkillId, number>();
  * once a second does not turn into a metronome.
  */
 export const sfx = {
-  /** Queues every skill clip. Called from BootScene.preload. */
+  /** Queues every skill clip, and the boss horn. Called from BootScene. */
   preload(scene: Phaser.Scene): void {
     const base = import.meta.env.BASE_URL;
+
+    scene.load.audio(AUDIO.bossAlert.key, `${base}${AUDIO.bossAlert.file}`);
 
     for (const [skill, clip] of Object.entries(AUDIO.skills)) {
       if (!clip) {
@@ -39,12 +41,13 @@ export const sfx = {
       return;
     }
 
-    // A very fast weapon would otherwise stack dozens of copies a second.
+    // A very fast weapon would otherwise stack dozens of copies a second,
+    // and a skill that touches something every frame needs a longer rest.
     const now = scene.time.now;
     if (now < (readyAt.get(skill) ?? 0)) {
       return;
     }
-    readyAt.set(skill, now + AUDIO.minGapMs);
+    readyAt.set(skill, now + (clip.gapMs ?? AUDIO.minGapMs));
 
     const index = sfx.pick(skill, clip.files.length);
     const key = keyFor(skill, index);
@@ -53,6 +56,15 @@ export const sfx = {
     }
 
     scene.sound.play(key, { volume: clip.volume });
+  },
+
+  /** The horn that announces a 우두머리. */
+  playBossAlert(scene: Phaser.Scene): void {
+    if (!scene.cache.audio.exists(AUDIO.bossAlert.key)) {
+      return;
+    }
+
+    scene.sound.play(AUDIO.bossAlert.key, { volume: AUDIO.bossAlert.volume });
   },
 
   /** A random variant, avoiding an immediate repeat when there is a choice. */

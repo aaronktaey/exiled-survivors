@@ -67,8 +67,8 @@ export const ja: Strings = {
   hud: {
     level: 'Lv {level}',
     enemies: '敵 {count}',
-    damage: '攻撃力 {damage}',
-    rate: '攻速 {rate}/s',
+    hit: '単発 {damage}',
+    dps: 'DPS {dps}',
   },
 
   game: {
@@ -109,6 +109,7 @@ export const ja: Strings = {
     attackSpeed: { label: '攻撃速度 +{n}', detail: '{skill}の毎秒攻撃回数が {n} 増えます' },
     range: { label: '射程 +{n}', detail: '{skill}の射程が {n}px 伸びます' },
     projectileSpeed: { label: '弾速 +{n}', detail: '{skill}が毎秒 {n}px 速く飛びます' },
+    orbitSpeed: { label: '回転速度 +{n}', detail: '{skill}が毎秒 {n}px 速く周回します' },
     chainCount: { label: '連鎖回数 +{n}', detail: '{skill}が {n} 体多く連鎖します' },
     pierceCount: { label: '貫通回数 +{n}', detail: '{skill}が {n} 体多く貫きます' },
     orbCount: { label: '球の数 +{n}', detail: '{skill}が {n} 個多く周回します' },
@@ -153,6 +154,14 @@ export const ja: Strings = {
     },
   },
 
+  guideChapters: {
+    goal: '目的',
+    controls: '操作',
+    growth: '成長',
+    skills: 'スキル',
+    enemies: '敵',
+  },
+
   guide: {
     goal: {
       heading: '目的',
@@ -192,7 +201,7 @@ export const ja: Strings = {
     },
     skills: {
       heading: 'スキル',
-      stats: '   ダメージ {damage} · 毎秒 {rate} 回 · 射程 {range}px',
+      stats: '   単発 {damage} · 毎秒 {rate} 回 · DPS {dps} · 射程 {range}px',
       upgrades: '   強化: {picks}',
       starter: '初期スキル',
     },

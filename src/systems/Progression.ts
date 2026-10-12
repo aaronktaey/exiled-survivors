@@ -1,6 +1,13 @@
 import Phaser from 'phaser';
 
-import { SKILL_BASE, STATS, UPGRADE_STEP, xpToNextLevel } from '@/config';
+import {
+  ENEMY,
+  SKILL_BASE,
+  STATS,
+  UPGRADE_CAP,
+  upgradeStep,
+  xpToNextLevel,
+} from '@/config';
 import { fill, skillName, t } from '@/i18n';
 import type { SkillDefinition, SkillId } from '@/weapons/skills';
 
@@ -9,6 +16,7 @@ export type UpgradeId =
   | 'attackSpeed'
   | 'range'
   | 'projectileSpeed'
+  | 'orbitSpeed'
   | 'chainCount'
   | 'pierceCount'
   | 'orbCount';
@@ -28,7 +36,8 @@ export type SkillStats = Record<UpgradeId, number>;
  */
 function optionText(id: UpgradeId, skill: SkillId): Omit<UpgradeOption, 'id'> {
   const copy = t().upgrades[id];
-  const values = { n: UPGRADE_STEP[id], skill: skillName(skill) };
+  const step = upgradeStep(skill, id);
+  const values = { n: Number(step.toFixed(2)), skill: skillName(skill) };
 
   return { label: fill(copy.label, values), detail: fill(copy.detail, values) };
 }
@@ -39,8 +48,29 @@ function optionText(id: UpgradeId, skill: SkillId): Omit<UpgradeOption, 'id'> {
  * tag without sharing a stat — 얼음창 flies like 화염구 but trades for
  * 관통 횟수 instead of reach.
  */
-export function upgradeOptionsFor(skill: SkillDefinition): readonly UpgradeOption[] {
-  return skill.upgrades.map((id) => ({ id, ...optionText(id, skill.id) }));
+export function upgradeOptionsFor(
+  skill: SkillDefinition,
+  stats?: SkillStats,
+): readonly UpgradeOption[] {
+  return skill.upgrades
+    // An upgrade at its ceiling is not offered: a pick that does nothing is
+    // worse than one fewer card.
+    .filter((id) => {
+      const cap = UPGRADE_CAP[id];
+      return cap === undefined || stats === undefined || stats[id] < cap;
+    })
+    .map((id) => ({ id, ...optionText(id, skill.id) }));
+}
+
+/**
+ * Damage per second for a stat line, counting every body a skill touches at
+ * once — that is what makes two skills comparable at a glance.
+ */
+export function dpsFromStats(stats: SkillStats): number {
+  const perSecond = 1000 / Math.max(STATS.minCooldownMs, 1000 / stats.attackSpeed);
+  const targets = 1 + stats.chainCount + stats.pierceCount + Math.max(0, stats.orbCount - 1);
+
+  return stats.damage * perSecond * targets;
 }
 
 /**
@@ -86,6 +116,24 @@ export class Progression extends Phaser.Events.EventEmitter {
   }
 
   public apply(skill: SkillId, upgrade: UpgradeId): void {
-    this.statsFor(skill)[upgrade] += UPGRADE_STEP[upgrade];
+    const stats = this.statsFor(skill);
+    const cap = UPGRADE_CAP[upgrade];
+    const raised = stats[upgrade] + upgradeStep(skill, upgrade);
+
+    stats[upgrade] = cap === undefined ? raised : Math.min(cap, raised);
+  }
+
+  /**
+   * Damage per second, as the HUD shows it. Multi-target skills count every
+   * body they touch, because that is what the number is for: comparing one
+   * skill against another at a glance.
+   */
+  public dpsFor(skill: SkillId): number {
+    return dpsFromStats(this.statsFor(skill));
+  }
+
+  /** A plain enemy's health, for reading a DPS against something. */
+  public static get enemyHealth(): number {
+    return ENEMY.maxHp;
   }
 }

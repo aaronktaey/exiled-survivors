@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 
 import { DEPTH, ENEMY_KINDS, TEXTURES, VOID_ORB } from '@/config';
 import type { Enemy } from '@/entities/Enemy';
+import { sfx } from '@/systems/Sfx';
 import { SKILLS } from '@/weapons/skills';
 import type { Weapon, WeaponContext } from '@/weapons/Weapon';
 
@@ -20,7 +21,7 @@ interface HitRecord {
  * damage is in where the player stands.
  *
  * It reads the shared stats as an orbit: `range` is how far out the orbs
- * ride, `projectileSpeed` how fast they travel around that circle, and the
+ * ride, `orbitSpeed` how fast they travel around that circle, and the
  * cooldown (from attack speed) how often one orb may hit the same enemy
  * again. Tags: 공허 · 주문 · 투사체.
  */
@@ -53,7 +54,7 @@ export class VoidOrb implements Weapon {
     this.sync(count);
 
     // Screen y grows downward, so a growing angle sweeps clockwise.
-    const angularSpeed = context.projectileSpeed / radius;
+    const angularSpeed = context.orbitSpeed / radius;
     this.angle = Phaser.Math.Angle.Wrap(this.angle + angularSpeed * (delta / 1000));
 
     const { x, y } = context.origin;
@@ -108,6 +109,8 @@ export class VoidOrb implements Weapon {
 
         this.hits.set(enemy, { life: enemy.lives, readyAt: this.elapsedMs + context.cooldownMs });
         context.hit(enemy, context.damage);
+        // Held well apart by its own gap, or an orbit would drone.
+        sfx.playSkill(this.scene, this.definition.id);
         break;
       }
     }

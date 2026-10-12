@@ -34,6 +34,8 @@ export interface WeaponContext {
   readonly pierceCount: number;
   /** Orbs kept in the air, from Progression. Ignored unless the skill orbits. */
   readonly orbCount: number;
+  /** How fast those orbs travel, in px per second. */
+  readonly orbitSpeed: number;
   /** Applies damage and resolves the kill (gem and skill drops). */
   readonly hit: (enemy: Enemy, amount: number) => void;
 }

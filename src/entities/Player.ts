@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 
 import { COLORS, DEPTH, HUD, PLAYER, TEXTURES } from '@/config';
+import { fill, t } from '@/i18n';
 import type { AnalogInput } from '@/systems/VirtualJoystick';
 
 type WasdKeys = Record<'W' | 'A' | 'S' | 'D', Phaser.Input.Keyboard.Key>;
@@ -19,6 +20,10 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   private readonly heading = new Phaser.Math.Vector2();
   /** Thin health bar that rides just above the sprite. */
   private readonly healthBar: Phaser.GameObjects.Graphics;
+  /** "Lv 4   12/20", just above that bar. */
+  private readonly nameplate: Phaser.GameObjects.Text;
+  /** Where the level comes from. Set once the run has its progression. */
+  private level = 1;
   private analog?: AnalogInput;
   private invulnerableUntil = 0;
 
@@ -32,6 +37,14 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     this.setCollideWorldBounds(true);
 
     this.healthBar = scene.add.graphics().setDepth(DEPTH.healthBar);
+    this.nameplate = scene.add
+      .text(x, y, '', {
+        fontFamily: 'system-ui, sans-serif',
+        fontSize: HUD.nameplateSize,
+        color: COLORS.text,
+      })
+      .setOrigin(0.5, 1)
+      .setDepth(DEPTH.healthBar);
     this.drawHealthBar();
 
     // Keyboard is absent on touch-only devices; movement just stays idle there.
@@ -69,6 +82,12 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     }
 
     this.setVelocity(this.heading.x * speed, this.heading.y * speed);
+    this.drawHealthBar();
+  }
+
+  /** Keeps the nameplate's level in step with progression. */
+  public setLevel(level: number): void {
+    this.level = level;
     this.drawHealthBar();
   }
 
@@ -130,9 +149,16 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
       this.healthBar.fillStyle(COLORS.hpFill, 1);
       this.healthBar.fillRect(left, top, width * ratio, height);
     }
+
+    const copy = t().hud;
+    this.nameplate.setText(
+      `${fill(copy.level, { level: this.level })}  ${this.hp}/${PLAYER.maxHp}`,
+    );
+    this.nameplate.setPosition(this.x, top - HUD.nameplateGap);
   }
 
   public override destroy(fromScene?: boolean): void {
+    this.nameplate.destroy(fromScene);
     this.healthBar.destroy(fromScene);
     super.destroy(fromScene);
   }

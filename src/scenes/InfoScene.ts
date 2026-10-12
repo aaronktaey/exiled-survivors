@@ -1,8 +1,7 @@
 import Phaser from 'phaser';
 
 import { COLORS, DEPTH, INFO, SCENES } from '@/config';
-import type { GuideSection } from '@/content/guide';
-import { guideSections } from '@/content/guide';
+import { guideChapters, type GuideChapter, type GuideSection } from '@/content/guide';
 import { PATCH_NOTES } from '@/content/patchNotes';
 import { language, t } from '@/i18n';
 import { prefersTouchControls } from '@/systems/VirtualJoystick';
@@ -17,35 +16,44 @@ export interface InfoSceneData {
 const title = (topic: InfoTopic): string =>
   topic === 'patch' ? t().info.patchTitle : t().info.guideTitle;
 
-/** 패치노트, as the same shape the guide uses. */
-function patchSections(): readonly GuideSection[] {
-  return PATCH_NOTES.map((note) => ({
-    heading: `v${note.version}   ${note.date}`,
-    // Korean is the fallback: an entry always has it, a new language may
-    // not have caught up with the newest note yet.
-    lines: (note.changes[language()] ?? note.changes.ko).map((change) => `· ${change}`),
-  }));
+/** 패치노트, as the one chapter it is. */
+function patchChapter(): GuideChapter {
+  return {
+    id: 'patch',
+    title: t().info.patchTitle,
+    sections: PATCH_NOTES.map((note) => ({
+      heading: `v${note.version}   ${note.date}`,
+      // Korean is the fallback: an entry always has it, a new language may
+      // not have caught up with the newest note yet.
+      lines: (note.changes[language()] ?? note.changes.ko).map((change) => `· ${change}`),
+    })),
+  };
 }
 
 /**
- * The reading screen: 패치노트 and 게임 가이드, both long enough to need
- * scrolling. Opened from the title and from the pause menu, over whichever
- * of them called it.
+ * The reading screen: 게임 가이드 and 패치노트.
  *
- * Everything scrolls together inside a container with a rectangular mask —
- * the wheel, the arrow keys, or a drag all move the same offset.
+ * The guide is long enough that one scroll was a poor way through it, so it
+ * has a contents list down the side — up and down pick a chapter, and the
+ * page beside it changes. The notes are a single chapter and simply scroll.
  */
 export class InfoScene extends Phaser.Scene {
   public static readonly KEY = SCENES.info;
 
   private payload!: InfoSceneData;
+  private chapters: readonly GuideChapter[] = [];
+  private tocEntries: Phaser.GameObjects.Text[] = [];
   private page!: Phaser.GameObjects.Container;
-  private bar!: Phaser.GameObjects.Rectangle;
+  private bar?: Phaser.GameObjects.Rectangle;
+  private barTrack?: Phaser.GameObjects.Rectangle;
 
+  private chapter = 0;
   private scrollY = 0;
   private maxScroll = 0;
   private viewTop = 0;
   private viewHeight = 0;
+  private contentLeft = 0;
+  private contentWidth = 0;
   /** Where a drag started, in screen px, or null when nothing is held. */
   private dragFrom: { pointerY: number; scrollY: number } | null = null;
 
@@ -55,14 +63,18 @@ export class InfoScene extends Phaser.Scene {
 
   public init(data: InfoSceneData): void {
     this.payload = data;
+    this.chapter = 0;
     this.scrollY = 0;
+    // The scene instance outlives a launch: last time's entries are already
+    // destroyed, and 패치노트 has no contents list to replace them with.
+    this.tocEntries = [];
   }
 
   public create(): void {
     const { width, height } = this.scale;
-    const sections = this.payload.topic === 'patch' ? patchSections() : guideSections();
+    this.chapters = this.payload.topic === 'patch' ? [patchChapter()] : guideChapters();
 
-    this.add.rectangle(0, 0, width, height, 0x05070b, 0.95).setOrigin(0, 0).setDepth(DEPTH.ui);
+    this.add.rectangle(0, 0, width, height, 0x05070b, 0.97).setOrigin(0, 0).setDepth(DEPTH.ui);
     this.add
       .text(width / 2, INFO.titleY, title(this.payload.topic), {
         fontFamily: 'system-ui, sans-serif',
@@ -75,18 +87,23 @@ export class InfoScene extends Phaser.Scene {
     this.viewTop = INFO.contentTop;
     this.viewHeight = height - INFO.contentTop - INFO.contentBottom;
 
-    this.page = this.add.container(0, 0).setDepth(DEPTH.ui + 1);
-    const contentHeight = this.layout(sections, width);
-    this.maxScroll = Math.max(0, contentHeight - this.viewHeight);
+    const hasContents = this.chapters.length > 1;
+    if (hasContents) {
+      // Contents down the left, the chapter beside it.
+      this.contentLeft = (width - INFO.contentWidth) / 2 + INFO.tocWidth / 2;
+      this.contentWidth = INFO.contentWidth - INFO.tocWidth;
+      this.buildContents((width - INFO.contentWidth) / 2);
+    } else {
+      this.contentLeft = (width - INFO.contentWidth) / 2;
+      this.contentWidth = INFO.contentWidth;
+    }
 
-    // Clip the page to the window it scrolls behind.
+    this.page = this.add.container(0, 0).setDepth(DEPTH.ui + 1);
     const shape = this.make.graphics({}, false);
     shape.fillRect(0, this.viewTop, width, this.viewHeight);
     this.page.setMask(shape.createGeometryMask());
 
-    this.buildScrollbar(width);
     this.buildCloseButton(width);
-
     this.add
       .text(
         width / 2,
@@ -98,12 +115,47 @@ export class InfoScene extends Phaser.Scene {
       .setDepth(DEPTH.ui + 1);
 
     this.armInput();
+    this.showChapter(0);
+  }
+
+  /** The contents list: one line per chapter, the current one lit. */
+  private buildContents(left: number): void {
+    this.tocEntries = this.chapters.map((entry, index) => {
+      const text = this.add
+        .text(left, this.viewTop + index * INFO.tocLineHeight, entry.title, {
+          fontFamily: 'system-ui, sans-serif',
+          fontSize: INFO.headingSize,
+          color: COLORS.muted,
+        })
+        .setDepth(DEPTH.ui + 1)
+        .setInteractive({ useHandCursor: true });
+
+      text.on(Phaser.Input.Events.GAMEOBJECT_POINTER_DOWN, () => this.showChapter(index));
+      return text;
+    });
+  }
+
+  /** Lays a chapter out and puts the page back to the top. */
+  private showChapter(index: number): void {
+    this.chapter = Phaser.Math.Wrap(index, 0, this.chapters.length);
+    this.scrollY = 0;
+
+    this.page.removeAll(true);
+    const height = this.layout(this.chapters[this.chapter]?.sections ?? []);
+    this.maxScroll = Math.max(0, height - this.viewHeight);
+
+    this.tocEntries.forEach((entry, i) => {
+      const active = i === this.chapter;
+      entry.setColor(active ? COLORS.accent : COLORS.muted);
+      entry.setAlpha(active ? 1 : 0.75);
+    });
+
+    this.buildScrollbar();
     this.applyScroll();
   }
 
   /** Stacks the sections into the page; returns how tall it came out. */
-  private layout(sections: readonly GuideSection[], width: number): number {
-    const left = (width - INFO.contentWidth) / 2;
+  private layout(sections: readonly GuideSection[]): number {
     let y = this.viewTop;
 
     sections.forEach((section, index) => {
@@ -111,7 +163,7 @@ export class InfoScene extends Phaser.Scene {
         y += INFO.sectionGap;
       }
 
-      const heading = this.add.text(left, y, section.heading, {
+      const heading = this.add.text(this.contentLeft, y, section.heading, {
         fontFamily: 'system-ui, sans-serif',
         fontSize: INFO.headingSize,
         color: COLORS.accent,
@@ -119,12 +171,12 @@ export class InfoScene extends Phaser.Scene {
       this.page.add(heading);
       y += heading.height + INFO.headingGap;
 
-      const body = this.add.text(left, y, [...section.lines], {
+      const body = this.add.text(this.contentLeft, y, [...section.lines], {
         fontFamily: 'system-ui, sans-serif',
         fontSize: INFO.lineSize,
         color: COLORS.text,
         lineSpacing: INFO.lineSpacing,
-        wordWrap: { width: INFO.contentWidth },
+        wordWrap: { width: this.contentWidth },
       });
       this.page.add(body);
       y += body.height;
@@ -133,13 +185,18 @@ export class InfoScene extends Phaser.Scene {
     return y - this.viewTop;
   }
 
-  private buildScrollbar(width: number): void {
+  private buildScrollbar(): void {
+    this.bar?.destroy();
+    this.barTrack?.destroy();
+    this.bar = undefined;
+    this.barTrack = undefined;
+
     if (this.maxScroll <= 0) {
       return;
     }
 
-    const x = (width + INFO.contentWidth) / 2 + 14;
-    this.add
+    const x = this.contentLeft + this.contentWidth + 16;
+    this.barTrack = this.add
       .rectangle(x, this.viewTop, 3, this.viewHeight, COLORS.panelEdge, 1)
       .setOrigin(0.5, 0)
       .setDepth(DEPTH.ui + 1);
@@ -158,8 +215,7 @@ export class InfoScene extends Phaser.Scene {
   private buildCloseButton(width: number): void {
     const x = (width + INFO.contentWidth) / 2 - 10;
     const button = this.add
-      .rectangle(x, INFO.titleY, 64, 28, COLORS.panel, 1)
-      .setStrokeStyle(2, COLORS.panelEdge, 1)
+      .rectangle(x, INFO.titleY, 64, 28, COLORS.panelActive, 0.55)
       .setDepth(DEPTH.ui + 1)
       .setInteractive({ useHandCursor: true });
 
@@ -193,7 +249,7 @@ export class InfoScene extends Phaser.Scene {
       // Drag down to pull the page down, as a touch screen expects.
       this.scrollTo(this.dragFrom.scrollY - (pointer.y - this.dragFrom.pointerY));
     });
-    const release = () => {
+    const release = (): void => {
       this.dragFrom = null;
     };
     this.input.on(Phaser.Input.Events.POINTER_UP, release);
@@ -201,14 +257,25 @@ export class InfoScene extends Phaser.Scene {
   }
 
   private onKeyDown(event: KeyboardEvent): void {
+    const chaptered = this.chapters.length > 1;
+
     switch (event.code) {
       case 'ArrowUp':
       case 'KeyW':
-        this.scrollBy(-INFO.keyStep);
+        // With a contents list the arrows walk it; without one they scroll.
+        if (chaptered) {
+          this.showChapter(this.chapter - 1);
+        } else {
+          this.scrollBy(-INFO.keyStep);
+        }
         break;
       case 'ArrowDown':
       case 'KeyS':
-        this.scrollBy(INFO.keyStep);
+        if (chaptered) {
+          this.showChapter(this.chapter + 1);
+        } else {
+          this.scrollBy(INFO.keyStep);
+        }
         break;
       case 'PageUp':
         this.scrollBy(-this.viewHeight);

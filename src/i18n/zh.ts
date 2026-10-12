@@ -67,8 +67,8 @@ export const zh: Strings = {
   hud: {
     level: 'Lv {level}',
     enemies: '敌人 {count}',
-    damage: '攻击 {damage}',
-    rate: '攻速 {rate}/s',
+    hit: '单次 {damage}',
+    dps: 'DPS {dps}',
   },
 
   game: {
@@ -109,6 +109,7 @@ export const zh: Strings = {
     attackSpeed: { label: '攻击速度 +{n}', detail: '{skill}每秒攻击次数提高 {n}' },
     range: { label: '射程 +{n}', detail: '{skill}的射程增加 {n}px' },
     projectileSpeed: { label: '弹速 +{n}', detail: '{skill}每秒多飞 {n}px' },
+    orbitSpeed: { label: '旋转速度 +{n}', detail: '{skill}每秒多环绕 {n}px' },
     chainCount: { label: '连锁次数 +{n}', detail: '{skill}多连锁 {n} 个敌人' },
     pierceCount: { label: '穿透次数 +{n}', detail: '{skill}多穿透 {n} 个敌人' },
     orbCount: { label: '球体数量 +{n}', detail: '{skill}多环绕 {n} 个球体' },
@@ -153,6 +154,14 @@ export const zh: Strings = {
     },
   },
 
+  guideChapters: {
+    goal: '目标',
+    controls: '操作',
+    growth: '成长',
+    skills: '技能',
+    enemies: '敌人',
+  },
+
   guide: {
     goal: {
       heading: '目标',
@@ -192,7 +201,7 @@ export const zh: Strings = {
     },
     skills: {
       heading: '技能',
-      stats: '   伤害 {damage} · 每秒 {rate} 次 · 射程 {range}px',
+      stats: '   单次 {damage} · 每秒 {rate} 次 · DPS {dps} · 射程 {range}px',
       upgrades: '   强化: {picks}',
       starter: '初始技能',
     },

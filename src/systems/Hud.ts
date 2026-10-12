@@ -6,8 +6,10 @@ import type { Progression } from '@/systems/Progression';
 
 export interface LoadoutEntry {
   readonly name: string;
+  /** What one hit lands. */
   readonly damage: number;
-  readonly attackSpeed: number;
+  /** Damage per second, counting everything the skill touches at once. */
+  readonly dps: number;
 }
 
 /**
@@ -16,11 +18,16 @@ export interface LoadoutEntry {
  *
  * Health is not here — it rides above the player, drawn by Player itself.
  */
+/** Whole numbers where they are whole, one decimal where they are not. */
+const round = (value: number): string =>
+  Number.isInteger(value) ? String(value) : value.toFixed(1);
+
 export class Hud {
   private readonly xpBar: Phaser.GameObjects.Graphics;
   private readonly statsLabel: Phaser.GameObjects.Text;
   private readonly skillsLabel: Phaser.GameObjects.Text;
   private readonly clockLabel: Phaser.GameObjects.Text;
+  private readonly enemiesLabel: Phaser.GameObjects.Text;
   private readonly progression: Progression;
   private readonly viewWidth: number;
   private readonly viewHeight: number;
@@ -62,6 +69,17 @@ export class Hud {
       .setOrigin(0.5, 0)
       .setScrollFactor(0)
       .setDepth(DEPTH.ui);
+
+    // Under the clock, where the eye already is during a wave.
+    this.enemiesLabel = scene.add
+      .text(this.viewWidth / 2, HUD.margin + 22, '', {
+        fontFamily: 'system-ui, sans-serif',
+        fontSize: '13px',
+        color: COLORS.muted,
+      })
+      .setOrigin(0.5, 0)
+      .setScrollFactor(0)
+      .setDepth(DEPTH.ui);
   }
 
   /** Starts the clock partway in, when a saved run is resumed. */
@@ -78,13 +96,12 @@ export class Hud {
     this.clockLabel.setText(`${mm}:${ss}`);
 
     const copy = t().hud;
-    this.statsLabel.setText(
-      `${fill(copy.level, { level: this.progression.level })}    ${fill(copy.enemies, { count: enemies })}`,
-    );
+    this.statsLabel.setText(fill(copy.level, { level: this.progression.level }));
+    this.enemiesLabel.setText(fill(copy.enemies, { count: enemies }));
     this.skillsLabel.setText(
       loadout.map(
         (s) =>
-          `${s.name}  ${fill(copy.damage, { damage: s.damage })}  ${fill(copy.rate, { rate: s.attackSpeed.toFixed(1) })}`,
+          `${s.name}  ${fill(copy.hit, { damage: round(s.damage) })}  ${fill(copy.dps, { dps: round(s.dps) })}`,
       ),
     );
 

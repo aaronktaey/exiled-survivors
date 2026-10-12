@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 
-import { DEPTH, ICONS, SKILL_LABEL, TEXTURES } from '@/config';
+import { DEPTH, SKILL_ICON_SIZE, SKILL_ICONS, SKILL_LABEL, TEXTURES } from '@/config';
 import { GroundItem } from '@/entities/GroundItem';
 import { skillName } from '@/i18n';
 import { SKILLS, type SkillDefinition, type SkillId } from '@/weapons/skills';
@@ -21,7 +21,7 @@ export class SkillDrop extends GroundItem {
 
   public constructor(scene: Phaser.Scene, x: number, y: number) {
     super(scene, x, y, TEXTURES.skillOrb, SKILL_LABEL.border);
-    this.setDisplaySize(ICONS.skillOrb.size, ICONS.skillOrb.size);
+    this.setDisplaySize(SKILL_ICON_SIZE.drop, SKILL_ICON_SIZE.drop);
 
     this.plate = scene.add
       .image(x, y, SKILLS.fireball.labelTexture)
@@ -42,7 +42,9 @@ export class SkillDrop extends GroundItem {
 
   public drop(x: number, y: number, skill: SkillDefinition): void {
     this.skillId = skill.id;
-    this.begin(x, y, ICONS.skillOrb.size);
+    // Each skill lies on the ground wearing its own icon.
+    this.setTexture(SKILL_ICONS[skill.id]?.key ?? TEXTURES.skillOrb);
+    this.begin(x, y, SKILL_ICON_SIZE.drop);
 
     this.plate.setTexture(skill.labelTexture);
     this.label.setText(skillName(skill.id));
@@ -67,7 +69,7 @@ export class SkillDrop extends GroundItem {
 
   /** Centres the plate (and its text) just above the orb. */
   private layout(x: number, y: number): void {
-    const plateY = y - ICONS.skillOrb.size / 2 - SKILL_LABEL.gap - this.plate.height / 2;
+    const plateY = y - SKILL_ICON_SIZE.drop / 2 - SKILL_LABEL.gap - this.plate.height / 2;
     this.plate.setPosition(x, plateY);
     this.label.setPosition(x, plateY);
   }

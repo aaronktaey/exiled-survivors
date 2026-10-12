@@ -86,8 +86,10 @@ export interface Strings {
   readonly hud: {
     readonly level: string;
     readonly enemies: string;
-    readonly damage: string;
-    readonly rate: string;
+    /** Damage one hit lands. */
+    readonly hit: string;
+    /** Damage per second, counting everything the skill touches. */
+    readonly dps: string;
   };
 
   readonly game: {
@@ -128,7 +130,14 @@ export interface Strings {
 
   /** Upgrade picks. {n} is the step, {skill} the skill being upgraded. */
   readonly upgrades: Record<
-    'damage' | 'attackSpeed' | 'range' | 'projectileSpeed' | 'chainCount' | 'pierceCount' | 'orbCount',
+    | 'damage'
+    | 'attackSpeed'
+    | 'range'
+    | 'projectileSpeed'
+    | 'orbitSpeed'
+    | 'chainCount'
+    | 'pierceCount'
+    | 'orbCount',
     { readonly label: string; readonly detail: string }
   >;
 
@@ -147,6 +156,15 @@ export interface Strings {
   };
 
   /** 게임 가이드. The builder fills the placeholders from the live config. */
+  /** Chapter names for the guide's table of contents. */
+  readonly guideChapters: {
+    readonly goal: string;
+    readonly controls: string;
+    readonly growth: string;
+    readonly skills: string;
+    readonly enemies: string;
+  };
+
   readonly guide: {
     readonly goal: GuideBlock;
     readonly controls: GuideBlock;

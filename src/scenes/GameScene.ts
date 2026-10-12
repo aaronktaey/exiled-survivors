@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 
 import {
   BALANCE,
+  BOSS_BANNER,
   COLORS,
   DEPTH,
   PAUSE_BUTTON,
@@ -18,6 +19,7 @@ import { GameOverScene, type GameOverData } from '@/scenes/GameOverScene';
 import { UpgradeScene, type UpgradeChoiceData } from '@/scenes/UpgradeScene';
 import {
   CombatSystem,
+  upgradeOptionsFor,
   DamageNumbers,
   DebugOverlay,
   Hud,
@@ -28,6 +30,7 @@ import {
   type UpgradeId,
 } from '@/systems';
 import { RareTooltip } from '@/systems/RareTooltip';
+import { sfx } from '@/systems/Sfx';
 import { saveGame, type SavedRun } from '@/systems/SaveGame';
 import { settings } from '@/systems/Settings';
 import { TiltInput, tiltAvailable } from '@/systems/TiltInput';
@@ -35,6 +38,7 @@ import { VirtualJoystick, prefersTouchControls } from '@/systems/VirtualJoystick
 import {
   ChainLightning,
   DROPPABLE_SKILLS,
+  SKILLS,
   Fireball,
   IceSpear,
   LEVEL_UP_SKILL,
@@ -81,6 +85,8 @@ export class GameScene extends Phaser.Scene {
   private damageNumbers!: DamageNumbers;
   private debug!: DebugOverlay;
   private rareTooltip!: RareTooltip;
+  private bossBanner?: Phaser.GameObjects.Text;
+  private bossPlate?: Phaser.GameObjects.Rectangle;
 
   private weapons: Weapon[] = [];
   private owned = new Set<SkillId>();
@@ -126,7 +132,7 @@ export class GameScene extends Phaser.Scene {
     // The hook is called later, during play, by which point combat exists.
     this.spawner = new SpawnDirector(this, this.player, {
       fireShot: (x, y, angle, spec) => this.combat.fireEnemyShot(x, y, angle, spec),
-      onBossSpawned: () => this.announce(t().game.bossArrived),
+      onBossSpawned: () => this.announceBoss(),
     });
     this.separation = new Separation(this.spawner.group);
     this.damageNumbers = new DamageNumbers(this);
@@ -158,6 +164,7 @@ export class GameScene extends Phaser.Scene {
     this.createPauseButton();
     this.armPauseInput();
 
+    this.player.setLevel(this.progression.level);
     this.progression.on(Progression.LEVEL_UP, this.onLevelUp, this);
     this.player.once(Player.DIED, this.onPlayerDied, this);
 
@@ -214,6 +221,7 @@ export class GameScene extends Phaser.Scene {
         range: stats.range,
         projectileSpeed: stats.projectileSpeed,
         chainCount: stats.chainCount,
+        orbitSpeed: stats.orbitSpeed,
         pierceCount: stats.pierceCount,
         orbCount: stats.orbCount,
         hit: this.combat.hit,
@@ -421,14 +429,64 @@ export class GameScene extends Phaser.Scene {
     return this.progression.statsFor(skill).damage * (BALANCE.damageScale[skill] ?? 1);
   }
 
-  private loadout(): ReadonlyArray<{ name: string; damage: number; attackSpeed: number }> {
+  private loadout(): ReadonlyArray<{ name: string; damage: number; dps: number }> {
     return this.weapons.map((weapon) => {
       const id = weapon.definition.id;
+      const scale = this.damageOf(id) / this.progression.statsFor(id).damage;
       return {
         name: skillName(id),
         damage: this.damageOf(id),
-        attackSpeed: this.progression.statsFor(id).attackSpeed,
+        // The dial scales damage, so it scales the DPS with it.
+        dps: this.progression.dpsFor(id) * scale,
       };
+    });
+  }
+
+  /**
+   * The 우두머리 announcement: louder than a pickup banner, and only ever one
+   * at a time, so two bosses in quick succession cannot overlap into mush.
+   */
+  private announceBoss(): void {
+    sfx.playBossAlert(this);
+
+    const camera = this.cameras.main;
+    const x = camera.width / 2;
+    const y = camera.height / 2 - 120;
+
+    this.bossBanner?.destroy();
+    this.bossPlate?.destroy();
+
+    this.bossPlate = this.add
+      .rectangle(x, y, BOSS_BANNER.width, BOSS_BANNER.height, COLORS.panel, 0.9)
+      .setStrokeStyle(2, COLORS.bossOutline, 1)
+      .setScrollFactor(0)
+      .setDepth(DEPTH.ui);
+
+    this.bossBanner = this.add
+      .text(x, y, t().game.bossArrived, {
+        fontFamily: 'system-ui, sans-serif',
+        fontSize: BOSS_BANNER.fontSize,
+        color: COLORS.bossText,
+        fontStyle: 'bold',
+      })
+      .setOrigin(0.5)
+      .setScrollFactor(0)
+      .setDepth(DEPTH.ui + 1);
+
+    const parts = [this.bossPlate, this.bossBanner];
+    parts.forEach((part) => part.setScale(0.8));
+    this.tweens.add({ targets: parts, scale: 1, duration: 220, ease: 'Back.easeOut' });
+    this.tweens.add({
+      targets: parts,
+      alpha: 0,
+      delay: BOSS_BANNER.holdMs,
+      duration: 500,
+      onComplete: () => {
+        this.bossPlate?.destroy();
+        this.bossBanner?.destroy();
+        this.bossPlate = undefined;
+        this.bossBanner = undefined;
+      },
     });
   }
 
@@ -498,6 +556,7 @@ export class GameScene extends Phaser.Scene {
 
   /** Level-up points are spent on the basic attack only. */
   private onLevelUp(level: number): void {
+    this.player.setLevel(level);
     this.queueChoice({
       title: t().upgrade.levelUp,
       subtitle: fill(t().upgrade.level, { level }),
@@ -524,6 +583,9 @@ export class GameScene extends Phaser.Scene {
 
     const data: UpgradeChoiceData = {
       ...request,
+      // Worked out here, where the live stats are, so an upgrade that has
+      // hit its ceiling is simply not offered.
+      options: upgradeOptionsFor(SKILLS[request.skill], this.progression.statsFor(request.skill)),
       onPick: (upgrade) => this.onUpgradePicked(request.skill, upgrade),
     };
     this.scene.launch(UpgradeScene.KEY, data);

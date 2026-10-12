@@ -60,17 +60,17 @@ export const SKILLS: Record<SkillId, SkillDefinition> = {
   iceSpear: {
     id: 'iceSpear',
     name: '얼음창',
-    tags: ['주문', '냉기', '관통', '투사체'],
+    tags: ['주문', '냉기', '투사체'],
     labelTexture: 'tex-label-iceSpear',
-    upgrades: ['damage', 'attackSpeed', 'pierceCount'],
-    summary: '적을 꿰뚫고 지나가며, 스친 모든 적에게 냉각(이동속도 -15%)을 겁니다.',
+    upgrades: ['damage', 'attackSpeed', 'range'],
+    summary: '맞은 적에게 냉각(이동속도 -15%)을 겁니다.',
   },
   voidOrb: {
     id: 'voidOrb',
     name: '공허구체',
     tags: ['공허', '주문', '투사체'],
     labelTexture: 'tex-label-voidOrb',
-    upgrades: ['damage', 'attackSpeed', 'orbCount'],
+    upgrades: ['damage', 'orbitSpeed', 'orbCount'],
     summary: '구체가 주위를 시계방향으로 돌며 닿는 적을 때립니다. 겨냥이 필요 없습니다.',
   },
 };

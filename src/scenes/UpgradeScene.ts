@@ -1,10 +1,10 @@
 import Phaser from 'phaser';
 
-import { COLORS, DEPTH } from '@/config';
+import { COLORS, DEPTH, SKILL_ICON_SIZE, SKILL_ICONS } from '@/config';
 import { t } from '@/i18n';
-import { upgradeOptionsFor, type UpgradeId, type UpgradeOption } from '@/systems/Progression';
+import type { UpgradeId, UpgradeOption } from '@/systems/Progression';
 import { prefersTouchControls } from '@/systems/VirtualJoystick';
-import { SKILLS, type SkillId } from '@/weapons/skills';
+import type { SkillId } from '@/weapons/skills';
 
 export interface UpgradeChoiceData {
   /** Headline — "LEVEL UP" for a level, the skill's name for a pickup. */
@@ -12,6 +12,8 @@ export interface UpgradeChoiceData {
   readonly subtitle: string;
   /** Which skill the chosen upgrade is spent on. */
   readonly skill: SkillId;
+  /** The picks to show, already filtered by whatever has hit its ceiling. */
+  readonly options: readonly UpgradeOption[];
   readonly onPick: (upgrade: UpgradeId) => void;
 }
 
@@ -80,6 +82,14 @@ export class UpgradeScene extends Phaser.Scene {
 
     this.add.rectangle(0, 0, width, height, 0x05070b, 0.72).setOrigin(0, 0).setDepth(DEPTH.ui);
 
+    const icon = SKILL_ICONS[this.payload.skill];
+    if (icon && this.textures.exists(icon.key)) {
+      this.add
+        .image(centerX, height / 2 - 196, icon.key)
+        .setDisplaySize(SKILL_ICON_SIZE.card, SKILL_ICON_SIZE.card)
+        .setDepth(DEPTH.ui);
+    }
+
     this.add
       .text(centerX, height / 2 - 150, this.payload.title, {
         fontFamily: 'system-ui, sans-serif',
@@ -100,7 +110,7 @@ export class UpgradeScene extends Phaser.Scene {
 
     // A projectile skill offers four picks, a melee one two, so the row is
     // sized from the count rather than from a fixed card width.
-    const options = upgradeOptionsFor(SKILLS[this.payload.skill]);
+    const options = this.payload.options;
     const cardWidth = Math.min(
       CARD_MAX_WIDTH,
       (width - SIDE_MARGIN * 2 - CARD_GAP * (options.length - 1)) / options.length,

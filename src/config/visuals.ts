@@ -22,6 +22,7 @@ export const COLORS = {
   /** 우두머리: a dark slab with a gold ring around it. */
   enemyBoss: 0x7a1f3d,
   bossOutline: 0xffd34d,
+  bossText: '#ffd34d',
   /** Enemy fire, kept well away from any colour the player's own shots use. */
   enemyShot: 0xff7a9c,
   /** The ring around a rare at one affix, and its tooltip heading. */
@@ -101,6 +102,36 @@ export const TEXTURES = {
  * Sprites are 32x32 and drawn down to `size`; the rest of the art is still
  * generated at boot.
  */
+/**
+ * One icon per skill, from the Raven Fantasy pack (see
+ * assets/icons/CREDITS.txt). Stand-ins until there is art of our own: the
+ * drop on the ground wears it, and so does the upgrade card.
+ */
+export const SKILL_ICONS: Record<string, { readonly file: string; readonly key: string }> = {
+  meleeStrike: { file: 'assets/icons/skill-meleeStrike.png', key: 'tex-skill-meleeStrike' },
+  fireball: { file: 'assets/icons/skill-fireball.png', key: 'tex-skill-fireball' },
+  chainLightning: { file: 'assets/icons/skill-chainLightning.png', key: 'tex-skill-chainLightning' },
+  iceSpear: { file: 'assets/icons/skill-iceSpear.png', key: 'tex-skill-iceSpear' },
+  voidOrb: { file: 'assets/icons/skill-voidOrb.png', key: 'tex-skill-voidOrb' },
+};
+
+/** How big a skill icon is drawn, on the ground and on a card. */
+export const SKILL_ICON_SIZE = {
+  drop: 24,
+  card: 34,
+} as const;
+
+/**
+ * How finely text is rendered. The canvas is 960 wide and gets stretched to
+ * the window, so glyphs are drawn at this multiple of it and sampled back
+ * down: sharp edges for texture memory, and nothing per frame.
+ */
+export const TEXT = {
+  resolution: 2,
+  /** A ceiling, so a 3x phone does not bake enormous glyph canvases. */
+  maxResolution: 3,
+} as const;
+
 export const ICONS = {
   gem: { file: "assets/icons/xp-gem.png", size: 14 },
   projectile: { file: "assets/icons/fireball.png", size: 16 },
@@ -136,6 +167,9 @@ export const HUD = {
   leftInset: 56,
   /** XP bar spans the full width along the very bottom edge. */
   xpBarHeight: 10,
+  /** The level and health line that sits above that bar. */
+  nameplateSize: '11px',
+  nameplateGap: 3,
   /** Health bar floats just above the player sprite. */
   healthBar: {
     width: 60,
@@ -165,6 +199,9 @@ export const INFO = {
   contentTop: 82,
   contentBottom: 58,
   contentWidth: 720,
+  /** The contents list down the left of the guide. */
+  tocWidth: 170,
+  tocLineHeight: 34,
   headingSize: '17px',
   headingGap: 8,
   lineSize: '14px',
@@ -187,6 +224,15 @@ export const RARE_OUTLINE_TIERS: readonly number[] = [
   0xf03a2a, // 5
   0xd41347, // 6
 ];
+
+/** The banner that announces a 우두머리. */
+export const BOSS_BANNER = {
+  width: 300,
+  height: 54,
+  fontSize: '26px',
+  /** How long it holds before fading. */
+  holdMs: 1400,
+} as const;
 
 /** The panel that lists a rare's affixes when it is hovered or tapped. */
 export const TOOLTIP = {

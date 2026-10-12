@@ -116,7 +116,22 @@ export const AUDIO = {
       files: ['assets/chainLightening1.mp3'],
       volume: 0.45,
     },
-  } as Partial<Record<SkillId, { readonly files: readonly string[]; readonly volume: number }>>,
+    fireball: { files: ['assets/fireball.mp3'], volume: 0.4 },
+    iceSpear: { files: ['assets/iceSpear.mp3'], volume: 0.4 },
+    // The orbs touch something most frames, so this one is held well apart.
+    voidOrb: { files: ['assets/voidSphere.mp3'], volume: 0.35, gapMs: 600 },
+  } as Partial<
+    Record<
+      SkillId,
+      { readonly files: readonly string[]; readonly volume: number; readonly gapMs?: number }
+    >
+  >,
   /** A skill cannot be heard again inside this, however fast it attacks. */
   minGapMs: 70,
+  /** The horn when a 우두머리 walks in. */
+  bossAlert: {
+    key: 'sfx-boss-alert',
+    file: 'assets/bossAlert.mp3',
+    volume: 0.6,
+  },
 } as const;

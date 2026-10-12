@@ -67,8 +67,8 @@ export const en: Strings = {
   hud: {
     level: 'Lv {level}',
     enemies: 'Enemies {count}',
-    damage: 'DMG {damage}',
-    rate: '{rate}/s',
+    hit: 'HIT {damage}',
+    dps: 'DPS {dps}',
   },
 
   game: {
@@ -109,6 +109,7 @@ export const en: Strings = {
     attackSpeed: { label: 'Attack speed +{n}', detail: '{skill} attacks {n} more time per second' },
     range: { label: 'Range +{n}', detail: '{skill} reaches {n}px further' },
     projectileSpeed: { label: 'Projectile speed +{n}', detail: '{skill} flies {n}px per second faster' },
+    orbitSpeed: { label: 'Orbit speed +{n}', detail: '{skill} circles {n}px per second faster' },
     chainCount: { label: 'Chains +{n}', detail: '{skill} jumps to {n} more enemy' },
     pierceCount: { label: 'Pierce +{n}', detail: '{skill} passes through {n} more enemy' },
     orbCount: { label: 'Orbs +{n}', detail: '{skill} keeps {n} more orb in the air' },
@@ -153,6 +154,14 @@ export const en: Strings = {
     },
   },
 
+  guideChapters: {
+    goal: 'The goal',
+    controls: 'Controls',
+    growth: 'Growing',
+    skills: 'Skills',
+    enemies: 'Enemies',
+  },
+
   guide: {
     goal: {
       heading: 'The goal',
@@ -192,7 +201,7 @@ export const en: Strings = {
     },
     skills: {
       heading: 'Skills',
-      stats: '   {damage} damage · {rate}/s · {range}px reach',
+      stats: '   {damage} a hit · {rate}/s · {dps} DPS · {range}px reach',
       upgrades: '   Upgrades: {picks}',
       starter: 'starting skill',
     },

@@ -4,6 +4,7 @@ import './style.css';
 
 import { COLORS, GAME_HEIGHT, GAME_WIDTH } from '@/config';
 import { settings } from '@/systems/Settings';
+import { registerSharpText } from '@/systems/SharpText';
 import {
   BootScene,
   ConfirmScene,
@@ -19,6 +20,8 @@ import {
 
 // Language first: every scene reads its text as it is built.
 settings.prime();
+// And every label it builds renders at more than one pixel per pixel.
+registerSharpText();
 
 const config: Phaser.Types.Core.GameConfig = {
   type: Phaser.AUTO,
