@@ -22,6 +22,10 @@ export const sfx = {
     const base = import.meta.env.BASE_URL;
 
     for (const [skill, clip] of Object.entries(AUDIO.skills)) {
+      if (!clip) {
+        continue;
+      }
+
       clip.files.forEach((file, index) => {
         scene.load.audio(keyFor(skill as SkillId, index), `${base}${file}`);
       });

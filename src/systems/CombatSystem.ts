@@ -13,8 +13,11 @@ import type { Progression } from '@/systems/Progression';
 import type { SkillDefinition, SkillId } from '@/weapons/skills';
 
 export interface CombatHooks {
-  /** Picks a skill to drop on a kill, or null to drop nothing. */
-  readonly rollSkillDrop: () => SkillDefinition | null;
+  /**
+   * Picks a skill to drop on a kill, or null to drop nothing. `bonus`
+   * multiplies the chance — a rare's affixes make it likelier.
+   */
+  readonly rollSkillDrop: (bonus: number) => SkillDefinition | null;
   /** Called when the player walks over a dropped skill. */
   readonly onSkillCollected: (skill: SkillId) => void;
 }
@@ -159,8 +162,9 @@ export class CombatSystem {
       return;
     }
 
-    // Each kind hits for its own weight: a 거구 costs far more to stand in.
-    this.player.takeDamage(enemy.contactDamage);
+    // Each kind hits for its own weight: a 거구 costs far more to stand in,
+    // and a rare adds whatever its affixes are worth.
+    this.player.takeDamage(enemy.rollDamage(enemy.contactDamage));
   };
 
   private onEnemyShotHit: Phaser.Types.Physics.Arcade.ArcadePhysicsCallback = (_player, b) => {
@@ -215,15 +219,16 @@ export class CombatSystem {
 
   private killEnemy(enemy: Enemy): void {
     const { x, y } = enemy;
-    // Read the reward before recycling, which resets the kind.
+    // Read the rewards before recycling, which resets the kind and affixes.
     const worth = enemy.xpValue;
+    const dropBonus = enemy.dropBonus;
     // Pooled: back to the spawner's pool rather than destroyed.
     enemy.recycle();
 
     const gem = this.gems.get() as XpGem | null;
     gem?.drop(x, y, worth, this.player);
 
-    const skill = this.hooks.rollSkillDrop();
+    const skill = this.hooks.rollSkillDrop(dropBonus);
     if (skill) {
       this.dropSkillAt(x, y, skill);
     }

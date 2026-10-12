@@ -1,16 +1,39 @@
 import Phaser from 'phaser';
 
 import {
+  AFFIXES,
   BALANCE,
   CHILL,
+  COLORS,
   DEPTH,
   ENEMY,
   ENEMY_KINDS,
+  RARE,
   TEXTURES,
   TIMING,
+  type AffixId,
+  type AffixSpec,
   type EnemyKind,
   type EnemyShotSpec,
 } from '@/config';
+
+const AFFIX_IDS = Object.keys(AFFIXES) as AffixId[];
+
+/** One to RARE.maxAffixes distinct affixes, drawn at random. */
+function rollAffixes(): readonly AffixSpec[] {
+  const pool = [...AFFIX_IDS];
+  const count = Phaser.Math.Between(RARE.minAffixes, Math.min(RARE.maxAffixes, pool.length));
+  const picked: AffixSpec[] = [];
+
+  for (let i = 0; i < count; i++) {
+    const [id] = pool.splice(Math.floor(Math.random() * pool.length), 1);
+    if (id) {
+      picked.push(AFFIXES[id]);
+    }
+  }
+
+  return picked;
+}
 
 /** What an enemy needs from the world around it. */
 export interface EnemyHooks {
@@ -37,6 +60,9 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
    * does not inherit the last occupant's cooldowns.
    */
   public lives = 0;
+  /** Rares wear a yellow ring and carry affixes; the rest carry none. */
+  public rare = false;
+  public affixes: readonly AffixSpec[] = [];
 
   private spec = ENEMY_KINDS.grunt;
   private speed: number = ENEMY.speed;
@@ -48,15 +74,36 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
   private chillMs = 0;
   /** Countdown to the next shot, for the kinds that have one. */
   private shotCooldownMs = 0;
+  /** The yellow ring, made on the first rare this sprite is used for. */
+  private outline?: Phaser.GameObjects.Rectangle;
+  private hpScale = 1;
+  private speedScale = 1;
+  private damageScale = 1;
+  private critChance = 0;
 
   public constructor(scene: Phaser.Scene, x: number, y: number) {
     super(scene, x, y, TEXTURES.enemy);
     this.setDepth(DEPTH.enemies);
   }
 
-  /** Contact damage this kind deals to the player. */
+  /** Contact damage before a rare's own multipliers. */
   public get contactDamage(): number {
     return this.spec.contactDamage;
+  }
+
+  /** How much more likely this one is to leave a skill behind. */
+  public get dropBonus(): number {
+    return 1 + this.affixes.length * RARE.dropBonusPerAffix;
+  }
+
+  /** "거대 · 치명" — what the tooltip lists. */
+  public get affixNames(): readonly string[] {
+    return this.affixes.map((affix) => affix.name);
+  }
+
+  /** Half the sprite's width, plus the ring. What counts as "pointing at it". */
+  public get pickRadius(): number {
+    return this.spec.size / 2 + RARE.outlinePadding;
   }
 
   /** XP its gem is worth. */
@@ -73,9 +120,10 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
     return this.chillMs > 0;
   }
 
-  /** Current move speed, after 냉각. */
+  /** Current move speed, after its affixes and 냉각. */
   public get currentSpeed(): number {
-    return this.isChilled ? this.speed * (1 - CHILL.slowFactor) : this.speed;
+    const moving = this.speed * this.speedScale;
+    return this.isChilled ? moving * (1 - CHILL.slowFactor) : moving;
   }
 
   /** (Re)starts this enemy at a position. Safe to call on a recycled one. */
@@ -85,6 +133,7 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
     target: Phaser.GameObjects.Components.Transform,
     kind: EnemyKind = 'grunt',
     hooks?: EnemyHooks,
+    rare = false,
   ): void {
     const spec = ENEMY_KINDS[kind];
     this.lives += 1;
@@ -92,12 +141,15 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
     this.spec = spec;
     this.hooks = hooks;
     this.target = target;
-    this.hp = Math.max(1, Math.round(spec.maxHp * BALANCE.enemyHpScale));
+    this.applyAffixes(rare ? rollAffixes() : []);
+    this.hp = Math.max(1, Math.round(spec.maxHp * this.hpScale * BALANCE.enemyHpScale));
     this.flashMs = 0;
     this.chillMs = 0;
     this.clearTint();
 
     // A little spread so a pack does not move as one rigid blob.
+    // Only the roll is baked in here; the affix multiplier is applied when
+    // the speed is read, so an affix can be added or dropped at any time.
     this.speed = spec.speed * Phaser.Math.FloatBetween(1 - ENEMY.speedVariance, 1 + ENEMY.speedVariance);
     // Stagger the first shot, or a wave of shooters fires in one volley.
     this.shotCooldownMs = spec.shot ? Phaser.Math.Between(0, spec.shot.cooldownMs) : 0;
@@ -106,6 +158,55 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
     this.enableBody(true, x, y, true, true);
     this.body?.setSize(spec.size, spec.size, true);
     this.setVelocity(0, 0);
+    this.drawOutline();
+  }
+
+  /** Reads a set of affixes into the multipliers the rest of the class uses. */
+  private applyAffixes(affixes: readonly AffixSpec[]): void {
+    this.affixes = affixes;
+    this.rare = affixes.length > 0;
+    this.hpScale = 1;
+    this.speedScale = 1;
+    this.damageScale = 1;
+    this.critChance = 0;
+
+    for (const affix of affixes) {
+      this.hpScale *= affix.hpScale ?? 1;
+      this.speedScale *= affix.speedScale ?? 1;
+      this.damageScale *= affix.damageScale ?? 1;
+      // Two 치명 rolls cannot happen — affixes are drawn without repeats —
+      // so the highest one simply wins.
+      this.critChance = Math.max(this.critChance, affix.critChance ?? 0);
+    }
+  }
+
+  /** The ring that marks a rare, made once and reused by the pool. */
+  private drawOutline(): void {
+    if (!this.rare) {
+      this.outline?.setVisible(false);
+      return;
+    }
+
+    const side = this.spec.size + RARE.outlinePadding * 2;
+    if (!this.outline) {
+      this.outline = this.scene.add
+        .rectangle(this.x, this.y, side, side)
+        .setFillStyle(undefined, 0)
+        .setDepth(DEPTH.enemies - 1);
+    }
+
+    this.outline
+      .setSize(side, side)
+      .setStrokeStyle(RARE.outlineWidth, COLORS.rareOutline, 1)
+      .setPosition(this.x, this.y)
+      .setVisible(true);
+  }
+
+  /** One hit's worth of damage, after 강력 and a roll for 치명. */
+  public rollDamage(base: number): number {
+    const crit = this.critChance > 0 && Math.random() < this.critChance;
+    const amount = base * this.damageScale * (crit ? RARE.critMultiplier : 1);
+    return Math.max(1, Math.round(amount));
   }
 
   /** Returns it to the pool without destroying it. */
@@ -113,8 +214,16 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
     this.target = undefined;
     this.hooks = undefined;
     this.chillMs = 0;
+    this.rare = false;
+    this.affixes = [];
+    this.outline?.setVisible(false);
     this.clearTint();
     this.disableBody(true, true);
+  }
+
+  public override destroy(fromScene?: boolean): void {
+    this.outline?.destroy(fromScene);
+    super.destroy(fromScene);
   }
 
   /**
@@ -166,6 +275,8 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
       }
     }
 
+    this.outline?.setPosition(this.x, this.y);
+
     if (!this.target || !this.body) {
       return;
     }
@@ -189,7 +300,8 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
     if (distance <= shot.range && this.shotCooldownMs <= 0 && this.target) {
       this.shotCooldownMs = shot.cooldownMs;
       const angle = Phaser.Math.Angle.Between(this.x, this.y, this.target.x, this.target.y);
-      this.hooks?.fireShot(this.x, this.y, angle, shot);
+      // A rare's bolt carries its own multipliers, rolled as it leaves.
+      this.hooks?.fireShot(this.x, this.y, angle, { ...shot, damage: this.rollDamage(shot.damage) });
     }
 
     if (distance > shot.standoff) {

@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 
-import { ENEMY_KINDS, SPAWN, SPAWN_TABLE, WORLD, type EnemyKind } from '@/config';
+import { ENEMY_KINDS, RARE, SPAWN, SPAWN_TABLE, WORLD, type EnemyKind } from '@/config';
 import { Enemy, type EnemyHooks } from '@/entities/Enemy';
 
 /**
@@ -55,6 +55,18 @@ export class SpawnDirector {
     return this.group.getLength();
   }
 
+  /** How many rares are on the field right now. */
+  public get aliveRares(): number {
+    let count = 0;
+    for (const child of this.group.getChildren()) {
+      const enemy = child as Enemy;
+      if (enemy.active && enemy.rare) {
+        count += 1;
+      }
+    }
+    return count;
+  }
+
   /** How many of each kind are on the field right now. */
   public get aliveByKind(): Record<EnemyKind, number> {
     const counts = { grunt: 0, brute: 0, runner: 0, shooter: 0 };
@@ -91,6 +103,15 @@ export class SpawnDirector {
         this.spawnOne();
       }
     }
+  }
+
+  /** One rare, next to the player. Used by the debug keys and by tests. */
+  public spawnRare(kind: EnemyKind = 'grunt'): Enemy | null {
+    const x = this.target.x + 120;
+    const y = this.target.y;
+    const enemy = this.group.get(x, y) as Enemy | null;
+    enemy?.spawn(x, y, this.target, kind, this.hooks, true);
+    return enemy;
   }
 
   /** Spawns `count` enemies at once, ignoring the usual cadence. */
@@ -162,7 +183,8 @@ export class SpawnDirector {
       return false;
     }
 
-    enemy.spawn(x, y, this.target, kind ?? this.pickKind(), this.hooks);
+    // One spawn in ten comes up rare, whatever kind it turned out to be.
+    enemy.spawn(x, y, this.target, kind ?? this.pickKind(), this.hooks, Math.random() < RARE.chance);
     return true;
   }
 }

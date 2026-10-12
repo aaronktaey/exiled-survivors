@@ -7,6 +7,7 @@ export interface DebugCounts {
   readonly enemies: number;
   readonly enemyPool: number;
   readonly byKind: Record<EnemyKind, number>;
+  readonly rares: number;
   readonly enemyShots: number;
   readonly projectiles: number;
   readonly gems: number;
@@ -23,6 +24,7 @@ export interface DebugActions {
   /** One of every kind, next to the player. */
   readonly spawnOneOfEach: () => number;
   readonly dropPotion: () => void;
+  readonly spawnRare: () => void;
   readonly clearEnemies: () => void;
   readonly grantLevel: () => void;
   readonly dropSkill: () => void;
@@ -30,7 +32,7 @@ export interface DebugActions {
   readonly toggleInvulnerable: () => boolean;
 }
 
-const KEYS = 'F1,F2,F3,F4,F5,F6,F7,F8';
+const KEYS = 'F1,F2,F3,F4,F5,F6,F7,F8,F9';
 
 /**
  * F1 overlay: frame timings and live object counts, plus the dev keys used
@@ -83,6 +85,7 @@ export class DebugOverlay {
     keyboard.on('keydown-F6', this.onInvulnerable, this);
     keyboard.on('keydown-F7', this.onSpawnEach, this);
     keyboard.on('keydown-F8', this.onDropPotion, this);
+    keyboard.on('keydown-F9', this.onSpawnRare, this);
   }
 
   public get visible(): boolean {
@@ -124,12 +127,12 @@ export class DebugOverlay {
       `FPS ${this.scene.game.loop.actualFps.toFixed(1)}   frame ${avg.toFixed(1)}ms avg / ${worst.toFixed(1)}ms peak`,
       `delta cap ${TIMING.maxDeltaMs}ms`,
       `enemies ${c.enemies} (pool ${c.enemyPool})   projectiles ${c.projectiles}   gems ${c.gems}`,
-      `  ${this.kindBreakdown(c)}   enemy shots ${c.enemyShots}`,
+      `  ${this.kindBreakdown(c)}   희귀 ${c.rares}   enemy shots ${c.enemyShots}`,
       `drops ${c.drops}   potions ${c.potions}   damage numbers ${c.damageNumbers}`,
       '',
       `F2 +${DEBUG.stressSpawnCount} enemies   F3 clear enemies   F4 level up`,
       `F5 drop skill   F6 invulnerable: ${this.invulnerable ? 'ON' : 'OFF'}`,
-      `F7 one of each enemy   F8 drop potion`,
+      `F7 one of each enemy   F8 drop potion   F9 spawn a rare`,
       'F1 close',
       this.lastNote,
     ];
@@ -194,6 +197,14 @@ export class DebugOverlay {
     }
     this.actions.dropPotion();
     this.note('dropped a potion');
+  }
+
+  private onSpawnRare(): void {
+    if (!this.shown) {
+      return;
+    }
+    this.actions.spawnRare();
+    this.note('spawned a rare');
   }
 
   private onInvulnerable(): void {

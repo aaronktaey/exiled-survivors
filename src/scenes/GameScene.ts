@@ -26,6 +26,7 @@ import {
   type SkillStats,
   type UpgradeId,
 } from '@/systems';
+import { RareTooltip } from '@/systems/RareTooltip';
 import { saveGame, type SavedRun } from '@/systems/SaveGame';
 import { settings } from '@/systems/Settings';
 import { TiltInput, tiltAvailable } from '@/systems/TiltInput';
@@ -79,6 +80,7 @@ export class GameScene extends Phaser.Scene {
   private separation!: Separation;
   private damageNumbers!: DamageNumbers;
   private debug!: DebugOverlay;
+  private rareTooltip!: RareTooltip;
 
   private weapons: Weapon[] = [];
   private owned = new Set<SkillId>();
@@ -134,12 +136,14 @@ export class GameScene extends Phaser.Scene {
       this.progression,
       this.damageNumbers,
       {
-        rollSkillDrop: () => this.rollSkillDrop(),
+        rollSkillDrop: (bonus) => this.rollSkillDrop(bonus),
         onSkillCollected: (skill) => this.onSkillCollected(skill),
       },
     );
     this.hud = new Hud(this, this.progression);
     this.debug = new DebugOverlay(this, this.debugActions());
+    this.rareTooltip = new RareTooltip(this, this.spawner.group);
+    this.armInspect();
 
     for (const skill of STARTING_SKILLS) {
       this.acquire(skill);
@@ -217,6 +221,8 @@ export class GameScene extends Phaser.Scene {
 
     this.damageNumbers.update(dt);
     this.hud.update(dt, this.spawner.alive, this.loadout());
+    // The panel is glued to its enemy, which is still walking around.
+    this.rareTooltip.refresh();
 
     this.sinceSaveMs += dt;
     if (this.sinceSaveMs >= SAVE.autosaveMs) {
@@ -260,6 +266,34 @@ export class GameScene extends Phaser.Scene {
       skills,
       spawnerMs: this.spawner.clockMs,
     });
+  }
+
+  /**
+   * Hovering a rare lists what it is carrying; on a touch screen, holding
+   * it does the same. The pause screen calls `inspectAt` itself, so the
+   * list can be read while the run is frozen.
+   */
+  private armInspect(): void {
+    this.input.on(Phaser.Input.Events.POINTER_MOVE, (pointer: Phaser.Input.Pointer) => {
+      this.rareTooltip.inspectAt(pointer.x, pointer.y);
+    });
+    this.input.on(Phaser.Input.Events.POINTER_DOWN, (pointer: Phaser.Input.Pointer) => {
+      this.rareTooltip.inspectAt(pointer.x, pointer.y);
+    });
+  }
+
+  /** The live enemies, for anything drawing over a frozen run. */
+  public get enemyGroup(): Phaser.Physics.Arcade.Group {
+    return this.spawner.group;
+  }
+
+  /** Points at whatever rare is under a screen position. */
+  public inspectAt(screenX: number, screenY: number): boolean {
+    return this.rareTooltip.inspectAt(screenX, screenY);
+  }
+
+  public clearInspect(): void {
+    this.rareTooltip.hide();
   }
 
   /** Esc on a keyboard, the back gesture on a phone, the corner button. */
@@ -312,6 +346,7 @@ export class GameScene extends Phaser.Scene {
     }
 
     this.writeSave();
+    this.rareTooltip.hide();
     this.scene.pause();
     this.scene.launch(SCENES.pause, {
       elapsedMs: this.elapsedMs,
@@ -363,9 +398,12 @@ export class GameScene extends Phaser.Scene {
     }
   }
 
-  /** Droppable skills keep dropping; a repeat drop upgrades instead. */
-  private rollSkillDrop(): SkillDefinition | null {
-    if (DROPPABLE_SKILLS.length === 0 || Math.random() >= SKILL_DROP.chance) {
+  /**
+   * Droppable skills keep dropping; a repeat drop upgrades instead.
+   * `bonus` is the killed enemy's drop multiplier — 1 for anything ordinary.
+   */
+  private rollSkillDrop(bonus = 1): SkillDefinition | null {
+    if (DROPPABLE_SKILLS.length === 0 || Math.random() >= SKILL_DROP.chance * bonus) {
       return null;
     }
 
@@ -417,6 +455,7 @@ export class GameScene extends Phaser.Scene {
         enemies: this.spawner.alive,
         enemyPool: this.spawner.pooled,
         byKind: this.spawner.aliveByKind,
+        rares: this.spawner.aliveRares,
         enemyShots: this.combat.enemyShots.countActive(true),
         projectiles: this.weapons.reduce((n, w) => n + (w.projectiles?.countActive(true) ?? 0), 0),
         gems: this.combat.gems.countActive(true),
@@ -426,6 +465,9 @@ export class GameScene extends Phaser.Scene {
       }),
       stressSpawn: (count: number) => this.spawner.spawnBurst(count),
       spawnOneOfEach: () => this.spawner.spawnOneOfEach(),
+      spawnRare: () => {
+        this.spawner.spawnRare();
+      },
       clearEnemies: () => this.spawner.clear(),
       grantLevel: () => this.progression.addXp(this.progression.xpToNext),
       dropSkill: () => {

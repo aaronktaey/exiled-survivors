@@ -1,7 +1,9 @@
 import Phaser from 'phaser';
 
 import { COLORS, DEPTH, SCENES } from '@/config';
+import type { GameScene } from '@/scenes/GameScene';
 import { MenuList } from '@/systems/MenuList';
+import { RareTooltip } from '@/systems/RareTooltip';
 
 export interface PauseSceneData {
   readonly elapsedMs: number;
@@ -17,6 +19,8 @@ export class PauseScene extends Phaser.Scene {
 
   private payload!: PauseSceneData;
   private menu!: MenuList;
+  /** This screen draws its own affix panel over the frozen run. */
+  private tooltip?: RareTooltip;
 
   public constructor() {
     super(PauseScene.KEY);
@@ -65,7 +69,7 @@ export class PauseScene extends Phaser.Scene {
     });
 
     this.add
-      .text(width / 2, height / 2 + 150, 'Esc 또는 뒤로가기로 이어서 진행', {
+      .text(width / 2, height / 2 + 150, 'Esc 또는 뒤로가기로 이어서 진행   ·   희귀 적을 가리키면 강화효과가 보입니다', {
         fontFamily: 'system-ui, sans-serif',
         fontSize: '13px',
         color: COLORS.muted,
@@ -74,6 +78,25 @@ export class PauseScene extends Phaser.Scene {
       .setDepth(DEPTH.ui + 1);
 
     this.input.keyboard?.on('keydown-ESC', this.resume, this);
+
+    // The run is frozen underneath but still drawn, so a rare's affixes can
+    // be read at leisure. The panel is this scene's own: drawn by the paused
+    // run it would sit under this screen's dimmer, borrowing that run's
+    // camera and enemies to know where everything is.
+    const run = this.run();
+    if (run) {
+      this.tooltip = new RareTooltip(this, run.enemyGroup, run.cameras.main);
+      this.input.on(Phaser.Input.Events.POINTER_MOVE, this.onInspect, this);
+      this.input.on(Phaser.Input.Events.POINTER_DOWN, this.onInspect, this);
+    }
+  }
+
+  private run(): GameScene | undefined {
+    return this.scene.get(SCENES.game) as GameScene | undefined;
+  }
+
+  private onInspect(pointer: Phaser.Input.Pointer): void {
+    this.tooltip?.inspectAt(pointer.x, pointer.y);
   }
 
   private openSettings(): void {
