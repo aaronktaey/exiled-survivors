@@ -115,9 +115,15 @@ export interface Strings {
     readonly roleAuthor: string;
     readonly roleDev: string;
     readonly roleEngine: string;
-    readonly roleIcons: string;
-    readonly roleMusic: string;
-    readonly roleSfx: string;
+  };
+
+  /** The one question the game asks before throwing a save away. */
+  readonly confirm: {
+    readonly newRunTitle: string;
+    readonly newRunBody: string;
+    readonly startAnyway: string;
+    readonly loadInstead: string;
+    readonly cancel: string;
   };
 
   /** Upgrade picks. {n} is the step, {skill} the skill being upgraded. */

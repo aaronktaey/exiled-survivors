@@ -3,6 +3,7 @@ export { MenuScene } from '@/scenes/MenuScene';
 export { SettingsScene, type SettingsSceneData } from '@/scenes/SettingsScene';
 export { CreditsScene, type CreditsSceneData } from '@/scenes/CreditsScene';
 export { InfoScene, type InfoSceneData, type InfoTopic } from '@/scenes/InfoScene';
+export { ConfirmScene, type ConfirmSceneData } from '@/scenes/ConfirmScene';
 export { PauseScene, type PauseSceneData } from '@/scenes/PauseScene';
 export { GameScene, type GameSceneData } from '@/scenes/GameScene';
 export { UpgradeScene, type UpgradeChoiceData } from '@/scenes/UpgradeScene';

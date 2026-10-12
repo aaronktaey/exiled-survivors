@@ -9,6 +9,7 @@ import {
   SKILL_BASE,
   SKILL_DROP,
   SPAWN_TABLE,
+  xpFor,
   type EnemyKind,
 } from '@/config';
 import { enemyName, fill, skillName, skillSummary, t, tagName } from '@/i18n';
@@ -111,7 +112,7 @@ function enemyLines(): readonly string[] {
         name: enemyName(kind),
         hp: spec.maxHp,
         contact: spec.contactDamage,
-        xp: spec.xp,
+        xp: xpFor(spec),
       }),
       `   ${g.notes[kind]} (${when})`,
     ];
@@ -123,7 +124,7 @@ function enemyLines(): readonly string[] {
       name: enemyName('boss'),
       hp: boss.maxHp,
       contact: boss.contactDamage,
-      xp: boss.xp,
+      xp: xpFor(boss),
     }),
     `   ${fill(g.notes.boss, { bossEvery: Math.round(BOSS.intervalMs / 1000) })}`,
   );

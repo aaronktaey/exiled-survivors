@@ -15,9 +15,6 @@ function lines(): readonly (readonly [string, string])[] {
     [copy.roleAuthor, 'whitemango'],
     [copy.roleDev, 'Claude Code (Anthropic)'],
     [copy.roleEngine, 'Phaser 4 · Vite · TypeScript'],
-    [copy.roleIcons, 'Raven Fantasy Icons — Caio / Clockwork Raven Studios'],
-    [copy.roleMusic, 'Constance'],
-    [copy.roleSfx, 'bulletcasing'],
   ];
 }
 
@@ -26,6 +23,8 @@ export class CreditsScene extends Phaser.Scene {
   public static readonly KEY = SCENES.credits;
 
   private payload!: CreditsSceneData;
+  /** This screen's list of choices. Public so a test can drive it. */
+  public menu!: MenuList;
 
   public constructor() {
     super(CreditsScene.KEY);
@@ -71,7 +70,7 @@ export class CreditsScene extends Phaser.Scene {
         .setDepth(DEPTH.ui + 1);
     });
 
-    new MenuList(this, {
+    this.menu = new MenuList(this, {
       x: width / 2,
       y: height - 92,
       width: 220,

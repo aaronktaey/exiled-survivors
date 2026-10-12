@@ -15,6 +15,40 @@ export interface PatchNote {
 
 export const PATCH_NOTES: readonly PatchNote[] = [
   {
+    version: '0.13',
+    date: '2026-10-12',
+    changes: {
+      ko: [
+        '경험치가 적의 강함에 비례하도록 바뀌었습니다 — 체력과 피해량에서 계산되며, 희귀 적은 강화효과만큼 더 줍니다.',
+        '경험치 배율은 XP.scale 하나로 전체 레벨업 속도를 조절할 수 있습니다.',
+        '저장된 기록이 있을 때 게임 시작을 누르면 경고하고, 이어서 하기 · 새로 시작 · 취소 중에 고를 수 있습니다.',
+        '제작자 정보를 설정 하위로 옮겼습니다.',
+        '브라우저 탭 아이콘으로 로고를 사용합니다.',
+      ],
+      en: [
+        'XP now follows how strong an enemy is — worked out from its health and damage, and a rare pays for its affixes.',
+        'XP.scale alone sets the pace of levelling for the whole run.',
+        'Starting a new run with a save waiting asks first: carry on with it, start fresh, or cancel.',
+        'Credits moved under Settings.',
+        'The logo is the browser tab icon.',
+      ],
+      ja: [
+        '経験値が敵の強さに比例するようになりました — 体力と攻撃力から算出し、レア敵は強化効果の分だけ多く入ります。',
+        'XP.scale だけでレベルアップ全体のペースを調整できます。',
+        'セーブがある状態でゲーム開始を押すと確認し、つづきから・新しく始める・キャンセルから選べます。',
+        'クレジットを設定の下に移しました。',
+        'ブラウザのタブアイコンにロゴを使います。',
+      ],
+      zh: [
+        '经验值改为与敌人强度成正比 — 由生命与伤害推算，稀有敌人按强化效果额外给予。',
+        '只需调整 XP.scale 即可改变整体升级节奏。',
+        '已有存档时点击开始游戏会先确认：继续那一局、开始新游戏或取消。',
+        '制作人员移到设置之下。',
+        '浏览器标签图标改用游戏徽标。',
+      ],
+    },
+  },
+  {
     version: '0.12',
     date: '2026-10-12',
     changes: {

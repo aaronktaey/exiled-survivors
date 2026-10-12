@@ -31,7 +31,7 @@ export class MenuScene extends Phaser.Scene {
       x: width / 2,
       y: 236,
       items: [
-        { id: 'start', label: () => t().menu.start, onSelect: () => this.startRun() },
+        { id: 'start', label: () => t().menu.start, onSelect: () => this.onStart() },
         {
           id: 'load',
           label: () => t().menu.load,
@@ -56,7 +56,6 @@ export class MenuScene extends Phaser.Scene {
           detail: () => `v${PATCH_NOTES[0]?.version ?? ''}`,
           onSelect: () => this.openOverlay(SCENES.info, { topic: 'patch' }),
         },
-        { id: 'credits', label: () => t().menu.credits, onSelect: () => this.openOverlay(SCENES.credits) },
       ],
     });
 
@@ -95,6 +94,37 @@ export class MenuScene extends Phaser.Scene {
       })
       .setOrigin(0.5)
       .setDepth(DEPTH.ui);
+  }
+
+  /**
+   * A new run would throw away whatever is saved, so when there is one it
+   * asks first — and offers to carry on with it instead, which is usually
+   * what the button was reaching for.
+   */
+  private onStart(): void {
+    const saved = saveGame.read();
+    if (!saved) {
+      this.startRun();
+      return;
+    }
+
+    this.scene.pause();
+    this.scene.launch(SCENES.confirm, {
+      detail: saveGame.describe(saved),
+      onConfirm: () => {
+        saveGame.clear();
+        this.scene.resume();
+        this.startRun();
+      },
+      onLoad: () => {
+        this.scene.resume();
+        this.startRun(true);
+      },
+      onCancel: () => {
+        this.scene.resume();
+        this.menu.refresh();
+      },
+    });
   }
 
   private startRun(fromSave = false): void {

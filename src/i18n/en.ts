@@ -94,9 +94,14 @@ export const en: Strings = {
     roleAuthor: 'Made by',
     roleDev: 'Built with',
     roleEngine: 'Engine',
-    roleIcons: 'Icons',
-    roleMusic: 'Music',
-    roleSfx: 'Sound',
+  },
+
+  confirm: {
+    newRunTitle: 'There is a run waiting',
+    newRunBody: 'Starting a new one throws the saved run away.',
+    startAnyway: 'Start a new run',
+    loadInstead: 'Carry on with it',
+    cancel: 'Cancel',
   },
 
   upgrades: {

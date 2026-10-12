@@ -94,9 +94,14 @@ export const zh: Strings = {
     roleAuthor: '制作',
     roleDev: '开发',
     roleEngine: '引擎',
-    roleIcons: '图标',
-    roleMusic: '音乐',
-    roleSfx: '音效',
+  },
+
+  confirm: {
+    newRunTitle: '有一局还没结束',
+    newRunBody: '开始新游戏会清除已保存的记录。',
+    startAnyway: '开始新游戏',
+    loadInstead: '继续那一局',
+    cancel: '取消',
   },
 
   upgrades: {

@@ -132,6 +132,7 @@ export class SettingsScene extends Phaser.Scene {
             this.menu.refresh();
           },
         },
+        { id: 'credits', label: () => t().menu.credits, onSelect: () => this.openCredits() },
         { id: 'back', label: () => t().common.back, onSelect: () => this.close() },
       ],
     });
@@ -181,6 +182,17 @@ export class SettingsScene extends Phaser.Scene {
     const highlight = this.placing ? 1 : movementMode === 'fixed' ? 0.55 : 0.25;
     this.previewBase.setAlpha(highlight);
     this.previewThumb.setAlpha(highlight);
+  }
+
+  /** 제작자 정보 lives under here now; it opens on top of this screen. */
+  private openCredits(): void {
+    this.scene.pause();
+    this.scene.launch(SCENES.credits, {
+      onClose: () => {
+        this.scene.resume();
+        this.menu.refresh();
+      },
+    });
   }
 
   private stepVolume(direction: -1 | 1): void {

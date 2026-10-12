@@ -12,6 +12,7 @@ import {
   RARE_OUTLINE_TIERS,
   TEXTURES,
   TIMING,
+  xpFor,
   type AffixId,
   type AffixSpec,
   type EnemyKind,
@@ -142,9 +143,9 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
     return this.spec.size / 2 + RARE.outlinePadding;
   }
 
-  /** XP its gem is worth. */
+  /** XP its gem is worth, from its own stat line and its affixes. */
   public get xpValue(): number {
-    return this.spec.xp;
+    return xpFor(this.spec, this.hpScale, this.damageScale);
   }
 
   public get kindName(): string {

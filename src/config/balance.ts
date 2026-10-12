@@ -74,8 +74,6 @@ export interface EnemyKindSpec {
   readonly maxHp: number;
   readonly speed: number;
   readonly contactDamage: number;
-  /** XP its gem is worth. */
-  readonly xp: number;
   /** Only the kinds that shoot have one. */
   readonly shot?: EnemyShotSpec;
 }
@@ -95,7 +93,6 @@ export const ENEMY_KINDS: Record<EnemyKind, EnemyKindSpec> = {
     maxHp: ENEMY.maxHp,
     speed: ENEMY.speed,
     contactDamage: ENEMY.contactDamage,
-    xp: 1,
   },
   brute: {
     id: "brute",
@@ -106,7 +103,6 @@ export const ENEMY_KINDS: Record<EnemyKind, EnemyKindSpec> = {
     maxHp: 120,
     speed: 42,
     contactDamage: 3,
-    xp: 4,
   },
   runner: {
     id: "runner",
@@ -117,7 +113,6 @@ export const ENEMY_KINDS: Record<EnemyKind, EnemyKindSpec> = {
     maxHp: 15,
     speed: 160,
     contactDamage: 1,
-    xp: 2,
   },
   /**
    * 우두머리. Not in the spawn table: one arrives on the clock instead, and
@@ -132,7 +127,6 @@ export const ENEMY_KINDS: Record<EnemyKind, EnemyKindSpec> = {
     maxHp: 900,
     speed: 40,
     contactDamage: 5,
-    xp: 30,
   },
   shooter: {
     id: "shooter",
@@ -143,7 +137,6 @@ export const ENEMY_KINDS: Record<EnemyKind, EnemyKindSpec> = {
     maxHp: 24,
     speed: 50,
     contactDamage: 1,
-    xp: 3,
     shot: {
       damage: 2,
       speed: 230,
@@ -400,10 +393,36 @@ export const STATS = {
   minCooldownMs: 50,
 } as const;
 
+/**
+ * What a kill is worth. XP is not hand-set per kind: it comes from how much
+ * enemy there was to get through, so a tougher enemy always pays better and
+ * a rare pays for its affixes. Turn `scale` to change the pace of the whole
+ * run; the weights say what a point of damage is worth in health.
+ */
 export const XP = {
   size: 8,
-  perEnemy: 1,
+  /** Multiplies the whole thing. The dial to turn for levelling pace. */
+  scale: 0.035,
+  /** One point of contact damage, counted as this much health. */
+  contactWeight: 12,
+  /** And one point of ranged damage, which costs you more to avoid. */
+  shotWeight: 16,
+  /** Even the frailest thing is worth something. */
+  minimum: 1,
 } as const;
+
+/**
+ * What an enemy of this shape is worth. `hpScale` and `damageScale` are a
+ * rare's affix multipliers, so a 거대 · 강력 rare pays for both.
+ */
+export function xpFor(spec: EnemyKindSpec, hpScale = 1, damageScale = 1): number {
+  const power =
+    spec.maxHp * hpScale +
+    spec.contactDamage * XP.contactWeight * damageScale +
+    (spec.shot ? spec.shot.damage * XP.shotWeight * damageScale : 0);
+
+  return Math.max(XP.minimum, Math.round(power * XP.scale));
+}
 
 /** PoE 경험치 곡선 근사식 (모양 유지, 크기는 SCALE로 조절) */
 export const XP_CURVE = {

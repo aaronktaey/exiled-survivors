@@ -98,9 +98,14 @@ export const ko: Strings = {
     roleAuthor: '제작',
     roleDev: '개발',
     roleEngine: '엔진',
-    roleIcons: '아이콘',
-    roleMusic: '배경음',
-    roleSfx: '효과음',
+  },
+
+  confirm: {
+    newRunTitle: '진행 중인 기록이 있습니다',
+    newRunBody: '새로 시작하면 저장된 기록은 사라집니다.',
+    startAnyway: '새로 시작',
+    loadInstead: '이어서 하기',
+    cancel: '취소',
   },
 
   upgrades: {

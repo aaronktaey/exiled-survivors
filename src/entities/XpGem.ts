@@ -7,7 +7,8 @@ import { DEPTH, ICONS, PLAYER, TEXTURES, XP } from '@/config';
  * homes in — the usual survivors-style vacuum.
  */
 export class XpGem extends Phaser.Physics.Arcade.Image {
-  public value: number = XP.perEnemy;
+  /** Set by whatever dropped it; this is only the floor. */
+  public value: number = XP.minimum;
   private target?: Phaser.GameObjects.Components.Transform;
 
   public constructor(scene: Phaser.Scene, x: number, y: number) {

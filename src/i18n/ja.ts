@@ -94,9 +94,14 @@ export const ja: Strings = {
     roleAuthor: '制作',
     roleDev: '開発',
     roleEngine: 'エンジン',
-    roleIcons: 'アイコン',
-    roleMusic: 'BGM',
-    roleSfx: '効果音',
+  },
+
+  confirm: {
+    newRunTitle: '途中のセーブがあります',
+    newRunBody: '新しく始めると、保存された記録は消えます。',
+    startAnyway: '新しく始める',
+    loadInstead: 'つづきから',
+    cancel: 'キャンセル',
   },
 
   upgrades: {

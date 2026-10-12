@@ -6,6 +6,7 @@ import { COLORS, GAME_HEIGHT, GAME_WIDTH } from '@/config';
 import { settings } from '@/systems/Settings';
 import {
   BootScene,
+  ConfirmScene,
   CreditsScene,
   GameOverScene,
   GameScene,
@@ -49,6 +50,7 @@ const config: Phaser.Types.Core.GameConfig = {
     SettingsScene,
     CreditsScene,
     InfoScene,
+    ConfirmScene,
     GameOverScene,
   ],
 };
