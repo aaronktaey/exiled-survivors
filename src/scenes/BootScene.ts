@@ -62,6 +62,8 @@ export class BootScene extends Phaser.Scene {
       shadow: COLORS.logoShadow,
     });
 
+    this.paintAdColumns();
+
     // Dev-only shortcut past the title, so the integration harness can drive
     // a run without clicking through the menu first.
     const skipMenu = import.meta.env.DEV && window.location.hash === '#run';
@@ -103,6 +105,24 @@ export class BootScene extends Phaser.Scene {
 
     graphics.generateTexture(TEXTURES.voidOrb, size, size);
     graphics.destroy();
+  }
+
+  /**
+   * Hands the baked logo to the page as a data URL, so the reserved ad
+   * columns can wear it while they are still empty. Pure decoration: if
+   * anything goes wrong the columns simply stay blank.
+   */
+  private paintAdColumns(): void {
+    try {
+      const source = this.textures.get(TEXTURES.logo).getSourceImage();
+      if (!(source instanceof HTMLCanvasElement)) {
+        return;
+      }
+
+      document.documentElement.style.setProperty('--ad-logo', 'url(' + source.toDataURL() + ')');
+    } catch {
+      // No document, or a texture that cannot be read back.
+    }
   }
 
   /** The potion: a white cross on a crimson field, read at a glance. */

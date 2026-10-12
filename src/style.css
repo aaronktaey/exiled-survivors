@@ -60,12 +60,18 @@ body {
   border-left: 1px dashed #1c2230;
 }
 
-/* Only while nothing has been dropped in: an empty slot says what it is. */
-.ad-slot:empty::before {
-  content: '광고 영역';
-  color: #39425a;
-  font: 12px system-ui, sans-serif;
-  letter-spacing: 0.08em;
+/*
+ * Only while nothing has been dropped in: an empty column wears the game's
+ * own logo as a watermark. --ad-logo is the baked pixel logo, handed over
+ * by BootScene; dropping an ad into the aside makes :empty stop matching,
+ * so the watermark gets out of the way on its own.
+ */
+.ad-slot:empty {
+  background-image: var(--ad-logo, none);
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 124px auto;
+  opacity: 0.6;
 }
 
 /* A phone, or a narrow window, gives the game everything. */

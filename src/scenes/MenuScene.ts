@@ -70,7 +70,7 @@ export class MenuScene extends Phaser.Scene {
     });
 
     this.add
-      .text(width / 2, y + logo.displayHeight / 2 + 26, '추방자 생존기', {
+      .text(width / 2, y + logo.displayHeight / 2 + 26, 'created by whitemango', {
         fontFamily: 'system-ui, sans-serif',
         fontSize: '15px',
         color: COLORS.muted,

@@ -8,7 +8,7 @@ export interface CreditsSceneData {
 }
 
 const LINES: readonly (readonly [string, string])[] = [
-  ['제작', 'aaronktaey'],
+  ['제작', 'whitemango'],
   ['개발', 'Claude Code (Anthropic)'],
   ['엔진', 'Phaser 4 · Vite · TypeScript'],
   ['아이콘', 'Raven Fantasy Icons — Caio / Clockwork Raven Studios'],
