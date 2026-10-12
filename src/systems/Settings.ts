@@ -1,5 +1,10 @@
 import { GAME_HEIGHT, JOYSTICK, SETTINGS_RANGE, STORAGE } from '@/config';
 
+/** How a touch device steers the survivor. */
+export type MovementMode = 'fixed' | 'floating' | 'tilt';
+
+export const MOVEMENT_MODES: readonly MovementMode[] = ['fixed', 'floating', 'tilt'];
+
 /** Everything the options screen can change, as it is stored. */
 export interface GameSettings {
   /** Multiplies the thumb stick's radii. */
@@ -7,8 +12,11 @@ export interface GameSettings {
   /** Where the stick's centre sits, in screen px. */
   joystickX: number;
   joystickY: number;
-  /** Steer by tilting the device instead of dragging the stick. */
-  tiltEnabled: boolean;
+  /**
+   * 'fixed' keeps the pad where it was placed, 'floating' puts one under
+   * whichever finger touches down, 'tilt' drops the pad for the sensor.
+   */
+  movementMode: MovementMode;
   bgmVolume: number;
 }
 
@@ -16,7 +24,7 @@ const DEFAULTS: GameSettings = {
   joystickScale: 1,
   joystickX: JOYSTICK.margin,
   joystickY: GAME_HEIGHT - JOYSTICK.margin,
-  tiltEnabled: false,
+  movementMode: 'fixed',
   bgmVolume: 0.35,
 };
 
@@ -57,6 +65,13 @@ class SettingsStore {
 
   public reset(): GameSettings {
     return this.update(DEFAULTS);
+  }
+
+  /** Walks the movement mode round its three options. */
+  public cycleMovementMode(direction: -1 | 1): GameSettings {
+    const at = MOVEMENT_MODES.indexOf(this.value.movementMode);
+    const next = (at + direction + MOVEMENT_MODES.length) % MOVEMENT_MODES.length;
+    return this.update({ movementMode: MOVEMENT_MODES[next] });
   }
 
   /** Steps a numeric setting by its configured increment. */
@@ -101,7 +116,7 @@ class SettingsStore {
       joystickScale: clamp(Number(raw.joystickScale) || 1, scale.min, scale.max),
       joystickX: Math.round(clamp(Number(raw.joystickX) || DEFAULTS.joystickX, 0, 4096)),
       joystickY: Math.round(clamp(Number(raw.joystickY) || DEFAULTS.joystickY, 0, 4096)),
-      tiltEnabled: raw.tiltEnabled === true,
+      movementMode: MOVEMENT_MODES.includes(raw.movementMode) ? raw.movementMode : 'fixed',
       bgmVolume: clamp(Number(raw.bgmVolume ?? DEFAULTS.bgmVolume), volume.min, volume.max),
     };
   }

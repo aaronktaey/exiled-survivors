@@ -77,6 +77,18 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     this.invulnerableUntil = on ? Number.MAX_SAFE_INTEGER : 0;
   }
 
+  /** Tops health back up, never past the maximum. */
+  public heal(amount: number): number {
+    if (!this.isAlive) {
+      return 0;
+    }
+
+    const before = this.hp;
+    this.hp = Math.min(PLAYER.maxHp, this.hp + amount);
+    this.drawHealthBar();
+    return this.hp - before;
+  }
+
   public takeDamage(amount: number): void {
     const now = this.scene.time.now;
     if (!this.isAlive || now < this.invulnerableUntil) {

@@ -1,5 +1,9 @@
 :root {
   color-scheme: dark;
+  /* Width of one reserved ad column. 160px takes a standard skyscraper. */
+  --ad-width: 160px;
+  /* Below this the columns fold away and the game takes the whole window. */
+  --ad-min-viewport: 1180px;
 }
 
 * {
@@ -19,9 +23,17 @@ body {
   -webkit-tap-highlight-color: transparent;
 }
 
-#game-root {
+/* The game sits between the two reserved columns and takes what is left. */
+#stage {
+  display: flex;
   width: 100vw;
   height: 100vh;
+}
+
+#game-root {
+  flex: 1 1 auto;
+  /* Without this a flex item refuses to shrink below its content. */
+  min-width: 0;
   display: grid;
   place-items: center;
 }
@@ -30,4 +42,35 @@ body {
   display: block;
   /* Keep touch drags driving the joystick instead of scrolling or zooming. */
   touch-action: none;
+}
+
+.ad-slot {
+  flex: 0 0 var(--ad-width);
+  display: grid;
+  place-items: center;
+  background: #090b10;
+  overflow: hidden;
+}
+
+#ad-left {
+  border-right: 1px dashed #1c2230;
+}
+
+#ad-right {
+  border-left: 1px dashed #1c2230;
+}
+
+/* Only while nothing has been dropped in: an empty slot says what it is. */
+.ad-slot:empty::before {
+  content: '광고 영역';
+  color: #39425a;
+  font: 12px system-ui, sans-serif;
+  letter-spacing: 0.08em;
+}
+
+/* A phone, or a narrow window, gives the game everything. */
+@media (max-width: 1180px) {
+  .ad-slot {
+    display: none;
+  }
 }

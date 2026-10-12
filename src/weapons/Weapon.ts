@@ -32,6 +32,8 @@ export interface WeaponContext {
   readonly chainCount: number;
   /** Extra enemies a shot passes through, from Progression. 0 stops on contact. */
   readonly pierceCount: number;
+  /** Orbs kept in the air, from Progression. Ignored unless the skill orbits. */
+  readonly orbCount: number;
   /** Applies damage and resolves the kill (gem and skill drops). */
   readonly hit: (enemy: Enemy, amount: number) => void;
 }

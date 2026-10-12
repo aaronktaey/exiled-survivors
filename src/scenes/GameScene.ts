@@ -38,6 +38,7 @@ import {
   LEVEL_UP_SKILL,
   MeleeStrike,
   SKILLS,
+  VoidOrb,
   STARTING_SKILLS,
   type SkillDefinition,
   type SkillId,
@@ -50,6 +51,7 @@ const WEAPONS: Record<SkillId, (scene: Phaser.Scene) => Weapon> = {
   fireball: (scene) => new Fireball(scene),
   chainLightning: (scene) => new ChainLightning(scene),
   iceSpear: (scene) => new IceSpear(scene),
+  voidOrb: (scene) => new VoidOrb(scene),
 };
 
 /** What the title screen hands over when a run starts. */
@@ -160,16 +162,17 @@ export class GameScene extends Phaser.Scene {
   }
 
   /**
-   * Touch devices steer with the thumb stick, or by tilting the device when
-   * the player has turned that on in 설정. A mouse-and-keyboard session gets
-   * neither.
+   * Touch devices steer whichever way 설정 says: a pad where they pinned it,
+   * a pad under the finger, or the tilt sensor. A mouse-and-keyboard session
+   * gets none of them.
    */
   private attachTouchControls(): void {
     if (!prefersTouchControls()) {
       return;
     }
 
-    if (settings.value.tiltEnabled && tiltAvailable()) {
+    // Tilt falls back to a pad on anything without the sensor.
+    if (settings.value.movementMode === 'tilt' && tiltAvailable()) {
       this.player.attachAnalog(new TiltInput(this));
       return;
     }
@@ -207,6 +210,7 @@ export class GameScene extends Phaser.Scene {
         projectileSpeed: stats.projectileSpeed,
         chainCount: stats.chainCount,
         pierceCount: stats.pierceCount,
+        orbCount: stats.orbCount,
         hit: this.combat.hit,
       });
     }
@@ -417,6 +421,7 @@ export class GameScene extends Phaser.Scene {
         projectiles: this.weapons.reduce((n, w) => n + (w.projectiles?.countActive(true) ?? 0), 0),
         gems: this.combat.gems.countActive(true),
         drops: this.combat.skillDrops.countActive(true),
+        potions: this.combat.potions.countActive(true),
         damageNumbers: this.damageNumbers.activeCount,
       }),
       stressSpawn: (count: number) => this.spawner.spawnBurst(count),
@@ -430,6 +435,7 @@ export class GameScene extends Phaser.Scene {
           this.combat.dropSkillAt(this.player.x + 60, this.player.y, skill);
         }
       },
+      dropPotion: () => this.combat.dropPotionAt(this.player.x + 60, this.player.y),
       toggleInvulnerable: () => {
         this.invulnerable = !this.invulnerable;
         this.player.setInvulnerable(this.invulnerable);

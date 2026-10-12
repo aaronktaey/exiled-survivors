@@ -6,7 +6,17 @@
     <title>Exiled Survivors</title>
   </head>
   <body>
-    <div id="game-root"></div>
+    <div id="stage">
+      <!--
+        Reserved for a banner later: drop the ad's iframe or script inside
+        the aside and the placeholder label gets out of the way on its own
+        (.ad-slot:empty::before). 160x600 skyscrapers fit as-is; both
+        columns fold away on narrow screens so the game keeps the width.
+      -->
+      <aside class="ad-slot" id="ad-left" aria-hidden="true"></aside>
+      <div id="game-root"></div>
+      <aside class="ad-slot" id="ad-right" aria-hidden="true"></aside>
+    </div>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>

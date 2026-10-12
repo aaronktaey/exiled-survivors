@@ -44,12 +44,20 @@ export class DamageNumbers {
     return count;
   }
 
-  public spawn(x: number, y: number, amount: number): void {
+  /** `style` marks a floater that is not damage, such as a heal. */
+  public spawn(
+    x: number,
+    y: number,
+    amount: number,
+    style?: { readonly prefix?: string; readonly color?: string },
+  ): void {
     const floater = this.take();
+    const shown = Number.isInteger(amount) ? String(amount) : amount.toFixed(1);
 
     floater.remainingMs = DAMAGE_NUMBERS.lifespanMs;
     floater.text
-      .setText(Number.isInteger(amount) ? String(amount) : amount.toFixed(1))
+      .setText(`${style?.prefix ?? ''}${shown}`)
+      .setColor(style?.color ?? COLORS.damageText)
       .setPosition(x, y)
       .setAlpha(1)
       .setActive(true)

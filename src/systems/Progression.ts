@@ -9,7 +9,8 @@ export type UpgradeId =
   | 'range'
   | 'projectileSpeed'
   | 'chainCount'
-  | 'pierceCount';
+  | 'pierceCount'
+  | 'orbCount';
 
 export interface UpgradeOption {
   readonly id: UpgradeId;
@@ -55,6 +56,10 @@ const OPTION_TEXT: Record<UpgradeId, (name: string) => Omit<UpgradeOption, 'id'>
   pierceCount: (name) => ({
     label: `관통 횟수 +${UPGRADE_STEP.pierceCount}`,
     detail: `${name}${subjectParticle(name)} ${UPGRADE_STEP.pierceCount}명을 더 꿰뚫고 지나갑니다`,
+  }),
+  orbCount: (name) => ({
+    label: `구체 수 +${UPGRADE_STEP.orbCount}`,
+    detail: `${name}${subjectParticle(name)} ${UPGRADE_STEP.orbCount}개 더 공전합니다`,
   }),
 };
 

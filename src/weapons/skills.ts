@@ -15,9 +15,10 @@ export type SkillTag =
   | '번개'
   | '연쇄'
   | '냉기'
-  | '관통';
+  | '관통'
+  | '공허';
 
-export type SkillId = 'meleeStrike' | 'fireball' | 'chainLightning' | 'iceSpear';
+export type SkillId = 'meleeStrike' | 'fireball' | 'chainLightning' | 'iceSpear' | 'voidOrb';
 
 export interface SkillDefinition {
   readonly id: SkillId;
@@ -58,6 +59,13 @@ export const SKILLS: Record<SkillId, SkillDefinition> = {
     labelTexture: 'tex-label-iceSpear',
     upgrades: ['damage', 'attackSpeed', 'pierceCount'],
   },
+  voidOrb: {
+    id: 'voidOrb',
+    name: '공허구체',
+    tags: ['공허', '주문', '투사체'],
+    labelTexture: 'tex-label-voidOrb',
+    upgrades: ['damage', 'attackSpeed', 'orbCount'],
+  },
 };
 
 /** Skills the player starts a run with. */
@@ -71,6 +79,7 @@ export const DROPPABLE_SKILLS: readonly SkillDefinition[] = [
   SKILLS.fireball,
   SKILLS.chainLightning,
   SKILLS.iceSpear,
+  SKILLS.voidOrb,
 ];
 
 export const ALL_SKILLS: readonly SkillDefinition[] = Object.values(SKILLS);

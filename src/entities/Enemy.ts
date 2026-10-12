@@ -31,6 +31,12 @@ export interface EnemyHooks {
 export class Enemy extends Phaser.Physics.Arcade.Sprite {
   public hp = 0;
   public kind: EnemyKind = 'grunt';
+  /**
+   * How many times this sprite has been spawned. Anything that remembers a
+   * per-enemy timer across frames pairs it with this, so a recycled sprite
+   * does not inherit the last occupant's cooldowns.
+   */
+  public lives = 0;
 
   private spec = ENEMY_KINDS.grunt;
   private speed: number = ENEMY.speed;
@@ -81,6 +87,7 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
     hooks?: EnemyHooks,
   ): void {
     const spec = ENEMY_KINDS[kind];
+    this.lives += 1;
     this.kind = kind;
     this.spec = spec;
     this.hooks = hooks;

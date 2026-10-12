@@ -14,6 +14,9 @@ export interface UpgradeChoiceData {
   readonly onPick: (upgrade: UpgradeId) => void;
 }
 
+/** Moving the caret is free; it is confirming that movement keys cannot do. */
+const LEFT_CODES = ['KeyA', 'ArrowLeft'];
+const RIGHT_CODES = ['KeyD', 'ArrowRight'];
 /** Space is the pick; Enter comes along for free. */
 const CONFIRM_CODES = ['Space', 'Enter', 'NumpadEnter'];
 /** 1-4 reach a card directly, so a keyboard can still get to all of them. */
@@ -39,11 +42,12 @@ interface CardView {
  * Upgrade picker, shown both on level-up (spends on the basic attack) and on
  * a skill pickup (spends on that skill).
  *
- * A card is taken by clicking or tapping it, or with the space bar. The
- * movement keys are deliberately inert here: they are held down constantly
- * while playing, and a popup that appears under a held key used to pick for
- * the player. Hovering moves the caret, and 1-4 reach a card directly so a
- * keyboard-only player can still choose any of them.
+ * The caret moves on left/right (or A/D) and on hover; a card is taken with
+ * the space bar, by clicking or tapping it, or with 1-4 for a card directly.
+ *
+ * What the movement keys deliberately cannot do is confirm. They are held
+ * down constantly while playing, and a popup appearing under a held key used
+ * to pick for the player.
  *
  * Input is locked briefly on open for the same reason.
  */
@@ -115,7 +119,7 @@ export class UpgradeScene extends Phaser.Scene {
       .text(
         centerX,
         height / 2 + 150,
-        prefersTouchControls() ? '원하는 쪽을 터치하세요' : 'Space 선택   클릭으로도 선택   (1-4 로 바로 선택)',
+        prefersTouchControls() ? '원하는 쪽을 터치하세요' : '← → 이동   Space 선택   (1-4 로 바로 선택)',
         {
           fontFamily: 'system-ui, sans-serif',
           fontSize: '14px',
@@ -183,6 +187,17 @@ export class UpgradeScene extends Phaser.Scene {
     this.pick(upgrade);
   }
 
+  /** Steps the caret, stopping at the ends rather than wrapping. */
+  private move(step: number): void {
+    const next = Phaser.Math.Clamp(this.selected + step, 0, this.cards.length - 1);
+    if (next === this.selected) {
+      return;
+    }
+
+    this.selected = next;
+    this.refresh(true);
+  }
+
   private onCardHovered(upgrade: UpgradeId): void {
     if (this.picked || !this.unlocked) {
       return;
@@ -230,7 +245,11 @@ export class UpgradeScene extends Phaser.Scene {
       return;
     }
 
-    if (CONFIRM_CODES.includes(event.code)) {
+    if (LEFT_CODES.includes(event.code)) {
+      this.move(-1);
+    } else if (RIGHT_CODES.includes(event.code)) {
+      this.move(1);
+    } else if (CONFIRM_CODES.includes(event.code)) {
       this.pick(this.cards[this.selected]!.option.id);
     }
   }

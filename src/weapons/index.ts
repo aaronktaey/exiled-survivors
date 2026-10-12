@@ -6,6 +6,7 @@ export { MeleeStrike } from '@/weapons/MeleeStrike';
 export { Fireball } from '@/weapons/Fireball';
 export { ChainLightning } from '@/weapons/ChainLightning';
 export { IceSpear } from '@/weapons/IceSpear';
+export { VoidOrb } from '@/weapons/VoidOrb';
 export { ProjectileWeapon } from '@/weapons/ProjectileWeapon';
 export { findNearest, findNearestEnemy, type Weapon, type WeaponContext } from '@/weapons/Weapon';
 export {

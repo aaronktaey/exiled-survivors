@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 
 import { WEAPON } from '@/config';
 import { Projectile, type LaunchSpec } from '@/entities/Projectile';
+import { sfx } from '@/systems/Sfx';
 import { findNearest, type Weapon, type WeaponContext } from '@/weapons/Weapon';
 import type { SkillDefinition } from '@/weapons/skills';
 
@@ -16,8 +17,10 @@ export abstract class ProjectileWeapon implements Weapon {
   public readonly projectiles: Phaser.Physics.Arcade.Group;
 
   protected sinceShotMs = 0;
+  private readonly scene: Phaser.Scene;
 
   public constructor(scene: Phaser.Scene) {
+    this.scene = scene;
     this.projectiles = scene.physics.add.group({
       classType: Projectile,
       maxSize: WEAPON.maxProjectiles,
@@ -53,5 +56,7 @@ export abstract class ProjectileWeapon implements Weapon {
 
     const angle = Phaser.Math.Angle.Between(context.origin.x, context.origin.y, target.x, target.y);
     shot.launch(context.origin.x, context.origin.y, angle, this.specFor(context));
+    // Silent for the skills that have no clip yet.
+    sfx.playSkill(this.scene, this.definition.id);
   }
 }

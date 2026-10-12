@@ -3,12 +3,24 @@ import Phaser from 'phaser';
 import { COLORS, DEPTH, JOYSTICK, SCENES, SETTINGS_RANGE } from '@/config';
 import { bgm } from '@/systems/Bgm';
 import { MenuList } from '@/systems/MenuList';
-import { settings } from '@/systems/Settings';
+import { settings, type MovementMode } from '@/systems/Settings';
 import { requestTiltPermission, tiltAvailable } from '@/systems/TiltInput';
 
 export interface SettingsSceneData {
   readonly onClose: () => void;
 }
+
+const MODE_NAMES: Record<MovementMode, string> = {
+  fixed: '고정 패드',
+  floating: '터치 위치에 생성',
+  tilt: '기울이기',
+};
+
+const MODE_HINTS: Record<MovementMode, string> = {
+  fixed: '↑ ↓ 이동   ◀ ▶ 값 조절   Space 선택   Esc 돌아가기',
+  floating: '화면 아무 곳이나 누른 자리에 패드가 생깁니다   ·   Esc 돌아가기',
+  tilt: '기기를 기울여 움직입니다. 패드는 표시되지 않습니다   ·   Esc 돌아가기',
+};
 
 /**
  * 설정: the thumb stick's size and where it sits, tilt steering, and the
@@ -70,23 +82,21 @@ export class SettingsScene extends Phaser.Scene {
           },
         },
         {
-          id: 'joystickPlace',
-          label: () => '터치패드 위치',
-          detail: () => `${Math.round(settings.value.joystickX)}, ${Math.round(settings.value.joystickY)}`,
-          onSelect: () => this.beginPlacing(),
+          id: 'movement',
+          label: () => '모바일 이동 방식',
+          detail: () => `${MODE_NAMES[settings.value.movementMode]}   ◀ ▶`,
+          onSelect: () => void this.cycleMode(1),
+          onAdjust: (direction) => void this.cycleMode(direction),
         },
         {
-          id: 'tilt',
-          label: () => '기울여서 이동 (모바일)',
-          detail: () => {
-            if (!tiltAvailable()) {
-              return '미지원 기기';
-            }
-            return settings.value.tiltEnabled ? '켜짐' : '꺼짐';
-          },
-          enabled: () => tiltAvailable(),
-          onSelect: () => void this.toggleTilt(),
-          onAdjust: () => void this.toggleTilt(),
+          id: 'joystickPlace',
+          label: () => '고정 패드 위치',
+          detail: () =>
+            settings.value.movementMode === 'fixed'
+              ? `${Math.round(settings.value.joystickX)}, ${Math.round(settings.value.joystickY)}`
+              : '고정 패드 전용',
+          enabled: () => settings.value.movementMode === 'fixed',
+          onSelect: () => this.beginPlacing(),
         },
         {
           id: 'bgm',
@@ -139,14 +149,19 @@ export class SettingsScene extends Phaser.Scene {
   }
 
   private drawPreview(): void {
-    const { joystickScale, joystickX, joystickY } = settings.value;
+    const { joystickScale, joystickX, joystickY, movementMode } = settings.value;
+
+    // Nothing to preview for tilt, and a floating pad has no home.
+    const shown = movementMode !== 'tilt';
+    this.previewBase.setVisible(shown);
+    this.previewThumb.setVisible(shown);
 
     this.previewBase.setRadius(JOYSTICK.baseRadius * joystickScale);
     this.previewThumb.setRadius(JOYSTICK.thumbRadius * joystickScale);
     this.previewBase.setPosition(joystickX, joystickY);
     this.previewThumb.setPosition(joystickX, joystickY);
 
-    const highlight = this.placing ? 1 : 0.55;
+    const highlight = this.placing ? 1 : movementMode === 'fixed' ? 0.55 : 0.25;
     this.previewBase.setAlpha(highlight);
     this.previewThumb.setAlpha(highlight);
   }
@@ -157,19 +172,23 @@ export class SettingsScene extends Phaser.Scene {
     this.menu.refresh();
   }
 
-  private async toggleTilt(): Promise<void> {
-    const turningOn = !settings.value.tiltEnabled;
-    if (turningOn) {
-      // iOS hands out orientation only after an explicit ask, and only from
-      // inside a gesture — which this press is.
-      const granted = await requestTiltPermission();
+  /**
+   * Steps to the next way of steering. Tilt is the one that can be refused:
+   * iOS hands out orientation only after an explicit ask, and only from
+   * inside a gesture — which this press is.
+   */
+  private async cycleMode(direction: -1 | 1): Promise<void> {
+    const next = settings.cycleMovementMode(direction).movementMode;
+
+    if (next === 'tilt') {
+      const granted = tiltAvailable() && (await requestTiltPermission());
       if (!granted) {
-        this.hint.setText('기기가 기울기 권한을 허용하지 않았습니다');
-        return;
+        this.hint.setText('이 기기에서는 기울이기를 쓸 수 없습니다');
+        settings.cycleMovementMode(direction);
       }
     }
 
-    settings.update({ tiltEnabled: turningOn });
+    this.drawPreview();
     this.menu.refresh();
     this.setHint();
   }
@@ -201,11 +220,7 @@ export class SettingsScene extends Phaser.Scene {
       return;
     }
 
-    this.hint.setText(
-      settings.value.tiltEnabled
-        ? '기울이기가 켜져 있어 터치패드는 숨겨집니다   ·   Esc 로 돌아가기'
-        : '↑ ↓ 이동   ◀ ▶ 값 조절   Space 선택   Esc 돌아가기',
-    );
+    this.hint.setText(MODE_HINTS[settings.value.movementMode]);
   }
 
   private moveStick(x: number, y: number): void {

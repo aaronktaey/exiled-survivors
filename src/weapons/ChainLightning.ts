@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 
 import { COLORS, DEPTH, LIGHTNING } from '@/config';
 import type { Enemy } from '@/entities/Enemy';
+import { sfx } from '@/systems/Sfx';
 import { SKILLS } from '@/weapons/skills';
 import { findNearestEnemy, type Weapon, type WeaponContext } from '@/weapons/Weapon';
 
@@ -73,6 +74,7 @@ export class ChainLightning implements Weapon {
     }
 
     this.showBolt(path);
+    sfx.playSkill(this.scene, this.definition.id);
   }
 
   private showBolt(path: readonly number[]): void {

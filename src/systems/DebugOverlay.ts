@@ -11,6 +11,7 @@ export interface DebugCounts {
   readonly projectiles: number;
   readonly gems: number;
   readonly drops: number;
+  readonly potions: number;
   readonly damageNumbers: number;
 }
 
@@ -21,6 +22,7 @@ export interface DebugActions {
   readonly stressSpawn: (count: number) => number;
   /** One of every kind, next to the player. */
   readonly spawnOneOfEach: () => number;
+  readonly dropPotion: () => void;
   readonly clearEnemies: () => void;
   readonly grantLevel: () => void;
   readonly dropSkill: () => void;
@@ -28,7 +30,7 @@ export interface DebugActions {
   readonly toggleInvulnerable: () => boolean;
 }
 
-const KEYS = 'F1,F2,F3,F4,F5,F6,F7';
+const KEYS = 'F1,F2,F3,F4,F5,F6,F7,F8';
 
 /**
  * F1 overlay: frame timings and live object counts, plus the dev keys used
@@ -80,6 +82,7 @@ export class DebugOverlay {
     keyboard.on('keydown-F5', this.onDrop, this);
     keyboard.on('keydown-F6', this.onInvulnerable, this);
     keyboard.on('keydown-F7', this.onSpawnEach, this);
+    keyboard.on('keydown-F8', this.onDropPotion, this);
   }
 
   public get visible(): boolean {
@@ -122,10 +125,11 @@ export class DebugOverlay {
       `delta cap ${TIMING.maxDeltaMs}ms`,
       `enemies ${c.enemies} (pool ${c.enemyPool})   projectiles ${c.projectiles}   gems ${c.gems}`,
       `  ${this.kindBreakdown(c)}   enemy shots ${c.enemyShots}`,
-      `drops ${c.drops}   damage numbers ${c.damageNumbers}`,
+      `drops ${c.drops}   potions ${c.potions}   damage numbers ${c.damageNumbers}`,
       '',
       `F2 +${DEBUG.stressSpawnCount} enemies   F3 clear enemies   F4 level up`,
-      `F5 drop skill   F6 invulnerable: ${this.invulnerable ? 'ON' : 'OFF'}   F7 one of each`,
+      `F5 drop skill   F6 invulnerable: ${this.invulnerable ? 'ON' : 'OFF'}`,
+      `F7 one of each enemy   F8 drop potion`,
       'F1 close',
       this.lastNote,
     ];
@@ -182,6 +186,14 @@ export class DebugOverlay {
     }
     const spawned = this.actions.spawnOneOfEach();
     this.note(`spawned ${spawned} enemies, one of each kind`);
+  }
+
+  private onDropPotion(): void {
+    if (!this.shown) {
+      return;
+    }
+    this.actions.dropPotion();
+    this.note('dropped a potion');
   }
 
   private onInvulnerable(): void {

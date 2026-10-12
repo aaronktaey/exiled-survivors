@@ -6,12 +6,15 @@ import {
   ENEMY_KINDS,
   ICONS,
   PLAYER,
+  POTION,
   SHOTS,
   SKILL_LABEL,
   TEXTURES,
+  VOID_ORB,
 } from '@/config';
 import { MENU, SCENES } from '@/config';
 import { createPixelTextTexture } from '@/systems/PixelFont';
+import { sfx } from '@/systems/Sfx';
 import { ALL_SKILLS, type SkillDefinition } from '@/weapons/skills';
 
 const GRID_TILE = 64;
@@ -31,6 +34,7 @@ export class BootScene extends Phaser.Scene {
     const base = import.meta.env.BASE_URL;
 
     this.load.audio(AUDIO.skillDrop.key, `${base}${AUDIO.skillDrop.file}`);
+    sfx.preload(this);
 
     this.load.image(TEXTURES.gem, `${base}${ICONS.gem.file}`);
     this.load.image(TEXTURES.projectile, `${base}${ICONS.projectile.file}`);
@@ -45,6 +49,8 @@ export class BootScene extends Phaser.Scene {
     }
     this.createSquareTexture(TEXTURES.enemyShot, 8, COLORS.enemyShot);
     this.createShardTexture();
+    this.createVoidOrbTexture();
+    this.createPotionTexture();
 
     for (const skill of ALL_SKILLS) {
       this.createSkillLabelTexture(skill);
@@ -82,6 +88,36 @@ export class BootScene extends Phaser.Scene {
     graphics.fillRect(0, 0, size, size);
 
     graphics.generateTexture(key, size, size);
+    graphics.destroy();
+  }
+
+  /** The void orb: a pale core inside a violet shell. */
+  private createVoidOrbTexture(): void {
+    const size = VOID_ORB.radius * 4;
+    const graphics = this.add.graphics();
+
+    graphics.fillStyle(COLORS.voidOrb, 1);
+    graphics.fillCircle(size / 2, size / 2, size / 2);
+    graphics.fillStyle(COLORS.voidOrbCore, 0.9);
+    graphics.fillCircle(size / 2, size / 2, size / 4);
+
+    graphics.generateTexture(TEXTURES.voidOrb, size, size);
+    graphics.destroy();
+  }
+
+  /** The potion: a white cross on a crimson field, read at a glance. */
+  private createPotionTexture(): void {
+    const size = POTION.size * 2;
+    const arm = size * 0.22;
+    const graphics = this.add.graphics();
+
+    graphics.fillStyle(COLORS.potion, 1);
+    graphics.fillRect(0, 0, size, size);
+    graphics.fillStyle(COLORS.potionCross, 1);
+    graphics.fillRect(size / 2 - arm / 2, size * 0.2, arm, size * 0.6);
+    graphics.fillRect(size * 0.2, size / 2 - arm / 2, size * 0.6, arm);
+
+    graphics.generateTexture(TEXTURES.potion, size, size);
     graphics.destroy();
   }
 

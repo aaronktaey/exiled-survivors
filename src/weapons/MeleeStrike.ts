@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 
 import { COLORS, DEPTH, MELEE } from '@/config';
 import type { Enemy } from '@/entities/Enemy';
+import { sfx } from '@/systems/Sfx';
 import { SKILLS } from '@/weapons/skills';
 import { findNearest, type Weapon, type WeaponContext } from '@/weapons/Weapon';
 
@@ -44,6 +45,7 @@ export class MeleeStrike implements Weapon {
     const halfArc = MELEE.arcRadians / 2;
 
     this.showFlash(origin.x, origin.y, angle, halfArc, range);
+    sfx.playSkill(this.scene, this.definition.id);
 
     // Copy first: a kill destroys the enemy and mutates the group's list.
     for (const child of [...context.enemies.getChildren()]) {

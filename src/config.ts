@@ -18,6 +18,7 @@ export const BALANCE = {
     fireball: 1,
     chainLightning: 1,
     iceSpear: 1,
+    voidOrb: 1,
   } as Record<SkillId, number>,
 };
 
@@ -78,6 +79,23 @@ export const AUDIO = {
     file: "assets/Constance.mp3",
     defaultVolume: 0.35,
   },
+  /**
+   * Per-skill sound. Several recordings for one skill are variants: each
+   * use picks one at random. They are small, so they load at boot.
+   */
+  skills: {
+    meleeStrike: {
+      files: ['assets/attack1.mp3', 'assets/attack2.mp3', 'assets/attack3.mp3'],
+      volume: 0.45,
+    },
+    chainLightning: {
+      // The file is spelled "Lightening"; matched here rather than renamed.
+      files: ['assets/chainLightening1.mp3'],
+      volume: 0.45,
+    },
+  } as Partial<Record<SkillId, { readonly files: readonly string[]; readonly volume: number }>>,
+  /** A skill cannot be heard again inside this, however fast it attacks. */
+  minGapMs: 70,
 } as const;
 
 export const DEBUG = {
@@ -196,6 +214,14 @@ export const COLORS = {
   lightningGlow: 0x5ea8ff,
   iceSpear: 0x9fe8ff,
   iceSpearEdge: 0x3f8fd0,
+  /** 공허: a violet core inside a darker rim. */
+  voidOrb: 0xb07cff,
+  voidOrbCore: 0xefe4ff,
+  /** The potion: a white cross on crimson, haloed in pink as it expires. */
+  potion: 0xd94452,
+  potionCross: 0xfff2f2,
+  potionGlow: 0xff8fa0,
+  healText: '#7ef0b0',
 } as const;
 
 export const DEPTH = {
@@ -223,6 +249,8 @@ export const TEXTURES = {
   enemyShot: "tex-enemy-shot",
   projectile: "tex-projectile",
   iceShard: "tex-ice-shard",
+  voidOrb: "tex-void-orb",
+  potion: "tex-potion",
   gem: "tex-gem",
   skillOrb: "tex-skill-orb",
   logo: "tex-logo",
@@ -236,6 +264,14 @@ export const SHOTS = {
     height: ICONS.projectile.size,
   },
   iceSpear: { texture: TEXTURES.iceShard, width: 22, height: 8 },
+} as const;
+
+/** The orbs 공허구체 keeps in the air around the player. */
+export const VOID_ORB = {
+  /** Drawn radius of one orb. */
+  radius: 9,
+  /** Forgiveness on the contact check, so a graze still counts. */
+  hitPadding: 2,
 } as const;
 
 /** The 냉각 debuff 얼음창 leaves on whatever it passes through. */
@@ -421,19 +457,32 @@ export const LIGHTNING = {
   glowWidth: 6,
 } as const;
 
-export const SKILL_DROP = {
-  /** Chance that killing an enemy drops a skill. */
-  chance: 0.03,
-  /** How long a dropped skill stays on the ground. XP gems never expire. */
+/** Shared by everything that lies on the ground. XP gems never expire. */
+export const GROUND_ITEM = {
+  /** How long a dropped item stays there. */
   lifespanMs: 60_000,
   /** Final stretch, during which it blinks a warning before vanishing. */
   warningMs: 10_000,
   /** Blink period at the start of the warning, and at the very end. */
   blinkSlowMs: 700,
   blinkFastMs: 80,
-  /** Radius of the halo that blinks behind the orb. */
+  /** Radius of the halo that blinks behind the item. */
   glowRadius: 12,
   glowAlpha: 0.65,
+} as const;
+
+export const SKILL_DROP = {
+  /** Chance that killing an enemy drops a skill. */
+  chance: 0.03,
+} as const;
+
+/** Health potions, rolled separately from the skill drop. */
+export const POTION = {
+  /** Chance that killing an enemy drops one. */
+  chance: 0.05,
+  /** Fraction of max HP it restores. */
+  healFraction: 0.1,
+  size: 16,
 } as const;
 
 /** Ground label for a dropped skill, baked into a texture at boot. */
@@ -474,6 +523,8 @@ export interface SkillBaseStats {
   readonly chainCount: number;
   /** Extra enemies a shot passes through after the first. 0 stops on contact. */
   readonly pierceCount: number;
+  /** Orbs kept in the air. Only the skills that orbit have any. */
+  readonly orbCount: number;
 }
 
 /** Where every skill starts before a single upgrade is picked. */
@@ -485,6 +536,7 @@ export const SKILL_BASE: Record<SkillId, SkillBaseStats> = {
     projectileSpeed: 0,
     chainCount: 0,
     pierceCount: 0,
+    orbCount: 0,
   },
   fireball: {
     damage: 20,
@@ -493,6 +545,7 @@ export const SKILL_BASE: Record<SkillId, SkillBaseStats> = {
     projectileSpeed: 230,
     chainCount: 0,
     pierceCount: 0,
+    orbCount: 0,
   },
   // Slower than the other two, because one cast lands on three enemies.
   chainLightning: {
@@ -502,6 +555,7 @@ export const SKILL_BASE: Record<SkillId, SkillBaseStats> = {
     projectileSpeed: 0,
     chainCount: 1,
     pierceCount: 0,
+    orbCount: 0,
   },
   // Longer reach than 화염구 and a faster shot, but it casts less often.
   iceSpear: {
@@ -511,6 +565,19 @@ export const SKILL_BASE: Record<SkillId, SkillBaseStats> = {
     projectileSpeed: 320,
     chainCount: 0,
     pierceCount: 2,
+    orbCount: 0,
+  },
+  // An orbit rather than a shot: range is how far out the orbs ride,
+  // projectileSpeed how fast they travel around, and attackSpeed how often
+  // one orb may hit the same enemy again.
+  voidOrb: {
+    damage: 10,
+    attackSpeed: 2,
+    range: 90,
+    projectileSpeed: 200,
+    chainCount: 0,
+    pierceCount: 0,
+    orbCount: 2,
   },
 };
 
@@ -522,6 +589,7 @@ export const UPGRADE_STEP = {
   projectileSpeed: 20,
   chainCount: 1,
   pierceCount: 1,
+  orbCount: 1,
 } as const;
 
 export const STATS = {

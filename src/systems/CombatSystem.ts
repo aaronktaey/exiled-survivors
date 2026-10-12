@@ -1,8 +1,9 @@
 import Phaser from 'phaser';
 
-import { AUDIO, WEAPON, type EnemyShotSpec } from '@/config';
+import { AUDIO, COLORS, PLAYER, POTION, WEAPON, type EnemyShotSpec } from '@/config';
 import { Enemy } from '@/entities/Enemy';
 import { EnemyShot } from '@/entities/EnemyShot';
+import { HealthPotion } from '@/entities/HealthPotion';
 import { Player } from '@/entities/Player';
 import { Projectile } from '@/entities/Projectile';
 import { SkillDrop } from '@/entities/SkillDrop';
@@ -27,6 +28,7 @@ export class CombatSystem {
   public readonly skillDrops: Phaser.Physics.Arcade.Group;
   /** Everything the shooting kinds have thrown at the player. */
   public readonly enemyShots: Phaser.Physics.Arcade.Group;
+  public readonly potions: Phaser.Physics.Arcade.Group;
 
   private readonly scene: Phaser.Scene;
   private readonly player: Player;
@@ -66,8 +68,11 @@ export class CombatSystem {
       runChildUpdate: true,
     });
 
+    this.potions = scene.physics.add.group({ classType: HealthPotion, runChildUpdate: true });
+
     scene.physics.add.overlap(player, enemies, this.onEnemyTouch, undefined, this);
     scene.physics.add.overlap(player, this.enemyShots, this.onEnemyShotHit, undefined, this);
+    scene.physics.add.overlap(player, this.potions, this.onPotionTouch, undefined, this);
     scene.physics.add.overlap(player, this.gems, this.onGemTouch, undefined, this);
     scene.physics.add.overlap(player, this.skillDrops, this.onSkillTouch, undefined, this);
   }
@@ -82,6 +87,12 @@ export class CombatSystem {
     const shot = this.enemyShots.get() as EnemyShot | null;
     shot?.fire(x, y, angle, spec);
   };
+
+  /** Places a potion directly — used by the kill roll and by debug keys. */
+  public dropPotionAt(x: number, y: number): void {
+    const potion = this.potions.get() as HealthPotion | null;
+    potion?.drop(x, y);
+  }
 
   /** Places a drop directly — used by the spawner's roll and by debug keys. */
   public dropSkillAt(x: number, y: number, skill: SkillDefinition): void {
@@ -172,6 +183,25 @@ export class CombatSystem {
     this.progression.addXp(gem.value);
   };
 
+  private onPotionTouch: Phaser.Types.Physics.Arcade.ArcadePhysicsCallback = (_player, b) => {
+    const potion = b as unknown as HealthPotion;
+    if (!potion.active) {
+      return;
+    }
+
+    // Walking over a full health bar would waste it, so leave it lying there.
+    if (this.player.hp >= PLAYER.maxHp) {
+      return;
+    }
+
+    potion.collect();
+    const healed = this.player.heal(HealthPotion.healing);
+    this.damageNumbers.spawn(this.player.x, this.player.y - 18, healed, {
+      prefix: '+',
+      color: COLORS.healText,
+    });
+  };
+
   private onSkillTouch: Phaser.Types.Physics.Arcade.ArcadePhysicsCallback = (_player, b) => {
     const drop = b as unknown as SkillDrop;
     if (!drop.active) {
@@ -196,6 +226,11 @@ export class CombatSystem {
     const skill = this.hooks.rollSkillDrop();
     if (skill) {
       this.dropSkillAt(x, y, skill);
+    }
+
+    // Rolled on its own, so a kill can leave both a skill and a potion.
+    if (Math.random() < POTION.chance) {
+      this.dropPotionAt(x, y);
     }
   }
 }
