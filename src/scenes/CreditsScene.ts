@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 
-import { COLORS, DEPTH, SCENES } from '@/config';
+import { COLORS, DEPTH, SCENES, SCRIM, TEXT } from '@/config';
 import { t } from '@/i18n';
 import { MenuList } from '@/systems/MenuList';
 
@@ -37,11 +37,11 @@ export class CreditsScene extends Phaser.Scene {
   public create(): void {
     const { width, height } = this.scale;
 
-    this.add.rectangle(0, 0, width, height, 0x05070b, 0.97).setOrigin(0, 0).setDepth(DEPTH.ui);
+    this.add.rectangle(0, 0, width, height, 0x05070b, SCRIM.reading).setOrigin(0, 0).setDepth(DEPTH.ui);
     this.add
       .text(width / 2, 60, t().credits.title, {
         fontFamily: 'system-ui, sans-serif',
-        fontSize: '34px',
+        fontSize: TEXT.size.screen,
         color: COLORS.text,
       })
       .setOrigin(0.5)
@@ -54,7 +54,7 @@ export class CreditsScene extends Phaser.Scene {
       this.add
         .text(left, y, role, {
           fontFamily: 'system-ui, sans-serif',
-          fontSize: '15px',
+          fontSize: TEXT.size.body,
           color: COLORS.accent,
         })
         .setOrigin(0, 0.5)
@@ -63,7 +63,7 @@ export class CreditsScene extends Phaser.Scene {
       this.add
         .text(left + 90, y, who, {
           fontFamily: 'system-ui, sans-serif',
-          fontSize: '15px',
+          fontSize: TEXT.size.body,
           color: COLORS.text,
         })
         .setOrigin(0, 0.5)

@@ -15,6 +15,44 @@ export interface PatchNote {
 
 export const PATCH_NOTES: readonly PatchNote[] = [
   {
+    version: '0.16',
+    date: '2026-10-13',
+    changes: {
+      ko: [
+        '글씨를 전체적으로 키우고 밝게 바꿨습니다 — 가장 작은 글씨도 이전의 안내 문구보다 큽니다.',
+        '모든 글씨에 어두운 테두리가 생겨, 적이나 효과 위에 겹쳐도 묻히지 않습니다.',
+        '게임 가이드 · 패치노트 · 설정 화면이 뒤를 완전히 가립니다. 이전에는 로고와 선택지가 글 위로 비쳐 보였습니다.',
+        '일시정지 · 레벨 업 · 게임 오버 화면도 바탕을 더 어둡게 해 글이 먼저 읽힙니다.',
+        '스킬 현황표가 단일피해 대신 스킬 레벨을 보여줍니다 — 획득하면 Lv 1, 강화할 때마다 1씩 오릅니다.',
+        '플레이어 레벨은 체력바 위에만 표시됩니다. 현황표의 스킬 레벨과 헷갈리지 않도록 좌측 상단에서 뺐습니다.',
+      ],
+      en: [
+        'Text is larger and brighter throughout — the smallest line in the game is now bigger than the old hint text.',
+        'Every label carries a dark outline, so nothing disappears into an enemy or an effect behind it.',
+        'The guide, the patch notes and the settings now cover the screen completely. The logo and the menu used to show through the words.',
+        'Pause, level up and game over darken the field further, so the words read first.',
+        'The loadout shows a skill’s level instead of its single-hit damage — Lv 1 when you pick it up, one more for every upgrade.',
+        'Your own level now appears only above the health bar; it left the top-left corner so it cannot be read as a skill level.',
+      ],
+      ja: [
+        '文字を全体的に大きく、明るくしました — 最小の文字でも以前の案内文より大きくなっています。',
+        'すべての文字に暗い縁取りが付き、敵やエフェクトに重なっても埋もれません。',
+        '遊び方・パッチノート・設定が背景を完全に覆うようになりました。以前はロゴや項目が文字の上に透けていました。',
+        '一時停止・レベルアップ・ゲームオーバーも背景をより暗くし、文字が先に読めるようにしました。',
+        'スキル一覧が単発ダメージではなくスキルレベルを表示します — 入手で Lv 1、強化ごとに 1 ずつ上がります。',
+        'プレイヤーのレベルは体力バーの上だけに表示します。一覧のスキルレベルと紛れないよう左上から外しました。',
+      ],
+      zh: [
+        '整体放大并提亮了文字 — 游戏中最小的字也比过去的提示文字更大。',
+        '所有文字都有深色描边，叠在敌人或特效上也不会被吞没。',
+        '游戏指南、补丁说明与设置界面现在完全遮住背景。此前标志和选项会透过文字显现。',
+        '暂停、升级与游戏结束界面的背景也更暗，文字更先被读到。',
+        '技能列表改为显示技能等级，不再显示单次伤害 — 获得时为 Lv 1，每次强化加 1。',
+        '玩家等级只显示在生命条上方；为避免与技能等级混淆，已从左上角移除。',
+      ],
+    },
+  },
+  {
     version: '0.15',
     date: '2026-10-12',
     changes: {

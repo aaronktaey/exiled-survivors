@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 
-import { COLORS, DEPTH, MENU, SCENES, TEXTURES } from '@/config';
+import { COLORS, DEPTH, MENU, SCENES, SCRIM, TEXT, TEXTURES } from '@/config';
 import { PATCH_NOTES } from '@/content/patchNotes';
 import { t } from '@/i18n';
 import { bgm } from '@/systems/Bgm';
@@ -22,7 +22,7 @@ export class MenuScene extends Phaser.Scene {
     const { width, height } = this.scale;
 
     this.add.tileSprite(0, 0, width, height, TEXTURES.grid).setOrigin(0, 0).setDepth(DEPTH.ground);
-    this.add.rectangle(0, 0, width, height, 0x05070b, 0.55).setOrigin(0, 0).setDepth(DEPTH.ground + 1);
+    this.add.rectangle(0, 0, width, height, 0x05070b, SCRIM.title).setOrigin(0, 0).setDepth(DEPTH.ground + 1);
 
     this.addLogo(width, 118);
 
@@ -64,7 +64,7 @@ export class MenuScene extends Phaser.Scene {
         width / 2,
         height - 26,
         prefersTouchControls() ? t().menu.hintTouch : t().menu.hintKeyboard,
-        { fontFamily: 'system-ui, sans-serif', fontSize: '13px', color: COLORS.muted },
+        { fontFamily: 'system-ui, sans-serif', fontSize: TEXT.size.hint, color: COLORS.muted },
       )
       .setOrigin(0.5)
       .setDepth(DEPTH.ui);
@@ -89,7 +89,7 @@ export class MenuScene extends Phaser.Scene {
     this.add
       .text(width / 2, y + logo.displayHeight / 2 + 26, t().menu.byline, {
         fontFamily: 'system-ui, sans-serif',
-        fontSize: '15px',
+        fontSize: TEXT.size.body,
         color: COLORS.muted,
       })
       .setOrigin(0.5)

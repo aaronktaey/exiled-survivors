@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 
-import { COLORS, DEPTH, JOYSTICK, SCENES, SETTINGS_RANGE } from '@/config';
+import { COLORS, DEPTH, JOYSTICK, SCENES, SCRIM, SETTINGS_RANGE, TEXT } from '@/config';
 import { languageName, t } from '@/i18n';
 import { bgm } from '@/systems/Bgm';
 import { MenuList } from '@/systems/MenuList';
@@ -61,11 +61,11 @@ export class SettingsScene extends Phaser.Scene {
   public create(): void {
     const { width, height } = this.scale;
 
-    this.add.rectangle(0, 0, width, height, 0x05070b, 0.97).setOrigin(0, 0).setDepth(DEPTH.ui);
+    this.add.rectangle(0, 0, width, height, 0x05070b, SCRIM.reading).setOrigin(0, 0).setDepth(DEPTH.ui);
     this.add
       .text(width / 2, 52, t().settings.title, {
         fontFamily: 'system-ui, sans-serif',
-        fontSize: '34px',
+        fontSize: TEXT.size.screen,
         color: COLORS.text,
       })
       .setOrigin(0.5)
@@ -140,7 +140,7 @@ export class SettingsScene extends Phaser.Scene {
     this.hint = this.add
       .text(width / 2, height - 28, '', {
         fontFamily: 'system-ui, sans-serif',
-        fontSize: '13px',
+        fontSize: TEXT.size.hint,
         color: COLORS.muted,
         align: 'center',
       })

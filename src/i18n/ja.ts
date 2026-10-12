@@ -67,7 +67,6 @@ export const ja: Strings = {
   hud: {
     level: 'Lv {level}',
     enemies: '敵 {count}',
-    hit: '単発 {damage}',
     dps: 'DPS {dps}',
   },
 

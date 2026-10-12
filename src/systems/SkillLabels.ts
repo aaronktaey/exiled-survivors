@@ -27,6 +27,8 @@ function bakeOne(scene: Phaser.Scene, skill: SkillDefinition): void {
     fontFamily: 'system-ui, sans-serif',
     fontSize: SKILL_LABEL.fontSize,
     color: SKILL_LABEL.text,
+    // Measured exactly as SkillDrop draws it, outline and all.
+    strokeThickness: 0,
   });
   const width = Math.ceil(probe.width) + paddingX * 2;
   const height = Math.ceil(probe.height) + paddingY * 2;

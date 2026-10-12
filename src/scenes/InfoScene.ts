@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 
-import { COLORS, DEPTH, INFO, SCENES } from '@/config';
+import { COLORS, DEPTH, INFO, SCENES, SCRIM, TEXT } from '@/config';
 import { guideChapters, type GuideChapter, type GuideSection } from '@/content/guide';
 import { PATCH_NOTES } from '@/content/patchNotes';
 import { language, t } from '@/i18n';
@@ -74,11 +74,11 @@ export class InfoScene extends Phaser.Scene {
     const { width, height } = this.scale;
     this.chapters = this.payload.topic === 'patch' ? [patchChapter()] : guideChapters();
 
-    this.add.rectangle(0, 0, width, height, 0x05070b, 0.97).setOrigin(0, 0).setDepth(DEPTH.ui);
+    this.add.rectangle(0, 0, width, height, 0x05070b, SCRIM.reading).setOrigin(0, 0).setDepth(DEPTH.ui);
     this.add
       .text(width / 2, INFO.titleY, title(this.payload.topic), {
         fontFamily: 'system-ui, sans-serif',
-        fontSize: '30px',
+        fontSize: TEXT.size.screen,
         color: COLORS.text,
       })
       .setOrigin(0.5)
@@ -109,7 +109,7 @@ export class InfoScene extends Phaser.Scene {
         width / 2,
         height - 24,
         prefersTouchControls() ? t().info.hintTouch : t().info.hintKeyboard,
-        { fontFamily: 'system-ui, sans-serif', fontSize: '13px', color: COLORS.muted },
+        { fontFamily: 'system-ui, sans-serif', fontSize: TEXT.size.hint, color: COLORS.muted },
       )
       .setOrigin(0.5)
       .setDepth(DEPTH.ui + 1);
@@ -222,7 +222,7 @@ export class InfoScene extends Phaser.Scene {
     this.add
       .text(x, INFO.titleY, t().common.close, {
         fontFamily: 'system-ui, sans-serif',
-        fontSize: '14px',
+        fontSize: TEXT.size.small,
         color: COLORS.text,
       })
       .setOrigin(0.5)

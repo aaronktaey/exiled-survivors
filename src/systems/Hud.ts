@@ -1,22 +1,23 @@
 import Phaser from 'phaser';
 
-import { COLORS, DEPTH, HUD } from '@/config';
+import { COLORS, DEPTH, HUD, TEXT } from '@/config';
 import { fill, t } from '@/i18n';
 import type { Progression } from '@/systems/Progression';
 
 export interface LoadoutEntry {
   readonly name: string;
-  /** What one hit lands. */
-  readonly damage: number;
+  /** Picks taken on this skill, the pickup included. */
+  readonly level: number;
   /** Damage per second, counting everything the skill touches at once. */
   readonly dps: number;
 }
 
 /**
- * Camera-fixed run readout: level and loadout top-left, clock top-centre,
- * and a full-width XP bar along the bottom edge.
+ * Camera-fixed run readout: the loadout top-left, clock and enemy count
+ * top-centre, and a full-width XP bar along the bottom edge.
  *
- * Health is not here — it rides above the player, drawn by Player itself.
+ * The player's own level and health are not here — they ride above the
+ * player, drawn by Player itself.
  */
 /** Whole numbers where they are whole, one decimal where they are not. */
 const round = (value: number): string =>
@@ -24,7 +25,6 @@ const round = (value: number): string =>
 
 export class Hud {
   private readonly xpBar: Phaser.GameObjects.Graphics;
-  private readonly statsLabel: Phaser.GameObjects.Text;
   private readonly skillsLabel: Phaser.GameObjects.Text;
   private readonly clockLabel: Phaser.GameObjects.Text;
   private readonly enemiesLabel: Phaser.GameObjects.Text;
@@ -41,19 +41,10 @@ export class Hud {
 
     this.xpBar = scene.add.graphics().setScrollFactor(0).setDepth(DEPTH.ui);
 
-    this.statsLabel = scene.add
+    this.skillsLabel = scene.add
       .text(HUD.leftInset, HUD.margin, '', {
         fontFamily: 'system-ui, sans-serif',
-        fontSize: '14px',
-        color: COLORS.muted,
-      })
-      .setScrollFactor(0)
-      .setDepth(DEPTH.ui);
-
-    this.skillsLabel = scene.add
-      .text(HUD.leftInset, HUD.margin + 22, '', {
-        fontFamily: 'system-ui, sans-serif',
-        fontSize: '14px',
+        fontSize: TEXT.size.small,
         color: COLORS.text,
         lineSpacing: 4,
       })
@@ -63,7 +54,7 @@ export class Hud {
     this.clockLabel = scene.add
       .text(this.viewWidth / 2, HUD.margin - 4, '', {
         fontFamily: 'system-ui, sans-serif',
-        fontSize: '20px',
+        fontSize: TEXT.size.heading,
         color: COLORS.text,
       })
       .setOrigin(0.5, 0)
@@ -72,9 +63,9 @@ export class Hud {
 
     // Under the clock, where the eye already is during a wave.
     this.enemiesLabel = scene.add
-      .text(this.viewWidth / 2, HUD.margin + 22, '', {
+      .text(this.viewWidth / 2, HUD.margin + HUD.countGap, '', {
         fontFamily: 'system-ui, sans-serif',
-        fontSize: '13px',
+        fontSize: TEXT.size.small,
         color: COLORS.muted,
       })
       .setOrigin(0.5, 0)
@@ -96,12 +87,11 @@ export class Hud {
     this.clockLabel.setText(`${mm}:${ss}`);
 
     const copy = t().hud;
-    this.statsLabel.setText(fill(copy.level, { level: this.progression.level }));
     this.enemiesLabel.setText(fill(copy.enemies, { count: enemies }));
     this.skillsLabel.setText(
       loadout.map(
         (s) =>
-          `${s.name}  ${fill(copy.hit, { damage: round(s.damage) })}  ${fill(copy.dps, { dps: round(s.dps) })}`,
+          `${s.name}  ${fill(copy.level, { level: s.level })}  ${fill(copy.dps, { dps: round(s.dps) })}`,
       ),
     );
 

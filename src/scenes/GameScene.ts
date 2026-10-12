@@ -9,6 +9,7 @@ import {
   SAVE,
   SCENES,
   SKILL_DROP,
+  TEXT,
   TEXTURES,
   TIMING,
   WORLD,
@@ -24,6 +25,7 @@ import {
   DebugOverlay,
   Hud,
   Progression,
+  type LoadoutEntry,
   Separation,
   SpawnDirector,
   type SkillStats,
@@ -429,13 +431,13 @@ export class GameScene extends Phaser.Scene {
     return this.progression.statsFor(skill).damage * (BALANCE.damageScale[skill] ?? 1);
   }
 
-  private loadout(): ReadonlyArray<{ name: string; damage: number; dps: number }> {
+  private loadout(): ReadonlyArray<LoadoutEntry> {
     return this.weapons.map((weapon) => {
       const id = weapon.definition.id;
       const scale = this.damageOf(id) / this.progression.statsFor(id).damage;
       return {
         name: skillName(id),
-        damage: this.damageOf(id),
+        level: this.progression.levelFor(id),
         // The dial scales damage, so it scales the DPS with it.
         dps: this.progression.dpsFor(id) * scale,
       };
@@ -496,7 +498,7 @@ export class GameScene extends Phaser.Scene {
     const label = this.add
       .text(camera.width / 2, camera.height - 70, message, {
         fontFamily: 'system-ui, sans-serif',
-        fontSize: '20px',
+        fontSize: TEXT.size.heading,
         color: COLORS.text,
       })
       .setOrigin(0.5)
@@ -625,7 +627,7 @@ export class GameScene extends Phaser.Scene {
     const title = this.add
       .text(camera.width / 2, camera.height / 2 - 24, t().game.intro, {
         fontFamily: 'system-ui, sans-serif',
-        fontSize: '56px',
+        fontSize: TEXT.size.huge,
         color: COLORS.text,
       })
       .setOrigin(0.5)
@@ -639,7 +641,7 @@ export class GameScene extends Phaser.Scene {
         prefersTouchControls() ? t().game.introHintTouch : t().game.introHintKeyboard,
         {
           fontFamily: 'system-ui, sans-serif',
-          fontSize: '18px',
+          fontSize: TEXT.size.label,
           color: COLORS.accent,
         },
       )

@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 
-import { COLORS, DEBUG, DEPTH, ENEMY_KINDS, TIMING, type EnemyKind } from '@/config';
+import { COLORS, DEBUG, DEPTH, ENEMY_KINDS, TEXT, TIMING, type EnemyKind } from '@/config';
 import { enemyName } from '@/i18n';
 
 /** Counts the overlay reads each frame. */
@@ -63,7 +63,7 @@ export class DebugOverlay {
     this.label = scene.add
       .text(16, 70, '', {
         fontFamily: 'ui-monospace, monospace',
-        fontSize: '13px',
+        fontSize: TEXT.size.hint,
         color: COLORS.debugText,
         backgroundColor: 'rgba(5, 7, 11, 0.72)',
         padding: { x: 8, y: 6 },

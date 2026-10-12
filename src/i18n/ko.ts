@@ -71,7 +71,6 @@ export const ko: Strings = {
   hud: {
     level: 'Lv {level}',
     enemies: '적 {count}',
-    hit: '단일피해 {damage}',
     dps: 'DPS {dps}',
   },
 

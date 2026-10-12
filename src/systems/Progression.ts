@@ -63,6 +63,27 @@ export function upgradeOptionsFor(
 }
 
 /**
+ * A skill's level: 1 when it is picked up, and one more for every upgrade
+ * taken since. It is counted back out of the stats rather than tracked
+ * alongside them, because every upgrade moves exactly one stat by exactly
+ * one step — so the stats already say how many were taken, and a save
+ * written before this existed still reads correctly.
+ */
+export function skillLevelFromStats(skill: SkillId, stats: SkillStats): number {
+  const base = SKILL_BASE[skill];
+  let taken = 0;
+
+  for (const id of Object.keys(stats) as UpgradeId[]) {
+    const step = upgradeStep(skill, id);
+    if (step > 0) {
+      taken += Math.round((stats[id] - base[id]) / step);
+    }
+  }
+
+  return 1 + Math.max(0, taken);
+}
+
+/**
  * Damage per second for a stat line, counting every body a skill touches at
  * once — that is what makes two skills comparable at a glance.
  */
@@ -121,6 +142,11 @@ export class Progression extends Phaser.Events.EventEmitter {
     const raised = stats[upgrade] + upgradeStep(skill, upgrade);
 
     stats[upgrade] = cap === undefined ? raised : Math.min(cap, raised);
+  }
+
+  /** How many picks this skill has had, counting the pickup itself. */
+  public levelFor(skill: SkillId): number {
+    return skillLevelFromStats(skill, this.statsFor(skill));
   }
 
   /**

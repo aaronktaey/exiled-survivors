@@ -67,7 +67,6 @@ export const zh: Strings = {
   hud: {
     level: 'Lv {level}',
     enemies: '敌人 {count}',
-    hit: '单次 {damage}',
     dps: 'DPS {dps}',
   },
 

@@ -34,6 +34,8 @@ export class SkillDrop extends GroundItem {
         fontFamily: 'system-ui, sans-serif',
         fontSize: SKILL_LABEL.fontSize,
         color: SKILL_LABEL.text,
+        // Dark ink on a pale plate: it needs no outline behind it.
+        strokeThickness: 0,
       })
       .setOrigin(0.5)
       .setDepth(DEPTH.skillDrop + 1)

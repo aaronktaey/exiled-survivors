@@ -9,7 +9,7 @@ export const COLORS = {
   text: "#f4f1e8",
   /** Same ink as a number, for shapes. */
   textFill: 0xf4f1e8,
-  muted: "#8b93a7",
+  muted: "#a9b3c9",
   accent: "#e0564a",
   /** Same accent as a number, for shapes (text takes the string form). */
   accentFill: 0xe0564a,
@@ -130,6 +130,47 @@ export const TEXT = {
   resolution: 2,
   /** A ceiling, so a 3x phone does not bake enormous glyph canvases. */
   maxResolution: 3,
+  /**
+   * Every size in the game, by what the text is for. Nothing sets a size by
+   * hand: one ladder means a screen read at arm's length stays readable
+   * everywhere, and raising a step raises it everywhere at once.
+   */
+  size: {
+    /** Footer hints and the debug readout — the smallest thing we print. */
+    hint: '15px',
+    /** Dense lists: the run readout, a card's fine print. */
+    small: '16px',
+    /** Ordinary body copy. */
+    body: '17px',
+    /** A row's own name in a menu, and a skill's name on a card. */
+    label: '20px',
+    /** A section heading, and the run clock. */
+    heading: '22px',
+    /** The headline on a small panel. */
+    panel: '28px',
+    /** A screen's own title. */
+    screen: '34px',
+    /** 일시정지, 레벨 업 — a word thrown across the middle of the screen. */
+    banner: '40px',
+    /** 게임 오버. */
+    hero: '48px',
+    /** The line a run opens on. */
+    huge: '56px',
+  },
+  /**
+   * A dark outline behind every label. The run readout and the damage
+   * numbers sit straight on the playfield, where a pale enemy or a lit
+   * effect can swallow them; an outline is measured into the glyph box (a
+   * shadow is not, so it clips), costs nothing per frame, and keeps centred
+   * text centred.
+   */
+  outline: {
+    color: '#05070b',
+    /** Share of the font size, clamped — thin on small text, not hairline. */
+    share: 0.14,
+    minPx: 2,
+    maxPx: 5,
+  },
 } as const;
 
 export const ICONS = {
@@ -163,13 +204,15 @@ export const SKILL_LABEL = {
 
 export const HUD = {
   margin: 16,
+  /** How far under the clock the enemy count sits. */
+  countGap: 30,
   /** Left edge of the run readout, clear of the pause button in the corner. */
   leftInset: 56,
   /** XP bar spans the full width along the very bottom edge. */
   xpBarHeight: 10,
   /** The level and health line that sits above that bar. */
-  nameplateSize: '11px',
-  nameplateGap: 3,
+  nameplateSize: TEXT.size.hint,
+  nameplateGap: 4,
   /** Health bar floats just above the player sprite. */
   healthBar: {
     width: 60,
@@ -179,9 +222,26 @@ export const HUD = {
   },
 } as const;
 
+/**
+ * How much of what is behind an overlay still shows through it. A screen
+ * you read covers the field outright — a logo ghosting through a paragraph
+ * is the quickest way to make it unreadable. One you act on mid-run leaves
+ * enough of the field to see what you walked into.
+ */
+export const SCRIM = {
+  /** 게임 가이드 · 패치노트 · 설정 · 제작자 정보 · 확인 창. */
+  reading: 1,
+  pause: 0.88,
+  upgrade: 0.86,
+  gameOver: 0.92,
+  /** The grid behind the title. */
+  title: 0.62,
+} as const;
+
 /** Where the shell screens — title, settings, credits, pause — are tuned. */
 export const MENU = {
-  buttonWidth: 300,
+  /** Wide enough that a row's name and its value never touch. */
+  buttonWidth: 360,
   /** Six rows have to fit under the logo, so the buttons are compact. */
   buttonHeight: 40,
   buttonGap: 8,
@@ -200,12 +260,12 @@ export const INFO = {
   contentBottom: 58,
   contentWidth: 720,
   /** The contents list down the left of the guide. */
-  tocWidth: 170,
-  tocLineHeight: 34,
-  headingSize: '17px',
+  tocWidth: 180,
+  tocLineHeight: 38,
+  headingSize: '20px',
   headingGap: 8,
-  lineSize: '14px',
-  lineSpacing: 5,
+  lineSize: '16px',
+  lineSpacing: 7,
   sectionGap: 22,
   /** How far one press of an arrow key moves the page. */
   keyStep: 48,
@@ -227,9 +287,9 @@ export const RARE_OUTLINE_TIERS: readonly number[] = [
 
 /** The banner that announces a 우두머리. */
 export const BOSS_BANNER = {
-  width: 300,
-  height: 54,
-  fontSize: '26px',
+  width: 340,
+  height: 58,
+  fontSize: '28px',
   /** How long it holds before fading. */
   holdMs: 1400,
 } as const;
@@ -242,8 +302,8 @@ export const TOOLTIP = {
   gap: 14,
   /** A pointer within this of a rare's centre is pointing at it. */
   grabPadding: 6,
-  titleSize: '13px',
-  lineSize: '12px',
+  titleSize: '16px',
+  lineSize: '15px',
 } as const;
 
 export const PAUSE_BUTTON = {
@@ -271,5 +331,5 @@ export const DAMAGE_NUMBERS = {
   lifespanMs: 650,
   /** Upward drift, px per second. */
   riseSpeed: 54,
-  fontSize: "13px",
+  fontSize: "16px",
 } as const;

@@ -67,7 +67,6 @@ export const en: Strings = {
   hud: {
     level: 'Lv {level}',
     enemies: 'Enemies {count}',
-    hit: 'HIT {damage}',
     dps: 'DPS {dps}',
   },
 

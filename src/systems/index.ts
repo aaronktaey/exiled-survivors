@@ -9,6 +9,7 @@ export { DamageNumbers } from '@/systems/DamageNumbers';
 export { DebugOverlay, type DebugActions, type DebugCounts } from '@/systems/DebugOverlay';
 export {
   Progression,
+  skillLevelFromStats,
   upgradeOptionsFor,
   type SkillStats,
   type UpgradeId,

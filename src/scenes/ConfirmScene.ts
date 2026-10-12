@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 
-import { COLORS, DEPTH, SCENES } from '@/config';
+import { COLORS, DEPTH, SCENES, SCRIM, TEXT } from '@/config';
 import { t } from '@/i18n';
 import { MenuList } from '@/systems/MenuList';
 
@@ -36,12 +36,12 @@ export class ConfirmScene extends Phaser.Scene {
     const { width, height } = this.scale;
     const copy = t().confirm;
 
-    this.add.rectangle(0, 0, width, height, 0x05070b, 0.97).setOrigin(0, 0).setDepth(DEPTH.ui);
+    this.add.rectangle(0, 0, width, height, 0x05070b, SCRIM.reading).setOrigin(0, 0).setDepth(DEPTH.ui);
 
     this.add
       .text(width / 2, height / 2 - 120, copy.newRunTitle, {
         fontFamily: 'system-ui, sans-serif',
-        fontSize: '26px',
+        fontSize: TEXT.size.panel,
         color: COLORS.accent,
       })
       .setOrigin(0.5)
@@ -50,7 +50,7 @@ export class ConfirmScene extends Phaser.Scene {
     this.add
       .text(width / 2, height / 2 - 76, copy.newRunBody, {
         fontFamily: 'system-ui, sans-serif',
-        fontSize: '15px',
+        fontSize: TEXT.size.body,
         color: COLORS.text,
         align: 'center',
         wordWrap: { width: 520 },
@@ -61,7 +61,7 @@ export class ConfirmScene extends Phaser.Scene {
     this.add
       .text(width / 2, height / 2 - 34, this.payload.detail, {
         fontFamily: 'system-ui, sans-serif',
-        fontSize: '14px',
+        fontSize: TEXT.size.small,
         color: COLORS.muted,
       })
       .setOrigin(0.5)

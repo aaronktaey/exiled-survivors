@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 
-import { COLORS, DEPTH, SCENES } from '@/config';
+import { COLORS, DEPTH, SCENES, SCRIM, TEXT } from '@/config';
 import { fill, t } from '@/i18n';
 import { MenuList } from '@/systems/MenuList';
 import { prefersTouchControls } from '@/systems/VirtualJoystick';
@@ -33,7 +33,7 @@ export class GameOverScene extends Phaser.Scene {
     const { width, height } = this.scale;
     const centerX = width / 2;
 
-    this.add.rectangle(0, 0, width, height, 0x05070b, 0.85).setOrigin(0, 0).setDepth(DEPTH.ui);
+    this.add.rectangle(0, 0, width, height, 0x05070b, SCRIM.gameOver).setOrigin(0, 0).setDepth(DEPTH.ui);
 
     const total = Math.floor(this.payload.survivedMs / 1000);
     const mm = String(Math.floor(total / 60)).padStart(2, '0');
@@ -42,7 +42,7 @@ export class GameOverScene extends Phaser.Scene {
     this.add
       .text(centerX, height / 2 - 150, t().gameOver.title, {
         fontFamily: 'system-ui, sans-serif',
-        fontSize: '48px',
+        fontSize: TEXT.size.hero,
         color: COLORS.accent,
       })
       .setOrigin(0.5)
@@ -51,7 +51,7 @@ export class GameOverScene extends Phaser.Scene {
     this.add
       .text(centerX, height / 2 - 100, fill(t().gameOver.survived, { time: `${mm}:${ss}`, level: this.payload.level }), {
         fontFamily: 'system-ui, sans-serif',
-        fontSize: '20px',
+        fontSize: TEXT.size.heading,
         color: COLORS.text,
       })
       .setOrigin(0.5)
@@ -72,7 +72,7 @@ export class GameOverScene extends Phaser.Scene {
         centerX,
         height - 28,
         prefersTouchControls() ? t().gameOver.hintTouch : t().gameOver.hintKeyboard,
-        { fontFamily: 'system-ui, sans-serif', fontSize: '13px', color: COLORS.muted },
+        { fontFamily: 'system-ui, sans-serif', fontSize: TEXT.size.hint, color: COLORS.muted },
       )
       .setOrigin(0.5)
       .setDepth(DEPTH.ui + 1);

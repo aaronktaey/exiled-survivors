@@ -85,6 +85,11 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     this.drawHealthBar();
   }
 
+  /** Full health, as balance.ts has it tuned. */
+  public get maxHp(): number {
+    return PLAYER.maxHp;
+  }
+
   /** Keeps the nameplate's level in step with progression. */
   public setLevel(level: number): void {
     this.level = level;

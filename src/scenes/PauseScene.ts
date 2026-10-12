@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 
-import { COLORS, DEPTH, SCENES } from '@/config';
+import { COLORS, DEPTH, SCENES, SCRIM, TEXT } from '@/config';
 import { fill, t } from '@/i18n';
 import type { GameScene } from '@/scenes/GameScene';
 import { MenuList } from '@/systems/MenuList';
@@ -34,12 +34,12 @@ export class PauseScene extends Phaser.Scene {
   public create(): void {
     const { width, height } = this.scale;
 
-    this.add.rectangle(0, 0, width, height, 0x05070b, 0.78).setOrigin(0, 0).setDepth(DEPTH.ui);
+    this.add.rectangle(0, 0, width, height, 0x05070b, SCRIM.pause).setOrigin(0, 0).setDepth(DEPTH.ui);
 
     this.add
       .text(width / 2, height / 2 - 128, t().pause.title, {
         fontFamily: 'system-ui, sans-serif',
-        fontSize: '38px',
+        fontSize: TEXT.size.banner,
         color: COLORS.text,
       })
       .setOrigin(0.5)
@@ -52,7 +52,7 @@ export class PauseScene extends Phaser.Scene {
     this.add
       .text(width / 2, height / 2 - 86, fill(t().pause.survived, { time: `${mm}:${ss}`, level: this.payload.level }), {
         fontFamily: 'system-ui, sans-serif',
-        fontSize: '16px',
+        fontSize: TEXT.size.body,
         color: COLORS.accent,
       })
       .setOrigin(0.5)
@@ -78,7 +78,7 @@ export class PauseScene extends Phaser.Scene {
     this.add
       .text(width / 2, height - 28, t().pause.hint, {
         fontFamily: 'system-ui, sans-serif',
-        fontSize: '13px',
+        fontSize: TEXT.size.hint,
         color: COLORS.muted,
       })
       .setOrigin(0.5)

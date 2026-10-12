@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 
-import { COLORS, DEPTH, SKILL_ICON_SIZE, SKILL_ICONS } from '@/config';
+import { COLORS, DEPTH, SCRIM, SKILL_ICON_SIZE, SKILL_ICONS, TEXT } from '@/config';
 import { t } from '@/i18n';
 import type { UpgradeId, UpgradeOption } from '@/systems/Progression';
 import { prefersTouchControls } from '@/systems/VirtualJoystick';
@@ -80,7 +80,7 @@ export class UpgradeScene extends Phaser.Scene {
     const centerX = width / 2;
     const cardY = height / 2 + 10;
 
-    this.add.rectangle(0, 0, width, height, 0x05070b, 0.72).setOrigin(0, 0).setDepth(DEPTH.ui);
+    this.add.rectangle(0, 0, width, height, 0x05070b, SCRIM.upgrade).setOrigin(0, 0).setDepth(DEPTH.ui);
 
     const icon = SKILL_ICONS[this.payload.skill];
     if (icon && this.textures.exists(icon.key)) {
@@ -93,7 +93,7 @@ export class UpgradeScene extends Phaser.Scene {
     this.add
       .text(centerX, height / 2 - 150, this.payload.title, {
         fontFamily: 'system-ui, sans-serif',
-        fontSize: '42px',
+        fontSize: TEXT.size.banner,
         color: COLORS.text,
       })
       .setOrigin(0.5)
@@ -102,7 +102,7 @@ export class UpgradeScene extends Phaser.Scene {
     this.add
       .text(centerX, height / 2 - 108, this.payload.subtitle, {
         fontFamily: 'system-ui, sans-serif',
-        fontSize: '18px',
+        fontSize: TEXT.size.label,
         color: COLORS.accent,
       })
       .setOrigin(0.5)
@@ -133,7 +133,7 @@ export class UpgradeScene extends Phaser.Scene {
         prefersTouchControls() ? t().upgrade.hintTouch : t().upgrade.hintKeyboard,
         {
           fontFamily: 'system-ui, sans-serif',
-          fontSize: '14px',
+          fontSize: TEXT.size.small,
           color: COLORS.muted,
         },
       )
@@ -156,7 +156,7 @@ export class UpgradeScene extends Phaser.Scene {
     const label = this.add
       .text(x, y - 36, option.label, {
         fontFamily: 'system-ui, sans-serif',
-        fontSize: cardWidth >= WIDE_CARD ? '26px' : '19px',
+        fontSize: cardWidth >= WIDE_CARD ? TEXT.size.panel : TEXT.size.label,
         color: COLORS.text,
         align: 'center',
         wordWrap: { width: cardWidth - 20 },
@@ -167,7 +167,7 @@ export class UpgradeScene extends Phaser.Scene {
     this.add
       .text(x, y + 22, option.detail, {
         fontFamily: 'system-ui, sans-serif',
-        fontSize: '13px',
+        fontSize: TEXT.size.hint,
         color: COLORS.muted,
         align: 'center',
         wordWrap: { width: cardWidth - 32 },

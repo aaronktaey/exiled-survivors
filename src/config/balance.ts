@@ -1,6 +1,6 @@
-import type { SkillId } from '@/weapons/skills';
+import type { SkillId } from "@/weapons/skills";
 
-import { COLORS, TEXTURES } from '@/config/visuals';
+import { COLORS, TEXTURES } from "@/config/visuals";
 
 /**
  * ★ 밸런스 — the file to open when tuning how the game plays.
@@ -32,7 +32,7 @@ export const BALANCE = {
 export const PLAYER = {
   size: 20,
   speed: 220,
-  maxHp: 20,
+  maxHp: 30,
   /** Invulnerability after taking a hit, so contact does not drain instantly. */
   invulnerableMs: 600,
   /** XP gems within this range drift toward the player. */
@@ -45,7 +45,7 @@ export const ENEMY = {
   size: 16,
   speed: 70,
   speedVariance: 0.25,
-  maxHp: 30,
+  maxHp: 24,
   contactDamage: 1,
 } as const;
 
@@ -124,7 +124,7 @@ export const ENEMY_KINDS: Record<EnemyKind, EnemyKindSpec> = {
     texture: TEXTURES.enemyBoss,
     size: 44,
     color: COLORS.enemyBoss,
-    maxHp: 900,
+    maxHp: 600,
     speed: 40,
     contactDamage: 5,
   },
@@ -152,7 +152,7 @@ export const ENEMY_KINDS: Record<EnemyKind, EnemyKindSpec> = {
 };
 
 /** What a rare enemy can be born with. */
-export type AffixId = 'giant' | 'swift' | 'critical' | 'mighty';
+export type AffixId = "giant" | "swift" | "critical" | "mighty";
 
 export interface AffixSpec {
   readonly id: AffixId;
@@ -170,10 +170,20 @@ export interface AffixSpec {
 }
 
 export const AFFIXES: Record<AffixId, AffixSpec> = {
-  giant: { id: 'giant', name: '거대', detail: '체력 +50%', hpScale: 1.5 },
-  swift: { id: 'swift', name: '신속', detail: '이동속도 +20%', speedScale: 1.2 },
-  critical: { id: 'critical', name: '치명', detail: '치명타 확률 20%', critChance: 0.2 },
-  mighty: { id: 'mighty', name: '강력', detail: '피해 +50%', damageScale: 1.5 },
+  giant: { id: "giant", name: "거대", detail: "체력 +50%", hpScale: 1.5 },
+  swift: {
+    id: "swift",
+    name: "신속",
+    detail: "이동속도 +20%",
+    speedScale: 1.2,
+  },
+  critical: {
+    id: "critical",
+    name: "치명",
+    detail: "치명타 확률 20%",
+    critChance: 0.2,
+  },
+  mighty: { id: "mighty", name: "강력", detail: "피해 +50%", damageScale: 1.5 },
 };
 
 export const RARE = {
@@ -436,7 +446,10 @@ export const UPGRADE_STEP_BY_SKILL: Partial<
 };
 
 /** How much one pick of `upgrade` adds to `skill`. */
-export function upgradeStep(skill: SkillId, upgrade: keyof typeof UPGRADE_STEP): number {
+export function upgradeStep(
+  skill: SkillId,
+  upgrade: keyof typeof UPGRADE_STEP,
+): number {
   return UPGRADE_STEP_BY_SKILL[skill]?.[upgrade] ?? UPGRADE_STEP[upgrade];
 }
 
@@ -472,7 +485,11 @@ export const XP = {
  * What an enemy of this shape is worth. `hpScale` and `damageScale` are a
  * rare's affix multipliers, so a 거대 · 강력 rare pays for both.
  */
-export function xpFor(spec: EnemyKindSpec, hpScale = 1, damageScale = 1): number {
+export function xpFor(
+  spec: EnemyKindSpec,
+  hpScale = 1,
+  damageScale = 1,
+): number {
   const power =
     spec.maxHp * hpScale +
     spec.contactDamage * XP.contactWeight * damageScale +

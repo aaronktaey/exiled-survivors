@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 
-import { COLORS, DEPTH, MENU } from '@/config';
+import { COLORS, DEPTH, MENU, TEXT } from '@/config';
 
 export interface MenuItem {
   readonly id: string;
@@ -78,18 +78,18 @@ export class MenuList {
       const label = scene.add
         .text(options.x, y, '', {
           fontFamily: 'system-ui, sans-serif',
-          fontSize: '18px',
+          fontSize: TEXT.size.label,
           color: COLORS.text,
         })
         .setOrigin(0.5)
         .setDepth(DEPTH.ui + 1);
 
       // A value row keeps its arrows clear of the read-out.
-      const detailRight = item.onAdjust ? options.x + width / 2 - 44 : options.x + width / 2 - 18;
+      const detailRight = item.onAdjust ? options.x + width / 2 - 46 : options.x + width / 2 - 14;
       const detail = scene.add
         .text(detailRight, y, '', {
           fontFamily: 'system-ui, sans-serif',
-          fontSize: '15px',
+          fontSize: TEXT.size.body,
           color: COLORS.muted,
         })
         .setOrigin(1, 0.5)
@@ -135,7 +135,7 @@ export class MenuList {
     const arrow = this.scene.add
       .text(x, y, direction < 0 ? '◀' : '▶', {
         fontFamily: 'system-ui, sans-serif',
-        fontSize: '15px',
+        fontSize: TEXT.size.body,
         color: COLORS.muted,
       })
       .setOrigin(0.5)

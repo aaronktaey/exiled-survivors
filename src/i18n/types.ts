@@ -87,7 +87,6 @@ export interface Strings {
     readonly level: string;
     readonly enemies: string;
     /** Damage one hit lands. */
-    readonly hit: string;
     /** Damage per second, counting everything the skill touches. */
     readonly dps: string;
   };
