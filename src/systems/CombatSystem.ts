@@ -15,9 +15,10 @@ import type { SkillDefinition, SkillId } from '@/weapons/skills';
 export interface CombatHooks {
   /**
    * Picks a skill to drop on a kill, or null to drop nothing. `bonus`
-   * multiplies the chance — a rare's affixes make it likelier.
+   * multiplies the chance — a rare's affixes make it likelier — and
+   * `guaranteed` skips the roll, which is what a 우두머리 is worth.
    */
-  readonly rollSkillDrop: (bonus: number) => SkillDefinition | null;
+  readonly rollSkillDrop: (bonus: number, guaranteed: boolean) => SkillDefinition | null;
   /** Called when the player walks over a dropped skill. */
   readonly onSkillCollected: (skill: SkillId) => void;
 }
@@ -222,13 +223,14 @@ export class CombatSystem {
     // Read the rewards before recycling, which resets the kind and affixes.
     const worth = enemy.xpValue;
     const dropBonus = enemy.dropBonus;
+    const wasBoss = enemy.isBoss;
     // Pooled: back to the spawner's pool rather than destroyed.
     enemy.recycle();
 
     const gem = this.gems.get() as XpGem | null;
     gem?.drop(x, y, worth, this.player);
 
-    const skill = this.hooks.rollSkillDrop(dropBonus);
+    const skill = this.hooks.rollSkillDrop(dropBonus, wasBoss);
     if (skill) {
       this.dropSkillAt(x, y, skill);
     }

@@ -38,6 +38,7 @@ export const ko: Strings = {
     hintPlacing: '방향키로 옮기거나 화면을 눌러 배치   ·   Space 로 확정',
     hintFloating: '화면 아무 곳이나 누른 자리에 패드가 생깁니다   ·   Esc 돌아가기',
     hintTilt: '기기를 기울여 움직입니다. 패드는 표시되지 않습니다   ·   Esc 돌아가기',
+    languageTitleOnly: '언어는 타이틀 화면에서만 바꿀 수 있습니다',
     tiltRefused: '이 기기에서는 기울이기를 쓸 수 없습니다',
   },
 
@@ -78,6 +79,7 @@ export const ko: Strings = {
     intro: 'Exile, do something!',
     introHintKeyboard: 'WASD · 방향키로 이동 — 공격은 자동',
     introHintTouch: '스틱을 끌어 이동 — 공격은 자동',
+    bossArrived: '우두머리 등장',
     pickedUp: '{skill} 획득',
     enhancedPickup: '{skill} 강화',
   },
@@ -163,6 +165,7 @@ export const ko: Strings = {
         grunt: '곧장 달려듭니다. 수가 많습니다.',
         brute: '느리지만 아주 단단하고, 스치기만 해도 크게 아픕니다.',
         runner: '약하지만 빠릅니다. 도망쳐도 따라붙습니다.',
+        boss: '1분마다 한 마리씩 찾아옵니다. 아주 단단하고 아주 아프지만, 쓰러뜨리면 스킬을 반드시 떨어뜨립니다.',
         shooter: '거리를 두고 멈춰 서서 탄을 쏩니다. 가까이 가거나 사거리가 긴 스킬로 잡으세요.',
       },
     },

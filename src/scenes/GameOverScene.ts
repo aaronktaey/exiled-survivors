@@ -93,6 +93,7 @@ export class GameOverScene extends Phaser.Scene {
   private openSettings(): void {
     this.scene.pause();
     this.scene.launch(SCENES.settings, {
+      allowLanguage: false,
       onClose: (languageChanged = false) => {
         this.scene.resume();
         if (languageChanged) {

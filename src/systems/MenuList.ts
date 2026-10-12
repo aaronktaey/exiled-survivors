@@ -68,19 +68,20 @@ export class MenuList {
 
     options.items.forEach((item, index) => {
       const y = options.y + index * step;
+      // No border: a row is just its words, and the one in hand is the one
+      // lit up. The panel stays for the hit area and the highlight.
       const panel = scene.add
-        .rectangle(options.x, y, width, MENU.buttonHeight, COLORS.panel, 1)
+        .rectangle(options.x, y, width, MENU.buttonHeight, COLORS.panelActive, 0)
         .setDepth(DEPTH.ui)
-        .setStrokeStyle(2, COLORS.panelEdge, 1)
         .setInteractive({ useHandCursor: true });
 
       const label = scene.add
-        .text(options.x - width / 2 + 18, y, '', {
+        .text(options.x, y, '', {
           fontFamily: 'system-ui, sans-serif',
           fontSize: '18px',
           color: COLORS.text,
         })
-        .setOrigin(0, 0.5)
+        .setOrigin(0.5)
         .setDepth(DEPTH.ui + 1);
 
       // A value row keeps its arrows clear of the read-out.
@@ -160,13 +161,12 @@ export class MenuList {
       const active = index === this.selected;
       const enabled = this.isEnabled(row);
 
-      row.panel.setFillStyle(active ? COLORS.panelActive : COLORS.panel, 1);
-      row.panel.setStrokeStyle(active ? 3 : 2, active ? COLORS.accentFill : COLORS.panelEdge, 1);
+      row.panel.setFillStyle(COLORS.panelActive, active ? 0.55 : 0);
       row.panel.setAlpha(enabled ? 1 : 0.45);
 
       row.label.setText(row.item.label());
-      row.label.setColor(enabled ? (active ? COLORS.text : COLORS.muted) : COLORS.muted);
-      row.label.setAlpha(enabled ? 1 : 0.6);
+      row.label.setColor(enabled ? (active ? COLORS.accent : COLORS.text) : COLORS.muted);
+      row.label.setAlpha(enabled ? 1 : 0.5);
 
       row.detail.setText(row.item.detail?.() ?? '');
       row.detail.setAlpha(enabled ? 1 : 0.6);

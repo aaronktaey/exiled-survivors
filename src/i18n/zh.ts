@@ -34,6 +34,7 @@ export const zh: Strings = {
     hintPlacing: '用方向键移动，或点按屏幕放置   ·   Space 确认',
     hintFloating: '摇杆会出现在你触摸屏幕的位置   ·   Esc 返回',
     hintTilt: '倾斜设备进行移动，不显示摇杆   ·   Esc 返回',
+    languageTitleOnly: '语言只能在标题画面中更改',
     tiltRefused: '此设备无法使用重力感应',
   },
 
@@ -74,6 +75,7 @@ export const zh: Strings = {
     intro: 'Exile, do something!',
     introHintKeyboard: 'WASD 或方向键移动 — 攻击自动进行',
     introHintTouch: '拖动摇杆移动 — 攻击自动进行',
+    bossArrived: '首领出现',
     pickedUp: '获得 {skill}',
     enhancedPickup: '强化 {skill}',
   },
@@ -136,7 +138,7 @@ export const zh: Strings = {
       관통: '穿透',
       공허: '虚空',
     },
-    enemies: { grunt: '杂兵', brute: '巨汉', runner: '疾走者', shooter: '射手' },
+    enemies: { boss: '首领', grunt: '杂兵', brute: '巨汉', runner: '疾走者', shooter: '射手' },
     affixes: { giant: '巨大', swift: '迅捷', critical: '致命', mighty: '强力' },
     affixDetails: {
       giant: '生命 +50%',
@@ -198,6 +200,7 @@ export const zh: Strings = {
         grunt: '径直冲向你，数量很多。',
         brute: '移动缓慢但非常坚硬，被碰到就会掉很多血。',
         runner: '脆弱但速度快，逃跑也甩不掉。',
+        boss: '每分钟出现一只。非常坚硬也非常疼，但击杀后必定掉落技能。',
         shooter: '会保持距离停下射击。走过去解决，或者用射程长的技能。',
       },
     },

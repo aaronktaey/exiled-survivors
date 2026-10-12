@@ -53,6 +53,8 @@ export interface Strings {
     readonly hintFloating: string;
     readonly hintTilt: string;
     readonly tiltRefused: string;
+    /** Why the Language row is dim while a run is going. */
+    readonly languageTitleOnly: string;
   };
 
   readonly pause: {
@@ -92,6 +94,7 @@ export interface Strings {
     readonly intro: string;
     readonly introHintKeyboard: string;
     readonly introHintTouch: string;
+    readonly bossArrived: string;
     readonly pickedUp: string;
     readonly enhancedPickup: string;
   };

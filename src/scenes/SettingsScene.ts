@@ -9,6 +9,12 @@ import { bakeSkillLabels } from '@/systems/SkillLabels';
 import { requestTiltPermission, tiltAvailable } from '@/systems/TiltInput';
 
 export interface SettingsSceneData {
+  /**
+   * Whether the language may be changed here. Only the title screen says
+   * yes: swapping every string out from under a running game meant
+   * rebuilding scenes that are mid-run, which is not worth the risk.
+   */
+  readonly allowLanguage?: boolean;
   /** True once the language has been changed during this visit. */
   readonly languageChanged?: boolean;
   readonly onClose: (languageChanged: boolean) => void;
@@ -55,7 +61,7 @@ export class SettingsScene extends Phaser.Scene {
   public create(): void {
     const { width, height } = this.scale;
 
-    this.add.rectangle(0, 0, width, height, 0x05070b, 0.92).setOrigin(0, 0).setDepth(DEPTH.ui);
+    this.add.rectangle(0, 0, width, height, 0x05070b, 0.97).setOrigin(0, 0).setDepth(DEPTH.ui);
     this.add
       .text(width / 2, 52, t().settings.title, {
         fontFamily: 'system-ui, sans-serif',
@@ -78,6 +84,7 @@ export class SettingsScene extends Phaser.Scene {
           // Always "Language", in every language — that is the point of it.
           label: () => 'Language',
           detail: () => languageName(settings.value.language),
+          enabled: () => this.payload.allowLanguage !== false,
           onSelect: () => this.changeLanguage(1),
           onAdjust: (direction) => this.changeLanguage(direction),
         },
@@ -193,9 +200,19 @@ export class SettingsScene extends Phaser.Scene {
    * underneath is told to do the same when this one closes.
    */
   private changeLanguage(direction: -1 | 1): void {
+    if (this.payload.allowLanguage === false) {
+      return;
+    }
+
     settings.cycleLanguage(direction);
     bakeSkillLabels(this);
-    this.scene.restart({ ...this.payload, languageChanged: true });
+
+    // A frame later: this call is still inside the input handler that is
+    // walking this scene's interactive objects, and restarting now pulls
+    // them out from under it.
+    this.time.delayedCall(0, () => {
+      this.scene.restart({ ...this.payload, languageChanged: true });
+    });
   }
 
   private async cycleMode(direction: -1 | 1): Promise<void> {
@@ -238,6 +255,11 @@ export class SettingsScene extends Phaser.Scene {
   private setHint(): void {
     if (this.placing) {
       this.hint.setText(t().settings.hintPlacing);
+      return;
+    }
+
+    if (this.payload.allowLanguage === false) {
+      this.hint.setText(t().settings.languageTitleOnly);
       return;
     }
 

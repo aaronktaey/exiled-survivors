@@ -39,7 +39,12 @@ export class MenuScene extends Phaser.Scene {
           enabled: () => saved !== null,
           onSelect: () => this.startRun(true),
         },
-        { id: 'settings', label: () => t().menu.settings, onSelect: () => this.openOverlay(SCENES.settings) },
+        {
+          id: 'settings',
+          // Always "Settings", like the Language row it leads to.
+          label: () => 'Settings',
+          onSelect: () => this.openOverlay(SCENES.settings, { allowLanguage: true }),
+        },
         {
           id: 'guide',
           label: () => t().menu.guide,

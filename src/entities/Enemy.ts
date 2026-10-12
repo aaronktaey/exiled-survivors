@@ -49,6 +49,8 @@ function rollAffixes(): readonly AffixSpec[] {
 export interface EnemyHooks {
   /** Fires one enemy shot. Only the kinds that shoot ever call it. */
   readonly fireShot: (x: number, y: number, angle: number, spec: EnemyShotSpec) => void;
+  /** Announces a 우두머리, so the run can say something about it. */
+  readonly onBossSpawned?: () => void;
 }
 
 /**
@@ -111,8 +113,12 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
     return this.affixes.map((affix) => affix.name);
   }
 
-  /** The ring's colour, which deepens with each affix carried. */
+/** The ring's colour: gold for a boss, deepening with a rare's affixes. */
   public get outlineColor(): number {
+    if (this.isBoss) {
+      return COLORS.bossOutline;
+    }
+
     const tier = Phaser.Math.Clamp(this.affixes.length, 1, RARE_OUTLINE_TIERS.length) - 1;
     return RARE_OUTLINE_TIERS[tier] ?? COLORS.rareOutline;
   }
@@ -143,6 +149,11 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
 
   public get kindName(): string {
     return this.spec.name;
+  }
+
+  /** 우두머리 arrives on the clock and always leaves a skill behind. */
+  public get isBoss(): boolean {
+    return this.kind === 'boss';
   }
 
   /** True while 냉각 is slowing it down. */
@@ -212,7 +223,7 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
 
   /** The ring that marks a rare, made once and reused by the pool. */
   private drawOutline(): void {
-    if (!this.rare) {
+    if (!this.rare && !this.isBoss) {
       this.outline?.setVisible(false);
       return;
     }

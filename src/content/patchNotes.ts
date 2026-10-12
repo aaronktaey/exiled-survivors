@@ -15,6 +15,40 @@ export interface PatchNote {
 
 export const PATCH_NOTES: readonly PatchNote[] = [
   {
+    version: '0.12',
+    date: '2026-10-12',
+    changes: {
+      ko: [
+        '우두머리 추가 — 1분마다 한 마리씩 등장하며, 처치하면 스킬을 반드시 떨어뜨립니다.',
+        '우두머리는 체력 900에 금색 테두리를 두르고, 등장할 때 알려줍니다.',
+        '언어는 타이틀 화면에서만 바꿀 수 있습니다. 게임 도중 바꾸면 문제가 생길 수 있어 막았습니다.',
+        '메인화면 · 일시정지 · 설정 화면의 선택지에서 테두리를 없애고 가운데 정렬했습니다.',
+        '메인화면의 설정 항목은 어느 언어에서나 Settings로 표기됩니다.',
+      ],
+      en: [
+        'Bosses — one arrives every minute, and killing it always leaves a skill.',
+        'A boss has 900 health, wears a gold ring, and announces itself.',
+        'The language can only be changed from the title screen; changing it mid-run could break things.',
+        'The title, pause and settings rows lost their borders and found their centre.',
+        'The title’s settings entry reads "Settings" in every language.',
+      ],
+      ja: [
+        'ボスを追加 — 1 分ごとに 1 体現れ、倒すと必ずスキルを落とします。',
+        'ボスは体力 900、金色の縁取りを帯び、出現時に知らせます。',
+        '言語はタイトル画面でのみ変更できます。ゲーム中の変更は不具合の恐れがあるため塞ぎました。',
+        'タイトル・一時停止・設定の項目から枠線を外し、中央揃えにしました。',
+        'タイトルの設定項目はどの言語でも Settings と表示されます。',
+      ],
+      zh: [
+        '新增首领 — 每分钟出现一只，击杀后必定掉落技能。',
+        '首领拥有 900 生命、金色描边，出现时会有提示。',
+        '语言只能在标题画面中更改，游戏途中更改可能导致问题，因此已禁用。',
+        '标题、暂停与设置画面的选项去掉了边框并居中显示。',
+        '标题画面的设置项在任何语言下都显示为 Settings。',
+      ],
+    },
+  },
+  {
     version: '0.11',
     date: '2026-10-12',
     changes: {

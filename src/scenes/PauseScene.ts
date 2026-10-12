@@ -66,7 +66,11 @@ export class PauseScene extends Phaser.Scene {
         { id: 'resume', label: () => t().pause.resume, onSelect: () => this.resume() },
         { id: 'guide', label: () => t().menu.guide, onSelect: () => this.openOverlay(SCENES.info, { topic: 'guide' }) },
         { id: 'patch', label: () => t().menu.patch, onSelect: () => this.openOverlay(SCENES.info, { topic: 'patch' }) },
-        { id: 'settings', label: () => t().menu.settings, onSelect: () => this.openOverlay(SCENES.settings) },
+        {
+          id: 'settings',
+          label: () => t().menu.settings,
+          onSelect: () => this.openOverlay(SCENES.settings, { allowLanguage: false }),
+        },
         { id: 'quit', label: () => t().pause.quit, onSelect: () => this.quit() },
       ],
     });

@@ -34,6 +34,7 @@ export const ja: Strings = {
     hintPlacing: '方向キーで動かすか画面を押して配置   ·   Space で確定',
     hintFloating: '画面のどこでも、触れた位置にパッドが出ます   ·   Esc で戻る',
     hintTilt: '端末を傾けて移動します。パッドは表示されません   ·   Esc で戻る',
+    languageTitleOnly: '言語はタイトル画面でのみ変更できます',
     tiltRefused: 'この端末では傾け操作を使えません',
   },
 
@@ -74,6 +75,7 @@ export const ja: Strings = {
     intro: 'Exile, do something!',
     introHintKeyboard: 'WASD・方向キーで移動 — 攻撃は自動',
     introHintTouch: 'スティックを引いて移動 — 攻撃は自動',
+    bossArrived: 'ボス出現',
     pickedUp: '{skill} 習得',
     enhancedPickup: '{skill} 強化',
   },
@@ -136,7 +138,7 @@ export const ja: Strings = {
       관통: '貫通',
       공허: '虚無',
     },
-    enemies: { grunt: '雑兵', brute: '巨漢', runner: '俊足', shooter: '射手' },
+    enemies: { boss: 'ボス', grunt: '雑兵', brute: '巨漢', runner: '俊足', shooter: '射手' },
     affixes: { giant: '巨大', swift: '俊敏', critical: '致命', mighty: '剛力' },
     affixDetails: {
       giant: '体力 +50%',
@@ -198,6 +200,7 @@ export const ja: Strings = {
         grunt: 'まっすぐ突っ込んできます。数が多いです。',
         brute: '遅いが非常に硬く、触れるだけで大きく削られます。',
         runner: '脆いが速い。逃げても追いついてきます。',
+        boss: '1 分ごとに 1 体現れます。非常に硬く痛いですが、倒せば必ずスキルを落とします。',
         shooter: '距離を取って止まり、撃ってきます。近づくか、射程の長いスキルで倒しましょう。',
       },
     },

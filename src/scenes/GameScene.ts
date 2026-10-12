@@ -126,6 +126,7 @@ export class GameScene extends Phaser.Scene {
     // The hook is called later, during play, by which point combat exists.
     this.spawner = new SpawnDirector(this, this.player, {
       fireShot: (x, y, angle, spec) => this.combat.fireEnemyShot(x, y, angle, spec),
+      onBossSpawned: () => this.announce(t().game.bossArrived),
     });
     this.separation = new Separation(this.spawner.group);
     this.damageNumbers = new DamageNumbers(this);
@@ -136,7 +137,7 @@ export class GameScene extends Phaser.Scene {
       this.progression,
       this.damageNumbers,
       {
-        rollSkillDrop: (bonus) => this.rollSkillDrop(bonus),
+        rollSkillDrop: (bonus, guaranteed) => this.rollSkillDrop(bonus, guaranteed),
         onSkillCollected: (skill) => this.onSkillCollected(skill),
       },
     );
@@ -403,8 +404,12 @@ export class GameScene extends Phaser.Scene {
    * Droppable skills keep dropping; a repeat drop upgrades instead.
    * `bonus` is the killed enemy's drop multiplier — 1 for anything ordinary.
    */
-  private rollSkillDrop(bonus = 1): SkillDefinition | null {
-    if (DROPPABLE_SKILLS.length === 0 || Math.random() >= SKILL_DROP.chance * bonus) {
+  private rollSkillDrop(bonus = 1, guaranteed = false): SkillDefinition | null {
+    if (DROPPABLE_SKILLS.length === 0) {
+      return null;
+    }
+
+    if (!guaranteed && Math.random() >= SKILL_DROP.chance * bonus) {
       return null;
     }
 
@@ -457,6 +462,7 @@ export class GameScene extends Phaser.Scene {
         enemyPool: this.spawner.pooled,
         byKind: this.spawner.aliveByKind,
         rares: this.spawner.aliveRares,
+        bosses: this.spawner.aliveBosses,
         enemyShots: this.combat.enemyShots.countActive(true),
         projectiles: this.weapons.reduce((n, w) => n + (w.projectiles?.countActive(true) ?? 0), 0),
         gems: this.combat.gems.countActive(true),
@@ -468,6 +474,9 @@ export class GameScene extends Phaser.Scene {
       spawnOneOfEach: () => this.spawner.spawnOneOfEach(),
       spawnRare: () => {
         this.spawner.spawnRare();
+      },
+      spawnBoss: () => {
+        this.spawner.spawnBoss();
       },
       clearEnemies: () => this.spawner.clear(),
       grantLevel: () => this.progression.addXp(this.progression.xpToNext),

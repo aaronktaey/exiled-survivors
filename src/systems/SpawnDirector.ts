@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 
-import { ENEMY_KINDS, RARE, SPAWN, SPAWN_TABLE, WORLD, type EnemyKind } from '@/config';
+import { BOSS, ENEMY_KINDS, RARE, SPAWN, SPAWN_TABLE, WORLD, type EnemyKind } from '@/config';
 import { Enemy, type EnemyHooks } from '@/entities/Enemy';
 
 /**
@@ -21,6 +21,7 @@ export class SpawnDirector {
   private readonly hooks: EnemyHooks;
   private elapsedMs = 0;
   private sinceSpawnMs = 0;
+  private sinceBossMs = 0;
 
   public constructor(
     scene: Phaser.Scene,
@@ -48,6 +49,8 @@ export class SpawnDirector {
   /** Puts the clock back where a saved run left it. */
   public seed(elapsedMs: number): void {
     this.elapsedMs = elapsedMs;
+    // A resumed run waits its full minute rather than owing a boss at once.
+    this.sinceBossMs = 0;
   }
 
   /** Total sprites held by the pool, alive or waiting. */
@@ -69,7 +72,7 @@ export class SpawnDirector {
 
   /** How many of each kind are on the field right now. */
   public get aliveByKind(): Record<EnemyKind, number> {
-    const counts = { grunt: 0, brute: 0, runner: 0, shooter: 0 };
+    const counts = { grunt: 0, brute: 0, runner: 0, shooter: 0, boss: 0 };
     for (const child of this.group.getChildren()) {
       const enemy = child as Enemy;
       if (enemy.active) {
@@ -94,6 +97,13 @@ export class SpawnDirector {
   public update(delta: number): void {
     this.elapsedMs += delta;
     this.sinceSpawnMs += delta;
+    this.sinceBossMs += delta;
+
+    // One 우두머리 a minute, on its own clock and outside the usual cap.
+    while (this.sinceBossMs >= BOSS.intervalMs) {
+      this.sinceBossMs -= BOSS.intervalMs;
+      this.spawnBoss();
+    }
 
     const interval = this.intervalMs;
     // Catch up if a long frame swallowed several spawn windows.
@@ -103,6 +113,42 @@ export class SpawnDirector {
         this.spawnOne();
       }
     }
+  }
+
+  /** Milliseconds until the next 우두머리. */
+  public get nextBossMs(): number {
+    return Math.max(0, BOSS.intervalMs - this.sinceBossMs);
+  }
+
+  /** How many 우두머리 are on the field. */
+  public get aliveBosses(): number {
+    let count = 0;
+    for (const child of this.group.getChildren()) {
+      const enemy = child as Enemy;
+      if (enemy.active && enemy.isBoss) {
+        count += 1;
+      }
+    }
+    return count;
+  }
+
+  /** Sends in one 우두머리 from just outside the ring. */
+  public spawnBoss(): Enemy | null {
+    const camera = this.scene.cameras.main;
+    const radius =
+      Math.hypot(camera.width, camera.height) / 2 + SPAWN.offscreenMargin + BOSS.extraDistance;
+    const angle = Phaser.Math.FloatBetween(0, Math.PI * 2);
+    const x = Phaser.Math.Clamp(this.target.x + Math.cos(angle) * radius, 0, WORLD.width);
+    const y = Phaser.Math.Clamp(this.target.y + Math.sin(angle) * radius, 0, WORLD.height);
+
+    const boss = this.group.get(x, y) as Enemy | null;
+    if (!boss) {
+      return null;
+    }
+
+    boss.spawn(x, y, this.target, 'boss', this.hooks);
+    this.hooks.onBossSpawned?.();
+    return boss;
   }
 
   /** One rare, next to the player. Used by the debug keys and by tests. */

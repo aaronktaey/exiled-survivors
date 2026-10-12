@@ -1,4 +1,5 @@
 import {
+  BOSS,
   ENEMY_KINDS,
   GROUND_ITEM,
   PLAYER,
@@ -101,7 +102,7 @@ function enemyLines(): readonly string[] {
   const g = t().guide.enemies;
   const order = [...SPAWN_TABLE].sort((a, b) => a.unlockMs - b.unlockMs);
 
-  return order.flatMap(({ kind, unlockMs }) => {
+  const lines = order.flatMap(({ kind, unlockMs }) => {
     const spec = ENEMY_KINDS[kind as EnemyKind];
     const when = unlockMs > 0 ? fill(g.unlocksAt, { time: seconds(unlockMs) }) : g.fromStart;
 
@@ -115,4 +116,17 @@ function enemyLines(): readonly string[] {
       `   ${g.notes[kind]} (${when})`,
     ];
   });
+
+  const boss = ENEMY_KINDS.boss;
+  lines.push(
+    fill(g.stats, {
+      name: enemyName('boss'),
+      hp: boss.maxHp,
+      contact: boss.contactDamage,
+      xp: boss.xp,
+    }),
+    `   ${fill(g.notes.boss, { bossEvery: Math.round(BOSS.intervalMs / 1000) })}`,
+  );
+
+  return lines;
 }

@@ -38,7 +38,7 @@ export class CreditsScene extends Phaser.Scene {
   public create(): void {
     const { width, height } = this.scale;
 
-    this.add.rectangle(0, 0, width, height, 0x05070b, 0.92).setOrigin(0, 0).setDepth(DEPTH.ui);
+    this.add.rectangle(0, 0, width, height, 0x05070b, 0.97).setOrigin(0, 0).setDepth(DEPTH.ui);
     this.add
       .text(width / 2, 60, t().credits.title, {
         fontFamily: 'system-ui, sans-serif',

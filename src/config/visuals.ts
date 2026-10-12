@@ -19,6 +19,9 @@ export const COLORS = {
   enemyBrute: 0xb44bd1,
   enemyRunner: 0xf2b134,
   enemyShooter: 0x5fc27e,
+  /** 우두머리: a dark slab with a gold ring around it. */
+  enemyBoss: 0x7a1f3d,
+  bossOutline: 0xffd34d,
   /** Enemy fire, kept well away from any colour the player's own shots use. */
   enemyShot: 0xff7a9c,
   /** The ring around a rare at one affix, and its tooltip heading. */
@@ -78,6 +81,7 @@ export const TEXTURES = {
   enemyBrute: "tex-enemy-brute",
   enemyRunner: "tex-enemy-runner",
   enemyShooter: "tex-enemy-shooter",
+  enemyBoss: "tex-enemy-boss",
   enemyShot: "tex-enemy-shot",
   projectile: "tex-projectile",
   iceShard: "tex-ice-shard",

@@ -49,7 +49,7 @@ export const ENEMY = {
   contactDamage: 1,
 } as const;
 
-export type EnemyKind = "grunt" | "brute" | "runner" | "shooter";
+export type EnemyKind = "grunt" | "brute" | "runner" | "shooter" | "boss";
 
 /** What a shooting enemy throws. */
 export interface EnemyShotSpec {
@@ -119,6 +119,21 @@ export const ENEMY_KINDS: Record<EnemyKind, EnemyKindSpec> = {
     contactDamage: 1,
     xp: 2,
   },
+  /**
+   * 우두머리. Not in the spawn table: one arrives on the clock instead, and
+   * killing it always leaves a skill behind.
+   */
+  boss: {
+    id: "boss",
+    name: "우두머리",
+    texture: TEXTURES.enemyBoss,
+    size: 44,
+    color: COLORS.enemyBoss,
+    maxHp: 900,
+    speed: 40,
+    contactDamage: 5,
+    xp: 30,
+  },
   shooter: {
     id: "shooter",
     name: "사수",
@@ -186,6 +201,14 @@ export const RARE = {
   /** The yellow ring: how thick, and how far outside the sprite it sits. */
   outlineWidth: 2,
   outlinePadding: 5,
+} as const;
+
+/** 우두머리: one every so often, worth killing for what it drops. */
+export const BOSS = {
+  /** How often one turns up, from the start of the run. */
+  intervalMs: 60_000,
+  /** How far outside the usual spawn ring it enters. */
+  extraDistance: 40,
 } as const;
 
 /**

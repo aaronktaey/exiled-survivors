@@ -34,6 +34,7 @@ export const en: Strings = {
     hintPlacing: 'Arrows to nudge, or touch the screen to place   ·   Space to confirm',
     hintFloating: 'The pad appears wherever you touch the screen   ·   Esc to go back',
     hintTilt: 'Tilt the device to move. No pad is shown.   ·   Esc to go back',
+    languageTitleOnly: 'The language can only be changed from the title screen',
     tiltRefused: 'This device will not give out tilt',
   },
 
@@ -74,6 +75,7 @@ export const en: Strings = {
     intro: 'Exile, do something!',
     introHintKeyboard: 'WASD or arrows to move — attacks are automatic',
     introHintTouch: 'Drag the stick to move — attacks are automatic',
+    bossArrived: 'A boss is here',
     pickedUp: '{skill} acquired',
     enhancedPickup: '{skill} upgraded',
   },
@@ -136,7 +138,7 @@ export const en: Strings = {
       관통: 'pierce',
       공허: 'void',
     },
-    enemies: { grunt: 'Grunt', brute: 'Brute', runner: 'Runner', shooter: 'Shooter' },
+    enemies: { boss: 'Boss', grunt: 'Grunt', brute: 'Brute', runner: 'Runner', shooter: 'Shooter' },
     affixes: { giant: 'Giant', swift: 'Swift', critical: 'Deadly', mighty: 'Mighty' },
     affixDetails: {
       giant: 'Health +50%',
@@ -198,6 +200,7 @@ export const en: Strings = {
         grunt: 'Walks straight at you. There are a lot of them.',
         brute: 'Slow, but very tough, and standing in one costs a great deal.',
         runner: 'Frail and fast. Running away does not shake it.',
+        boss: 'One arrives every minute. Very tough and very painful, but killing it always leaves a skill.',
         shooter: 'Stops at a distance and fires. Walk it down, or bring something with reach.',
       },
     },
