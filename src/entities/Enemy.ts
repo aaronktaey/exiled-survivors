@@ -9,6 +9,7 @@ import {
   ENEMY,
   ENEMY_KINDS,
   RARE,
+  RARE_OUTLINE_TIERS,
   TEXTURES,
   TIMING,
   type AffixId,
@@ -19,14 +20,23 @@ import {
 
 const AFFIX_IDS = Object.keys(AFFIXES) as AffixId[];
 
-/** One to RARE.maxAffixes distinct affixes, drawn at random. */
+/**
+ * What a rare is carrying. It always gets minAffixes; after that each
+ * further one has to win its own roll, so most rares carry one or two and
+ * a full stack is something you meet rarely and remember.
+ *
+ * Repeats are allowed — there are fewer affix kinds than the ceiling, and
+ * a doubled 거대 is a fine way to say "much bigger".
+ */
 function rollAffixes(): readonly AffixSpec[] {
-  const pool = [...AFFIX_IDS];
-  const count = Phaser.Math.Between(RARE.minAffixes, Math.min(RARE.maxAffixes, pool.length));
   const picked: AffixSpec[] = [];
 
-  for (let i = 0; i < count; i++) {
-    const [id] = pool.splice(Math.floor(Math.random() * pool.length), 1);
+  while (picked.length < RARE.maxAffixes) {
+    if (picked.length >= RARE.minAffixes && Math.random() >= RARE.extraAffixChance) {
+      break;
+    }
+
+    const id = AFFIX_IDS[Math.floor(Math.random() * AFFIX_IDS.length)];
     if (id) {
       picked.push(AFFIXES[id]);
     }
@@ -101,6 +111,26 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
     return this.affixes.map((affix) => affix.name);
   }
 
+  /** The ring's colour, which deepens with each affix carried. */
+  public get outlineColor(): number {
+    const tier = Phaser.Math.Clamp(this.affixes.length, 1, RARE_OUTLINE_TIERS.length) - 1;
+    return RARE_OUTLINE_TIERS[tier] ?? COLORS.rareOutline;
+  }
+
+  /** Affixes folded into "거대 x2" counts, in the order they were drawn. */
+  public get affixTally(): readonly { readonly affix: AffixSpec; readonly count: number }[] {
+    const tally: { affix: AffixSpec; count: number }[] = [];
+    for (const affix of this.affixes) {
+      const seen = tally.find((entry) => entry.affix.id === affix.id);
+      if (seen) {
+        seen.count += 1;
+      } else {
+        tally.push({ affix, count: 1 });
+      }
+    }
+    return tally;
+  }
+
   /** Half the sprite's width, plus the ring. What counts as "pointing at it". */
   public get pickRadius(): number {
     return this.spec.size / 2 + RARE.outlinePadding;
@@ -171,12 +201,12 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
     this.critChance = 0;
 
     for (const affix of affixes) {
+      // The same affix can be drawn twice, and then it stacks: the scales
+      // multiply, while crit chance adds up and stops at certain.
       this.hpScale *= affix.hpScale ?? 1;
       this.speedScale *= affix.speedScale ?? 1;
       this.damageScale *= affix.damageScale ?? 1;
-      // Two 치명 rolls cannot happen — affixes are drawn without repeats —
-      // so the highest one simply wins.
-      this.critChance = Math.max(this.critChance, affix.critChance ?? 0);
+      this.critChance = Math.min(1, this.critChance + (affix.critChance ?? 0));
     }
   }
 
@@ -197,7 +227,7 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
 
     this.outline
       .setSize(side, side)
-      .setStrokeStyle(RARE.outlineWidth, COLORS.rareOutline, 1)
+      .setStrokeStyle(RARE.outlineWidth, this.outlineColor, 1)
       .setPosition(this.x, this.y)
       .setVisible(true);
   }

@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 
 import { COLORS, DEPTH } from '@/config';
+import { t } from '@/i18n';
 import { upgradeOptionsFor, type UpgradeId, type UpgradeOption } from '@/systems/Progression';
 import { prefersTouchControls } from '@/systems/VirtualJoystick';
 import { SKILLS, type SkillId } from '@/weapons/skills';
@@ -119,7 +120,7 @@ export class UpgradeScene extends Phaser.Scene {
       .text(
         centerX,
         height / 2 + 150,
-        prefersTouchControls() ? '원하는 쪽을 터치하세요' : '← → 이동   Space 선택   (1-4 로 바로 선택)',
+        prefersTouchControls() ? t().upgrade.hintTouch : t().upgrade.hintKeyboard,
         {
           fontFamily: 'system-ui, sans-serif',
           fontSize: '14px',

@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 
 import { COLORS, DEBUG, DEPTH, ENEMY_KINDS, TIMING, type EnemyKind } from '@/config';
+import { enemyName } from '@/i18n';
 
 /** Counts the overlay reads each frame. */
 export interface DebugCounts {
@@ -141,7 +142,7 @@ export class DebugOverlay {
   /** "일반 12  질주 3  사수 1  거구 0" */
   private kindBreakdown(counts: DebugCounts): string {
     return (Object.keys(ENEMY_KINDS) as EnemyKind[])
-      .map((kind) => `${ENEMY_KINDS[kind].name} ${counts.byKind[kind] ?? 0}`)
+      .map((kind) => `${enemyName(kind)} ${counts.byKind[kind] ?? 0}`)
       .join('  ');
   }
 

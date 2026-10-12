@@ -13,6 +13,7 @@ import {
   WORLD,
 } from '@/config';
 import { Player } from '@/entities/Player';
+import { fill, skillName, t } from '@/i18n';
 import { GameOverScene, type GameOverData } from '@/scenes/GameOverScene';
 import { UpgradeScene, type UpgradeChoiceData } from '@/scenes/UpgradeScene';
 import {
@@ -38,7 +39,6 @@ import {
   IceSpear,
   LEVEL_UP_SKILL,
   MeleeStrike,
-  SKILLS,
   VoidOrb,
   STARTING_SKILLS,
   type SkillDefinition,
@@ -390,11 +390,12 @@ export class GameScene extends Phaser.Scene {
     const isNew = !this.owned.has(skill);
     this.acquire(skill);
 
-    const name = SKILLS[skill].name;
-    this.announce(isNew ? `${name} 획득` : `${name} 강화`);
+    const name = skillName(skill);
+    const copy = t().game;
+    this.announce(fill(isNew ? copy.pickedUp : copy.enhancedPickup, { skill: name }));
 
     if (!isNew) {
-      this.queueChoice({ title: name, subtitle: '강화', skill });
+      this.queueChoice({ title: name, subtitle: t().upgrade.enhanced, skill });
     }
   }
 
@@ -419,7 +420,7 @@ export class GameScene extends Phaser.Scene {
     return this.weapons.map((weapon) => {
       const id = weapon.definition.id;
       return {
-        name: weapon.definition.name,
+        name: skillName(id),
         damage: this.damageOf(id),
         attackSpeed: this.progression.statsFor(id).attackSpeed,
       };
@@ -488,7 +489,11 @@ export class GameScene extends Phaser.Scene {
 
   /** Level-up points are spent on the basic attack only. */
   private onLevelUp(level: number): void {
-    this.queueChoice({ title: 'LEVEL UP', subtitle: `Lv ${level}`, skill: LEVEL_UP_SKILL });
+    this.queueChoice({
+      title: t().upgrade.levelUp,
+      subtitle: fill(t().upgrade.level, { level }),
+      skill: LEVEL_UP_SKILL,
+    });
   }
 
   private queueChoice(request: ChoiceRequest): void {
@@ -547,7 +552,7 @@ export class GameScene extends Phaser.Scene {
     const camera = this.cameras.main;
 
     const title = this.add
-      .text(camera.width / 2, camera.height / 2 - 24, 'Hello Survivor', {
+      .text(camera.width / 2, camera.height / 2 - 24, t().game.intro, {
         fontFamily: 'system-ui, sans-serif',
         fontSize: '56px',
         color: COLORS.text,
@@ -560,7 +565,7 @@ export class GameScene extends Phaser.Scene {
       .text(
         camera.width / 2,
         camera.height / 2 + 32,
-        prefersTouchControls() ? '스틱을 끌어 이동 — 공격은 자동' : 'WASD · 방향키로 이동 — 공격은 자동',
+        prefersTouchControls() ? t().game.introHintTouch : t().game.introHintKeyboard,
         {
           fontFamily: 'system-ui, sans-serif',
           fontSize: '18px',

@@ -1,0 +1,230 @@
+import type { Strings } from '@/i18n/types';
+
+/** 简体中文. */
+export const zh: Strings = {
+  native: '中文',
+
+  common: { back: '返回', close: '关闭', on: '开', off: '关' },
+
+  menu: {
+    byline: 'created by whitemango',
+    start: '开始游戏',
+    load: '继续游戏',
+    noSave: '没有存档',
+    settings: '设置',
+    guide: '游戏指南',
+    patch: '更新日志',
+    credits: '制作人员',
+    hintKeyboard: '↑ ↓ 移动   Space 选择   （也可点击）',
+    hintTouch: '点按条目进行选择',
+  },
+
+  settings: {
+    title: '设置',
+    padSize: '摇杆大小',
+    padPlace: '固定摇杆位置',
+    padPlaceOnlyFixed: '仅固定摇杆可用',
+    movement: '移动端操作方式',
+    modeFixed: '固定摇杆',
+    modeFloating: '触点生成摇杆',
+    modeTilt: '重力感应',
+    bgm: '背景音量',
+    reset: '恢复默认',
+    hint: '↑ ↓ 移动   ◀ ▶ 调整   Space 选择   Esc 返回',
+    hintPlacing: '用方向键移动，或点按屏幕放置   ·   Space 确认',
+    hintFloating: '摇杆会出现在你触摸屏幕的位置   ·   Esc 返回',
+    hintTilt: '倾斜设备进行移动，不显示摇杆   ·   Esc 返回',
+    tiltRefused: '此设备无法使用重力感应',
+  },
+
+  pause: {
+    title: '暂停',
+    survived: '生存 {time}    Lv {level}',
+    resume: '继续',
+    quit: '保存并返回标题',
+    hint: 'Esc 或返回键继续   ·   指向稀有敌人可查看强化效果',
+  },
+
+  gameOver: {
+    title: 'GAME OVER',
+    survived: '生存 {time}    Lv {level}',
+    retry: '再来一局',
+    toTitle: '返回标题',
+    hintKeyboard: '↑ ↓ 移动   Space 选择',
+    hintTouch: '点按条目进行选择',
+  },
+
+  upgrade: {
+    levelUp: 'LEVEL UP',
+    level: 'Lv {level}',
+    acquired: '获得',
+    enhanced: '强化',
+    hintKeyboard: '← → 移动   Space 选择   （1-4 直接选）',
+    hintTouch: '点按想要的一项',
+  },
+
+  hud: {
+    level: 'Lv {level}',
+    enemies: '敌人 {count}',
+    damage: '攻击 {damage}',
+    rate: '攻速 {rate}/s',
+  },
+
+  game: {
+    intro: 'Exile, do something!',
+    introHintKeyboard: 'WASD 或方向键移动 — 攻击自动进行',
+    introHintTouch: '拖动摇杆移动 — 攻击自动进行',
+    pickedUp: '获得 {skill}',
+    enhancedPickup: '强化 {skill}',
+  },
+
+  rare: { title: '稀有' },
+
+  info: {
+    patchTitle: '更新日志',
+    guideTitle: '游戏指南',
+    hintKeyboard: '↑ ↓ 或滚轮滚动   ·   Esc 返回',
+    hintTouch: '上下滑动   ·   点击关闭返回',
+  },
+
+  credits: {
+    title: '制作人员',
+    roleAuthor: '制作',
+    roleDev: '开发',
+    roleEngine: '引擎',
+    roleIcons: '图标',
+    roleMusic: '音乐',
+    roleSfx: '音效',
+  },
+
+  upgrades: {
+    damage: { label: '攻击力 +{n}', detail: '{skill}的伤害提高 {n}' },
+    attackSpeed: { label: '攻击速度 +{n}', detail: '{skill}每秒攻击次数提高 {n}' },
+    range: { label: '射程 +{n}', detail: '{skill}的射程增加 {n}px' },
+    projectileSpeed: { label: '弹速 +{n}', detail: '{skill}每秒多飞 {n}px' },
+    chainCount: { label: '连锁次数 +{n}', detail: '{skill}多连锁 {n} 个敌人' },
+    pierceCount: { label: '穿透次数 +{n}', detail: '{skill}多穿透 {n} 个敌人' },
+    orbCount: { label: '球体数量 +{n}', detail: '{skill}多环绕 {n} 个球体' },
+  },
+
+  names: {
+    skills: {
+      meleeStrike: '打击',
+      fireball: '火球',
+      chainLightning: '连锁闪电',
+      iceSpear: '冰枪',
+      voidOrb: '虚空球',
+    },
+    skillSummaries: {
+      meleeStrike: '朝最近的敌人短促挥击，范围内的敌人一并命中。',
+      fireball: '向最近的敌人投出火球，命中第一个敌人后炸开。',
+      chainLightning: '瞬发闪电命中敌人后跳向最近的下一个，不会重复命中同一个。',
+      iceSpear: '穿透敌人前进，并给掠过的所有敌人附加冰冷（移动速度 -15%）。',
+      voidOrb: '球体顺时针环绕你，扫到的敌人都会受伤，无需瞄准。',
+    },
+    tags: {
+      물리: '物理',
+      공격: '攻击',
+      근접: '近战',
+      투사체: '弹道',
+      원거리: '远程',
+      주문: '法术',
+      화염: '火焰',
+      번개: '闪电',
+      연쇄: '连锁',
+      냉기: '冰冷',
+      관통: '穿透',
+      공허: '虚空',
+    },
+    enemies: { grunt: '杂兵', brute: '巨汉', runner: '疾走者', shooter: '射手' },
+    affixes: { giant: '巨大', swift: '迅捷', critical: '致命', mighty: '强力' },
+    affixDetails: {
+      giant: '生命 +50%',
+      swift: '移动速度 +20%',
+      critical: '暴击率 20%',
+      mighty: '伤害 +50%',
+    },
+  },
+
+  guide: {
+    goal: {
+      heading: '目标',
+      lines: [
+        '在源源不断的敌人中尽可能活得久一些。',
+        '生命值为 {hp}。被敌人碰到或被弹丸击中都会减少，归零即结束。',
+        '所有攻击都是自动的。你要做的是站位，以及决定强化什么。',
+      ],
+    },
+    controls: {
+      heading: '操作',
+      lines: [
+        'WASD 或方向键移动。',
+        'Esc、左上角按钮、（移动端）返回键可暂停。',
+        '强化选择界面：方向键移动光标，Space、点击、触摸或数字键 1~4 确认。',
+        '移动键无法确认选择。这是为了避免移动时按住的键替你做决定。',
+        '把鼠标移到稀有敌人上或触摸它即可查看强化效果，暂停时同样可以。',
+      ],
+    },
+    mobile: {
+      heading: '移动端操作',
+      lines: [
+        '设置中有三种方式可选。',
+        '固定摇杆 — 固定在你设定的位置，大小和位置都可调整。',
+        '触点生成摇杆 — 平时不显示，手指按下的位置就会出现摇杆。',
+        '重力感应 — 倾斜设备进行移动。第一次读到的角度即为中立位置。',
+      ],
+    },
+    growth: {
+      heading: '成长',
+      lines: [
+        '击杀敌人会掉落经验宝石，靠近就会被吸过来。',
+        '升级时会出现强化 {starters} 的选项。',
+        '拾取技能时会出现该技能的强化选项。第一次拾取的技能为未强化的基础状态。',
+        '强化按技能分别累积，提升火球不会改变打击。',
+      ],
+    },
+    skills: {
+      heading: '技能',
+      stats: '   伤害 {damage} · 每秒 {rate} 次 · 射程 {range}px',
+      upgrades: '   强化: {picks}',
+      starter: '初始技能',
+    },
+    enemies: {
+      heading: '敌人',
+      stats: '{name}  生命 {hp} · 接触伤害 {contact} · 经验 {xp}',
+      fromStart: '从一开始出现',
+      unlocksAt: '{time} 秒后出现',
+      notes: {
+        grunt: '径直冲向你，数量很多。',
+        brute: '移动缓慢但非常坚硬，被碰到就会掉很多血。',
+        runner: '脆弱但速度快，逃跑也甩不掉。',
+        shooter: '会保持距离停下射击。走过去解决，或者用射程长的技能。',
+      },
+    },
+    rares: {
+      heading: '稀有敌人',
+      lines: [
+        '{chance} 的敌人会以稀有形态出现，并带有彩色描边。',
+        '稀有敌人拥有 {min}~{max} 个强化效果，数量越多描边越深。重复的效果会叠加。',
+        '每个强化效果使其技能掉落率提高 {dropBonus}。危险，但值得击杀。',
+      ],
+    },
+    drops: {
+      heading: '掉落',
+      lines: [
+        '经验宝石 — 每次击杀都会掉落，不会消失。',
+        '技能 — {skillChance} 概率。已拥有的技能会改为开启强化选项。',
+        '生命药水 — {potionChance} 概率，回复最大生命的 {heal}。生命已满时不会拾取。',
+        '除经验外的掉落会在 {life} 秒后消失，最后 {warning} 秒会越闪越快。',
+      ],
+    },
+    saving: {
+      heading: '存档',
+      lines: [
+        '每 {autosave} 秒以及每次暂停都会自动存档。',
+        '用暂停菜单的「保存并返回标题」退出，再用标题画面的「继续游戏」接着玩。',
+        '死亡后存档会被清除。存档是为了中途停下再回来，而不是为了取消死亡。',
+      ],
+    },
+  },
+};

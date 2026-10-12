@@ -21,7 +21,7 @@ export const COLORS = {
   enemyShooter: 0x5fc27e,
   /** Enemy fire, kept well away from any colour the player's own shots use. */
   enemyShot: 0xff7a9c,
-  /** The ring around a rare, and the heading on its tooltip. */
+  /** The ring around a rare at one affix, and its tooltip heading. */
   rareOutline: 0xffd34d,
   rareText: '#ffd34d',
   projectile: 0xffe9a3,
@@ -169,6 +169,20 @@ export const INFO = {
   /** How far one press of an arrow key moves the page. */
   keyStep: 48,
 } as const;
+
+/**
+ * A rare's ring, by how many affixes it carries: pale gold for one, deeper
+ * and angrier the more it is stacking, so what is coming reads across the
+ * screen before the tooltip does.
+ */
+export const RARE_OUTLINE_TIERS: readonly number[] = [
+  0xffd34d, // 1
+  0xffae2e, // 2
+  0xff8a1f, // 3
+  0xff6314, // 4
+  0xf03a2a, // 5
+  0xd41347, // 6
+];
 
 /** The panel that lists a rare's affixes when it is hovered or tapped. */
 export const TOOLTIP = {

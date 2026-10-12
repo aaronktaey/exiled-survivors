@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 
 import { COLORS, DEPTH, MENU, SCENES, TEXTURES } from '@/config';
 import { PATCH_NOTES } from '@/content/patchNotes';
+import { t } from '@/i18n';
 import { bgm } from '@/systems/Bgm';
 import { MenuList } from '@/systems/MenuList';
 import { saveGame } from '@/systems/SaveGame';
@@ -30,27 +31,27 @@ export class MenuScene extends Phaser.Scene {
       x: width / 2,
       y: 236,
       items: [
-        { id: 'start', label: () => '게임 시작', onSelect: () => this.startRun() },
+        { id: 'start', label: () => t().menu.start, onSelect: () => this.startRun() },
         {
           id: 'load',
-          label: () => '불러오기',
-          detail: () => (saved ? saveGame.describe(saved) : '저장 없음'),
+          label: () => t().menu.load,
+          detail: () => (saved ? saveGame.describe(saved) : t().menu.noSave),
           enabled: () => saved !== null,
           onSelect: () => this.startRun(true),
         },
-        { id: 'settings', label: () => '설정', onSelect: () => this.openOverlay(SCENES.settings) },
+        { id: 'settings', label: () => t().menu.settings, onSelect: () => this.openOverlay(SCENES.settings) },
         {
           id: 'guide',
-          label: () => '게임 가이드',
+          label: () => t().menu.guide,
           onSelect: () => this.openOverlay(SCENES.info, { topic: 'guide' }),
         },
         {
           id: 'patch',
-          label: () => '패치노트',
+          label: () => t().menu.patch,
           detail: () => `v${PATCH_NOTES[0]?.version ?? ''}`,
           onSelect: () => this.openOverlay(SCENES.info, { topic: 'patch' }),
         },
-        { id: 'credits', label: () => '제작자 정보', onSelect: () => this.openOverlay(SCENES.credits) },
+        { id: 'credits', label: () => t().menu.credits, onSelect: () => this.openOverlay(SCENES.credits) },
       ],
     });
 
@@ -58,7 +59,7 @@ export class MenuScene extends Phaser.Scene {
       .text(
         width / 2,
         height - 26,
-        prefersTouchControls() ? '항목을 탭해서 선택' : '↑ ↓ 이동   Space 선택   (마우스 클릭도 가능)',
+        prefersTouchControls() ? t().menu.hintTouch : t().menu.hintKeyboard,
         { fontFamily: 'system-ui, sans-serif', fontSize: '13px', color: COLORS.muted },
       )
       .setOrigin(0.5)
@@ -82,7 +83,7 @@ export class MenuScene extends Phaser.Scene {
     });
 
     this.add
-      .text(width / 2, y + logo.displayHeight / 2 + 26, 'created by whitemango', {
+      .text(width / 2, y + logo.displayHeight / 2 + 26, t().menu.byline, {
         fontFamily: 'system-ui, sans-serif',
         fontSize: '15px',
         color: COLORS.muted,
@@ -100,8 +101,13 @@ export class MenuScene extends Phaser.Scene {
     this.scene.pause();
     this.scene.launch(key, {
       ...extra,
-      onClose: () => {
+      onClose: (languageChanged = false) => {
         this.scene.resume();
+        // A new language means new text everywhere, so build it again.
+        if (languageChanged) {
+          this.scene.restart();
+          return;
+        }
         this.menu.refresh();
       },
     });

@@ -4,6 +4,7 @@ import { COLORS, DEPTH, INFO, SCENES } from '@/config';
 import type { GuideSection } from '@/content/guide';
 import { guideSections } from '@/content/guide';
 import { PATCH_NOTES } from '@/content/patchNotes';
+import { language, t } from '@/i18n';
 import { prefersTouchControls } from '@/systems/VirtualJoystick';
 
 export type InfoTopic = 'patch' | 'guide';
@@ -13,16 +14,16 @@ export interface InfoSceneData {
   readonly onClose: () => void;
 }
 
-const TITLES: Record<InfoTopic, string> = {
-  patch: '패치노트',
-  guide: '게임 가이드',
-};
+const title = (topic: InfoTopic): string =>
+  topic === 'patch' ? t().info.patchTitle : t().info.guideTitle;
 
 /** 패치노트, as the same shape the guide uses. */
 function patchSections(): readonly GuideSection[] {
   return PATCH_NOTES.map((note) => ({
     heading: `v${note.version}   ${note.date}`,
-    lines: note.changes.map((change) => `· ${change}`),
+    // Korean is the fallback: an entry always has it, a new language may
+    // not have caught up with the newest note yet.
+    lines: (note.changes[language()] ?? note.changes.ko).map((change) => `· ${change}`),
   }));
 }
 
@@ -63,7 +64,7 @@ export class InfoScene extends Phaser.Scene {
 
     this.add.rectangle(0, 0, width, height, 0x05070b, 0.95).setOrigin(0, 0).setDepth(DEPTH.ui);
     this.add
-      .text(width / 2, INFO.titleY, TITLES[this.payload.topic], {
+      .text(width / 2, INFO.titleY, title(this.payload.topic), {
         fontFamily: 'system-ui, sans-serif',
         fontSize: '30px',
         color: COLORS.text,
@@ -90,7 +91,7 @@ export class InfoScene extends Phaser.Scene {
       .text(
         width / 2,
         height - 24,
-        prefersTouchControls() ? '위아래로 쓸어 넘기기   ·   닫기를 눌러 돌아가기' : '↑ ↓ 또는 휠로 스크롤   ·   Esc 로 돌아가기',
+        prefersTouchControls() ? t().info.hintTouch : t().info.hintKeyboard,
         { fontFamily: 'system-ui, sans-serif', fontSize: '13px', color: COLORS.muted },
       )
       .setOrigin(0.5)
@@ -163,7 +164,7 @@ export class InfoScene extends Phaser.Scene {
       .setInteractive({ useHandCursor: true });
 
     this.add
-      .text(x, INFO.titleY, '닫기', {
+      .text(x, INFO.titleY, t().common.close, {
         fontFamily: 'system-ui, sans-serif',
         fontSize: '14px',
         color: COLORS.text,

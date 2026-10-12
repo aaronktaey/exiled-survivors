@@ -8,14 +8,14 @@ import {
   PLAYER,
   POTION,
   SHOTS,
-  SKILL_LABEL,
   TEXTURES,
   VOID_ORB,
 } from '@/config';
 import { MENU, SCENES } from '@/config';
 import { createPixelTextTexture } from '@/systems/PixelFont';
+import { bakeSkillLabels } from '@/systems/SkillLabels';
 import { sfx } from '@/systems/Sfx';
-import { ALL_SKILLS, type SkillDefinition } from '@/weapons/skills';
+
 
 const GRID_TILE = 64;
 
@@ -52,9 +52,7 @@ export class BootScene extends Phaser.Scene {
     this.createVoidOrbTexture();
     this.createPotionTexture();
 
-    for (const skill of ALL_SKILLS) {
-      this.createSkillLabelTexture(skill);
-    }
+    bakeSkillLabels(this);
 
     createPixelTextTexture(this, TEXTURES.logo, ['EXILED', 'SURVIVORS'], {
       pixel: MENU.logoPixel,
@@ -163,31 +161,4 @@ export class BootScene extends Phaser.Scene {
     graphics.destroy();
   }
 
-  /**
-   * Bakes the plate a dropped skill sits on, sized to its name. The name
-   * itself is a Text drawn on top by SkillDrop — DynamicTexture, which would
-   * let the whole label be one texture, bakes empty on Phaser 4 here.
-   */
-  private createSkillLabelTexture(skill: SkillDefinition): void {
-    const { borderWidth, paddingX, paddingY } = SKILL_LABEL;
-
-    // Measure the name, then throw the probe away.
-    const probe = this.add.text(0, 0, skill.name, {
-      fontFamily: 'system-ui, sans-serif',
-      fontSize: SKILL_LABEL.fontSize,
-      color: SKILL_LABEL.text,
-    });
-    const width = Math.ceil(probe.width) + paddingX * 2;
-    const height = Math.ceil(probe.height) + paddingY * 2;
-    probe.destroy();
-
-    const plate = this.add.graphics();
-    plate.fillStyle(SKILL_LABEL.background, 1);
-    plate.fillRect(0, 0, width, height);
-    plate.lineStyle(borderWidth, SKILL_LABEL.border, 1);
-    plate.strokeRect(borderWidth / 2, borderWidth / 2, width - borderWidth, height - borderWidth);
-
-    plate.generateTexture(skill.labelTexture, width, height);
-    plate.destroy();
-  }
 }

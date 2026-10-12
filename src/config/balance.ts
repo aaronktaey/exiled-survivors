@@ -171,9 +171,14 @@ export const AFFIXES: Record<AffixId, AffixSpec> = {
 export const RARE = {
   /** Share of spawns that come up rare. */
   chance: 0.1,
-  /** How many affixes one rare is born with, inclusive. */
+  /**
+   * How many affixes one rare can be born with. Every rare gets at least
+   * minAffixes; each further one is only `extraAffixChance` likely, so a
+   * six-stack is rare among rares rather than one roll in six.
+   */
   minAffixes: 1,
-  maxAffixes: 2,
+  maxAffixes: 6,
+  extraAffixChance: 0.45,
   /** What a 치명 hit is worth. */
   critMultiplier: 2,
   /** Each affix it carries raises its skill drop chance by this much. */

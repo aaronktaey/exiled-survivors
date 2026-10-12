@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 
 import { COLORS, DEPTH, TOOLTIP } from '@/config';
+import { affixDetail, affixName, t } from '@/i18n';
 import type { Enemy } from '@/entities/Enemy';
 
 /**
@@ -41,7 +42,7 @@ export class RareTooltip {
       .setVisible(false);
 
     this.title = scene.add
-      .text(0, 0, '희귀', {
+      .text(0, 0, t().rare.title, {
         fontFamily: 'system-ui, sans-serif',
         fontSize: TOOLTIP.titleSize,
         color: COLORS.rareText,
@@ -140,7 +141,19 @@ export class RareTooltip {
 
   private show(enemy: Enemy): void {
     this.shown = enemy;
-    this.body.setText(enemy.affixes.map((affix) => `${affix.name}  ${affix.detail}`));
+    this.title.setText(t().rare.title);
+    this.body.setText(
+      enemy.affixTally.map(({ affix, count }) => {
+        const name = count > 1 ? `${affixName(affix.id)} x${count}` : affixName(affix.id);
+        return `${name}  ${affixDetail(affix.id)}`;
+      }),
+    );
+
+    // Panel and heading wear the same colour as the ring, so the tier reads
+    // here too.
+    const colour = enemy.outlineColor;
+    this.panel.setStrokeStyle(1, colour, 1);
+    this.title.setColor(`#${colour.toString(16).padStart(6, '0')}`);
 
     const width = Math.max(this.body.width, this.title.width) + TOOLTIP.paddingX * 2;
     const height = this.title.height + this.body.height + TOOLTIP.paddingY * 2 + 2;

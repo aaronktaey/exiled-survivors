@@ -3,6 +3,7 @@ import Phaser from 'phaser';
 import './style.css';
 
 import { COLORS, GAME_HEIGHT, GAME_WIDTH } from '@/config';
+import { settings } from '@/systems/Settings';
 import {
   BootScene,
   CreditsScene,
@@ -14,6 +15,9 @@ import {
   SettingsScene,
   UpgradeScene,
 } from '@/scenes';
+
+// Language first: every scene reads its text as it is built.
+settings.prime();
 
 const config: Phaser.Types.Core.GameConfig = {
   type: Phaser.AUTO,

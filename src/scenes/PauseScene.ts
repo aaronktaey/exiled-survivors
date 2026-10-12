@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 
 import { COLORS, DEPTH, SCENES } from '@/config';
+import { fill, t } from '@/i18n';
 import type { GameScene } from '@/scenes/GameScene';
 import { MenuList } from '@/systems/MenuList';
 import { RareTooltip } from '@/systems/RareTooltip';
@@ -36,7 +37,7 @@ export class PauseScene extends Phaser.Scene {
     this.add.rectangle(0, 0, width, height, 0x05070b, 0.78).setOrigin(0, 0).setDepth(DEPTH.ui);
 
     this.add
-      .text(width / 2, height / 2 - 128, '일시정지', {
+      .text(width / 2, height / 2 - 128, t().pause.title, {
         fontFamily: 'system-ui, sans-serif',
         fontSize: '38px',
         color: COLORS.text,
@@ -49,7 +50,7 @@ export class PauseScene extends Phaser.Scene {
     const ss = String(total % 60).padStart(2, '0');
 
     this.add
-      .text(width / 2, height / 2 - 86, `생존 ${mm}:${ss}    Lv ${this.payload.level}`, {
+      .text(width / 2, height / 2 - 86, fill(t().pause.survived, { time: `${mm}:${ss}`, level: this.payload.level }), {
         fontFamily: 'system-ui, sans-serif',
         fontSize: '16px',
         color: COLORS.accent,
@@ -62,16 +63,16 @@ export class PauseScene extends Phaser.Scene {
       y: height / 2 - 50,
       onCancel: () => this.resume(),
       items: [
-        { id: 'resume', label: () => '계속하기', onSelect: () => this.resume() },
-        { id: 'guide', label: () => '게임 가이드', onSelect: () => this.openOverlay(SCENES.info, { topic: 'guide' }) },
-        { id: 'patch', label: () => '패치노트', onSelect: () => this.openOverlay(SCENES.info, { topic: 'patch' }) },
-        { id: 'settings', label: () => '설정', onSelect: () => this.openOverlay(SCENES.settings) },
-        { id: 'quit', label: () => '저장하고 타이틀로', onSelect: () => this.quit() },
+        { id: 'resume', label: () => t().pause.resume, onSelect: () => this.resume() },
+        { id: 'guide', label: () => t().menu.guide, onSelect: () => this.openOverlay(SCENES.info, { topic: 'guide' }) },
+        { id: 'patch', label: () => t().menu.patch, onSelect: () => this.openOverlay(SCENES.info, { topic: 'patch' }) },
+        { id: 'settings', label: () => t().menu.settings, onSelect: () => this.openOverlay(SCENES.settings) },
+        { id: 'quit', label: () => t().pause.quit, onSelect: () => this.quit() },
       ],
     });
 
     this.add
-      .text(width / 2, height - 28, 'Esc 또는 뒤로가기로 이어서 진행   ·   희귀 적을 가리키면 강화효과가 보입니다', {
+      .text(width / 2, height - 28, t().pause.hint, {
         fontFamily: 'system-ui, sans-serif',
         fontSize: '13px',
         color: COLORS.muted,
@@ -106,8 +107,12 @@ export class PauseScene extends Phaser.Scene {
     this.scene.pause();
     this.scene.launch(key, {
       ...extra,
-      onClose: () => {
+      onClose: (languageChanged = false) => {
         this.scene.resume();
+        if (languageChanged) {
+          this.scene.restart();
+          return;
+        }
         this.menu.refresh();
       },
     });

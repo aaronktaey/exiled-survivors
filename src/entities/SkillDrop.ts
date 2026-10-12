@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 
 import { DEPTH, ICONS, SKILL_LABEL, TEXTURES } from '@/config';
 import { GroundItem } from '@/entities/GroundItem';
+import { skillName } from '@/i18n';
 import { SKILLS, type SkillDefinition, type SkillId } from '@/weapons/skills';
 
 /**
@@ -44,7 +45,7 @@ export class SkillDrop extends GroundItem {
     this.begin(x, y, ICONS.skillOrb.size);
 
     this.plate.setTexture(skill.labelTexture);
-    this.label.setText(skill.name);
+    this.label.setText(skillName(skill.id));
     this.layout(x, y);
     this.plate.setVisible(true);
     this.label.setVisible(true);

@@ -1,4 +1,5 @@
 import { GAME_HEIGHT, JOYSTICK, SETTINGS_RANGE, STORAGE } from '@/config';
+import { LANGUAGES, detectLanguage, setLanguage, type Language } from '@/i18n';
 
 /** How a touch device steers the survivor. */
 export type MovementMode = 'fixed' | 'floating' | 'tilt';
@@ -18,6 +19,7 @@ export interface GameSettings {
    */
   movementMode: MovementMode;
   bgmVolume: number;
+  language: Language;
 }
 
 const DEFAULTS: GameSettings = {
@@ -26,6 +28,8 @@ const DEFAULTS: GameSettings = {
   joystickY: GAME_HEIGHT - JOYSTICK.margin,
   movementMode: 'fixed',
   bgmVolume: 0.35,
+  // Nothing stored yet means a first visit: follow the browser.
+  language: detectLanguage(),
 };
 
 type Listener = (settings: GameSettings) => void;
@@ -52,12 +56,22 @@ class SettingsStore {
     return this.current;
   }
 
+  /**
+   * Reads storage and applies the stored language. Called once at boot,
+   * before any scene builds text: a screen built under the default and
+   * then switched would keep the words it was born with.
+   */
+  public prime(): void {
+    void this.value;
+  }
+
   public get defaults(): GameSettings {
     return { ...DEFAULTS };
   }
 
   public update(patch: Partial<GameSettings>): GameSettings {
     this.current = this.sanitise({ ...this.value, ...patch });
+    setLanguage(this.current.language);
     this.save();
     this.listeners.forEach((listener) => listener(this.current));
     return this.current;
@@ -65,6 +79,13 @@ class SettingsStore {
 
   public reset(): GameSettings {
     return this.update(DEFAULTS);
+  }
+
+  /** Walks the language round the list, applying it as it goes. */
+  public cycleLanguage(direction: -1 | 1): GameSettings {
+    const at = LANGUAGES.indexOf(this.value.language);
+    const next = (at + direction + LANGUAGES.length) % LANGUAGES.length;
+    return this.update({ language: LANGUAGES[next] });
   }
 
   /** Walks the movement mode round its three options. */
@@ -98,6 +119,8 @@ class SettingsStore {
     } catch {
       this.current = { ...DEFAULTS };
     }
+
+    setLanguage(this.current.language);
   }
 
   private save(): void {
@@ -117,6 +140,7 @@ class SettingsStore {
       joystickX: Math.round(clamp(Number(raw.joystickX) || DEFAULTS.joystickX, 0, 4096)),
       joystickY: Math.round(clamp(Number(raw.joystickY) || DEFAULTS.joystickY, 0, 4096)),
       movementMode: MOVEMENT_MODES.includes(raw.movementMode) ? raw.movementMode : 'fixed',
+      language: LANGUAGES.includes(raw.language) ? raw.language : DEFAULTS.language,
       bgmVolume: clamp(Number(raw.bgmVolume ?? DEFAULTS.bgmVolume), volume.min, volume.max),
     };
   }

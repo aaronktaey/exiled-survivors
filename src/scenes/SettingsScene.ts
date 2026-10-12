@@ -1,25 +1,27 @@
 import Phaser from 'phaser';
 
 import { COLORS, DEPTH, JOYSTICK, SCENES, SETTINGS_RANGE } from '@/config';
+import { languageName, t } from '@/i18n';
 import { bgm } from '@/systems/Bgm';
 import { MenuList } from '@/systems/MenuList';
 import { settings, type MovementMode } from '@/systems/Settings';
+import { bakeSkillLabels } from '@/systems/SkillLabels';
 import { requestTiltPermission, tiltAvailable } from '@/systems/TiltInput';
 
 export interface SettingsSceneData {
-  readonly onClose: () => void;
+  /** True once the language has been changed during this visit. */
+  readonly languageChanged?: boolean;
+  readonly onClose: (languageChanged: boolean) => void;
 }
 
-const MODE_NAMES: Record<MovementMode, string> = {
-  fixed: '고정 패드',
-  floating: '터치 위치에 생성',
-  tilt: '기울이기',
+const modeName = (mode: MovementMode): string => {
+  const copy = t().settings;
+  return mode === 'fixed' ? copy.modeFixed : mode === 'floating' ? copy.modeFloating : copy.modeTilt;
 };
 
-const MODE_HINTS: Record<MovementMode, string> = {
-  fixed: '↑ ↓ 이동   ◀ ▶ 값 조절   Space 선택   Esc 돌아가기',
-  floating: '화면 아무 곳이나 누른 자리에 패드가 생깁니다   ·   Esc 돌아가기',
-  tilt: '기기를 기울여 움직입니다. 패드는 표시되지 않습니다   ·   Esc 돌아가기',
+const modeHint = (mode: MovementMode): string => {
+  const copy = t().settings;
+  return mode === 'fixed' ? copy.hint : mode === 'floating' ? copy.hintFloating : copy.hintTilt;
 };
 
 /**
@@ -55,7 +57,7 @@ export class SettingsScene extends Phaser.Scene {
 
     this.add.rectangle(0, 0, width, height, 0x05070b, 0.92).setOrigin(0, 0).setDepth(DEPTH.ui);
     this.add
-      .text(width / 2, 52, '설정', {
+      .text(width / 2, 52, t().settings.title, {
         fontFamily: 'system-ui, sans-serif',
         fontSize: '34px',
         color: COLORS.text,
@@ -72,8 +74,16 @@ export class SettingsScene extends Phaser.Scene {
       onCancel: () => this.close(),
       items: [
         {
+          id: 'language',
+          // Always "Language", in every language — that is the point of it.
+          label: () => 'Language',
+          detail: () => languageName(settings.value.language),
+          onSelect: () => this.changeLanguage(1),
+          onAdjust: (direction) => this.changeLanguage(direction),
+        },
+        {
           id: 'joystickScale',
-          label: () => '터치패드 크기',
+          label: () => t().settings.padSize,
           detail: () => `${Math.round(settings.value.joystickScale * 100)}%`,
           onSelect: () => settings.step('joystickScale', 1),
           onAdjust: (direction) => {
@@ -83,31 +93,31 @@ export class SettingsScene extends Phaser.Scene {
         },
         {
           id: 'movement',
-          label: () => '모바일 이동 방식',
-          detail: () => `${MODE_NAMES[settings.value.movementMode]}`,
+          label: () => t().settings.movement,
+          detail: () => modeName(settings.value.movementMode),
           onSelect: () => void this.cycleMode(1),
           onAdjust: (direction) => void this.cycleMode(direction),
         },
         {
           id: 'joystickPlace',
-          label: () => '고정 패드 위치',
+          label: () => t().settings.padPlace,
           detail: () =>
             settings.value.movementMode === 'fixed'
               ? `${Math.round(settings.value.joystickX)}, ${Math.round(settings.value.joystickY)}`
-              : '고정 패드 전용',
+              : t().settings.padPlaceOnlyFixed,
           enabled: () => settings.value.movementMode === 'fixed',
           onSelect: () => this.beginPlacing(),
         },
         {
           id: 'bgm',
-          label: () => '배경음 음량',
+          label: () => t().settings.bgm,
           detail: () => `${Math.round(settings.value.bgmVolume * 100)}%`,
           onSelect: () => this.stepVolume(1),
           onAdjust: (direction) => this.stepVolume(direction),
         },
         {
           id: 'reset',
-          label: () => '기본값으로',
+          label: () => t().settings.reset,
           onSelect: () => {
             settings.reset();
             bgm.applyVolume(this);
@@ -115,7 +125,7 @@ export class SettingsScene extends Phaser.Scene {
             this.menu.refresh();
           },
         },
-        { id: 'back', label: () => '돌아가기', onSelect: () => this.close() },
+        { id: 'back', label: () => t().common.back, onSelect: () => this.close() },
       ],
     });
 
@@ -177,13 +187,24 @@ export class SettingsScene extends Phaser.Scene {
    * iOS hands out orientation only after an explicit ask, and only from
    * inside a gesture — which this press is.
    */
+  /**
+   * Steps to the next language. Every label on screen changes, including
+   * this screen's own, so it is rebuilt from scratch — and the screen
+   * underneath is told to do the same when this one closes.
+   */
+  private changeLanguage(direction: -1 | 1): void {
+    settings.cycleLanguage(direction);
+    bakeSkillLabels(this);
+    this.scene.restart({ ...this.payload, languageChanged: true });
+  }
+
   private async cycleMode(direction: -1 | 1): Promise<void> {
     const next = settings.cycleMovementMode(direction).movementMode;
 
     if (next === 'tilt') {
       const granted = tiltAvailable() && (await requestTiltPermission());
       if (!granted) {
-        this.hint.setText('이 기기에서는 기울이기를 쓸 수 없습니다');
+        this.hint.setText(t().settings.tiltRefused);
         settings.cycleMovementMode(direction);
       }
     }
@@ -216,11 +237,11 @@ export class SettingsScene extends Phaser.Scene {
 
   private setHint(): void {
     if (this.placing) {
-      this.hint.setText('방향키로 옮기거나 화면을 눌러 배치   ·   Space 로 확정');
+      this.hint.setText(t().settings.hintPlacing);
       return;
     }
 
-    this.hint.setText(MODE_HINTS[settings.value.movementMode]);
+    this.hint.setText(modeHint(settings.value.movementMode));
   }
 
   private moveStick(x: number, y: number): void {
@@ -283,8 +304,8 @@ export class SettingsScene extends Phaser.Scene {
     }
 
     this.input.keyboard?.off('keydown', this.onKeyDown, this);
-    const { onClose } = this.payload;
+    const { onClose, languageChanged } = this.payload;
     this.scene.stop();
-    onClose();
+    onClose(languageChanged === true);
   }
 }

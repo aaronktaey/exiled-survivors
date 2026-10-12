@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 
 import { SKILL_BASE, STATS, UPGRADE_STEP, xpToNextLevel } from '@/config';
-import { subjectParticle } from '@/systems/korean';
+import { fill, skillName, t } from '@/i18n';
 import type { SkillDefinition, SkillId } from '@/weapons/skills';
 
 export type UpgradeId =
@@ -22,37 +22,16 @@ export interface UpgradeOption {
 /** Every stat is tracked per skill, so an upgrade only hits its own. */
 export type SkillStats = Record<UpgradeId, number>;
 
-/** How each upgrade is worded, for whichever skill is being upgraded. */
-const OPTION_TEXT: Record<UpgradeId, (name: string) => Omit<UpgradeOption, 'id'>> = {
-  damage: (name) => ({
-    label: `공격력 +${UPGRADE_STEP.damage}`,
-    detail: `${name}의 피해가 ${UPGRADE_STEP.damage} 늘어납니다`,
-  }),
-  attackSpeed: (name) => ({
-    label: `공격속도 +${UPGRADE_STEP.attackSpeed}`,
-    detail: `${name}의 초당 공격 횟수가 ${UPGRADE_STEP.attackSpeed} 늘어납니다`,
-  }),
-  range: (name) => ({
-    label: `사정거리 +${UPGRADE_STEP.range}`,
-    detail: `${name}의 사정거리가 ${UPGRADE_STEP.range}px 늘어납니다`,
-  }),
-  projectileSpeed: (name) => ({
-    label: `투사체 속도 +${UPGRADE_STEP.projectileSpeed}`,
-    detail: `${name}${subjectParticle(name)} 초당 ${UPGRADE_STEP.projectileSpeed}px 더 빠르게 날아갑니다`,
-  }),
-  chainCount: (name) => ({
-    label: `연쇄 횟수 +${UPGRADE_STEP.chainCount}`,
-    detail: `${name}${subjectParticle(name)} ${UPGRADE_STEP.chainCount}명에게 더 옮겨붙습니다`,
-  }),
-  pierceCount: (name) => ({
-    label: `관통 횟수 +${UPGRADE_STEP.pierceCount}`,
-    detail: `${name}${subjectParticle(name)} ${UPGRADE_STEP.pierceCount}명을 더 꿰뚫고 지나갑니다`,
-  }),
-  orbCount: (name) => ({
-    label: `구체 수 +${UPGRADE_STEP.orbCount}`,
-    detail: `${name}${subjectParticle(name)} ${UPGRADE_STEP.orbCount}개 더 공전합니다`,
-  }),
-};
+/**
+ * How each upgrade is worded. The wording lives in the locale; the amount
+ * comes from UPGRADE_STEP, so a tuning change shows up in the text.
+ */
+function optionText(id: UpgradeId, skill: SkillId): Omit<UpgradeOption, 'id'> {
+  const copy = t().upgrades[id];
+  const values = { n: UPGRADE_STEP[id], skill: skillName(skill) };
+
+  return { label: fill(copy.label, values), detail: fill(copy.detail, values) };
+}
 
 /**
  * The picks offered, in the order the skill lists them. Which upgrades a
@@ -61,7 +40,7 @@ const OPTION_TEXT: Record<UpgradeId, (name: string) => Omit<UpgradeOption, 'id'>
  * 관통 횟수 instead of reach.
  */
 export function upgradeOptionsFor(skill: SkillDefinition): readonly UpgradeOption[] {
-  return skill.upgrades.map((id) => ({ id, ...OPTION_TEXT[id](skill.name) }));
+  return skill.upgrades.map((id) => ({ id, ...optionText(id, skill.id) }));
 }
 
 /**

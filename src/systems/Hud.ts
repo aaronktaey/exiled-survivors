@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 
 import { COLORS, DEPTH, HUD } from '@/config';
+import { fill, t } from '@/i18n';
 import type { Progression } from '@/systems/Progression';
 
 export interface LoadoutEntry {
@@ -76,9 +77,15 @@ export class Hud {
     const ss = String(total % 60).padStart(2, '0');
     this.clockLabel.setText(`${mm}:${ss}`);
 
-    this.statsLabel.setText(`Lv ${this.progression.level}    적 ${enemies}`);
+    const copy = t().hud;
+    this.statsLabel.setText(
+      `${fill(copy.level, { level: this.progression.level })}    ${fill(copy.enemies, { count: enemies })}`,
+    );
     this.skillsLabel.setText(
-      loadout.map((s) => `${s.name}  공격력 ${s.damage}  공속 ${s.attackSpeed.toFixed(1)}/s`),
+      loadout.map(
+        (s) =>
+          `${s.name}  ${fill(copy.damage, { damage: s.damage })}  ${fill(copy.rate, { rate: s.attackSpeed.toFixed(1) })}`,
+      ),
     );
 
     this.drawXpBar();
