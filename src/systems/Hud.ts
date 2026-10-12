@@ -34,7 +34,7 @@ export class Hud {
     this.xpBar = scene.add.graphics().setScrollFactor(0).setDepth(DEPTH.ui);
 
     this.statsLabel = scene.add
-      .text(HUD.margin, HUD.margin, '', {
+      .text(HUD.leftInset, HUD.margin, '', {
         fontFamily: 'system-ui, sans-serif',
         fontSize: '14px',
         color: COLORS.muted,
@@ -43,7 +43,7 @@ export class Hud {
       .setDepth(DEPTH.ui);
 
     this.skillsLabel = scene.add
-      .text(HUD.margin, HUD.margin + 22, '', {
+      .text(HUD.leftInset, HUD.margin + 22, '', {
         fontFamily: 'system-ui, sans-serif',
         fontSize: '14px',
         color: COLORS.text,
@@ -61,6 +61,11 @@ export class Hud {
       .setOrigin(0.5, 0)
       .setScrollFactor(0)
       .setDepth(DEPTH.ui);
+  }
+
+  /** Starts the clock partway in, when a saved run is resumed. */
+  public seed(elapsedMs: number): void {
+    this.elapsedMs = elapsedMs;
   }
 
   public update(delta: number, enemies: number, loadout: ReadonlyArray<LoadoutEntry>): void {

@@ -10,7 +10,8 @@ import {
   SKILL_LABEL,
   TEXTURES,
 } from '@/config';
-import { GameScene } from '@/scenes/GameScene';
+import { MENU, SCENES } from '@/config';
+import { createPixelTextTexture } from '@/systems/PixelFont';
 import { ALL_SKILLS, type SkillDefinition } from '@/weapons/skills';
 
 const GRID_TILE = 64;
@@ -49,7 +50,16 @@ export class BootScene extends Phaser.Scene {
       this.createSkillLabelTexture(skill);
     }
 
-    this.scene.start(GameScene.KEY);
+    createPixelTextTexture(this, TEXTURES.logo, ['EXILED', 'SURVIVORS'], {
+      pixel: MENU.logoPixel,
+      color: COLORS.logo,
+      shadow: COLORS.logoShadow,
+    });
+
+    // Dev-only shortcut past the title, so the integration harness can drive
+    // a run without clicking through the menu first.
+    const skipMenu = import.meta.env.DEV && window.location.hash === '#run';
+    this.scene.start(skipMenu ? SCENES.game : SCENES.menu);
   }
 
   /** One tile of the arena floor, repeated by a TileSprite. */

@@ -14,10 +14,10 @@ export interface UpgradeChoiceData {
   readonly onPick: (upgrade: UpgradeId) => void;
 }
 
-const LEFT_CODES = ['KeyA', 'ArrowLeft'];
-const RIGHT_CODES = ['KeyD', 'ArrowRight'];
-/** Confirm stays inside WASD/arrows; Enter and Space are extras. */
-const CONFIRM_CODES = ['KeyW', 'ArrowUp', 'KeyS', 'ArrowDown', 'Enter', 'Space'];
+/** Space is the pick; Enter comes along for free. */
+const CONFIRM_CODES = ['Space', 'Enter', 'NumpadEnter'];
+/** 1-4 reach a card directly, so a keyboard can still get to all of them. */
+const NUMBER_CODES = ['Digit1', 'Digit2', 'Digit3', 'Digit4'];
 
 /** Cards shrink from this to fit however many options a skill offers. */
 const CARD_MAX_WIDTH = 260;
@@ -37,12 +37,15 @@ interface CardView {
 
 /**
  * Upgrade picker, shown both on level-up (spends on the basic attack) and on
- * a skill pickup (spends on that skill). A pointer moves between the cards
- * on left/right and up/down confirms, so the game stays playable on WASD and
- * the arrow keys alone; cards are also tappable.
+ * a skill pickup (spends on that skill).
  *
- * Key repeats are dropped and input is locked briefly on open, so a direction
- * already held for movement cannot move the pointer or confirm by accident.
+ * A card is taken by clicking or tapping it, or with the space bar. The
+ * movement keys are deliberately inert here: they are held down constantly
+ * while playing, and a popup that appears under a held key used to pick for
+ * the player. Hovering moves the caret, and 1-4 reach a card directly so a
+ * keyboard-only player can still choose any of them.
+ *
+ * Input is locked briefly on open for the same reason.
  */
 export class UpgradeScene extends Phaser.Scene {
   public static readonly KEY = 'UpgradeScene';
@@ -112,7 +115,7 @@ export class UpgradeScene extends Phaser.Scene {
       .text(
         centerX,
         height / 2 + 150,
-        prefersTouchControls() ? '원하는 쪽을 터치하세요' : '← → 이동   ↑ ↓ 선택   (WASD 동일)',
+        prefersTouchControls() ? '원하는 쪽을 터치하세요' : 'Space 선택   클릭으로도 선택   (1-4 로 바로 선택)',
         {
           fontFamily: 'system-ui, sans-serif',
           fontSize: '14px',
@@ -157,9 +160,11 @@ export class UpgradeScene extends Phaser.Scene {
       .setOrigin(0.5)
       .setDepth(DEPTH.ui);
 
-    // Touch (and mouse) players pick by tapping the card directly.
+    // Touch (and mouse) players pick by tapping the card directly; hovering
+    // moves the caret, so the space bar takes whatever is under the cursor.
     panel.setInteractive({ useHandCursor: true });
     panel.on(Phaser.Input.Events.GAMEOBJECT_POINTER_DOWN, () => this.onCardTapped(option.id));
+    panel.on(Phaser.Input.Events.GAMEOBJECT_POINTER_OVER, () => this.onCardHovered(option.id));
 
     return { option, panel, label, x };
   }
@@ -178,13 +183,17 @@ export class UpgradeScene extends Phaser.Scene {
     this.pick(upgrade);
   }
 
-  private move(step: number): void {
-    const next = Phaser.Math.Clamp(this.selected + step, 0, this.cards.length - 1);
-    if (next === this.selected) {
+  private onCardHovered(upgrade: UpgradeId): void {
+    if (this.picked || !this.unlocked) {
       return;
     }
 
-    this.selected = next;
+    const index = this.cards.findIndex((card) => card.option.id === upgrade);
+    if (index < 0 || index === this.selected) {
+      return;
+    }
+
+    this.selected = index;
     this.refresh(true);
   }
 
@@ -210,11 +219,18 @@ export class UpgradeScene extends Phaser.Scene {
       return;
     }
 
-    if (LEFT_CODES.includes(event.code)) {
-      this.move(-1);
-    } else if (RIGHT_CODES.includes(event.code)) {
-      this.move(1);
-    } else if (CONFIRM_CODES.includes(event.code)) {
+    const numbered = NUMBER_CODES.indexOf(event.code);
+    if (numbered >= 0) {
+      const card = this.cards[numbered];
+      if (card) {
+        this.selected = numbered;
+        this.refresh(true);
+        this.pick(card.option.id);
+      }
+      return;
+    }
+
+    if (CONFIRM_CODES.includes(event.code)) {
       this.pick(this.cards[this.selected]!.option.id);
     }
   }

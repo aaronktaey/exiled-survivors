@@ -1,6 +1,17 @@
 import Phaser from 'phaser';
 
-import { BALANCE, COLORS, DEPTH, SKILL_DROP, TEXTURES, TIMING, WORLD } from '@/config';
+import {
+  BALANCE,
+  COLORS,
+  DEPTH,
+  PAUSE_BUTTON,
+  SAVE,
+  SCENES,
+  SKILL_DROP,
+  TEXTURES,
+  TIMING,
+  WORLD,
+} from '@/config';
 import { Player } from '@/entities/Player';
 import { GameOverScene, type GameOverData } from '@/scenes/GameOverScene';
 import { UpgradeScene, type UpgradeChoiceData } from '@/scenes/UpgradeScene';
@@ -12,8 +23,12 @@ import {
   Progression,
   Separation,
   SpawnDirector,
+  type SkillStats,
   type UpgradeId,
 } from '@/systems';
+import { saveGame, type SavedRun } from '@/systems/SaveGame';
+import { settings } from '@/systems/Settings';
+import { TiltInput, tiltAvailable } from '@/systems/TiltInput';
 import { VirtualJoystick, prefersTouchControls } from '@/systems/VirtualJoystick';
 import {
   ChainLightning,
@@ -36,6 +51,12 @@ const WEAPONS: Record<SkillId, (scene: Phaser.Scene) => Weapon> = {
   chainLightning: (scene) => new ChainLightning(scene),
   iceSpear: (scene) => new IceSpear(scene),
 };
+
+/** What the title screen hands over when a run starts. */
+export interface GameSceneData {
+  /** A run to resume, or null/absent for a fresh one. */
+  readonly save?: SavedRun | null;
+}
 
 /** One queued upgrade popup, from a level-up or a skill pickup. */
 interface ChoiceRequest {
@@ -61,6 +82,8 @@ export class GameScene extends Phaser.Scene {
   private owned = new Set<SkillId>();
 
   private elapsedMs = 0;
+  private sinceSaveMs = 0;
+  private resuming: SavedRun | null = null;
   /** Popups earned while one was already open. */
   private pendingChoices: ChoiceRequest[] = [];
   private choosing = false;
@@ -73,8 +96,13 @@ export class GameScene extends Phaser.Scene {
     super(GameScene.KEY);
   }
 
+  public init(data?: GameSceneData): void {
+    this.resuming = data?.save ?? null;
+  }
+
   public create(): void {
     this.elapsedMs = 0;
+    this.sinceSaveMs = 0;
     this.pendingChoices = [];
     this.choosing = false;
     this.over = false;
@@ -115,15 +143,38 @@ export class GameScene extends Phaser.Scene {
       this.acquire(skill);
     }
 
-    // Touch devices get a thumb stick; a mouse-and-keyboard session does not.
-    if (prefersTouchControls()) {
-      this.player.attachAnalog(new VirtualJoystick(this));
+    if (this.resuming) {
+      this.restore(this.resuming);
     }
+
+    this.attachTouchControls();
+    this.createPauseButton();
+    this.armPauseInput();
 
     this.progression.on(Progression.LEVEL_UP, this.onLevelUp, this);
     this.player.once(Player.DIED, this.onPlayerDied, this);
 
-    this.showIntro();
+    if (!this.resuming) {
+      this.showIntro();
+    }
+  }
+
+  /**
+   * Touch devices steer with the thumb stick, or by tilting the device when
+   * the player has turned that on in 설정. A mouse-and-keyboard session gets
+   * neither.
+   */
+  private attachTouchControls(): void {
+    if (!prefersTouchControls()) {
+      return;
+    }
+
+    if (settings.value.tiltEnabled && tiltAvailable()) {
+      this.player.attachAnalog(new TiltInput(this));
+      return;
+    }
+
+    this.player.attachAnalog(new VirtualJoystick(this));
   }
 
   public override update(_time: number, delta: number): void {
@@ -162,6 +213,111 @@ export class GameScene extends Phaser.Scene {
 
     this.damageNumbers.update(dt);
     this.hud.update(dt, this.spawner.alive, this.loadout());
+
+    this.sinceSaveMs += dt;
+    if (this.sinceSaveMs >= SAVE.autosaveMs) {
+      this.sinceSaveMs = 0;
+      this.writeSave();
+    }
+  }
+
+  /** Puts a saved run back together: stats, skills, clocks and health. */
+  private restore(run: SavedRun): void {
+    this.progression.level = run.level;
+    this.progression.xp = run.xp;
+
+    for (const [id, stats] of Object.entries(run.skills) as [SkillId, SkillStats][]) {
+      this.acquire(id);
+      Object.assign(this.progression.statsFor(id), stats);
+    }
+
+    this.player.hp = run.hp;
+    this.elapsedMs = run.elapsedMs;
+    this.hud.seed(run.elapsedMs);
+    this.spawner.seed(run.spawnerMs);
+  }
+
+  /** The single autosave slot, written on a timer and when pausing. */
+  private writeSave(): void {
+    if (this.over) {
+      return;
+    }
+
+    const skills: Partial<Record<SkillId, SkillStats>> = {};
+    for (const id of this.owned) {
+      skills[id] = { ...this.progression.statsFor(id) };
+    }
+
+    saveGame.write({
+      elapsedMs: this.elapsedMs,
+      level: this.progression.level,
+      xp: this.progression.xp,
+      hp: this.player.hp,
+      skills,
+      spawnerMs: this.spawner.clockMs,
+    });
+  }
+
+  /** Esc on a keyboard, the back gesture on a phone, the corner button. */
+  private armPauseInput(): void {
+    this.input.keyboard?.on('keydown-ESC', this.pauseRun, this);
+
+    // One history entry to swallow, so Android's back pauses instead of
+    // leaving the page. It is re-armed each time it is spent.
+    window.history.pushState({ exiledSurvivors: true }, '');
+    window.addEventListener('popstate', this.onBrowserBack);
+
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      this.input.keyboard?.off('keydown-ESC', this.pauseRun, this);
+      window.removeEventListener('popstate', this.onBrowserBack);
+    });
+  }
+
+  private onBrowserBack = (): void => {
+    window.history.pushState({ exiledSurvivors: true }, '');
+    this.pauseRun();
+  };
+
+  private createPauseButton(): void {
+    const { size, margin } = PAUSE_BUTTON;
+    const x = margin + size / 2;
+    const y = margin + size / 2;
+
+    const button = this.add
+      .rectangle(x, y, size, size, COLORS.panel, 0.85)
+      .setStrokeStyle(2, COLORS.panelEdge, 1)
+      .setScrollFactor(0)
+      .setDepth(DEPTH.ui)
+      .setInteractive({ useHandCursor: true });
+
+    const bar = (offset: number) =>
+      this.add
+        .rectangle(x + offset, y, 4, size * 0.44, COLORS.textFill, 0.9)
+        .setScrollFactor(0)
+        .setDepth(DEPTH.ui + 1);
+    bar(-5);
+    bar(5);
+
+    button.on(Phaser.Input.Events.GAMEOBJECT_POINTER_DOWN, this.pauseRun, this);
+  }
+
+  /** Freezes the run and opens the pause menu over it. */
+  private pauseRun(): void {
+    if (this.over || this.choosing || this.scene.isPaused()) {
+      return;
+    }
+
+    this.writeSave();
+    this.scene.pause();
+    this.scene.launch(SCENES.pause, {
+      elapsedMs: this.elapsedMs,
+      level: this.progression.level,
+      onResume: () => this.scene.resume(),
+      onQuit: () => {
+        this.writeSave();
+        this.scene.start(SCENES.menu);
+      },
+    });
   }
 
   private createFloor(): void {
@@ -327,6 +483,8 @@ export class GameScene extends Phaser.Scene {
   private onPlayerDied(): void {
     this.over = true;
     this.physics.pause();
+    // A save is somewhere to come back from, not a way to undo a death.
+    saveGame.clear();
 
     const data: GameOverData = {
       level: this.progression.level,

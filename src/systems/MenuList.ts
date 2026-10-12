@@ -1,0 +1,218 @@
+import Phaser from 'phaser';
+
+import { COLORS, DEPTH, MENU } from '@/config';
+
+export interface MenuItem {
+  readonly id: string;
+  /** Read every refresh, so a row can show live values. */
+  readonly label: () => string;
+  /** Right-hand value, for settings rows. */
+  readonly detail?: () => string;
+  /** A disabled row is dimmed and cannot be chosen. */
+  readonly enabled?: () => boolean;
+  readonly onSelect?: () => void;
+  /** Left/right on this row, for the rows that are really sliders. */
+  readonly onAdjust?: (direction: -1 | 1) => void;
+}
+
+export interface MenuListOptions {
+  readonly x: number;
+  readonly y: number;
+  readonly items: readonly MenuItem[];
+  readonly width?: number;
+  /** Escape, or the back button. */
+  readonly onCancel?: () => void;
+}
+
+const UP_CODES = ['KeyW', 'ArrowUp'];
+const DOWN_CODES = ['KeyS', 'ArrowDown'];
+const LEFT_CODES = ['KeyA', 'ArrowLeft'];
+const RIGHT_CODES = ['KeyD', 'ArrowRight'];
+const SELECT_CODES = ['Space', 'Enter', 'NumpadEnter'];
+
+interface Row {
+  readonly item: MenuItem;
+  readonly panel: Phaser.GameObjects.Rectangle;
+  readonly label: Phaser.GameObjects.Text;
+  readonly detail: Phaser.GameObjects.Text;
+}
+
+/**
+ * The vertical button list every shell screen is built from: title, pause,
+ * settings and credits.
+ *
+ * Works on keyboard (up/down to move, left/right to adjust a value row,
+ * space or enter to choose) and on pointer or finger (hover highlights, tap
+ * chooses). Input is locked briefly on open so the key that opened the
+ * screen cannot fall through onto a button.
+ */
+export class MenuList {
+  private static readonly INPUT_LOCK_MS = 220;
+
+  private readonly scene: Phaser.Scene;
+  private readonly rows: Row[] = [];
+  private readonly onCancel?: () => void;
+
+  private selected = 0;
+  private unlocked = false;
+  private inputOn = true;
+
+  public constructor(scene: Phaser.Scene, options: MenuListOptions) {
+    this.scene = scene;
+    this.onCancel = options.onCancel;
+
+    const width = options.width ?? MENU.buttonWidth;
+    const step = MENU.buttonHeight + MENU.buttonGap;
+
+    options.items.forEach((item, index) => {
+      const y = options.y + index * step;
+      const panel = scene.add
+        .rectangle(options.x, y, width, MENU.buttonHeight, COLORS.panel, 1)
+        .setDepth(DEPTH.ui)
+        .setStrokeStyle(2, COLORS.panelEdge, 1)
+        .setInteractive({ useHandCursor: true });
+
+      const label = scene.add
+        .text(options.x - width / 2 + 18, y, '', {
+          fontFamily: 'system-ui, sans-serif',
+          fontSize: '18px',
+          color: COLORS.text,
+        })
+        .setOrigin(0, 0.5)
+        .setDepth(DEPTH.ui + 1);
+
+      const detail = scene.add
+        .text(options.x + width / 2 - 18, y, '', {
+          fontFamily: 'system-ui, sans-serif',
+          fontSize: '15px',
+          color: COLORS.muted,
+        })
+        .setOrigin(1, 0.5)
+        .setDepth(DEPTH.ui + 1);
+
+      panel.on(Phaser.Input.Events.GAMEOBJECT_POINTER_OVER, () => this.moveTo(index));
+      panel.on(Phaser.Input.Events.GAMEOBJECT_POINTER_DOWN, () => {
+        this.moveTo(index);
+        this.activate();
+      });
+
+      this.rows.push({ item, panel, label, detail });
+    });
+
+    this.selected = this.rows.findIndex((row) => this.isEnabled(row));
+    if (this.selected < 0) {
+      this.selected = 0;
+    }
+
+    this.refresh();
+    scene.time.delayedCall(MenuList.INPUT_LOCK_MS, () => {
+      this.unlocked = true;
+    });
+    scene.input.keyboard?.on('keydown', this.onKeyDown, this);
+    scene.events.once(Phaser.Scenes.Events.SHUTDOWN, this.destroy, this);
+  }
+
+  /** Off while another mode owns the keys, such as placing the stick. */
+  public setInputEnabled(on: boolean): void {
+    this.inputOn = on;
+  }
+
+  public get selectedId(): string {
+    return this.rows[this.selected]?.item.id ?? '';
+  }
+
+  /** Repaints labels and values; call after anything a row displays changes. */
+  public refresh(): void {
+    this.rows.forEach((row, index) => {
+      const active = index === this.selected;
+      const enabled = this.isEnabled(row);
+
+      row.panel.setFillStyle(active ? COLORS.panelActive : COLORS.panel, 1);
+      row.panel.setStrokeStyle(active ? 3 : 2, active ? COLORS.accentFill : COLORS.panelEdge, 1);
+      row.panel.setAlpha(enabled ? 1 : 0.45);
+
+      row.label.setText(row.item.label());
+      row.label.setColor(enabled ? (active ? COLORS.text : COLORS.muted) : COLORS.muted);
+      row.label.setAlpha(enabled ? 1 : 0.6);
+
+      row.detail.setText(row.item.detail?.() ?? '');
+      row.detail.setAlpha(enabled ? 1 : 0.6);
+    });
+  }
+
+  public destroy(): void {
+    this.scene.input.keyboard?.off('keydown', this.onKeyDown, this);
+  }
+
+  private isEnabled(row: Row): boolean {
+    return row.item.enabled?.() !== false;
+  }
+
+  private moveTo(index: number): void {
+    if (!this.unlocked || !this.inputOn || index === this.selected) {
+      return;
+    }
+    this.selected = index;
+    this.refresh();
+  }
+
+  /** Steps to the next selectable row, skipping disabled ones. */
+  private step(direction: -1 | 1): void {
+    for (let i = 1; i <= this.rows.length; i++) {
+      const index = Phaser.Math.Wrap(this.selected + direction * i, 0, this.rows.length);
+      const row = this.rows[index];
+      if (row && this.isEnabled(row)) {
+        this.selected = index;
+        this.refresh();
+        return;
+      }
+    }
+  }
+
+  private activate(): void {
+    if (!this.unlocked || !this.inputOn) {
+      return;
+    }
+
+    const row = this.rows[this.selected];
+    if (!row || !this.isEnabled(row)) {
+      return;
+    }
+
+    row.item.onSelect?.();
+  }
+
+  private adjust(direction: -1 | 1): void {
+    if (!this.unlocked || !this.inputOn) {
+      return;
+    }
+
+    const row = this.rows[this.selected];
+    if (!row || !this.isEnabled(row) || !row.item.onAdjust) {
+      return;
+    }
+
+    row.item.onAdjust(direction);
+    this.refresh();
+  }
+
+  private onKeyDown(event: KeyboardEvent): void {
+    if (event.repeat || !this.unlocked || !this.inputOn) {
+      return;
+    }
+
+    if (UP_CODES.includes(event.code)) {
+      this.step(-1);
+    } else if (DOWN_CODES.includes(event.code)) {
+      this.step(1);
+    } else if (LEFT_CODES.includes(event.code)) {
+      this.adjust(-1);
+    } else if (RIGHT_CODES.includes(event.code)) {
+      this.adjust(1);
+    } else if (SELECT_CODES.includes(event.code)) {
+      this.activate();
+    } else if (event.code === 'Escape') {
+      this.onCancel?.();
+    }
+  }
+}

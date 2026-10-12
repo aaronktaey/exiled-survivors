@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 
 import { COLORS, DEPTH, JOYSTICK } from '@/config';
+import { settings } from '@/systems/Settings';
 
 /** Anything that can supply a movement direction alongside the keyboard. */
 export interface AnalogInput {
@@ -17,9 +18,10 @@ export function prefersTouchControls(): boolean {
 }
 
 /**
- * Thumb stick for touch devices, pinned to the bottom-left of the camera.
- * A touch anywhere within JOYSTICK.grabRadius takes hold of it, so the
- * player does not have to land exactly on the ring.
+ * Thumb stick for touch devices. Its size and where it sits come from the
+ * player's settings, because thumbs and phones differ; a touch anywhere
+ * within the (scaled) grab radius takes hold of it, so the player does not
+ * have to land exactly on the ring.
  */
 export class VirtualJoystick implements AnalogInput {
   private readonly scene: Phaser.Scene;
@@ -29,21 +31,25 @@ export class VirtualJoystick implements AnalogInput {
 
   private activePointerId: number | null = null;
   private tilt = 0;
+  /** Everything about the ring scales with this. */
+  private readonly scale: number;
 
   public constructor(scene: Phaser.Scene) {
     this.scene = scene;
 
-    const x = JOYSTICK.margin;
-    const y = scene.scale.height - JOYSTICK.margin;
+    const { joystickScale, joystickX, joystickY } = settings.value;
+    this.scale = joystickScale;
+    const x = Phaser.Math.Clamp(joystickX, 0, scene.scale.width);
+    const y = Phaser.Math.Clamp(joystickY, 0, scene.scale.height);
 
     this.base = scene.add
-      .circle(x, y, JOYSTICK.baseRadius, COLORS.stick, JOYSTICK.baseAlpha)
+      .circle(x, y, JOYSTICK.baseRadius * joystickScale, COLORS.stick, JOYSTICK.baseAlpha)
       .setScrollFactor(0)
       .setDepth(DEPTH.ui);
     this.base.setStrokeStyle(2, COLORS.stick, JOYSTICK.baseAlpha * 2);
 
     this.thumb = scene.add
-      .circle(x, y, JOYSTICK.thumbRadius, COLORS.stick, JOYSTICK.thumbAlpha)
+      .circle(x, y, JOYSTICK.thumbRadius * joystickScale, COLORS.stick, JOYSTICK.thumbAlpha)
       .setScrollFactor(0)
       .setDepth(DEPTH.ui);
 
@@ -77,7 +83,7 @@ export class VirtualJoystick implements AnalogInput {
     }
 
     const distance = Phaser.Math.Distance.Between(pointer.x, pointer.y, this.base.x, this.base.y);
-    if (distance > JOYSTICK.grabRadius) {
+    if (distance > JOYSTICK.grabRadius * this.scale) {
       return;
     }
 
@@ -114,8 +120,9 @@ export class VirtualJoystick implements AnalogInput {
       return;
     }
 
-    const clamped = Math.min(length, JOYSTICK.baseRadius);
-    const ratio = clamped / JOYSTICK.baseRadius;
+    const reach = JOYSTICK.baseRadius * this.scale;
+    const clamped = Math.min(length, reach);
+    const ratio = clamped / reach;
 
     this.thumb.setPosition(this.base.x + (dx / length) * clamped, this.base.y + (dy / length) * clamped);
 

@@ -43,7 +43,7 @@ export const DAMAGE_NUMBERS = {
   lifespanMs: 650,
   /** Upward drift, px per second. */
   riseSpeed: 54,
-  fontSize: '13px',
+  fontSize: "13px",
 } as const;
 
 /**
@@ -56,18 +56,27 @@ export const DAMAGE_NUMBERS = {
  * generated at boot.
  */
 export const ICONS = {
-  gem: { file: 'assets/icons/xp-gem.png', size: 14 },
-  projectile: { file: 'assets/icons/fireball.png', size: 16 },
-  skillOrb: { file: 'assets/icons/skill-orb.png', size: 22 },
+  gem: { file: "assets/icons/xp-gem.png", size: 14 },
+  projectile: { file: "assets/icons/fireball.png", size: 16 },
+  skillOrb: { file: "assets/icons/skill-orb.png", size: 22 },
 } as const;
 
 export const AUDIO = {
   skillDrop: {
-    key: 'sfx-skill-drop',
-    file: 'assets/bulletcasing.wav',
+    key: "sfx-skill-drop",
+    file: "assets/bulletcasing.wav",
     volume: 0.6,
     /** The clip opens with ~1s of silence; start just before the impact. */
     seek: 0.95,
+  },
+  /**
+   * Background music. 5.6MB, so it is fetched after the menu is already on
+   * screen rather than held in front of the first frame.
+   */
+  bgm: {
+    key: "bgm-main",
+    file: "assets/Constance.mp3",
+    defaultVolume: 0.35,
   },
 } as const;
 
@@ -87,9 +96,72 @@ export const WORLD = {
   height: 2400,
 } as const;
 
+/**
+ * Scene keys. They live here so two scenes can hand off to each other
+ * without importing each other's class, which would be a cycle.
+ */
+export const SCENES = {
+  boot: "BootScene",
+  menu: "MenuScene",
+  game: "GameScene",
+  upgrade: "UpgradeScene",
+  pause: "PauseScene",
+  settings: "SettingsScene",
+  credits: "CreditsScene",
+  gameOver: "GameOverScene",
+} as const;
+
+/** Where the shell screens — title, settings, credits, pause — are tuned. */
+export const MENU = {
+  buttonWidth: 300,
+  buttonHeight: 46,
+  buttonGap: 12,
+  /** Side of one logo pixel, in screen px. */
+  logoPixel: 6,
+  /** How far the logo drifts, and how long one full bob takes. */
+  logoBobPx: 10,
+  logoBobMs: 2600,
+} as const;
+
+/** Keys the browser keeps our state under. Bump the suffix to invalidate. */
+export const STORAGE = {
+  settings: "exiled-survivors:settings:v1",
+  save: "exiled-survivors:save:v1",
+} as const;
+
+export const SAVE = {
+  /** How often a run writes itself out while playing. */
+  autosaveMs: 10_000,
+} as const;
+
+/** Bounds for the adjustable settings. */
+export const SETTINGS_RANGE = {
+  joystickScale: { min: 0.6, max: 1.8, step: 0.1 },
+  bgmVolume: { min: 0, max: 1, step: 0.1 },
+  /** Nudge per key press while placing the stick. */
+  joystickNudgePx: 8,
+} as const;
+
+/** Tilt steering, for phones held flat-ish in two hands. */
+export const TILT = {
+  /** Degrees away from the held-still baseline that read as a full push. */
+  fullTiltDeg: 22,
+  /** Anything inside this reads as level, so a resting hand does not drift. */
+  deadZoneDeg: 3.5,
+  /** Smoothing on the raw sensor, 0-1 per frame. */
+  smoothing: 0.25,
+} as const;
+
+export const PAUSE_BUTTON = {
+  size: 34,
+  margin: 10,
+} as const;
+
 export const COLORS = {
   background: "#0b0d12",
   text: "#f4f1e8",
+  /** Same ink as a number, for shapes. */
+  textFill: 0xf4f1e8,
   muted: "#8b93a7",
   accent: "#e0564a",
   /** Same accent as a number, for shapes (text takes the string form). */
@@ -113,8 +185,11 @@ export const COLORS = {
   barTrack: 0x222a38,
   stick: 0xf4f1e8,
   meleeArc: 0xdfe7f5,
-  damageText: '#ffe9a3',
-  debugText: '#7ef0b0',
+  /** The pixel logo: bone white over a red offset, like a stamped sign. */
+  logo: 0xf4f1e8,
+  logoShadow: 0xe0564a,
+  damageText: "#ffe9a3",
+  debugText: "#7ef0b0",
   fireball: 0xffa63d,
   /** Bright core of a lightning arc, over a wider soft glow. */
   lightning: 0xdff1ff,
@@ -150,6 +225,7 @@ export const TEXTURES = {
   iceShard: "tex-ice-shard",
   gem: "tex-gem",
   skillOrb: "tex-skill-orb",
+  logo: "tex-logo",
 } as const;
 
 /** How each projectile skill's shot is drawn. Width runs along its flight. */
@@ -193,7 +269,7 @@ export const ENEMY = {
   contactDamage: 1,
 } as const;
 
-export type EnemyKind = 'grunt' | 'brute' | 'runner' | 'shooter';
+export type EnemyKind = "grunt" | "brute" | "runner" | "shooter";
 
 /** What a shooting enemy throws. */
 export interface EnemyShotSpec {
@@ -231,8 +307,8 @@ export interface EnemyKindSpec {
  */
 export const ENEMY_KINDS: Record<EnemyKind, EnemyKindSpec> = {
   grunt: {
-    id: 'grunt',
-    name: '일반',
+    id: "grunt",
+    name: "일반",
     texture: TEXTURES.enemy,
     size: ENEMY.size,
     color: COLORS.enemy,
@@ -242,8 +318,8 @@ export const ENEMY_KINDS: Record<EnemyKind, EnemyKindSpec> = {
     xp: 1,
   },
   brute: {
-    id: 'brute',
-    name: '거구',
+    id: "brute",
+    name: "거구",
     texture: TEXTURES.enemyBrute,
     size: 26,
     color: COLORS.enemyBrute,
@@ -253,8 +329,8 @@ export const ENEMY_KINDS: Record<EnemyKind, EnemyKindSpec> = {
     xp: 4,
   },
   runner: {
-    id: 'runner',
-    name: '질주',
+    id: "runner",
+    name: "질주",
     texture: TEXTURES.enemyRunner,
     size: 12,
     color: COLORS.enemyRunner,
@@ -264,8 +340,8 @@ export const ENEMY_KINDS: Record<EnemyKind, EnemyKindSpec> = {
     xp: 2,
   },
   shooter: {
-    id: 'shooter',
-    name: '사수',
+    id: "shooter",
+    name: "사수",
     texture: TEXTURES.enemyShooter,
     size: 16,
     color: COLORS.enemyShooter,
@@ -291,11 +367,15 @@ export const ENEMY_KINDS: Record<EnemyKind, EnemyKindSpec> = {
  * Weighted spawn table. A kind only joins the draw once the run is old
  * enough for it, so the first minute stays readable.
  */
-export const SPAWN_TABLE: readonly { kind: EnemyKind; weight: number; unlockMs: number }[] = [
-  { kind: 'grunt', weight: 60, unlockMs: 0 },
-  { kind: 'runner', weight: 22, unlockMs: 25_000 },
-  { kind: 'shooter', weight: 16, unlockMs: 50_000 },
-  { kind: 'brute', weight: 12, unlockMs: 75_000 },
+export const SPAWN_TABLE: readonly {
+  kind: EnemyKind;
+  weight: number;
+  unlockMs: number;
+}[] = [
+  { kind: "grunt", weight: 60, unlockMs: 0 },
+  { kind: "runner", weight: 22, unlockMs: 25_000 },
+  { kind: "shooter", weight: 16, unlockMs: 50_000 },
+  { kind: "brute", weight: 12, unlockMs: 75_000 },
 ];
 
 export const SPAWN = {
@@ -308,6 +388,8 @@ export const SPAWN = {
 
 export const HUD = {
   margin: 16,
+  /** Left edge of the run readout, clear of the pause button in the corner. */
+  leftInset: 56,
   /** XP bar spans the full width along the very bottom edge. */
   xpBarHeight: 10,
   /** Health bar floats just above the player sprite. */
@@ -396,12 +478,40 @@ export interface SkillBaseStats {
 
 /** Where every skill starts before a single upgrade is picked. */
 export const SKILL_BASE: Record<SkillId, SkillBaseStats> = {
-  meleeStrike: { damage: 10, attackSpeed: 1.5, range: 44, projectileSpeed: 0, chainCount: 0, pierceCount: 0 },
-  fireball: { damage: 10, attackSpeed: 1.5, range: 100, projectileSpeed: 230, chainCount: 0, pierceCount: 0 },
+  meleeStrike: {
+    damage: 10,
+    attackSpeed: 1,
+    range: 66,
+    projectileSpeed: 0,
+    chainCount: 0,
+    pierceCount: 0,
+  },
+  fireball: {
+    damage: 20,
+    attackSpeed: 1,
+    range: 100,
+    projectileSpeed: 230,
+    chainCount: 0,
+    pierceCount: 0,
+  },
   // Slower than the other two, because one cast lands on three enemies.
-  chainLightning: { damage: 10, attackSpeed: 1, range: 160, projectileSpeed: 0, chainCount: 2, pierceCount: 0 },
+  chainLightning: {
+    damage: 10,
+    attackSpeed: 0.8,
+    range: 160,
+    projectileSpeed: 0,
+    chainCount: 1,
+    pierceCount: 0,
+  },
   // Longer reach than 화염구 and a faster shot, but it casts less often.
-  iceSpear: { damage: 10, attackSpeed: 1, range: 180, projectileSpeed: 320, chainCount: 0, pierceCount: 2 },
+  iceSpear: {
+    damage: 10,
+    attackSpeed: 1,
+    range: 180,
+    projectileSpeed: 320,
+    chainCount: 0,
+    pierceCount: 2,
+  },
 };
 
 /** How much one pick of each upgrade adds. Keys match SkillBaseStats. */

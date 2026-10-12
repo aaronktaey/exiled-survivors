@@ -40,6 +40,16 @@ export class SpawnDirector {
     return this.group.countActive(true);
   }
 
+  /** The difficulty clock, which drives both rate and the enemy mix. */
+  public get clockMs(): number {
+    return this.elapsedMs;
+  }
+
+  /** Puts the clock back where a saved run left it. */
+  public seed(elapsedMs: number): void {
+    this.elapsedMs = elapsedMs;
+  }
+
   /** Total sprites held by the pool, alive or waiting. */
   public get pooled(): number {
     return this.group.getLength();
