@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 
 import { SKILL_BASE, STATS, UPGRADE_STEP, xpToNextLevel } from '@/config';
+import { subjectParticle } from '@/systems/korean';
 import type { SkillDefinition, SkillId } from '@/weapons/skills';
 
 export type UpgradeId =
@@ -20,16 +21,6 @@ export interface UpgradeOption {
 
 /** Every stat is tracked per skill, so an upgrade only hits its own. */
 export type SkillStats = Record<UpgradeId, number>;
-
-/**
- * Korean subject particle: 이 after a final consonant, 가 after a vowel —
- * 얼음창이 but 화염구가.
- */
-function subjectParticle(name: string): string {
-  const syllable = name.charCodeAt(name.length - 1) - 0xac00;
-  const hasFinalConsonant = syllable >= 0 && syllable <= 11171 && syllable % 28 !== 0;
-  return hasFinalConsonant ? '이' : '가';
-}
 
 /** How each upgrade is worded, for whichever skill is being upgraded. */
 const OPTION_TEXT: Record<UpgradeId, (name: string) => Omit<UpgradeOption, 'id'>> = {

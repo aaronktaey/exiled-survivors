@@ -35,6 +35,8 @@ interface Row {
   readonly panel: Phaser.GameObjects.Rectangle;
   readonly label: Phaser.GameObjects.Text;
   readonly detail: Phaser.GameObjects.Text;
+  /** The ◀ ▶ buttons, on the rows that hold a value. */
+  readonly arrows: Phaser.GameObjects.Text[];
 }
 
 /**
@@ -81,8 +83,10 @@ export class MenuList {
         .setOrigin(0, 0.5)
         .setDepth(DEPTH.ui + 1);
 
+      // A value row keeps its arrows clear of the read-out.
+      const detailRight = item.onAdjust ? options.x + width / 2 - 44 : options.x + width / 2 - 18;
       const detail = scene.add
-        .text(options.x + width / 2 - 18, y, '', {
+        .text(detailRight, y, '', {
           fontFamily: 'system-ui, sans-serif',
           fontSize: '15px',
           color: COLORS.muted,
@@ -96,7 +100,15 @@ export class MenuList {
         this.activate();
       });
 
-      this.rows.push({ item, panel, label, detail });
+      // Real buttons, not decoration: without them a mouse or a finger could
+      // only ever raise a value, because tapping the row means "select".
+      const arrows = item.onAdjust
+        ? ([-1, 1] as const).map((direction) =>
+            this.buildArrow(options.x + width / 2 - (direction < 0 ? 34 : 14), y, direction, index),
+          )
+        : [];
+
+      this.rows.push({ item, panel, label, detail, arrows });
     });
 
     this.selected = this.rows.findIndex((row) => this.isEnabled(row));
@@ -115,6 +127,27 @@ export class MenuList {
   /** Off while another mode owns the keys, such as placing the stick. */
   public setInputEnabled(on: boolean): void {
     this.inputOn = on;
+  }
+
+  /** One ◀ or ▶ button, which adjusts its row without selecting it. */
+  private buildArrow(x: number, y: number, direction: -1 | 1, index: number): Phaser.GameObjects.Text {
+    const arrow = this.scene.add
+      .text(x, y, direction < 0 ? '◀' : '▶', {
+        fontFamily: 'system-ui, sans-serif',
+        fontSize: '15px',
+        color: COLORS.muted,
+      })
+      .setOrigin(0.5)
+      .setDepth(DEPTH.ui + 2)
+      .setInteractive({ useHandCursor: true });
+
+    arrow.on(Phaser.Input.Events.GAMEOBJECT_POINTER_OVER, () => this.moveTo(index));
+    arrow.on(Phaser.Input.Events.GAMEOBJECT_POINTER_DOWN, () => {
+      this.moveTo(index);
+      this.adjust(direction);
+    });
+
+    return arrow;
   }
 
   public get selectedId(): string {
@@ -137,6 +170,11 @@ export class MenuList {
 
       row.detail.setText(row.item.detail?.() ?? '');
       row.detail.setAlpha(enabled ? 1 : 0.6);
+
+      row.arrows.forEach((arrow) => {
+        arrow.setColor(active && enabled ? COLORS.accent : COLORS.muted);
+        arrow.setAlpha(enabled ? 1 : 0.4);
+      });
     });
   }
 

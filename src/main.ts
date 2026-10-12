@@ -8,6 +8,7 @@ import {
   CreditsScene,
   GameOverScene,
   GameScene,
+  InfoScene,
   MenuScene,
   PauseScene,
   SettingsScene,
@@ -43,6 +44,7 @@ const config: Phaser.Types.Core.GameConfig = {
     PauseScene,
     SettingsScene,
     CreditsScene,
+    InfoScene,
     GameOverScene,
   ],
 };

@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 
 import { COLORS, DEPTH, MENU, SCENES, TEXTURES } from '@/config';
+import { PATCH_NOTES } from '@/content/patchNotes';
 import { bgm } from '@/systems/Bgm';
 import { MenuList } from '@/systems/MenuList';
 import { saveGame } from '@/systems/SaveGame';
@@ -22,12 +23,12 @@ export class MenuScene extends Phaser.Scene {
     this.add.tileSprite(0, 0, width, height, TEXTURES.grid).setOrigin(0, 0).setDepth(DEPTH.ground);
     this.add.rectangle(0, 0, width, height, 0x05070b, 0.55).setOrigin(0, 0).setDepth(DEPTH.ground + 1);
 
-    this.addLogo(width, 128);
+    this.addLogo(width, 118);
 
     const saved = saveGame.read();
     this.menu = new MenuList(this, {
       x: width / 2,
-      y: 268,
+      y: 236,
       items: [
         { id: 'start', label: () => '게임 시작', onSelect: () => this.startRun() },
         {
@@ -38,6 +39,17 @@ export class MenuScene extends Phaser.Scene {
           onSelect: () => this.startRun(true),
         },
         { id: 'settings', label: () => '설정', onSelect: () => this.openOverlay(SCENES.settings) },
+        {
+          id: 'guide',
+          label: () => '게임 가이드',
+          onSelect: () => this.openOverlay(SCENES.info, { topic: 'guide' }),
+        },
+        {
+          id: 'patch',
+          label: () => '패치노트',
+          detail: () => `v${PATCH_NOTES[0]?.version ?? ''}`,
+          onSelect: () => this.openOverlay(SCENES.info, { topic: 'patch' }),
+        },
         { id: 'credits', label: () => '제작자 정보', onSelect: () => this.openOverlay(SCENES.credits) },
       ],
     });
@@ -83,10 +95,11 @@ export class MenuScene extends Phaser.Scene {
     this.scene.start(SCENES.game, { save: fromSave ? saveGame.read() : null });
   }
 
-  /** Settings and credits sit on top; the menu waits, deaf, underneath. */
-  private openOverlay(key: string): void {
+  /** The other screens sit on top; the menu waits, deaf, underneath. */
+  private openOverlay(key: string, extra: object = {}): void {
     this.scene.pause();
     this.scene.launch(key, {
+      ...extra,
       onClose: () => {
         this.scene.resume();
         this.menu.refresh();

@@ -59,17 +59,19 @@ export class PauseScene extends Phaser.Scene {
 
     this.menu = new MenuList(this, {
       x: width / 2,
-      y: height / 2 - 20,
+      y: height / 2 - 50,
       onCancel: () => this.resume(),
       items: [
         { id: 'resume', label: () => '계속하기', onSelect: () => this.resume() },
-        { id: 'settings', label: () => '설정', onSelect: () => this.openSettings() },
+        { id: 'guide', label: () => '게임 가이드', onSelect: () => this.openOverlay(SCENES.info, { topic: 'guide' }) },
+        { id: 'patch', label: () => '패치노트', onSelect: () => this.openOverlay(SCENES.info, { topic: 'patch' }) },
+        { id: 'settings', label: () => '설정', onSelect: () => this.openOverlay(SCENES.settings) },
         { id: 'quit', label: () => '저장하고 타이틀로', onSelect: () => this.quit() },
       ],
     });
 
     this.add
-      .text(width / 2, height / 2 + 150, 'Esc 또는 뒤로가기로 이어서 진행   ·   희귀 적을 가리키면 강화효과가 보입니다', {
+      .text(width / 2, height - 28, 'Esc 또는 뒤로가기로 이어서 진행   ·   희귀 적을 가리키면 강화효과가 보입니다', {
         fontFamily: 'system-ui, sans-serif',
         fontSize: '13px',
         color: COLORS.muted,
@@ -99,9 +101,11 @@ export class PauseScene extends Phaser.Scene {
     this.tooltip?.inspectAt(pointer.x, pointer.y);
   }
 
-  private openSettings(): void {
+  /** Settings, the guide and the notes all open over the pause screen. */
+  private openOverlay(key: string, extra: object = {}): void {
     this.scene.pause();
-    this.scene.launch(SCENES.settings, {
+    this.scene.launch(key, {
+      ...extra,
       onClose: () => {
         this.scene.resume();
         this.menu.refresh();

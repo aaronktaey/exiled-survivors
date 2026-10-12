@@ -28,6 +28,8 @@ export interface SkillDefinition {
   readonly labelTexture: string;
   /** The picks this skill's upgrade screen offers, in the order shown. */
   readonly upgrades: readonly UpgradeId[];
+  /** One line on what it does, shown in 게임 가이드. */
+  readonly summary: string;
 }
 
 export const SKILLS: Record<SkillId, SkillDefinition> = {
@@ -37,6 +39,7 @@ export const SKILLS: Record<SkillId, SkillDefinition> = {
     tags: ['물리', '공격', '근접'],
     labelTexture: 'tex-label-meleeStrike',
     upgrades: ['damage', 'attackSpeed'],
+    summary: '가장 가까운 적을 향해 짧게 휘두릅니다. 범위 안의 적을 한꺼번에 때립니다.',
   },
   fireball: {
     id: 'fireball',
@@ -44,6 +47,7 @@ export const SKILLS: Record<SkillId, SkillDefinition> = {
     tags: ['투사체', '원거리', '주문', '화염'],
     labelTexture: 'tex-label-fireball',
     upgrades: ['damage', 'attackSpeed', 'range', 'projectileSpeed'],
+    summary: '가장 가까운 적에게 불덩이를 던집니다. 처음 맞은 적에게서 터집니다.',
   },
   chainLightning: {
     id: 'chainLightning',
@@ -51,6 +55,7 @@ export const SKILLS: Record<SkillId, SkillDefinition> = {
     tags: ['주문', '번개', '연쇄'],
     labelTexture: 'tex-label-chainLightning',
     upgrades: ['damage', 'attackSpeed', 'chainCount'],
+    summary: '즉발 번개가 적을 때리고, 가까운 다음 적으로 옮겨붙습니다. 같은 적을 두 번 때리지는 않습니다.',
   },
   iceSpear: {
     id: 'iceSpear',
@@ -58,6 +63,7 @@ export const SKILLS: Record<SkillId, SkillDefinition> = {
     tags: ['주문', '냉기', '관통', '투사체'],
     labelTexture: 'tex-label-iceSpear',
     upgrades: ['damage', 'attackSpeed', 'pierceCount'],
+    summary: '적을 꿰뚫고 지나가며, 스친 모든 적에게 냉각(이동속도 -15%)을 겁니다.',
   },
   voidOrb: {
     id: 'voidOrb',
@@ -65,6 +71,7 @@ export const SKILLS: Record<SkillId, SkillDefinition> = {
     tags: ['공허', '주문', '투사체'],
     labelTexture: 'tex-label-voidOrb',
     upgrades: ['damage', 'attackSpeed', 'orbCount'],
+    summary: '구체가 주위를 시계방향으로 돌며 닿는 적을 때립니다. 겨냥이 필요 없습니다.',
   },
 };
 

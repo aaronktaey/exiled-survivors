@@ -144,13 +144,30 @@ export const HUD = {
 /** Where the shell screens — title, settings, credits, pause — are tuned. */
 export const MENU = {
   buttonWidth: 300,
-  buttonHeight: 46,
-  buttonGap: 12,
+  /** Six rows have to fit under the logo, so the buttons are compact. */
+  buttonHeight: 40,
+  buttonGap: 8,
   /** Side of one logo pixel, in screen px. */
   logoPixel: 6,
   /** How far the logo drifts, and how long one full bob takes. */
   logoBobPx: 10,
   logoBobMs: 2600,
+} as const;
+
+/** 패치노트 and 게임 가이드: a long page that scrolls inside a window. */
+export const INFO = {
+  titleY: 44,
+  /** The scrolling window, measured from the top and bottom of the screen. */
+  contentTop: 82,
+  contentBottom: 58,
+  contentWidth: 720,
+  headingSize: '17px',
+  headingGap: 8,
+  lineSize: '14px',
+  lineSpacing: 5,
+  sectionGap: 22,
+  /** How far one press of an arrow key moves the page. */
+  keyStep: 48,
 } as const;
 
 /** The panel that lists a rare's affixes when it is hovered or tapped. */

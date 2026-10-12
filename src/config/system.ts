@@ -28,6 +28,7 @@ export const SCENES = {
   pause: "PauseScene",
   settings: "SettingsScene",
   credits: "CreditsScene",
+  info: "InfoScene",
   gameOver: "GameOverScene",
 } as const;
 

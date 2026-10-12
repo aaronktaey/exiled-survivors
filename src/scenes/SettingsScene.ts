@@ -74,7 +74,7 @@ export class SettingsScene extends Phaser.Scene {
         {
           id: 'joystickScale',
           label: () => '터치패드 크기',
-          detail: () => `${Math.round(settings.value.joystickScale * 100)}%   ◀ ▶`,
+          detail: () => `${Math.round(settings.value.joystickScale * 100)}%`,
           onSelect: () => settings.step('joystickScale', 1),
           onAdjust: (direction) => {
             settings.step('joystickScale', direction);
@@ -84,7 +84,7 @@ export class SettingsScene extends Phaser.Scene {
         {
           id: 'movement',
           label: () => '모바일 이동 방식',
-          detail: () => `${MODE_NAMES[settings.value.movementMode]}   ◀ ▶`,
+          detail: () => `${MODE_NAMES[settings.value.movementMode]}`,
           onSelect: () => void this.cycleMode(1),
           onAdjust: (direction) => void this.cycleMode(direction),
         },
@@ -101,7 +101,7 @@ export class SettingsScene extends Phaser.Scene {
         {
           id: 'bgm',
           label: () => '배경음 음량',
-          detail: () => `${Math.round(settings.value.bgmVolume * 100)}%   ◀ ▶`,
+          detail: () => `${Math.round(settings.value.bgmVolume * 100)}%`,
           onSelect: () => this.stepVolume(1),
           onAdjust: (direction) => this.stepVolume(direction),
         },
