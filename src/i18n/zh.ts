@@ -16,6 +16,7 @@ export const zh: Strings = {
     noPoints: '还没有点数 — 击杀首领以收集神圣碎片。',
     hintKeyboard: '↑ ↓ 移动   Space 投入   Esc 返回',
     hintTouch: '点击条目投入点数',
+    shardName: '神圣碎片',
     temporary: '这是临时版本 — 目前为三条线，分支树是下一步的工作。',
   },
 

@@ -39,6 +39,8 @@ export interface Strings {
     readonly noPoints: string;
     readonly hintKeyboard: string;
     readonly hintTouch: string;
+    /** What one 신성한 조각 is called, over it on the ground. */
+    readonly shardName: string;
     /** Said plainly: three lines today, a tree later. */
     readonly temporary: string;
   };

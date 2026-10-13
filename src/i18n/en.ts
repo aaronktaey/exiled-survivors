@@ -16,6 +16,7 @@ export const en: Strings = {
     noPoints: 'No points yet — kill a 우두머리 and collect Divine Shards.',
     hintKeyboard: '↑ ↓ to move   Space to spend   Esc to go back',
     hintTouch: 'Tap a line to spend a point',
+    shardName: 'Divine Shard',
     temporary: 'A placeholder: three lines today, a tree with branches next.',
   },
 

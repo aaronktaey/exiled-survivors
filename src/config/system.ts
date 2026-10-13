@@ -110,10 +110,14 @@ export const AUDIO = {
     magic: { key: "sfx-drop-magic", file: "assets/magicDrop.mp3", volume: 0.5 },
     rare: { key: "sfx-drop-rare", file: "assets/rareDrop.mp3", volume: 0.6 },
   } as const,
-  /** How many 속성 a weapon needs before it sounds like the next tier up. */
+  /**
+   * How many 속성 a weapon needs to be the next rarity up. One ladder: it
+   * is what the drop is labelled as and what it sounds like when it lands,
+   * so the two can never disagree.
+   */
   dropTiers: {
-    magicFrom: 1,
-    rareFrom: 3,
+    magicFrom: 3,
+    rareFrom: 5,
   } as const,
   /**
    * Background music. 5.6MB, so it is fetched after the menu is already on

@@ -133,12 +133,16 @@ export function gearBonusFor(item: GearItem | null): GearBonus {
 }
 
 /**
- * How rare what landed is, which is what it sounds like when it does.
- * Path of Exile's own ladder: nothing on it is normal, a line or two is
- * magic, and three or more is rare.
+ * How rare a weapon came out, which is both how it is labelled on the
+ * ground and what it sounds like when it lands. Up to two 속성 is ordinary,
+ * three or four is magic, five or six is rare.
  */
 export function dropTierFor(item: GearItem): DropTier {
-  const lines = item.prefixes.length + item.suffixes.length;
+  return tierForLines(item.prefixes.length + item.suffixes.length);
+}
+
+/** The same ladder, for anything that knows its own count. */
+export function tierForLines(lines: number): DropTier {
   if (lines >= AUDIO.dropTiers.rareFrom) {
     return 'rare';
   }

@@ -16,6 +16,7 @@ export const ja: Strings = {
     noPoints: 'ポイントがありません — ボスを倒して神聖な欠片を集めてください。',
     hintKeyboard: '↑ ↓ 移動   Space 投資   Esc 戻る',
     hintTouch: '項目をタップして投資',
+    shardName: '神聖な欠片',
     temporary: '暫定版です — 今は三つの行で、枝分かれするツリーは次の作業です。',
   },
 

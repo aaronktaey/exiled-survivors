@@ -16,7 +16,6 @@ import {
 } from '@/config';
 import { MENU, SCENES } from '@/config';
 import { createPixelTextTexture } from '@/systems/PixelFont';
-import { bakeSkillLabels } from '@/systems/SkillLabels';
 import { sfx } from '@/systems/Sfx';
 
 
@@ -64,7 +63,6 @@ export class BootScene extends Phaser.Scene {
     this.createDivineShardTexture();
     this.createPassiveTexture();
 
-    bakeSkillLabels(this);
 
     createPixelTextTexture(this, TEXTURES.logo, ['EXILED', 'SURVIVORS'], {
       pixel: MENU.logoPixel,

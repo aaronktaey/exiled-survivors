@@ -6,7 +6,6 @@ import { languageName, t } from '@/i18n';
 import { bgm } from '@/systems/Bgm';
 import { MenuList } from '@/systems/MenuList';
 import { settings, type MovementMode } from '@/systems/Settings';
-import { bakeSkillLabels } from '@/systems/SkillLabels';
 import { requestTiltPermission, tiltAvailable } from '@/systems/TiltInput';
 
 export interface SettingsSceneData {
@@ -224,7 +223,6 @@ export class SettingsScene extends Phaser.Scene {
     }
 
     settings.cycleLanguage(direction);
-    bakeSkillLabels(this);
 
     // A frame later: this call is still inside the input handler that is
     // walking this scene's interactive objects, and restarting now pulls

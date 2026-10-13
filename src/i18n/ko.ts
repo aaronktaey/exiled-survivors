@@ -20,6 +20,7 @@ export const ko: Strings = {
     noPoints: '포인트가 없습니다 — 우두머리를 처치해 신성한 조각을 모으세요.',
     hintKeyboard: '↑ ↓ 이동   Space 투자   Esc 돌아가기',
     hintTouch: '항목을 탭해서 투자',
+    shardName: '신성한 조각',
     temporary: '임시 구성입니다 — 지금은 세 줄이고, 갈래가 나뉘는 트리는 다음 작업입니다.',
   },
 

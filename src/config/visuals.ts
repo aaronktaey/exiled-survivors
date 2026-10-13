@@ -208,16 +208,59 @@ export const SHOTS = {
 } as const;
 
 /** Ground label for a dropped skill, baked into a texture at boot. */
-export const SKILL_LABEL = {
-  text: "#FE0000",
-  background: 0xffffff,
-  border: 0xfe0000,
-  borderWidth: 1,
-  paddingX: 5,
-  paddingY: 3,
-  fontSize: "24px",
-  /** Gap between the orb on the ground and the plate above it. */
+/**
+ * The name floating over something on the ground, by how rare it is.
+ *
+ * The ladder is about being seen. A 일반 drop is bare text, read against
+ * whatever is behind it on the field. A 마법 drop sits on a dark plate with
+ * a lit edge. A 희귀 drop keeps the white-on-red plate every drop used to
+ * wear — the loudest thing on the screen — and breathes, so the eye catches
+ * it from across the arena.
+ */
+export const DROP_LABEL = {
+  /** Gap between the item on the ground and the plate above it. */
   gap: 5,
+  paddingX: 6,
+  paddingY: 3,
+  tiers: {
+    normal: {
+      fontSize: "20px",
+      text: "#e8edf7",
+      /** No plate: the dark outline every label carries is enough. */
+      plate: 0x000000,
+      plateAlpha: 0,
+      border: 0x000000,
+      borderWidth: 0,
+      /** Dark text on a pale plate needs no outline; bare text does. */
+      outlined: true,
+      pulse: 0,
+    },
+    magic: {
+      fontSize: "22px",
+      text: "#cfe8ff",
+      plate: 0x0b1626,
+      plateAlpha: 0.92,
+      border: 0x4f9fe0,
+      borderWidth: 2,
+      outlined: false,
+      pulse: 0,
+    },
+    rare: {
+      fontSize: "24px",
+      text: "#FE0000",
+      plate: 0xffffff,
+      plateAlpha: 1,
+      border: 0xfe0000,
+      borderWidth: 2,
+      outlined: false,
+      /** How far the plate swells and settles again, forever. */
+      pulse: 0.06,
+    },
+  },
+  /** How long the label takes to pop in, before it starts breathing. */
+  popMs: 180,
+  /** One full breath of the 희귀 plate. */
+  pulseMs: 900,
 } as const;
 
 export const HUD = {

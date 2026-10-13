@@ -30,6 +30,8 @@ export const PATCH_NOTES: readonly PatchNote[] = [
         '드랍 효과음이 희귀도에 따라 달라집니다 — 속성이 없으면 일반, 1~2개면 매직, 3개 이상이면 레어. 레어 소리는 울림까지 한 파일로 합쳐 재생합니다.',
         '장비 공격력을 크게 낮췄습니다 — 녹슨 검 1, 단계마다 +1(1/2/3/4). 예리도 +3에서 +1로 내렸습니다.',
         '얼음창의 관통이 돌아왔습니다 — 기본 2회 관통이며, 강화 선택지도 사정거리에서 관통 횟수로 되돌렸습니다.',
+        '바닥에 떨어진 것의 이름표가 희귀도에 따라 세 가지로 나뉩니다 — 일반은 테두리만 두른 글씨, 마법은 파란 테두리의 어두운 판, 희귀는 예전 스킬 이름표의 흰 판에 붉은 글씨이며 천천히 숨 쉽니다.',
+        '분류 — 스킬은 일반, 무기는 속성 2개까지 일반 · 3~4개 마법 · 5~6개 희귀, 신성한 조각은 희귀입니다. 드랍 효과음도 같은 기준을 씁니다.',
       ],
       en: [
         'Modifiers on enemies and on equipment are now called 속성, one word for both.',
@@ -42,7 +44,9 @@ export const PATCH_NOTES: readonly PatchNote[] = [
         'What is applied to you goes in one order: passives, then the weapon, then whatever the run itself has added — so an upgrade card is worth exactly what it says, whenever you take it.',
         'A drop sounds like how rare it is — nothing on it is normal, one or two 속성 is magic, three or more is rare. The rare one plays as a single mixed file, swell and all.',
         'Equipment attack power is far lower — 녹슨 검 is 1, and one step up the roster is +1 (1/2/3/4). 예리 went from +3 to +1.',
-        'Ice Spear pierces again — two bodies by default, and its upgrade is pierce count once more rather than range.'
+        'Ice Spear pierces again — two bodies by default, and its upgrade is pierce count once more rather than range.',
+        'A name on the ground now comes in three dresses — ordinary is outlined text, magic is a dark plate with a lit blue edge, and rare keeps the white-on-red plate every drop used to wear, breathing slowly.',
+        'Skills are ordinary; a weapon is ordinary up to two 속성, magic at three or four, rare at five or six; a 신성한 조각 is rare. The drop sound follows the same ladder.'
       ],
       ja: [
         '「強化効果」を「属性」と呼びます。敵と装備で同じ言葉を使います。',
@@ -56,6 +60,8 @@ export const PATCH_NOTES: readonly PatchNote[] = [
         'ドロップ音がレアリティで変わります — 属性なしは通常、1〜2 個はマジック、3 個以上はレア。レア音は響きまで一つのファイルに合成して再生します。',
         '装備の攻撃力を大きく下げました — 錆びた剣は 1、段階ごとに +1（1/2/3/4）。鋭利も +3 から +1 にしました。',
         '氷槍の貫通が戻りました — 既定で 2 体貫通し、強化の選択肢も射程から貫通回数に戻しました。',
+        '地面に落ちたものの名札がレアリティで三種になりました — 通常は縁取りだけの文字、マジックは青い縁の暗い板、レアは以前のスキル名札の白地に赤文字で、ゆっくり呼吸します。',
+        '分類 — スキルは通常、武器は属性 2 個までが通常・3〜4 個がマジック・5〜6 個がレア、神聖な欠片はレアです。ドロップ音も同じ基準です。',
       ],
       zh: [
         '敌人与装备上的「强化效果」统一改称「属性」。',
@@ -69,6 +75,8 @@ export const PATCH_NOTES: readonly PatchNote[] = [
         '掉落音效按稀有度区分 — 无属性为普通，1~2 个为魔法，3 个以上为稀有。稀有音效连同回响已合成为单个文件播放。',
         '大幅下调装备攻击力 — 生锈的剑为 1，每升一级 +1（1/2/3/4）。锐利也从 +3 降为 +1。',
         '冰枪的穿透回归 — 默认穿透 2 名敌人，强化选项也从射程改回穿透次数。',
+        '地上掉落物的名牌按稀有度分为三种 — 普通为仅带描边的文字，魔法为蓝边深色底板，稀有沿用过去技能名牌的白底红字，并会缓慢呼吸。',
+        '分类 — 技能为普通；武器属性 2 个以内为普通、3~4 个为魔法、5~6 个为稀有；神圣碎片为稀有。掉落音效也采用同一标准。',
       ],
     },
   },
