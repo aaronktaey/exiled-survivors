@@ -64,8 +64,7 @@ export class Separation {
   }
 
   private resolve(): void {
-    const { cellSize, radius, strength } = SEPARATION;
-    const minDistSq = radius * radius;
+    const { cellSize, strength } = SEPARATION;
 
     for (let i = 0; i < this.actives.length; i++) {
       const a = this.actives[i]!;
@@ -83,19 +82,31 @@ export class Separation {
             if (j <= i) {
               continue;
             }
-            this.separate(a, this.actives[j]!, radius, minDistSq, strength);
+            this.separate(a, this.actives[j]!, strength);
           }
         }
       }
     }
   }
 
-  private separate(a: Enemy, b: Enemy, minDist: number, minDistSq: number, strength: number): void {
+  /**
+   * Room for this pair, off their own two sizes. Two 질주 need less of it
+   * than two 거구, and a 우두머리 needs more than either.
+   */
+  private static roomFor(a: Enemy, b: Enemy): number {
+    return Math.max(
+      SEPARATION.minDistance,
+      ((a.bodySize + b.bodySize) / 2) * SEPARATION.spacing,
+    );
+  }
+
+  private separate(a: Enemy, b: Enemy, strength: number): void {
     const dx = b.x - a.x;
     const dy = b.y - a.y;
     const distSq = dx * dx + dy * dy;
+    const minDist = Separation.roomFor(a, b);
 
-    if (distSq >= minDistSq) {
+    if (distSq >= minDist * minDist) {
       return;
     }
 
@@ -107,14 +118,18 @@ export class Separation {
     }
 
     const dist = Math.sqrt(distSq);
-    const push = ((minDist - dist) / 2) * strength;
-    const nx = (dx / dist) * push;
-    const ny = (dy / dist) * push;
+    const push = (minDist - dist) * strength;
+    // The bigger one gives less ground, so a crowd of 일반 cannot walk a
+    // 우두머리 off its line, and nothing hides inside it either.
+    const total = a.bodySize + b.bodySize;
+    const aShare = total > 0 ? b.bodySize / total : 0.5;
+    const nx = dx / dist;
+    const ny = dy / dist;
 
-    a.x -= nx;
-    a.y -= ny;
-    b.x += nx;
-    b.y += ny;
+    a.x -= nx * push * aShare;
+    a.y -= ny * push * aShare;
+    b.x += nx * push * (1 - aShare);
+    b.y += ny * push * (1 - aShare);
   }
 
   private static keyOf(cx: number, cy: number): number {

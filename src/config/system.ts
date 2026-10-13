@@ -76,12 +76,21 @@ export const TIMING = {
 
 /** Enemies push each other apart instead of running full collisions. */
 export const SEPARATION = {
-  /** Enemies closer than this get nudged apart. */
-  radius: 14,
+  /**
+   * How much room a pair keeps, as a share of their own two sizes. One flat
+   * radius meant a 거구 sat half inside another 거구 while two 질주 had a
+   * gap: the distance has to come off the pair, not off a constant.
+   */
+  spacing: 1.05,
+  /** A floor under that, so the smallest two still do not share a pixel. */
+  minDistance: 14,
   /** Fraction of the overlap resolved per frame; 1 separates immediately. */
-  strength: 0.5,
-  /** Spatial-hash cell size. Must be >= radius for the 3x3 lookup to be sound. */
-  cellSize: 28,
+  strength: 0.7,
+  /**
+   * Spatial-hash cell size. Must be >= the largest distance kept above, or
+   * the 3x3 lookup misses pairs: two 우두머리 want 44 x 1.05 of room.
+   */
+  cellSize: 48,
 } as const;
 
 export const DEBUG = {
@@ -97,9 +106,10 @@ export type DropTier = 'normal' | 'magic' | 'rare';
 export const AUDIO = {
   /**
    * What a drop sounds like, by how rare it is — Path of Exile's own ladder.
-   * A weapon with no 속성 is normal, one or two is magic, three or more is
-   * rare, and everything else that lands on the ground (a skill, a potion,
-   * a 신성한 조각) is normal.
+   * A weapon is normal up to two 속성, magic at three or four, rare at five
+   * or six. A 신성한 조각 is rare whatever else is on the floor; a skill and
+   * a potion are normal. It is the same ladder the nameplates use, so what
+   * a drop looks like and what it sounds like can never disagree.
    *
    * The rare one is a single file: the hit and the swell behind it were two
    * recordings, mixed down to one so there is nothing to keep in step at

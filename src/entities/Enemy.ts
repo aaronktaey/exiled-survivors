@@ -153,6 +153,11 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
     return this.spec.size / 2 + RARE.outlinePadding;
   }
 
+  /** Side of the sprite, for anything that has to give it room. */
+  public get bodySize(): number {
+    return this.spec.size;
+  }
+
   /** XP its gem is worth, from its own stat line and its affixes. */
   public get xpValue(): number {
     return xpFor(this.spec, this.hpScale, this.damageScale);

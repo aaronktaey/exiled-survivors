@@ -131,7 +131,7 @@ export const ENEMY_KINDS: Record<EnemyKind, EnemyKindSpec> = {
     texture: TEXTURES.enemyBoss,
     size: 44,
     color: COLORS.enemyBoss,
-    maxHp: 400,
+    maxHp: 500,
     speed: 40,
     contactDamage: 5,
     /**
@@ -143,7 +143,7 @@ export const ENEMY_KINDS: Record<EnemyKind, EnemyKindSpec> = {
       damage: 5,
       speed: 150,
       /** Seconds between rings, not between bolts. */
-      cooldownMs: 10_000,
+      cooldownMs: 5_000,
       /** How many go out, spread evenly around the circle. */
       count: 18,
       range: 0,
@@ -419,7 +419,10 @@ export function enemyHpScaleAt(elapsedMs: number): number {
 
 /** The share of spawns that come up rare, after the same clock. */
 export function rareChanceAt(elapsedMs: number): number {
-  return Math.min(1, RARE.chance + DIFFICULTY.rareChancePerMinute * runMinutes(elapsedMs));
+  return Math.min(
+    1,
+    RARE.chance + DIFFICULTY.rareChancePerMinute * runMinutes(elapsedMs),
+  );
 }
 
 /** 우두머리: one every so often, worth killing for what it drops. */

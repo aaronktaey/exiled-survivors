@@ -127,7 +127,9 @@ export class CombatSystem {
     }
 
     shard.drop(x, y);
-    this.playDropSound();
+    // Its nameplate is the 희귀 one, so its sound is too: one ladder, or the
+    // ear and the eye disagree about the same object on the floor.
+    this.playDropSound('rare');
   }
 
   /** Places a weapon directly — used by the 우두머리 kill and debug keys. */
