@@ -4,15 +4,19 @@
  *
  * A 우두머리 drops a 신성한 조각 half the time; ten of them make one
  * 신성한 구슬, and one 구슬 is one point. A point buys a rank of one of the
- * three lines below, and the ranks stack.
+ * two lines below, and the ranks stack.
  *
- * It is deliberately three flat lines rather than a tree: the shape — which
+ * Health regeneration is not one of them: the 재생 속성 on a weapon is where
+ * that lives, and having it in both places made the tree the thing you took
+ * first and the weapon's line worth nothing.
+ *
+ * It is deliberately flat lines rather than a tree: the shape — which
  * node unlocks which — is the next piece of work, and everything underneath
  * it (the currency, the points, the ranks, the order it is applied in) is
  * already here and will not have to move.
  */
 
-export type PassiveId = 'attackSpeed' | 'damage' | 'regen';
+export type PassiveId = 'attackSpeed' | 'damage';
 
 export interface PassiveSpec {
   readonly id: PassiveId;
@@ -26,8 +30,6 @@ export interface PassiveSpec {
   readonly attackSpeedScale?: number;
   /** Multiplies every skill's damage, per rank. */
   readonly damageScale?: number;
-  /** Health returned every REGEN.periodMs, per rank. */
-  readonly regen?: number;
 }
 
 export const PASSIVES: Record<PassiveId, PassiveSpec> = {
@@ -44,13 +46,6 @@ export const PASSIVES: Record<PassiveId, PassiveSpec> = {
     detail: '공격속도 +10%',
     maxRank: 10,
     attackSpeedScale: 1.1,
-  },
-  regen: {
-    id: 'regen',
-    name: '재생',
-    detail: '5초당 체력 +1',
-    maxRank: 10,
-    regen: 1,
   },
 };
 

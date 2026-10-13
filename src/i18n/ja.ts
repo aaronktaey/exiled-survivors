@@ -218,11 +218,13 @@ export const ja: Strings = {
       evasive: '無敵時間 +30%',
       magnetic: '取得範囲 +40%',
     },
-    passives: { damage: 'ダメージ', attackSpeed: '攻撃速度', regen: '再生' },
+    affixGearDetails: {
+      giant: '最大体力 +25%',
+    },
+    passives: { damage: 'ダメージ', attackSpeed: '攻撃速度' },
     passiveDetails: {
       damage: 'ダメージ +10%',
       attackSpeed: '攻撃速度 +10%',
-      regen: '5 秒ごとに体力 +1',
     },
   },
 

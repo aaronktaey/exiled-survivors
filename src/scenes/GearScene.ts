@@ -11,7 +11,7 @@ import {
   type AffixId,
   type AffixKind,
 } from '@/config';
-import { affixDetail, affixKindName, affixName, fill, gearTitle, t } from '@/i18n';
+import { affixGearDetail, affixKindName, affixName, fill, gearTitle, t } from '@/i18n';
 import { gear, gearBonusFor, type GearItem } from '@/systems/Gear';
 import { centredTop, fitWidth } from '@/systems/Layout';
 import { MenuList } from '@/systems/MenuList';
@@ -280,7 +280,7 @@ export class GearScene extends Phaser.Scene {
 
     return [...counts].map(([id, n]) => {
       const name = n > 1 ? `${affixName(id)} ×${n}` : affixName(id);
-      return `${affixKindName(kind)}  ${name}   ${affixDetail(id)}`;
+      return `${affixKindName(kind)}  ${name}   ${affixGearDetail(id)}`;
     });
   }
 

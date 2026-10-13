@@ -219,6 +219,8 @@ export interface Strings {
     readonly enemies?: Record<string, string>;
     readonly affixes?: Record<string, string>;
     readonly affixDetails?: Record<string, string>;
+    /** Only for the 속성 whose weapon side reads differently. */
+    readonly affixGearDetails?: Record<string, string>;
     readonly gear?: Record<string, string>;
     readonly passives?: Record<string, string>;
     readonly passiveDetails?: Record<string, string>;

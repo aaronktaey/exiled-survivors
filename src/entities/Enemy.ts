@@ -7,6 +7,7 @@ import {
   DEPTH,
   ENEMY,
   ENEMY_KINDS,
+  HUD,
   RARE,
   RARE_OUTLINE_TIERS,
   TEXTURES,
@@ -18,6 +19,7 @@ import {
   type EnemyShotSpec,
   type EnemyVolleySpec,
 } from '@/config';
+import { enemyName } from '@/i18n';
 
 /** Only the 속성 that mean something on an enemy. */
 const ENEMY_AFFIX_POOL = ENEMY_AFFIXES;
@@ -67,6 +69,8 @@ export interface EnemyHooks {
  */
 export class Enemy extends Phaser.Physics.Arcade.Sprite {
   public hp = 0;
+  /** What it walked in with, for anything that draws a bar. */
+  public maxHp = 0;
   public kind: EnemyKind = 'grunt';
   /**
    * How many times this sprite has been spawned. Anything that remembers a
@@ -92,6 +96,9 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
   private shotCooldownMs = 0;
   /** The yellow ring, made on the first rare this sprite is used for. */
   private outline?: Phaser.GameObjects.Rectangle;
+  /** 우두머리's health bar and the line above it, made on its first one. */
+  private healthBar?: Phaser.GameObjects.Graphics;
+  private plate?: Phaser.GameObjects.Text;
   private hpScale = 1;
   private speedScale = 1;
   private damageScale = 1;
@@ -179,6 +186,7 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
     kind: EnemyKind = 'grunt',
     hooks?: EnemyHooks,
     rare = false,
+    timeScale = 1,
   ): void {
     const spec = ENEMY_KINDS[kind];
     this.lives += 1;
@@ -187,7 +195,13 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
     this.hooks = hooks;
     this.target = target;
     this.applyAffixes(rare ? rollAffixes() : []);
-    this.hp = Math.max(1, Math.round(spec.maxHp * this.hpScale * BALANCE.enemyHpScale));
+    // Three things decide what it walks in with: the kind, whatever 속성 it
+    // was born with, and how long the run has already lasted.
+    this.hp = Math.max(
+      1,
+      Math.round(spec.maxHp * this.hpScale * BALANCE.enemyHpScale * timeScale),
+    );
+    this.maxHp = this.hp;
     this.flashMs = 0;
     this.chillMs = 0;
     this.clearTint();
@@ -207,6 +221,7 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
     this.body?.setSize(spec.size, spec.size, true);
     this.setVelocity(0, 0);
     this.drawOutline();
+    this.drawHealthBar();
   }
 
   /** Reads a set of affixes into the multipliers the rest of the class uses. */
@@ -255,6 +270,49 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
       .setVisible(true);
   }
 
+  /**
+   * The bar a 우두머리 wears, drawn the way the survivor's own is: a track,
+   * the fill over it, and its name and count on a line above. Nothing below
+   * that rank gets one — a field of forty bars would say nothing at all.
+   */
+  private drawHealthBar(): void {
+    if (!this.isBoss) {
+      this.healthBar?.setVisible(false);
+      this.plate?.setVisible(false);
+      return;
+    }
+
+    const { width, height, gap } = HUD.bossBar;
+    const left = this.x - width / 2;
+    const top = this.y - this.spec.size / 2 - gap - height;
+    const ratio = Phaser.Math.Clamp(this.hp / Math.max(1, this.maxHp), 0, 1);
+
+    if (!this.healthBar) {
+      this.healthBar = this.scene.add.graphics().setDepth(DEPTH.healthBar);
+      this.plate = this.scene.add
+        .text(this.x, top, '', {
+          fontFamily: 'system-ui, sans-serif',
+          fontSize: HUD.nameplateSize,
+          color: COLORS.text,
+        })
+        .setOrigin(0.5, 1)
+        .setDepth(DEPTH.healthBar);
+    }
+
+    this.healthBar.clear();
+    this.healthBar.fillStyle(COLORS.barTrack, 1);
+    this.healthBar.fillRect(left, top, width, height);
+    if (ratio > 0) {
+      this.healthBar.fillStyle(COLORS.hpFill, 1);
+      this.healthBar.fillRect(left, top, width * ratio, height);
+    }
+    this.healthBar.setVisible(true);
+
+    this.plate?.setText(`${enemyName(this.kind)}  ${Math.max(0, this.hp)}/${this.maxHp}`);
+    this.plate?.setPosition(this.x, top - HUD.nameplateGap);
+    this.plate?.setVisible(true);
+  }
+
   /** One hit's worth of damage, after 강력 and a roll for 치명. */
   public rollDamage(base: number): number {
     const crit = this.critChance > 0 && Math.random() < this.critChance;
@@ -270,12 +328,16 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
     this.rare = false;
     this.affixes = [];
     this.outline?.setVisible(false);
+    this.healthBar?.setVisible(false);
+    this.plate?.setVisible(false);
     this.clearTint();
     this.disableBody(true, true);
   }
 
   public override destroy(fromScene?: boolean): void {
     this.outline?.destroy(fromScene);
+    this.healthBar?.destroy(fromScene);
+    this.plate?.destroy(fromScene);
     super.destroy(fromScene);
   }
 
@@ -329,6 +391,9 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
     }
 
     this.outline?.setPosition(this.x, this.y);
+    if (this.isBoss) {
+      this.drawHealthBar();
+    }
 
     if (!this.target || !this.body) {
       return;

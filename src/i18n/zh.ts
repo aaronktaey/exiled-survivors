@@ -218,11 +218,13 @@ export const zh: Strings = {
       evasive: '无敌时间 +30%',
       magnetic: '拾取范围 +40%',
     },
-    passives: { damage: '伤害', attackSpeed: '攻击速度', regen: '再生' },
+    affixGearDetails: {
+      giant: '最大生命 +25%',
+    },
+    passives: { damage: '伤害', attackSpeed: '攻击速度' },
     passiveDetails: {
       damage: '伤害 +10%',
       attackSpeed: '攻击速度 +10%',
-      regen: '每 5 秒回复 1 点生命',
     },
   },
 

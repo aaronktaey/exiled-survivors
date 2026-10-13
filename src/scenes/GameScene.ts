@@ -651,6 +651,8 @@ export class GameScene extends Phaser.Scene {
         drops: this.combat.skillDrops.countActive(true),
         potions: this.combat.potions.countActive(true),
         damageNumbers: this.damageNumbers.activeCount,
+        hpScale: this.spawner.hpScale,
+        rareChance: this.spawner.rareChance,
       }),
       stressSpawn: (count: number) => this.spawner.spawnBurst(count),
       spawnOneOfEach: () => this.spawner.spawnOneOfEach(),

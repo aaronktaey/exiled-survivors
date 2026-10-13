@@ -63,5 +63,5 @@ export function critMultiplierFor(mods: RunModifiers): number {
 
 /** Health returned every REGEN.periodMs, from the tree and from the weapon. */
 export function regenFor(mods: RunModifiers): number {
-  return mods.passive.regen + mods.gear.regen;
+  return mods.gear.regen;
 }

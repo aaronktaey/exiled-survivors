@@ -140,7 +140,7 @@ export const ENEMY_KINDS: Record<EnemyKind, EnemyKindSpec> = {
      * the ring goes everywhere, and the gap between bolts is the way out.
      */
     volley: {
-      damage: 4,
+      damage: 5,
       speed: 150,
       /** Seconds between rings, not between bolts. */
       cooldownMs: 10_000,
@@ -162,9 +162,8 @@ export const ENEMY_KINDS: Record<EnemyKind, EnemyKindSpec> = {
     speed: 50,
     contactDamage: 1,
     shot: {
-      damage: 2,
-      /** Slow enough to read and walk around. */
-      speed: 184,
+      damage: 3,
+      speed: 230,
       /** One every four seconds: a 사수 is a nuisance, not a turret. */
       cooldownMs: 4000,
       range: 300,
@@ -247,6 +246,11 @@ export interface AffixSpec {
   /** Shown under the name when the enemy, or the weapon, is inspected. */
   readonly detail: string;
   /**
+   * What it says on a weapon, where that differs. 거대 is worth +50% to an
+   * enemy and +25% to a survivor, and one line cannot honestly say both.
+   */
+  readonly gearDetail?: string;
+  /**
    * What it does on an enemy, and what it does on a weapon. An 속성 rolls
    * only where it has something to do: 자력 would mean nothing to an enemy,
    * and the run has no enemy regeneration to hang 재생 on, so those are
@@ -313,8 +317,10 @@ export const AFFIXES: Record<AffixId, AffixSpec> = {
     kind: "suffix",
     name: "거대",
     detail: "체력 +50%",
+    /** On a weapon it is worth half that: a survivor's bar is the run. */
+    gearDetail: "최대 체력 +25%",
     enemy: { hpScale: 1.5 },
-    gear: { maxHpScale: 1.5 },
+    gear: { maxHpScale: 1.25 },
   },
   swift: {
     id: "swift",
@@ -384,6 +390,37 @@ export const RARE = {
   outlineWidth: 2,
   outlinePadding: 5,
 } as const;
+
+/**
+ * How the run gets harder simply by lasting.
+ *
+ * Every whole minute an enemy spawns with is worth another `hpScalePerMinute`
+ * of health, compounding — the tenth minute is worth far more than the first,
+ * which is what stops a built-up survivor from mowing the field forever — and
+ * another `rareChancePerMinute` of the spawns come up rare.
+ *
+ * It steps on the minute rather than creeping, so a run has a shape: the
+ * 우두머리 walks in and everything behind it is tougher than it was.
+ */
+export const DIFFICULTY = {
+  hpScalePerMinute: 1.1,
+  rareChancePerMinute: 0.01,
+} as const;
+
+/** Whole minutes the run has lasted. */
+export function runMinutes(elapsedMs: number): number {
+  return Math.max(0, Math.floor(elapsedMs / 60_000));
+}
+
+/** What an enemy spawning now is worth in health, for the clock alone. */
+export function enemyHpScaleAt(elapsedMs: number): number {
+  return DIFFICULTY.hpScalePerMinute ** runMinutes(elapsedMs);
+}
+
+/** The share of spawns that come up rare, after the same clock. */
+export function rareChanceAt(elapsedMs: number): number {
+  return Math.min(1, RARE.chance + DIFFICULTY.rareChancePerMinute * runMinutes(elapsedMs));
+}
 
 /** 우두머리: one every so often, worth killing for what it drops. */
 export const BOSS = {

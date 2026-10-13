@@ -127,6 +127,17 @@ export function affixDetail(id: AffixId): string {
   return t().names?.affixDetails?.[id] ?? AFFIXES[id].detail;
 }
 
+/**
+ * The same line as it reads on a weapon. Most 속성 do one thing wherever
+ * they land and fall back to the general wording; 거대 is worth half as much
+ * to a survivor as to an enemy, so it says so.
+ */
+export function affixGearDetail(id: AffixId): string {
+  return (
+    t().names?.affixGearDetails?.[id] ?? AFFIXES[id].gearDetail ?? affixDetail(id)
+  );
+}
+
 export function gearName(id: GearId): string {
   return t().names?.gear?.[id] ?? GEAR[id].name;
 }

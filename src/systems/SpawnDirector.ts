@@ -1,6 +1,15 @@
 import Phaser from 'phaser';
 
-import { BOSS, ENEMY_KINDS, RARE, SPAWN, SPAWN_TABLE, WORLD, type EnemyKind } from '@/config';
+import {
+  BOSS,
+  ENEMY_KINDS,
+  SPAWN,
+  SPAWN_TABLE,
+  WORLD,
+  enemyHpScaleAt,
+  rareChanceAt,
+  type EnemyKind,
+} from '@/config';
 import { Enemy, type EnemyHooks } from '@/entities/Enemy';
 
 /**
@@ -44,6 +53,19 @@ export class SpawnDirector {
   /** The difficulty clock, which drives both rate and the enemy mix. */
   public get clockMs(): number {
     return this.elapsedMs;
+  }
+
+  /**
+   * What an enemy spawning right now is worth in health, for how long the
+   * run has lasted. Read rather than stored, so it is always the clock's.
+   */
+  public get hpScale(): number {
+    return enemyHpScaleAt(this.elapsedMs);
+  }
+
+  /** The share of spawns coming up rare right now, after the same clock. */
+  public get rareChance(): number {
+    return rareChanceAt(this.elapsedMs);
   }
 
   /** Puts the clock back where a saved run left it. */
@@ -146,7 +168,7 @@ export class SpawnDirector {
       return null;
     }
 
-    boss.spawn(x, y, this.target, 'boss', this.hooks);
+    boss.spawn(x, y, this.target, 'boss', this.hooks, false, this.hpScale);
     this.hooks.onBossSpawned?.();
     return boss;
   }
@@ -156,7 +178,7 @@ export class SpawnDirector {
     const x = this.target.x + 120;
     const y = this.target.y;
     const enemy = this.group.get(x, y) as Enemy | null;
-    enemy?.spawn(x, y, this.target, kind, this.hooks, true);
+    enemy?.spawn(x, y, this.target, kind, this.hooks, true, this.hpScale);
     return enemy;
   }
 
@@ -182,7 +204,7 @@ export class SpawnDirector {
       const y = this.target.y + Math.sin(angle) * 140;
       const enemy = this.group.get(x, y) as Enemy | null;
       if (enemy) {
-        enemy.spawn(x, y, this.target, kind, this.hooks);
+        enemy.spawn(x, y, this.target, kind, this.hooks, false, this.hpScale);
         spawned++;
       }
     });
@@ -229,8 +251,17 @@ export class SpawnDirector {
       return false;
     }
 
-    // One spawn in ten comes up rare, whatever kind it turned out to be.
-    enemy.spawn(x, y, this.target, kind ?? this.pickKind(), this.hooks, Math.random() < RARE.chance);
+    // One spawn in ten comes up rare at the start, and one more in a hundred
+    // for every minute the run has lasted, whatever kind it turned out to be.
+    enemy.spawn(
+      x,
+      y,
+      this.target,
+      kind ?? this.pickKind(),
+      this.hooks,
+      Math.random() < this.rareChance,
+      this.hpScale,
+    );
     return true;
   }
 }

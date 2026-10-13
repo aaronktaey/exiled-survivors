@@ -287,6 +287,16 @@ export const HUD = {
     /** Gap between the sprite's top edge and the bar. */
     gap: 6,
   },
+  /**
+   * A 우두머리 wears the same bar the survivor does, only wider: it is the
+   * one enemy whose health is a thing you plan around rather than a thing
+   * you notice going down.
+   */
+  bossBar: {
+    width: 96,
+    height: 7,
+    gap: 8,
+  },
 } as const;
 
 /**

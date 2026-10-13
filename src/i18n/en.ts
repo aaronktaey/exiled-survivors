@@ -218,11 +218,13 @@ export const en: Strings = {
       evasive: 'Invulnerable window +30%',
       magnetic: 'Pickup range +40%',
     },
-    passives: { damage: 'Damage', attackSpeed: 'Attack speed', regen: 'Regeneration' },
+    affixGearDetails: {
+      giant: 'Maximum life +25%',
+    },
+    passives: { damage: 'Damage', attackSpeed: 'Attack speed' },
     passiveDetails: {
       damage: 'Damage +10%',
       attackSpeed: 'Attack speed +10%',
-      regen: '+1 life every 5s',
     },
   },
 

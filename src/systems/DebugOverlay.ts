@@ -16,6 +16,9 @@ export interface DebugCounts {
   readonly drops: number;
   readonly potions: number;
   readonly damageNumbers: number;
+  /** What the clock alone is doing to the field right now. */
+  readonly hpScale: number;
+  readonly rareChance: number;
 }
 
 /** Developer actions the overlay can trigger. */
@@ -132,6 +135,7 @@ export class DebugOverlay {
       `delta cap ${TIMING.maxDeltaMs}ms`,
       `enemies ${c.enemies} (pool ${c.enemyPool})   projectiles ${c.projectiles}   gems ${c.gems}`,
       `  ${this.kindBreakdown(c)}   희귀 ${c.rares}   우두머리 ${c.bosses}   enemy shots ${c.enemyShots}`,
+      `  난이도 체력 x${c.hpScale.toFixed(2)}   희귀 확률 ${(c.rareChance * 100).toFixed(0)}%`,
       `drops ${c.drops}   potions ${c.potions}   damage numbers ${c.damageNumbers}`,
       '',
       `F2 +${DEBUG.stressSpawnCount} enemies   F3 clear enemies   F4 level up`,
