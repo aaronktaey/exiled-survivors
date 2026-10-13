@@ -2,11 +2,13 @@ import {
   AFFIXES,
   ENEMY_KINDS,
   GEAR,
+  ORBS,
   PASSIVES,
   type AffixId,
   type AffixKind,
   type EnemyKind,
   type GearId,
+  type OrbId,
   type PassiveId,
 } from '@/config';
 import { en } from '@/i18n/en';
@@ -136,6 +138,19 @@ export function affixGearDetail(id: AffixId): string {
   return (
     t().names?.affixGearDetails?.[id] ?? AFFIXES[id].gearDetail ?? affixDetail(id)
   );
+}
+
+/** The 구슬's full name, its one-word form, and what it does. */
+export function orbName(id: OrbId): string {
+  return t().names?.orbs?.[id] ?? ORBS[id].name;
+}
+
+export function orbShort(id: OrbId): string {
+  return t().names?.orbShorts?.[id] ?? ORBS[id].short;
+}
+
+export function orbDetail(id: OrbId): string {
+  return t().names?.orbDetails?.[id] ?? ORBS[id].detail;
 }
 
 export function gearName(id: GearId): string {

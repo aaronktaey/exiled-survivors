@@ -89,6 +89,11 @@ export interface Strings {
     /** The button that throws one away, and what it says once it is armed. */
     readonly discard: string;
     readonly discardConfirm: string;
+    /** The 구슬 buttons: "변화 x3", and what one press asks before acting. */
+    readonly orbCount: string;
+    readonly orbConfirm: string;
+    /** Shown when the stash holds none of a 구슬 at all. */
+    readonly orbNone: string;
     readonly hintKeyboard: string;
     readonly hintTouch: string;
     /** "접두어" / "접미어", heading the lines of each kind. */
@@ -159,6 +164,8 @@ export interface Strings {
     readonly introHintTouch: string;
     /** Banner when a piece of 장비 is walked over. {gear} is its name. */
     readonly gearFound: string;
+    /** Shouted when a 구슬 is walked over. */
+    readonly orbFound: string;
     /** 신성한 조각 picked up: {held} of {need} towards the next 구슬. */
     readonly shardFound: string;
     /** ...and the one that completed it. */
@@ -221,6 +228,9 @@ export interface Strings {
     readonly affixDetails?: Record<string, string>;
     /** Only for the 속성 whose weapon side reads differently. */
     readonly affixGearDetails?: Record<string, string>;
+    readonly orbs?: Record<string, string>;
+    readonly orbShorts?: Record<string, string>;
+    readonly orbDetails?: Record<string, string>;
     readonly gear?: Record<string, string>;
     readonly passives?: Record<string, string>;
     readonly passiveDetails?: Record<string, string>;

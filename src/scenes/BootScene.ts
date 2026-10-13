@@ -62,6 +62,7 @@ export class BootScene extends Phaser.Scene {
     this.createGearTexture();
     this.createDivineShardTexture();
     this.createPassiveTexture();
+    this.createOrbTexture();
 
 
     createPixelTextTexture(this, TEXTURES.logo, ['EXILED', 'SURVIVORS'], {
@@ -162,6 +163,26 @@ export class BootScene extends Phaser.Scene {
     );
 
     graphics.generateTexture(TEXTURES.shard, size, size);
+    graphics.destroy();
+  }
+
+  /**
+   * A 구슬: one white sphere with a highlight, tinted per orb where it is
+   * drawn. White so the tint comes out at full strength.
+   */
+  private createOrbTexture(): void {
+    const size = 32;
+    const half = size / 2;
+    const graphics = this.add.graphics();
+
+    graphics.fillStyle(0xffffff, 1);
+    graphics.fillCircle(half, half, half - 1);
+    graphics.fillStyle(0x000000, 0.28);
+    graphics.fillCircle(half, half + size * 0.12, half - size * 0.18);
+    graphics.fillStyle(0xffffff, 0.9);
+    graphics.fillCircle(size * 0.36, size * 0.33, size * 0.11);
+
+    graphics.generateTexture(TEXTURES.orb, size, size);
     graphics.destroy();
   }
 

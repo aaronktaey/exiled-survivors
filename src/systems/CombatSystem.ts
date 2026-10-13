@@ -1,11 +1,21 @@
 import Phaser from 'phaser';
 
-import { AUDIO, COLORS, POTION, WEAPON, type DropTier, type EnemyShotSpec } from '@/config';
+import {
+  AUDIO,
+  COLORS,
+  ORBS,
+  POTION,
+  WEAPON,
+  type DropTier,
+  type EnemyShotSpec,
+  type OrbId,
+} from '@/config';
 import { Enemy } from '@/entities/Enemy';
 import { EnemyShot } from '@/entities/EnemyShot';
 import { GearDrop } from '@/entities/GearDrop';
+import { OrbDrop } from '@/entities/OrbDrop';
 import { ShardDrop } from '@/entities/ShardDrop';
-import { dropTierFor, type GearItem } from '@/systems/Gear';
+import { dropTierFor, rollOrbDrop, type GearItem } from '@/systems/Gear';
 import type { RunStats } from '@/systems/RunStats';
 import { HealthPotion } from '@/entities/HealthPotion';
 import { Player } from '@/entities/Player';
@@ -29,6 +39,8 @@ export interface CombatHooks {
   /** True when this kill also owes a 신성한 조각. */
   readonly rollShardDrop: (fromBoss: boolean) => boolean;
   readonly onShardCollected: () => void;
+  /** Called when the player walks over a 구슬. */
+  readonly onOrbCollected: (id: OrbId) => void;
   /** What one of the survivor's critical hits is worth. */
   readonly critMultiplier: () => number;
   /** Called when the player walks over a dropped skill. */
@@ -47,6 +59,7 @@ export class CombatSystem {
   public readonly potions: Phaser.Physics.Arcade.Group;
   public readonly gearDrops: Phaser.Physics.Arcade.Group;
   public readonly shardDrops: Phaser.Physics.Arcade.Group;
+  public readonly orbDrops: Phaser.Physics.Arcade.Group;
 
   private readonly scene: Phaser.Scene;
   private readonly player: Player;
@@ -92,6 +105,7 @@ export class CombatSystem {
     this.potions = scene.physics.add.group({ classType: HealthPotion, runChildUpdate: true });
     this.gearDrops = scene.physics.add.group({ classType: GearDrop, runChildUpdate: true });
     this.shardDrops = scene.physics.add.group({ classType: ShardDrop, runChildUpdate: true });
+    this.orbDrops = scene.physics.add.group({ classType: OrbDrop, runChildUpdate: true });
 
     scene.physics.add.overlap(player, enemies, this.onEnemyTouch, undefined, this);
     scene.physics.add.overlap(player, this.enemyShots, this.onEnemyShotHit, undefined, this);
@@ -100,6 +114,7 @@ export class CombatSystem {
     scene.physics.add.overlap(player, this.skillDrops, this.onSkillTouch, undefined, this);
     scene.physics.add.overlap(player, this.gearDrops, this.onGearTouch, undefined, this);
     scene.physics.add.overlap(player, this.shardDrops, this.onShardTouch, undefined, this);
+    scene.physics.add.overlap(player, this.orbDrops, this.onOrbTouch, undefined, this);
   }
 
   /** Wires a newly acquired projectile weapon into enemy collisions. */
@@ -130,6 +145,17 @@ export class CombatSystem {
     // Its nameplate is the 희귀 one, so its sound is too: one ladder, or the
     // ear and the eye disagree about the same object on the floor.
     this.playDropSound('rare');
+  }
+
+  /** Places a 구슬 directly — used by the kill roll and by debug keys. */
+  public dropOrbAt(x: number, y: number, id: OrbId): void {
+    const drop = this.orbDrops.get() as OrbDrop | null;
+    if (!drop) {
+      return;
+    }
+
+    drop.drop(x, y, id);
+    this.playDropSound(ORBS[id]?.tier ?? 'normal');
   }
 
   /** Places a weapon directly — used by the 우두머리 kill and debug keys. */
@@ -301,6 +327,16 @@ export class CombatSystem {
     this.hooks.onShardCollected();
   };
 
+  private onOrbTouch: Phaser.Types.Physics.Arcade.ArcadePhysicsCallback = (_player, object) => {
+    const drop = object as OrbDrop;
+    if (!drop.active) {
+      return;
+    }
+
+    drop.collect();
+    this.hooks.onOrbCollected(drop.orb);
+  };
+
   private killEnemy(enemy: Enemy): void {
     const { x, y } = enemy;
     // Read the rewards before recycling, which resets the kind and affixes.
@@ -333,6 +369,13 @@ export class CombatSystem {
     // And half of them leave a 신성한 조각 beside it.
     if (this.hooks.rollShardDrop(wasBoss)) {
       this.dropShardAt(x + 18, y);
+    }
+
+    // A 구슬 rolls off any kill at all, which is what gives the hundredth
+    // 일반 of a run something to be.
+    const orb = rollOrbDrop();
+    if (orb) {
+      this.dropOrbAt(x - 18, y, orb.id);
     }
   }
 }

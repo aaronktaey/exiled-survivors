@@ -106,6 +106,7 @@ export const TEXTURES = {
   skillOrb: "tex-skill-orb",
   gear: "tex-gear",
   shard: "tex-shard",
+  orb: "tex-orb",
   passive: "tex-passive",
   logo: "tex-logo",
 } as const;

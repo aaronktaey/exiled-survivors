@@ -8,6 +8,7 @@ import {
   PAUSE_BUTTON,
   REGEN,
   SHARD,
+  type OrbId,
   STATS,
   SAVE,
   SCENES,
@@ -18,7 +19,7 @@ import {
   WORLD,
 } from '@/config';
 import { Player } from '@/entities/Player';
-import { fill, gearTitle, skillName, t } from '@/i18n';
+import { fill, gearTitle, orbName, skillName, t } from '@/i18n';
 import { GameOverScene, type GameOverData } from '@/scenes/GameOverScene';
 import { UpgradeScene, type UpgradeChoiceData } from '@/scenes/UpgradeScene';
 import {
@@ -56,6 +57,7 @@ import {
   regenFor,
   type RunModifiers,
 } from '@/systems/Modifiers';
+import { orbs } from '@/systems/Orbs';
 import { passives } from '@/systems/Passives';
 import { settings } from '@/systems/Settings';
 import { TiltInput, tiltAvailable } from '@/systems/TiltInput';
@@ -180,7 +182,7 @@ export class GameScene extends Phaser.Scene {
       fireShot: (x, y, angle, spec) => this.combat.fireEnemyShot(x, y, angle, spec),
       onBossSpawned: () => this.announceBoss(),
     });
-    this.separation = new Separation(this.spawner.group);
+    this.separation = new Separation(this.spawner.group, this.player);
     this.damageNumbers = new DamageNumbers(this);
     this.stats = new RunStats();
     this.combat = new CombatSystem(
@@ -197,6 +199,7 @@ export class GameScene extends Phaser.Scene {
         onGearCollected: (found) => this.onGearCollected(found),
         rollShardDrop: (fromBoss) => fromBoss && Math.random() < SHARD.chance,
         onShardCollected: () => this.onShardCollected(),
+        onOrbCollected: (id) => this.onOrbCollected(id),
         critMultiplier: () => critMultiplierFor(this.mods),
       },
     );
@@ -542,6 +545,15 @@ export class GameScene extends Phaser.Scene {
   private onGearCollected(found: GearItem): void {
     gear.add(found);
     this.announce(fill(t().game.gearFound, { gear: gearTitle(found) }));
+  }
+
+  /**
+   * A 구슬 goes into the drawer, not onto the weapon: what it is spent on is
+   * a decision, and the 장비창 is where the weapons are.
+   */
+  private onOrbCollected(id: OrbId): void {
+    orbs.add(id);
+    this.announce(fill(t().game.orbFound, { orb: orbName(id) }));
   }
 
 /**

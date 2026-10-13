@@ -7,12 +7,14 @@ import {
   STARTING_GEAR,
   STORAGE,
   SUFFIXES,
+  ORBS,
   attackForTier,
   type AffixId,
   type AffixSpec,
   type GearId,
   type DropTier,
   type GearSpec,
+  type OrbSpec,
 } from '@/config';
 
 /**
@@ -151,6 +153,95 @@ export function tierForLines(lines: number): DropTier {
 }
 
 /**
+ * `count` affix lines, drawn with room on both sides. Prefixes and suffixes
+ * are picked at random between whichever side still has space, so asking for
+ * four does not quietly become three prefixes and a dead roll.
+ */
+export function rollAffixLines(count: number): {
+  prefixes: AffixId[];
+  suffixes: AffixId[];
+} {
+  const prefixes: AffixId[] = [];
+  const suffixes: AffixId[] = [];
+
+  for (let i = 0; i < count; i++) {
+    const canPrefix = prefixes.length < GEAR_DROP.maxPrefixes && PREFIXES.length > 0;
+    const canSuffix = suffixes.length < GEAR_DROP.maxSuffixes && SUFFIXES.length > 0;
+    if (!canPrefix && !canSuffix) {
+      break;
+    }
+
+    const takePrefix = canPrefix && (!canSuffix || Math.random() < 0.5);
+    const pool = takePrefix ? PREFIXES : SUFFIXES;
+    const picked = pool[Math.floor(Math.random() * pool.length)];
+    if (!picked) {
+      break;
+    }
+
+    (takePrefix ? prefixes : suffixes).push(picked.id);
+  }
+
+  return { prefixes, suffixes };
+}
+
+/** The most lines any one weapon can carry. */
+export const MAX_AFFIX_LINES = GEAR_DROP.maxPrefixes + GEAR_DROP.maxSuffixes;
+
+/**
+ * What a 구슬 does to a weapon, or null when it would do nothing — a
+ * 각성의 구슬 on a weapon already carrying six, which must not be spent.
+ *
+ * A reroll throws away everything that was on it, which is the whole bargain:
+ * a 혼돈의 구슬 can turn a four-line weapon into two, and that is why it is
+ * worth hesitating over.
+ */
+export function orbApplied(item: GearItem, orb: OrbSpec): GearItem | null {
+  if (orb.reroll) {
+    const span = orb.reroll.max - orb.reroll.min + 1;
+    const count = orb.reroll.min + Math.floor(Math.random() * span);
+    const rolled = rollAffixLines(Math.min(count, MAX_AFFIX_LINES));
+    return { ...item, prefixes: rolled.prefixes, suffixes: rolled.suffixes };
+  }
+
+  const held = item.prefixes.length + item.suffixes.length;
+  if (!orb.add || held >= MAX_AFFIX_LINES) {
+    return null;
+  }
+
+  const prefixes = [...item.prefixes];
+  const suffixes = [...item.suffixes];
+  for (let i = 0; i < orb.add; i++) {
+    const canPrefix = prefixes.length < GEAR_DROP.maxPrefixes && PREFIXES.length > 0;
+    const canSuffix = suffixes.length < GEAR_DROP.maxSuffixes && SUFFIXES.length > 0;
+    if (!canPrefix && !canSuffix) {
+      break;
+    }
+
+    const takePrefix = canPrefix && (!canSuffix || Math.random() < 0.5);
+    const pool = takePrefix ? PREFIXES : SUFFIXES;
+    const picked = pool[Math.floor(Math.random() * pool.length)];
+    if (!picked) {
+      break;
+    }
+
+    (takePrefix ? prefixes : suffixes).push(picked.id);
+  }
+
+  return { ...item, prefixes, suffixes };
+}
+
+/** Rolls for a 구슬 off one kill. Returns the one that dropped, if any. */
+export function rollOrbDrop(): OrbSpec | null {
+  for (const orb of Object.values(ORBS)) {
+    if (Math.random() < orb.chance) {
+      return orb;
+    }
+  }
+
+  return null;
+}
+
+/**
  * A weapon as a 우두머리 leaves it: a base from the roster, then affix lines
  * that each have to win their own roll. Repeats are allowed, the way a rare
  * enemy can be born doubly 거대 — there are fewer affixes than the ceiling,
@@ -251,6 +342,23 @@ class GearStore {
     }
 
     this.commit({ ...this.value, items: this.value.items.filter((item) => item.uid !== uid) });
+    return true;
+  }
+
+  /**
+   * Swaps one weapon for a changed copy of itself, keeping its place in the
+   * stash and whether it is being carried. This is what a 구슬 does: the
+   * same weapon, different lines.
+   */
+  public replace(item: GearItem): boolean {
+    if (!this.value.items.some((held) => held.uid === item.uid)) {
+      return false;
+    }
+
+    this.commit({
+      ...this.value,
+      items: this.value.items.map((held) => (held.uid === item.uid ? item : held)),
+    });
     return true;
   }
 

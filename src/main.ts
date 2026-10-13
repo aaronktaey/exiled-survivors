@@ -6,8 +6,9 @@ import * as balance from '@/config';
 import { COLORS } from '@/config';
 import { settings } from '@/systems/Settings';
 import { registerSharpText } from '@/systems/SharpText';
-import { gear, gearBonusFor } from '@/systems/Gear';
+import { gear, gearBonusFor, orbApplied } from '@/systems/Gear';
 import { gold } from '@/systems/Gold';
+import { orbs } from '@/systems/Orbs';
 import { passives } from '@/systems/Passives';
 import { currentCanvasSize } from '@/systems/Viewport';
 import {
@@ -85,6 +86,8 @@ if (import.meta.env.DEV) {
     gearBonusFor?: typeof gearBonusFor;
     passives?: typeof passives;
     gold?: typeof gold;
+    orbs?: typeof orbs;
+    orbApplied?: typeof orbApplied;
   };
   dev.game = game;
   // So a test can read a tuned number instead of carrying a copy of it.
@@ -93,4 +96,6 @@ if (import.meta.env.DEV) {
   dev.gearBonusFor = gearBonusFor;
   dev.passives = passives;
   dev.gold = gold;
+  dev.orbs = orbs;
+  dev.orbApplied = orbApplied;
 }

@@ -45,6 +45,8 @@ export const STORAGE = {
   passives: "exiled-survivors:passives:v1",
   /** And the purse a run pays into. */
   gold: "exiled-survivors:gold:v1",
+  /** The 구슬 drawer, which outlives a run beside the stash. */
+  orbs: "exiled-survivors:orbs:v1",
 } as const;
 
 export const SAVE = {
@@ -84,6 +86,14 @@ export const SEPARATION = {
   spacing: 1.05,
   /** A floor under that, so the smallest two still do not share a pixel. */
   minDistance: 14,
+  /**
+   * And how much room they keep from the survivor, on the same reading of
+   * their two sizes. Deliberately less than they keep from each other:
+   * contact damage is an overlap, so an enemy that cannot touch the player
+   * cannot hurt them either. This is enough to stop one sitting dead centre
+   * on the sprite, and not enough to call off the fight.
+   */
+  playerSpacing: 0.6,
   /** Fraction of the overlap resolved per frame; 1 separates immediately. */
   strength: 0.7,
   /**

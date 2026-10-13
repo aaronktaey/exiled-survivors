@@ -214,6 +214,23 @@ export class MenuList {
     return this.items[this.selected]?.id ?? '';
   }
 
+  /**
+   * Puts the cursor on one item by id, scrolling it into the window. Used by
+   * a screen that rebuilt itself and wants the cursor back where it was.
+   */
+  public focus(id: string): boolean {
+    const index = this.items.findIndex((item) => item.id === id);
+    if (index < 0) {
+      return false;
+    }
+
+    this.selected = index;
+    this.scrollTo(index);
+    this.refresh();
+    this.onMove?.(this.selectedId);
+    return true;
+  }
+
   /** Repaints labels and values; call after anything a row displays changes. */
   public refresh(): void {
     this.rows.forEach((row, slot) => {

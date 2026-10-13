@@ -1,6 +1,6 @@
 import type Phaser from 'phaser';
 
-import { SEPARATION } from '@/config';
+import { PLAYER, SEPARATION } from '@/config';
 import type { Enemy } from '@/entities/Enemy';
 
 /** Offset so negative cell coordinates still hash to a unique positive key. */
@@ -17,17 +17,59 @@ const KEY_STRIDE = 8192;
  */
 export class Separation {
   private readonly group: Phaser.Physics.Arcade.Group;
+  /** The survivor, who is nudged out of rather than nudged. */
+  private readonly player?: Phaser.GameObjects.Components.Transform;
   private readonly actives: Enemy[] = [];
   private readonly cells = new Map<number, number[]>();
   private readonly touched: number[] = [];
 
-  public constructor(group: Phaser.Physics.Arcade.Group) {
+  public constructor(
+    group: Phaser.Physics.Arcade.Group,
+    player?: Phaser.GameObjects.Components.Transform,
+  ) {
     this.group = group;
+    this.player = player;
   }
 
   public update(): void {
     this.rebuild();
     this.resolve();
+    this.clearOfPlayer();
+  }
+
+  /**
+   * Keeps the crowd off the survivor's own square. A chaser walking to the
+   * exact centre of the sprite hides the one thing the player has to be able
+   * to see, and a stack of them hides it completely.
+   *
+   * Only the enemy gives ground: being shoved around by what you are running
+   * from is worse than the overlap.
+   */
+  private clearOfPlayer(): void {
+    const player = this.player;
+    if (!player) {
+      return;
+    }
+
+    for (const enemy of this.actives) {
+      const dx = enemy.x - player.x;
+      const dy = enemy.y - player.y;
+      const distSq = dx * dx + dy * dy;
+      const room = ((PLAYER.size + enemy.bodySize) / 2) * SEPARATION.playerSpacing;
+      if (distSq >= room * room) {
+        continue;
+      }
+
+      if (distSq === 0) {
+        // Exactly on top: any direction will do, so long as it is one.
+        enemy.x += room;
+        continue;
+      }
+
+      const dist = Math.sqrt(distSq);
+      enemy.x = player.x + (dx / dist) * room;
+      enemy.y = player.y + (dy / dist) * room;
+    }
   }
 
   private rebuild(): void {

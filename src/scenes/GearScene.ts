@@ -8,17 +8,37 @@ import {
   SCRIM,
   TEXT,
   TEXTURES,
+  ALL_ORBS,
+  ORBS,
   type AffixId,
   type AffixKind,
+  type OrbId,
 } from '@/config';
-import { affixGearDetail, affixKindName, affixName, fill, gearTitle, t } from '@/i18n';
-import { gear, gearBonusFor, type GearItem } from '@/systems/Gear';
-import { centredTop, fitWidth } from '@/systems/Layout';
+import {
+  affixGearDetail,
+  affixKindName,
+  affixName,
+  fill,
+  gearTitle,
+  orbDetail,
+  orbName,
+  orbShort,
+  t,
+} from '@/i18n';
+import { gear, gearBonusFor, orbApplied, type GearItem } from '@/systems/Gear';
+import { orbs } from '@/systems/Orbs';
+import { centredTop, fitText, fitWidth } from '@/systems/Layout';
 import { MenuList } from '@/systems/MenuList';
 import { prefersTouchControls } from '@/systems/VirtualJoystick';
 
 export interface GearSceneData {
   readonly onClose: () => void;
+  /**
+   * The weapon the cursor should land on. A 구슬 relays the screen — the
+   * read-out is a different height once the lines change — and without this
+   * the cursor would jump to the top of the stash on every single reroll.
+   */
+  readonly focus?: string;
 }
 
 /** A percentage, as a reader would say it: "+50%", not "+50.0000001%". */
@@ -36,6 +56,9 @@ const COLUMNS_FROM = 760;
 const DISCARD_BLOCK = 44;
 const DISCARD_HEIGHT = 30;
 const DISCARD_WIDTH = 200;
+/** The row of 구슬 buttons under that, and the line explaining one. */
+const ORB_BLOCK = 40;
+const ORB_DETAIL_BLOCK = 26;
 
 /**
  * 장비창 — the stash, and which weapon goes out with you next time.
@@ -57,11 +80,18 @@ export class GearScene extends Phaser.Scene {
   /** 버리기, and the plate behind it. Public so a test can press it. */
   public discard!: Phaser.GameObjects.Text;
   private discardPlate!: Phaser.GameObjects.Rectangle;
+  /** The 구슬 buttons, by id. Public so a test can press one. */
+  public orbButtons = new Map<OrbId, Phaser.GameObjects.Text>();
+  private orbPlates = new Map<OrbId, Phaser.GameObjects.Rectangle>();
+  /** What the armed 구슬 would do, or empty. Public for tests. */
+  public orbHint!: Phaser.GameObjects.Text;
   /**
-   * Whether 버리기 has been pressed once already. A weapon six 속성 deep is
-   * an hour of 우두머리 kills, so it does not go on a single tap.
+   * What has been pressed once and is waiting to be pressed again: 'discard',
+   * a 구슬's id, or nothing. Everything on this screen that cannot be undone
+   * asks first — a weapon six 속성 deep is an hour of 우두머리 kills, and a
+   * 각성의 구슬 is a thousand ordinary ones.
    */
-  public armed = false;
+  public armed: 'discard' | OrbId | null = null;
 
   public constructor() {
     super(GearScene.KEY);
@@ -71,7 +101,9 @@ export class GearScene extends Phaser.Scene {
     this.payload = data;
     // The scene instance outlives a launch, and an armed button left over
     // from last time would throw the first weapon away on one press.
-    this.armed = false;
+    this.armed = null;
+    this.orbButtons = new Map();
+    this.orbPlates = new Map();
   }
 
   public create(): void {
@@ -100,7 +132,7 @@ export class GearScene extends Phaser.Scene {
     const linesHeight = lineCount * LINE_HEIGHT;
     const sideBySide = width > height && width >= COLUMNS_FROM;
 
-    const readOut = linesHeight + DISCARD_BLOCK;
+    const readOut = linesHeight + DISCARD_BLOCK + ORB_BLOCK + ORB_DETAIL_BLOCK;
     // On a short landscape window the weapon in hand gives up some of its
     // air, because the read-out under it cannot give up any lines.
     const headRoom = height < 480 ? 44 : 64;
@@ -160,6 +192,7 @@ export class GearScene extends Phaser.Scene {
       ],
     });
 
+
     const linesY = sideBySide
       ? listTop
       : Math.min(listTop + listHeight + LINES_GAP, height - FOOTER - readOut);
@@ -177,23 +210,33 @@ export class GearScene extends Phaser.Scene {
       .setOrigin(0.5, 0)
       .setDepth(DEPTH.ui + 1);
 
-    this.buildDiscard(
-      sideBySide ? Math.round(width * 0.72) : width / 2,
-      linesY + linesHeight + DISCARD_BLOCK / 2,
-    );
+    const columnX = sideBySide ? Math.round(width * 0.72) : width / 2;
+    const columnWidth = sideBySide ? Math.round(width * 0.44) : fitWidth(520, width);
+    this.buildDiscard(columnX, linesY + linesHeight + DISCARD_BLOCK / 2);
+    this.buildOrbs(columnX, linesY + linesHeight + DISCARD_BLOCK + ORB_BLOCK / 2, columnWidth);
 
-    this.add
-      .text(
-        width / 2,
-        height - 28,
-        prefersTouchControls() ? copy.hintTouch : copy.hintKeyboard,
-        { fontFamily: 'system-ui, sans-serif', fontSize: TEXT.size.hint, color: COLORS.muted },
-      )
-      .setOrigin(0.5)
-      .setDepth(DEPTH.ui + 1);
+    // The hint has four things to say on a keyboard, which is wider than a
+    // phone's canvas; shrink it rather than let it run off the sides.
+    fitText(
+      this.add
+        .text(
+          width / 2,
+          height - 28,
+          prefersTouchControls() ? copy.hintTouch : copy.hintKeyboard,
+          { fontFamily: 'system-ui, sans-serif', fontSize: TEXT.size.hint, color: COLORS.muted },
+        )
+        .setOrigin(0.5)
+        .setDepth(DEPTH.ui + 1),
+      width,
+    );
 
     this.refreshWearing();
     this.showLines();
+    // Back onto whatever the last 구슬 was spent on, rather than the top of
+    // the stash. Last, because it repaints the buttons built just above.
+    if (this.payload.focus) {
+      this.menu.focus(this.payload.focus);
+    }
   }
 
   /**
@@ -219,12 +262,138 @@ export class GearScene extends Phaser.Scene {
     this.discardPlate.on(Phaser.Input.Events.GAMEOBJECT_POINTER_DOWN, () => this.pressDiscard());
     this.input.keyboard?.on('keydown-DELETE', this.pressDiscard, this);
     this.input.keyboard?.on('keydown-BACKSPACE', this.pressDiscard, this);
+    // 1, 2, 3 for the 구슬, in the order they are drawn.
+    this.input.keyboard?.on('keydown', this.onOrbKey, this);
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       this.input.keyboard?.off('keydown-DELETE', this.pressDiscard, this);
       this.input.keyboard?.off('keydown-BACKSPACE', this.pressDiscard, this);
+      this.input.keyboard?.off('keydown', this.onOrbKey, this);
     });
 
     this.refreshDiscard();
+  }
+
+  /**
+   * The 구슬 row: one button per kind, each saying how many are held. A
+   * press arms it, a second press spends it. Greyed out when the drawer is
+   * empty of that kind, or when it would do nothing to this weapon.
+   */
+  private buildOrbs(x: number, y: number, columnWidth: number): void {
+    const slot = Math.min(140, Math.floor(columnWidth / ALL_ORBS.length));
+    const left = x - (slot * ALL_ORBS.length) / 2 + slot / 2;
+
+    ALL_ORBS.forEach((orb, index) => {
+      const cx = Math.round(left + index * slot);
+      const plate = this.add
+        .rectangle(cx, y, slot - 6, DISCARD_HEIGHT, COLORS.panelActive, 0)
+        .setDepth(DEPTH.ui)
+        .setInteractive({ useHandCursor: true });
+
+      const label = this.add
+        .text(cx, y, '', {
+          fontFamily: 'system-ui, sans-serif',
+          fontSize: TEXT.size.small,
+          color: COLORS.muted,
+        })
+        .setOrigin(0.5)
+        .setDepth(DEPTH.ui + 1);
+
+      plate.on(Phaser.Input.Events.GAMEOBJECT_POINTER_DOWN, () => this.pressOrb(orb.id));
+      this.orbPlates.set(orb.id, plate);
+      this.orbButtons.set(orb.id, label);
+    });
+
+    this.orbHint = this.add
+      .text(x, y + ORB_BLOCK / 2 + 4, '', {
+        fontFamily: 'system-ui, sans-serif',
+        fontSize: TEXT.size.hint,
+        color: COLORS.muted,
+        align: 'center',
+        wordWrap: { width: columnWidth },
+      })
+      .setOrigin(0.5, 0)
+      .setDepth(DEPTH.ui + 1);
+
+    this.refreshOrbs();
+  }
+
+  private onOrbKey(event: KeyboardEvent): void {
+    if (event.repeat) {
+      return;
+    }
+
+    const index = ['Digit1', 'Digit2', 'Digit3'].indexOf(event.code);
+    const orb = index >= 0 ? ALL_ORBS[index] : undefined;
+    if (orb) {
+      this.pressOrb(orb.id);
+    }
+  }
+
+  /** True when spending this 구슬 on the weapon under the cursor would do something. */
+  private canUse(id: OrbId): boolean {
+    const item = this.selected();
+    const spec = ORBS[id];
+    if (!item || !spec || orbs.count(id) <= 0) {
+      return false;
+    }
+
+    return orbApplied(item, spec) !== null;
+  }
+
+  /** First press asks, second press spends it. */
+  public pressOrb(id: OrbId): void {
+    const item = this.selected();
+    const spec = ORBS[id];
+    if (!item || !spec || !this.canUse(id)) {
+      return;
+    }
+
+    if (this.armed !== id) {
+      this.armed = id;
+      this.refreshDiscard();
+      this.refreshOrbs();
+      return;
+    }
+
+    const changed = orbApplied(item, spec);
+    if (!changed || !orbs.spend(id)) {
+      return;
+    }
+
+    gear.replace(changed);
+    // The weapon is a different height to read out now, so the whole screen
+    // is measured again — with the cursor left on the weapon it was spent on.
+    this.scene.restart({ ...this.payload, focus: item.uid });
+  }
+
+  private refreshOrbs(): void {
+    const copy = t().gear;
+    ALL_ORBS.forEach((orb) => {
+      const label = this.orbButtons.get(orb.id);
+      const plate = this.orbPlates.get(orb.id);
+      if (!label || !plate) {
+        return;
+      }
+
+      const held = orbs.count(orb.id);
+      const live = this.canUse(orb.id);
+      const asking = this.armed === orb.id && live;
+
+      label.setText(
+        asking
+          ? fill(copy.orbConfirm, { orb: orbShort(orb.id) })
+          : fill(copy.orbCount, { orb: orbShort(orb.id), count: held }),
+      );
+      label.setColor(asking ? COLORS.accent : COLORS.muted);
+      label.setAlpha(live ? 1 : 0.35);
+      plate.setFillStyle(COLORS.panelActive, asking ? 0.55 : 0);
+      plate.setAlpha(live ? 1 : 0.35);
+    });
+
+    const armedOrb = ALL_ORBS.find((orb) => orb.id === this.armed);
+    this.orbHint.setText(
+      armedOrb ? `${orbName(armedOrb.id)} — ${orbDetail(armedOrb.id)}` : '',
+    );
   }
 
   /** The weapon under the cursor, if the cursor is on one at all. */
@@ -244,9 +413,10 @@ export class GearScene extends Phaser.Scene {
       return;
     }
 
-    if (!this.armed) {
-      this.armed = true;
+    if (this.armed !== 'discard') {
+      this.armed = 'discard';
       this.refreshDiscard();
+      this.refreshOrbs();
       return;
     }
 
@@ -260,10 +430,11 @@ export class GearScene extends Phaser.Scene {
     const copy = t().gear;
     const live = this.canDiscard(this.selected());
 
-    this.discard.setText(this.armed && live ? copy.discardConfirm : copy.discard);
-    this.discard.setColor(this.armed && live ? COLORS.accent : COLORS.muted);
+    const asking = this.armed === 'discard' && live;
+    this.discard.setText(asking ? copy.discardConfirm : copy.discard);
+    this.discard.setColor(asking ? COLORS.accent : COLORS.muted);
     this.discard.setAlpha(live ? 1 : 0.35);
-    this.discardPlate.setFillStyle(COLORS.panelActive, this.armed && live ? 0.55 : 0);
+    this.discardPlate.setFillStyle(COLORS.panelActive, asking ? 0.55 : 0);
     this.discardPlate.setAlpha(live ? 1 : 0.35);
   }
 
@@ -342,8 +513,9 @@ export class GearScene extends Phaser.Scene {
     this.refreshWearing();
     this.menu.refresh();
     // What is now in hand cannot be thrown away, and what was may be.
-    this.armed = false;
+    this.armed = null;
     this.refreshDiscard();
+    this.refreshOrbs();
   }
 
   private refreshWearing(): void {
@@ -355,8 +527,9 @@ export class GearScene extends Phaser.Scene {
     const item = this.selected();
     this.lines.setText(item ? GearScene.describe(item) : '');
     // A question asked about one weapon does not carry over to the next.
-    this.armed = false;
+    this.armed = null;
     this.refreshDiscard();
+    this.refreshOrbs();
   }
 
   private close(): void {

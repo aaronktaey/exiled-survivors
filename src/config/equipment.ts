@@ -75,3 +75,79 @@ export const GEAR_DROP = {
   /** How big it is drawn on the ground. */
   size: 20,
 } as const;
+
+/**
+ * ★ 구슬 — the consumables a weapon is rerolled with.
+ *
+ * Path of Exile's currency, in the smallest form this game needs: one orb
+ * rerolls a weapon's 속성 to a small count, one rerolls it to a wide one,
+ * and one adds a line to what is already there. They drop off any kill at
+ * the rates below, so a weapon is no longer only what the 우두머리 happened
+ * to leave — it is something to work on.
+ *
+ * Adding one means a line in ORBS, a name in the locales, and nothing else:
+ * the stash, the drop, the label and the button all read this table.
+ */
+export type OrbId = 'transmute' | 'chaos' | 'awaken';
+
+export interface OrbSpec {
+  readonly id: OrbId;
+  /** Korean name; a locale renames it through `names.orbs`. */
+  readonly name: string;
+  /** The one word that fits on a button beside a count. */
+  readonly short: string;
+  /** What it does, written out. */
+  readonly detail: string;
+  /** Share of kills that leave one. */
+  readonly chance: number;
+  /** How loudly it lands: its nameplate and its drop sound both read this. */
+  readonly tier: 'normal' | 'magic' | 'rare';
+  readonly color: number;
+  /**
+   * Rerolls the weapon to somewhere in this many 속성, counting prefixes and
+   * suffixes together. Exactly one of `reroll` and `add` is set.
+   */
+  readonly reroll?: { readonly min: number; readonly max: number };
+  /** Or adds this many lines to whatever is already on it. */
+  readonly add?: number;
+}
+
+export const ORBS: Record<OrbId, OrbSpec> = {
+  transmute: {
+    id: 'transmute',
+    name: '변화의 구슬',
+    short: '변화',
+    detail: '속성을 1~2개로 다시 굴립니다',
+    chance: 0.01,
+    tier: 'magic',
+    color: 0x6aa9ff,
+    reroll: { min: 1, max: 2 },
+  },
+  chaos: {
+    id: 'chaos',
+    name: '혼돈의 구슬',
+    short: '혼돈',
+    detail: '속성을 2~4개로 다시 굴립니다',
+    chance: 0.003,
+    tier: 'rare',
+    color: 0xd45fd0,
+    reroll: { min: 2, max: 4 },
+  },
+  awaken: {
+    id: 'awaken',
+    name: '각성의 구슬',
+    short: '각성',
+    detail: '속성 1개를 더합니다 (최대 6)',
+    chance: 0.001,
+    tier: 'rare',
+    color: 0xffd34d,
+    add: 1,
+  },
+};
+
+export const ALL_ORBS: readonly OrbSpec[] = Object.values(ORBS);
+
+export const ORB_DROP = {
+  /** How big one is drawn on the ground. */
+  size: 16,
+} as const;

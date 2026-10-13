@@ -5,6 +5,7 @@ import { PATCH_NOTES } from '@/content/patchNotes';
 import { t } from '@/i18n';
 import { bgm } from '@/systems/Bgm';
 import { IconBar } from '@/systems/IconBar';
+import { orbs } from '@/systems/Orbs';
 import { passives } from '@/systems/Passives';
 import { MenuList } from '@/systems/MenuList';
 import { saveGame } from '@/systems/SaveGame';
@@ -91,6 +92,9 @@ export class MenuScene extends Phaser.Scene {
         id: 'gear',
         texture: TEXTURES.gear,
         label: () => t().menu.gear,
+        // A 구슬 in the drawer is something to do in there, the same way a
+        // point waiting is something to do in the tree.
+        badge: () => orbs.total > 0,
         onSelect: () => this.openOverlay(SCENES.gear),
       },
       {
