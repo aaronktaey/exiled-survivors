@@ -59,8 +59,12 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     return this.hp > 0;
   }
 
-  /** Adds a second direction source (the touch stick) beside the keyboard. */
-  public attachAnalog(source: AnalogInput): void {
+  /**
+   * Sets the second direction source (the touch stick or the tilt sensor)
+   * beside the keyboard. Passing nothing takes it away — a run can change
+   * how it is steered while it is being played.
+   */
+  public attachAnalog(source?: AnalogInput): void {
     this.analog = source;
   }
 

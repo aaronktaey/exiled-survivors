@@ -27,6 +27,8 @@ const NUMBER_CODES = ['Digit1', 'Digit2', 'Digit3', 'Digit4'];
 
 /** Cards shrink from this to fit however many options a skill offers. */
 const CARD_MAX_WIDTH = 260;
+/** Below this a card cannot hold its own label, so the row wraps instead. */
+const CARD_MIN_WIDTH = 150;
 const CARD_HEIGHT = 170;
 const CARD_GAP = 24;
 /** Keeps the row clear of the screen edges at four cards. */
@@ -39,6 +41,7 @@ interface CardView {
   readonly panel: Phaser.GameObjects.Rectangle;
   readonly label: Phaser.GameObjects.Text;
   readonly x: number;
+  readonly y: number;
 }
 
 /**
@@ -109,21 +112,35 @@ export class UpgradeScene extends Phaser.Scene {
       .setDepth(DEPTH.ui);
 
     // A projectile skill offers four picks, a melee one two, so the row is
-    // sized from the count rather than from a fixed card width.
+    // sized from the count rather than from a fixed card width — and on a
+    // phone, where four of them would be slivers, it wraps onto two rows.
     const options = this.payload.options;
+    const usable = width - SIDE_MARGIN * 2;
+    const perRow = Math.max(
+      1,
+      Math.min(options.length, Math.floor((usable + CARD_GAP) / (CARD_MIN_WIDTH + CARD_GAP))),
+    );
+    const rowCount = Math.ceil(options.length / perRow);
     const cardWidth = Math.min(
       CARD_MAX_WIDTH,
-      (width - SIDE_MARGIN * 2 - CARD_GAP * (options.length - 1)) / options.length,
+      (usable - CARD_GAP * (perRow - 1)) / perRow,
     );
     const span = cardWidth + CARD_GAP;
+    const rowSpan = CARD_HEIGHT + CARD_GAP;
+    // Each row is centred on its own, so a short last row sits in the middle.
+    const firstRowY = cardY - ((rowCount - 1) * rowSpan) / 2;
+
     this.cards = options.map((option, index) => {
-      const x = centerX + (index - (options.length - 1) / 2) * span;
-      return this.buildCard(x, cardY, cardWidth, option);
+      const row = Math.floor(index / perRow);
+      const inRow = index - row * perRow;
+      const rowSize = Math.min(perRow, options.length - row * perRow);
+      const x = centerX + (inRow - (rowSize - 1) / 2) * span;
+      return this.buildCard(x, firstRowY + row * rowSpan, cardWidth, option);
     });
 
     // Caret that slides to whichever card is under the pointer.
     this.pointer = this.add
-      .triangle(this.cards[0]!.x, cardY - CARD_HEIGHT / 2 - 18, 0, 0, 18, 0, 9, 12, COLORS.accentFill)
+      .triangle(this.cards[0]!.x, firstRowY - CARD_HEIGHT / 2 - 18, 0, 0, 18, 0, 9, 12, COLORS.accentFill)
       .setDepth(DEPTH.ui);
 
     this.add
@@ -181,7 +198,7 @@ export class UpgradeScene extends Phaser.Scene {
     panel.on(Phaser.Input.Events.GAMEOBJECT_POINTER_DOWN, () => this.onCardTapped(option.id));
     panel.on(Phaser.Input.Events.GAMEOBJECT_POINTER_OVER, () => this.onCardHovered(option.id));
 
-    return { option, panel, label, x };
+    return { option, panel, label, x, y };
   }
 
   private onCardTapped(upgrade: UpgradeId): void {
@@ -231,11 +248,19 @@ export class UpgradeScene extends Phaser.Scene {
       card.label.setColor(active ? COLORS.text : COLORS.muted);
     });
 
-    const targetX = this.cards[this.selected]!.x;
+    const card = this.cards[this.selected]!;
+    const targetX = card.x;
+    const targetY = card.y - CARD_HEIGHT / 2 - 18;
     if (animate) {
-      this.tweens.add({ targets: this.pointer, x: targetX, duration: 110, ease: 'Quad.easeOut' });
+      this.tweens.add({
+        targets: this.pointer,
+        x: targetX,
+        y: targetY,
+        duration: 110,
+        ease: 'Quad.easeOut',
+      });
     } else {
-      this.pointer.setX(targetX);
+      this.pointer.setPosition(targetX, targetY);
     }
   }
 

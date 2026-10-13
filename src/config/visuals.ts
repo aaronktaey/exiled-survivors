@@ -53,6 +53,11 @@ export const COLORS = {
   /** 공허: a violet core inside a darker rim. */
   voidOrb: 0xb07cff,
   voidOrbCore: 0xefe4ff,
+  /** 장비 on the ground: a brass crate, lit gold, named in gold. */
+  gear: 0xc08a3e,
+  gearEdge: 0xf2d08a,
+  gearGlow: 0xffd34d,
+  gearText: '#f2d08a',
   /** The potion: a white cross on crimson, haloed in pink as it expires. */
   potion: 0xd94452,
   potionCross: 0xfff2f2,
@@ -90,6 +95,7 @@ export const TEXTURES = {
   potion: "tex-potion",
   gem: "tex-gem",
   skillOrb: "tex-skill-orb",
+  gear: "tex-gear",
   logo: "tex-logo",
 } as const;
 
@@ -206,6 +212,13 @@ export const HUD = {
   margin: 16,
   /** How far under the clock the enemy count sits. */
   countGap: 30,
+  /**
+   * Under this canvas width the loadout would run under the clock, so it
+   * drops below the clock block instead of sitting beside it.
+   */
+  narrowWidth: 640,
+  /** Where the loadout starts once it has dropped. */
+  narrowTop: 54,
   /** Left edge of the run readout, clear of the pause button in the corner. */
   leftInset: 56,
   /** XP bar spans the full width along the very bottom edge. */
@@ -247,6 +260,24 @@ export const MENU = {
   buttonGap: 8,
   /** Side of one logo pixel, in screen px. */
   logoPixel: 6,
+  /** Roughly how tall the baked logo comes out, for centring the title. */
+  logoHeight: 104,
+  /** Air kept either side of it on a screen too narrow for its full size. */
+  logoMargin: 20,
+  /** That logo plus the byline under it. */
+  logoBlockHeight: 150,
+  /** Gap between that block and the first row, and the same on a short one. */
+  logoGap: 34,
+  logoGapShort: 18,
+  /** Under this canvas height the title uses the shorter gap. */
+  shortHeight: 600,
+  /** A screen's title and the air under it, before its first row. */
+  titleBlockHeight: 76,
+  /**
+   * Under this screen width a centred name and a right-aligned value collide
+   * in the same row, so the name moves to the left edge instead.
+   */
+  tightWidth: 560,
   /** How far the logo drifts, and how long one full bob takes. */
   logoBobPx: 10,
   logoBobMs: 2600,
@@ -259,8 +290,12 @@ export const INFO = {
   contentTop: 82,
   contentBottom: 58,
   contentWidth: 720,
+  /** Narrower screens keep at least this much air at each edge. */
+  sideMargin: 24,
   /** The contents list down the left of the guide. */
   tocWidth: 180,
+  /** ...which gives up width first, but never below this. */
+  tocMinWidth: 96,
   tocLineHeight: 38,
   headingSize: '20px',
   headingGap: 8,

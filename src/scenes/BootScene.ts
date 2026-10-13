@@ -4,6 +4,7 @@ import {
   AUDIO,
   COLORS,
   ENEMY_KINDS,
+  GEAR_DROP,
   ICONS,
   SKILL_ICONS,
   PLAYER,
@@ -56,6 +57,7 @@ export class BootScene extends Phaser.Scene {
     this.createShardTexture();
     this.createVoidOrbTexture();
     this.createPotionTexture();
+    this.createGearTexture();
 
     bakeSkillLabels(this);
 
@@ -129,6 +131,26 @@ export class BootScene extends Phaser.Scene {
   }
 
   /** The potion: a white cross on a crimson field, read at a glance. */
+  /** 장비 on the ground: a brass crate with a lighter lid and edge. */
+  private createGearTexture(): void {
+    const size = GEAR_DROP.size * 2;
+    const edge = Math.max(2, Math.round(size * 0.08));
+    const graphics = this.add.graphics();
+
+    graphics.fillStyle(COLORS.gear, 1);
+    graphics.fillRect(0, 0, size, size);
+    graphics.fillStyle(COLORS.gearEdge, 1);
+    graphics.fillRect(0, 0, size, edge);
+    graphics.fillRect(0, size - edge, size, edge);
+    graphics.fillRect(0, 0, edge, size);
+    graphics.fillRect(size - edge, 0, edge, size);
+    // A band across the middle, so it reads as a crate rather than a block.
+    graphics.fillRect(0, size / 2 - edge / 2, size, edge);
+
+    graphics.generateTexture(TEXTURES.gear, size, size);
+    graphics.destroy();
+  }
+
   private createPotionTexture(): void {
     const size = POTION.size * 2;
     const arm = size * 0.22;

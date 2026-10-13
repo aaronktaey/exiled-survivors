@@ -2,15 +2,17 @@ import Phaser from 'phaser';
 
 import './style.css';
 
-import { COLORS, GAME_HEIGHT, GAME_WIDTH } from '@/config';
+import { COLORS } from '@/config';
 import { settings } from '@/systems/Settings';
 import { registerSharpText } from '@/systems/SharpText';
+import { currentCanvasSize } from '@/systems/Viewport';
 import {
   BootScene,
   ConfirmScene,
   CreditsScene,
   GameOverScene,
   GameScene,
+  GearScene,
   InfoScene,
   MenuScene,
   PauseScene,
@@ -23,11 +25,15 @@ settings.prime();
 // And every label it builds renders at more than one pixel per pixel.
 registerSharpText();
 
+// The canvas is the shape of the window it opens in, so a phone is not
+// handed a letterboxed strip of a desktop layout.
+const { width, height } = currentCanvasSize();
+
 const config: Phaser.Types.Core.GameConfig = {
   type: Phaser.AUTO,
   parent: 'game-root',
-  width: GAME_WIDTH,
-  height: GAME_HEIGHT,
+  width,
+  height,
   backgroundColor: COLORS.background,
   // No pixel-art assets yet, and nearest-neighbour upscaling under Scale.FIT
   // chews up the HUD and menu text. Revisit when real sprites land.
@@ -55,6 +61,7 @@ const config: Phaser.Types.Core.GameConfig = {
     InfoScene,
     ConfirmScene,
     GameOverScene,
+    GearScene,
   ],
 };
 

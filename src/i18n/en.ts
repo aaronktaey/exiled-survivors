@@ -12,6 +12,7 @@ export const en: Strings = {
     load: 'Continue',
     noSave: 'No save',
     settings: 'Settings',
+    gear: 'Equipment',
     guide: 'How to Play',
     patch: 'Patch Notes',
     credits: 'Credits',
@@ -36,6 +37,16 @@ export const en: Strings = {
     hintTilt: 'Tilt the device to move. No pad is shown.   ·   Esc to go back',
     languageTitleOnly: 'The language can only be changed from the title screen',
     tiltRefused: 'This device will not give out tilt',
+  },
+
+  gear: {
+    title: 'Equipment',
+    wearing: 'Wearing',
+    equipped: 'worn',
+    equip: 'Wear',
+    comingSoon: 'Equipment does nothing yet — the stats arrive in a later update.',
+    hintKeyboard: '↑ ↓ to move   Space to wear   Esc to go back',
+    hintTouch: 'Tap a piece to wear it',
   },
 
   pause: {
@@ -75,6 +86,7 @@ export const en: Strings = {
     introHintKeyboard: 'WASD or arrows to move — attacks are automatic',
     introHintTouch: 'Drag the stick to move — attacks are automatic',
     bossArrived: 'A boss is here',
+    gearFound: 'Found {gear} — wear it from the title screen',
     pickedUp: '{skill} acquired',
     enhancedPickup: '{skill} upgraded',
   },
@@ -144,6 +156,12 @@ export const en: Strings = {
       공허: 'void',
     },
     enemies: { boss: 'Boss', grunt: 'Grunt', brute: 'Brute', runner: 'Runner', shooter: 'Shooter' },
+    gear: {
+      rustySword: 'Rusty Sword',
+      chippedAxe: 'Chipped Axe',
+      wornDagger: 'Worn Dagger',
+      crackedWand: 'Cracked Wand',
+    },
     affixes: { giant: 'Giant', swift: 'Swift', critical: 'Deadly', mighty: 'Mighty' },
     affixDetails: {
       giant: 'Health +50%',

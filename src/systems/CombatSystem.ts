@@ -1,8 +1,18 @@
 import Phaser from 'phaser';
 
-import { AUDIO, COLORS, PLAYER, POTION, WEAPON, type EnemyShotSpec } from '@/config';
+import {
+  AUDIO,
+  COLORS,
+  GEAR,
+  PLAYER,
+  POTION,
+  WEAPON,
+  type EnemyShotSpec,
+  type GearSpec,
+} from '@/config';
 import { Enemy } from '@/entities/Enemy';
 import { EnemyShot } from '@/entities/EnemyShot';
+import { GearDrop } from '@/entities/GearDrop';
 import { HealthPotion } from '@/entities/HealthPotion';
 import { Player } from '@/entities/Player';
 import { Projectile } from '@/entities/Projectile';
@@ -19,6 +29,9 @@ export interface CombatHooks {
    * `guaranteed` skips the roll, which is what a 우두머리 is worth.
    */
   readonly rollSkillDrop: (bonus: number, guaranteed: boolean) => SkillDefinition | null;
+  /** A piece of 장비 to leave behind, or null when nothing is owed. */
+  readonly rollGearDrop: () => GearSpec | null;
+  readonly onGearCollected: (gear: GearSpec) => void;
   /** Called when the player walks over a dropped skill. */
   readonly onSkillCollected: (skill: SkillId) => void;
 }
@@ -33,6 +46,7 @@ export class CombatSystem {
   /** Everything the shooting kinds have thrown at the player. */
   public readonly enemyShots: Phaser.Physics.Arcade.Group;
   public readonly potions: Phaser.Physics.Arcade.Group;
+  public readonly gearDrops: Phaser.Physics.Arcade.Group;
 
   private readonly scene: Phaser.Scene;
   private readonly player: Player;
@@ -73,12 +87,14 @@ export class CombatSystem {
     });
 
     this.potions = scene.physics.add.group({ classType: HealthPotion, runChildUpdate: true });
+    this.gearDrops = scene.physics.add.group({ classType: GearDrop, runChildUpdate: true });
 
     scene.physics.add.overlap(player, enemies, this.onEnemyTouch, undefined, this);
     scene.physics.add.overlap(player, this.enemyShots, this.onEnemyShotHit, undefined, this);
     scene.physics.add.overlap(player, this.potions, this.onPotionTouch, undefined, this);
     scene.physics.add.overlap(player, this.gems, this.onGemTouch, undefined, this);
     scene.physics.add.overlap(player, this.skillDrops, this.onSkillTouch, undefined, this);
+    scene.physics.add.overlap(player, this.gearDrops, this.onGearTouch, undefined, this);
   }
 
   /** Wires a newly acquired projectile weapon into enemy collisions. */
@@ -96,6 +112,17 @@ export class CombatSystem {
   public dropPotionAt(x: number, y: number): void {
     const potion = this.potions.get() as HealthPotion | null;
     potion?.drop(x, y);
+  }
+
+  /** Places a piece of 장비 directly — used by the kill roll and debug keys. */
+  public dropGearAt(x: number, y: number, spec: GearSpec): void {
+    const drop = this.gearDrops.get() as GearDrop | null;
+    if (!drop) {
+      return;
+    }
+
+    drop.drop(x, y, spec);
+    this.playDropSound();
   }
 
   /** Places a drop directly — used by the spawner's roll and by debug keys. */
@@ -218,6 +245,17 @@ export class CombatSystem {
     this.hooks.onSkillCollected(skillId);
   };
 
+  private onGearTouch: Phaser.Types.Physics.Arcade.ArcadePhysicsCallback = (_player, b) => {
+    const drop = b as unknown as GearDrop;
+    if (!drop.active) {
+      return;
+    }
+
+    const { gearId } = drop;
+    drop.collect();
+    this.hooks.onGearCollected(GEAR[gearId]);
+  };
+
   private killEnemy(enemy: Enemy): void {
     const { x, y } = enemy;
     // Read the rewards before recycling, which resets the kind and affixes.
@@ -238,6 +276,11 @@ export class CombatSystem {
     // Rolled on its own, so a kill can leave both a skill and a potion.
     if (Math.random() < POTION.chance) {
       this.dropPotionAt(x, y);
+    }
+
+    const found = this.hooks.rollGearDrop();
+    if (found) {
+      this.dropGearAt(x, y, found);
     }
   }
 }

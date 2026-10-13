@@ -2,13 +2,18 @@ import Phaser from 'phaser';
 
 import { COLORS, DEPTH, MENU, SCENES, SCRIM, TEXT, TEXTURES } from '@/config';
 import { PATCH_NOTES } from '@/content/patchNotes';
-import { t } from '@/i18n';
+import { gearName, t } from '@/i18n';
 import { bgm } from '@/systems/Bgm';
+import { gear } from '@/systems/Gear';
 import { MenuList } from '@/systems/MenuList';
 import { saveGame } from '@/systems/SaveGame';
+import { centredTop } from '@/systems/Layout';
 import { prefersTouchControls } from '@/systems/VirtualJoystick';
 
-/** Title screen: the logo, and the four ways out of it. */
+/** How many rows the title lists, for centring it before they are built. */
+const ROW_COUNT = 6;
+
+/** Title screen: the logo, and the ways out of it. */
 export class MenuScene extends Phaser.Scene {
   public static readonly KEY = SCENES.menu;
 
@@ -24,12 +29,19 @@ export class MenuScene extends Phaser.Scene {
     this.add.tileSprite(0, 0, width, height, TEXTURES.grid).setOrigin(0, 0).setDepth(DEPTH.ground);
     this.add.rectangle(0, 0, width, height, 0x05070b, SCRIM.title).setOrigin(0, 0).setDepth(DEPTH.ground + 1);
 
-    this.addLogo(width, 118);
+    // Logo, byline and rows are one block, centred in whatever is there.
+    const listHeight = ROW_COUNT * (MENU.buttonHeight + MENU.buttonGap) - MENU.buttonGap;
+    // Six rows under the logo only just fit a 540-tall canvas, so a short
+    // one closes the gap rather than pushing the last row into the hint.
+    const gap = height < MENU.shortHeight ? MENU.logoGapShort : MENU.logoGap;
+    const top = centredTop(height, MENU.logoBlockHeight + gap + listHeight);
+
+    this.addLogo(width, top + MENU.logoHeight / 2);
 
     const saved = saveGame.read();
     this.menu = new MenuList(this, {
       x: width / 2,
-      y: 236,
+      y: top + MENU.logoBlockHeight + gap + MENU.buttonHeight / 2,
       items: [
         { id: 'start', label: () => t().menu.start, onSelect: () => this.onStart() },
         {
@@ -38,6 +50,12 @@ export class MenuScene extends Phaser.Scene {
           detail: () => (saved ? saveGame.describe(saved) : t().menu.noSave),
           enabled: () => saved !== null,
           onSelect: () => this.startRun(true),
+        },
+        {
+          id: 'gear',
+          label: () => t().menu.gear,
+          detail: () => gearName(gear.equipped.id),
+          onSelect: () => this.openOverlay(SCENES.gear),
         },
         {
           id: 'settings',
@@ -76,6 +94,12 @@ export class MenuScene extends Phaser.Scene {
   /** The pixel logo, drifting slowly up and down. */
   private addLogo(width: number, y: number): void {
     const logo = this.add.image(width / 2, y, TEXTURES.logo).setDepth(DEPTH.ui);
+
+    // It is baked at a fixed pixel size, which is wider than a phone.
+    const room = width - MENU.logoMargin * 2;
+    if (logo.width > room) {
+      logo.setScale(room / logo.width);
+    }
 
     this.tweens.add({
       targets: logo,

@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 
-import { COLORS, DEPTH, JOYSTICK, SCENES, SCRIM, SETTINGS_RANGE, TEXT } from '@/config';
+import { COLORS, DEPTH, JOYSTICK, MENU, SCENES, SCRIM, SETTINGS_RANGE, TEXT } from '@/config';
+import { centredTop } from '@/systems/Layout';
 import { languageName, t } from '@/i18n';
 import { bgm } from '@/systems/Bgm';
 import { MenuList } from '@/systems/MenuList';
@@ -62,8 +63,12 @@ export class SettingsScene extends Phaser.Scene {
     const { width, height } = this.scale;
 
     this.add.rectangle(0, 0, width, height, 0x05070b, SCRIM.reading).setOrigin(0, 0).setDepth(DEPTH.ui);
+    // Title and eight rows, centred together rather than pinned to the top.
+    const listHeight = 8 * (MENU.buttonHeight + MENU.buttonGap) - MENU.buttonGap;
+    const top = centredTop(height, MENU.titleBlockHeight + listHeight);
+
     this.add
-      .text(width / 2, 52, t().settings.title, {
+      .text(width / 2, top + 16, t().settings.title, {
         fontFamily: 'system-ui, sans-serif',
         fontSize: TEXT.size.screen,
         color: COLORS.text,
@@ -75,7 +80,7 @@ export class SettingsScene extends Phaser.Scene {
 
     this.menu = new MenuList(this, {
       x: width / 2,
-      y: 128,
+      y: top + MENU.titleBlockHeight + MENU.buttonHeight / 2,
       width: 420,
       onCancel: () => this.close(),
       items: [

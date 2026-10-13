@@ -1,10 +1,12 @@
 import Phaser from 'phaser';
 
 import {
+  ALL_GEAR,
   BALANCE,
   BOSS_BANNER,
   COLORS,
   DEPTH,
+  GEAR_DROP,
   PAUSE_BUTTON,
   SAVE,
   SCENES,
@@ -13,9 +15,10 @@ import {
   TEXTURES,
   TIMING,
   WORLD,
+  type GearSpec,
 } from '@/config';
 import { Player } from '@/entities/Player';
-import { fill, skillName, t } from '@/i18n';
+import { fill, gearName, skillName, t } from '@/i18n';
 import { GameOverScene, type GameOverData } from '@/scenes/GameOverScene';
 import { UpgradeScene, type UpgradeChoiceData } from '@/scenes/UpgradeScene';
 import {
@@ -34,9 +37,14 @@ import {
 import { RareTooltip } from '@/systems/RareTooltip';
 import { sfx } from '@/systems/Sfx';
 import { saveGame, type SavedRun } from '@/systems/SaveGame';
+import { gear } from '@/systems/Gear';
 import { settings } from '@/systems/Settings';
 import { TiltInput, tiltAvailable } from '@/systems/TiltInput';
-import { VirtualJoystick, prefersTouchControls } from '@/systems/VirtualJoystick';
+import {
+  VirtualJoystick,
+  prefersTouchControls,
+  type AnalogInput,
+} from '@/systems/VirtualJoystick';
 import {
   ChainLightning,
   DROPPABLE_SKILLS,
@@ -87,6 +95,10 @@ export class GameScene extends Phaser.Scene {
   private damageNumbers!: DamageNumbers;
   private debug!: DebugOverlay;
   private rareTooltip!: RareTooltip;
+  /** The touch steering in use, so a settings change can replace it. */
+  private analog?: AnalogInput;
+  /** Drops the settings subscription when the run ends. */
+  private unwatchSettings?: () => void;
   private bossBanner?: Phaser.GameObjects.Text;
   private bossPlate?: Phaser.GameObjects.Rectangle;
 
@@ -147,6 +159,8 @@ export class GameScene extends Phaser.Scene {
       {
         rollSkillDrop: (bonus, guaranteed) => this.rollSkillDrop(bonus, guaranteed),
         onSkillCollected: (skill) => this.onSkillCollected(skill),
+        rollGearDrop: () => this.rollGearDrop(),
+        onGearCollected: (found) => this.onGearCollected(found),
       },
     );
     this.hud = new Hud(this, this.progression);
@@ -179,19 +193,50 @@ export class GameScene extends Phaser.Scene {
    * Touch devices steer whichever way 설정 says: a pad where they pinned it,
    * a pad under the finger, or the tilt sensor. A mouse-and-keyboard session
    * gets none of them.
+   *
+   * 설정 is reachable from the pause screen, so the choice can change in the
+   * middle of a run. The steering is rebuilt when it does, rather than
+   * waiting for the next run to pick it up.
    */
   private attachTouchControls(): void {
+    this.buildAnalog();
+
+    let last = settings.value;
+    this.unwatchSettings = settings.onChange((next) => {
+      const moved =
+        next.movementMode !== last.movementMode ||
+        next.joystickScale !== last.joystickScale ||
+        next.joystickX !== last.joystickX ||
+        next.joystickY !== last.joystickY;
+      last = next;
+
+      if (moved) {
+        this.buildAnalog();
+      }
+    });
+
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      this.unwatchSettings?.();
+      this.unwatchSettings = undefined;
+    });
+  }
+
+  /** Throws away the steering in hand and builds what 설정 now asks for. */
+  private buildAnalog(): void {
+    this.analog?.destroy();
+    this.analog = undefined;
+    this.player.attachAnalog(undefined);
+
     if (!prefersTouchControls()) {
       return;
     }
 
     // Tilt falls back to a pad on anything without the sensor.
-    if (settings.value.movementMode === 'tilt' && tiltAvailable()) {
-      this.player.attachAnalog(new TiltInput(this));
-      return;
-    }
-
-    this.player.attachAnalog(new VirtualJoystick(this));
+    this.analog =
+      settings.value.movementMode === 'tilt' && tiltAvailable()
+        ? new TiltInput(this)
+        : new VirtualJoystick(this);
+    this.player.attachAnalog(this.analog);
   }
 
   public override update(_time: number, delta: number): void {
@@ -424,6 +469,44 @@ export class GameScene extends Phaser.Scene {
     }
 
     return DROPPABLE_SKILLS[Math.floor(Math.random() * DROPPABLE_SKILLS.length)] ?? null;
+  }
+
+  /**
+   * 장비 a kill might leave behind. Only pieces not already in the stash
+   * are rolled for, so a full stash simply stops dropping — there is nothing
+   * to do with a second copy until the system has something to say about it.
+   */
+  private rollGearDrop(): GearSpec | null {
+    if (Math.random() >= GEAR_DROP.chance) {
+      return null;
+    }
+
+    const candidates = ALL_GEAR.filter(
+      (spec) => spec.weight > 0 && !(GEAR_DROP.skipOwned && gear.has(spec.id)),
+    );
+    if (candidates.length === 0) {
+      return null;
+    }
+
+    const total = candidates.reduce((sum, spec) => sum + spec.weight, 0);
+    let roll = Math.random() * total;
+    for (const spec of candidates) {
+      roll -= spec.weight;
+      if (roll <= 0) {
+        return spec;
+      }
+    }
+
+    return candidates[candidates.length - 1] ?? null;
+  }
+
+  /**
+   * A piece goes straight into the stash, which outlives the run. Putting it
+   * on is the title screen's business, so a run is never interrupted by it.
+   */
+  private onGearCollected(found: GearSpec): void {
+    gear.own(found.id);
+    this.announce(fill(t().game.gearFound, { gear: gearName(found.id) }));
   }
 
   /** Upgraded damage after the balance dial for that skill. */

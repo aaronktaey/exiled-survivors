@@ -12,6 +12,7 @@ export const zh: Strings = {
     load: '继续游戏',
     noSave: '没有存档',
     settings: '设置',
+    gear: '装备',
     guide: '游戏指南',
     patch: '更新日志',
     credits: '制作人员',
@@ -36,6 +37,16 @@ export const zh: Strings = {
     hintTilt: '倾斜设备进行移动，不显示摇杆   ·   Esc 返回',
     languageTitleOnly: '语言只能在标题画面中更改',
     tiltRefused: '此设备无法使用重力感应',
+  },
+
+  gear: {
+    title: '装备',
+    wearing: '装备中',
+    equipped: '装备中',
+    equip: '装备',
+    comingSoon: '装备目前没有效果 — 属性会在后续更新中加入。',
+    hintKeyboard: '↑ ↓ 移动   Space 装备   Esc 返回',
+    hintTouch: '点击条目即可装备',
   },
 
   pause: {
@@ -75,6 +86,7 @@ export const zh: Strings = {
     introHintKeyboard: 'WASD 或方向键移动 — 攻击自动进行',
     introHintTouch: '拖动摇杆移动 — 攻击自动进行',
     bossArrived: '首领出现',
+    gearFound: '获得 {gear} — 可在主界面装备',
     pickedUp: '获得 {skill}',
     enhancedPickup: '强化 {skill}',
   },
@@ -144,6 +156,12 @@ export const zh: Strings = {
       공허: '虚空',
     },
     enemies: { boss: '首领', grunt: '杂兵', brute: '巨汉', runner: '疾走者', shooter: '射手' },
+    gear: {
+      rustySword: '生锈的剑',
+      chippedAxe: '崩口的斧',
+      wornDagger: '破旧的匕首',
+      crackedWand: '裂开的法杖',
+    },
     affixes: { giant: '巨大', swift: '迅捷', critical: '致命', mighty: '强力' },
     affixDetails: {
       giant: '生命 +50%',

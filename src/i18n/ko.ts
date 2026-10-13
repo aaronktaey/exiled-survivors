@@ -16,6 +16,7 @@ export const ko: Strings = {
     load: '불러오기',
     noSave: '저장 없음',
     settings: '설정',
+    gear: '장비',
     guide: '게임 가이드',
     patch: '패치노트',
     credits: '제작자 정보',
@@ -40,6 +41,16 @@ export const ko: Strings = {
     hintTilt: '기기를 기울여 움직입니다. 패드는 표시되지 않습니다   ·   Esc 돌아가기',
     languageTitleOnly: '언어는 타이틀 화면에서만 바꿀 수 있습니다',
     tiltRefused: '이 기기에서는 기울이기를 쓸 수 없습니다',
+  },
+
+  gear: {
+    title: '장비',
+    wearing: '착용 중',
+    equipped: '착용 중',
+    equip: '착용',
+    comingSoon: '장비 효과는 아직 없습니다 — 능력치는 다음 업데이트에 붙습니다.',
+    hintKeyboard: '↑ ↓ 이동   Space 착용   Esc 돌아가기',
+    hintTouch: '항목을 탭해서 착용',
   },
 
   pause: {
@@ -79,6 +90,7 @@ export const ko: Strings = {
     introHintKeyboard: 'WASD · 방향키로 이동 — 공격은 자동',
     introHintTouch: '스틱을 끌어 이동 — 공격은 자동',
     bossArrived: '우두머리 등장',
+    gearFound: '{gear} 획득 — 메인화면에서 착용',
     pickedUp: '{skill} 획득',
     enhancedPickup: '{skill} 강화',
   },

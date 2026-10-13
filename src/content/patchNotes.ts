@@ -15,6 +15,48 @@ export interface PatchNote {
 
 export const PATCH_NOTES: readonly PatchNote[] = [
   {
+    version: '0.17',
+    date: '2026-10-13',
+    changes: {
+      ko: [
+        '화면이 기기 모양에 맞춰집니다 — 세로로 든 휴대폰에서 위아래 검은 띠 없이 꽉 차고, 글씨와 조작부가 두 배 이상 커집니다.',
+        '세로 화면에서는 적 수와 스킬 현황표가 겹치지 않도록 자리를 옮기고, 설정의 항목 이름은 왼쪽, 값은 오른쪽에 놓입니다.',
+        '강화 선택지가 네 개일 때 좁은 화면에서는 두 줄로 나뉩니다. 전에는 손가락보다 좁은 카드가 넷 늘어섰습니다.',
+        '게임 도중 모바일 이동 방식을 바꾸면 바로 적용됩니다 — 전에는 다음 판까지 고정 패드가 그대로였습니다.',
+        '장비가 생겼습니다. 메인화면의 장비에서 확인하고 착용합니다.',
+        '장비는 게임 도중 떨어지고, 주우면 보관함에 들어갑니다. 착용은 판이 끝난 뒤 메인화면에서 합니다.',
+        "기본 장비는 '녹슨 칼'입니다. 장비 효과는 아직 없으며, 능력치는 다음 업데이트에 붙습니다.",
+      ],
+      en: [
+        'The screen now takes the shape of the device — a phone held upright fills it with no black bands, and the text and controls come out more than twice the size.',
+        'In portrait the enemy count and the loadout no longer overlap, and a settings row puts its name on the left and its value on the right.',
+        'Four upgrade picks wrap onto two rows on a narrow screen, where they used to be four cards narrower than a thumb.',
+        'Changing the mobile steering mid-run now applies at once — the pinned pad used to stay until the next run.',
+        'Equipment has arrived. Find it under 장비 on the title screen.',
+        'A piece can drop during a run; walking over it puts it in your stash. Wearing one is done afterwards, from the title screen.',
+        "You start with a Rusty Sword. Equipment does nothing yet — the stats arrive in a later update.",
+      ],
+      ja: [
+        '画面が端末の形に合うようになりました — 縦持ちのスマホでは上下の黒帯がなくなり、文字と操作部が二倍以上の大きさになります。',
+        '縦画面では敵の数とスキル一覧が重ならないよう配置を変え、設定の項目名は左、値は右に並びます。',
+        '強化の選択肢が四つあるとき、狭い画面では二段に折り返します。以前は指より狭いカードが四枚並んでいました。',
+        'ゲーム中にモバイルの移動方式を変えると、すぐに反映されます — 以前は次の回まで固定パッドのままでした。',
+        '装備が入りました。タイトル画面の「装備」で確認して身に着けます。',
+        '装備はゲーム中に落ち、拾うと保管箱に入ります。装備するのは終わったあと、タイトル画面からです。',
+        '初期装備は「錆びた剣」です。装備の効果はまだなく、能力値は次の更新で付きます。',
+      ],
+      zh: [
+        '画面会随设备形状调整 — 竖持手机时不再有上下黑边，文字与操作区大了一倍以上。',
+        '竖屏下敌人数量与技能列表不再重叠，设置中的项目名靠左、数值靠右。',
+        '强化选项为四个时，窄屏会折成两行。此前是四张比手指还窄的卡片。',
+        '游戏途中更改移动方式会立即生效 — 此前要等到下一局才会换掉固定摇杆。',
+        '新增装备。在主界面的「装备」中查看与穿戴。',
+        '装备会在游戏中掉落，拾取后进入仓库。穿戴则在结束后于主界面进行。',
+        '初始装备是「生锈的剑」。装备目前没有效果，属性会在后续更新中加入。',
+      ],
+    },
+  },
+  {
     version: '0.16',
     date: '2026-10-13',
     changes: {

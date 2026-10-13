@@ -7,6 +7,8 @@ import { settings } from '@/systems/Settings';
 export interface AnalogInput {
   /** Writes the unit direction into `out`; returns tilt from 0 to 1. */
   read(out: Phaser.Math.Vector2): number;
+  /** Lets go of whatever it listens to. Called when it is swapped out. */
+  destroy(): void;
 }
 
 /** True when the device's primary pointer is a finger rather than a mouse. */
@@ -89,6 +91,9 @@ export class VirtualJoystick implements AnalogInput {
     input.off(Phaser.Input.Events.POINTER_UP, this.onUp, this);
     input.off(Phaser.Input.Events.POINTER_UP_OUTSIDE, this.onUp, this);
     events.off(Phaser.Scenes.Events.SHUTDOWN, this.destroy, this);
+    // Swapped out mid-run, the ring would otherwise stay on screen.
+    this.base.destroy();
+    this.thumb.destroy();
   }
 
   private onDown(pointer: Phaser.Input.Pointer): void {

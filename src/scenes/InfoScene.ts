@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 
 import { COLORS, DEPTH, INFO, SCENES, SCRIM, TEXT } from '@/config';
+import { fitWidth } from '@/systems/Layout';
 import { guideChapters, type GuideChapter, type GuideSection } from '@/content/guide';
 import { PATCH_NOTES } from '@/content/patchNotes';
 import { language, t } from '@/i18n';
@@ -87,15 +88,19 @@ export class InfoScene extends Phaser.Scene {
     this.viewTop = INFO.contentTop;
     this.viewHeight = height - INFO.contentTop - INFO.contentBottom;
 
+    // The page is as wide as it wants, or as wide as the screen allows.
+    const pageWidth = fitWidth(INFO.contentWidth, width, INFO.sideMargin);
     const hasContents = this.chapters.length > 1;
     if (hasContents) {
-      // Contents down the left, the chapter beside it.
-      this.contentLeft = (width - INFO.contentWidth) / 2 + INFO.tocWidth / 2;
-      this.contentWidth = INFO.contentWidth - INFO.tocWidth;
-      this.buildContents((width - INFO.contentWidth) / 2);
+      // Contents down the left, the chapter beside it. On a narrow screen
+      // the list gives up room first, down to a floor it still reads at.
+      const toc = Math.max(INFO.tocMinWidth, Math.min(INFO.tocWidth, pageWidth * 0.3));
+      this.contentLeft = (width - pageWidth) / 2 + toc;
+      this.contentWidth = pageWidth - toc;
+      this.buildContents((width - pageWidth) / 2);
     } else {
-      this.contentLeft = (width - INFO.contentWidth) / 2;
-      this.contentWidth = INFO.contentWidth;
+      this.contentLeft = (width - pageWidth) / 2;
+      this.contentWidth = pageWidth;
     }
 
     this.page = this.add.container(0, 0).setDepth(DEPTH.ui + 1);
@@ -213,7 +218,7 @@ export class InfoScene extends Phaser.Scene {
 
   /** A tappable 닫기, for touch screens with no Esc key. */
   private buildCloseButton(width: number): void {
-    const x = (width + INFO.contentWidth) / 2 - 10;
+    const x = width - INFO.sideMargin - 22;
     const button = this.add
       .rectangle(x, INFO.titleY, 64, 28, COLORS.panelActive, 0.55)
       .setDepth(DEPTH.ui + 1)

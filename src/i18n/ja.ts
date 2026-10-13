@@ -12,6 +12,7 @@ export const ja: Strings = {
     load: 'つづきから',
     noSave: 'セーブなし',
     settings: '設定',
+    gear: '装備',
     guide: '遊び方',
     patch: 'パッチノート',
     credits: 'クレジット',
@@ -36,6 +37,16 @@ export const ja: Strings = {
     hintTilt: '端末を傾けて移動します。パッドは表示されません   ·   Esc で戻る',
     languageTitleOnly: '言語はタイトル画面でのみ変更できます',
     tiltRefused: 'この端末では傾け操作を使えません',
+  },
+
+  gear: {
+    title: '装備',
+    wearing: '装備中',
+    equipped: '装備中',
+    equip: '装備',
+    comingSoon: '装備の効果はまだありません — 能力値は次の更新で付きます。',
+    hintKeyboard: '↑ ↓ 移動   Space 装備   Esc 戻る',
+    hintTouch: '項目をタップして装備',
   },
 
   pause: {
@@ -75,6 +86,7 @@ export const ja: Strings = {
     introHintKeyboard: 'WASD・方向キーで移動 — 攻撃は自動',
     introHintTouch: 'スティックを引いて移動 — 攻撃は自動',
     bossArrived: 'ボス出現',
+    gearFound: '{gear} 獲得 — タイトル画面で装備できます',
     pickedUp: '{skill} 習得',
     enhancedPickup: '{skill} 強化',
   },
@@ -144,6 +156,12 @@ export const ja: Strings = {
       공허: '虚無',
     },
     enemies: { boss: 'ボス', grunt: '雑兵', brute: '巨漢', runner: '俊足', shooter: '射手' },
+    gear: {
+      rustySword: '錆びた剣',
+      chippedAxe: '刃こぼれの斧',
+      wornDagger: '使い古した短剣',
+      crackedWand: 'ひびの入った杖',
+    },
     affixes: { giant: '巨大', swift: '俊敏', critical: '致命', mighty: '剛力' },
     affixDetails: {
       giant: '体力 +50%',

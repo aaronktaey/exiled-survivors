@@ -41,8 +41,11 @@ export class Hud {
 
     this.xpBar = scene.add.graphics().setScrollFactor(0).setDepth(DEPTH.ui);
 
+    // On a phone the clock is only two hundred pixels from the left edge,
+    // so the loadout goes under it rather than through it.
+    const narrow = this.viewWidth < HUD.narrowWidth;
     this.skillsLabel = scene.add
-      .text(HUD.leftInset, HUD.margin, '', {
+      .text(narrow ? HUD.margin : HUD.leftInset, narrow ? HUD.narrowTop : HUD.margin, '', {
         fontFamily: 'system-ui, sans-serif',
         fontSize: TEXT.size.small,
         color: COLORS.text,

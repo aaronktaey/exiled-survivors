@@ -30,6 +30,7 @@ export interface Strings {
     readonly load: string;
     readonly noSave: string;
     readonly settings: string;
+    readonly gear: string;
     readonly guide: string;
     readonly patch: string;
     readonly credits: string;
@@ -55,6 +56,19 @@ export interface Strings {
     readonly tiltRefused: string;
     /** Why the Language row is dim while a run is going. */
     readonly languageTitleOnly: string;
+  };
+
+  /** 장비창, which is still mostly a promise. */
+  readonly gear: {
+    readonly title: string;
+    /** The piece being worn, above the list. */
+    readonly wearing: string;
+    readonly equipped: string;
+    readonly equip: string;
+    /** Said plainly, so nobody waits for an effect that is not there. */
+    readonly comingSoon: string;
+    readonly hintKeyboard: string;
+    readonly hintTouch: string;
   };
 
   readonly pause: {
@@ -96,6 +110,8 @@ export interface Strings {
     readonly introHintKeyboard: string;
     readonly introHintTouch: string;
     readonly bossArrived: string;
+    /** Banner when a piece of 장비 is walked over. {gear} is its name. */
+    readonly gearFound: string;
     readonly pickedUp: string;
     readonly enhancedPickup: string;
   };
@@ -152,6 +168,7 @@ export interface Strings {
     readonly enemies?: Record<string, string>;
     readonly affixes?: Record<string, string>;
     readonly affixDetails?: Record<string, string>;
+    readonly gear?: Record<string, string>;
   };
 
   /** 게임 가이드. The builder fills the placeholders from the live config. */

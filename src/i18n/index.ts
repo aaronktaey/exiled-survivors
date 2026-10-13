@@ -1,4 +1,4 @@
-import { AFFIXES, ENEMY_KINDS, type AffixId, type EnemyKind } from '@/config';
+import { AFFIXES, ENEMY_KINDS, GEAR, type AffixId, type EnemyKind, type GearId } from '@/config';
 import { en } from '@/i18n/en';
 import { ja } from '@/i18n/ja';
 import { ko } from '@/i18n/ko';
@@ -115,4 +115,8 @@ export function affixName(id: AffixId): string {
 
 export function affixDetail(id: AffixId): string {
   return t().names?.affixDetails?.[id] ?? AFFIXES[id].detail;
+}
+
+export function gearName(id: GearId): string {
+  return t().names?.gear?.[id] ?? GEAR[id].name;
 }

@@ -30,3 +30,6 @@ export { bgm } from '@/systems/Bgm';
 export { sfx } from '@/systems/Sfx';
 export { createPixelTextTexture } from '@/systems/PixelFont';
 export { RareTooltip } from '@/systems/RareTooltip';
+export { canvasSizeFor, currentCanvasSize, type CanvasSize } from '@/systems/Viewport';
+export { centredTop, fitWidth } from '@/systems/Layout';
+export { gear, type GearState } from '@/systems/Gear';

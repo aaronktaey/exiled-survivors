@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 
-import { COLORS, DEPTH, SCENES, SCRIM, TEXT } from '@/config';
+import { COLORS, DEPTH, MENU, SCENES, SCRIM, TEXT } from '@/config';
+import { centredTop } from '@/systems/Layout';
 import { t } from '@/i18n';
 import { MenuList } from '@/systems/MenuList';
 
@@ -38,8 +39,11 @@ export class CreditsScene extends Phaser.Scene {
     const { width, height } = this.scale;
 
     this.add.rectangle(0, 0, width, height, 0x05070b, SCRIM.reading).setOrigin(0, 0).setDepth(DEPTH.ui);
+    const block = MENU.titleBlockHeight + lines().length * 34 + 60 + MENU.buttonHeight;
+    const top = centredTop(height, block);
+
     this.add
-      .text(width / 2, 60, t().credits.title, {
+      .text(width / 2, top + 16, t().credits.title, {
         fontFamily: 'system-ui, sans-serif',
         fontSize: TEXT.size.screen,
         color: COLORS.text,
@@ -47,9 +51,9 @@ export class CreditsScene extends Phaser.Scene {
       .setOrigin(0.5)
       .setDepth(DEPTH.ui + 1);
 
-    const left = width / 2 - 230;
+    const left = width / 2 - Math.min(230, width / 2 - 24);
     lines().forEach(([role, who], index) => {
-      const y = 140 + index * 34;
+      const y = top + MENU.titleBlockHeight + 12 + index * 34;
 
       this.add
         .text(left, y, role, {
@@ -72,7 +76,7 @@ export class CreditsScene extends Phaser.Scene {
 
     this.menu = new MenuList(this, {
       x: width / 2,
-      y: height - 92,
+      y: top + block - MENU.buttonHeight / 2,
       width: 220,
       onCancel: () => this.close(),
       items: [{ id: 'back', label: () => t().common.back, onSelect: () => this.close() }],

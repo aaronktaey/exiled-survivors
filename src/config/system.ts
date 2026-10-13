@@ -31,12 +31,15 @@ export const SCENES = {
   info: "InfoScene",
   confirm: "ConfirmScene",
   gameOver: "GameOverScene",
+  gear: "GearScene",
 } as const;
 
 /** Keys the browser keeps our state under. Bump the suffix to invalidate. */
 export const STORAGE = {
   settings: "exiled-survivors:settings:v1",
   save: "exiled-survivors:save:v1",
+  /** The equipment stash, which outlives any one run. */
+  gear: "exiled-survivors:gear:v1",
 } as const;
 
 export const SAVE = {
@@ -134,4 +137,18 @@ export const AUDIO = {
     file: 'assets/bossAlert.mp3',
     volume: 0.6,
   },
+} as const;
+
+/**
+ * How the canvas is sized for the window it lands in. The numbers are in
+ * game units: see systems/Viewport.ts for how they are turned into a size.
+ */
+export const VIEWPORT = {
+  /** The short side on a desktop — the shape the game was laid out in. */
+  designShortSide: 540,
+  /** Never smaller than this, or a menu has nowhere to go. */
+  minShortSide: 420,
+  /** Bounds on long ÷ short, so neither a square nor an ultrawide goes odd. */
+  minAspect: 1.2,
+  maxAspect: 2.2,
 } as const;

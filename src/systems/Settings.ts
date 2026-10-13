@@ -1,5 +1,6 @@
-import { GAME_HEIGHT, JOYSTICK, SETTINGS_RANGE, STORAGE } from '@/config';
+import { JOYSTICK, SETTINGS_RANGE, STORAGE } from '@/config';
 import { LANGUAGES, detectLanguage, setLanguage, type Language } from '@/i18n';
+import { currentCanvasSize } from '@/systems/Viewport';
 
 /** How a touch device steers the survivor. */
 export type MovementMode = 'fixed' | 'floating' | 'tilt';
@@ -25,7 +26,8 @@ export interface GameSettings {
 const DEFAULTS: GameSettings = {
   joystickScale: 1,
   joystickX: JOYSTICK.margin,
-  joystickY: GAME_HEIGHT - JOYSTICK.margin,
+  // The canvas is sized for the window, so the corner is not a fixed number.
+  joystickY: currentCanvasSize().height - JOYSTICK.margin,
   movementMode: 'fixed',
   bgmVolume: 0.35,
   // Nothing stored yet means a first visit: follow the browser.

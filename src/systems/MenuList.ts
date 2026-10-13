@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 
 import { COLORS, DEPTH, MENU, TEXT } from '@/config';
+import { fitWidth } from '@/systems/Layout';
 
 export interface MenuItem {
   readonly id: string;
@@ -63,7 +64,7 @@ export class MenuList {
     this.scene = scene;
     this.onCancel = options.onCancel;
 
-    const width = options.width ?? MENU.buttonWidth;
+    const width = fitWidth(options.width ?? MENU.buttonWidth, scene.scale.width);
     const step = MENU.buttonHeight + MENU.buttonGap;
 
     options.items.forEach((item, index) => {
@@ -75,13 +76,16 @@ export class MenuList {
         .setDepth(DEPTH.ui)
         .setInteractive({ useHandCursor: true });
 
+      // Centred normally; on a narrow screen a row with a value on its
+      // right has to give that value somewhere to be.
+      const tight = scene.scale.width < MENU.tightWidth && item.detail !== undefined;
       const label = scene.add
-        .text(options.x, y, '', {
+        .text(tight ? options.x - width / 2 + 14 : options.x, y, '', {
           fontFamily: 'system-ui, sans-serif',
           fontSize: TEXT.size.label,
           color: COLORS.text,
         })
-        .setOrigin(0.5)
+        .setOrigin(tight ? 0 : 0.5, 0.5)
         .setDepth(DEPTH.ui + 1);
 
       // A value row keeps its arrows clear of the read-out.

@@ -1,6 +1,7 @@
 export { BootScene } from '@/scenes/BootScene';
 export { MenuScene } from '@/scenes/MenuScene';
 export { SettingsScene, type SettingsSceneData } from '@/scenes/SettingsScene';
+export { GearScene, type GearSceneData } from '@/scenes/GearScene';
 export { CreditsScene, type CreditsSceneData } from '@/scenes/CreditsScene';
 export { InfoScene, type InfoSceneData, type InfoTopic } from '@/scenes/InfoScene';
 export { ConfirmScene, type ConfirmSceneData } from '@/scenes/ConfirmScene';
