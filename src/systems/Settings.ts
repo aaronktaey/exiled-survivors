@@ -1,23 +1,20 @@
-import { JOYSTICK, SETTINGS_RANGE, STORAGE } from '@/config';
+import { SETTINGS_RANGE, STORAGE } from '@/config';
 import { LANGUAGES, detectLanguage, setLanguage, type Language } from '@/i18n';
-import { currentCanvasSize } from '@/systems/Viewport';
 
-/** How a touch device steers the survivor. */
-export type MovementMode = 'fixed' | 'floating' | 'tilt';
+/**
+ * How a touch device steers the survivor. The pad is summoned under
+ * whichever finger lands — a pad pinned to one spot asked the player to find
+ * it before they could move, which on a phone is a hit they take for free.
+ */
+export type MovementMode = 'floating' | 'tilt';
 
-export const MOVEMENT_MODES: readonly MovementMode[] = ['fixed', 'floating', 'tilt'];
+export const MOVEMENT_MODES: readonly MovementMode[] = ['floating', 'tilt'];
 
 /** Everything the options screen can change, as it is stored. */
 export interface GameSettings {
   /** Multiplies the thumb stick's radii. */
   joystickScale: number;
-  /** Where the stick's centre sits, in screen px. */
-  joystickX: number;
-  joystickY: number;
-  /**
-   * 'fixed' keeps the pad where it was placed, 'floating' puts one under
-   * whichever finger touches down, 'tilt' drops the pad for the sensor.
-   */
+  /** 'floating' puts a pad under the finger, 'tilt' uses the sensor instead. */
   movementMode: MovementMode;
   bgmVolume: number;
   language: Language;
@@ -25,10 +22,7 @@ export interface GameSettings {
 
 const DEFAULTS: GameSettings = {
   joystickScale: 1,
-  joystickX: JOYSTICK.margin,
-  // The canvas is sized for the window, so the corner is not a fixed number.
-  joystickY: currentCanvasSize().height - JOYSTICK.margin,
-  movementMode: 'fixed',
+  movementMode: 'floating',
   bgmVolume: 0.35,
   // Nothing stored yet means a first visit: follow the browser.
   language: detectLanguage(),
@@ -139,9 +133,7 @@ class SettingsStore {
     const volume = SETTINGS_RANGE.bgmVolume;
     return {
       joystickScale: clamp(Number(raw.joystickScale) || 1, scale.min, scale.max),
-      joystickX: Math.round(clamp(Number(raw.joystickX) || DEFAULTS.joystickX, 0, 4096)),
-      joystickY: Math.round(clamp(Number(raw.joystickY) || DEFAULTS.joystickY, 0, 4096)),
-      movementMode: MOVEMENT_MODES.includes(raw.movementMode) ? raw.movementMode : 'fixed',
+      movementMode: MOVEMENT_MODES.includes(raw.movementMode) ? raw.movementMode : 'floating',
       language: LANGUAGES.includes(raw.language) ? raw.language : DEFAULTS.language,
       bgmVolume: clamp(Number(raw.bgmVolume ?? DEFAULTS.bgmVolume), volume.min, volume.max),
     };

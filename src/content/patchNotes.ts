@@ -32,6 +32,10 @@ export const PATCH_NOTES: readonly PatchNote[] = [
         '얼음창의 관통이 돌아왔습니다 — 기본 2회 관통이며, 강화 선택지도 사정거리에서 관통 횟수로 되돌렸습니다.',
         '바닥에 떨어진 것의 이름표가 희귀도에 따라 세 가지로 나뉩니다 — 일반은 테두리만 두른 글씨, 마법은 파란 테두리의 어두운 판, 희귀는 예전 스킬 이름표의 흰 판에 붉은 글씨이며 천천히 숨 쉽니다.',
         '분류 — 스킬은 일반, 무기는 속성 2개까지 일반 · 3~4개 마법 · 5~6개 희귀, 신성한 조각은 희귀입니다. 드랍 효과음도 같은 기준을 씁니다.',
+        '모바일 이동이 “터치 위치에 패드 생성” 하나로 통일되었습니다. 고정 패드와 패드 위치 설정은 사라졌고, 패드 크기는 그대로 조절할 수 있습니다.',
+        '강화 선택지가 % 로 바뀌었습니다 — 공격력 +20%, 공격속도 +20%, 사정거리 +15%, 투사체·회전 속도 +15~20%. 연쇄·관통·구체 수는 개수라서 그대로 +1입니다.',
+        '증가는 모두 그 스킬의 기본값 기준으로 더해집니다 — 기본 피해 10에 +3%를 열 번 고르면 13이 됩니다. 1.03을 열 번 곱하지 않습니다.',
+        '단계끼리는 곱해집니다 — 기본 10에 패시브 +30%, 전투 중 +50%면 10 × 1.3 × 1.5 입니다. 패시브 한 점은 전투 중에 쌓은 것 전부를 같이 올려줍니다.',
       ],
       en: [
         'Modifiers on enemies and on equipment are now called 속성, one word for both.',
@@ -46,7 +50,11 @@ export const PATCH_NOTES: readonly PatchNote[] = [
         'Equipment attack power is far lower — 녹슨 검 is 1, and one step up the roster is +1 (1/2/3/4). 예리 went from +3 to +1.',
         'Ice Spear pierces again — two bodies by default, and its upgrade is pierce count once more rather than range.',
         'A name on the ground now comes in three dresses — ordinary is outlined text, magic is a dark plate with a lit blue edge, and rare keeps the white-on-red plate every drop used to wear, breathing slowly.',
-        'Skills are ordinary; a weapon is ordinary up to two 속성, magic at three or four, rare at five or six; a 신성한 조각 is rare. The drop sound follows the same ladder.'
+        'Skills are ordinary; a weapon is ordinary up to two 속성, magic at three or four, rare at five or six; a 신성한 조각 is rare. The drop sound follows the same ladder.',
+        'Mobile steering is one thing now: the pad appears under your finger. The pinned pad and its position setting are gone; pad size still adjusts.',
+        'Upgrade cards are percentages — damage +20%, attack speed +20%, range +15%, projectile and orbit speed +15–20%. Chains, pierces and orbs are counts, so they stay at +1.',
+        'Increases add up on that skill’s base: ten picks of +3% on a base of 10 is 13, not 1.03 to the tenth.',
+        'Layers multiply with each other: a base of 10 with +30% from the tree and +50% from the run is 10 × 1.3 × 1.5. A passive point therefore lifts everything the run has already built.'
       ],
       ja: [
         '「強化効果」を「属性」と呼びます。敵と装備で同じ言葉を使います。',
@@ -62,6 +70,10 @@ export const PATCH_NOTES: readonly PatchNote[] = [
         '氷槍の貫通が戻りました — 既定で 2 体貫通し、強化の選択肢も射程から貫通回数に戻しました。',
         '地面に落ちたものの名札がレアリティで三種になりました — 通常は縁取りだけの文字、マジックは青い縁の暗い板、レアは以前のスキル名札の白地に赤文字で、ゆっくり呼吸します。',
         '分類 — スキルは通常、武器は属性 2 個までが通常・3〜4 個がマジック・5〜6 個がレア、神聖な欠片はレアです。ドロップ音も同じ基準です。',
+        'モバイルの移動が「触れた位置に出す」一つになりました。固定パッドと位置設定はなくなり、大きさは引き続き変えられます。',
+        '強化の選択肢が % 表記になりました — 攻撃力 +20%、攻撃速度 +20%、射程 +15%、弾速・回転速度 +15〜20%。連鎖・貫通・球の数は個数なので +1 のままです。',
+        '増加はそのスキルの基本値に加算されます — 基本ダメージ 10 に +3% を十回選べば 13 です。1.03 を十回掛けるのではありません。',
+        '段階どうしは掛け算になります — 基本 10 にパッシブ +30%、戦闘中 +50% なら 10 × 1.3 × 1.5 です。パッシブ 1 点が戦闘中に積んだもの全体を押し上げます。',
       ],
       zh: [
         '敌人与装备上的「强化效果」统一改称「属性」。',
@@ -77,6 +89,10 @@ export const PATCH_NOTES: readonly PatchNote[] = [
         '冰枪的穿透回归 — 默认穿透 2 名敌人，强化选项也从射程改回穿透次数。',
         '地上掉落物的名牌按稀有度分为三种 — 普通为仅带描边的文字，魔法为蓝边深色底板，稀有沿用过去技能名牌的白底红字，并会缓慢呼吸。',
         '分类 — 技能为普通；武器属性 2 个以内为普通、3~4 个为魔法、5~6 个为稀有；神圣碎片为稀有。掉落音效也采用同一标准。',
+        '移动方式统一为「触点生成摇杆」。固定摇杆及其位置设置已移除，摇杆大小仍可调整。',
+        '强化选项改为百分比 — 攻击力 +20%、攻击速度 +20%、射程 +15%、弹速与旋转速度 +15~20%。连锁、穿透与球体数量是个数，仍为 +1。',
+        '提升均以该技能的基础值相加 — 基础伤害 10 选十次 +3% 即为 13，而非 1.03 的十次方。',
+        '不同层之间相乘 — 基础 10 加被动 +30%、战斗中 +50%，结果为 10 × 1.3 × 1.5。因此一点被动会抬高战斗中积累的全部收益。',
       ],
     },
   },

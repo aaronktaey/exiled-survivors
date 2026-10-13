@@ -62,16 +62,12 @@ export interface Strings {
   readonly settings: {
     readonly title: string;
     readonly padSize: string;
-    readonly padPlace: string;
-    readonly padPlaceOnlyFixed: string;
     readonly movement: string;
-    readonly modeFixed: string;
     readonly modeFloating: string;
     readonly modeTilt: string;
     readonly bgm: string;
     readonly reset: string;
     readonly hint: string;
-    readonly hintPlacing: string;
     readonly hintFloating: string;
     readonly hintTilt: string;
     readonly tiltRefused: string;

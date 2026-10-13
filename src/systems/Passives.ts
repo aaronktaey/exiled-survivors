@@ -27,7 +27,13 @@ const DEFAULTS: PassiveState = { shards: 0, points: 0, ranks: {} };
 
 type Listener = (state: PassiveState) => void;
 
-/** What a set of ranks adds up to. Each rank multiplies, or adds, again. */
+/**
+ * What a set of ranks adds up to.
+ *
+ * Ranks of one line add together rather than compounding — three ranks of
+ * +10% is +30%, not 1.1³ — so the tenth point in a line is worth what the
+ * first was. The layers multiply with each other; that is Modifiers' job.
+ */
 export function passiveBonusFor(ranks: PassiveState['ranks']): PassiveBonus {
   let damageScale = 1;
   let attackSpeedScale = 1;
@@ -39,8 +45,8 @@ export function passiveBonusFor(ranks: PassiveState['ranks']): PassiveBonus {
       continue;
     }
 
-    damageScale *= (spec.damageScale ?? 1) ** rank;
-    attackSpeedScale *= (spec.attackSpeedScale ?? 1) ** rank;
+    damageScale += ((spec.damageScale ?? 1) - 1) * rank;
+    attackSpeedScale += ((spec.attackSpeedScale ?? 1) - 1) * rank;
     regen += (spec.regen ?? 0) * rank;
   }
 

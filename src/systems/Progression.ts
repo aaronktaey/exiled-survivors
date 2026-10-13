@@ -5,6 +5,7 @@ import {
   SKILL_BASE,
   STATS,
   UPGRADE_CAP,
+  upgradeShown,
   upgradeStep,
   xpToNextLevel,
 } from '@/config';
@@ -31,13 +32,15 @@ export interface UpgradeOption {
 export type SkillStats = Record<UpgradeId, number>;
 
 /**
- * How each upgrade is worded. The wording lives in the locale; the amount
- * comes from UPGRADE_STEP, so a tuning change shows up in the text.
+ * How each upgrade is worded. The wording lives in the locale; the number
+ * comes from the config, so a tuning change shows up in the text. A stat
+ * that is a quantity shows a percentage — the card says "+20%" because
+ * that is what it does — and a count shows the count.
  */
 function optionText(id: UpgradeId, skill: SkillId): Omit<UpgradeOption, 'id'> {
   const copy = t().upgrades[id];
-  const step = upgradeStep(skill, id);
-  const values = { n: Number(step.toFixed(2)), skill: skillName(skill) };
+  const shown = upgradeShown(skill, id);
+  const values = { n: Number(shown.toFixed(2)), skill: skillName(skill) };
 
   return { label: fill(copy.label, values), detail: fill(copy.detail, values) };
 }

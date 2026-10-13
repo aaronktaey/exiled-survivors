@@ -239,9 +239,7 @@ export class GameScene extends Phaser.Scene {
     this.unwatchSettings = settings.onChange((next) => {
       const moved =
         next.movementMode !== last.movementMode ||
-        next.joystickScale !== last.joystickScale ||
-        next.joystickX !== last.joystickX ||
-        next.joystickY !== last.joystickY;
+        next.joystickScale !== last.joystickScale;
       last = next;
 
       if (moved) {

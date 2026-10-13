@@ -54,8 +54,6 @@ export const SAVE = {
 export const SETTINGS_RANGE = {
   joystickScale: { min: 0.6, max: 1.8, step: 0.1 },
   bgmVolume: { min: 0, max: 1, step: 0.1 },
-  /** Nudge per key press while placing the stick. */
-  joystickNudgePx: 8,
 } as const;
 
 /** Tilt steering, for phones held flat-ish in two hands. */

@@ -567,48 +567,64 @@ export const SKILL_BASE: Record<SkillId, SkillBaseStats> = {
   },
 };
 
-/** How much one pick of each upgrade adds. Keys match SkillBaseStats. */
 /**
- * What one pick of each upgrade adds, by default.
+ * What one pick of each upgrade is worth.
  *
- * The two that move damage per second — damage and attack speed — are set
- * per skill in UPGRADE_STEP_BY_SKILL, so each pick is worth about
- * DPS_TARGET.upgradeShare of where that skill started. The others are
- * utility or structure and are the same for everyone; adding a chain or an
- * orb is worth more than a fifth by its nature.
+ * The stats that are a quantity — damage, how fast it goes off, how far it
+ * reaches — go up by a **share of where that skill started**, and the card
+ * says so: "공격력 +20%" raises a 15-damage skill by 3 and a 6-damage one by
+ * 1.2. A flat step had to be hand-tuned per skill to mean the same thing to
+ * each of them, and still drifted every time the skills were rebalanced.
+ *
+ * The increase is on the base rather than on the running total, the way
+ * Path of Exile's "increased" works: three picks is +60% of where it
+ * started, not 1.2 cubed, so the tenth card is worth what the first was.
+ */
+export const UPGRADE_PERCENT = {
+  damage: 0.2,
+  attackSpeed: 0.2,
+  range: 0.15,
+  projectileSpeed: 0.15,
+  orbitSpeed: 0.2,
+} as const;
+
+/**
+ * The upgrades that add a thing rather than a quantity. A percentage of one
+ * chain is not a chain, so these stay whole numbers.
  */
 export const UPGRADE_STEP = {
-  damage: 1,
-  attackSpeed: 0.2,
-  range: 10,
-  projectileSpeed: 20,
-  orbitSpeed: 40,
   chainCount: 1,
   pierceCount: 1,
   orbCount: 1,
 } as const;
 
-/** Per-skill overrides, where the DPS maths asks for a different step. */
-export const UPGRADE_STEP_BY_SKILL: Partial<
-  Record<SkillId, Partial<Record<keyof typeof UPGRADE_STEP, number>>>
-> = {
-  meleeStrike: { damage: 3 },
-  fireball: { damage: 3 },
-  chainLightning: { damage: 1, attackSpeed: 0.15 },
-  iceSpear: { damage: 2 },
-  voidOrb: { damage: 1 },
-};
+export type UpgradeKey = keyof typeof UPGRADE_PERCENT | keyof typeof UPGRADE_STEP;
 
-/** How much one pick of `upgrade` adds to `skill`. */
-export function upgradeStep(
-  skill: SkillId,
-  upgrade: keyof typeof UPGRADE_STEP,
-): number {
-  return UPGRADE_STEP_BY_SKILL[skill]?.[upgrade] ?? UPGRADE_STEP[upgrade];
+/** True when this upgrade is written as a percentage on its card. */
+export function isPercentUpgrade(
+  upgrade: UpgradeKey,
+): upgrade is keyof typeof UPGRADE_PERCENT {
+  return upgrade in UPGRADE_PERCENT;
+}
+
+/** What one pick of this upgrade adds to this skill, in the stat's units. */
+export function upgradeStep(skill: SkillId, upgrade: UpgradeKey): number {
+  if (isPercentUpgrade(upgrade)) {
+    return SKILL_BASE[skill][upgrade] * UPGRADE_PERCENT[upgrade];
+  }
+
+  return UPGRADE_STEP[upgrade];
+}
+
+/** The number the card shows: a percentage, or a count. */
+export function upgradeShown(skill: SkillId, upgrade: UpgradeKey): number {
+  return isPercentUpgrade(upgrade)
+    ? Math.round(UPGRADE_PERCENT[upgrade] * 100)
+    : upgradeStep(skill, upgrade);
 }
 
 /** Ceilings on the upgrades that add structure rather than numbers. */
-export const UPGRADE_CAP: Partial<Record<keyof typeof UPGRADE_STEP, number>> = {
+export const UPGRADE_CAP: Partial<Record<UpgradeKey, number>> = {
   chainCount: 7,
 };
 

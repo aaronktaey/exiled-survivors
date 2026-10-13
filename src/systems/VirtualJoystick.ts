@@ -20,15 +20,14 @@ export function prefersTouchControls(): boolean {
 }
 
 /**
- * Thumb stick for touch devices, in two flavours.
+ * Thumb stick for touch devices.
  *
- * Pinned ('fixed'), it sits where the player put it in 설정 and a touch
- * anywhere within the scaled grab radius takes hold, so they do not have to
- * land exactly on the ring. Summoned ('floating'), it is invisible until a
- * finger lands and then appears right under it — wherever that is.
+ * It is invisible until a finger lands, and then appears right under it,
+ * wherever that is. There is no second flavour: a pad pinned to one corner
+ * asked the player to find it before they could move, and on a phone that
+ * is a hit taken for free.
  *
- * Its size comes from the settings either way, because thumbs and phones
- * differ.
+ * Its size comes from the settings, because thumbs and phones differ.
  */
 export class VirtualJoystick implements AnalogInput {
   private readonly scene: Phaser.Scene;
@@ -40,17 +39,15 @@ export class VirtualJoystick implements AnalogInput {
   private tilt = 0;
   /** Everything about the ring scales with this. */
   private readonly scale: number;
-  /** True when the pad appears under the finger instead of staying put. */
-  private readonly floating: boolean;
 
   public constructor(scene: Phaser.Scene) {
     this.scene = scene;
 
-    const { joystickScale, joystickX, joystickY, movementMode } = settings.value;
+    const { joystickScale } = settings.value;
     this.scale = joystickScale;
-    this.floating = movementMode === 'floating';
-    const x = Phaser.Math.Clamp(joystickX, 0, scene.scale.width);
-    const y = Phaser.Math.Clamp(joystickY, 0, scene.scale.height);
+    // Off screen until a finger says where it belongs.
+    const x = -1000;
+    const y = -1000;
 
     this.base = scene.add
       .circle(x, y, JOYSTICK.baseRadius * joystickScale, COLORS.stick, JOYSTICK.baseAlpha)
@@ -63,11 +60,8 @@ export class VirtualJoystick implements AnalogInput {
       .setScrollFactor(0)
       .setDepth(DEPTH.ui);
 
-    // A floating pad has nowhere to be until a finger says where.
-    if (this.floating) {
-      this.base.setVisible(false);
-      this.thumb.setVisible(false);
-    }
+    this.base.setVisible(false);
+    this.thumb.setVisible(false);
 
     // A second pointer keeps the stick responsive if another finger is down.
     scene.input.addPointer(2);
@@ -101,16 +95,9 @@ export class VirtualJoystick implements AnalogInput {
       return;
     }
 
-    if (this.floating) {
-      // Wherever the finger landed is where the pad is, this time round.
-      this.base.setPosition(pointer.x, pointer.y).setVisible(true);
-      this.thumb.setPosition(pointer.x, pointer.y).setVisible(true);
-    } else {
-      const distance = Phaser.Math.Distance.Between(pointer.x, pointer.y, this.base.x, this.base.y);
-      if (distance > JOYSTICK.grabRadius * this.scale) {
-        return;
-      }
-    }
+    // Wherever the finger landed is where the pad is, this time round.
+    this.base.setPosition(pointer.x, pointer.y).setVisible(true);
+    this.thumb.setPosition(pointer.x, pointer.y).setVisible(true);
 
     this.activePointerId = pointer.id;
     this.apply(pointer);
@@ -131,11 +118,8 @@ export class VirtualJoystick implements AnalogInput {
     this.tilt = 0;
     this.direction.set(0, 0);
     this.thumb.setPosition(this.base.x, this.base.y);
-
-    if (this.floating) {
-      this.base.setVisible(false);
-      this.thumb.setVisible(false);
-    }
+    this.base.setVisible(false);
+    this.thumb.setVisible(false);
   }
 
   private apply(pointer: Phaser.Input.Pointer): void {
