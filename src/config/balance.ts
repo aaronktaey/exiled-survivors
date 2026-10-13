@@ -124,7 +124,7 @@ export const ENEMY_KINDS: Record<EnemyKind, EnemyKindSpec> = {
     texture: TEXTURES.enemyBoss,
     size: 44,
     color: COLORS.enemyBoss,
-    maxHp: 600,
+    maxHp: 400,
     speed: 40,
     contactDamage: 5,
   },
@@ -327,9 +327,9 @@ export const REGEN = {
 } as const;
 
 /** The ones a rare enemy can be born with. */
-export const ENEMY_AFFIXES: readonly AffixSpec[] = Object.values(AFFIXES).filter(
-  (affix) => affix.enemy !== undefined,
-);
+export const ENEMY_AFFIXES: readonly AffixSpec[] = Object.values(
+  AFFIXES,
+).filter((affix) => affix.enemy !== undefined);
 
 export const PREFIXES: readonly AffixSpec[] = Object.values(AFFIXES).filter(
   (affix) => affix.kind === "prefix" && affix.gear !== undefined,
@@ -598,7 +598,9 @@ export const UPGRADE_STEP = {
   orbCount: 1,
 } as const;
 
-export type UpgradeKey = keyof typeof UPGRADE_PERCENT | keyof typeof UPGRADE_STEP;
+export type UpgradeKey =
+  | keyof typeof UPGRADE_PERCENT
+  | keyof typeof UPGRADE_STEP;
 
 /** True when this upgrade is written as a percentage on its card. */
 export function isPercentUpgrade(
