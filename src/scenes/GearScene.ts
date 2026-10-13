@@ -32,6 +32,10 @@ const LINES_GAP = 24;
 const FOOTER = 56;
 /** Wide enough to stand the stash and the read-out beside each other. */
 const COLUMNS_FROM = 760;
+/** The 버리기 button under the read-out, and the air around it. */
+const DISCARD_BLOCK = 44;
+const DISCARD_HEIGHT = 30;
+const DISCARD_WIDTH = 200;
 
 /**
  * 장비창 — the stash, and which weapon goes out with you next time.
@@ -50,6 +54,14 @@ export class GearScene extends Phaser.Scene {
   private wearing!: Phaser.GameObjects.Text;
   /** The lines of whichever weapon is under the cursor. Public for tests. */
   public lines!: Phaser.GameObjects.Text;
+  /** 버리기, and the plate behind it. Public so a test can press it. */
+  public discard!: Phaser.GameObjects.Text;
+  private discardPlate!: Phaser.GameObjects.Rectangle;
+  /**
+   * Whether 버리기 has been pressed once already. A weapon six 속성 deep is
+   * an hour of 우두머리 kills, so it does not go on a single tap.
+   */
+  public armed = false;
 
   public constructor() {
     super(GearScene.KEY);
@@ -57,6 +69,9 @@ export class GearScene extends Phaser.Scene {
 
   public init(data: GearSceneData): void {
     this.payload = data;
+    // The scene instance outlives a launch, and an armed button left over
+    // from last time would throw the first weapon away on one press.
+    this.armed = false;
   }
 
   public create(): void {
@@ -85,8 +100,12 @@ export class GearScene extends Phaser.Scene {
     const linesHeight = lineCount * LINE_HEIGHT;
     const sideBySide = width > height && width >= COLUMNS_FROM;
 
-    const bodyRoom = height - 24 - MENU.titleBlockHeight - 64 - FOOTER;
-    const listRoom = sideBySide ? bodyRoom : bodyRoom - LINES_GAP - linesHeight;
+    const readOut = linesHeight + DISCARD_BLOCK;
+    // On a short landscape window the weapon in hand gives up some of its
+    // air, because the read-out under it cannot give up any lines.
+    const headRoom = height < 480 ? 44 : 64;
+    const bodyRoom = height - 24 - MENU.titleBlockHeight - headRoom - FOOTER;
+    const listRoom = sideBySide ? bodyRoom : bodyRoom - LINES_GAP - readOut;
     const rows = Phaser.Math.Clamp(
       Math.floor((listRoom + MENU.buttonGap) / step),
       2,
@@ -94,9 +113,9 @@ export class GearScene extends Phaser.Scene {
     );
     const listHeight = rows * step - MENU.buttonGap;
     const bodyHeight = sideBySide
-      ? Math.max(listHeight, linesHeight)
-      : listHeight + LINES_GAP + linesHeight;
-    const top = centredTop(height, MENU.titleBlockHeight + 64 + bodyHeight);
+      ? Math.max(listHeight, readOut)
+      : listHeight + LINES_GAP + readOut;
+    const top = centredTop(height, MENU.titleBlockHeight + headRoom + bodyHeight);
 
     this.add
       .text(width / 2, top + 16, copy.title, {
@@ -107,7 +126,7 @@ export class GearScene extends Phaser.Scene {
       .setOrigin(0.5)
       .setDepth(DEPTH.ui + 1);
 
-    const wearingY = top + MENU.titleBlockHeight + 8;
+    const wearingY = top + MENU.titleBlockHeight + headRoom / 2 - 24;
     this.add
       .image(width / 2 - 80, wearingY, TEXTURES.gear)
       .setDisplaySize(26, 26)
@@ -122,7 +141,7 @@ export class GearScene extends Phaser.Scene {
       .setOrigin(0, 0.5)
       .setDepth(DEPTH.ui + 1);
 
-    const listTop = top + MENU.titleBlockHeight + 64;
+    const listTop = top + MENU.titleBlockHeight + headRoom;
     this.menu = new MenuList(this, {
       x: sideBySide ? Math.round(width * 0.28) : width / 2,
       y: listTop + MENU.buttonHeight / 2,
@@ -143,7 +162,7 @@ export class GearScene extends Phaser.Scene {
 
     const linesY = sideBySide
       ? listTop
-      : Math.min(listTop + listHeight + LINES_GAP, height - FOOTER - linesHeight);
+      : Math.min(listTop + listHeight + LINES_GAP, height - FOOTER - readOut);
     this.lines = this.add
       .text(sideBySide ? Math.round(width * 0.72) : width / 2, linesY, '', {
         fontFamily: 'system-ui, sans-serif',
@@ -158,6 +177,11 @@ export class GearScene extends Phaser.Scene {
       .setOrigin(0.5, 0)
       .setDepth(DEPTH.ui + 1);
 
+    this.buildDiscard(
+      sideBySide ? Math.round(width * 0.72) : width / 2,
+      linesY + linesHeight + DISCARD_BLOCK / 2,
+    );
+
     this.add
       .text(
         width / 2,
@@ -170,6 +194,77 @@ export class GearScene extends Phaser.Scene {
 
     this.refreshWearing();
     this.showLines();
+  }
+
+  /**
+   * 버리기 — the one destructive thing on this screen, so it is a button
+   * rather than a key alone, and it asks before it does anything. Delete
+   * does the same from a keyboard; moving the cursor takes the question back.
+   */
+  private buildDiscard(x: number, y: number): void {
+    this.discardPlate = this.add
+      .rectangle(x, y, DISCARD_WIDTH, DISCARD_HEIGHT, COLORS.panelActive, 0)
+      .setDepth(DEPTH.ui)
+      .setInteractive({ useHandCursor: true });
+
+    this.discard = this.add
+      .text(x, y, '', {
+        fontFamily: 'system-ui, sans-serif',
+        fontSize: TEXT.size.body,
+        color: COLORS.muted,
+      })
+      .setOrigin(0.5)
+      .setDepth(DEPTH.ui + 1);
+
+    this.discardPlate.on(Phaser.Input.Events.GAMEOBJECT_POINTER_DOWN, () => this.pressDiscard());
+    this.input.keyboard?.on('keydown-DELETE', this.pressDiscard, this);
+    this.input.keyboard?.on('keydown-BACKSPACE', this.pressDiscard, this);
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      this.input.keyboard?.off('keydown-DELETE', this.pressDiscard, this);
+      this.input.keyboard?.off('keydown-BACKSPACE', this.pressDiscard, this);
+    });
+
+    this.refreshDiscard();
+  }
+
+  /** The weapon under the cursor, if the cursor is on one at all. */
+  private selected(): GearItem | undefined {
+    return gear.items.find((held) => held.uid === this.menu.selectedId);
+  }
+
+  /** Only something the survivor is not carrying can be thrown away. */
+  private canDiscard(item: GearItem | undefined): boolean {
+    return item !== undefined && gear.value.equipped !== item.uid;
+  }
+
+  /** First press asks, second press throws it away. */
+  public pressDiscard(): void {
+    const item = this.selected();
+    if (!this.canDiscard(item) || !item) {
+      return;
+    }
+
+    if (!this.armed) {
+      this.armed = true;
+      this.refreshDiscard();
+      return;
+    }
+
+    gear.discard(item.uid);
+    // The stash is a weapon shorter, so the whole screen is measured again
+    // rather than patched: the window, the read-out and the rows all change.
+    this.scene.restart(this.payload);
+  }
+
+  private refreshDiscard(): void {
+    const copy = t().gear;
+    const live = this.canDiscard(this.selected());
+
+    this.discard.setText(this.armed && live ? copy.discardConfirm : copy.discard);
+    this.discard.setColor(this.armed && live ? COLORS.accent : COLORS.muted);
+    this.discard.setAlpha(live ? 1 : 0.35);
+    this.discardPlate.setFillStyle(COLORS.panelActive, this.armed && live ? 0.55 : 0);
+    this.discardPlate.setAlpha(live ? 1 : 0.35);
   }
 
 /**
@@ -246,6 +341,9 @@ export class GearScene extends Phaser.Scene {
     gear.equip(uid);
     this.refreshWearing();
     this.menu.refresh();
+    // What is now in hand cannot be thrown away, and what was may be.
+    this.armed = false;
+    this.refreshDiscard();
   }
 
   private refreshWearing(): void {
@@ -254,8 +352,11 @@ export class GearScene extends Phaser.Scene {
 
   /** The lines of whichever row the cursor is on; the back row has none. */
   private showLines(): void {
-    const item = gear.items.find((held) => held.uid === this.menu.selectedId);
+    const item = this.selected();
     this.lines.setText(item ? GearScene.describe(item) : '');
+    // A question asked about one weapon does not carry over to the next.
+    this.armed = false;
+    this.refreshDiscard();
   }
 
   private close(): void {

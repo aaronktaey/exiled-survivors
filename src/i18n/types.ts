@@ -86,6 +86,9 @@ export interface Strings {
     readonly wearing: string;
     readonly equipped: string;
     readonly equip: string;
+    /** The button that throws one away, and what it says once it is armed. */
+    readonly discard: string;
+    readonly discardConfirm: string;
     readonly hintKeyboard: string;
     readonly hintTouch: string;
     /** "접두어" / "접미어", heading the lines of each kind. */

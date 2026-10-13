@@ -241,6 +241,19 @@ class GearStore {
     return item;
   }
 
+  /**
+   * Throws one away for good. Whatever is being carried stays: put something
+   * else on first, which is also what keeps the stash from ever emptying.
+   */
+  public discard(uid: string): boolean {
+    if (uid === this.value.equipped || !this.value.items.some((item) => item.uid === uid)) {
+      return false;
+    }
+
+    this.commit({ ...this.value, items: this.value.items.filter((item) => item.uid !== uid) });
+    return true;
+  }
+
   /** Puts a weapon on. Only something already in the stash can be carried. */
   public equip(uid: string): boolean {
     if (!this.value.items.some((item) => item.uid === uid) || this.value.equipped === uid) {
@@ -301,11 +314,16 @@ class GearStore {
         suffixes: (item.suffixes ?? []).filter((id: AffixId) => AFFIXES[id]?.kind === 'suffix'),
       }));
 
-    if (!items.some((item) => item.uid === STARTER_UID)) {
-      items.unshift({ ...DEFAULTS.items[0]! });
+    // Empty-handed is the one state that cannot stand, so the 녹슨 검 comes
+    // back then and only then. Throwing it away once there is something
+    // better is allowed, and it stays thrown away.
+    if (items.length === 0) {
+      items.push({ ...DEFAULTS.items[0]! });
     }
 
-    const equipped = items.some((item) => item.uid === raw.equipped) ? raw.equipped : STARTER_UID;
+    const equipped = items.some((item) => item.uid === raw.equipped)
+      ? raw.equipped
+      : items[0]!.uid;
     return { items, equipped };
   }
 }
