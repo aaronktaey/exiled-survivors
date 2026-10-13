@@ -2,7 +2,6 @@ import Phaser from 'phaser';
 
 import {
   BALANCE,
-  BOSS_BANNER,
   COLORS,
   DEPTH,
   GEAR_DROP,
@@ -123,8 +122,6 @@ export class GameScene extends Phaser.Scene {
   private analog?: AnalogInput;
   /** Drops the settings subscription when the run ends. */
   private unwatchSettings?: () => void;
-  private bossBanner?: Phaser.GameObjects.Text;
-  private bossPlate?: Phaser.GameObjects.Rectangle;
 
   private weapons: Weapon[] = [];
   private owned = new Set<SkillId>();
@@ -599,51 +596,16 @@ export class GameScene extends Phaser.Scene {
   }
 
   /**
-   * The 우두머리 announcement: louder than a pickup banner, and only ever one
-   * at a time, so two bosses in quick succession cannot overlap into mush.
+   * A 우두머리 arrives on its horn, and nothing else.
+   *
+   * It used to put a banner across the middle of the screen, which is where
+   * the player is standing and where the 우두머리 is walking in from — the
+   * one moment in a run when covering the field costs the most. The horn
+   * says the same thing and hides nothing; the gold ring and the size say
+   * the rest once it is on screen.
    */
   private announceBoss(): void {
     sfx.playBossAlert(this);
-
-    const camera = this.cameras.main;
-    const x = camera.width / 2;
-    const y = camera.height / 2 - 120;
-
-    this.bossBanner?.destroy();
-    this.bossPlate?.destroy();
-
-    this.bossPlate = this.add
-      .rectangle(x, y, BOSS_BANNER.width, BOSS_BANNER.height, COLORS.panel, 0.9)
-      .setStrokeStyle(2, COLORS.bossOutline, 1)
-      .setScrollFactor(0)
-      .setDepth(DEPTH.ui);
-
-    this.bossBanner = this.add
-      .text(x, y, t().game.bossArrived, {
-        fontFamily: 'system-ui, sans-serif',
-        fontSize: BOSS_BANNER.fontSize,
-        color: COLORS.bossText,
-        fontStyle: 'bold',
-      })
-      .setOrigin(0.5)
-      .setScrollFactor(0)
-      .setDepth(DEPTH.ui + 1);
-
-    const parts = [this.bossPlate, this.bossBanner];
-    parts.forEach((part) => part.setScale(0.8));
-    this.tweens.add({ targets: parts, scale: 1, duration: 220, ease: 'Back.easeOut' });
-    this.tweens.add({
-      targets: parts,
-      alpha: 0,
-      delay: BOSS_BANNER.holdMs,
-      duration: 500,
-      onComplete: () => {
-        this.bossPlate?.destroy();
-        this.bossBanner?.destroy();
-        this.bossPlate = undefined;
-        this.bossBanner = undefined;
-      },
-    });
   }
 
   /** Brief banner, used when a skill is picked up. */

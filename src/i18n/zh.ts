@@ -108,7 +108,6 @@ export const zh: Strings = {
     intro: 'Exile, do something!',
     introHintKeyboard: 'WASD 或方向键移动 — 攻击自动进行',
     introHintTouch: '拖动摇杆移动 — 攻击自动进行',
-    bossArrived: '首领出现',
     gearFound: '获得 {gear} — 可在主界面装备',
     shardFound: '神圣碎片 {held}/{need}',
     orbMade: '神圣宝珠完成 — 被动点数 +1',

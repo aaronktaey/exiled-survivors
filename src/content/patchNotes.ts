@@ -36,6 +36,7 @@ export const PATCH_NOTES: readonly PatchNote[] = [
         '강화 선택지가 % 로 바뀌었습니다 — 공격력 +20%, 공격속도 +20%, 사정거리 +15%, 투사체·회전 속도 +15~20%. 연쇄·관통·구체 수는 개수라서 그대로 +1입니다.',
         '증가는 모두 그 스킬의 기본값 기준으로 더해집니다 — 기본 피해 10에 +3%를 열 번 고르면 13이 됩니다. 1.03을 열 번 곱하지 않습니다.',
         '단계끼리는 곱해집니다 — 기본 10에 패시브 +30%, 전투 중 +50%면 10 × 1.3 × 1.5 입니다. 패시브 한 점은 전투 중에 쌓은 것 전부를 같이 올려줍니다.',
+        '우두머리 등장 알림창을 없앴습니다 — 화면 한가운데를 가렸습니다. 등장은 뿔소리로 알립니다.',
       ],
       en: [
         'Modifiers on enemies and on equipment are now called 속성, one word for both.',
@@ -54,7 +55,8 @@ export const PATCH_NOTES: readonly PatchNote[] = [
         'Mobile steering is one thing now: the pad appears under your finger. The pinned pad and its position setting are gone; pad size still adjusts.',
         'Upgrade cards are percentages — damage +20%, attack speed +20%, range +15%, projectile and orbit speed +15–20%. Chains, pierces and orbs are counts, so they stay at +1.',
         'Increases add up on that skill’s base: ten picks of +3% on a base of 10 is 13, not 1.03 to the tenth.',
-        'Layers multiply with each other: a base of 10 with +30% from the tree and +50% from the run is 10 × 1.3 × 1.5. A passive point therefore lifts everything the run has already built.'
+        'Layers multiply with each other: a base of 10 with +30% from the tree and +50% from the run is 10 × 1.3 × 1.5. A passive point therefore lifts everything the run has already built.',
+        'The 우두머리 arrival banner is gone — it covered the middle of the screen. The horn still announces one.'
       ],
       ja: [
         '「強化効果」を「属性」と呼びます。敵と装備で同じ言葉を使います。',
@@ -74,6 +76,7 @@ export const PATCH_NOTES: readonly PatchNote[] = [
         '強化の選択肢が % 表記になりました — 攻撃力 +20%、攻撃速度 +20%、射程 +15%、弾速・回転速度 +15〜20%。連鎖・貫通・球の数は個数なので +1 のままです。',
         '増加はそのスキルの基本値に加算されます — 基本ダメージ 10 に +3% を十回選べば 13 です。1.03 を十回掛けるのではありません。',
         '段階どうしは掛け算になります — 基本 10 にパッシブ +30%、戦闘中 +50% なら 10 × 1.3 × 1.5 です。パッシブ 1 点が戦闘中に積んだもの全体を押し上げます。',
+        'ボス出現の通知を削除しました — 画面の中央を覆っていました。出現は角笛で知らせます。',
       ],
       zh: [
         '敌人与装备上的「强化效果」统一改称「属性」。',
@@ -93,6 +96,7 @@ export const PATCH_NOTES: readonly PatchNote[] = [
         '强化选项改为百分比 — 攻击力 +20%、攻击速度 +20%、射程 +15%、弹速与旋转速度 +15~20%。连锁、穿透与球体数量是个数，仍为 +1。',
         '提升均以该技能的基础值相加 — 基础伤害 10 选十次 +3% 即为 13，而非 1.03 的十次方。',
         '不同层之间相乘 — 基础 10 加被动 +30%、战斗中 +50%，结果为 10 × 1.3 × 1.5。因此一点被动会抬高战斗中积累的全部收益。',
+        '移除了首领出现的提示框 — 它会遮住屏幕中央。出现仍由号角提示。',
       ],
     },
   },

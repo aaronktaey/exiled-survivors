@@ -144,7 +144,6 @@ export interface Strings {
     readonly intro: string;
     readonly introHintKeyboard: string;
     readonly introHintTouch: string;
-    readonly bossArrived: string;
     /** Banner when a piece of 장비 is walked over. {gear} is its name. */
     readonly gearFound: string;
     /** 신성한 조각 picked up: {held} of {need} towards the next 구슬. */

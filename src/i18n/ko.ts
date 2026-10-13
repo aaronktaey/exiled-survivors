@@ -112,7 +112,6 @@ export const ko: Strings = {
     intro: 'Exile, do something!',
     introHintKeyboard: 'WASD · 방향키로 이동 — 공격은 자동',
     introHintTouch: '스틱을 끌어 이동 — 공격은 자동',
-    bossArrived: '우두머리 등장',
     gearFound: '{gear} 획득 — 메인화면에서 착용',
     shardFound: '신성한 조각 {held}/{need}',
     orbMade: '신성한 구슬 완성 — 패시브 포인트 +1',

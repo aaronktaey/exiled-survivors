@@ -108,7 +108,6 @@ export const en: Strings = {
     intro: 'Exile, do something!',
     introHintKeyboard: 'WASD or arrows to move — attacks are automatic',
     introHintTouch: 'Drag the stick to move — attacks are automatic',
-    bossArrived: 'A boss is here',
     gearFound: 'Found {gear} — wear it from the title screen',
     shardFound: 'Divine Shard {held}/{need}',
     orbMade: 'A Divine Orb — one passive point',

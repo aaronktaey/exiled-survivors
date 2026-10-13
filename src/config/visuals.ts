@@ -22,7 +22,6 @@ export const COLORS = {
   /** 우두머리: a dark slab with a gold ring around it. */
   enemyBoss: 0x7a1f3d,
   bossOutline: 0xffd34d,
-  bossText: '#ffd34d',
   /** Enemy fire, kept well away from any colour the player's own shots use. */
   enemyShot: 0xff7a9c,
   /** The ring around a rare at one affix, and its tooltip heading. */
@@ -388,15 +387,6 @@ export const RARE_OUTLINE_TIERS: readonly number[] = [
   0xf03a2a, // 5
   0xd41347, // 6
 ];
-
-/** The banner that announces a 우두머리. */
-export const BOSS_BANNER = {
-  width: 340,
-  height: 58,
-  fontSize: '28px',
-  /** How long it holds before fading. */
-  holdMs: 1400,
-} as const;
 
 /** The panel that lists a rare's affixes when it is hovered or tapped. */
 export const TOOLTIP = {

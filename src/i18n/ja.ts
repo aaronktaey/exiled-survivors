@@ -108,7 +108,6 @@ export const ja: Strings = {
     intro: 'Exile, do something!',
     introHintKeyboard: 'WASD・方向キーで移動 — 攻撃は自動',
     introHintTouch: 'スティックを引いて移動 — 攻撃は自動',
-    bossArrived: 'ボス出現',
     gearFound: '{gear} 獲得 — タイトル画面で装備できます',
     shardFound: '神聖な欠片 {held}/{need}',
     orbMade: '神聖なオーブ完成 — パッシブポイント +1',
