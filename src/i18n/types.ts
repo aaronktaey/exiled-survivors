@@ -41,6 +41,10 @@ export interface Strings {
     readonly hintTouch: string;
     /** What one 신성한 조각 is called, over it on the ground. */
     readonly shardName: string;
+    /** The shop row: a shard for {price} gold. */
+    readonly buyShard: string;
+    /** Gold in the purse. */
+    readonly goldHeld: string;
     /** Said plainly: three lines today, a tree later. */
     readonly temporary: string;
   };
@@ -117,6 +121,12 @@ export interface Strings {
   readonly gameOver: {
     readonly title: string;
     readonly survived: string;
+    /** The table: what the run dealt, killed, earned, and was carrying. */
+    readonly damageDealt: string;
+    readonly killsDealt: string;
+    readonly goldEarned: string;
+    /** One skill's line: "타격 Lv 3 · DPS 21". */
+    readonly skillLine: string;
     readonly retry: string;
     readonly toTitle: string;
     readonly hintKeyboard: string;

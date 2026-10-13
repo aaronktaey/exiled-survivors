@@ -1,4 +1,5 @@
-import { PASSIVES, SHARD, STORAGE, type PassiveId } from '@/config';
+import { ECONOMY, PASSIVES, SHARD, STORAGE, type PassiveId } from '@/config';
+import { gold } from '@/systems/Gold';
 
 /** The stash of points, and where they have been spent. */
 export interface PassiveState {
@@ -102,6 +103,19 @@ class PassiveStore {
       shards: shards - SHARD.perOrb,
       points: this.value.points + SHARD.pointsPerOrb,
     });
+    return true;
+  }
+
+  /**
+   * Buys one 신성한 조각 with gold. It goes in as if a 우두머리 had left it,
+   * so ten bought shards finish a 구슬 the same way ten found ones do.
+   */
+  public buyShard(): boolean {
+    if (!gold.spend(ECONOMY.shardPrice)) {
+      return false;
+    }
+
+    this.addShard();
     return true;
   }
 

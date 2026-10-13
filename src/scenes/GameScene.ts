@@ -29,6 +29,8 @@ import {
   fitText,
   Hud,
   Progression,
+  RunStats,
+  gold,
   type LoadoutEntry,
   Separation,
   SpawnDirector,
@@ -118,6 +120,8 @@ export class GameScene extends Phaser.Scene {
   private mods: RunModifiers = NO_MODIFIERS;
   /** Counts up to REGEN.periodMs, then pays out. */
   private sinceRegenMs = 0;
+  /** What this run has done, read out on the screen that ends it. */
+  private stats!: RunStats;
   /** The touch steering in use, so a settings change can replace it. */
   private analog?: AnalogInput;
   /** Drops the settings subscription when the run ends. */
@@ -178,12 +182,14 @@ export class GameScene extends Phaser.Scene {
     });
     this.separation = new Separation(this.spawner.group);
     this.damageNumbers = new DamageNumbers(this);
+    this.stats = new RunStats();
     this.combat = new CombatSystem(
       this,
       this.player,
       this.spawner.group,
       this.progression,
       this.damageNumbers,
+      this.stats,
       {
         rollSkillDrop: (bonus, guaranteed) => this.rollSkillDrop(bonus, guaranteed),
         onSkillCollected: (skill) => this.onSkillCollected(skill),
@@ -729,7 +735,25 @@ export class GameScene extends Phaser.Scene {
     // A save is somewhere to come back from, not a way to undo a death.
     saveGame.clear();
 
+    // The run is paid for the damage it dealt, so one that ended badly still
+    // moved the tree forward. Paid once, here, before the screen reads it.
+    const damage = this.stats.damage;
+    const earned = gold.earn(damage);
+
     const data: GameOverData = {
+      summary: {
+        damage,
+        kills: this.stats.killCount,
+        byKind: this.stats.byKind,
+        skills: this.loadout().map((line) => ({
+          name: line.name,
+          level: line.level,
+          dps: line.dps,
+        })),
+        survivedMs: this.elapsedMs,
+        level: this.progression.level,
+        gold: earned,
+      },
       level: this.progression.level,
       survivedMs: this.elapsedMs,
       onRestart: () => this.scene.restart(),

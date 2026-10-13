@@ -37,6 +37,9 @@ export const PATCH_NOTES: readonly PatchNote[] = [
         '증가는 모두 그 스킬의 기본값 기준으로 더해집니다 — 기본 피해 10에 +3%를 열 번 고르면 13이 됩니다. 1.03을 열 번 곱하지 않습니다.',
         '단계끼리는 곱해집니다 — 기본 10에 패시브 +30%, 전투 중 +50%면 10 × 1.3 × 1.5 입니다. 패시브 한 점은 전투 중에 쌓은 것 전부를 같이 올려줍니다.',
         '우두머리 등장 알림창을 없앴습니다 — 화면 한가운데를 가렸습니다. 등장은 뿔소리로 알립니다.',
+        '게임이 끝나면 통계표가 나옵니다 — 가한 피해, 처치 수, 적 종류별 마릿수, 그리고 사망 시점의 스킬 레벨과 DPS.',
+        '가한 피해 100당 골드 1을 얻습니다. 과잉 피해는 세지 않고, 적이 실제로 받은 만큼만 셉니다.',
+        '골드 100으로 패시브 화면에서 신성한 조각을 살 수 있습니다. 산 조각도 주운 조각과 똑같이 10개가 모이면 신성한 구슬이 됩니다.',
       ],
       en: [
         'Modifiers on enemies and on equipment are now called 속성, one word for both.',
@@ -56,7 +59,10 @@ export const PATCH_NOTES: readonly PatchNote[] = [
         'Upgrade cards are percentages — damage +20%, attack speed +20%, range +15%, projectile and orbit speed +15–20%. Chains, pierces and orbs are counts, so they stay at +1.',
         'Increases add up on that skill’s base: ten picks of +3% on a base of 10 is 13, not 1.03 to the tenth.',
         'Layers multiply with each other: a base of 10 with +30% from the tree and +50% from the run is 10 × 1.3 × 1.5. A passive point therefore lifts everything the run has already built.',
-        'The 우두머리 arrival banner is gone — it covered the middle of the screen. The horn still announces one.'
+        'The 우두머리 arrival banner is gone — it covered the middle of the screen. The horn still announces one.',
+        'A run ends on a table now: damage dealt, kills, a breakdown by enemy kind, and the skills as they stood at death with their level and DPS.',
+        'Every 100 damage dealt is a gold. Overkill does not count — only what the enemy actually absorbed.',
+        'A 신성한 조각 costs 100 gold on the 패시브 screen. Bought shards finish a 구슬 exactly as found ones do.'
       ],
       ja: [
         '「強化効果」を「属性」と呼びます。敵と装備で同じ言葉を使います。',
@@ -77,6 +83,9 @@ export const PATCH_NOTES: readonly PatchNote[] = [
         '増加はそのスキルの基本値に加算されます — 基本ダメージ 10 に +3% を十回選べば 13 です。1.03 を十回掛けるのではありません。',
         '段階どうしは掛け算になります — 基本 10 にパッシブ +30%、戦闘中 +50% なら 10 × 1.3 × 1.5 です。パッシブ 1 点が戦闘中に積んだもの全体を押し上げます。',
         'ボス出現の通知を削除しました — 画面の中央を覆っていました。出現は角笛で知らせます。',
+        'ゲーム終了時に戦績表が出ます — 与ダメージ、撃破数、敵の種類別の数、そして死亡時のスキルのレベルと DPS。',
+        '与ダメージ 100 ごとに 1 ゴールド入ります。過剰ダメージは数えず、敵が実際に受けた分だけ数えます。',
+        '100 ゴールドでパッシブ画面から神聖な欠片を買えます。買った欠片も拾った欠片と同じく 10 個で神聖なオーブになります。',
       ],
       zh: [
         '敌人与装备上的「强化效果」统一改称「属性」。',
@@ -97,6 +106,9 @@ export const PATCH_NOTES: readonly PatchNote[] = [
         '提升均以该技能的基础值相加 — 基础伤害 10 选十次 +3% 即为 13，而非 1.03 的十次方。',
         '不同层之间相乘 — 基础 10 加被动 +30%、战斗中 +50%，结果为 10 × 1.3 × 1.5。因此一点被动会抬高战斗中积累的全部收益。',
         '移除了首领出现的提示框 — 它会遮住屏幕中央。出现仍由号角提示。',
+        '游戏结束时会显示统计表 — 造成伤害、击杀数、按敌人种类的数量，以及死亡时各技能的等级与 DPS。',
+        '每造成 100 点伤害获得 1 金币。溢出伤害不计，只计敌人实际承受的部分。',
+        '在被动界面可用 100 金币购买神圣碎片。购买的碎片与拾取的碎片一样，集满 10 个合成神圣宝珠。',
       ],
     },
   },

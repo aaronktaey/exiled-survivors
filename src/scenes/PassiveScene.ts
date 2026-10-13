@@ -1,9 +1,21 @@
 import Phaser from 'phaser';
 
-import { ALL_PASSIVES, COLORS, DEPTH, MENU, SCENES, SCRIM, SHARD, TEXT, TEXTURES } from '@/config';
+import {
+  ALL_PASSIVES,
+  COLORS,
+  DEPTH,
+  ECONOMY,
+  MENU,
+  SCENES,
+  SCRIM,
+  SHARD,
+  TEXT,
+  TEXTURES,
+} from '@/config';
 import { fill, passiveDetail, t } from '@/i18n';
 import { centredTop, fitWidth } from '@/systems/Layout';
 import { MenuList } from '@/systems/MenuList';
+import { gold } from '@/systems/Gold';
 import { passives } from '@/systems/Passives';
 import { prefersTouchControls } from '@/systems/VirtualJoystick';
 
@@ -47,7 +59,7 @@ export class PassiveScene extends Phaser.Scene {
       .setDepth(DEPTH.ui);
 
     const listHeight =
-      (ALL_PASSIVES.length + 1) * (MENU.buttonHeight + MENU.buttonGap) - MENU.buttonGap;
+      (ALL_PASSIVES.length + 2) * (MENU.buttonHeight + MENU.buttonGap) - MENU.buttonGap;
     const top = centredTop(height, MENU.titleBlockHeight + 64 + listHeight + 70);
 
     this.add
@@ -81,6 +93,13 @@ export class PassiveScene extends Phaser.Scene {
       width: 440,
       onCancel: () => this.close(),
       items: [
+        {
+          id: 'buyShard',
+          label: () => fill(copy.buyShard, { price: ECONOMY.shardPrice }),
+          detail: () => fill(copy.goldHeld, { gold: gold.value }),
+          enabled: () => gold.value >= ECONOMY.shardPrice,
+          onSelect: () => this.buy(),
+        },
         ...ALL_PASSIVES.map((spec) => ({
           id: spec.id,
           // The name and what it does say the same thing for these three,
@@ -136,12 +155,23 @@ export class PassiveScene extends Phaser.Scene {
     }
   }
 
+  /** Gold for a shard — the slow, certain road to a point. */
+  private buy(): void {
+    if (passives.buyShard()) {
+      this.refreshPurse();
+      this.menu.refresh();
+    }
+  }
+
   private refreshPurse(): void {
     const copy = t().passives;
     const { points, shards } = passives.value;
     const purse = fill(copy.points, { points });
     const towards = fill(copy.shards, { held: shards, need: SHARD.perOrb });
-    this.purse.setText(points > 0 ? `${purse}   ·   ${towards}` : `${towards}   ·   ${copy.noPoints}`);
+    const coins = fill(copy.goldHeld, { gold: gold.value });
+    this.purse.setText(
+      points > 0 ? `${purse}   ·   ${towards}   ·   ${coins}` : `${towards}   ·   ${coins}`,
+    );
   }
 
   private close(): void {

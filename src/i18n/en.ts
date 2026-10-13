@@ -17,6 +17,8 @@ export const en: Strings = {
     hintKeyboard: '↑ ↓ to move   Space to spend   Esc to go back',
     hintTouch: 'Tap a line to spend a point',
     shardName: 'Divine Shard',
+    buyShard: 'Buy a Divine Shard  {price} gold',
+    goldHeld: '{gold} gold',
     temporary: 'A placeholder: three lines today, a tree with branches next.',
   },
 
@@ -82,6 +84,10 @@ export const en: Strings = {
 
   gameOver: {
     title: 'GAME OVER',
+    damageDealt: 'Damage dealt',
+    killsDealt: 'Kills',
+    goldEarned: 'Gold earned',
+    skillLine: '{skill} Lv {level} · {dps} DPS',
     survived: 'Survived {time}    Lv {level}',
     retry: 'Run again',
     toTitle: 'Title screen',

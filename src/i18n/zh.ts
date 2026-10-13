@@ -17,6 +17,8 @@ export const zh: Strings = {
     hintKeyboard: '↑ ↓ 移动   Space 投入   Esc 返回',
     hintTouch: '点击条目投入点数',
     shardName: '神圣碎片',
+    buyShard: '购买神圣碎片  {price} 金币',
+    goldHeld: '金币 {gold}',
     temporary: '这是临时版本 — 目前为三条线，分支树是下一步的工作。',
   },
 
@@ -82,6 +84,10 @@ export const zh: Strings = {
 
   gameOver: {
     title: 'GAME OVER',
+    damageDealt: '造成伤害',
+    killsDealt: '击杀',
+    goldEarned: '获得金币',
+    skillLine: '{skill} Lv {level} · DPS {dps}',
     survived: '生存 {time}    Lv {level}',
     retry: '再来一局',
     toTitle: '返回标题',

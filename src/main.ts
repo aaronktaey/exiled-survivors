@@ -2,10 +2,12 @@ import Phaser from 'phaser';
 
 import './style.css';
 
+import * as balance from '@/config';
 import { COLORS } from '@/config';
 import { settings } from '@/systems/Settings';
 import { registerSharpText } from '@/systems/SharpText';
 import { gear, gearBonusFor } from '@/systems/Gear';
+import { gold } from '@/systems/Gold';
 import { passives } from '@/systems/Passives';
 import { currentCanvasSize } from '@/systems/Viewport';
 import {
@@ -78,12 +80,17 @@ const game = new Phaser.Game(config);
 if (import.meta.env.DEV) {
   const dev = window as Window & {
     game?: Phaser.Game;
+    config?: typeof balance;
     gear?: typeof gear;
     gearBonusFor?: typeof gearBonusFor;
     passives?: typeof passives;
+    gold?: typeof gold;
   };
   dev.game = game;
+  // So a test can read a tuned number instead of carrying a copy of it.
+  dev.config = balance;
   dev.gear = gear;
   dev.gearBonusFor = gearBonusFor;
   dev.passives = passives;
+  dev.gold = gold;
 }

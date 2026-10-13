@@ -17,6 +17,8 @@ export const ja: Strings = {
     hintKeyboard: '↑ ↓ 移動   Space 投資   Esc 戻る',
     hintTouch: '項目をタップして投資',
     shardName: '神聖な欠片',
+    buyShard: '神聖な欠片を購入  {price} ゴールド',
+    goldHeld: 'ゴールド {gold}',
     temporary: '暫定版です — 今は三つの行で、枝分かれするツリーは次の作業です。',
   },
 
@@ -82,6 +84,10 @@ export const ja: Strings = {
 
   gameOver: {
     title: 'GAME OVER',
+    damageDealt: '与ダメージ',
+    killsDealt: '撃破',
+    goldEarned: '獲得ゴールド',
+    skillLine: '{skill} Lv {level} · DPS {dps}',
     survived: '生存 {time}    Lv {level}',
     retry: 'もう一度',
     toTitle: 'タイトルへ',

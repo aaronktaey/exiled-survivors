@@ -21,6 +21,8 @@ export const ko: Strings = {
     hintKeyboard: '↑ ↓ 이동   Space 투자   Esc 돌아가기',
     hintTouch: '항목을 탭해서 투자',
     shardName: '신성한 조각',
+    buyShard: '신성한 조각 구매  {price}골드',
+    goldHeld: '골드 {gold}',
     temporary: '임시 구성입니다 — 지금은 세 줄이고, 갈래가 나뉘는 트리는 다음 작업입니다.',
   },
 
@@ -86,6 +88,10 @@ export const ko: Strings = {
 
   gameOver: {
     title: 'GAME OVER',
+    damageDealt: '가한 피해',
+    killsDealt: '처치',
+    goldEarned: '획득 골드',
+    skillLine: '{skill} Lv {level} · DPS {dps}',
     survived: '생존 {time}    Lv {level}',
     retry: '다시하기',
     toTitle: '메인화면',

@@ -43,6 +43,8 @@ export const STORAGE = {
   gear: "exiled-survivors:gear:v2",
   /** The passive tree, which outlives it too. */
   passives: "exiled-survivors:passives:v1",
+  /** And the purse a run pays into. */
+  gold: "exiled-survivors:gold:v1",
 } as const;
 
 export const SAVE = {

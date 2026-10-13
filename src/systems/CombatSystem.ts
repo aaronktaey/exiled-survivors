@@ -6,6 +6,7 @@ import { EnemyShot } from '@/entities/EnemyShot';
 import { GearDrop } from '@/entities/GearDrop';
 import { ShardDrop } from '@/entities/ShardDrop';
 import { dropTierFor, type GearItem } from '@/systems/Gear';
+import type { RunStats } from '@/systems/RunStats';
 import { HealthPotion } from '@/entities/HealthPotion';
 import { Player } from '@/entities/Player';
 import { Projectile } from '@/entities/Projectile';
@@ -52,6 +53,7 @@ export class CombatSystem {
   private readonly progression: Progression;
   private readonly damageNumbers: DamageNumbers;
   private readonly hooks: CombatHooks;
+  private readonly stats: RunStats;
 
   public constructor(
     scene: Phaser.Scene,
@@ -59,12 +61,14 @@ export class CombatSystem {
     enemies: Phaser.Physics.Arcade.Group,
     progression: Progression,
     damageNumbers: DamageNumbers,
+    stats: RunStats,
     hooks: CombatHooks,
   ) {
     this.scene = scene;
     this.player = player;
     this.progression = progression;
     this.damageNumbers = damageNumbers;
+    this.stats = stats;
     this.hooks = hooks;
 
     this.gems = scene.physics.add.group({
@@ -175,6 +179,9 @@ export class CombatSystem {
     const dealt = crit ? Math.round(amount * this.hooks.critMultiplier()) : amount;
 
     this.damageNumbers.spawn(enemy.x, enemy.y - 10, dealt, crit ? { color: COLORS.critText } : undefined);
+    // What the enemy actually absorbed: a hit that kills something with two
+    // health left is worth two, not whatever the number on the card said.
+    this.stats.recordDamage(Math.min(dealt, enemy.hp));
 
     if (enemy.takeDamage(dealt)) {
       this.killEnemy(enemy);
@@ -295,6 +302,7 @@ export class CombatSystem {
   private killEnemy(enemy: Enemy): void {
     const { x, y } = enemy;
     // Read the rewards before recycling, which resets the kind and affixes.
+    this.stats.recordKill(enemy.kind);
     const worth = enemy.xpValue;
     const dropBonus = enemy.dropBonus;
     const wasBoss = enemy.isBoss;

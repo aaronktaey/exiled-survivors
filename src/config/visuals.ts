@@ -388,6 +388,19 @@ export const RARE_OUTLINE_TIERS: readonly number[] = [
   0xd41347, // 6
 ];
 
+/** The table the end-of-run screen reads the run out in. */
+export const GAME_OVER = {
+  /** Title and the line under it, before the table starts. */
+  headHeight: 104,
+  /** One label-and-figure row. */
+  lineHeight: 24,
+  /** Air under a wrapped line, which may be one row tall or three. */
+  wrapGap: 10,
+  /** Between the table and the first button. */
+  tableGap: 24,
+  tableWidth: 420,
+} as const;
+
 /** The panel that lists a rare's affixes when it is hovered or tapped. */
 export const TOOLTIP = {
   paddingX: 10,

@@ -1,26 +1,44 @@
 import Phaser from 'phaser';
 
-import { COLORS, DEPTH, SCENES, SCRIM, TEXT } from '@/config';
-import { fill, t } from '@/i18n';
-import { fitText } from '@/systems/Layout';
+import { COLORS, DEPTH, GAME_OVER, MENU, SCENES, SCRIM, TEXT } from '@/config';
+import { enemyName, fill, t } from '@/i18n';
+import { centredTop, fitText, fitWidth } from '@/systems/Layout';
 import { MenuList } from '@/systems/MenuList';
+import type { RunSummary } from '@/systems/RunStats';
 import { prefersTouchControls } from '@/systems/VirtualJoystick';
 
 export interface GameOverData {
+  /** What the run amounted to, read out as a table. */
+  readonly summary: RunSummary;
   readonly level: number;
   readonly survivedMs: number;
   readonly onRestart: () => void;
 }
 
+/** "12,345" — thousands marked, because the damage number gets long. */
+const grouped = (value: number): string => Math.round(value).toLocaleString('en-US');
+
+/** Whole numbers where they are whole, one decimal where they are not. */
+const round = (value: number): string =>
+  Number.isInteger(value) ? String(value) : value.toFixed(1);
+
 /**
- * End-of-run screen: how it went, and the three ways on — another run,
- * the title, or the options.
+ * End-of-run screen: what the run amounted to, and the three ways on —
+ * another run, the title, or the options.
+ *
+ * The table is built before anything is placed, because how tall it comes
+ * out depends on how many enemy kinds were met and how many skills were
+ * carried, and a line of either can wrap. It is measured, and then the whole
+ * block is centred around it.
  */
 export class GameOverScene extends Phaser.Scene {
   public static readonly KEY = SCENES.gameOver;
 
   private payload!: GameOverData;
-  private menu!: MenuList;
+  /** This screen's list of choices. Public so a test can drive it. */
+  public menu!: MenuList;
+  /** The table, so a test can read what the run was told it did. */
+  public table!: Phaser.GameObjects.Container;
 
   public constructor() {
     super(GameOverScene.KEY);
@@ -36,13 +54,18 @@ export class GameOverScene extends Phaser.Scene {
 
     this.add.rectangle(0, 0, width, height, 0x05070b, SCRIM.gameOver).setOrigin(0, 0).setDepth(DEPTH.ui);
 
+    // Built first, measured, then everything is centred around it.
+    const tableHeight = this.buildTable(width);
+    const rows = 3 * (MENU.buttonHeight + MENU.buttonGap) - MENU.buttonGap;
+    const top = centredTop(height, GAME_OVER.headHeight + tableHeight + GAME_OVER.tableGap + rows);
+
     const total = Math.floor(this.payload.survivedMs / 1000);
     const mm = String(Math.floor(total / 60)).padStart(2, '0');
     const ss = String(total % 60).padStart(2, '0');
 
     fitText(
       this.add
-        .text(centerX, height / 2 - 150, t().gameOver.title, {
+        .text(centerX, top + 28, t().gameOver.title, {
           fontFamily: 'system-ui, sans-serif',
           fontSize: TEXT.size.hero,
           color: COLORS.accent,
@@ -53,17 +76,20 @@ export class GameOverScene extends Phaser.Scene {
     );
 
     this.add
-      .text(centerX, height / 2 - 100, fill(t().gameOver.survived, { time: `${mm}:${ss}`, level: this.payload.level }), {
-        fontFamily: 'system-ui, sans-serif',
-        fontSize: TEXT.size.heading,
-        color: COLORS.text,
-      })
+      .text(
+        centerX,
+        top + 70,
+        fill(t().gameOver.survived, { time: `${mm}:${ss}`, level: this.payload.level }),
+        { fontFamily: 'system-ui, sans-serif', fontSize: TEXT.size.heading, color: COLORS.text },
+      )
       .setOrigin(0.5)
       .setDepth(DEPTH.ui + 1);
 
+    this.table.setPosition(centerX, top + GAME_OVER.headHeight);
+
     this.menu = new MenuList(this, {
       x: centerX,
-      y: height / 2 - 30,
+      y: top + GAME_OVER.headHeight + tableHeight + GAME_OVER.tableGap + MENU.buttonHeight / 2,
       items: [
         { id: 'retry', label: () => t().gameOver.retry, onSelect: () => this.restart() },
         { id: 'menu', label: () => t().gameOver.toTitle, onSelect: () => this.toTitle() },
@@ -80,6 +106,84 @@ export class GameOverScene extends Phaser.Scene {
       )
       .setOrigin(0.5)
       .setDepth(DEPTH.ui + 1);
+  }
+
+  /**
+   * The run as a table, inside a container whose own origin is the middle of
+   * its top edge. Returns how tall it came out.
+   *
+   * Three figures with a label on the left and a number on the right, then
+   * what was killed and what was carried — both of which are a list and so
+   * are set as one wrapped, centred line each.
+   */
+  private buildTable(screenWidth: number): number {
+    const copy = t().gameOver;
+    const { summary } = this.payload;
+    const half = fitWidth(GAME_OVER.tableWidth, screenWidth) / 2;
+
+    this.table = this.add.container(0, 0).setDepth(DEPTH.ui + 1);
+    let y = 0;
+
+    const figure = (label: string, value: string): void => {
+      this.table.add(
+        this.add
+          .text(-half, y, label, {
+            fontFamily: 'system-ui, sans-serif',
+            fontSize: TEXT.size.small,
+            color: COLORS.muted,
+          })
+          .setOrigin(0, 0),
+      );
+      this.table.add(
+        this.add
+          .text(half, y, value, {
+            fontFamily: 'system-ui, sans-serif',
+            fontSize: TEXT.size.small,
+            color: COLORS.text,
+          })
+          .setOrigin(1, 0),
+      );
+      y += GAME_OVER.lineHeight;
+    };
+
+    const wrapped = (text: string, colour: string): void => {
+      if (!text) {
+        return;
+      }
+
+      const line = this.add
+        .text(0, y, text, {
+          fontFamily: 'system-ui, sans-serif',
+          fontSize: TEXT.size.hint,
+          color: colour,
+          align: 'center',
+          lineSpacing: 3,
+          wordWrap: { width: half * 2 },
+        })
+        .setOrigin(0.5, 0);
+      this.table.add(line);
+      y += line.height + GAME_OVER.wrapGap;
+    };
+
+    figure(copy.damageDealt, grouped(summary.damage));
+    figure(copy.killsDealt, grouped(summary.kills));
+    figure(copy.goldEarned, `+${grouped(summary.gold)}`);
+
+    y += GAME_OVER.wrapGap;
+    wrapped(
+      summary.byKind.map((entry) => `${enemyName(entry.kind)} ${entry.count}`).join('   '),
+      COLORS.muted,
+    );
+    wrapped(
+      summary.skills
+        .map((line) =>
+          fill(copy.skillLine, { skill: line.name, level: line.level, dps: round(line.dps) }),
+        )
+        .join('   '),
+      COLORS.text,
+    );
+
+    return y;
   }
 
   private restart(): void {
