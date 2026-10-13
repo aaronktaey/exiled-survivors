@@ -65,6 +65,11 @@ export interface EnemyShotSpec {
   readonly lifespanMs: number;
 }
 
+/** A ring of bolts thrown outward, rather than aimed at anything. */
+export interface EnemyVolleySpec extends EnemyShotSpec {
+  readonly count: number;
+}
+
 export interface EnemyKindSpec {
   readonly id: EnemyKind;
   readonly name: string;
@@ -76,6 +81,8 @@ export interface EnemyKindSpec {
   readonly contactDamage: number;
   /** Only the kinds that shoot have one. */
   readonly shot?: EnemyShotSpec;
+  /** Only the kinds that throw a ring outward have one. */
+  readonly volley?: EnemyVolleySpec;
 }
 
 /**
@@ -127,6 +134,23 @@ export const ENEMY_KINDS: Record<EnemyKind, EnemyKindSpec> = {
     maxHp: 400,
     speed: 40,
     contactDamage: 5,
+    /**
+     * Every so often it throws a ring of bolts outward, which is what makes
+     * standing still beside a 우두머리 a losing idea. It aims at nothing:
+     * the ring goes everywhere, and the gap between bolts is the way out.
+     */
+    volley: {
+      damage: 4,
+      speed: 150,
+      /** Seconds between rings, not between bolts. */
+      cooldownMs: 10_000,
+      /** How many go out, spread evenly around the circle. */
+      count: 18,
+      range: 0,
+      standoff: 0,
+      size: 10,
+      lifespanMs: 4000,
+    },
   },
   shooter: {
     id: "shooter",
@@ -139,8 +163,10 @@ export const ENEMY_KINDS: Record<EnemyKind, EnemyKindSpec> = {
     contactDamage: 1,
     shot: {
       damage: 2,
-      speed: 230,
-      cooldownMs: 2000,
+      /** Slow enough to read and walk around. */
+      speed: 184,
+      /** One every four seconds: a 사수 is a nuisance, not a turret. */
+      cooldownMs: 4000,
       range: 300,
       // Outside 타격 and 화염구, inside 연쇄번개 and 얼음창: walk it down or
       // bring something with reach.

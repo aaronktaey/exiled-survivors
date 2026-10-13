@@ -16,6 +16,7 @@ import {
   type AffixSpec,
   type EnemyKind,
   type EnemyShotSpec,
+  type EnemyVolleySpec,
 } from '@/config';
 
 /** Only the 속성 that mean something on an enemy. */
@@ -85,6 +86,8 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
   private flashMs = 0;
   /** Countdown on the 냉각 debuff, ticked in update. */
   private chillMs = 0;
+  /** Countdown to the next ring, for the kinds that throw one. */
+  private volleyCooldownMs = 0;
   /** Countdown to the next shot, for the kinds that have one. */
   private shotCooldownMs = 0;
   /** The yellow ring, made on the first rare this sprite is used for. */
@@ -195,6 +198,9 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
     this.speed = spec.speed * Phaser.Math.FloatBetween(1 - ENEMY.speedVariance, 1 + ENEMY.speedVariance);
     // Stagger the first shot, or a wave of shooters fires in one volley.
     this.shotCooldownMs = spec.shot ? Phaser.Math.Between(0, spec.shot.cooldownMs) : 0;
+    // A ring, though, waits its full count: one the instant it walks in
+    // would go off before the player has seen what arrived.
+    this.volleyCooldownMs = spec.volley?.cooldownMs ?? 0;
 
     this.setTexture(spec.texture);
     this.enableBody(true, x, y, true, true);
@@ -330,11 +336,40 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
 
     const distance = Phaser.Math.Distance.Between(this.x, this.y, this.target.x, this.target.y);
 
+    if (this.spec.volley) {
+      this.throwRing(dt, this.spec.volley);
+    }
+
     if (this.spec.shot && this.fightAtRange(dt, distance, this.spec.shot)) {
       return;
     }
 
     this.scene.physics.moveTo(this, this.target.x, this.target.y, this.currentSpeed);
+  }
+
+/**
+   * Throws a ring of bolts outward on its own clock, aimed at nothing. It
+   * goes off wherever the 우두머리 is and whatever it is doing, so standing
+   * beside one is a decision rather than a default.
+   */
+  private throwRing(delta: number, volley: EnemyVolleySpec): void {
+    this.volleyCooldownMs -= delta;
+    if (this.volleyCooldownMs > 0 || volley.count <= 0) {
+      return;
+    }
+
+    this.volleyCooldownMs = volley.cooldownMs;
+
+    const step = (Math.PI * 2) / volley.count;
+    // A different starting angle each time, or the gaps are always in the
+    // same place and standing in one of them is the whole answer.
+    const offset = Math.random() * step;
+    for (let i = 0; i < volley.count; i++) {
+      this.hooks?.fireShot(this.x, this.y, offset + i * step, {
+        ...volley,
+        damage: this.rollDamage(volley.damage),
+      });
+    }
   }
 
   /**
