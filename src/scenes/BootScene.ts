@@ -6,6 +6,7 @@ import {
   ENEMY_KINDS,
   GEAR_DROP,
   ICONS,
+  SHARD,
   SKILL_ICONS,
   PLAYER,
   POTION,
@@ -35,7 +36,9 @@ export class BootScene extends Phaser.Scene {
   public preload(): void {
     const base = import.meta.env.BASE_URL;
 
-    this.load.audio(AUDIO.skillDrop.key, `${base}${AUDIO.skillDrop.file}`);
+    for (const clip of Object.values(AUDIO.drops)) {
+      this.load.audio(clip.key, `${base}${clip.file}`);
+    }
     sfx.preload(this);
 
     this.load.image(TEXTURES.gem, `${base}${ICONS.gem.file}`);
@@ -58,6 +61,8 @@ export class BootScene extends Phaser.Scene {
     this.createVoidOrbTexture();
     this.createPotionTexture();
     this.createGearTexture();
+    this.createDivineShardTexture();
+    this.createPassiveTexture();
 
     bakeSkillLabels(this);
 
@@ -131,6 +136,52 @@ export class BootScene extends Phaser.Scene {
   }
 
   /** The potion: a white cross on a crimson field, read at a glance. */
+  /** 신성한 조각: a pale four-pointed sliver, lit like a gem. */
+  private createShardTexture(): void {
+    const size = SHARD.size * 2;
+    const half = size / 2;
+    const graphics = this.add.graphics();
+
+    graphics.fillStyle(COLORS.shardEdge, 1);
+    graphics.fillPoints(
+      [
+        new Phaser.Math.Vector2(half, 0),
+        new Phaser.Math.Vector2(size, half),
+        new Phaser.Math.Vector2(half, size),
+        new Phaser.Math.Vector2(0, half),
+      ],
+      true,
+    );
+    graphics.fillStyle(COLORS.shard, 1);
+    graphics.fillPoints(
+      [
+        new Phaser.Math.Vector2(half, size * 0.18),
+        new Phaser.Math.Vector2(size * 0.82, half),
+        new Phaser.Math.Vector2(half, size * 0.82),
+        new Phaser.Math.Vector2(size * 0.18, half),
+      ],
+      true,
+    );
+
+    graphics.generateTexture(TEXTURES.shard, size, size);
+    graphics.destroy();
+  }
+
+  /** 패시브's icon: a lit node with a ring around it. */
+  private createPassiveTexture(): void {
+    const size = 48;
+    const half = size / 2;
+    const graphics = this.add.graphics();
+
+    graphics.lineStyle(Math.round(size * 0.1), COLORS.passiveEdge, 1);
+    graphics.strokeCircle(half, half, half - size * 0.1);
+    graphics.fillStyle(COLORS.passive, 1);
+    graphics.fillCircle(half, half, size * 0.24);
+
+    graphics.generateTexture(TEXTURES.passive, size, size);
+    graphics.destroy();
+  }
+
   /** 장비 on the ground: a brass crate with a lighter lid and edge. */
   private createGearTexture(): void {
     const size = GEAR_DROP.size * 2;
@@ -167,7 +218,7 @@ export class BootScene extends Phaser.Scene {
   }
 
   /** The ice shard: a diamond, long along the axis it is fired down. */
-  private createShardTexture(): void {
+  private createDivineShardTexture(): void {
     const { width, height } = SHOTS.iceSpear;
     const graphics = this.add.graphics();
 

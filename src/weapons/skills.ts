@@ -62,8 +62,8 @@ export const SKILLS: Record<SkillId, SkillDefinition> = {
     name: '얼음창',
     tags: ['주문', '냉기', '투사체'],
     labelTexture: 'tex-label-iceSpear',
-    upgrades: ['damage', 'attackSpeed', 'range'],
-    summary: '맞은 적에게 냉각(이동속도 -15%)을 겁니다.',
+    upgrades: ['damage', 'attackSpeed', 'pierceCount'],
+    summary: '적을 관통하며, 맞은 적에게 냉각(이동속도 -15%)을 겁니다.',
   },
   voidOrb: {
     id: 'voidOrb',

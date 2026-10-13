@@ -6,6 +6,19 @@ export const zh: Strings = {
 
   common: { back: '返回', close: '关闭', on: '开', off: '关' },
 
+  passives: {
+    title: '被动',
+    points: '点数 {points}',
+    shards: '神圣碎片 {held}/{need}',
+    rank: '{rank} / {max}',
+    maxed: '已满',
+    spend: '投入',
+    noPoints: '还没有点数 — 击杀首领以收集神圣碎片。',
+    hintKeyboard: '↑ ↓ 移动   Space 投入   Esc 返回',
+    hintTouch: '点击条目投入点数',
+    temporary: '这是临时版本 — 目前为三条线，分支树是下一步的工作。',
+  },
+
   menu: {
     byline: 'created by whitemango',
     start: '开始游戏',
@@ -51,10 +64,15 @@ export const zh: Strings = {
     prefixWord: '{affix}的',
     suffixWord: '· {affix}',
     attack: '攻击力 +{attack}',
-    plain: '没有强化效果',
+    attack2: '攻击速度 +{percent}%',
+    plain: '没有属性',
     summaryHp: '最大生命 +{percent}%',
     summarySpeed: '移动速度 +{percent}%',
     summaryCrit: '暴击几率 {percent}%',
+    summaryCritDamage: '暴击伤害 +{percent}%',
+    summaryRegen: '每 5 秒回复 {amount} 点生命',
+    summaryEvade: '无敌时间 +{percent}%',
+    summaryPickup: '拾取范围 +{percent}%',
   },
 
   pause: {
@@ -62,7 +80,7 @@ export const zh: Strings = {
     survived: '生存 {time}    Lv {level}',
     resume: '继续',
     quit: '保存并返回标题',
-    hint: 'Esc 或返回键继续   ·   指向稀有敌人可查看强化效果',
+    hint: 'Esc 或返回键继续   ·   指向稀有敌人可查看属性',
   },
 
   gameOver: {
@@ -95,6 +113,8 @@ export const zh: Strings = {
     introHintTouch: '拖动摇杆移动 — 攻击自动进行',
     bossArrived: '首领出现',
     gearFound: '获得 {gear} — 可在主界面装备',
+    shardFound: '神圣碎片 {held}/{need}',
+    orbMade: '神圣宝珠完成 — 被动点数 +1',
     pickedUp: '获得 {skill}',
     enhancedPickup: '强化 {skill}',
   },
@@ -170,12 +190,35 @@ export const zh: Strings = {
       steelSword: '钢剑',
       runedSword: '符文剑',
     },
-    affixes: { giant: '巨大', swift: '迅捷', critical: '致命', mighty: '强力' },
+    affixes: {
+      giant: '巨大',
+      swift: '迅捷',
+      critical: '致命',
+      mighty: '强力',
+      cruel: '残酷',
+      frenzied: '狂乱',
+      honed: '锐利',
+      regrowth: '再生',
+      evasive: '闪避',
+      magnetic: '磁力',
+    },
     affixDetails: {
       giant: '生命 +50%',
       swift: '移动速度 +20%',
-      critical: '暴击率 20%',
+      critical: '暴击几率 20%',
       mighty: '伤害 +50%',
+      cruel: '暴击伤害 +50%',
+      frenzied: '攻击速度 +15%',
+      honed: '攻击力 +1',
+      regrowth: '每 5 秒回复 2 点生命',
+      evasive: '无敌时间 +30%',
+      magnetic: '拾取范围 +40%',
+    },
+    passives: { damage: '伤害', attackSpeed: '攻击速度', regen: '再生' },
+    passiveDetails: {
+      damage: '伤害 +10%',
+      attackSpeed: '攻击速度 +10%',
+      regen: '每 5 秒回复 1 点生命',
     },
   },
 
@@ -203,7 +246,7 @@ export const zh: Strings = {
         'Esc、左上角按钮、（移动端）返回键可暂停。',
         '强化选择界面：方向键移动光标，Space、点击、触摸或数字键 1~4 确认。',
         '移动键无法确认选择。这是为了避免移动时按住的键替你做决定。',
-        '把鼠标移到稀有敌人上或触摸它即可查看强化效果，暂停时同样可以。',
+        '把鼠标移到稀有敌人上或触摸它即可查看属性，暂停时同样可以。',
       ],
     },
     mobile: {
@@ -247,8 +290,8 @@ export const zh: Strings = {
       heading: '稀有敌人',
       lines: [
         '{chance} 的敌人会以稀有形态出现，并带有彩色描边。',
-        '稀有敌人拥有 {min}~{max} 个强化效果，数量越多描边越深。重复的效果会叠加。',
-        '每个强化效果使其技能掉落率提高 {dropBonus}。危险，但值得击杀。',
+        '稀有敌人拥有 {min}~{max} 个属性，数量越多描边越深。重复的效果会叠加。',
+        '每个属性使其技能掉落率提高 {dropBonus}。危险，但值得击杀。',
       ],
     },
     drops: {
@@ -258,7 +301,9 @@ export const zh: Strings = {
         '技能 — {skillChance} 概率。已拥有的技能会改为开启强化选项。',
         '生命药水 — {potionChance} 概率，回复最大生命的 {heal}。生命已满时不会拾取。',
         '装备 — 每击杀一名首领都会掉落一把剑。拾取后进入仓库，装备在主界面的「装备」中进行。',
-        '掉落的剑有概率带有强化效果 — 前缀为攻击，后缀为防御与移动。与稀有敌人身上的相同。',
+        '掉落的剑有概率带有属性 — 前缀为攻击，后缀为防御与移动。与稀有敌人身上的相同。',
+        '神圣碎片 — 首领有一半概率掉落。集满 10 个会合成神圣宝珠，即 1 点被动点数。',
+        '作用在玩家身上的效果按被动 → 装备 → 战斗中强化的顺序生效。',
         '除经验外的掉落会在 {life} 秒后消失，最后 {warning} 秒会越闪越快。',
       ],
     },

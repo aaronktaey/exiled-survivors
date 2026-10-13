@@ -1,10 +1,11 @@
 import Phaser from 'phaser';
 
-import { AUDIO, COLORS, POTION, RARE, WEAPON, type EnemyShotSpec } from '@/config';
+import { AUDIO, COLORS, POTION, WEAPON, type DropTier, type EnemyShotSpec } from '@/config';
 import { Enemy } from '@/entities/Enemy';
 import { EnemyShot } from '@/entities/EnemyShot';
 import { GearDrop } from '@/entities/GearDrop';
-import type { GearItem } from '@/systems/Gear';
+import { ShardDrop } from '@/entities/ShardDrop';
+import { dropTierFor, type GearItem } from '@/systems/Gear';
 import { HealthPotion } from '@/entities/HealthPotion';
 import { Player } from '@/entities/Player';
 import { Projectile } from '@/entities/Projectile';
@@ -24,6 +25,11 @@ export interface CombatHooks {
   /** A weapon to leave behind, or null when nothing is owed. */
   readonly rollGearDrop: (fromBoss: boolean) => GearItem | null;
   readonly onGearCollected: (item: GearItem) => void;
+  /** True when this kill also owes a 신성한 조각. */
+  readonly rollShardDrop: (fromBoss: boolean) => boolean;
+  readonly onShardCollected: () => void;
+  /** What one of the survivor's critical hits is worth. */
+  readonly critMultiplier: () => number;
   /** Called when the player walks over a dropped skill. */
   readonly onSkillCollected: (skill: SkillId) => void;
 }
@@ -39,6 +45,7 @@ export class CombatSystem {
   public readonly enemyShots: Phaser.Physics.Arcade.Group;
   public readonly potions: Phaser.Physics.Arcade.Group;
   public readonly gearDrops: Phaser.Physics.Arcade.Group;
+  public readonly shardDrops: Phaser.Physics.Arcade.Group;
 
   private readonly scene: Phaser.Scene;
   private readonly player: Player;
@@ -80,6 +87,7 @@ export class CombatSystem {
 
     this.potions = scene.physics.add.group({ classType: HealthPotion, runChildUpdate: true });
     this.gearDrops = scene.physics.add.group({ classType: GearDrop, runChildUpdate: true });
+    this.shardDrops = scene.physics.add.group({ classType: ShardDrop, runChildUpdate: true });
 
     scene.physics.add.overlap(player, enemies, this.onEnemyTouch, undefined, this);
     scene.physics.add.overlap(player, this.enemyShots, this.onEnemyShotHit, undefined, this);
@@ -87,6 +95,7 @@ export class CombatSystem {
     scene.physics.add.overlap(player, this.gems, this.onGemTouch, undefined, this);
     scene.physics.add.overlap(player, this.skillDrops, this.onSkillTouch, undefined, this);
     scene.physics.add.overlap(player, this.gearDrops, this.onGearTouch, undefined, this);
+    scene.physics.add.overlap(player, this.shardDrops, this.onShardTouch, undefined, this);
   }
 
   /** Wires a newly acquired projectile weapon into enemy collisions. */
@@ -106,6 +115,17 @@ export class CombatSystem {
     potion?.drop(x, y);
   }
 
+  /** Places a 신성한 조각 directly — used by the kill and by debug keys. */
+  public dropShardAt(x: number, y: number): void {
+    const shard = this.shardDrops.get() as ShardDrop | null;
+    if (!shard) {
+      return;
+    }
+
+    shard.drop(x, y);
+    this.playDropSound();
+  }
+
   /** Places a weapon directly — used by the 우두머리 kill and debug keys. */
   public dropGearAt(x: number, y: number, item: GearItem): void {
     const drop = this.gearDrops.get() as GearDrop | null;
@@ -114,7 +134,7 @@ export class CombatSystem {
     }
 
     drop.drop(x, y, item);
-    this.playDropSound();
+    this.playDropSound(dropTierFor(item));
   }
 
   /** Places a drop directly — used by the spawner's roll and by debug keys. */
@@ -128,11 +148,16 @@ export class CombatSystem {
     this.playDropSound();
   }
 
-  private playDropSound(): void {
-    const { key, volume, seek } = AUDIO.skillDrop;
+  /**
+   * The drop's own sound, by how rare what landed is. A rare weapon's clip
+   * carries its own swell behind the hit — one mixed file rather than two
+   * played together, so there is nothing to keep in step.
+   */
+  private playDropSound(tier: DropTier = 'normal'): void {
+    const clip = AUDIO.drops[tier];
     // Stay quiet rather than warn if the clip failed to load.
-    if (this.scene.cache.audio.exists(key)) {
-      this.scene.sound.play(key, { volume, seek });
+    if (this.scene.cache.audio.exists(clip.key)) {
+      this.scene.sound.play(clip.key, { volume: clip.volume });
     }
   }
 
@@ -147,7 +172,7 @@ export class CombatSystem {
     }
 
     const crit = this.player.critChance > 0 && Math.random() < this.player.critChance;
-    const dealt = crit ? Math.round(amount * RARE.critMultiplier) : amount;
+    const dealt = crit ? Math.round(amount * this.hooks.critMultiplier()) : amount;
 
     this.damageNumbers.spawn(enemy.x, enemy.y - 10, dealt, crit ? { color: COLORS.critText } : undefined);
 
@@ -257,6 +282,16 @@ export class CombatSystem {
     }
   };
 
+  private onShardTouch: Phaser.Types.Physics.Arcade.ArcadePhysicsCallback = (_player, b) => {
+    const shard = b as unknown as ShardDrop;
+    if (!shard.active) {
+      return;
+    }
+
+    shard.collect();
+    this.hooks.onShardCollected();
+  };
+
   private killEnemy(enemy: Enemy): void {
     const { x, y } = enemy;
     // Read the rewards before recycling, which resets the kind and affixes.
@@ -283,6 +318,11 @@ export class CombatSystem {
     const found = this.hooks.rollGearDrop(wasBoss);
     if (found) {
       this.dropGearAt(x, y, found);
+    }
+
+    // And half of them leave a 신성한 조각 beside it.
+    if (this.hooks.rollShardDrop(wasBoss)) {
+      this.dropShardAt(x + 18, y);
     }
   }
 }

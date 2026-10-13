@@ -33,3 +33,13 @@ export { RareTooltip } from '@/systems/RareTooltip';
 export { canvasSizeFor, currentCanvasSize, type CanvasSize } from '@/systems/Viewport';
 export { centredTop, fitText, fitWidth } from '@/systems/Layout';
 export { gear, type GearState } from '@/systems/Gear';
+export { passives, passiveBonusFor, type PassiveBonus, type PassiveState } from '@/systems/Passives';
+export { IconBar, type IconButton } from '@/systems/IconBar';
+export {
+  NO_MODIFIERS,
+  attackSpeedFor,
+  critMultiplierFor,
+  damageFor,
+  regenFor,
+  type RunModifiers,
+} from '@/systems/Modifiers';

@@ -32,6 +32,7 @@ export const SCENES = {
   confirm: "ConfirmScene",
   gameOver: "GameOverScene",
   gear: "GearScene",
+  passives: "PassiveScene",
 } as const;
 
 /** Keys the browser keeps our state under. Bump the suffix to invalidate. */
@@ -40,6 +41,8 @@ export const STORAGE = {
   save: "exiled-survivors:save:v1",
   /** The equipment stash, which outlives any one run. */
   gear: "exiled-survivors:gear:v2",
+  /** The passive tree, which outlives it too. */
+  passives: "exiled-survivors:passives:v1",
 } as const;
 
 export const SAVE = {
@@ -88,14 +91,30 @@ export const DEBUG = {
   sampleFrames: 60,
 } as const;
 
+/** How rare a drop is, which is what it sounds like when it lands. */
+export type DropTier = 'normal' | 'magic' | 'rare';
+
 export const AUDIO = {
-  skillDrop: {
-    key: "sfx-skill-drop",
-    file: "assets/bulletcasing.wav",
-    volume: 0.6,
-    /** The clip opens with ~1s of silence; start just before the impact. */
-    seek: 0.95,
-  },
+  /**
+   * What a drop sounds like, by how rare it is — Path of Exile's own ladder.
+   * A weapon with no 속성 is normal, one or two is magic, three or more is
+   * rare, and everything else that lands on the ground (a skill, a potion,
+   * a 신성한 조각) is normal.
+   *
+   * The rare one is a single file: the hit and the swell behind it were two
+   * recordings, mixed down to one so there is nothing to keep in step at
+   * playback time. See assets/CREDITS.txt.
+   */
+  drops: {
+    normal: { key: "sfx-drop-normal", file: "assets/normalDrop.mp3", volume: 0.55 },
+    magic: { key: "sfx-drop-magic", file: "assets/magicDrop.mp3", volume: 0.5 },
+    rare: { key: "sfx-drop-rare", file: "assets/rareDrop.mp3", volume: 0.6 },
+  } as const,
+  /** How many 속성 a weapon needs before it sounds like the next tier up. */
+  dropTiers: {
+    magicFrom: 1,
+    rareFrom: 3,
+  } as const,
   /**
    * Background music. 5.6MB, so it is fetched after the menu is already on
    * screen rather than held in front of the first frame.

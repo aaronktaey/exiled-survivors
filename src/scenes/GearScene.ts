@@ -20,7 +20,7 @@ const percent = (scale: number): number => Math.round((scale - 1) * 100);
  * A weapon reads the way an item reads in Path of Exile: its own line first
  * (the flat attack power its tier is worth), then its 접두어 and its 접미어,
  * each one named and spelled out. What is written on the weapon is the same
- * set of 강화효과 a rare enemy wears, which is why the words are familiar.
+ * set of 속성 a rare enemy wears, which is why the words are familiar.
  */
 export class GearScene extends Phaser.Scene {
   public static readonly KEY = SCENES.gear;
@@ -143,6 +143,9 @@ export class GearScene extends Phaser.Scene {
     const copy = t().gear;
     const bonus = gearBonusFor(item);
     const out = [fill(copy.attack, { attack: bonus.attack })];
+    if (bonus.attackSpeedScale !== 1) {
+      out[0] += `   ${fill(copy.attack2, { percent: percent(bonus.attackSpeedScale) })}`;
+    }
 
     if (item.prefixes.length > 0) {
       out.push(`${copy.prefix}  ${GearScene.tally(item.prefixes)}`);
@@ -164,6 +167,18 @@ export class GearScene extends Phaser.Scene {
     }
     if (bonus.critChance > 0) {
       summary.push(fill(copy.summaryCrit, { percent: Math.round(bonus.critChance * 100) }));
+    }
+    if (bonus.critMultiplierBonus > 0) {
+      summary.push(fill(copy.summaryCritDamage, { percent: Math.round(bonus.critMultiplierBonus * 100) }));
+    }
+    if (bonus.regen > 0) {
+      summary.push(fill(copy.summaryRegen, { amount: bonus.regen }));
+    }
+    if (bonus.invulnerableScale !== 1) {
+      summary.push(fill(copy.summaryEvade, { percent: percent(bonus.invulnerableScale) }));
+    }
+    if (bonus.pickupScale !== 1) {
+      summary.push(fill(copy.summaryPickup, { percent: percent(bonus.pickupScale) }));
     }
     if (summary.length > 0) {
       out.push(summary.join(' · '));

@@ -1,0 +1,18 @@
+Sound
+-----
+normalDrop.mp3, magicDrop.mp3   — what an ordinary and a magic drop sound like
+rareDrop.wav, rareDropBackground.wav
+                                — the two recordings a rare drop is made of
+rareDrop.mp3                    — the two above, mixed down to one file:
+
+    ffmpeg -i rareDrop.wav -i rareDropBackground.wav \
+      -filter_complex "[0:a][1:a]amix=inputs=2:duration=longest\
+:dropout_transition=0:normalize=0,alimiter=limit=0.85:level=false,volume=0.95" \
+      -c:a libmp3lame -q:a 3 rareDrop.mp3
+
+  Mixed rather than played together so there is nothing to keep in step at
+  playback time. Re-run the line above after replacing either source.
+
+Icons
+-----
+icons/   — Raven Fantasy Icons (free pack). See icons/CREDITS.txt.

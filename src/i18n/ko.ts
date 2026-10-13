@@ -10,6 +10,19 @@ export const ko: Strings = {
 
   common: { back: '돌아가기', close: '닫기', on: '켜짐', off: '꺼짐' },
 
+  passives: {
+    title: '패시브',
+    points: '포인트 {points}',
+    shards: '신성한 조각 {held}/{need}',
+    rank: '{rank} / {max}',
+    maxed: '최대',
+    spend: '투자',
+    noPoints: '포인트가 없습니다 — 우두머리를 처치해 신성한 조각을 모으세요.',
+    hintKeyboard: '↑ ↓ 이동   Space 투자   Esc 돌아가기',
+    hintTouch: '항목을 탭해서 투자',
+    temporary: '임시 구성입니다 — 지금은 세 줄이고, 갈래가 나뉘는 트리는 다음 작업입니다.',
+  },
+
   menu: {
     byline: 'created by whitemango',
     start: '게임 시작',
@@ -55,10 +68,15 @@ export const ko: Strings = {
     prefixWord: '{affix}의',
     suffixWord: '· {affix}',
     attack: '공격력 +{attack}',
-    plain: '강화효과 없음',
+    attack2: '공격속도 +{percent}%',
+    plain: '속성 없음',
     summaryHp: '최대 체력 +{percent}%',
     summarySpeed: '이동속도 +{percent}%',
     summaryCrit: '치명타 확률 {percent}%',
+    summaryCritDamage: '치명타 피해 +{percent}%',
+    summaryRegen: '5초당 체력 +{amount}',
+    summaryEvade: '무적 시간 +{percent}%',
+    summaryPickup: '획득 범위 +{percent}%',
   },
 
   pause: {
@@ -66,7 +84,7 @@ export const ko: Strings = {
     survived: '생존 {time}    Lv {level}',
     resume: '계속하기',
     quit: '저장하고 타이틀로',
-    hint: 'Esc 또는 뒤로가기로 이어서 진행   ·   희귀 적을 가리키면 강화효과가 보입니다',
+    hint: 'Esc 또는 뒤로가기로 이어서 진행   ·   희귀 적을 가리키면 속성이 보입니다',
   },
 
   gameOver: {
@@ -99,6 +117,8 @@ export const ko: Strings = {
     introHintTouch: '스틱을 끌어 이동 — 공격은 자동',
     bossArrived: '우두머리 등장',
     gearFound: '{gear} 획득 — 메인화면에서 착용',
+    shardFound: '신성한 조각 {held}/{need}',
+    orbMade: '신성한 구슬 완성 — 패시브 포인트 +1',
     pickedUp: '{skill} 획득',
     enhancedPickup: '{skill} 강화',
   },
@@ -162,7 +182,7 @@ export const ko: Strings = {
         'Esc · 좌측 상단 버튼 · (모바일) 뒤로가기로 일시정지합니다.',
         '강화 선택 화면: 방향키로 커서를 옮기고, Space · 클릭 · 터치 · 숫자키 1~4로 고릅니다.',
         '이동키로는 선택이 확정되지 않습니다. 이동하느라 누르고 있던 키가 대신 고르는 일을 막기 위해서입니다.',
-        '희귀 적에 마우스를 올리거나 터치하면 강화효과를 볼 수 있습니다. 일시정지 중에도 됩니다.',
+        '희귀 적에 마우스를 올리거나 터치하면 속성을 볼 수 있습니다. 일시정지 중에도 됩니다.',
       ],
     },
     mobile: {
@@ -206,8 +226,8 @@ export const ko: Strings = {
       heading: '희귀 적',
       lines: [
         '적 {chance}는 희귀로 등장하며 테두리를 두릅니다.',
-        '강화효과를 {min}~{max}개 가지며, 많을수록 테두리 색이 진해집니다. 같은 효과가 중복되면 효과는 누적됩니다.',
-        '강화효과 1개당 스킬 드랍률이 {dropBonus} 올라갑니다. 위험한 만큼 값어치가 있습니다.',
+        '속성을 {min}~{max}개 가지며, 많을수록 테두리 색이 진해집니다. 같은 효과가 중복되면 효과는 누적됩니다.',
+        '속성 1개당 스킬 드랍률이 {dropBonus} 올라갑니다. 위험한 만큼 값어치가 있습니다.',
       ],
     },
     drops: {
@@ -217,7 +237,9 @@ export const ko: Strings = {
         '스킬 — {skillChance} 확률. 이미 가진 스킬이면 강화 선택지가 열립니다.',
         '체력 포션 — {potionChance} 확률. 최대 체력의 {heal}를 회복합니다. 체력이 가득 차 있으면 줍지 않고 남겨둡니다.',
         '장비 — 우두머리를 처치할 때마다 검 한 자루가 떨어집니다. 주우면 보관함에 들어가고, 착용은 시작 화면의 장비에서 합니다.',
-        '떨어진 검은 확률에 따라 강화효과를 지닙니다 — 접두어는 공격, 접미어는 방어와 이동. 적의 강화효과와 같은 것들입니다.',
+        '떨어진 검은 확률에 따라 속성을 지닙니다 — 접두어는 공격, 접미어는 방어와 이동. 적의 속성과 같은 것들입니다.',
+        '신성한 조각 — 우두머리가 절반의 확률로 떨어뜨립니다. 10개를 모으면 신성한 구슬이 되어 패시브 포인트 1점이 됩니다.',
+        '플레이어에게 걸리는 효과는 패시브 → 장비 → 전투 중 강화 순서로 적용됩니다.',
         '경험치를 제외한 드랍은 {life}초 뒤에 사라집니다. 마지막 {warning}초 동안 점점 빠르게 깜빡입니다.',
       ],
     },

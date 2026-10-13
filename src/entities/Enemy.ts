@@ -1,7 +1,6 @@
 import Phaser from 'phaser';
 
 import {
-  AFFIXES,
   BALANCE,
   CHILL,
   COLORS,
@@ -11,15 +10,16 @@ import {
   RARE,
   RARE_OUTLINE_TIERS,
   TEXTURES,
+  ENEMY_AFFIXES,
   TIMING,
   xpFor,
-  type AffixId,
   type AffixSpec,
   type EnemyKind,
   type EnemyShotSpec,
 } from '@/config';
 
-const AFFIX_IDS = Object.keys(AFFIXES) as AffixId[];
+/** Only the 속성 that mean something on an enemy. */
+const ENEMY_AFFIX_POOL = ENEMY_AFFIXES;
 
 /**
  * What a rare is carrying. It always gets minAffixes; after that each
@@ -37,9 +37,9 @@ function rollAffixes(): readonly AffixSpec[] {
       break;
     }
 
-    const id = AFFIX_IDS[Math.floor(Math.random() * AFFIX_IDS.length)];
-    if (id) {
-      picked.push(AFFIXES[id]);
+    const affix = ENEMY_AFFIX_POOL[Math.floor(Math.random() * ENEMY_AFFIX_POOL.length)];
+    if (affix) {
+      picked.push(affix);
     }
   }
 
@@ -215,10 +215,15 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
     for (const affix of affixes) {
       // The same affix can be drawn twice, and then it stacks: the scales
       // multiply, while crit chance adds up and stops at certain.
-      this.hpScale *= affix.hpScale ?? 1;
-      this.speedScale *= affix.speedScale ?? 1;
-      this.damageScale *= affix.damageScale ?? 1;
-      this.critChance = Math.min(1, this.critChance + (affix.critChance ?? 0));
+      const effect = affix.enemy;
+      if (!effect) {
+        continue;
+      }
+
+      this.hpScale *= effect.hpScale ?? 1;
+      this.speedScale *= effect.speedScale ?? 1;
+      this.damageScale *= effect.damageScale ?? 1;
+      this.critChance = Math.min(1, this.critChance + (effect.critChance ?? 0));
     }
   }
 

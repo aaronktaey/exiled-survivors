@@ -6,6 +6,7 @@ import { COLORS } from '@/config';
 import { settings } from '@/systems/Settings';
 import { registerSharpText } from '@/systems/SharpText';
 import { gear, gearBonusFor } from '@/systems/Gear';
+import { passives } from '@/systems/Passives';
 import { currentCanvasSize } from '@/systems/Viewport';
 import {
   BootScene,
@@ -15,6 +16,7 @@ import {
   GameScene,
   GearScene,
   InfoScene,
+  PassiveScene,
   MenuScene,
   PauseScene,
   SettingsScene,
@@ -63,6 +65,7 @@ const config: Phaser.Types.Core.GameConfig = {
     ConfirmScene,
     GameOverScene,
     GearScene,
+    PassiveScene,
   ],
 };
 
@@ -77,8 +80,10 @@ if (import.meta.env.DEV) {
     game?: Phaser.Game;
     gear?: typeof gear;
     gearBonusFor?: typeof gearBonusFor;
+    passives?: typeof passives;
   };
   dev.game = game;
   dev.gear = gear;
   dev.gearBonusFor = gearBonusFor;
+  dev.passives = passives;
 }

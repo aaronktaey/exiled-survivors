@@ -2,22 +2,25 @@ import Phaser from 'phaser';
 
 import { COLORS, DEPTH, MENU, SCENES, SCRIM, TEXT, TEXTURES } from '@/config';
 import { PATCH_NOTES } from '@/content/patchNotes';
-import { gearName, t } from '@/i18n';
+import { t } from '@/i18n';
 import { bgm } from '@/systems/Bgm';
-import { gear } from '@/systems/Gear';
+import { IconBar } from '@/systems/IconBar';
+import { passives } from '@/systems/Passives';
 import { MenuList } from '@/systems/MenuList';
 import { saveGame } from '@/systems/SaveGame';
 import { centredTop } from '@/systems/Layout';
 import { prefersTouchControls } from '@/systems/VirtualJoystick';
 
 /** How many rows the title lists, for centring it before they are built. */
-const ROW_COUNT = 6;
+const ROW_COUNT = 5;
 
 /** Title screen: the logo, and the ways out of it. */
 export class MenuScene extends Phaser.Scene {
   public static readonly KEY = SCENES.menu;
 
   private menu!: MenuList;
+  /** The corner icons. Public so a test can press one. */
+  public icons!: IconBar;
 
   public constructor() {
     super(MenuScene.KEY);
@@ -52,12 +55,6 @@ export class MenuScene extends Phaser.Scene {
           onSelect: () => this.startRun(true),
         },
         {
-          id: 'gear',
-          label: () => t().menu.gear,
-          detail: () => gearName(gear.equipped.id),
-          onSelect: () => this.openOverlay(SCENES.gear),
-        },
-        {
           id: 'settings',
           // Always "Settings", like the Language row it leads to.
           label: () => 'Settings',
@@ -86,6 +83,24 @@ export class MenuScene extends Phaser.Scene {
       )
       .setOrigin(0.5)
       .setDepth(DEPTH.ui);
+
+    // 장비 and 패시브 live in the corner rather than in the list: they are
+    // where you go between runs, not a way out of the title.
+    this.icons = new IconBar(this, [
+      {
+        id: 'gear',
+        texture: TEXTURES.gear,
+        label: () => t().menu.gear,
+        onSelect: () => this.openOverlay(SCENES.gear),
+      },
+      {
+        id: 'passives',
+        texture: TEXTURES.passive,
+        label: () => t().passives.title,
+        badge: () => passives.value.points > 0,
+        onSelect: () => this.openOverlay(SCENES.passives),
+      },
+    ]);
 
     // The track is multi-megabyte, so it arrives a moment after the menu.
     bgm.start(this);
@@ -170,6 +185,7 @@ export class MenuScene extends Phaser.Scene {
           return;
         }
         this.menu.refresh();
+        this.icons.refresh();
       },
     });
   }

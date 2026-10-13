@@ -152,7 +152,7 @@ export const ENEMY_KINDS: Record<EnemyKind, EnemyKindSpec> = {
 };
 
 /**
- * ★ 강화효과 — what a rare enemy is born with, and what a dropped weapon
+ * ★ 속성 — what a rare enemy is born with, and what a dropped weapon
  * comes out of a 우두머리 carrying.
  *
  * Split the way Path of Exile splits an item's modifiers: a **prefix** sits
@@ -164,28 +164,22 @@ export const ENEMY_KINDS: Record<EnemyKind, EnemyKindSpec> = {
  * enemy hit half again as hard, and makes a weapon hit half again as hard.
  * The two sides are separate fields so they can be tuned apart.
  */
-export type AffixId = "giant" | "swift" | "critical" | "mighty";
+export type AffixId =
+  | "giant"
+  | "swift"
+  | "critical"
+  | "mighty"
+  | "cruel"
+  | "frenzied"
+  | "honed"
+  | "regrowth"
+  | "evasive"
+  | "magnetic";
 
 export type AffixKind = "prefix" | "suffix";
 
-/** What an affix does for whoever is holding the weapon it is on. */
-export interface GearAffixEffect {
-  /** Multiplies the weapon's attack power. */
-  readonly attackScale?: number;
-  /** Multiplies the survivor's maximum health. */
-  readonly maxHpScale?: number;
-  /** Multiplies the survivor's move speed. */
-  readonly moveSpeedScale?: number;
-  /** Chance each hit lands for RARE.critMultiplier instead. */
-  readonly critChance?: number;
-}
-
-export interface AffixSpec {
-  readonly id: AffixId;
-  readonly kind: AffixKind;
-  readonly name: string;
-  /** Shown under the name when the enemy, or the weapon, is inspected. */
-  readonly detail: string;
+/** What an 속성 does to the enemy it was born on. */
+export interface EnemyAffixEffect {
   /** Multiplies max HP. */
   readonly hpScale?: number;
   /** Multiplies move speed. */
@@ -194,10 +188,59 @@ export interface AffixSpec {
   readonly damageScale?: number;
   /** Chance each of its hits lands for RARE.critMultiplier instead. */
   readonly critChance?: number;
-  /** The same affix, read from the other end of the weapon. */
-  readonly gear: GearAffixEffect;
 }
 
+/** What the same 속성 does for whoever is holding the weapon it is on. */
+export interface GearAffixEffect {
+  /** Multiplies the weapon's attack power. */
+  readonly attackScale?: number;
+  /** Flat attack power, added before any scale. */
+  readonly attackBonus?: number;
+  /** Multiplies every skill's attacks per second. */
+  readonly attackSpeedScale?: number;
+  /** Multiplies the survivor's maximum health. */
+  readonly maxHpScale?: number;
+  /** Multiplies the survivor's move speed. */
+  readonly moveSpeedScale?: number;
+  /** Chance each hit lands for the crit multiplier instead. */
+  readonly critChance?: number;
+  /** Adds to what a critical hit is worth, over RARE.critMultiplier. */
+  readonly critMultiplierBonus?: number;
+  /** Health returned every REGEN.periodMs. */
+  readonly regen?: number;
+  /** Multiplies the invulnerable window after taking a hit. */
+  readonly invulnerableScale?: number;
+  /** Multiplies how far a gem has to be before it drifts over. */
+  readonly pickupScale?: number;
+}
+
+export interface AffixSpec {
+  readonly id: AffixId;
+  readonly kind: AffixKind;
+  readonly name: string;
+  /** Shown under the name when the enemy, or the weapon, is inspected. */
+  readonly detail: string;
+  /**
+   * What it does on an enemy, and what it does on a weapon. An 속성 rolls
+   * only where it has something to do: 자력 would mean nothing to an enemy,
+   * and the run has no enemy regeneration to hang 재생 on, so those are
+   * weapon-only. The four that read both ways roll on both.
+   */
+  readonly enemy?: EnemyAffixEffect;
+  readonly gear?: GearAffixEffect;
+}
+
+/**
+ * The roster, picked from the categories Path of Exile puts on an item and
+ * narrowed to what this game can actually express. Added flat damage, a
+ * damage percentage, critical chance and critical damage, attack speed,
+ * maximum life, movement speed and regeneration all have somewhere to go.
+ * Resistances, accuracy and attributes do not — there are no damage types,
+ * no miss chance and no attributes — so they are left out rather than
+ * invented. 자력 is the one that is not a PoE line: the pickup radius is
+ * this genre's own utility stat, and it is the only place a utility suffix
+ * had to go.
+ */
 export const AFFIXES: Record<AffixId, AffixSpec> = {
   // --- 접두어: what it does to whatever it is pointed at ---
   mighty: {
@@ -205,7 +248,7 @@ export const AFFIXES: Record<AffixId, AffixSpec> = {
     kind: "prefix",
     name: "강력",
     detail: "피해 +50%",
-    damageScale: 1.5,
+    enemy: { damageScale: 1.5 },
     gear: { attackScale: 1.5 },
   },
   critical: {
@@ -213,8 +256,29 @@ export const AFFIXES: Record<AffixId, AffixSpec> = {
     kind: "prefix",
     name: "치명",
     detail: "치명타 확률 20%",
-    critChance: 0.2,
+    enemy: { critChance: 0.2 },
     gear: { critChance: 0.2 },
+  },
+  cruel: {
+    id: "cruel",
+    kind: "prefix",
+    name: "잔혹",
+    detail: "치명타 피해 +50%",
+    gear: { critMultiplierBonus: 0.5 },
+  },
+  frenzied: {
+    id: "frenzied",
+    kind: "prefix",
+    name: "광포",
+    detail: "공격속도 +15%",
+    gear: { attackSpeedScale: 1.15 },
+  },
+  honed: {
+    id: "honed",
+    kind: "prefix",
+    name: "예리",
+    detail: "공격력 +1",
+    gear: { attackBonus: 1 },
   },
 
   // --- 접미어: what it does for whoever is carrying it ---
@@ -223,7 +287,7 @@ export const AFFIXES: Record<AffixId, AffixSpec> = {
     kind: "suffix",
     name: "거대",
     detail: "체력 +50%",
-    hpScale: 1.5,
+    enemy: { hpScale: 1.5 },
     gear: { maxHpScale: 1.5 },
   },
   swift: {
@@ -231,17 +295,48 @@ export const AFFIXES: Record<AffixId, AffixSpec> = {
     kind: "suffix",
     name: "신속",
     detail: "이동속도 +20%",
-    speedScale: 1.2,
+    enemy: { speedScale: 1.2 },
     gear: { moveSpeedScale: 1.2 },
+  },
+  regrowth: {
+    id: "regrowth",
+    kind: "suffix",
+    name: "재생",
+    detail: "5초당 체력 +2",
+    gear: { regen: 2 },
+  },
+  evasive: {
+    id: "evasive",
+    kind: "suffix",
+    name: "회피",
+    detail: "피격 후 무적 시간 +30%",
+    gear: { invulnerableScale: 1.3 },
+  },
+  magnetic: {
+    id: "magnetic",
+    kind: "suffix",
+    name: "자력",
+    detail: "획득 범위 +40%",
+    gear: { pickupScale: 1.4 },
   },
 };
 
+/** How often regeneration pays out, for 재생 and for the passive tree. */
+export const REGEN = {
+  periodMs: 5000,
+} as const;
+
+/** The ones a rare enemy can be born with. */
+export const ENEMY_AFFIXES: readonly AffixSpec[] = Object.values(AFFIXES).filter(
+  (affix) => affix.enemy !== undefined,
+);
+
 export const PREFIXES: readonly AffixSpec[] = Object.values(AFFIXES).filter(
-  (affix) => affix.kind === "prefix",
+  (affix) => affix.kind === "prefix" && affix.gear !== undefined,
 );
 
 export const SUFFIXES: readonly AffixSpec[] = Object.values(AFFIXES).filter(
-  (affix) => affix.kind === "suffix",
+  (affix) => affix.kind === "suffix" && affix.gear !== undefined,
 );
 
 export const RARE = {
@@ -452,7 +547,8 @@ export const SKILL_BASE: Record<SkillId, SkillBaseStats> = {
     range: 180,
     projectileSpeed: 320,
     chainCount: 0,
-    pierceCount: 0,
+    /** Runs through two bodies before it is spent, and upgrades from there. */
+    pierceCount: 2,
     orbCount: 0,
     orbitSpeed: 0,
   },

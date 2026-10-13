@@ -98,9 +98,14 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     return this.maxHpValue;
   }
 
-  /** Chance one of this survivor's hits lands for RARE.critMultiplier. */
+  /** Chance one of this survivor's hits lands for the crit multiplier. */
   public get critChance(): number {
     return this.gear.critChance;
+  }
+
+  /** How far a gem has to be before it starts drifting over. */
+  public get pickupRadius(): number {
+    return PLAYER.pickupRadius * this.gear.pickupScale;
   }
 
   /**
@@ -145,13 +150,13 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     }
 
     this.hp = Math.max(0, this.hp - amount);
-    this.invulnerableUntil = now + PLAYER.invulnerableMs;
+    this.invulnerableUntil = now + PLAYER.invulnerableMs * this.gear.invulnerableScale;
 
     // Blink for the duration of the i-frames.
     this.scene.tweens.add({
       targets: this,
       alpha: 0.25,
-      duration: PLAYER.invulnerableMs / 6,
+      duration: (PLAYER.invulnerableMs * this.gear.invulnerableScale) / 6,
       yoyo: true,
       repeat: 2,
       onComplete: () => this.setAlpha(1),

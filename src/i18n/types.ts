@@ -24,6 +24,25 @@ export interface Strings {
     readonly off: string;
   };
 
+  /** 패시브: the tree, its currency, and the icon it is reached by. */
+  readonly passives: {
+    readonly title: string;
+    /** Points in hand, waiting to be spent. */
+    readonly points: string;
+    /** Progress towards the next one: {held} of {need} shards. */
+    readonly shards: string;
+    /** A line's rank, as "3 / 10". */
+    readonly rank: string;
+    readonly maxed: string;
+    readonly spend: string;
+    /** Shown when there is nothing to spend. */
+    readonly noPoints: string;
+    readonly hintKeyboard: string;
+    readonly hintTouch: string;
+    /** Said plainly: three lines today, a tree later. */
+    readonly temporary: string;
+  };
+
   readonly menu: {
     readonly byline: string;
     readonly start: string;
@@ -75,12 +94,18 @@ export interface Strings {
     readonly suffixWord: string;
     /** The weapon's own line: flat attack power it adds to every skill. */
     readonly attack: string;
+    /** ...and the attack speed beside it, when it has any. */
+    readonly attack2: string;
     /** What a weapon with no affixes says. */
     readonly plain: string;
     /** The stat lines a carried weapon is worth, for the summary. */
     readonly summaryHp: string;
     readonly summarySpeed: string;
     readonly summaryCrit: string;
+    readonly summaryCritDamage: string;
+    readonly summaryRegen: string;
+    readonly summaryEvade: string;
+    readonly summaryPickup: string;
   };
 
   readonly pause: {
@@ -124,6 +149,10 @@ export interface Strings {
     readonly bossArrived: string;
     /** Banner when a piece of 장비 is walked over. {gear} is its name. */
     readonly gearFound: string;
+    /** 신성한 조각 picked up: {held} of {need} towards the next 구슬. */
+    readonly shardFound: string;
+    /** ...and the one that completed it. */
+    readonly orbMade: string;
     readonly pickedUp: string;
     readonly enhancedPickup: string;
   };
@@ -181,6 +210,8 @@ export interface Strings {
     readonly affixes?: Record<string, string>;
     readonly affixDetails?: Record<string, string>;
     readonly gear?: Record<string, string>;
+    readonly passives?: Record<string, string>;
+    readonly passiveDetails?: Record<string, string>;
   };
 
   /** 게임 가이드. The builder fills the placeholders from the live config. */

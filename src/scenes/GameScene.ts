@@ -7,6 +7,9 @@ import {
   DEPTH,
   GEAR_DROP,
   PAUSE_BUTTON,
+  REGEN,
+  SHARD,
+  STATS,
   SAVE,
   SCENES,
   SKILL_DROP,
@@ -44,6 +47,15 @@ import {
   type GearBonus,
   type GearItem,
 } from '@/systems/Gear';
+import {
+  NO_MODIFIERS,
+  attackSpeedFor,
+  critMultiplierFor,
+  damageFor,
+  regenFor,
+  type RunModifiers,
+} from '@/systems/Modifiers';
+import { passives } from '@/systems/Passives';
 import { settings } from '@/systems/Settings';
 import { TiltInput, tiltAvailable } from '@/systems/TiltInput';
 import {
@@ -103,6 +115,10 @@ export class GameScene extends Phaser.Scene {
   private rareTooltip!: RareTooltip;
   /** What the carried weapon is worth, read once as the run is built. */
   private gearBonus: GearBonus = NO_BONUS;
+  /** 패시브 and 장비 together, in the order they are applied. */
+  private mods: RunModifiers = NO_MODIFIERS;
+  /** Counts up to REGEN.periodMs, then pays out. */
+  private sinceRegenMs = 0;
   /** The touch steering in use, so a settings change can replace it. */
   private analog?: AnalogInput;
   /** Drops the settings subscription when the run ends. */
@@ -147,8 +163,11 @@ export class GameScene extends Phaser.Scene {
 
     this.createFloor();
 
-    // The weapon is picked on the title screen, so it is fixed for the run.
+    // Both are picked on the title screen, so they are fixed for the run:
+    // 패시브 first, then 장비, then whatever the run itself adds.
     this.gearBonus = gearBonusFor(gear.equipped);
+    this.mods = { passive: passives.bonus, gear: this.gearBonus };
+    this.sinceRegenMs = 0;
 
     this.player = new Player(this, WORLD.width / 2, WORLD.height / 2);
     this.player.applyGear(this.gearBonus);
@@ -173,6 +192,9 @@ export class GameScene extends Phaser.Scene {
         onSkillCollected: (skill) => this.onSkillCollected(skill),
         rollGearDrop: (fromBoss) => this.rollGearDrop(fromBoss),
         onGearCollected: (found) => this.onGearCollected(found),
+        rollShardDrop: (fromBoss) => fromBoss && Math.random() < SHARD.chance,
+        onShardCollected: () => this.onShardCollected(),
+        critMultiplier: () => critMultiplierFor(this.mods),
       },
     );
     this.hud = new Hud(this, this.progression);
@@ -263,6 +285,7 @@ export class GameScene extends Phaser.Scene {
     // the world, so every system downstream runs on a clamped delta.
     const dt = Math.min(delta, TIMING.maxDeltaMs);
     this.elapsedMs += dt;
+    this.regenerate(dt);
 
     this.player.update();
     this.spawner.update(dt);
@@ -276,7 +299,7 @@ export class GameScene extends Phaser.Scene {
         origin: this.player,
         enemies: this.spawner.group,
         damage: this.damageOf(id),
-        cooldownMs: this.progression.cooldownMsFor(id),
+        cooldownMs: this.cooldownOf(id),
         range: stats.range,
         projectileSpeed: stats.projectileSpeed,
         chainCount: stats.chainCount,
@@ -498,6 +521,20 @@ export class GameScene extends Phaser.Scene {
   }
 
   /**
+   * A 신성한 조각. Ten of them finish a 신성한 구슬, which is a point in
+   * the tree — and that is worth saying out loud when it happens.
+   */
+  private onShardCollected(): void {
+    const completed = passives.addShard();
+    const copy = t().game;
+    this.announce(
+      completed
+        ? copy.orbMade
+        : fill(copy.shardFound, { held: passives.value.shards, need: SHARD.perOrb }),
+    );
+  }
+
+  /**
    * A weapon goes straight into the stash, which outlives the run. Putting
    * it on is the title screen's business, so a run is never interrupted.
    */
@@ -506,25 +543,59 @@ export class GameScene extends Phaser.Scene {
     this.announce(fill(t().game.gearFound, { gear: gearTitle(found) }));
   }
 
-  /**
-   * Upgraded damage after the carried weapon and the balance dial for that
-   * skill. The weapon's attack power is flat and lands before the dial, so a
-   * skill tuned down gets a tuned-down share of it too.
+/**
+   * One skill's damage per hit: the tree, then the weapon, then the run,
+   * and the per-skill balance dial over the lot.
    */
   private damageOf(skill: SkillId): number {
-    const base = this.progression.statsFor(skill).damage + this.gearBonus.attack;
-    return base * (BALANCE.damageScale[skill] ?? 1);
+    const upgraded = this.progression.statsFor(skill).damage;
+    // Whole numbers: a percentage from the tree would otherwise put a
+    // decimal point on every damage number that floats off an enemy.
+    return Math.round(damageFor(skill, upgraded, this.mods) * (BALANCE.damageScale[skill] ?? 1));
+  }
+
+  /**
+   * 재생, from the tree and from the weapon, paid out in whole points every
+   * REGEN.periodMs rather than drifting a fraction per frame.
+   */
+  private regenerate(dt: number): void {
+    const perPeriod = regenFor(this.mods);
+    if (perPeriod <= 0 || !this.player.isAlive) {
+      return;
+    }
+
+    this.sinceRegenMs += dt;
+    while (this.sinceRegenMs >= REGEN.periodMs) {
+      this.sinceRegenMs -= REGEN.periodMs;
+      const healed = this.player.heal(perPeriod);
+      if (healed > 0) {
+        this.damageNumbers.spawn(this.player.x, this.player.y - 18, healed, {
+          prefix: '+',
+          color: COLORS.healText,
+        });
+      }
+    }
+  }
+
+  /** The same fold, for how often that skill goes off. */
+  private cooldownOf(skill: SkillId): number {
+    const upgraded = this.progression.statsFor(skill).attackSpeed;
+    const rate = attackSpeedFor(skill, upgraded, this.mods);
+    return Math.max(STATS.minCooldownMs, 1000 / Math.max(rate, 0.01));
   }
 
   private loadout(): ReadonlyArray<LoadoutEntry> {
     return this.weapons.map((weapon) => {
       const id = weapon.definition.id;
-      const scale = this.damageOf(id) / this.progression.statsFor(id).damage;
+      const stats = this.progression.statsFor(id);
+      // Read off the same folds the run fights with, so the number on the
+      // HUD is the number the enemies are getting.
+      const perSecond = 1000 / this.cooldownOf(id);
+      const targets = 1 + stats.chainCount + stats.pierceCount + Math.max(0, stats.orbCount - 1);
       return {
         name: skillName(id),
         level: this.progression.levelFor(id),
-        // The dial scales damage, so it scales the DPS with it.
-        dps: this.progression.dpsFor(id) * scale,
+        dps: this.damageOf(id) * perSecond * targets,
       };
     });
   }

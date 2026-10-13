@@ -1,5 +1,6 @@
 import {
   AFFIXES,
+  AUDIO,
   GEAR,
   GEAR_DROP,
   PREFIXES,
@@ -10,6 +11,7 @@ import {
   type AffixId,
   type AffixSpec,
   type GearId,
+  type DropTier,
   type GearSpec,
 } from '@/config';
 
@@ -36,16 +38,28 @@ export interface GearState {
 export interface GearBonus {
   /** Flat damage added to every skill's hit. */
   readonly attack: number;
+  readonly attackSpeedScale: number;
   readonly maxHpScale: number;
   readonly moveSpeedScale: number;
+  readonly pickupScale: number;
+  readonly invulnerableScale: number;
+  /** Health returned every REGEN.periodMs. */
+  readonly regen: number;
   readonly critChance: number;
+  /** Added to RARE.critMultiplier when one lands. */
+  readonly critMultiplierBonus: number;
 }
 
 export const NO_BONUS: GearBonus = {
   attack: 0,
+  attackSpeedScale: 1,
   maxHpScale: 1,
   moveSpeedScale: 1,
+  pickupScale: 1,
+  invulnerableScale: 1,
+  regen: 0,
   critChance: 0,
+  critMultiplierBonus: 0,
 };
 
 const STARTER_UID = 'starter';
@@ -76,24 +90,60 @@ export function gearBonusFor(item: GearItem | null): GearBonus {
     return NO_BONUS;
   }
 
+  let attackBonus = 0;
   let attackScale = 1;
+  let attackSpeedScale = 1;
   let maxHpScale = 1;
   let moveSpeedScale = 1;
+  let pickupScale = 1;
+  let invulnerableScale = 1;
+  let regen = 0;
   let critChance = 0;
+  let critMultiplierBonus = 0;
 
   for (const affix of affixesOf(item)) {
-    attackScale *= affix.gear.attackScale ?? 1;
-    maxHpScale *= affix.gear.maxHpScale ?? 1;
-    moveSpeedScale *= affix.gear.moveSpeedScale ?? 1;
-    critChance = Math.min(1, critChance + (affix.gear.critChance ?? 0));
+    const effect = affix.gear;
+    if (!effect) {
+      continue;
+    }
+
+    attackBonus += effect.attackBonus ?? 0;
+    attackScale *= effect.attackScale ?? 1;
+    attackSpeedScale *= effect.attackSpeedScale ?? 1;
+    maxHpScale *= effect.maxHpScale ?? 1;
+    moveSpeedScale *= effect.moveSpeedScale ?? 1;
+    pickupScale *= effect.pickupScale ?? 1;
+    invulnerableScale *= effect.invulnerableScale ?? 1;
+    regen += effect.regen ?? 0;
+    critChance = Math.min(1, critChance + (effect.critChance ?? 0));
+    critMultiplierBonus += effect.critMultiplierBonus ?? 0;
   }
 
   return {
-    attack: Math.round(attackForTier(GEAR[item.id].tier) * attackScale),
+    attack: Math.round((attackForTier(GEAR[item.id].tier) + attackBonus) * attackScale),
+    attackSpeedScale,
     maxHpScale,
     moveSpeedScale,
+    pickupScale,
+    invulnerableScale,
+    regen,
     critChance,
+    critMultiplierBonus,
   };
+}
+
+/**
+ * How rare what landed is, which is what it sounds like when it does.
+ * Path of Exile's own ladder: nothing on it is normal, a line or two is
+ * magic, and three or more is rare.
+ */
+export function dropTierFor(item: GearItem): DropTier {
+  const lines = item.prefixes.length + item.suffixes.length;
+  if (lines >= AUDIO.dropTiers.rareFrom) {
+    return 'rare';
+  }
+
+  return lines >= AUDIO.dropTiers.magicFrom ? 'magic' : 'normal';
 }
 
 /**

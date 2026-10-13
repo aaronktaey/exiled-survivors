@@ -53,6 +53,14 @@ export const COLORS = {
   /** 공허: a violet core inside a darker rim. */
   voidOrb: 0xb07cff,
   voidOrbCore: 0xefe4ff,
+  /** 신성한 조각: a pale shard, lit the way a gem is. */
+  shard: 0xd6ecff,
+  shardEdge: 0x7fb8e8,
+  shardGlow: 0xaad4ff,
+  shardText: '#d6ecff',
+  /** 패시브, on its icon and its screen. */
+  passive: 0x7ef0b0,
+  passiveEdge: 0xcdfbe2,
   /** 장비 on the ground: a brass crate, lit gold, named in gold. */
   gear: 0xc08a3e,
   gearEdge: 0xf2d08a,
@@ -98,6 +106,8 @@ export const TEXTURES = {
   gem: "tex-gem",
   skillOrb: "tex-skill-orb",
   gear: "tex-gear",
+  shard: "tex-shard",
+  passive: "tex-passive",
   logo: "tex-logo",
 } as const;
 
@@ -251,6 +261,20 @@ export const SCRIM = {
   gameOver: 0.92,
   /** The grid behind the title. */
   title: 0.62,
+} as const;
+
+/**
+ * The two icons in the top-right corner of the title: 장비 and 패시브, the
+ * screens you go to between runs rather than from a row in the list.
+ */
+export const ICON_BAR = {
+  size: 38,
+  gap: 12,
+  margin: 18,
+  /** The caption under each one. */
+  labelGap: 6,
+  /** A dot in the corner when one of them has something waiting. */
+  badgeRadius: 7,
 } as const;
 
 /** Where the shell screens — title, settings, credits, pause — are tuned. */

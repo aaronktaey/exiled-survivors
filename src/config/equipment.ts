@@ -2,7 +2,7 @@
  * ★ 장비 — the weapon the survivor carries, and what one can come out of a
  * 우두머리 carrying.
  *
- * A weapon is a base plus its 강화효과. The base gives flat attack power,
+ * A weapon is a base plus its 속성. The base gives flat attack power,
  * which is added to every skill's damage, and the roster is four swords a
  * step apart. The affixes are the same ones a rare enemy wears, split into
  * prefixes and suffixes the way Path of Exile splits them — see AFFIXES in
@@ -30,10 +30,15 @@ export interface GearSpec {
 }
 
 export const GEAR_BASE = {
-  /** Attack power of the first tier. */
-  tier1Attack: 3,
-  /** What one step up the roster is worth. */
-  attackPerTier: 3,
+  /**
+   * Attack power of the first tier, and what one step up the roster adds.
+   *
+   * These are flat damage on every skill, and a skill starts at 15, so they
+   * are deliberately small: at 3 and 3 the top sword was worth +80% damage
+   * on its own and nothing else in the run could compete with it.
+   */
+  tier1Attack: 1,
+  attackPerTier: 1,
 } as const;
 
 /** Attack power for a tier, so the roster stays in step with the dial. */

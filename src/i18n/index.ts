@@ -2,10 +2,12 @@ import {
   AFFIXES,
   ENEMY_KINDS,
   GEAR,
+  PASSIVES,
   type AffixId,
   type AffixKind,
   type EnemyKind,
   type GearId,
+  type PassiveId,
 } from '@/config';
 import { en } from '@/i18n/en';
 import { ja } from '@/i18n/ja';
@@ -127,6 +129,24 @@ export function affixDetail(id: AffixId): string {
 
 export function gearName(id: GearId): string {
   return t().names?.gear?.[id] ?? GEAR[id].name;
+}
+
+/** "무쇠 검+3" — the base, and how many 속성 it rolled. */
+export function gearLabel(item: {
+  readonly id: GearId;
+  readonly prefixes: readonly AffixId[];
+  readonly suffixes: readonly AffixId[];
+}): string {
+  const count = item.prefixes.length + item.suffixes.length;
+  return count > 0 ? `${gearName(item.id)}+${count}` : gearName(item.id);
+}
+
+export function passiveName(id: PassiveId): string {
+  return t().names?.passives?.[id] ?? PASSIVES[id].name;
+}
+
+export function passiveDetail(id: PassiveId): string {
+  return t().names?.passiveDetails?.[id] ?? PASSIVES[id].detail;
 }
 
 /**

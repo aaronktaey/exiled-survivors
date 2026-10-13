@@ -6,6 +6,19 @@ export const ja: Strings = {
 
   common: { back: '戻る', close: '閉じる', on: 'オン', off: 'オフ' },
 
+  passives: {
+    title: 'パッシブ',
+    points: 'ポイント {points}',
+    shards: '神聖な欠片 {held}/{need}',
+    rank: '{rank} / {max}',
+    maxed: '最大',
+    spend: '投資',
+    noPoints: 'ポイントがありません — ボスを倒して神聖な欠片を集めてください。',
+    hintKeyboard: '↑ ↓ 移動   Space 投資   Esc 戻る',
+    hintTouch: '項目をタップして投資',
+    temporary: '暫定版です — 今は三つの行で、枝分かれするツリーは次の作業です。',
+  },
+
   menu: {
     byline: 'created by whitemango',
     start: 'ゲーム開始',
@@ -51,10 +64,15 @@ export const ja: Strings = {
     prefixWord: '{affix}の',
     suffixWord: '· {affix}',
     attack: '攻撃力 +{attack}',
-    plain: '強化効果なし',
+    attack2: '攻撃速度 +{percent}%',
+    plain: '属性なし',
     summaryHp: '最大体力 +{percent}%',
     summarySpeed: '移動速度 +{percent}%',
     summaryCrit: 'クリティカル率 {percent}%',
+    summaryCritDamage: 'クリティカルダメージ +{percent}%',
+    summaryRegen: '5 秒ごとに体力 +{amount}',
+    summaryEvade: '無敵時間 +{percent}%',
+    summaryPickup: '取得範囲 +{percent}%',
   },
 
   pause: {
@@ -62,7 +80,7 @@ export const ja: Strings = {
     survived: '生存 {time}    Lv {level}',
     resume: 'つづける',
     quit: 'セーブしてタイトルへ',
-    hint: 'Esc または戻るでつづける   ·   レア敵を指すと強化効果が見えます',
+    hint: 'Esc または戻るでつづける   ·   レア敵を指すと属性が見えます',
   },
 
   gameOver: {
@@ -95,6 +113,8 @@ export const ja: Strings = {
     introHintTouch: 'スティックを引いて移動 — 攻撃は自動',
     bossArrived: 'ボス出現',
     gearFound: '{gear} 獲得 — タイトル画面で装備できます',
+    shardFound: '神聖な欠片 {held}/{need}',
+    orbMade: '神聖なオーブ完成 — パッシブポイント +1',
     pickedUp: '{skill} 習得',
     enhancedPickup: '{skill} 強化',
   },
@@ -170,12 +190,35 @@ export const ja: Strings = {
       steelSword: '鋼の剣',
       runedSword: 'ルーンの剣',
     },
-    affixes: { giant: '巨大', swift: '俊敏', critical: '致命', mighty: '剛力' },
+    affixes: {
+      giant: '巨大',
+      swift: '俊敏',
+      critical: '致命',
+      mighty: '剛力',
+      cruel: '残酷',
+      frenzied: '狂乱',
+      honed: '鋭利',
+      regrowth: '再生',
+      evasive: '回避',
+      magnetic: '磁力',
+    },
     affixDetails: {
       giant: '体力 +50%',
       swift: '移動速度 +20%',
-      critical: '会心率 20%',
+      critical: 'クリティカル率 20%',
       mighty: 'ダメージ +50%',
+      cruel: 'クリティカルダメージ +50%',
+      frenzied: '攻撃速度 +15%',
+      honed: '攻撃力 +1',
+      regrowth: '5 秒ごとに体力 +2',
+      evasive: '無敵時間 +30%',
+      magnetic: '取得範囲 +40%',
+    },
+    passives: { damage: 'ダメージ', attackSpeed: '攻撃速度', regen: '再生' },
+    passiveDetails: {
+      damage: 'ダメージ +10%',
+      attackSpeed: '攻撃速度 +10%',
+      regen: '5 秒ごとに体力 +1',
     },
   },
 
@@ -203,7 +246,7 @@ export const ja: Strings = {
         'Esc・左上のボタン・（モバイル）戻るで一時停止します。',
         '強化選択画面：方向キーでカーソルを動かし、Space・クリック・タッチ・数字キー 1~4 で決めます。',
         '移動キーでは決定できません。移動のために押しっぱなしのキーが代わりに選んでしまうのを防ぐためです。',
-        'レア敵にマウスを乗せるか触れると強化効果が見えます。一時停止中でも確認できます。',
+        'レア敵にマウスを乗せるか触れると属性が見えます。一時停止中でも確認できます。',
       ],
     },
     mobile: {
@@ -247,8 +290,8 @@ export const ja: Strings = {
       heading: 'レア敵',
       lines: [
         '敵の {chance} がレアとして現れ、縁取りを帯びます。',
-        '強化効果を {min}~{max} 個持ち、多いほど縁の色が濃くなります。同じ効果は重なって累積します。',
-        '強化効果 1 個につきスキルのドロップ率が {dropBonus} 上がります。危険な分だけ見返りがあります。',
+        '属性を {min}~{max} 個持ち、多いほど縁の色が濃くなります。同じ効果は重なって累積します。',
+        '属性 1 個につきスキルのドロップ率が {dropBonus} 上がります。危険な分だけ見返りがあります。',
       ],
     },
     drops: {
@@ -258,7 +301,9 @@ export const ja: Strings = {
         'スキル — {skillChance} の確率。すでに持っていれば強化の選択肢になります。',
         '回復ポーション — {potionChance} の確率。最大体力の {heal} を回復します。体力が満タンなら拾わず残します。',
         '装備 — ボスを倒すたびに剣が一振り落ちます。拾うと保管箱に入り、装備はタイトル画面の「装備」で行います。',
-        '落ちた剣は確率で強化効果を持ちます — 接頭辞は攻撃、接尾辞は防御と移動。レア敵が持つものと同じです。',
+        '落ちた剣は確率で属性を持ちます — 接頭辞は攻撃、接尾辞は防御と移動。レア敵が持つものと同じです。',
+        '神聖な欠片 — ボスは半分の確率で落とします。10 個で神聖なオーブになり、パッシブポイント 1 点になります。',
+        'プレイヤーにかかる効果はパッシブ → 装備 → 戦闘中の強化の順に適用されます。',
         '経験値以外のドロップは {life} 秒で消えます。最後の {warning} 秒は点滅が速くなります。',
       ],
     },

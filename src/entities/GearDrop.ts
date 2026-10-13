@@ -2,7 +2,7 @@ import Phaser from 'phaser';
 
 import { COLORS, DEPTH, GEAR_DROP, SKILL_LABEL, TEXT, TEXTURES } from '@/config';
 import { GroundItem } from '@/entities/GroundItem';
-import { gearTitle } from '@/i18n';
+import { gearLabel } from '@/i18n';
 import type { GearItem } from '@/systems/Gear';
 
 /**
@@ -39,8 +39,9 @@ export class GearDrop extends GroundItem {
     this.item = item;
     this.begin(x, y, GEAR_DROP.size);
 
-    // The rolled name, so what is on the ground says what it is worth.
-    this.label.setText(gearTitle(item));
+    // "무쇠 검+3" — the base and how many 속성 it rolled, which is what
+    // you need to know at a glance while something is chasing you.
+    this.label.setText(gearLabel(item));
     this.label.setPosition(x, y - GEAR_DROP.size / 2 - SKILL_LABEL.gap - this.label.height / 2);
     this.label.setVisible(true);
 
