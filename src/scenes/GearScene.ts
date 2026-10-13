@@ -83,6 +83,7 @@ export class GearScene extends Phaser.Scene {
   /** The 구슬 buttons, by id. Public so a test can press one. */
   public orbButtons = new Map<OrbId, Phaser.GameObjects.Text>();
   private orbPlates = new Map<OrbId, Phaser.GameObjects.Rectangle>();
+  private orbIcons = new Map<OrbId, Phaser.GameObjects.Image>();
   /** What the armed 구슬 would do, or empty. Public for tests. */
   public orbHint!: Phaser.GameObjects.Text;
   /**
@@ -104,6 +105,7 @@ export class GearScene extends Phaser.Scene {
     this.armed = null;
     this.orbButtons = new Map();
     this.orbPlates = new Map();
+    this.orbIcons = new Map();
   }
 
   public create(): void {
@@ -289,8 +291,15 @@ export class GearScene extends Phaser.Scene {
         .setDepth(DEPTH.ui)
         .setInteractive({ useHandCursor: true });
 
+      // Its own sprite beside the word, so the row reads as three different
+      // things rather than three counts.
+      const icon = this.add
+        .image(cx - slot / 2 + 16, y, orb.texture)
+        .setDisplaySize(18, 18)
+        .setDepth(DEPTH.ui + 1);
+
       const label = this.add
-        .text(cx, y, '', {
+        .text(cx + 8, y, '', {
           fontFamily: 'system-ui, sans-serif',
           fontSize: TEXT.size.small,
           color: COLORS.muted,
@@ -298,6 +307,7 @@ export class GearScene extends Phaser.Scene {
         .setOrigin(0.5)
         .setDepth(DEPTH.ui + 1);
 
+      this.orbIcons.set(orb.id, icon);
       plate.on(Phaser.Input.Events.GAMEOBJECT_POINTER_DOWN, () => this.pressOrb(orb.id));
       this.orbPlates.set(orb.id, plate);
       this.orbButtons.set(orb.id, label);
@@ -388,6 +398,7 @@ export class GearScene extends Phaser.Scene {
       label.setAlpha(live ? 1 : 0.35);
       plate.setFillStyle(COLORS.panelActive, asking ? 0.55 : 0);
       plate.setAlpha(live ? 1 : 0.35);
+      this.orbIcons.get(orb.id)?.setAlpha(live ? 1 : 0.3);
     });
 
     const armedOrb = ALL_ORBS.find((orb) => orb.id === this.armed);

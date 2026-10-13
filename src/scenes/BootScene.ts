@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 
 import {
+  ALL_ORBS,
   AUDIO,
   COLORS,
   ENEMY_KINDS,
@@ -62,7 +63,7 @@ export class BootScene extends Phaser.Scene {
     this.createGearTexture();
     this.createDivineShardTexture();
     this.createPassiveTexture();
-    this.createOrbTexture();
+    this.createOrbTextures();
 
 
     createPixelTextTexture(this, TEXTURES.logo, ['EXILED', 'SURVIVORS'], {
@@ -167,23 +168,56 @@ export class BootScene extends Phaser.Scene {
   }
 
   /**
-   * A 구슬: one white sphere with a highlight, tinted per orb where it is
-   * drawn. White so the tint comes out at full strength.
+   * The three 구슬. A sphere each, in its own colour, with its own mark cut
+   * into the face — colour alone would not tell them apart on a dark floor,
+   * and a 각성의 구슬 is a thousand kills apart from a 변화의 구슬.
    */
-  private createOrbTexture(): void {
-    const size = 32;
-    const half = size / 2;
-    const graphics = this.add.graphics();
+  private createOrbTextures(): void {
+    for (const orb of ALL_ORBS) {
+      const size = 32;
+      const half = size / 2;
+      const graphics = this.add.graphics();
 
-    graphics.fillStyle(0xffffff, 1);
-    graphics.fillCircle(half, half, half - 1);
-    graphics.fillStyle(0x000000, 0.28);
-    graphics.fillCircle(half, half + size * 0.12, half - size * 0.18);
-    graphics.fillStyle(0xffffff, 0.9);
-    graphics.fillCircle(size * 0.36, size * 0.33, size * 0.11);
+      graphics.fillStyle(orb.color, 1);
+      graphics.fillCircle(half, half, half - 1);
+      // A darker lower half, so it reads as a sphere rather than a disc.
+      graphics.fillStyle(0x000000, 0.22);
+      graphics.fillCircle(half, half + size * 0.14, half - size * 0.16);
 
-    graphics.generateTexture(TEXTURES.orb, size, size);
-    graphics.destroy();
+      graphics.fillStyle(0xffffff, 0.92);
+      if (orb.id === 'transmute') {
+        // A ring: the same thing, come round again.
+        graphics.lineStyle(Math.round(size * 0.09), 0xffffff, 0.92);
+        graphics.strokeCircle(half, half, size * 0.2);
+      } else if (orb.id === 'chaos') {
+        // Four points thrown outward.
+        graphics.fillPoints(
+          [
+            new Phaser.Math.Vector2(half, size * 0.2),
+            new Phaser.Math.Vector2(half + size * 0.1, half - size * 0.06),
+            new Phaser.Math.Vector2(size * 0.8, half),
+            new Phaser.Math.Vector2(half + size * 0.06, half + size * 0.1),
+            new Phaser.Math.Vector2(half, size * 0.8),
+            new Phaser.Math.Vector2(half - size * 0.1, half + size * 0.06),
+            new Phaser.Math.Vector2(size * 0.2, half),
+            new Phaser.Math.Vector2(half - size * 0.06, half - size * 0.1),
+          ],
+          true,
+        );
+      } else {
+        // A cross with the arms stepping outward: one more of something.
+        const arm = size * 0.07;
+        graphics.fillRect(half - arm / 2, size * 0.22, arm, size * 0.56);
+        graphics.fillRect(size * 0.22, half - arm / 2, size * 0.56, arm);
+      }
+
+      // A highlight, last, so it sits over the mark.
+      graphics.fillStyle(0xffffff, 0.55);
+      graphics.fillCircle(size * 0.33, size * 0.3, size * 0.08);
+
+      graphics.generateTexture(orb.texture, size, size);
+      graphics.destroy();
+    }
   }
 
   /** 패시브's icon: a lit node with a ring around it. */
@@ -201,21 +235,48 @@ export class BootScene extends Phaser.Scene {
     graphics.destroy();
   }
 
-  /** 장비 on the ground: a brass crate with a lighter lid and edge. */
+  /**
+   * 장비: a sword, point up. The same sprite on the ground, in the corner of
+   * the title screen and beside 착용 중 — what you walk over and the screen
+   * you take it to should be the same object.
+   */
   private createGearTexture(): void {
     const size = GEAR_DROP.size * 2;
-    const edge = Math.max(2, Math.round(size * 0.08));
+    const half = size / 2;
     const graphics = this.add.graphics();
 
-    graphics.fillStyle(COLORS.gear, 1);
-    graphics.fillRect(0, 0, size, size);
+    const bladeWidth = Math.max(3, Math.round(size * 0.16));
+    const guardWidth = Math.round(size * 0.62);
+    const guardHeight = Math.max(2, Math.round(size * 0.09));
+    const guardY = Math.round(size * 0.66);
+
+    // Blade: a tapered point over a straight edge.
     graphics.fillStyle(COLORS.gearEdge, 1);
-    graphics.fillRect(0, 0, size, edge);
-    graphics.fillRect(0, size - edge, size, edge);
-    graphics.fillRect(0, 0, edge, size);
-    graphics.fillRect(size - edge, 0, edge, size);
-    // A band across the middle, so it reads as a crate rather than a block.
-    graphics.fillRect(0, size / 2 - edge / 2, size, edge);
+    graphics.fillPoints(
+      [
+        new Phaser.Math.Vector2(half, size * 0.05),
+        new Phaser.Math.Vector2(half + bladeWidth / 2, size * 0.2),
+        new Phaser.Math.Vector2(half + bladeWidth / 2, guardY),
+        new Phaser.Math.Vector2(half - bladeWidth / 2, guardY),
+        new Phaser.Math.Vector2(half - bladeWidth / 2, size * 0.2),
+      ],
+      true,
+    );
+    // A fuller down the middle, so the blade has a side lit and a side not.
+    graphics.fillStyle(COLORS.gear, 1);
+    graphics.fillRect(half, size * 0.18, Math.max(1, bladeWidth / 2 - 1), guardY - size * 0.18);
+
+    // Crossguard and grip.
+    graphics.fillStyle(COLORS.gear, 1);
+    graphics.fillRect(half - guardWidth / 2, guardY, guardWidth, guardHeight);
+    graphics.fillRect(
+      half - Math.max(1, bladeWidth / 3),
+      guardY + guardHeight,
+      Math.max(2, (bladeWidth * 2) / 3),
+      size * 0.22,
+    );
+    graphics.fillStyle(COLORS.gearEdge, 1);
+    graphics.fillCircle(half, size * 0.95, Math.max(2, size * 0.08));
 
     graphics.generateTexture(TEXTURES.gear, size, size);
     graphics.destroy();

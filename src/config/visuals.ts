@@ -85,7 +85,33 @@ export const DEPTH = {
   healthBar: 55,
   /** Ground item labels read above the crowd. */
   skillDrop: 60,
+  /** Edge markers sit over the field but under anything pinned to the HUD. */
+  edgeMarker: 70,
   ui: 100,
+} as const;
+
+/**
+ * The little icons around the rim of the screen that say where something
+ * worth walking to is, when it is off the edge of the view.
+ *
+ * A 우두머리 walks in from outside the view by design, and a weapon it left
+ * can expire on a part of the floor the camera never showed. Both of those
+ * are things the player would have gone and got, had they known.
+ */
+export const EDGE_MARKERS = {
+  /** How far inside the screen edge a marker sits, clear of the HUD row. */
+  margin: 34,
+  /** Side of the icon, and of the arrow behind it. */
+  size: 18,
+  arrow: 7,
+  /**
+   * Most markers at once. The nearest win, so a floor covered in drops does
+   * not turn the rim of the screen into a second crowd.
+   */
+  max: 10,
+  alpha: 0.9,
+  /** Anything this far outside the view is too far to bother pointing at. */
+  rangePx: 1400,
 } as const;
 
 /** Texture keys generated at boot — placeholder art until real sprites land. */
@@ -106,7 +132,9 @@ export const TEXTURES = {
   skillOrb: "tex-skill-orb",
   gear: "tex-gear",
   shard: "tex-shard",
-  orb: "tex-orb",
+  orbTransmute: "tex-orb-transmute",
+  orbChaos: "tex-orb-chaos",
+  orbAwaken: "tex-orb-awaken",
   passive: "tex-passive",
   logo: "tex-logo",
 } as const;

@@ -1,14 +1,14 @@
 import Phaser from 'phaser';
 
-import { ORBS, ORB_DROP, TEXTURES, type OrbId } from '@/config';
+import { ORBS, ORB_DROP, type OrbId } from '@/config';
 import { GroundItem } from '@/entities/GroundItem';
 import { orbName } from '@/i18n';
 import { DropLabel } from '@/systems/DropLabel';
 
 /**
- * A 구슬 on the ground. One sprite tinted three ways rather than three
- * sprites: what tells them apart is the colour and the name above it, and
- * both come off the ORBS table.
+ * A 구슬 on the ground. Each has its own sprite — a ring, a star, a cross —
+ * because three spheres in three colours are one dark floor away from being
+ * the same thing. Both the sprite and the name come off the ORBS table.
  */
 export class OrbDrop extends GroundItem {
   /** The name above it. Public so a test can read what it says. */
@@ -17,7 +17,7 @@ export class OrbDrop extends GroundItem {
   public orb: OrbId = 'transmute';
 
   public constructor(scene: Phaser.Scene, x: number, y: number) {
-    super(scene, x, y, TEXTURES.orb, ORBS.transmute.color);
+    super(scene, x, y, ORBS.transmute.texture, ORBS.transmute.color);
     this.setDisplaySize(ORB_DROP.size, ORB_DROP.size);
 
     this.nameplate = new DropLabel(scene, x, y);
@@ -27,9 +27,9 @@ export class OrbDrop extends GroundItem {
     const spec = ORBS[id] ?? ORBS.transmute;
     this.orb = spec.id;
 
+    this.setTexture(spec.texture);
     this.begin(x, y, ORB_DROP.size);
     this.setDisplaySize(ORB_DROP.size, ORB_DROP.size);
-    this.setTint(spec.color);
     this.glow.setFillStyle(spec.color, this.glow.fillAlpha);
 
     this.nameplate.show(orbName(spec.id), spec.tier);

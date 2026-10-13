@@ -76,6 +76,8 @@ export const GEAR_DROP = {
   size: 20,
 } as const;
 
+import { TEXTURES } from '@/config/visuals';
+
 /**
  * ★ 구슬 — the consumables a weapon is rerolled with.
  *
@@ -103,6 +105,8 @@ export interface OrbSpec {
   /** How loudly it lands: its nameplate and its drop sound both read this. */
   readonly tier: 'normal' | 'magic' | 'rare';
   readonly color: number;
+  /** Its own sprite: the three read apart at a glance, not only by colour. */
+  readonly texture: string;
   /**
    * Rerolls the weapon to somewhere in this many 속성, counting prefixes and
    * suffixes together. Exactly one of `reroll` and `add` is set.
@@ -121,6 +125,7 @@ export const ORBS: Record<OrbId, OrbSpec> = {
     chance: 0.01,
     tier: 'magic',
     color: 0x6aa9ff,
+    texture: TEXTURES.orbTransmute,
     reroll: { min: 1, max: 2 },
   },
   chaos: {
@@ -131,6 +136,7 @@ export const ORBS: Record<OrbId, OrbSpec> = {
     chance: 0.003,
     tier: 'rare',
     color: 0xd45fd0,
+    texture: TEXTURES.orbChaos,
     reroll: { min: 2, max: 4 },
   },
   awaken: {
@@ -141,6 +147,7 @@ export const ORBS: Record<OrbId, OrbSpec> = {
     chance: 0.001,
     tier: 'rare',
     color: 0xffd34d,
+    texture: TEXTURES.orbAwaken,
     add: 1,
   },
 };

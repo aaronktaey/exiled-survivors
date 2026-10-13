@@ -18,6 +18,7 @@ import {
   TIMING,
   WORLD,
 } from '@/config';
+import type { Enemy } from '@/entities/Enemy';
 import { Player } from '@/entities/Player';
 import { fill, gearTitle, orbName, skillName, t } from '@/i18n';
 import { GameOverScene, type GameOverData } from '@/scenes/GameOverScene';
@@ -38,6 +39,7 @@ import {
   type SkillStats,
   type UpgradeId,
 } from '@/systems';
+import { EdgeMarkers } from '@/systems/EdgeMarkers';
 import { RareTooltip } from '@/systems/RareTooltip';
 import { sfx } from '@/systems/Sfx';
 import { saveGame, type SavedRun } from '@/systems/SaveGame';
@@ -116,6 +118,8 @@ export class GameScene extends Phaser.Scene {
   private damageNumbers!: DamageNumbers;
   private debug!: DebugOverlay;
   private rareTooltip!: RareTooltip;
+  /** The rim of the screen, pointing at what is just off it. Public for tests. */
+  public edgeMarkers!: EdgeMarkers;
   /** What the carried weapon is worth, read once as the run is built. */
   private gearBonus: GearBonus = NO_BONUS;
   /** 패시브 and 장비 together, in the order they are applied. */
@@ -206,6 +210,22 @@ export class GameScene extends Phaser.Scene {
     this.hud = new Hud(this, this.progression);
     this.debug = new DebugOverlay(this, this.debugActions());
     this.rareTooltip = new RareTooltip(this, this.spawner.group);
+    // In the order they matter: a 우두머리 before a 신성한 조각, and both
+    // before a skill lying in the grass.
+    this.edgeMarkers = new EdgeMarkers(this, [
+      {
+        group: this.spawner.group,
+        filter: (object) => (object as Enemy).isBoss === true,
+        // The gold ring it wears on the field, so the rim says the same
+        // thing about it that the field does.
+        arrowColor: COLORS.bossOutline,
+      },
+      { group: this.combat.shardDrops },
+      { group: this.combat.orbDrops },
+      { group: this.combat.gearDrops },
+      { group: this.combat.skillDrops },
+      { group: this.combat.potions },
+    ]);
     this.armInspect();
 
     for (const skill of STARTING_SKILLS) {
@@ -315,6 +335,7 @@ export class GameScene extends Phaser.Scene {
     }
 
     this.damageNumbers.update(dt);
+    this.edgeMarkers.update();
     this.hud.update(dt, this.spawner.alive, this.loadout());
     // The panel is glued to its enemy, which is still walking around.
     this.rareTooltip.refresh();
@@ -770,7 +791,10 @@ export class GameScene extends Phaser.Scene {
       },
       level: this.progression.level,
       survivedMs: this.elapsedMs,
-      onRestart: () => this.scene.restart(),
+      // Explicitly fresh. A restart with no data of its own keeps whatever
+      // the scene was last started with, and after 불러오기 that is the
+      // loaded run — which would quietly put a death back where it resumed.
+      onRestart: () => this.scene.restart({ save: null }),
     };
     this.scene.bringToTop(GameOverScene.KEY);
     this.scene.launch(GameOverScene.KEY, data);
