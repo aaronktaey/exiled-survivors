@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 
 import { COLORS, DEPTH, HUD, PLAYER, TEXTURES } from '@/config';
 import { fill, t } from '@/i18n';
+import { NO_BONUS, type GearBonus } from '@/systems/Gear';
 import type { AnalogInput } from '@/systems/VirtualJoystick';
 
 type WasdKeys = Record<'W' | 'A' | 'S' | 'D', Phaser.Input.Keyboard.Key>;
@@ -24,6 +25,9 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   private readonly nameplate: Phaser.GameObjects.Text;
   /** Where the level comes from. Set once the run has its progression. */
   private level = 1;
+  /** What the carried weapon is worth to this survivor. */
+  private gear: GearBonus = NO_BONUS;
+  private maxHpValue: number = PLAYER.maxHp;
   private analog?: AnalogInput;
   private invulnerableUntil = 0;
 
@@ -78,20 +82,37 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
 
     // Keys win when both are live; the stick is analogue, so a partial tilt
     // moves proportionally slower.
-    let speed = PLAYER.speed;
+    let speed = PLAYER.speed * this.gear.moveSpeedScale;
     if (this.heading.lengthSq() > 0) {
       this.heading.normalize();
     } else if (this.analog) {
-      speed = PLAYER.speed * this.analog.read(this.heading);
+      speed = PLAYER.speed * this.gear.moveSpeedScale * this.analog.read(this.heading);
     }
 
     this.setVelocity(this.heading.x * speed, this.heading.y * speed);
     this.drawHealthBar();
   }
 
-  /** Full health, as balance.ts has it tuned. */
+  /** Full health: what balance.ts tunes, after the carried weapon. */
   public get maxHp(): number {
-    return PLAYER.maxHp;
+    return this.maxHpValue;
+  }
+
+  /** Chance one of this survivor's hits lands for RARE.critMultiplier. */
+  public get critChance(): number {
+    return this.gear.critChance;
+  }
+
+  /**
+   * Reads the carried weapon into the survivor. Health is rescaled rather
+   * than topped up, so a weapon with 거대 on it starts the run at the fuller
+   * bar it earns.
+   */
+  public applyGear(bonus: GearBonus): void {
+    this.gear = bonus;
+    this.maxHpValue = Math.max(1, Math.round(PLAYER.maxHp * bonus.maxHpScale));
+    this.hp = this.maxHpValue;
+    this.drawHealthBar();
   }
 
   /** Keeps the nameplate's level in step with progression. */
@@ -112,7 +133,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     }
 
     const before = this.hp;
-    this.hp = Math.min(PLAYER.maxHp, this.hp + amount);
+    this.hp = Math.min(this.maxHpValue, this.hp + amount);
     this.drawHealthBar();
     return this.hp - before;
   }
@@ -148,7 +169,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     const { width, height, gap } = HUD.healthBar;
     const left = this.x - width / 2;
     const top = this.y - PLAYER.size / 2 - gap - height;
-    const ratio = Phaser.Math.Clamp(this.hp / PLAYER.maxHp, 0, 1);
+    const ratio = Phaser.Math.Clamp(this.hp / this.maxHpValue, 0, 1);
 
     this.healthBar.clear();
     this.healthBar.fillStyle(COLORS.barTrack, 1);
@@ -161,7 +182,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
 
     const copy = t().hud;
     this.nameplate.setText(
-      `${fill(copy.level, { level: this.level })}  ${this.hp}/${PLAYER.maxHp}`,
+      `${fill(copy.level, { level: this.level })}  ${this.hp}/${this.maxHpValue}`,
     );
     this.nameplate.setPosition(this.x, top - HUD.nameplateGap);
   }

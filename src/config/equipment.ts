@@ -1,39 +1,50 @@
 /**
- * ★ 장비 — equipment, as far as it goes today.
+ * ★ 장비 — the weapon the survivor carries, and what one can come out of a
+ * 우두머리 carrying.
  *
- * The plumbing is here and working: a piece can drop while a run is on, it
- * goes into a stash that outlives the run, and the title screen's 장비 lets
- * you put one on for the next one. What is *not* here yet is any effect: no
- * piece changes a single number, by design. The real system — stats, slots
- * beyond a weapon, rarity, a reason to prefer one piece over another — is
- * still to be designed, and the names below are stand-ins for whatever it
- * turns out to want.
+ * A weapon is a base plus its 강화효과. The base gives flat attack power,
+ * which is added to every skill's damage, and the roster is four swords a
+ * step apart. The affixes are the same ones a rare enemy wears, split into
+ * prefixes and suffixes the way Path of Exile splits them — see AFFIXES in
+ * balance.ts.
  *
- * So: adding a piece today means a line in GEAR and a name in the locales.
- * When the effects land, they go in GearSpec beside `name`.
+ * Adding a sword means a line in GEAR and a name in the locales.
  */
 
 export type GearSlot = 'weapon';
 
-export type GearId = 'rustySword' | 'chippedAxe' | 'wornDagger' | 'crackedWand';
+export type GearId = 'rustySword' | 'ironSword' | 'steelSword' | 'runedSword';
 
 export interface GearSpec {
   readonly id: GearId;
   readonly slot: GearSlot;
+  /** 1 to 4. One step is GEAR_BASE.attackPerTier of attack power. */
+  readonly tier: number;
   /** Korean name; a locale renames it through `names.gear`. */
   readonly name: string;
   /**
-   * Relative chance of being the piece a drop turns out to be. The starter
-   * is 0 — it is already in the stash, so finding it again means nothing.
+   * Relative chance of being the sword a 우두머리 leaves. Lower tiers are
+   * commoner, so the better swords stay worth waiting for.
    */
   readonly weight: number;
 }
 
+export const GEAR_BASE = {
+  /** Attack power of the first tier. */
+  tier1Attack: 3,
+  /** What one step up the roster is worth. */
+  attackPerTier: 3,
+} as const;
+
+/** Attack power for a tier, so the roster stays in step with the dial. */
+export const attackForTier = (tier: number): number =>
+  GEAR_BASE.tier1Attack + (tier - 1) * GEAR_BASE.attackPerTier;
+
 export const GEAR: Record<GearId, GearSpec> = {
-  rustySword: { id: 'rustySword', slot: 'weapon', name: '녹슨 칼', weight: 0 },
-  chippedAxe: { id: 'chippedAxe', slot: 'weapon', name: '이 빠진 도끼', weight: 1 },
-  wornDagger: { id: 'wornDagger', slot: 'weapon', name: '낡은 단검', weight: 1 },
-  crackedWand: { id: 'crackedWand', slot: 'weapon', name: '금 간 지팡이', weight: 1 },
+  rustySword: { id: 'rustySword', slot: 'weapon', tier: 1, name: '녹슨 검', weight: 4 },
+  ironSword: { id: 'ironSword', slot: 'weapon', tier: 2, name: '무쇠 검', weight: 3 },
+  steelSword: { id: 'steelSword', slot: 'weapon', tier: 3, name: '강철 검', weight: 2 },
+  runedSword: { id: 'runedSword', slot: 'weapon', tier: 4, name: '룬 각인 검', weight: 1 },
 };
 
 export const ALL_GEAR: readonly GearSpec[] = Object.values(GEAR);
@@ -42,10 +53,20 @@ export const ALL_GEAR: readonly GearSpec[] = Object.values(GEAR);
 export const STARTING_GEAR: GearId = 'rustySword';
 
 export const GEAR_DROP = {
-  /** Chance that killing an enemy leaves a piece of equipment. */
-  chance: 0.01,
+  /**
+   * Only a 우두머리 leaves one, and it always does. One a minute, which is
+   * what makes a 우두머리 worth walking towards.
+   */
+  fromBossOnly: true,
+  /**
+   * Each affix line has to win its own roll, and the roll repeats until one
+   * fails: a fifth of drops carry a line, a twenty-fifth carry two, and a
+   * full six-line weapon is something you would tell someone about.
+   */
+  affixChance: 0.2,
+  /** Path of Exile's ceiling for a rare: three of each. */
+  maxPrefixes: 3,
+  maxSuffixes: 3,
   /** How big it is drawn on the ground. */
   size: 20,
-  /** A piece already in the stash is not dropped again. */
-  skipOwned: true,
 } as const;

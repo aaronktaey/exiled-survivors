@@ -23,6 +23,8 @@ export interface MenuListOptions {
   readonly width?: number;
   /** Escape, or the back button. */
   readonly onCancel?: () => void;
+  /** The cursor landed on a different row. */
+  readonly onMove?: (id: string) => void;
 }
 
 const UP_CODES = ['KeyW', 'ArrowUp'];
@@ -55,6 +57,7 @@ export class MenuList {
   private readonly scene: Phaser.Scene;
   private readonly rows: Row[] = [];
   private readonly onCancel?: () => void;
+  private readonly onMove?: (id: string) => void;
 
   private selected = 0;
   private unlocked = false;
@@ -63,6 +66,7 @@ export class MenuList {
   public constructor(scene: Phaser.Scene, options: MenuListOptions) {
     this.scene = scene;
     this.onCancel = options.onCancel;
+    this.onMove = options.onMove;
 
     const width = fitWidth(options.width ?? MENU.buttonWidth, scene.scale.width);
     const step = MENU.buttonHeight + MENU.buttonGap;
@@ -196,6 +200,7 @@ export class MenuList {
     }
     this.selected = index;
     this.refresh();
+    this.onMove?.(this.selectedId);
   }
 
   /** Steps to the next selectable row, skipping disabled ones. */
@@ -206,6 +211,7 @@ export class MenuList {
       if (row && this.isEnabled(row)) {
         this.selected = index;
         this.refresh();
+        this.onMove?.(this.selectedId);
         return;
       }
     }

@@ -133,6 +133,7 @@ export class MenuScene extends Phaser.Scene {
     }
 
     this.scene.pause();
+    this.scene.bringToTop(SCENES.confirm);
     this.scene.launch(SCENES.confirm, {
       detail: saveGame.describe(saved),
       onConfirm: () => {
@@ -158,6 +159,7 @@ export class MenuScene extends Phaser.Scene {
   /** The other screens sit on top; the menu waits, deaf, underneath. */
   private openOverlay(key: string, extra: object = {}): void {
     this.scene.pause();
+    this.scene.bringToTop(key);
     this.scene.launch(key, {
       ...extra,
       onClose: (languageChanged = false) => {

@@ -5,6 +5,7 @@ import './style.css';
 import { COLORS } from '@/config';
 import { settings } from '@/systems/Settings';
 import { registerSharpText } from '@/systems/SharpText';
+import { gear, gearBonusFor } from '@/systems/Gear';
 import { currentCanvasSize } from '@/systems/Viewport';
 import {
   BootScene,
@@ -67,8 +68,17 @@ const config: Phaser.Types.Core.GameConfig = {
 
 const game = new Phaser.Game(config);
 
-// Console handle for poking at the running game while developing.
-// `import.meta.env.DEV` is false in builds, so this drops out of the bundle.
+// Console handles for poking at the running game while developing. The
+// stash is one of them because it outlives a run, so it cannot be reached
+// through a scene. `import.meta.env.DEV` is false in builds, so this drops
+// out of the bundle.
 if (import.meta.env.DEV) {
-  (window as Window & { game?: Phaser.Game }).game = game;
+  const dev = window as Window & {
+    game?: Phaser.Game;
+    gear?: typeof gear;
+    gearBonusFor?: typeof gearBonusFor;
+  };
+  dev.game = game;
+  dev.gear = gear;
+  dev.gearBonusFor = gearBonusFor;
 }

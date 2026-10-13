@@ -1,18 +1,10 @@
 import Phaser from 'phaser';
 
-import {
-  AUDIO,
-  COLORS,
-  GEAR,
-  PLAYER,
-  POTION,
-  WEAPON,
-  type EnemyShotSpec,
-  type GearSpec,
-} from '@/config';
+import { AUDIO, COLORS, POTION, RARE, WEAPON, type EnemyShotSpec } from '@/config';
 import { Enemy } from '@/entities/Enemy';
 import { EnemyShot } from '@/entities/EnemyShot';
 import { GearDrop } from '@/entities/GearDrop';
+import type { GearItem } from '@/systems/Gear';
 import { HealthPotion } from '@/entities/HealthPotion';
 import { Player } from '@/entities/Player';
 import { Projectile } from '@/entities/Projectile';
@@ -29,9 +21,9 @@ export interface CombatHooks {
    * `guaranteed` skips the roll, which is what a 우두머리 is worth.
    */
   readonly rollSkillDrop: (bonus: number, guaranteed: boolean) => SkillDefinition | null;
-  /** A piece of 장비 to leave behind, or null when nothing is owed. */
-  readonly rollGearDrop: () => GearSpec | null;
-  readonly onGearCollected: (gear: GearSpec) => void;
+  /** A weapon to leave behind, or null when nothing is owed. */
+  readonly rollGearDrop: (fromBoss: boolean) => GearItem | null;
+  readonly onGearCollected: (item: GearItem) => void;
   /** Called when the player walks over a dropped skill. */
   readonly onSkillCollected: (skill: SkillId) => void;
 }
@@ -114,14 +106,14 @@ export class CombatSystem {
     potion?.drop(x, y);
   }
 
-  /** Places a piece of 장비 directly — used by the kill roll and debug keys. */
-  public dropGearAt(x: number, y: number, spec: GearSpec): void {
+  /** Places a weapon directly — used by the 우두머리 kill and debug keys. */
+  public dropGearAt(x: number, y: number, item: GearItem): void {
     const drop = this.gearDrops.get() as GearDrop | null;
     if (!drop) {
       return;
     }
 
-    drop.drop(x, y, spec);
+    drop.drop(x, y, item);
     this.playDropSound();
   }
 
@@ -144,15 +136,22 @@ export class CombatSystem {
     }
   }
 
-  /** Single entry point for damage, so every kill drops the same things. */
+  /**
+   * Single entry point for damage, so every kill drops the same things —
+   * and so 치명 on the carried weapon lands on everything the survivor
+   * throws, the same way a rare's 치명 lands on everything it throws.
+   */
   public hit = (enemy: Enemy, amount: number): void => {
     if (!enemy.active) {
       return;
     }
 
-    this.damageNumbers.spawn(enemy.x, enemy.y - 10, amount);
+    const crit = this.player.critChance > 0 && Math.random() < this.player.critChance;
+    const dealt = crit ? Math.round(amount * RARE.critMultiplier) : amount;
 
-    if (enemy.takeDamage(amount)) {
+    this.damageNumbers.spawn(enemy.x, enemy.y - 10, dealt, crit ? { color: COLORS.critText } : undefined);
+
+    if (enemy.takeDamage(dealt)) {
       this.killEnemy(enemy);
     }
   };
@@ -222,7 +221,7 @@ export class CombatSystem {
     }
 
     // Walking over a full health bar would waste it, so leave it lying there.
-    if (this.player.hp >= PLAYER.maxHp) {
+    if (this.player.hp >= this.player.maxHp) {
       return;
     }
 
@@ -251,9 +250,11 @@ export class CombatSystem {
       return;
     }
 
-    const { gearId } = drop;
+    const { item } = drop;
     drop.collect();
-    this.hooks.onGearCollected(GEAR[gearId]);
+    if (item) {
+      this.hooks.onGearCollected(item);
+    }
   };
 
   private killEnemy(enemy: Enemy): void {
@@ -278,7 +279,8 @@ export class CombatSystem {
       this.dropPotionAt(x, y);
     }
 
-    const found = this.hooks.rollGearDrop();
+    // Only a 우두머리 leaves a weapon, and it always does.
+    const found = this.hooks.rollGearDrop(wasBoss);
     if (found) {
       this.dropGearAt(x, y, found);
     }

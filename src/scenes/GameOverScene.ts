@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 
 import { COLORS, DEPTH, SCENES, SCRIM, TEXT } from '@/config';
 import { fill, t } from '@/i18n';
+import { fitText } from '@/systems/Layout';
 import { MenuList } from '@/systems/MenuList';
 import { prefersTouchControls } from '@/systems/VirtualJoystick';
 
@@ -39,14 +40,17 @@ export class GameOverScene extends Phaser.Scene {
     const mm = String(Math.floor(total / 60)).padStart(2, '0');
     const ss = String(total % 60).padStart(2, '0');
 
-    this.add
-      .text(centerX, height / 2 - 150, t().gameOver.title, {
-        fontFamily: 'system-ui, sans-serif',
-        fontSize: TEXT.size.hero,
-        color: COLORS.accent,
-      })
-      .setOrigin(0.5)
-      .setDepth(DEPTH.ui + 1);
+    fitText(
+      this.add
+        .text(centerX, height / 2 - 150, t().gameOver.title, {
+          fontFamily: 'system-ui, sans-serif',
+          fontSize: TEXT.size.hero,
+          color: COLORS.accent,
+        })
+        .setOrigin(0.5)
+        .setDepth(DEPTH.ui + 1),
+      width,
+    );
 
     this.add
       .text(centerX, height / 2 - 100, fill(t().gameOver.survived, { time: `${mm}:${ss}`, level: this.payload.level }), {
@@ -92,6 +96,8 @@ export class GameOverScene extends Phaser.Scene {
 
   private openSettings(): void {
     this.scene.pause();
+    // Scenes render in the order the game added them, not the order they
+    // were opened — without this, 설정 draws under the screen that opened it.
     this.scene.launch(SCENES.settings, {
       allowLanguage: false,
       onClose: (languageChanged = false) => {
@@ -103,5 +109,6 @@ export class GameOverScene extends Phaser.Scene {
         this.menu.refresh();
       },
     });
+    this.scene.bringToTop(SCENES.settings);
   }
 }

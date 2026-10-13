@@ -192,6 +192,8 @@ export class SettingsScene extends Phaser.Scene {
   /** 제작자 정보 lives under here now; it opens on top of this screen. */
   private openCredits(): void {
     this.scene.pause();
+    // Drawn over whatever opened this screen, whichever one it was.
+    this.scene.bringToTop(SCENES.credits);
     this.scene.launch(SCENES.credits, {
       onClose: () => {
         this.scene.resume();

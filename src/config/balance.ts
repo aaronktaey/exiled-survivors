@@ -151,13 +151,40 @@ export const ENEMY_KINDS: Record<EnemyKind, EnemyKindSpec> = {
   },
 };
 
-/** What a rare enemy can be born with. */
+/**
+ * ★ 강화효과 — what a rare enemy is born with, and what a dropped weapon
+ * comes out of a 우두머리 carrying.
+ *
+ * Split the way Path of Exile splits an item's modifiers: a **prefix** sits
+ * in front of the name and is the offensive line (added damage, crit), a
+ * **suffix** follows it and is the defensive or utility line (life, speed).
+ * An item there holds at most three of each, which is the ceiling used here.
+ *
+ * The same affix means the same thing to whoever carries it: 강력 makes an
+ * enemy hit half again as hard, and makes a weapon hit half again as hard.
+ * The two sides are separate fields so they can be tuned apart.
+ */
 export type AffixId = "giant" | "swift" | "critical" | "mighty";
+
+export type AffixKind = "prefix" | "suffix";
+
+/** What an affix does for whoever is holding the weapon it is on. */
+export interface GearAffixEffect {
+  /** Multiplies the weapon's attack power. */
+  readonly attackScale?: number;
+  /** Multiplies the survivor's maximum health. */
+  readonly maxHpScale?: number;
+  /** Multiplies the survivor's move speed. */
+  readonly moveSpeedScale?: number;
+  /** Chance each hit lands for RARE.critMultiplier instead. */
+  readonly critChance?: number;
+}
 
 export interface AffixSpec {
   readonly id: AffixId;
+  readonly kind: AffixKind;
   readonly name: string;
-  /** Shown under the name when the enemy is inspected. */
+  /** Shown under the name when the enemy, or the weapon, is inspected. */
   readonly detail: string;
   /** Multiplies max HP. */
   readonly hpScale?: number;
@@ -167,24 +194,55 @@ export interface AffixSpec {
   readonly damageScale?: number;
   /** Chance each of its hits lands for RARE.critMultiplier instead. */
   readonly critChance?: number;
+  /** The same affix, read from the other end of the weapon. */
+  readonly gear: GearAffixEffect;
 }
 
 export const AFFIXES: Record<AffixId, AffixSpec> = {
-  giant: { id: "giant", name: "거대", detail: "체력 +50%", hpScale: 1.5 },
-  swift: {
-    id: "swift",
-    name: "신속",
-    detail: "이동속도 +20%",
-    speedScale: 1.2,
+  // --- 접두어: what it does to whatever it is pointed at ---
+  mighty: {
+    id: "mighty",
+    kind: "prefix",
+    name: "강력",
+    detail: "피해 +50%",
+    damageScale: 1.5,
+    gear: { attackScale: 1.5 },
   },
   critical: {
     id: "critical",
+    kind: "prefix",
     name: "치명",
     detail: "치명타 확률 20%",
     critChance: 0.2,
+    gear: { critChance: 0.2 },
   },
-  mighty: { id: "mighty", name: "강력", detail: "피해 +50%", damageScale: 1.5 },
+
+  // --- 접미어: what it does for whoever is carrying it ---
+  giant: {
+    id: "giant",
+    kind: "suffix",
+    name: "거대",
+    detail: "체력 +50%",
+    hpScale: 1.5,
+    gear: { maxHpScale: 1.5 },
+  },
+  swift: {
+    id: "swift",
+    kind: "suffix",
+    name: "신속",
+    detail: "이동속도 +20%",
+    speedScale: 1.2,
+    gear: { moveSpeedScale: 1.2 },
+  },
 };
+
+export const PREFIXES: readonly AffixSpec[] = Object.values(AFFIXES).filter(
+  (affix) => affix.kind === "prefix",
+);
+
+export const SUFFIXES: readonly AffixSpec[] = Object.values(AFFIXES).filter(
+  (affix) => affix.kind === "suffix",
+);
 
 export const RARE = {
   /** Share of spawns that come up rare. */

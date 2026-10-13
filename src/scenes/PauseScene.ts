@@ -109,6 +109,7 @@ export class PauseScene extends Phaser.Scene {
   /** Settings, the guide and the notes all open over the pause screen. */
   private openOverlay(key: string, extra: object = {}): void {
     this.scene.pause();
+    this.scene.bringToTop(key);
     this.scene.launch(key, {
       ...extra,
       onClose: (languageChanged = false) => {

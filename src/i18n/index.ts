@@ -1,4 +1,12 @@
-import { AFFIXES, ENEMY_KINDS, GEAR, type AffixId, type EnemyKind, type GearId } from '@/config';
+import {
+  AFFIXES,
+  ENEMY_KINDS,
+  GEAR,
+  type AffixId,
+  type AffixKind,
+  type EnemyKind,
+  type GearId,
+} from '@/config';
 import { en } from '@/i18n/en';
 import { ja } from '@/i18n/ja';
 import { ko } from '@/i18n/ko';
@@ -119,4 +127,31 @@ export function affixDetail(id: AffixId): string {
 
 export function gearName(id: GearId): string {
   return t().names?.gear?.[id] ?? GEAR[id].name;
+}
+
+/**
+ * A weapon's rolled name, the way Path of Exile builds one: the first
+ * prefix in front of the base, the first suffix behind it. The rest of the
+ * lines are read in the 장비창 rather than crammed into the name.
+ */
+export function gearTitle(item: {
+  readonly id: GearId;
+  readonly prefixes: readonly AffixId[];
+  readonly suffixes: readonly AffixId[];
+}): string {
+  const copy = t().gear;
+  const head = item.prefixes[0];
+  const tail = item.suffixes[0];
+  const parts = [
+    head ? fill(copy.prefixWord, { affix: affixName(head) }) : '',
+    gearName(item.id),
+    tail ? fill(copy.suffixWord, { affix: affixName(tail) }) : '',
+  ];
+
+  return parts.filter(Boolean).join(' ');
+}
+
+/** "접두어" or "접미어", for the line that lists one. */
+export function affixKindName(kind: AffixKind): string {
+  return kind === 'prefix' ? t().gear.prefix : t().gear.suffix;
 }

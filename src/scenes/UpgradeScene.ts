@@ -3,6 +3,7 @@ import Phaser from 'phaser';
 import { COLORS, DEPTH, SCRIM, SKILL_ICON_SIZE, SKILL_ICONS, TEXT } from '@/config';
 import { t } from '@/i18n';
 import type { UpgradeId, UpgradeOption } from '@/systems/Progression';
+import { fitText } from '@/systems/Layout';
 import { prefersTouchControls } from '@/systems/VirtualJoystick';
 import type { SkillId } from '@/weapons/skills';
 
@@ -93,14 +94,17 @@ export class UpgradeScene extends Phaser.Scene {
         .setDepth(DEPTH.ui);
     }
 
-    this.add
-      .text(centerX, height / 2 - 150, this.payload.title, {
-        fontFamily: 'system-ui, sans-serif',
-        fontSize: TEXT.size.banner,
-        color: COLORS.text,
-      })
-      .setOrigin(0.5)
-      .setDepth(DEPTH.ui);
+    fitText(
+      this.add
+        .text(centerX, height / 2 - 150, this.payload.title, {
+          fontFamily: 'system-ui, sans-serif',
+          fontSize: TEXT.size.banner,
+          color: COLORS.text,
+        })
+        .setOrigin(0.5)
+        .setDepth(DEPTH.ui),
+      width,
+    );
 
     this.add
       .text(centerX, height / 2 - 108, this.payload.subtitle, {

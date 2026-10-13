@@ -39,7 +39,7 @@ export const STORAGE = {
   settings: "exiled-survivors:settings:v1",
   save: "exiled-survivors:save:v1",
   /** The equipment stash, which outlives any one run. */
-  gear: "exiled-survivors:gear:v1",
+  gear: "exiled-survivors:gear:v2",
 } as const;
 
 export const SAVE = {

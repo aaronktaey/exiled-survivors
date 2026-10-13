@@ -15,6 +15,56 @@ export interface PatchNote {
 
 export const PATCH_NOTES: readonly PatchNote[] = [
   {
+    version: '0.18',
+    date: '2026-10-13',
+    changes: {
+      ko: [
+        '장비에 강화효과가 생겼습니다 — 적의 강화효과를 그대로 쓰며, 공격적인 것은 접두어, 방어·이동에 관한 것은 접미어로 나뉩니다.',
+        '강화효과는 접두어 강력 · 치명, 접미어 거대 · 신속입니다. 접두어와 접미어는 각각 최대 3줄까지 붙습니다.',
+        '장비는 이제 우두머리를 처치할 때만 떨어지고, 처치할 때마다 반드시 한 자루 떨어집니다. 일반 적은 더 이상 장비를 떨어뜨리지 않습니다.',
+        '떨어진 검은 20% 확률로 강화효과 한 줄을 얻고, 성공하면 같은 확률로 한 줄씩 더 붙습니다.',
+        '검이 4종이 되었습니다 — 녹슨 검 · 무쇠 검 · 강철 검 · 룬 각인 검. 단계마다 기본 공격력이 3씩 높습니다.',
+        '장비의 공격력은 모든 스킬의 피해에 그대로 더해집니다. 치명 · 거대 · 신속은 각각 치명타 확률, 최대 체력, 이동속도로 들어옵니다.',
+        '장비 화면이 들고 있는 검과 그 검의 접두어 · 접미어, 그리고 그것이 합쳐서 무엇이 되는지를 보여줍니다.',
+        '게임 종료 후 설정을 열면 두 화면이 겹쳐 보이던 문제를 고쳤습니다.',
+        '세로 화면에서 "Exile, do something!" 이 양옆으로 잘리던 문제를 고쳤습니다. 큰 글씨는 화면 폭에 맞춰 줄어듭니다.',
+      ],
+      en: [
+        'Equipment now rolls modifiers — the same ones rare enemies wear, split so the offensive ones are prefixes and the defensive or movement ones are suffixes.',
+        'The prefixes are 강력 and 치명; the suffixes are 거대 and 신속. Three of each at most, as on a rare item in Path of Exile.',
+        'Equipment now drops only from a 우두머리, and every one of them leaves a sword. Ordinary enemies no longer drop any.',
+        'A dropped sword has a 20% chance of a modifier line, and on a success rolls again at the same odds.',
+        'There are four swords — Rusty, Iron, Steel and Runed. Each step up is worth three more attack power.',
+        "A weapon's attack power is added to every skill's damage. 치명, 거대 and 신속 come through as critical chance, maximum life and move speed.",
+        'The equipment screen reads out the sword in hand, its prefixes and suffixes, and what the lot adds up to.',
+        'Fixed the two screens drawing on top of each other when 설정 was opened after a run ended.',
+        'Fixed "Exile, do something!" running off both sides of a portrait screen. Big lines now shrink to fit.',
+      ],
+      ja: [
+        '装備に強化効果が付くようになりました — レア敵と同じものを使い、攻撃的なものは接頭辞、防御・移動に関わるものは接尾辞に分かれます。',
+        '接頭辞は強力・致命、接尾辞は巨大・迅速です。接頭辞と接尾辞はそれぞれ最大 3 行まで付きます。',
+        '装備はボスを倒したときだけ落ち、倒すたびに必ず一振り落ちます。通常の敵は落とさなくなりました。',
+        '落ちた剣は 20% で強化効果が 1 行付き、成功すると同じ確率でもう 1 行ずつ付きます。',
+        '剣が 4 種になりました — 錆びた剣・鉄の剣・鋼の剣・ルーンの剣。段階ごとに基本攻撃力が 3 ずつ上がります。',
+        '装備の攻撃力はすべてのスキルのダメージにそのまま加算されます。致命・巨大・迅速はクリティカル率・最大体力・移動速度として入ります。',
+        '装備画面が手にしている剣と、その接頭辞・接尾辞、そして合計で何になるかを表示します。',
+        'ゲーム終了後に設定を開くと二つの画面が重なって見える問題を直しました。',
+        '縦画面で「Exile, do something!」が左右に切れる問題を直しました。大きな文字は画面幅に合わせて縮みます。',
+      ],
+      zh: [
+        '装备现在会带有强化效果 — 与稀有敌人身上的相同，攻击类归为前缀，防御与移动类归为后缀。',
+        '前缀为强力、致命；后缀为巨大、迅捷。前缀与后缀各最多 3 条。',
+        '装备现在只会从首领身上掉落，且每次击杀必定掉落一把剑。普通敌人不再掉落装备。',
+        '掉落的剑有 20% 概率获得一条强化效果，成功后再以相同概率继续追加。',
+        '剑增加到 4 种 — 生锈的剑、铁剑、钢剑、符文剑。每升一级基础攻击力高 3 点。',
+        '装备的攻击力会直接加到所有技能的伤害上。致命、巨大、迅捷分别转化为暴击几率、最大生命与移动速度。',
+        '装备界面会列出手中的剑、它的前缀与后缀，以及合计的效果。',
+        '修复了游戏结束后打开设置时两个界面重叠显示的问题。',
+        '修复了竖屏下「Exile, do something!」左右被截断的问题。大号文字会随屏幕宽度缩放。',
+      ],
+    },
+  },
+  {
     version: '0.17',
     date: '2026-10-13',
     changes: {

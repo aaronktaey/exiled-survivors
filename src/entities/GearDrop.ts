@@ -1,9 +1,9 @@
 import Phaser from 'phaser';
 
-import { COLORS, DEPTH, GEAR_DROP, SKILL_LABEL, TEXT, TEXTURES, type GearId } from '@/config';
+import { COLORS, DEPTH, GEAR_DROP, SKILL_LABEL, TEXT, TEXTURES } from '@/config';
 import { GroundItem } from '@/entities/GroundItem';
-import { gearName } from '@/i18n';
-import { STARTING_GEAR, type GearSpec } from '@/config';
+import { gearTitle } from '@/i18n';
+import type { GearItem } from '@/systems/Gear';
 
 /**
  * A piece of equipment lying on the ground. Walk over it and it goes into
@@ -15,7 +15,8 @@ import { STARTING_GEAR, type GearSpec } from '@/config';
  * field on its own.
  */
 export class GearDrop extends GroundItem {
-  public gearId: GearId = STARTING_GEAR;
+  /** The weapon as it was rolled, handed over when it is walked into. */
+  public item: GearItem | null = null;
 
   private readonly label: Phaser.GameObjects.Text;
 
@@ -34,11 +35,12 @@ export class GearDrop extends GroundItem {
       .setVisible(false);
   }
 
-  public drop(x: number, y: number, spec: GearSpec): void {
-    this.gearId = spec.id;
+  public drop(x: number, y: number, item: GearItem): void {
+    this.item = item;
     this.begin(x, y, GEAR_DROP.size);
 
-    this.label.setText(gearName(spec.id));
+    // The rolled name, so what is on the ground says what it is worth.
+    this.label.setText(gearTitle(item));
     this.label.setPosition(x, y - GEAR_DROP.size / 2 - SKILL_LABEL.gap - this.label.height / 2);
     this.label.setVisible(true);
 

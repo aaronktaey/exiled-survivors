@@ -63,6 +63,8 @@ export const COLORS = {
   potionCross: 0xfff2f2,
   potionGlow: 0xff8fa0,
   healText: '#7ef0b0',
+  /** A 치명 hit of the survivor's own, so it reads apart from an ordinary one. */
+  critText: '#ffb347',
 } as const;
 
 export const DEPTH = {

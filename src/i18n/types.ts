@@ -58,17 +58,29 @@ export interface Strings {
     readonly languageTitleOnly: string;
   };
 
-  /** 장비창, which is still mostly a promise. */
+  /** 장비창, and the words a rolled weapon is described with. */
   readonly gear: {
     readonly title: string;
-    /** The piece being worn, above the list. */
+    /** The weapon in hand, above the list. */
     readonly wearing: string;
     readonly equipped: string;
     readonly equip: string;
-    /** Said plainly, so nobody waits for an effect that is not there. */
-    readonly comingSoon: string;
     readonly hintKeyboard: string;
     readonly hintTouch: string;
+    /** "접두어" / "접미어", heading the lines of each kind. */
+    readonly prefix: string;
+    readonly suffix: string;
+    /** How a rolled name wears an affix. {affix} is its name. */
+    readonly prefixWord: string;
+    readonly suffixWord: string;
+    /** The weapon's own line: flat attack power it adds to every skill. */
+    readonly attack: string;
+    /** What a weapon with no affixes says. */
+    readonly plain: string;
+    /** The stat lines a carried weapon is worth, for the summary. */
+    readonly summaryHp: string;
+    readonly summarySpeed: string;
+    readonly summaryCrit: string;
   };
 
   readonly pause: {

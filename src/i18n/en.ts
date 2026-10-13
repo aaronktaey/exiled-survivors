@@ -41,12 +41,20 @@ export const en: Strings = {
 
   gear: {
     title: 'Equipment',
-    wearing: 'Wearing',
-    equipped: 'worn',
-    equip: 'Wear',
-    comingSoon: 'Equipment does nothing yet — the stats arrive in a later update.',
-    hintKeyboard: '↑ ↓ to move   Space to wear   Esc to go back',
-    hintTouch: 'Tap a piece to wear it',
+    wearing: 'Carrying',
+    equipped: 'carried',
+    equip: 'Carry',
+    hintKeyboard: '↑ ↓ to move   Space to carry   Esc to go back',
+    hintTouch: 'Tap a weapon to carry it',
+    prefix: 'Prefix',
+    suffix: 'Suffix',
+    prefixWord: '{affix}',
+    suffixWord: 'of {affix}',
+    attack: '+{attack} attack power',
+    plain: 'No modifiers',
+    summaryHp: '+{percent}% maximum life',
+    summarySpeed: '+{percent}% move speed',
+    summaryCrit: '{percent}% critical chance',
   },
 
   pause: {
@@ -158,9 +166,9 @@ export const en: Strings = {
     enemies: { boss: 'Boss', grunt: 'Grunt', brute: 'Brute', runner: 'Runner', shooter: 'Shooter' },
     gear: {
       rustySword: 'Rusty Sword',
-      chippedAxe: 'Chipped Axe',
-      wornDagger: 'Worn Dagger',
-      crackedWand: 'Cracked Wand',
+      ironSword: 'Iron Sword',
+      steelSword: 'Steel Sword',
+      runedSword: 'Runed Sword',
     },
     affixes: { giant: 'Giant', swift: 'Swift', critical: 'Deadly', mighty: 'Mighty' },
     affixDetails: {
@@ -249,6 +257,8 @@ export const en: Strings = {
         'XP gems — one per kill, and they never expire.',
         'Skills — {skillChance} chance. A skill you already have opens an upgrade instead.',
         'Health potions — {potionChance} chance, worth {heal} of your maximum. A full health bar leaves them lying there.',
+        'Equipment — every 우두머리 leaves a sword. Walking over it puts it in your stash; you carry it from 장비 on the title screen.',
+        'A dropped sword may roll modifiers — prefixes are offensive, suffixes defensive or utility. They are the same ones rare enemies wear.',
         'Everything except gems disappears after {life}s, blinking faster over the last {warning}s.',
       ],
     },

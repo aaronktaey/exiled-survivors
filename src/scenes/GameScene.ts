@@ -1,7 +1,6 @@
 import Phaser from 'phaser';
 
 import {
-  ALL_GEAR,
   BALANCE,
   BOSS_BANNER,
   COLORS,
@@ -15,10 +14,9 @@ import {
   TEXTURES,
   TIMING,
   WORLD,
-  type GearSpec,
 } from '@/config';
 import { Player } from '@/entities/Player';
-import { fill, gearName, skillName, t } from '@/i18n';
+import { fill, gearTitle, skillName, t } from '@/i18n';
 import { GameOverScene, type GameOverData } from '@/scenes/GameOverScene';
 import { UpgradeScene, type UpgradeChoiceData } from '@/scenes/UpgradeScene';
 import {
@@ -26,6 +24,7 @@ import {
   upgradeOptionsFor,
   DamageNumbers,
   DebugOverlay,
+  fitText,
   Hud,
   Progression,
   type LoadoutEntry,
@@ -37,7 +36,14 @@ import {
 import { RareTooltip } from '@/systems/RareTooltip';
 import { sfx } from '@/systems/Sfx';
 import { saveGame, type SavedRun } from '@/systems/SaveGame';
-import { gear } from '@/systems/Gear';
+import {
+  NO_BONUS,
+  gear,
+  gearBonusFor,
+  rollGearItem,
+  type GearBonus,
+  type GearItem,
+} from '@/systems/Gear';
 import { settings } from '@/systems/Settings';
 import { TiltInput, tiltAvailable } from '@/systems/TiltInput';
 import {
@@ -95,6 +101,8 @@ export class GameScene extends Phaser.Scene {
   private damageNumbers!: DamageNumbers;
   private debug!: DebugOverlay;
   private rareTooltip!: RareTooltip;
+  /** What the carried weapon is worth, read once as the run is built. */
+  private gearBonus: GearBonus = NO_BONUS;
   /** The touch steering in use, so a settings change can replace it. */
   private analog?: AnalogInput;
   /** Drops the settings subscription when the run ends. */
@@ -139,7 +147,11 @@ export class GameScene extends Phaser.Scene {
 
     this.createFloor();
 
+    // The weapon is picked on the title screen, so it is fixed for the run.
+    this.gearBonus = gearBonusFor(gear.equipped);
+
     this.player = new Player(this, WORLD.width / 2, WORLD.height / 2);
+    this.player.applyGear(this.gearBonus);
     this.cameras.main.startFollow(this.player, true, 0.12, 0.12);
 
     this.progression = new Progression();
@@ -159,7 +171,7 @@ export class GameScene extends Phaser.Scene {
       {
         rollSkillDrop: (bonus, guaranteed) => this.rollSkillDrop(bonus, guaranteed),
         onSkillCollected: (skill) => this.onSkillCollected(skill),
-        rollGearDrop: () => this.rollGearDrop(),
+        rollGearDrop: (fromBoss) => this.rollGearDrop(fromBoss),
         onGearCollected: (found) => this.onGearCollected(found),
       },
     );
@@ -404,6 +416,7 @@ export class GameScene extends Phaser.Scene {
     this.writeSave();
     this.rareTooltip.hide();
     this.scene.pause();
+    this.scene.bringToTop(SCENES.pause);
     this.scene.launch(SCENES.pause, {
       elapsedMs: this.elapsedMs,
       level: this.progression.level,
@@ -472,46 +485,35 @@ export class GameScene extends Phaser.Scene {
   }
 
   /**
-   * 장비 a kill might leave behind. Only pieces not already in the stash
-   * are rolled for, so a full stash simply stops dropping — there is nothing
-   * to do with a second copy until the system has something to say about it.
+   * The weapon a kill leaves behind. Only a 우두머리 leaves one, and it
+   * always does — one a minute, which is what makes walking towards one
+   * worth the trouble. What it is, and what it rolled, is Gear's business.
    */
-  private rollGearDrop(): GearSpec | null {
-    if (Math.random() >= GEAR_DROP.chance) {
+  private rollGearDrop(fromBoss: boolean): GearItem | null {
+    if (GEAR_DROP.fromBossOnly && !fromBoss) {
       return null;
     }
 
-    const candidates = ALL_GEAR.filter(
-      (spec) => spec.weight > 0 && !(GEAR_DROP.skipOwned && gear.has(spec.id)),
-    );
-    if (candidates.length === 0) {
-      return null;
-    }
-
-    const total = candidates.reduce((sum, spec) => sum + spec.weight, 0);
-    let roll = Math.random() * total;
-    for (const spec of candidates) {
-      roll -= spec.weight;
-      if (roll <= 0) {
-        return spec;
-      }
-    }
-
-    return candidates[candidates.length - 1] ?? null;
+    return rollGearItem();
   }
 
   /**
-   * A piece goes straight into the stash, which outlives the run. Putting it
-   * on is the title screen's business, so a run is never interrupted by it.
+   * A weapon goes straight into the stash, which outlives the run. Putting
+   * it on is the title screen's business, so a run is never interrupted.
    */
-  private onGearCollected(found: GearSpec): void {
-    gear.own(found.id);
-    this.announce(fill(t().game.gearFound, { gear: gearName(found.id) }));
+  private onGearCollected(found: GearItem): void {
+    gear.add(found);
+    this.announce(fill(t().game.gearFound, { gear: gearTitle(found) }));
   }
 
-  /** Upgraded damage after the balance dial for that skill. */
+  /**
+   * Upgraded damage after the carried weapon and the balance dial for that
+   * skill. The weapon's attack power is flat and lands before the dial, so a
+   * skill tuned down gets a tuned-down share of it too.
+   */
   private damageOf(skill: SkillId): number {
-    return this.progression.statsFor(skill).damage * (BALANCE.damageScale[skill] ?? 1);
+    const base = this.progression.statsFor(skill).damage + this.gearBonus.attack;
+    return base * (BALANCE.damageScale[skill] ?? 1);
   }
 
   private loadout(): ReadonlyArray<LoadoutEntry> {
@@ -673,6 +675,7 @@ export class GameScene extends Phaser.Scene {
       options: upgradeOptionsFor(SKILLS[request.skill], this.progression.statsFor(request.skill)),
       onPick: (upgrade) => this.onUpgradePicked(request.skill, upgrade),
     };
+    this.scene.bringToTop(UpgradeScene.KEY);
     this.scene.launch(UpgradeScene.KEY, data);
   }
 
@@ -700,6 +703,7 @@ export class GameScene extends Phaser.Scene {
       survivedMs: this.elapsedMs,
       onRestart: () => this.scene.restart(),
     };
+    this.scene.bringToTop(GameOverScene.KEY);
     this.scene.launch(GameOverScene.KEY, data);
   }
 
@@ -707,30 +711,38 @@ export class GameScene extends Phaser.Scene {
   private showIntro(): void {
     const camera = this.cameras.main;
 
-    const title = this.add
-      .text(camera.width / 2, camera.height / 2 - 24, t().game.intro, {
-        fontFamily: 'system-ui, sans-serif',
-        fontSize: TEXT.size.huge,
-        color: COLORS.text,
-      })
-      .setOrigin(0.5)
-      .setScrollFactor(0)
-      .setDepth(DEPTH.ui);
-
-    const hint = this.add
-      .text(
-        camera.width / 2,
-        camera.height / 2 + 32,
-        prefersTouchControls() ? t().game.introHintTouch : t().game.introHintKeyboard,
-        {
+    // The line is sized for a 960-wide canvas; a phone's is 420, where it
+    // used to run off both sides.
+    const title = fitText(
+      this.add
+        .text(camera.width / 2, camera.height / 2 - 24, t().game.intro, {
           fontFamily: 'system-ui, sans-serif',
-          fontSize: TEXT.size.label,
-          color: COLORS.accent,
-        },
-      )
-      .setOrigin(0.5)
-      .setScrollFactor(0)
-      .setDepth(DEPTH.ui);
+          fontSize: TEXT.size.huge,
+          color: COLORS.text,
+        })
+        .setOrigin(0.5)
+        .setScrollFactor(0)
+        .setDepth(DEPTH.ui),
+      camera.width,
+    );
+
+    const hint = fitText(
+      this.add
+        .text(
+          camera.width / 2,
+          camera.height / 2 + 32,
+          prefersTouchControls() ? t().game.introHintTouch : t().game.introHintKeyboard,
+          {
+            fontFamily: 'system-ui, sans-serif',
+            fontSize: TEXT.size.label,
+            color: COLORS.accent,
+          },
+        )
+        .setOrigin(0.5)
+        .setScrollFactor(0)
+        .setDepth(DEPTH.ui),
+      camera.width,
+    );
 
     this.tweens.add({
       targets: [title, hint],

@@ -1,23 +1,152 @@
-import { GEAR, STARTING_GEAR, STORAGE, type GearId, type GearSpec } from '@/config';
+import {
+  AFFIXES,
+  GEAR,
+  GEAR_DROP,
+  PREFIXES,
+  STARTING_GEAR,
+  STORAGE,
+  SUFFIXES,
+  attackForTier,
+  type AffixId,
+  type AffixSpec,
+  type GearId,
+  type GearSpec,
+} from '@/config';
+
+/**
+ * One weapon, as it was rolled. Two 강철 검 can both be held and be worth
+ * different things, so an item carries its own id rather than being its
+ * base.
+ */
+export interface GearItem {
+  readonly uid: string;
+  readonly id: GearId;
+  readonly prefixes: readonly AffixId[];
+  readonly suffixes: readonly AffixId[];
+}
 
 /** What the stash holds, as it is written to localStorage. */
 export interface GearState {
-  /** Every piece found so far, including the one that was there to start. */
-  readonly owned: readonly GearId[];
-  readonly equipped: GearId;
+  readonly items: readonly GearItem[];
+  /** The uid of the weapon in hand. */
+  readonly equipped: string;
 }
 
-const DEFAULTS: GearState = { owned: [STARTING_GEAR], equipped: STARTING_GEAR };
+/** Everything a weapon is worth to whoever is holding it. */
+export interface GearBonus {
+  /** Flat damage added to every skill's hit. */
+  readonly attack: number;
+  readonly maxHpScale: number;
+  readonly moveSpeedScale: number;
+  readonly critChance: number;
+}
+
+export const NO_BONUS: GearBonus = {
+  attack: 0,
+  maxHpScale: 1,
+  moveSpeedScale: 1,
+  critChance: 0,
+};
+
+const STARTER_UID = 'starter';
+
+const DEFAULTS: GearState = {
+  items: [{ uid: STARTER_UID, id: STARTING_GEAR, prefixes: [], suffixes: [] }],
+  equipped: STARTER_UID,
+};
 
 type Listener = (state: GearState) => void;
 
+let nextUid = 1;
+
+/** Every affix on an item, prefixes first, as the specs behind them. */
+export function affixesOf(item: GearItem): readonly AffixSpec[] {
+  return [...item.prefixes, ...item.suffixes]
+    .map((id) => AFFIXES[id])
+    .filter((spec): spec is AffixSpec => spec !== undefined);
+}
+
 /**
- * The equipment stash: what has been found, and what is being worn.
+ * What an item is worth. The scales multiply, so two 강력 compound, and crit
+ * chance adds up and stops at certain — the same arithmetic a rare enemy's
+ * affixes go through.
+ */
+export function gearBonusFor(item: GearItem | null): GearBonus {
+  if (!item || !GEAR[item.id]) {
+    return NO_BONUS;
+  }
+
+  let attackScale = 1;
+  let maxHpScale = 1;
+  let moveSpeedScale = 1;
+  let critChance = 0;
+
+  for (const affix of affixesOf(item)) {
+    attackScale *= affix.gear.attackScale ?? 1;
+    maxHpScale *= affix.gear.maxHpScale ?? 1;
+    moveSpeedScale *= affix.gear.moveSpeedScale ?? 1;
+    critChance = Math.min(1, critChance + (affix.gear.critChance ?? 0));
+  }
+
+  return {
+    attack: Math.round(attackForTier(GEAR[item.id].tier) * attackScale),
+    maxHpScale,
+    moveSpeedScale,
+    critChance,
+  };
+}
+
+/**
+ * A weapon as a 우두머리 leaves it: a base from the roster, then affix lines
+ * that each have to win their own roll. Repeats are allowed, the way a rare
+ * enemy can be born doubly 거대 — there are fewer affixes than the ceiling,
+ * and a second 강력 is a fine way to say "much harder".
+ */
+export function rollGearItem(): GearItem {
+  const total = Object.values(GEAR).reduce((sum, spec) => sum + spec.weight, 0);
+  let roll = Math.random() * total;
+  let base: GearSpec = GEAR[STARTING_GEAR];
+  for (const spec of Object.values(GEAR)) {
+    roll -= spec.weight;
+    if (roll <= 0) {
+      base = spec;
+      break;
+    }
+  }
+
+  const prefixes: AffixId[] = [];
+  const suffixes: AffixId[] = [];
+  const room = () =>
+    (prefixes.length < GEAR_DROP.maxPrefixes ? PREFIXES.length : 0) +
+    (suffixes.length < GEAR_DROP.maxSuffixes ? SUFFIXES.length : 0);
+
+  while (room() > 0 && Math.random() < GEAR_DROP.affixChance) {
+    // Pick among whichever side still has room, so a full set of prefixes
+    // does not stop the suffixes from rolling.
+    const canPrefix = prefixes.length < GEAR_DROP.maxPrefixes && PREFIXES.length > 0;
+    const canSuffix = suffixes.length < GEAR_DROP.maxSuffixes && SUFFIXES.length > 0;
+    const takePrefix = canPrefix && (!canSuffix || Math.random() < 0.5);
+    const pool = takePrefix ? PREFIXES : SUFFIXES;
+    const picked = pool[Math.floor(Math.random() * pool.length)];
+    if (!picked) {
+      break;
+    }
+
+    (takePrefix ? prefixes : suffixes).push(picked.id);
+  }
+
+  nextUid += 1;
+  return { uid: `g${Date.now().toString(36)}${nextUid}`, id: base.id, prefixes, suffixes };
+}
+
+/**
+ * The equipment stash: what has been found, and what is being carried.
  *
  * It sits beside the settings rather than inside a save, because it outlives
- * a run on purpose — a piece found in a run that ended badly is still yours,
- * and the title screen is where it goes on. Storage is allowed to fail: a
- * blocked localStorage just means the stash lasts as long as the tab does.
+ * a run on purpose — a weapon a 우두머리 left in a run that ended badly is
+ * still yours, and the title screen is where it goes on. Storage is allowed
+ * to fail: a blocked localStorage just means the stash lasts as long as the
+ * tab does.
  */
 class GearStore {
   private current: GearState = { ...DEFAULTS };
@@ -31,42 +160,45 @@ class GearStore {
     return this.current;
   }
 
-  /** Every owned piece, in the order the roster lists them. */
-  public get owned(): readonly GearSpec[] {
-    const held = new Set(this.value.owned);
-    return Object.values(GEAR).filter((spec) => held.has(spec.id));
+  /** Everything held, best first, so the list reads as a ladder. */
+  public get items(): readonly GearItem[] {
+    return [...this.value.items].sort((a, b) => {
+      const tier = (GEAR[b.id]?.tier ?? 0) - (GEAR[a.id]?.tier ?? 0);
+      return tier !== 0 ? tier : affixesOf(b).length - affixesOf(a).length;
+    });
   }
 
-  public get equipped(): GearSpec {
-    return GEAR[this.value.equipped] ?? GEAR[STARTING_GEAR];
+  public get equipped(): GearItem {
+    return this.value.items.find((item) => item.uid === this.value.equipped) ?? DEFAULTS.items[0];
   }
 
-  public has(id: GearId): boolean {
-    return this.value.owned.includes(id);
+  public get equippedSpec(): GearSpec {
+    return GEAR[this.equipped.id] ?? GEAR[STARTING_GEAR];
   }
 
-  /** Adds a piece to the stash. Returns false if it was already there. */
-  public own(id: GearId): boolean {
-    if (!GEAR[id] || this.has(id)) {
+  /** What the survivor is getting out of what they are holding. */
+  public get bonus(): GearBonus {
+    return gearBonusFor(this.equipped);
+  }
+
+  /** Adds a weapon to the stash. It is not put on; that is done on the title. */
+  public add(item: GearItem): GearItem {
+    this.commit({ ...this.value, items: [...this.value.items, item] });
+    return item;
+  }
+
+  /** Puts a weapon on. Only something already in the stash can be carried. */
+  public equip(uid: string): boolean {
+    if (!this.value.items.some((item) => item.uid === uid) || this.value.equipped === uid) {
       return false;
     }
 
-    this.commit({ ...this.value, owned: [...this.value.owned, id] });
-    return true;
-  }
-
-  /** Puts a piece on. Only something already in the stash can be worn. */
-  public equip(id: GearId): boolean {
-    if (!this.has(id) || this.value.equipped === id) {
-      return false;
-    }
-
-    this.commit({ ...this.value, equipped: id });
+    this.commit({ ...this.value, equipped: uid });
     return true;
   }
 
   public reset(): GearState {
-    this.commit({ ...DEFAULTS });
+    this.commit({ items: [...DEFAULTS.items], equipped: DEFAULTS.equipped });
     return this.current;
   }
 
@@ -103,15 +235,24 @@ class GearStore {
 
   /** A hand-edited or stale payload cannot leave the survivor empty-handed. */
   private sanitise(raw: GearState): GearState {
-    const owned = (Array.isArray(raw.owned) ? raw.owned : []).filter(
-      (id: GearId) => GEAR[id] !== undefined,
-    );
-    if (!owned.includes(STARTING_GEAR)) {
-      owned.unshift(STARTING_GEAR);
+    const items: GearItem[] = (Array.isArray(raw.items) ? raw.items : [])
+      .filter(
+        (item: GearItem) =>
+          item && GEAR[item.id] !== undefined && typeof item.uid === 'string',
+      )
+      .map((item: GearItem) => ({
+        uid: item.uid,
+        id: item.id,
+        prefixes: (item.prefixes ?? []).filter((id: AffixId) => AFFIXES[id]?.kind === 'prefix'),
+        suffixes: (item.suffixes ?? []).filter((id: AffixId) => AFFIXES[id]?.kind === 'suffix'),
+      }));
+
+    if (!items.some((item) => item.uid === STARTER_UID)) {
+      items.unshift({ ...DEFAULTS.items[0]! });
     }
 
-    const equipped = owned.includes(raw.equipped) ? raw.equipped : STARTING_GEAR;
-    return { owned: [...new Set(owned)], equipped };
+    const equipped = items.some((item) => item.uid === raw.equipped) ? raw.equipped : STARTER_UID;
+    return { items, equipped };
   }
 }
 
