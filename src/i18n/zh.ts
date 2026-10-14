@@ -66,7 +66,7 @@ export const zh: Strings = {
     orbAdded: '{orb} — 新增 {affix}',
     orbUpgraded: '{orb} — {from} → {to}',
     orbDestroyed: '{orb} — 装备被摧毁了',
-    hintKeyboard: '↑ ↓ 移动   Space 装备   1~3 宝珠   Del 丢弃   Esc 返回',
+    hintKeyboard: '↑ ↓ 移动   Space 装备   {keys} 宝珠   Del 丢弃   Esc 返回',
     hintTouch: '点击装备 — 丢弃与宝珠在下方按钮',
     lockedHint: '存档中的一局正持有该武器 — 请先结束该局或重新开始',
     prefix: '词缀前缀',

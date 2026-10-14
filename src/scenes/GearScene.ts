@@ -243,7 +243,7 @@ export class GearScene extends Phaser.Scene {
             ? copy.lockedHint
             : prefersTouchControls()
               ? copy.hintTouch
-              : copy.hintKeyboard,
+              : fill(copy.hintKeyboard, { keys: `1~${ALL_ORBS.length}` }),
           { fontFamily: 'system-ui, sans-serif', fontSize: TEXT.size.hint, color: COLORS.muted },
         )
         .setOrigin(0.5)
@@ -354,7 +354,8 @@ export class GearScene extends Phaser.Scene {
       return;
     }
 
-    const index = ['Digit1', 'Digit2', 'Digit3'].indexOf(event.code);
+    // One key per 구슬, in the order they are drawn, however many there are.
+    const index = ALL_ORBS.findIndex((_, i) => event.code === `Digit${i + 1}`);
     const orb = index >= 0 ? ALL_ORBS[index] : undefined;
     if (orb) {
       this.pressOrb(orb.id);

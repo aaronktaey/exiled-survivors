@@ -66,7 +66,7 @@ export const ja: Strings = {
     orbAdded: '{orb} — {affix} を追加',
     orbUpgraded: '{orb} — {from} → {to}',
     orbDestroyed: '{orb} — 装備が壊れました',
-    hintKeyboard: '↑ ↓ 移動   Space 装備   1~3 球   Del 捨てる   Esc 戻る',
+    hintKeyboard: '↑ ↓ 移動   Space 装備   {keys} 球   Del 捨てる   Esc 戻る',
     hintTouch: 'タップで装備 — 廃棄と球は下のボタン',
     lockedHint: 'セーブ中の回が装備しているため変更できません — その回を終えるか、新しく始めてください',
     prefix: '接頭辞',

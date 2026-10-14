@@ -70,7 +70,7 @@ export const ko: Strings = {
     orbAdded: '{orb} — {affix} 추가',
     orbUpgraded: '{orb} — {from} → {to}',
     orbDestroyed: '{orb} — 장비가 파괴되었습니다',
-    hintKeyboard: '↑ ↓ 이동   Space 착용   1~3 구슬   Del 버리기   Esc 돌아가기',
+    hintKeyboard: '↑ ↓ 이동   Space 착용   {keys} 구슬   Del 버리기   Esc 돌아가기',
     hintTouch: '탭해서 착용 — 버리기와 구슬은 아래 버튼',
     lockedHint: '저장된 판이 있어 교체할 수 없습니다 — 그 판을 끝내거나 새로 시작하세요',
     prefix: '접두어',
