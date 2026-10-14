@@ -34,3 +34,8 @@ coverage/
 # Keeping the 6.5k-file pack here also slows local builds, since Vite copies
 # everything in public/; move it out of public/ if that becomes annoying.
 public/assets/Free - Raven Fantasy Icons/
+
+# The test harness drives a real Chrome; neither its profile nor the
+# screenshots it takes belong in the repo.
+tests/chrome-profile/
+tests/shots/
