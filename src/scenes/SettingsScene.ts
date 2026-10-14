@@ -1,11 +1,11 @@
 import Phaser from 'phaser';
 
 import { COLORS, DEPTH, JOYSTICK, MENU, SCENES, SCRIM, TEXT } from '@/config';
-import { centredTop } from '@/systems/Layout';
-import { languageName, t } from '@/i18n';
+import { centredTop, fitWidth } from '@/systems/Layout';
+import { fill, languageName, t } from '@/i18n';
 import { bgm } from '@/systems/Bgm';
 import { MenuList } from '@/systems/MenuList';
-import { settings, type MovementMode } from '@/systems/Settings';
+import { MOVEMENT_MODES, settings, type MovementMode } from '@/systems/Settings';
 import { requestTiltPermission, tiltAvailable } from '@/systems/TiltInput';
 import { prefersTouchControls } from '@/systems/VirtualJoystick';
 
@@ -79,6 +79,7 @@ export class SettingsScene extends Phaser.Scene {
       y: top + MENU.titleBlockHeight + MENU.buttonHeight / 2,
       width: 420,
       onCancel: () => this.close(),
+      onMove: () => this.setHint(),
       items: [
         {
           id: 'language',
@@ -134,8 +135,11 @@ export class SettingsScene extends Phaser.Scene {
         fontSize: TEXT.size.hint,
         color: COLORS.muted,
         align: 'center',
+        // A phone's canvas is 420 across and this line is the longest on the
+        // screen; without the wrap it ran off both sides at once.
+        wordWrap: { width: fitWidth(560, width) },
       })
-      .setOrigin(0.5)
+      .setOrigin(0.5, 1)
       .setDepth(DEPTH.ui + 1);
     this.setHint();
 
@@ -242,10 +246,20 @@ export class SettingsScene extends Phaser.Scene {
     }
 
     // How the steering works matters on a phone; which keys do what matters
-    // everywhere else.
-    this.hint.setText(
-      prefersTouchControls() ? modeHint(settings.value.movementMode) : t().settings.hint,
-    );
+    // everywhere else. On the row that chooses it, say what the other way is
+    // as well — a setting nobody can tell is there may as well not be.
+    if (prefersTouchControls()) {
+      const other = MOVEMENT_MODES.find((mode) => mode !== settings.value.movementMode);
+      this.hint.setText(
+        this.menu.selectedId === 'movement' && other
+          ? `${modeHint(settings.value.movementMode)}
+${fill(t().settings.modeOther, { mode: modeName(other) })}`
+          : modeHint(settings.value.movementMode),
+      );
+      return;
+    }
+
+    this.hint.setText(t().settings.hint);
   }
 
   private close(): void {

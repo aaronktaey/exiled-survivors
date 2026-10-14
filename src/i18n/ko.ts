@@ -53,6 +53,7 @@ export const ko: Strings = {
     hintTilt: '기기를 기울여 움직입니다. 패드는 표시되지 않습니다   ·   Esc 돌아가기',
     languageTitleOnly: '언어는 타이틀 화면에서만 바꿀 수 있습니다',
     tiltRefused: '이 기기에서는 기울이기를 쓸 수 없습니다',
+    modeOther: '◀ ▶ 로 {mode}{으로} 바꿀 수 있습니다',
   },
 
   gear: {
@@ -69,18 +70,12 @@ export const ko: Strings = {
     hintTouch: '탭해서 착용 — 버리기와 구슬은 아래 버튼',
     prefix: '접두어',
     suffix: '접미어',
+    tier: '{tier}티어',
     prefixWord: '{affix}의',
     suffixWord: '· {affix}',
     attack: '공격력 +{attack}',
     attack2: '공격속도 +{percent}%',
     plain: '속성 없음',
-    summaryHp: '최대 체력 +{percent}%',
-    summarySpeed: '이동속도 +{percent}%',
-    summaryCrit: '치명타 확률 {percent}%',
-    summaryCritDamage: '치명타 피해 +{percent}%',
-    summaryRegen: '5초당 체력 +{amount}',
-    summaryEvade: '무적 시간 +{percent}%',
-    summaryPickup: '획득 범위 +{percent}%',
   },
 
   pause: {

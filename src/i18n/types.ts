@@ -75,6 +75,8 @@ export interface Strings {
     readonly hintFloating: string;
     readonly hintTilt: string;
     readonly tiltRefused: string;
+    /** Says the other way of steering exists. {mode} is its name. */
+    readonly modeOther: string;
     /** Why the Language row is dim while a run is going. */
     readonly languageTitleOnly: string;
   };
@@ -96,9 +98,11 @@ export interface Strings {
     readonly orbNone: string;
     readonly hintKeyboard: string;
     readonly hintTouch: string;
-    /** "접두어" / "접미어", heading the lines of each kind. */
+    /** "접두어" / "접미어", heading the slots of each kind. */
     readonly prefix: string;
     readonly suffix: string;
+    /** Which rung an 속성 rolled. {tier} is the number; 1 is the best. */
+    readonly tier: string;
     /** How a rolled name wears an affix. {affix} is its name. */
     readonly prefixWord: string;
     readonly suffixWord: string;
@@ -108,14 +112,6 @@ export interface Strings {
     readonly attack2: string;
     /** What a weapon with no affixes says. */
     readonly plain: string;
-    /** The stat lines a carried weapon is worth, for the summary. */
-    readonly summaryHp: string;
-    readonly summarySpeed: string;
-    readonly summaryCrit: string;
-    readonly summaryCritDamage: string;
-    readonly summaryRegen: string;
-    readonly summaryEvade: string;
-    readonly summaryPickup: string;
   };
 
   readonly pause: {

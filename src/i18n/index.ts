@@ -3,6 +3,7 @@ import {
   ENEMY_KINDS,
   GEAR,
   ORBS,
+  affixTier,
   PASSIVES,
   type AffixId,
   type AffixKind,
@@ -16,7 +17,7 @@ import { ja } from '@/i18n/ja';
 import { ko } from '@/i18n/ko';
 import { zh } from '@/i18n/zh';
 import type { Language, Strings } from '@/i18n/types';
-import { objectParticle, subjectParticle } from '@/systems/korean';
+import { objectParticle, subjectParticle, towardParticle } from '@/systems/korean';
 import { SKILLS, type SkillId, type SkillTag } from '@/weapons/skills';
 
 export type { Language, Strings, GuideBlock } from '@/i18n/types';
@@ -77,18 +78,21 @@ export function detectLanguage(): Language {
 
 /**
  * Fills {placeholders} in a line. Korean particles are placeholders too:
- * {이가} and {을를} look at the value that came before them, so a template
- * never has to know which name will land in it.
+ * {이가}, {을를} and {으로} look at the value that came before them, so a
+ * template never has to know which name will land in it.
  */
 export function fill(template: string, values: Record<string, string | number> = {}): string {
   let last = '';
 
-  return template.replace(/\{(\w+|이가|을를)\}/g, (_match, key: string) => {
+  return template.replace(/\{(\w+|이가|을를|으로)\}/g, (_match, key: string) => {
     if (key === '이가') {
       return subjectParticle(last);
     }
     if (key === '을를') {
       return objectParticle(last);
+    }
+    if (key === '으로') {
+      return towardParticle(last);
     }
 
     const value = values[key];
@@ -130,14 +134,12 @@ export function affixDetail(id: AffixId): string {
 }
 
 /**
- * The same line as it reads on a weapon. Most 속성 do one thing wherever
- * they land and fall back to the general wording; 거대 is worth half as much
- * to a survivor as to an enemy, so it says so.
+ * The same line as it reads on a weapon at one rung. A locale may rename the
+ * 속성 itself; the numbers come off the tier ladder, which is the same in
+ * every language.
  */
-export function affixGearDetail(id: AffixId): string {
-  return (
-    t().names?.affixGearDetails?.[id] ?? AFFIXES[id].gearDetail ?? affixDetail(id)
-  );
+export function affixGearDetail(id: AffixId, tier: number): string {
+  return affixTier(id, tier)?.detail ?? affixDetail(id);
 }
 
 /** The 구슬's full name, its one-word form, and what it does. */
@@ -160,8 +162,8 @@ export function gearName(id: GearId): string {
 /** "무쇠 검+3" — the base, and how many 속성 it rolled. */
 export function gearLabel(item: {
   readonly id: GearId;
-  readonly prefixes: readonly AffixId[];
-  readonly suffixes: readonly AffixId[];
+  readonly prefixes: readonly { readonly id: AffixId }[];
+  readonly suffixes: readonly { readonly id: AffixId }[];
 }): string {
   const count = item.prefixes.length + item.suffixes.length;
   return count > 0 ? `${gearName(item.id)}+${count}` : gearName(item.id);
@@ -182,16 +184,16 @@ export function passiveDetail(id: PassiveId): string {
  */
 export function gearTitle(item: {
   readonly id: GearId;
-  readonly prefixes: readonly AffixId[];
-  readonly suffixes: readonly AffixId[];
+  readonly prefixes: readonly { readonly id: AffixId }[];
+  readonly suffixes: readonly { readonly id: AffixId }[];
 }): string {
   const copy = t().gear;
   const head = item.prefixes[0];
   const tail = item.suffixes[0];
   const parts = [
-    head ? fill(copy.prefixWord, { affix: affixName(head) }) : '',
+    head ? fill(copy.prefixWord, { affix: affixName(head.id) }) : '',
     gearName(item.id),
-    tail ? fill(copy.suffixWord, { affix: affixName(tail) }) : '',
+    tail ? fill(copy.suffixWord, { affix: affixName(tail.id) }) : '',
   ];
 
   return parts.filter(Boolean).join(' ');

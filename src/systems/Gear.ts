@@ -7,9 +7,14 @@ import {
   STARTING_GEAR,
   STORAGE,
   SUFFIXES,
+  LEGACY_AFFIX_TIER,
   ORBS,
+  affixTier,
   attackForTier,
+  rollAffixTier,
   type AffixId,
+  type AffixLine,
+  type GearAffixEffect,
   type AffixSpec,
   type GearId,
   type DropTier,
@@ -25,8 +30,8 @@ import {
 export interface GearItem {
   readonly uid: string;
   readonly id: GearId;
-  readonly prefixes: readonly AffixId[];
-  readonly suffixes: readonly AffixId[];
+  readonly prefixes: readonly AffixLine[];
+  readonly suffixes: readonly AffixLine[];
 }
 
 /** What the stash holds, as it is written to localStorage. */
@@ -75,11 +80,26 @@ type Listener = (state: GearState) => void;
 
 let nextUid = 1;
 
-/** Every affix on an item, prefixes first, as the specs behind them. */
-export function affixesOf(item: GearItem): readonly AffixSpec[] {
-  return [...item.prefixes, ...item.suffixes]
-    .map((id) => AFFIXES[id])
-    .filter((spec): spec is AffixSpec => spec !== undefined);
+/** One 속성 on a weapon: which it is, which rung, and what that rung does. */
+export interface RolledAffix {
+  readonly line: AffixLine;
+  readonly spec: AffixSpec;
+  readonly effect: GearAffixEffect;
+  /** What this rung reads as on a weapon. */
+  readonly detail: string;
+}
+
+/** Every 속성 on an item, prefixes first, each at the rung it rolled. */
+export function affixesOf(item: GearItem): readonly RolledAffix[] {
+  const out: RolledAffix[] = [];
+  for (const line of [...item.prefixes, ...item.suffixes]) {
+    const spec = AFFIXES[line.id];
+    const rung = affixTier(line.id, line.tier);
+    if (spec && rung) {
+      out.push({ line, spec, effect: rung.gear, detail: rung.detail });
+    }
+  }
+  return out;
 }
 
 /**
@@ -103,12 +123,7 @@ export function gearBonusFor(item: GearItem | null): GearBonus {
   let critChance = 0;
   let critMultiplierBonus = 0;
 
-  for (const affix of affixesOf(item)) {
-    const effect = affix.gear;
-    if (!effect) {
-      continue;
-    }
-
+  for (const { effect } of affixesOf(item)) {
     attackBonus += effect.attackBonus ?? 0;
     attackScale *= effect.attackScale ?? 1;
     attackSpeedScale *= effect.attackSpeedScale ?? 1;
@@ -158,11 +173,11 @@ export function tierForLines(lines: number): DropTier {
  * four does not quietly become three prefixes and a dead roll.
  */
 export function rollAffixLines(count: number): {
-  prefixes: AffixId[];
-  suffixes: AffixId[];
+  prefixes: AffixLine[];
+  suffixes: AffixLine[];
 } {
-  const prefixes: AffixId[] = [];
-  const suffixes: AffixId[] = [];
+  const prefixes: AffixLine[] = [];
+  const suffixes: AffixLine[] = [];
 
   for (let i = 0; i < count; i++) {
     const canPrefix = prefixes.length < GEAR_DROP.maxPrefixes && PREFIXES.length > 0;
@@ -178,7 +193,7 @@ export function rollAffixLines(count: number): {
       break;
     }
 
-    (takePrefix ? prefixes : suffixes).push(picked.id);
+    (takePrefix ? prefixes : suffixes).push({ id: picked.id, tier: rollAffixTier(picked.id) });
   }
 
   return { prefixes, suffixes };
@@ -208,8 +223,8 @@ export function orbApplied(item: GearItem, orb: OrbSpec): GearItem | null {
     return null;
   }
 
-  const prefixes = [...item.prefixes];
-  const suffixes = [...item.suffixes];
+  const prefixes: AffixLine[] = [...item.prefixes];
+  const suffixes: AffixLine[] = [...item.suffixes];
   for (let i = 0; i < orb.add; i++) {
     const canPrefix = prefixes.length < GEAR_DROP.maxPrefixes && PREFIXES.length > 0;
     const canSuffix = suffixes.length < GEAR_DROP.maxSuffixes && SUFFIXES.length > 0;
@@ -224,7 +239,7 @@ export function orbApplied(item: GearItem, orb: OrbSpec): GearItem | null {
       break;
     }
 
-    (takePrefix ? prefixes : suffixes).push(picked.id);
+    (takePrefix ? prefixes : suffixes).push({ id: picked.id, tier: rollAffixTier(picked.id) });
   }
 
   return { ...item, prefixes, suffixes };
@@ -259,8 +274,8 @@ export function rollGearItem(): GearItem {
     }
   }
 
-  const prefixes: AffixId[] = [];
-  const suffixes: AffixId[] = [];
+  const prefixes: AffixLine[] = [];
+  const suffixes: AffixLine[] = [];
   const room = () =>
     (prefixes.length < GEAR_DROP.maxPrefixes ? PREFIXES.length : 0) +
     (suffixes.length < GEAR_DROP.maxSuffixes ? SUFFIXES.length : 0);
@@ -277,7 +292,7 @@ export function rollGearItem(): GearItem {
       break;
     }
 
-    (takePrefix ? prefixes : suffixes).push(picked.id);
+    (takePrefix ? prefixes : suffixes).push({ id: picked.id, tier: rollAffixTier(picked.id) });
   }
 
   nextUid += 1;
@@ -408,6 +423,28 @@ class GearStore {
     }
   }
 
+  /**
+   * Reads a stored list of 속성, in either shape. Before tiers a line was
+   * just an id; those come back at the middle rung, which is about what they
+   * were worth when they were written.
+   */
+  private static lines(
+    raw: readonly (AffixLine | AffixId)[] | undefined,
+    kind: 'prefix' | 'suffix',
+  ): AffixLine[] {
+    const out: AffixLine[] = [];
+    for (const entry of raw ?? []) {
+      const id = (typeof entry === 'string' ? entry : entry?.id) as AffixId;
+      if (AFFIXES[id]?.kind !== kind || AFFIXES[id]?.gearTiers === undefined) {
+        continue;
+      }
+
+      const tier = typeof entry === 'string' ? LEGACY_AFFIX_TIER : Number(entry?.tier);
+      out.push({ id, tier: affixTier(id, tier)?.tier ?? LEGACY_AFFIX_TIER });
+    }
+    return out;
+  }
+
   /** A hand-edited or stale payload cannot leave the survivor empty-handed. */
   private sanitise(raw: GearState): GearState {
     const items: GearItem[] = (Array.isArray(raw.items) ? raw.items : [])
@@ -418,8 +455,8 @@ class GearStore {
       .map((item: GearItem) => ({
         uid: item.uid,
         id: item.id,
-        prefixes: (item.prefixes ?? []).filter((id: AffixId) => AFFIXES[id]?.kind === 'prefix'),
-        suffixes: (item.suffixes ?? []).filter((id: AffixId) => AFFIXES[id]?.kind === 'suffix'),
+        prefixes: GearStore.lines(item.prefixes, 'prefix'),
+        suffixes: GearStore.lines(item.suffixes, 'suffix'),
       }));
 
     // Empty-handed is the one state that cannot stand, so the 녹슨 검 comes

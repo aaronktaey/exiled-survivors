@@ -9,14 +9,13 @@ import {
   TEXT,
   TEXTURES,
   ALL_ORBS,
+  GEAR_DROP,
   ORBS,
-  type AffixId,
-  type AffixKind,
+  type AffixLine,
   type OrbId,
 } from '@/config';
 import {
   affixGearDetail,
-  affixKindName,
   affixName,
   fill,
   gearTitle,
@@ -50,6 +49,15 @@ const LINE_HEIGHT = 24;
 const LINES_GAP = 24;
 /** The footer hint, and the air above it. */
 const FOOTER = 56;
+/** An 속성 slot with nothing in it. */
+const EMPTY_SLOT = '─'.repeat(22);
+/**
+ * What the read-out always costs: the weapon's own line, a heading and three
+ * slots for the 접두어, the same for the 접미어, and one spare for a line
+ * long enough to wrap. Fixed, because the slots are drawn whether or not
+ * anything is in them — which is the point of drawing them.
+ */
+const READ_OUT_LINES = 1 + (1 + GEAR_DROP.maxPrefixes) + (1 + GEAR_DROP.maxSuffixes) + 1;
 /** Wide enough to stand the stash and the read-out beside each other. */
 const COLUMNS_FROM = 760;
 /** The 버리기 button under the read-out, and the air around it. */
@@ -127,11 +135,7 @@ export class GearScene extends Phaser.Scene {
     // there is only 540 of it, and the width to stand them side by side
     // instead. Either way the stash is what scrolls, never the read-out.
     const step = MENU.buttonHeight + MENU.buttonGap;
-    const lineCount =
-      held.reduce((most, item) => Math.max(most, GearScene.describe(item).split('\n').length), 1) +
-      // One spare, for a summary line long enough to wrap.
-      1;
-    const linesHeight = lineCount * LINE_HEIGHT;
+    const linesHeight = READ_OUT_LINES * LINE_HEIGHT;
     const sideBySide = width > height && width >= COLUMNS_FROM;
 
     const readOut = linesHeight + DISCARD_BLOCK + ORB_BLOCK + ORB_DETAIL_BLOCK;
@@ -450,72 +454,47 @@ export class GearScene extends Phaser.Scene {
   }
 
 /**
-   * "접두어  강력 ×2   피해 +50%" — a line per 속성 the weapon carries,
-   * saying which half of the name it is, and what it actually does. Repeats
-   * are counted rather than listed twice, the way a rare enemy's are.
+   * One slot, filled or empty: "1티어  치명  치명타 확률 +50%", or a rule
+   * where nothing has been rolled yet. The empty ones are drawn on purpose —
+   * what a weapon could still take is as much use to read as what it has.
    */
-  private static affixLines(kind: AffixKind, ids: readonly AffixId[]): string[] {
-    const counts = new Map<AffixId, number>();
-    for (const id of ids) {
-      counts.set(id, (counts.get(id) ?? 0) + 1);
+  private static slots(lines: readonly AffixLine[], count: number): string[] {
+    const copy = t().gear;
+    const rows = lines
+      .slice(0, count)
+      .map(
+        (line) =>
+          `${fill(copy.tier, { tier: line.tier })}  ${affixName(line.id)}   ` +
+          affixGearDetail(line.id, line.tier),
+      );
+
+    while (rows.length < count) {
+      rows.push(EMPTY_SLOT);
     }
 
-    return [...counts].map(([id, n]) => {
-      const name = n > 1 ? `${affixName(id)} ×${n}` : affixName(id);
-      return `${affixKindName(kind)}  ${name}   ${affixGearDetail(id)}`;
-    });
+    return rows;
   }
 
   /**
-   * What one weapon is worth: its own attack power, then every 속성 on it
-   * spelled out, then what the lot adds up to for the survivor. The last
-   * line is not the same as the ones above it — two 거대 read "+50%" each
-   * and come to +125% together.
+   * What one weapon is worth: its own attack power, then every 접두어 slot,
+   * then every 접미어 slot. Each filled slot says which rung it rolled —
+   * tier 1 is the best there is — so two weapons with the same 속성 on them
+   * can be told apart.
    */
   public static describe(item: GearItem): string {
     const copy = t().gear;
     const bonus = gearBonusFor(item);
-    const out = [fill(copy.attack, { attack: bonus.attack })];
-    if (bonus.attackSpeedScale !== 1) {
-      out[0] += `   ${fill(copy.attack2, { percent: percent(bonus.attackSpeedScale) })}`;
-    }
+    const head = fill(copy.attack, { attack: bonus.attack });
 
-    out.push(
-      ...GearScene.affixLines('prefix', item.prefixes),
-      ...GearScene.affixLines('suffix', item.suffixes),
-    );
-    if (item.prefixes.length === 0 && item.suffixes.length === 0) {
-      out.push(copy.plain);
-    }
-
-    // What that adds up to for the survivor, where it is not just damage.
-    const summary: string[] = [];
-    if (bonus.maxHpScale !== 1) {
-      summary.push(fill(copy.summaryHp, { percent: percent(bonus.maxHpScale) }));
-    }
-    if (bonus.moveSpeedScale !== 1) {
-      summary.push(fill(copy.summarySpeed, { percent: percent(bonus.moveSpeedScale) }));
-    }
-    if (bonus.critChance > 0) {
-      summary.push(fill(copy.summaryCrit, { percent: Math.round(bonus.critChance * 100) }));
-    }
-    if (bonus.critMultiplierBonus > 0) {
-      summary.push(fill(copy.summaryCritDamage, { percent: Math.round(bonus.critMultiplierBonus * 100) }));
-    }
-    if (bonus.regen > 0) {
-      summary.push(fill(copy.summaryRegen, { amount: bonus.regen }));
-    }
-    if (bonus.invulnerableScale !== 1) {
-      summary.push(fill(copy.summaryEvade, { percent: percent(bonus.invulnerableScale) }));
-    }
-    if (bonus.pickupScale !== 1) {
-      summary.push(fill(copy.summaryPickup, { percent: percent(bonus.pickupScale) }));
-    }
-    if (summary.length > 0) {
-      out.push(summary.join(' · '));
-    }
-
-    return out.join('\n');
+    return [
+      bonus.attackSpeedScale !== 1
+        ? `${head}   ${fill(copy.attack2, { percent: percent(bonus.attackSpeedScale) })}`
+        : head,
+      copy.prefix,
+      ...GearScene.slots(item.prefixes, GEAR_DROP.maxPrefixes),
+      copy.suffix,
+      ...GearScene.slots(item.suffixes, GEAR_DROP.maxSuffixes),
+    ].join('\n');
   }
 
   /** Puts a weapon on and repaints the rows, so the mark follows it. */

@@ -206,7 +206,12 @@ export class CombatSystem {
     const crit = this.player.critChance > 0 && Math.random() < this.player.critChance;
     const dealt = crit ? Math.round(amount * this.hooks.critMultiplier()) : amount;
 
-    this.damageNumbers.spawn(enemy.x, enemy.y - 10, dealt, crit ? { color: COLORS.critText } : undefined);
+    this.damageNumbers.spawn(
+      enemy.x,
+      enemy.y - 10,
+      dealt,
+      crit ? { color: COLORS.critText, crit: true } : undefined,
+    );
     // What the enemy actually absorbed: a hit that kills something with two
     // health left is worth two, not whatever the number on the card said.
     this.stats.recordDamage(Math.min(dealt, enemy.hp));

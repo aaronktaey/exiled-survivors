@@ -478,4 +478,16 @@ export const DAMAGE_NUMBERS = {
   /** Upward drift, px per second. */
   riseSpeed: 54,
   fontSize: "16px",
+  /**
+   * A critical hit is the one number worth looking at, so it is drawn half
+   * again as large, outlined against whatever it lands on, and it starts
+   * larger still and settles — the eye catches the movement before it reads
+   * the number.
+   */
+  critScale: 1.55,
+  critPopScale: 2.1,
+  critPopMs: 140,
+  critOutline: 3,
+  /** A crit hangs about longer than an ordinary hit. */
+  critLifespanMs: 900,
 } as const;

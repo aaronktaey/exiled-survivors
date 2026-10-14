@@ -1,4 +1,4 @@
-import { RARE, SKILL_BASE } from '@/config';
+import { PLAYER, SKILL_BASE } from '@/config';
 import type { SkillId } from '@/weapons/skills';
 import { NO_BONUS, type GearBonus } from '@/systems/Gear';
 import { NO_PASSIVES, type PassiveBonus } from '@/systems/Passives';
@@ -58,7 +58,7 @@ export function attackSpeedFor(skill: SkillId, upgraded: number, mods: RunModifi
 
 /** What one critical hit is worth, after everything that raises it. */
 export function critMultiplierFor(mods: RunModifiers): number {
-  return RARE.critMultiplier + mods.gear.critMultiplierBonus;
+  return PLAYER.critMultiplier + mods.gear.critMultiplierBonus;
 }
 
 /** Health returned every REGEN.periodMs, from the tree and from the weapon. */

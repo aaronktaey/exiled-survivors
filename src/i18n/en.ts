@@ -49,6 +49,7 @@ export const en: Strings = {
     hintTilt: 'Tilt the device to move. No pad is shown.   ·   Esc to go back',
     languageTitleOnly: 'The language can only be changed from the title screen',
     tiltRefused: 'This device will not give out tilt',
+    modeOther: '◀ ▶ to switch to {mode}',
   },
 
   gear: {
@@ -65,18 +66,12 @@ export const en: Strings = {
     hintTouch: 'Tap to carry — discard and orbs are the buttons below',
     prefix: 'Prefix',
     suffix: 'Suffix',
+    tier: 'T{tier}',
     prefixWord: '{affix}',
     suffixWord: 'of {affix}',
     attack: '+{attack} attack power',
     attack2: '+{percent}% attack speed',
     plain: 'No modifiers',
-    summaryHp: '+{percent}% maximum life',
-    summarySpeed: '+{percent}% move speed',
-    summaryCrit: '{percent}% critical chance',
-    summaryCritDamage: '+{percent}% critical damage',
-    summaryRegen: '+{amount} life every 5s',
-    summaryEvade: '+{percent}% invulnerable window',
-    summaryPickup: '+{percent}% pickup range',
   },
 
   pause: {

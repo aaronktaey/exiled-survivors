@@ -49,6 +49,7 @@ export const zh: Strings = {
     hintTilt: '倾斜设备进行移动，不显示摇杆   ·   Esc 返回',
     languageTitleOnly: '语言只能在标题画面中更改',
     tiltRefused: '此设备无法使用重力感应',
+    modeOther: '◀ ▶ 可切换为{mode}',
   },
 
   gear: {
@@ -65,18 +66,12 @@ export const zh: Strings = {
     hintTouch: '点击装备 — 丢弃与宝珠在下方按钮',
     prefix: '词缀前缀',
     suffix: '词缀后缀',
+    tier: 'T{tier}',
     prefixWord: '{affix}的',
     suffixWord: '· {affix}',
     attack: '攻击力 +{attack}',
     attack2: '攻击速度 +{percent}%',
     plain: '没有属性',
-    summaryHp: '最大生命 +{percent}%',
-    summarySpeed: '移动速度 +{percent}%',
-    summaryCrit: '暴击几率 {percent}%',
-    summaryCritDamage: '暴击伤害 +{percent}%',
-    summaryRegen: '每 5 秒回复 {amount} 点生命',
-    summaryEvade: '无敌时间 +{percent}%',
-    summaryPickup: '拾取范围 +{percent}%',
   },
 
   pause: {

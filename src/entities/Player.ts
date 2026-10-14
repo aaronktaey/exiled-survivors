@@ -100,7 +100,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
 
   /** Chance one of this survivor's hits lands for the crit multiplier. */
   public get critChance(): number {
-    return this.gear.critChance;
+    return Math.min(1, PLAYER.critChance + this.gear.critChance);
   }
 
   /** How far a gem has to be before it starts drifting over. */

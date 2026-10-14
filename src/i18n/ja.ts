@@ -49,6 +49,7 @@ export const ja: Strings = {
     hintTilt: '端末を傾けて移動します。パッドは表示されません   ·   Esc で戻る',
     languageTitleOnly: '言語はタイトル画面でのみ変更できます',
     tiltRefused: 'この端末では傾け操作を使えません',
+    modeOther: '◀ ▶ で{mode}に切り替えられます',
   },
 
   gear: {
@@ -65,18 +66,12 @@ export const ja: Strings = {
     hintTouch: 'タップで装備 — 廃棄と球は下のボタン',
     prefix: '接頭辞',
     suffix: '接尾辞',
+    tier: 'T{tier}',
     prefixWord: '{affix}の',
     suffixWord: '· {affix}',
     attack: '攻撃力 +{attack}',
     attack2: '攻撃速度 +{percent}%',
     plain: '属性なし',
-    summaryHp: '最大体力 +{percent}%',
-    summarySpeed: '移動速度 +{percent}%',
-    summaryCrit: 'クリティカル率 {percent}%',
-    summaryCritDamage: 'クリティカルダメージ +{percent}%',
-    summaryRegen: '5 秒ごとに体力 +{amount}',
-    summaryEvade: '無敵時間 +{percent}%',
-    summaryPickup: '取得範囲 +{percent}%',
   },
 
   pause: {

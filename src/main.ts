@@ -8,6 +8,7 @@ import { settings } from '@/systems/Settings';
 import { registerSharpText } from '@/systems/SharpText';
 import { gear, gearBonusFor, orbApplied } from '@/systems/Gear';
 import { gold } from '@/systems/Gold';
+import { critMultiplierFor } from '@/systems/Modifiers';
 import { orbs } from '@/systems/Orbs';
 import { passives } from '@/systems/Passives';
 import { currentCanvasSize } from '@/systems/Viewport';
@@ -88,6 +89,7 @@ if (import.meta.env.DEV) {
     gold?: typeof gold;
     orbs?: typeof orbs;
     orbApplied?: typeof orbApplied;
+    critMultiplierFor?: typeof critMultiplierFor;
   };
   dev.game = game;
   // So a test can read a tuned number instead of carrying a copy of it.
@@ -98,4 +100,5 @@ if (import.meta.env.DEV) {
   dev.gold = gold;
   dev.orbs = orbs;
   dev.orbApplied = orbApplied;
+  dev.critMultiplierFor = critMultiplierFor;
 }

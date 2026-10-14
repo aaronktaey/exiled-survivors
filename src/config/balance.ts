@@ -32,9 +32,17 @@ export const BALANCE = {
 export const PLAYER = {
   size: 20,
   speed: 220,
-  maxHp: 30,
+  maxHp: 20,
   /** Invulnerability after taking a hit, so contact does not drain instantly. */
   invulnerableMs: 600,
+  /**
+   * Every survivor crits sometimes, with or without 치명 on the weapon. The
+   * 치명 속성 adds to this rather than being the only way to have any, so a
+   * crit read-out is worth watching from the first run.
+   */
+  critChance: 0.05,
+  /** What one of those is worth, before 잔혹 raises it. */
+  critMultiplier: 1.5,
   /** XP gems within this range drift toward the player. */
   pickupRadius: 110,
   pickupSpeed: 420,
@@ -239,25 +247,61 @@ export interface GearAffixEffect {
   readonly pickupScale?: number;
 }
 
+/**
+ * One rung of an 속성 on a weapon. Tier 1 is the best of them, the way it is
+ * in Path of Exile, and the weakest tiers are the ones that keep turning up:
+ * `weight` is how often this rung comes out of a roll against the others on
+ * the same 속성.
+ */
+export interface AffixTierSpec {
+  /** 1 is the best. */
+  readonly tier: number;
+  readonly weight: number;
+  /** What it says on a weapon at this rung. */
+  readonly detail: string;
+  readonly gear: GearAffixEffect;
+}
+
 export interface AffixSpec {
   readonly id: AffixId;
   readonly kind: AffixKind;
   readonly name: string;
-  /** Shown under the name when the enemy, or the weapon, is inspected. */
+  /** Shown under the name when a rare enemy is inspected. */
   readonly detail: string;
   /**
-   * What it says on a weapon, where that differs. 거대 is worth +50% to an
-   * enemy and +25% to a survivor, and one line cannot honestly say both.
-   */
-  readonly gearDetail?: string;
-  /**
-   * What it does on an enemy, and what it does on a weapon. An 속성 rolls
-   * only where it has something to do: 자력 would mean nothing to an enemy,
-   * and the run has no enemy regeneration to hang 재생 on, so those are
-   * weapon-only. The four that read both ways roll on both.
+   * What it does on an enemy. An 속성 rolls there only where it has
+   * something to do: 자력 would mean nothing to an enemy, and the run has no
+   * enemy regeneration to hang 재생 on, so those are weapon-only. An enemy's
+   * 속성 has no tier — it is one number, and a rare is read by its ring and
+   * its tooltip rather than by a tier list.
    */
   readonly enemy?: EnemyAffixEffect;
-  readonly gear?: GearAffixEffect;
+  /** What it does on a weapon, rung by rung. Tier 1 first. */
+  readonly gearTiers?: readonly AffixTierSpec[];
+}
+
+/**
+ * How often each rung turns up, from tier 1 down. The best is roughly one
+ * roll in thirty, which is what makes a 구슬 worth spending on a weapon that
+ * already has the right 속성 on it at the wrong rung.
+ */
+export const AFFIX_TIER_WEIGHTS: readonly number[] = [1, 3, 6, 10, 15];
+
+/** The rung an 속성 saved before tiers existed comes back at. */
+export const LEGACY_AFFIX_TIER = 3;
+
+/** Builds a tier ladder from one value per rung, best first. */
+function tiers(
+  detail: (value: number) => string,
+  effect: (value: number) => GearAffixEffect,
+  values: readonly [number, number, number, number, number],
+): readonly AffixTierSpec[] {
+  return values.map((value, index) => ({
+    tier: index + 1,
+    weight: AFFIX_TIER_WEIGHTS[index] ?? 1,
+    detail: detail(value),
+    gear: effect(value),
+  }));
 }
 
 /**
@@ -279,7 +323,11 @@ export const AFFIXES: Record<AffixId, AffixSpec> = {
     name: "강력",
     detail: "피해 +50%",
     enemy: { damageScale: 1.5 },
-    gear: { attackScale: 1.5 },
+    gearTiers: tiers(
+      (v) => `피해 +${v}%`,
+      (v) => ({ attackScale: 1 + v / 100 }),
+      [75, 60, 50, 35, 25],
+    ),
   },
   critical: {
     id: "critical",
@@ -287,28 +335,44 @@ export const AFFIXES: Record<AffixId, AffixSpec> = {
     name: "치명",
     detail: "치명타 확률 20%",
     enemy: { critChance: 0.2 },
-    gear: { critChance: 0.2 },
+    gearTiers: tiers(
+      (v) => `치명타 확률 +${v}%`,
+      (v) => ({ critChance: v / 100 }),
+      [50, 40, 30, 20, 10],
+    ),
   },
   cruel: {
     id: "cruel",
     kind: "prefix",
     name: "잔혹",
     detail: "치명타 피해 +50%",
-    gear: { critMultiplierBonus: 0.5 },
+    gearTiers: tiers(
+      (v) => `치명타 피해 +${v}%`,
+      (v) => ({ critMultiplierBonus: v / 100 }),
+      [100, 80, 60, 40, 20],
+    ),
   },
   frenzied: {
     id: "frenzied",
     kind: "prefix",
     name: "광포",
     detail: "공격속도 +15%",
-    gear: { attackSpeedScale: 1.15 },
+    gearTiers: tiers(
+      (v) => `공격속도 +${v}%`,
+      (v) => ({ attackSpeedScale: 1 + v / 100 }),
+      [30, 25, 20, 15, 10],
+    ),
   },
   honed: {
     id: "honed",
     kind: "prefix",
     name: "예리",
     detail: "공격력 +1",
-    gear: { attackBonus: 1 },
+    gearTiers: tiers(
+      (v) => `공격력 +${v}`,
+      (v) => ({ attackBonus: v }),
+      [5, 4, 3, 2, 1],
+    ),
   },
 
   // --- 접미어: what it does for whoever is carrying it ---
@@ -317,10 +381,12 @@ export const AFFIXES: Record<AffixId, AffixSpec> = {
     kind: "suffix",
     name: "거대",
     detail: "체력 +50%",
-    /** On a weapon it is worth half that: a survivor's bar is the run. */
-    gearDetail: "최대 체력 +25%",
     enemy: { hpScale: 1.5 },
-    gear: { maxHpScale: 1.25 },
+    gearTiers: tiers(
+      (v) => `최대 체력 +${v}%`,
+      (v) => ({ maxHpScale: 1 + v / 100 }),
+      [45, 38, 30, 22, 15],
+    ),
   },
   swift: {
     id: "swift",
@@ -328,30 +394,80 @@ export const AFFIXES: Record<AffixId, AffixSpec> = {
     name: "신속",
     detail: "이동속도 +20%",
     enemy: { speedScale: 1.2 },
-    gear: { moveSpeedScale: 1.2 },
+    gearTiers: tiers(
+      (v) => `이동속도 +${v}%`,
+      (v) => ({ moveSpeedScale: 1 + v / 100 }),
+      [36, 30, 24, 18, 12],
+    ),
   },
   regrowth: {
     id: "regrowth",
     kind: "suffix",
     name: "재생",
     detail: "5초당 체력 +2",
-    gear: { regen: 2 },
+    gearTiers: tiers(
+      (v) => `5초당 체력 +${v}`,
+      (v) => ({ regen: v }),
+      [6, 5, 4, 3, 2],
+    ),
   },
   evasive: {
     id: "evasive",
     kind: "suffix",
     name: "회피",
     detail: "피격 후 무적 시간 +30%",
-    gear: { invulnerableScale: 1.3 },
+    gearTiers: tiers(
+      (v) => `무적 시간 +${v}%`,
+      (v) => ({ invulnerableScale: 1 + v / 100 }),
+      [50, 42, 34, 26, 18],
+    ),
   },
   magnetic: {
     id: "magnetic",
     kind: "suffix",
     name: "자력",
     detail: "획득 범위 +40%",
-    gear: { pickupScale: 1.4 },
+    gearTiers: tiers(
+      (v) => `획득 범위 +${v}%`,
+      (v) => ({ pickupScale: 1 + v / 100 }),
+      [80, 68, 56, 44, 32],
+    ),
   },
 };
+
+/** One 속성's rung, as it sits on a weapon. */
+export interface AffixLine {
+  readonly id: AffixId;
+  readonly tier: number;
+}
+
+/** The rung an 속성 is at, falling back to the weakest if it is unknown. */
+export function affixTier(
+  id: AffixId,
+  tier: number,
+): AffixTierSpec | undefined {
+  const ladder = AFFIXES[id]?.gearTiers;
+  if (!ladder || ladder.length === 0) {
+    return undefined;
+  }
+
+  return ladder.find((rung) => rung.tier === tier) ?? ladder[ladder.length - 1];
+}
+
+/** Rolls a rung for one 속성: the weak ones often, the best one rarely. */
+export function rollAffixTier(id: AffixId): number {
+  const ladder = AFFIXES[id]?.gearTiers ?? [];
+  const total = ladder.reduce((sum, rung) => sum + rung.weight, 0);
+  let roll = Math.random() * total;
+  for (const rung of ladder) {
+    roll -= rung.weight;
+    if (roll <= 0) {
+      return rung.tier;
+    }
+  }
+
+  return ladder[ladder.length - 1]?.tier ?? LEGACY_AFFIX_TIER;
+}
 
 /** How often regeneration pays out, for 재생 and for the passive tree. */
 export const REGEN = {
@@ -364,11 +480,11 @@ export const ENEMY_AFFIXES: readonly AffixSpec[] = Object.values(
 ).filter((affix) => affix.enemy !== undefined);
 
 export const PREFIXES: readonly AffixSpec[] = Object.values(AFFIXES).filter(
-  (affix) => affix.kind === "prefix" && affix.gear !== undefined,
+  (affix) => affix.kind === "prefix" && affix.gearTiers !== undefined,
 );
 
 export const SUFFIXES: readonly AffixSpec[] = Object.values(AFFIXES).filter(
-  (affix) => affix.kind === "suffix" && affix.gear !== undefined,
+  (affix) => affix.kind === "suffix" && affix.gearTiers !== undefined,
 );
 
 export const RARE = {
@@ -531,7 +647,7 @@ export const POTION = {
   /** Chance that killing an enemy drops one. */
   chance: 0.02,
   /** Fraction of max HP it restores. */
-  healFraction: 0.1,
+  healFraction: 0.5,
   size: 16,
 } as const;
 
