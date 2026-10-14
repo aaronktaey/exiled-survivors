@@ -254,6 +254,7 @@ export const zh: Strings = {
       frenzied: '狂乱',
       evasive: '闪避',
       magnetic: '磁力',
+      volleying: '连射',
     },
     affixDetails: {
       giant: '生命 +50%',
@@ -264,9 +265,47 @@ export const zh: Strings = {
       frenzied: '攻击速度 +15%',
       evasive: '无敌时间 +30%',
       magnetic: '拾取范围 +40%',
+      volleying: '弹射物 +2',
     },
     affixGearDetails: {
-      giant: '最大生命 +25%',
+      mighty: '伤害 +{value}%',
+      critical: '暴击几率 +{value}%',
+      cruel: '暴击伤害 +{value}%',
+      frenzied: '攻击速度 +{value}%',
+      giant: '最大生命 +{value}%',
+      swift: '移动速度 +{value}%',
+      evasive: '无敌时间 +{value}%',
+      magnetic: '拾取范围 +{value}%',
+    },
+    orbs: {
+      transmute: '变化宝珠',
+      chaos: '混沌宝珠',
+      awaken: '觉醒宝珠',
+      explode: '爆炸宝珠',
+    },
+    orbShorts: {
+      transmute: '变化',
+      chaos: '混沌',
+      awaken: '觉醒',
+      explode: '爆炸',
+    },
+    orbDetails: {
+      transmute: '将词缀重新随机为 1~2 条',
+      chaos: '将词缀重新随机为 2~4 条',
+      awaken: '追加 1 条词缀（最多 6 条）',
+      explode: '把一条词缀换成高一阶的另一条 — 20% 概率摧毁装备',
+    },
+    bones: {
+      skull: '远古头骨',
+      rib: '肋骨',
+    },
+    boneShorts: {
+      skull: '头骨',
+      rib: '肋骨',
+    },
+    boneDetails: {
+      skull: '稀有敌人改为首领出现',
+      rib: '所有敌人生命 +100%，掉落率 +50%',
     },
     passives: { damage: '伤害', attackSpeed: '攻击速度' },
     passiveDetails: {

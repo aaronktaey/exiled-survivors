@@ -293,6 +293,7 @@ export interface Strings {
     readonly affixes?: Record<string, string>;
     readonly affixDetails?: Record<string, string>;
     /** Only for the 속성 whose weapon side reads differently. */
+    /** A weapon's line at one rung: "Damage +{value}%". Korean reads the table. */
     readonly affixGearDetails?: Record<string, string>;
     readonly bones?: Record<string, string>;
     readonly boneShorts?: Record<string, string>;

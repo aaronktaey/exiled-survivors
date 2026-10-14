@@ -254,6 +254,7 @@ export const ja: Strings = {
       frenzied: '狂乱',
       evasive: '回避',
       magnetic: '磁力',
+      volleying: '連射',
     },
     affixDetails: {
       giant: '体力 +50%',
@@ -264,9 +265,47 @@ export const ja: Strings = {
       frenzied: '攻撃速度 +15%',
       evasive: '無敵時間 +30%',
       magnetic: '取得範囲 +40%',
+      volleying: '投射物 +2',
     },
     affixGearDetails: {
-      giant: '最大体力 +25%',
+      mighty: '被害 +{value}%',
+      critical: 'クリティカル率 +{value}%',
+      cruel: 'クリティカル被害 +{value}%',
+      frenzied: '攻撃速度 +{value}%',
+      giant: '最大体力 +{value}%',
+      swift: '移動速度 +{value}%',
+      evasive: '無敵時間 +{value}%',
+      magnetic: '獲得範囲 +{value}%',
+    },
+    orbs: {
+      transmute: '変化の球',
+      chaos: '混沌の球',
+      awaken: '覚醒の球',
+      explode: '爆発の球',
+    },
+    orbShorts: {
+      transmute: '変化',
+      chaos: '混沌',
+      awaken: '覚醒',
+      explode: '爆発',
+    },
+    orbDetails: {
+      transmute: '属性を 1〜2 個に振り直します',
+      chaos: '属性を 2〜4 個に振り直します',
+      awaken: '属性を 1 個追加します（最大 6）',
+      explode: '属性 1 個を一段階上の別の属性に — 20% の確率で装備が壊れます',
+    },
+    bones: {
+      skull: '古代の頭蓋骨',
+      rib: '肋骨',
+    },
+    boneShorts: {
+      skull: '頭蓋骨',
+      rib: '肋骨',
+    },
+    boneDetails: {
+      skull: 'レア敵の代わりにボスが現れます',
+      rib: '全ての敵の体力 +100%、ドロップ率 +50%',
     },
     passives: { damage: 'ダメージ', attackSpeed: '攻撃速度' },
     passiveDetails: {

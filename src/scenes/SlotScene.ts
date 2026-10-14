@@ -194,9 +194,6 @@ export class SlotScene extends Phaser.Scene {
 
   /** Holds the result up for a moment, then hands it back and closes. */
   private land(index: number): void {
-    // The fanfare outlives the screen: it plays on the game's sound manager,
-    // so it carries on into the run the skill was won for.
-    sfx.playSlot(this, 'win');
     this.time.delayedCall(SLOT.holdMs, () => {
       if (this.done) {
         return;

@@ -6,6 +6,7 @@ import { centredTop, fitText, fitWidth } from '@/systems/Layout';
 import { MenuList } from '@/systems/MenuList';
 import type { RunSummary } from '@/systems/RunStats';
 import { prefersTouchControls } from '@/systems/VirtualJoystick';
+import { addBackButton, type BackButton } from '@/systems/BackButton';
 
 export interface GameOverData {
   /** What the run amounted to, read out as a table. */
@@ -33,6 +34,8 @@ const round = (value: number): string =>
  */
 export class GameOverScene extends Phaser.Scene {
   public static readonly KEY = SCENES.gameOver;
+  /** The way out in the corner. Public so a test can press it. */
+  public backButton?: BackButton;
 
   private payload!: GameOverData;
   /** This screen's list of choices. Public so a test can drive it. */
@@ -49,6 +52,7 @@ export class GameOverScene extends Phaser.Scene {
   }
 
   public create(): void {
+    this.backButton = addBackButton(this, () => this.toTitle());
     const { width, height } = this.scale;
     const centerX = width / 2;
 

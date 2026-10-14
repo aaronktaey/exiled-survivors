@@ -216,6 +216,31 @@ check('it arms once they step out, and wakes when they come back',
   underfoot.armedAfter && underfoot.spent && underfoot.alive > 0,
   `${underfoot.alive} called up`);
 
+// --- 6b. it goes the way every other drop goes: a minute, then gone ---
+const expiry = await run(`
+  ${FREEZE}
+  const g = window.config.GROUND_ITEM;
+  const a = s.combat.dropAltarAt(s.player.x + 300, s.player.y, 'bosses');
+  const step = (ms) => { for (let t = 0; t < ms; t += 50) a.update(0, 50); };
+  const start = a.timeLeftMs;
+  step(g.lifespanMs - g.warningMs - 1000);
+  const quiet = a.active && !a.glow.visible;
+  let blinked = false;
+  for (let t = 0; t < g.warningMs - 500; t += 50) { a.update(0, 50); blinked = blinked || a.glow.visible; }
+  const late = a.active;
+  step(2000);
+  const out = { start, life: g.lifespanMs, quiet, blinked, late, gone: !a.active,
+                plate: a.nameplate.label.visible, alive: s.spawner.alive };
+  s.choosing = false;
+  return out;
+`);
+console.log('expiry:', JSON.stringify(expiry));
+check('an altar lasts as long as any other drop', expiry.start === expiry.life, `${expiry.start}ms`);
+check('it blinks its warning over the last stretch, like the rest',
+  expiry.quiet && expiry.blinked && expiry.late);
+check('and then it is gone, its offer with it, having called nothing up',
+  expiry.gone && expiry.plate === false && expiry.alive === 0);
+
 // --- 7. under a 고대 두개골, a rare pack is 우두머리 up to the ceiling ---
 const skulled = await run(`
   ${FREEZE}

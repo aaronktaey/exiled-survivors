@@ -8,6 +8,7 @@ import { MenuList } from '@/systems/MenuList';
 import { MOVEMENT_MODES, settings, type MovementMode } from '@/systems/Settings';
 import { requestTiltPermission, tiltAvailable } from '@/systems/TiltInput';
 import { prefersTouchControls } from '@/systems/VirtualJoystick';
+import { addBackButton, type BackButton } from '@/systems/BackButton';
 
 export interface SettingsSceneData {
   /**
@@ -40,6 +41,8 @@ const modeHint = (mode: MovementMode): string => {
  */
 export class SettingsScene extends Phaser.Scene {
   public static readonly KEY = SCENES.settings;
+  /** The way out in the corner. Public so a test can press it. */
+  public backButton?: BackButton;
 
   private payload!: SettingsSceneData;
   private menu!: MenuList;
@@ -56,6 +59,7 @@ export class SettingsScene extends Phaser.Scene {
   }
 
   public create(): void {
+    this.backButton = addBackButton(this, () => this.close());
     const { width, height } = this.scale;
 
     this.add.rectangle(0, 0, width, height, 0x05070b, SCRIM.reading).setOrigin(0, 0).setDepth(DEPTH.ui);

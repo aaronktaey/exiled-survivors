@@ -269,8 +269,13 @@ export interface AffixTierSpec {
   /** 1 is the best. */
   readonly tier: number;
   readonly weight: number;
-  /** What it says on a weapon at this rung. */
+  /** What it says on a weapon at this rung, in Korean. */
   readonly detail: string;
+  /**
+   * The rung's number, for a locale's own wording of the line — `{value}`
+   * in `names.affixGearDetails` — so the ladder is tuned once, here.
+   */
+  readonly value: number;
   readonly gear: GearAffixEffect;
 }
 
@@ -317,6 +322,7 @@ function tiers(
     tier: index + 1,
     weight: AFFIX_TIER_WEIGHTS[index] ?? 1,
     detail: detail(value),
+    value,
     gear: effect(value),
   }));
 }
@@ -657,7 +663,7 @@ export const MELEE = {
 /** 화염구 bursts where it lands, hurting everything around the first hit. */
 export const FIREBALL = {
   /** Everything this close to the first hit takes the shot's damage too. */
-  blastRadius: 60,
+  blastRadius: 30,
   /** How long the burst stays on screen. */
   flashMs: 220,
 } as const;
@@ -837,10 +843,11 @@ export const SKILL_BASE: Record<SkillId, SkillBaseStats> = {
     orbCount: 0,
     orbitSpeed: 0,
   },
-  // Two enemies a cast at 0.8 casts a second: a third of an enemy per second.
+  // Two enemies a cast. It was 0.8 casts a second — a third of an enemy per
+  // second — and is a fifth faster than that now.
   chainLightning: {
     damage: 60,
-    attackSpeed: 0.8,
+    attackSpeed: 0.96,
     range: 160,
     projectileSpeed: 0,
     chainCount: 1,
@@ -882,7 +889,7 @@ export const SKILL_BASE: Record<SkillId, SkillBaseStats> = {
     projectileSpeed: 0,
     chainCount: 0,
     pierceCount: 0,
-    orbCount: 2,
+    orbCount: 3,
     orbitSpeed: 200,
   },
 };

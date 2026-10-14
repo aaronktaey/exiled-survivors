@@ -5,6 +5,7 @@ import { fill, t } from '@/i18n';
 import type { GameScene } from '@/scenes/GameScene';
 import { MenuList } from '@/systems/MenuList';
 import { RareTooltip } from '@/systems/RareTooltip';
+import { addBackButton, type BackButton } from '@/systems/BackButton';
 
 export interface PauseSceneData {
   readonly elapsedMs: number;
@@ -17,6 +18,8 @@ export interface PauseSceneData {
 /** 일시정지: the run is frozen underneath until this closes. */
 export class PauseScene extends Phaser.Scene {
   public static readonly KEY = SCENES.pause;
+  /** The way out in the corner. Public so a test can press it. */
+  public backButton?: BackButton;
 
   private payload!: PauseSceneData;
   private menu!: MenuList;
@@ -32,6 +35,7 @@ export class PauseScene extends Phaser.Scene {
   }
 
   public create(): void {
+    this.backButton = addBackButton(this, () => this.resume());
     const { width, height } = this.scale;
 
     this.add.rectangle(0, 0, width, height, 0x05070b, SCRIM.pause).setOrigin(0, 0).setDepth(DEPTH.ui);

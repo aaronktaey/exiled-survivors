@@ -143,7 +143,13 @@ export function affixDetail(id: AffixId): string {
  * every language.
  */
 export function affixGearDetail(id: AffixId, tier: number): string {
-  return affixTier(id, tier)?.detail ?? affixDetail(id);
+  const rung = affixTier(id, tier);
+  if (!rung) {
+    return affixDetail(id);
+  }
+
+  const template = t().names?.affixGearDetails?.[id];
+  return template ? fill(template, { value: rung.value }) : rung.detail;
 }
 
 /**

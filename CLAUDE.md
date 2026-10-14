@@ -72,7 +72,7 @@ wrong shape.
 ## The test harness
 
 `tests/` drives a real Chrome over CDP against the dev server and checks the
-running game, not units. 28 suites, ~750 checks. It is the only thing that has
+running game, not units. 30 suites, ~850 checks. It is the only thing that has
 caught most of what has gone wrong here, so run all of it before every commit.
 
 ```sh
@@ -82,7 +82,7 @@ node run-all.mjs test-full test-skills test-balance test-chain test-ice \
   test-void test-enemies test-rare test-boss test-potion test-sfx test-perf \
   test-hud test-expiry test-audio test-touch test-shell test-shell2 test-info \
   test-i18n test-gear test-passive test-responsive test-stats test-bones \
-  test-altar test-slot test-inventory
+  test-altar test-slot test-inventory test-locale test-back
 ```
 
 `run-all.mjs` starts Chrome itself (`CHROME_PATH` overrides where it looks),
@@ -140,10 +140,21 @@ Read `git log` for what changed and when. What is not in the log:
   a fresh run holds only what the 슬롯머신 lands on, and a level-up upgrades
   a random skill in hand. With the reel off (`#run`, the harness) a run
   starts on `UNSPUN_SKILL` (타격) so suites have something deterministic.
-- **The slot sound is one file in three parts** (`AUDIO.slot`: run / stop /
-  win). Its sources are in `assets-src/slot`, not `public`, and
-  `tools/mix-slot.py` rebuilds `public/assets/slot.mp3` and prints the
-  offsets to copy into config.
+- **The slot sound is one file in two parts** (`AUDIO.slot`: run / stop),
+  levelled quiet on purpose — the user found the first mix far too loud.
+  `tools/mix-slot.py` rebuilds `public/assets/slot.mp3` from
+  `assets-src/slot` and prints the offsets to copy into config. The jackpot
+  clips (in `assets-src/slot` and `public/assets`) are kept for later: do not
+  use or delete them.
+- **Every other language is checked for Korean.** Data tables are written in
+  Korean and a locale renames what it knows (`names.*`); `test-locale` walks
+  every screen in en/ja/zh and fails on any Hangul left on it. A new name,
+  line or button needs its entry in all three, and a weapon tier line goes
+  through `names.affixGearDetails` with `{value}`.
+- **Back buttons.** Every screen but the title and the run calls
+  `addBackButton` (top-left, arrow only below 600 wide) with the same exit
+  Esc takes; `test-back` checks each one sits clear and goes where it
+  should. A new screen should do the same.
 - **제단 chain on purpose.** Every 우두머리 leaves a 제단 (`ALTAR.fromBoss`),
   ordinary kills leave one at `ALTAR.fromKill`, and a 제단 can call up 우두머리, which leave 제단. It is opt-in — nothing
   happens until the survivor walks up — so it is not capped. An altar arms only

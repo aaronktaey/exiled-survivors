@@ -18,6 +18,7 @@ import { MenuList } from '@/systems/MenuList';
 import { gold } from '@/systems/Gold';
 import { passives } from '@/systems/Passives';
 import { prefersTouchControls } from '@/systems/VirtualJoystick';
+import { addBackButton, type BackButton } from '@/systems/BackButton';
 
 export interface PassiveSceneData {
   readonly onClose: () => void;
@@ -34,6 +35,8 @@ export interface PassiveSceneData {
  */
 export class PassiveScene extends Phaser.Scene {
   public static readonly KEY = SCENES.passives;
+  /** The way out in the corner. Public so a test can press it. */
+  public backButton?: BackButton;
 
   private payload!: PassiveSceneData;
   /** This screen's list of choices. Public so a test can drive it. */
@@ -50,6 +53,7 @@ export class PassiveScene extends Phaser.Scene {
   }
 
   public create(): void {
+    this.backButton = addBackButton(this, () => this.close());
     const { width, height } = this.scale;
     const copy = t().passives;
 

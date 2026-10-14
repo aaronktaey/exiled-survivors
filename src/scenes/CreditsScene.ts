@@ -4,6 +4,7 @@ import { COLORS, DEPTH, MENU, SCENES, SCRIM, TEXT } from '@/config';
 import { centredTop } from '@/systems/Layout';
 import { t } from '@/i18n';
 import { MenuList } from '@/systems/MenuList';
+import { addBackButton, type BackButton } from '@/systems/BackButton';
 
 export interface CreditsSceneData {
   readonly onClose: () => void;
@@ -22,6 +23,8 @@ function lines(): readonly (readonly [string, string])[] {
 /** 제작자 정보: who and what this run is built out of. */
 export class CreditsScene extends Phaser.Scene {
   public static readonly KEY = SCENES.credits;
+  /** The way out in the corner. Public so a test can press it. */
+  public backButton?: BackButton;
 
   private payload!: CreditsSceneData;
   /** This screen's list of choices. Public so a test can drive it. */
@@ -36,6 +39,7 @@ export class CreditsScene extends Phaser.Scene {
   }
 
   public create(): void {
+    this.backButton = addBackButton(this, () => this.close());
     const { width, height } = this.scale;
 
     this.add.rectangle(0, 0, width, height, 0x05070b, SCRIM.reading).setOrigin(0, 0).setDepth(DEPTH.ui);

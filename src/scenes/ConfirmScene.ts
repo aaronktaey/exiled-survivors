@@ -3,6 +3,7 @@ import Phaser from 'phaser';
 import { COLORS, DEPTH, SCENES, SCRIM, TEXT } from '@/config';
 import { t } from '@/i18n';
 import { MenuList } from '@/systems/MenuList';
+import { addBackButton, type BackButton } from '@/systems/BackButton';
 
 export interface ConfirmSceneData {
   /** Shown under the heading: what is about to be lost. */
@@ -19,6 +20,8 @@ export interface ConfirmSceneData {
  */
 export class ConfirmScene extends Phaser.Scene {
   public static readonly KEY = SCENES.confirm;
+  /** The way out in the corner. Public so a test can press it. */
+  public backButton?: BackButton;
 
   private payload!: ConfirmSceneData;
   /** This screen's list of choices. Public so a test can drive it. */
@@ -33,6 +36,7 @@ export class ConfirmScene extends Phaser.Scene {
   }
 
   public create(): void {
+    this.backButton = addBackButton(this, () => this.finish(this.payload.onCancel));
     const { width, height } = this.scale;
     const copy = t().confirm;
 

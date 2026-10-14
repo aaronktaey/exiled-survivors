@@ -41,6 +41,7 @@ import { fitText } from '@/systems/Layout';
 import { orbs } from '@/systems/Orbs';
 import { saveGame } from '@/systems/SaveGame';
 import { prefersTouchControls } from '@/systems/VirtualJoystick';
+import { addBackButton, type BackButton } from '@/systems/BackButton';
 
 export type InventoryTab = 'gear' | 'consumables';
 
@@ -105,6 +106,8 @@ const LINES_STYLE = {
  */
 export class InventoryScene extends Phaser.Scene {
   public static readonly KEY = SCENES.inventory;
+  /** The way out in the corner. Public so a test can press it. */
+  public backButton?: BackButton;
 
   private payload!: InventorySceneData;
   public tab: InventoryTab = 'gear';
@@ -170,6 +173,7 @@ export class InventoryScene extends Phaser.Scene {
   }
 
   public create(): void {
+    this.backButton = addBackButton(this, () => this.close());
     const { width, height } = this.scale;
     const copy = t().inventory;
 

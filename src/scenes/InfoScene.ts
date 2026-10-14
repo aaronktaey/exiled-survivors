@@ -6,6 +6,7 @@ import { guideChapters, type GuideChapter, type GuideSection } from '@/content/g
 import { PATCH_NOTES } from '@/content/patchNotes';
 import { language, t } from '@/i18n';
 import { prefersTouchControls } from '@/systems/VirtualJoystick';
+import { addBackButton, type BackButton } from '@/systems/BackButton';
 
 export type InfoTopic = 'patch' | 'guide';
 
@@ -40,6 +41,8 @@ function patchChapter(): GuideChapter {
  */
 export class InfoScene extends Phaser.Scene {
   public static readonly KEY = SCENES.info;
+  /** The way out in the corner. Public so a test can press it. */
+  public backButton?: BackButton;
 
   private payload!: InfoSceneData;
   private chapters: readonly GuideChapter[] = [];
@@ -72,6 +75,7 @@ export class InfoScene extends Phaser.Scene {
   }
 
   public create(): void {
+    this.backButton = addBackButton(this, () => this.close());
     const { width, height } = this.scale;
     this.chapters = this.payload.topic === 'patch' ? [patchChapter()] : guideChapters();
 

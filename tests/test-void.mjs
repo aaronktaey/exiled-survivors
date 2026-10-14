@@ -64,7 +64,7 @@ check('공허구체 is 공허·주문·투사체',
   grant.name === '공허구체' && JSON.stringify(grant.tags) === JSON.stringify(['공허', '주문', '투사체']),
   `${grant.tags}`);
 check('it is granted at its configured base line',
-  JSON.stringify(grant.stats) === JSON.stringify(grant.base) && grant.stats.orbCount === 2,
+  JSON.stringify(grant.stats) === JSON.stringify(grant.base) && grant.stats.orbCount >= 2,
   `orbs=${grant.stats.orbCount} dmg=${grant.stats.damage} radius=${grant.stats.range} speed=${grant.stats.projectileSpeed}`);
 check('first pickup opens no popup', grant.popup === false);
 
@@ -77,9 +77,16 @@ check('one orb per orbCount is in the air', placed.count === placed.stats.orbCou
 check('they ride at the configured radius',
   placed.orbs.every(o => Math.abs(o.d - placed.stats.range) <= 2),
   placed.orbs.map(o => `${o.d}px`).join(' / '));
-check('two orbs sit opposite each other',
-  Math.abs(Math.abs(placed.orbs[0].a - placed.orbs[1].a) - 180) < 3,
-  `${placed.orbs[0].a}° and ${placed.orbs[1].a}°`);
+// Evenly round the circle, however many it starts with: a full turn over
+// the count between each one and the next.
+const gapsOf = (orbs) => orbs
+  .map((o) => (o.a + 360) % 360)
+  .sort((a, b) => a - b)
+  .map((a, i, all) => Math.round((all[(i + 1) % all.length] - a + 360) % 360));
+const BASE_ORBS = grant.base.orbCount;
+check(`the ${BASE_ORBS} starting orbs are spaced evenly round the circle`,
+  gapsOf(placed.orbs).every((gap) => Math.abs(gap - 360 / BASE_ORBS) <= 3),
+  `gaps ${gapsOf(placed.orbs).join('° / ')}°`);
 check('they are drawn from the void orb texture',
   placed.orbs.every(o => o.tex === 'tex-void-orb' && o.size === 18),
   `${placed.orbs[0].tex} at ${placed.orbs[0].size}px`);
@@ -267,14 +274,12 @@ await cdp.tap('Digit3', 51, '3');
 await sleep(700);
 const grown = await orbState();
 console.log('after 구체 수 +1:', JSON.stringify(grown));
-check('구체 수 +1 adds an orb', grown.count === 3 && grown.stats.orbCount === 3,
+check('구체 수 +1 adds an orb',
+  grown.count === BASE_ORBS + 1 && grown.stats.orbCount === BASE_ORBS + 1,
   `${grown.count} orbs`);
-const spacing = grown.orbs
-  .map((o) => (o.a + 360) % 360)
-  .sort((a, b) => a - b)
-  .map((a, i, all) => Math.round((all[(i + 1) % all.length] - a + 360) % 360));
-check('three orbs are spaced 120° apart',
-  spacing.every((gap) => Math.abs(gap - 120) <= 3),
+const spacing = gapsOf(grown.orbs);
+check('and the orbs space themselves out again',
+  spacing.every((gap) => Math.abs(gap - 360 / (BASE_ORBS + 1)) <= 3),
   `gaps ${spacing.join('° / ')}°`);
 await shot('void-02-orbs');
 
@@ -325,7 +330,7 @@ const live = await run(`
 `);
 console.log('after 12s:', JSON.stringify(live));
 check('it keeps orbiting and killing in a real run',
-  live.kills > 0 && live.orbs === 3 && live.over === false,
+  live.kills > 0 && live.orbs === BASE_ORBS + 1 && live.over === false,
   `kills=${live.kills} orbs=${live.orbs} weapons=${live.weapons}`);
 await shot('void-03-live');
 

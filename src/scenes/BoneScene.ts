@@ -17,6 +17,7 @@ import { bones } from '@/systems/Bones';
 import { centredTop, fitText, fitWidth } from '@/systems/Layout';
 import { MenuList } from '@/systems/MenuList';
 import { prefersTouchControls } from '@/systems/VirtualJoystick';
+import { addBackButton, type BackButton } from '@/systems/BackButton';
 
 export interface BoneSceneData {
   /** Starts the run with these, having spent them. */
@@ -43,6 +44,8 @@ const COLUMNS_FROM = 760;
  */
 export class BoneScene extends Phaser.Scene {
   public static readonly KEY = SCENES.bones;
+  /** The way out in the corner. Public so a test can press it. */
+  public backButton?: BackButton;
 
   private payload!: BoneSceneData;
   /** This screen's list of choices. Public so a test can drive it. */
@@ -65,6 +68,7 @@ export class BoneScene extends Phaser.Scene {
   }
 
   public create(): void {
+    this.backButton = addBackButton(this, () => this.payload.onCancel());
     const { width, height } = this.scale;
     const copy = t().bones;
     const held = ALL_BONES.filter((bone) => bones.count(bone.id) > 0);

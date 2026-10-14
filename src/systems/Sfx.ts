@@ -84,8 +84,8 @@ export const sfx = {
     return spin;
   },
 
-  /** One of the slot file's one-shots: the clunk on 확정, or the landing. */
-  playSlot(scene: Phaser.Scene, part: 'stop' | 'win'): void {
+  /** The slot file's one-shot: the clunk on 확정. */
+  playSlot(scene: Phaser.Scene, part: 'stop'): void {
     const clip = AUDIO.slot;
     if (!scene.cache.audio.exists(clip.key)) {
       return;

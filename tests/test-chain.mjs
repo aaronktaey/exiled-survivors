@@ -221,15 +221,33 @@ check('its ground label reads 연쇄번개, in the ordinary dress',
   drop.label === '연쇄번개' && drop.style.plateAlpha === 0,
   `"${drop.label}" in ${drop.style.colour}`);
 
-// --- 12. level-ups still spend on 타격 ---
-await run(`s.progression.addXp(s.progression.xpToNext); return 1;`);
-await sleep(700);
-const lv = await popup();
-check('a level-up still targets 타격 with two picks',
-  lv.open === true && lv.skill === 'meleeStrike' && lv.cards.length === 2,
-  `skill=${lv.skill} cards=${lv.cards?.map(c => c.label).join(' | ')}`);
-await cdp.tap('Space', 32, ' ');
-await sleep(500);
+// --- 12. a level-up spends on a skill in hand ---
+// Which one is random; the roll is pinned to each end in turn so both of the
+// two held here are seen to come up, each with its own picks.
+const levelUp = async (roll) => {
+  const held = await run(`
+    const r = Math.random;
+    Math.random = () => ${roll};
+    s.progression.addXp(s.progression.xpToNext);
+    Math.random = r;
+    return [...s.owned];
+  `);
+  await sleep(700);
+  const lv = await popup();
+  await cdp.tap('Space', 32, ' ');
+  await sleep(500);
+  return { held, lv };
+};
+const low = await levelUp(0);
+const high = await levelUp(0.999);
+check('a level-up offers a skill in hand, and over the roll it can be any of them',
+  low.lv.open && high.lv.open && low.held.includes(low.lv.skill) &&
+    high.held.includes(high.lv.skill) && low.lv.skill !== high.lv.skill,
+  `${low.lv.skill} / ${high.lv.skill} of ${low.held.join(', ')}`);
+check('and its picks are that skill’s own',
+  (low.lv.skill === 'meleeStrike' ? low.lv.cards.length === 2 : low.lv.cards.length === 3) &&
+    (high.lv.skill === 'chainLightning' ? high.lv.cards.length === 3 : high.lv.cards.length === 2),
+  `${low.lv.cards?.length} and ${high.lv.cards?.length} cards`);
 
 // --- 13. live play with all three skills ---
 await run(`
