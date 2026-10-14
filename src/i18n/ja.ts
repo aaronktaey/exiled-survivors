@@ -130,6 +130,25 @@ export const ja: Strings = {
     hintTouch: '項目をタップして選択',
   },
 
+  ranking: {
+    title: 'ランキング',
+    icon: 'ランキング',
+    empty: 'まだ記録がありません — 1 回終えると名前を登録できます。',
+    place: '順位',
+    name: '名前',
+    damage: '与えた被害',
+    champion: '1 位  {name}  {damage}',
+    entryTitle: 'ランキング {place} 位！',
+    entryLead: '与えた被害 {damage} — 名前を残しましょう（英字 3 文字 + 絵文字 1 つ）',
+    confirm: '登録',
+    skip: 'スキップ',
+    entryHintKeyboard: '← → 枠移動   ↑ ↓ または英字入力   Enter 登録   Esc スキップ',
+    entryHintTouch: '▲ ▼ で文字と絵文字を選び、登録を押してください',
+    register: 'ランキング登録',
+    registered: 'ランキング {place} 位で登録しました',
+    localNote: 'この端末の記録です。プレイヤー同士で共有するランキングは準備中です。',
+  },
+
   slot: {
     startTitle: '開始スキル',
     startSubtitle: 'この回に持ち込むスキルをひとつ',
@@ -238,7 +257,7 @@ export const ja: Strings = {
       공허: '虚無',
       오라: 'オーラ',
     },
-    enemies: { boss: 'ボス', grunt: '雑兵', brute: '巨漢', runner: '俊足', shooter: '射手' },
+    enemies: { boss: 'ボス', fugitive: '逃亡者', grunt: '雑兵', brute: '巨漢', runner: '俊足', shooter: '射手' },
     gear: {
       rustySword: '錆びた剣',
       ironSword: '鉄の剣',
@@ -375,6 +394,7 @@ export const ja: Strings = {
         brute: '遅いが非常に硬く、触れるだけで大きく削られます。',
         runner: '脆いが速い。逃げても追いついてきます。',
         boss: '1 分ごとに 1 体現れます。非常に硬く痛いですが、倒せば必ずスキルを落とします。',
+        fugitive: '攻撃してきません。硬くとても速く、攻撃を受けるたびに逃げ出して少し先で止まります。去る前に倒せばスキルが確定で落ちます — 最初は {first} 秒、以後 {every} 秒ごとに現れ、それぞれ {life} 秒で消えます。',
         shooter: '距離を取って止まり、撃ってきます。近づくか、射程の長いスキルで倒しましょう。',
       },
     },

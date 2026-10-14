@@ -11,7 +11,7 @@ import {
   type BoneId,
 } from '@/config';
 import { PATCH_NOTES } from '@/content/patchNotes';
-import { t } from '@/i18n';
+import { fill, t } from '@/i18n';
 import { bgm } from '@/systems/Bgm';
 import { IconBar } from '@/systems/IconBar';
 import { bones } from '@/systems/Bones';
@@ -19,7 +19,8 @@ import { orbs } from '@/systems/Orbs';
 import { passives } from '@/systems/Passives';
 import { MenuList } from '@/systems/MenuList';
 import { saveGame } from '@/systems/SaveGame';
-import { centredTop } from '@/systems/Layout';
+import { centredTop, fitText } from '@/systems/Layout';
+import { rankLabel, ranking } from '@/systems/Ranking';
 import { prefersTouchControls } from '@/systems/VirtualJoystick';
 
 /** How many rows the title lists, for centring it before they are built. */
@@ -32,6 +33,8 @@ export class MenuScene extends Phaser.Scene {
   private menu!: MenuList;
   /** The corner icons. Public so a test can press one. */
   public icons!: IconBar;
+  /** First place under the logo, when there is one. Public for tests. */
+  public champion?: Phaser.GameObjects.Text;
 
   public constructor() {
     super(MenuScene.KEY);
@@ -48,14 +51,16 @@ export class MenuScene extends Phaser.Scene {
     // Six rows under the logo only just fit a 540-tall canvas, so a short
     // one closes the gap rather than pushing the last row into the hint.
     const gap = height < MENU.shortHeight ? MENU.logoGapShort : MENU.logoGap;
-    const top = centredTop(height, MENU.logoBlockHeight + gap + listHeight);
+    // First place on the board takes a line under the byline, once there is one.
+    const blockHeight = MENU.logoBlockHeight + (ranking.first ? MENU.championGap : 0);
+    const top = centredTop(height, blockHeight + gap + listHeight);
 
     this.addLogo(width, top + MENU.logoHeight / 2);
 
     const saved = saveGame.read();
     this.menu = new MenuList(this, {
       x: width / 2,
-      y: top + MENU.logoBlockHeight + gap + MENU.buttonHeight / 2,
+      y: top + blockHeight + gap + MENU.buttonHeight / 2,
       items: [
         { id: 'start', label: () => t().menu.start, onSelect: () => this.onStart() },
         {
@@ -114,6 +119,12 @@ export class MenuScene extends Phaser.Scene {
         badge: () => passives.value.points > 0,
         onSelect: () => this.openOverlay(SCENES.passives),
       },
+      {
+        id: 'ranking',
+        texture: TEXTURES.trophy,
+        label: () => t().ranking.icon,
+        onSelect: () => this.openOverlay(SCENES.ranking),
+      },
     ]);
 
     // The track is multi-megabyte, so it arrives a moment after the menu.
@@ -139,14 +150,46 @@ export class MenuScene extends Phaser.Scene {
       repeat: -1,
     });
 
+    const bylineY = y + logo.displayHeight / 2 + 26;
     this.add
-      .text(width / 2, y + logo.displayHeight / 2 + 26, t().menu.byline, {
+      .text(width / 2, bylineY, t().menu.byline, {
         fontFamily: 'system-ui, sans-serif',
         fontSize: TEXT.size.body,
         color: COLORS.muted,
       })
       .setOrigin(0.5)
       .setDepth(DEPTH.ui);
+
+    this.addChampion(width, bylineY + MENU.championGap);
+  }
+
+  /**
+   * First place on the board, under the logo — the run to beat. Tapping it
+   * opens the board. Nothing is drawn until someone has set one.
+   */
+  private addChampion(width: number, y: number): void {
+    const first = ranking.first;
+    this.champion = undefined;
+    if (!first) {
+      return;
+    }
+
+    this.champion = fitText(
+      this.add
+        .text(width / 2, y, fill(t().ranking.champion, {
+          name: rankLabel(first),
+          damage: Math.round(first.damage).toLocaleString('en-US'),
+        }), {
+          fontFamily: 'system-ui, sans-serif',
+          fontSize: TEXT.size.body,
+          color: COLORS.gearText,
+        })
+        .setOrigin(0.5)
+        .setDepth(DEPTH.ui)
+        .setInteractive({ useHandCursor: true }),
+      width - 32,
+    );
+    this.champion.on(Phaser.Input.Events.GAMEOBJECT_POINTER_DOWN, () => this.openOverlay(SCENES.ranking));
   }
 
   /**

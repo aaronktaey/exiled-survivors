@@ -35,6 +35,8 @@ export const SCENES = {
   bones: "BoneScene",
   passives: "PassiveScene",
   slot: "SlotScene",
+  ranking: "RankingScene",
+  rankEntry: "RankEntryScene",
 } as const;
 
 /** Keys the browser keeps our state under. Bump the suffix to invalidate. */
@@ -51,6 +53,30 @@ export const STORAGE = {
   orbs: "exiled-survivors:orbs:v1",
   /** And the 뼈다귀 drawer, spent one run at a time. */
   bones: "exiled-survivors:bones:v1",
+  /** The local ranking, until there is a shared one. */
+  ranking: "exiled-survivors:ranking:v1",
+} as const;
+
+/**
+ * 랭킹 — the best runs by damage dealt. Kept on this device for now; when it
+ * becomes a board shared between players, the store behind it changes and
+ * this shape does not.
+ */
+export const RANKING = {
+  /** How many places it keeps. */
+  size: 20,
+  /** A name is up to this many letters, A to Z. */
+  nameLength: 3,
+  /** What the letter slots step through. The blank is "no letter here". */
+  letters: ' ABCDEFGHIJKLMNOPQRSTUVWXYZ',
+  /** The one emoji a name may carry, picked from these. The blank is none. */
+  emoji: ['', '😀', '😎', '🔥', '💀', '👑', '⚔️', '🐉', '👻', '🍀', '⭐', '💎', '🦊', '🐱'],
+  /**
+   * Whether the end of a run that made the board asks for a name at once.
+   * The test harness turns it off so the end screen is what it expects;
+   * test-ranking turns it back on.
+   */
+  promptOnDeath: true as boolean,
 } as const;
 
 export const SAVE = {

@@ -130,6 +130,25 @@ export const zh: Strings = {
     hintTouch: '点按条目进行选择',
   },
 
+  ranking: {
+    title: '排行榜',
+    icon: '排行榜',
+    empty: '还没有记录 — 打完一局即可登记名字。',
+    place: '名次',
+    name: '名字',
+    damage: '造成伤害',
+    champion: '第 1 名  {name}  {damage}',
+    entryTitle: '排行榜第 {place} 名！',
+    entryLead: '造成伤害 {damage} — 留下名字吧（3 个字母 + 1 个表情）',
+    confirm: '登记',
+    skip: '跳过',
+    entryHintKeyboard: '← → 切换格子   ↑ ↓ 或输入字母   Enter 登记   Esc 跳过',
+    entryHintTouch: '用 ▲ ▼ 选择字母与表情，然后按登记',
+    register: '登记排行',
+    registered: '已登记为第 {place} 名',
+    localNote: '这是本设备的记录。玩家之间共享的排行榜正在准备中。',
+  },
+
   slot: {
     startTitle: '初始技能',
     startSubtitle: '本局带入的一个技能',
@@ -238,7 +257,7 @@ export const zh: Strings = {
       공허: '虚空',
       오라: '光环',
     },
-    enemies: { boss: '首领', grunt: '杂兵', brute: '巨汉', runner: '疾走者', shooter: '射手' },
+    enemies: { boss: '首领', fugitive: '逃亡者', grunt: '杂兵', brute: '巨汉', runner: '疾走者', shooter: '射手' },
     gear: {
       rustySword: '生锈的剑',
       ironSword: '铁剑',
@@ -375,6 +394,7 @@ export const zh: Strings = {
         brute: '移动缓慢但非常坚硬，被碰到就会掉很多血。',
         runner: '脆弱但速度快，逃跑也甩不掉。',
         boss: '每分钟出现一只。非常坚硬也非常疼，但击杀后必定掉落技能。',
+        fugitive: '从不反击。坚硬且非常快，每次受击都会逃开，跑一段后停下。在它离开前击杀必定掉落技能 — 第一个在 {first} 秒出现，此后每 {every} 秒一个，每个出现 {life} 秒后消失。',
         shooter: '会保持距离停下射击。走过去解决，或者用射程长的技能。',
       },
     },

@@ -1,5 +1,6 @@
 import {
   BOSS,
+  FUGITIVE,
   ENEMY_KINDS,
   GROUND_ITEM,
   PLAYER,
@@ -171,6 +172,21 @@ function enemyLines(): readonly string[] {
       xp: xpFor(boss),
     }),
     `   ${fill(g.notes.boss, { bossEvery: seconds(BOSS.intervalMs) })}`,
+  );
+
+  const fugitive = ENEMY_KINDS.fugitive;
+  lines.push(
+    fill(g.stats, {
+      name: enemyName('fugitive'),
+      hp: fugitive.maxHp,
+      contact: fugitive.contactDamage,
+      xp: xpFor(fugitive),
+    }),
+    `   ${fill(g.notes.fugitive, {
+      first: seconds(FUGITIVE.firstMs),
+      every: seconds(FUGITIVE.intervalMs),
+      life: seconds(fugitive.lifespanMs ?? 0),
+    })}`,
   );
 
   return lines;

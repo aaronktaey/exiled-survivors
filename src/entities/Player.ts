@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 
-import { COLORS, DEPTH, HUD, PLAYER, TEXTURES } from '@/config';
+import { COLORS, DEPTH, ENEMY, HUD, PLAYER, TEXTURES } from '@/config';
 import { fill, t } from '@/i18n';
 import { NO_BONUS, type GearBonus } from '@/systems/Gear';
 import type { AnalogInput } from '@/systems/VirtualJoystick';
@@ -143,16 +143,52 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     return this.hp - before;
   }
 
+  /**
+   * A hit from anything thrown — a bolt, a 우두머리's ring. It opens the
+   * survivor's own invulnerable window, so a volley landing at once is one
+   * hit rather than eighteen.
+   */
   public takeDamage(amount: number): void {
     const now = this.scene.time.now;
     if (!this.isAlive || now < this.invulnerableUntil) {
       return;
     }
 
-    this.hp = Math.max(0, this.hp - amount);
     this.invulnerableUntil = now + PLAYER.invulnerableMs * this.gear.invulnerableScale;
+    this.hurt(amount);
+  }
 
-    // Blink for the duration of the i-frames.
+  /**
+   * A hit from an enemy's body. Each enemy keeps its own cooldown for this
+   * (ENEMY.contactCooldownMs, read off `contactCooldownMs`), and touching
+   * does not open the survivor's window — so every body pressed against the
+   * survivor hurts, and walking through a crowd costs what the crowd is.
+   * Only the debug switch holds it off.
+   */
+  public takeContact(amount: number): void {
+    if (!this.isAlive || this.shielded) {
+      return;
+    }
+
+    this.hurt(amount);
+  }
+
+  /** How long one enemy waits before its body can hurt again. 회피 lengthens it. */
+  public get contactCooldownMs(): number {
+    return ENEMY.contactCooldownMs * this.gear.invulnerableScale;
+  }
+
+  /** True while the debug switch holds every hit off. */
+  public get shielded(): boolean {
+    return this.invulnerableUntil === Number.MAX_SAFE_INTEGER;
+  }
+
+  private hurt(amount: number): void {
+    this.hp = Math.max(0, this.hp - amount);
+
+    // A short blink, restarted rather than stacked when hits come together.
+    this.scene.tweens.killTweensOf(this);
+    this.setAlpha(1);
     this.scene.tweens.add({
       targets: this,
       alpha: 0.25,

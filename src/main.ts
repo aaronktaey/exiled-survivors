@@ -7,6 +7,7 @@ import { COLORS } from '@/config';
 import { settings } from '@/systems/Settings';
 import { registerSharpText } from '@/systems/SharpText';
 import { gear, gearBonusFor, orbApplied } from '@/systems/Gear';
+import { ranking } from '@/systems/Ranking';
 import { gold } from '@/systems/Gold';
 import { critMultiplierFor } from '@/systems/Modifiers';
 import { bones as bonesStore } from '@/systems/Bones';
@@ -28,6 +29,8 @@ import {
   SettingsScene,
   UpgradeScene,
   SlotScene,
+  RankingScene,
+  RankEntryScene,
 } from '@/scenes';
 
 // Language first: every scene reads its text as it is built.
@@ -66,6 +69,8 @@ const config: Phaser.Types.Core.GameConfig = {
     GameScene,
     UpgradeScene,
     SlotScene,
+    RankingScene,
+    RankEntryScene,
     PauseScene,
     SettingsScene,
     CreditsScene,
@@ -96,6 +101,7 @@ if (import.meta.env.DEV) {
     bones?: typeof bonesStore;
     orbApplied?: typeof orbApplied;
     critMultiplierFor?: typeof critMultiplierFor;
+    ranking?: typeof ranking;
   };
   dev.game = game;
   // So a test can read a tuned number instead of carrying a copy of it.
@@ -108,4 +114,5 @@ if (import.meta.env.DEV) {
   dev.bones = bonesStore;
   dev.orbApplied = orbApplied;
   dev.critMultiplierFor = critMultiplierFor;
+  dev.ranking = ranking;
 }

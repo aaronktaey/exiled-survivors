@@ -185,6 +185,32 @@ export interface Strings {
     readonly hintTouch: string;
   };
 
+  /** 랭킹 — the board, the line under the logo, and entering a name. */
+  readonly ranking: {
+    readonly title: string;
+    /** The icon's label on the title screen. */
+    readonly icon: string;
+    readonly empty: string;
+    /** Column heads. */
+    readonly place: string;
+    readonly name: string;
+    readonly damage: string;
+    /** Under the logo: {name} and {damage} of first place. */
+    readonly champion: string;
+    /** The name-entry popup. {place} is where the run would land. */
+    readonly entryTitle: string;
+    readonly entryLead: string;
+    readonly confirm: string;
+    readonly skip: string;
+    readonly entryHintKeyboard: string;
+    readonly entryHintTouch: string;
+    /** The end screen's row, before and after a name went in. */
+    readonly register: string;
+    readonly registered: string;
+    /** A board shared between players is coming; this one is this device's. */
+    readonly localNote: string;
+  };
+
   /** 슬롯머신 — the reel a new run spins for its first skill. */
   readonly slot: {
     /** Over the reel when a run starts. */

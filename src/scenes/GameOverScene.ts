@@ -1,10 +1,12 @@
 import Phaser from 'phaser';
 
-import { COLORS, DEPTH, GAME_OVER, MENU, SCENES, SCRIM, TEXT } from '@/config';
+import { COLORS, DEPTH, GAME_OVER, MENU, RANKING, SCENES, SCRIM, TEXT } from '@/config';
 import { enemyName, fill, t } from '@/i18n';
 import { centredTop, fitText, fitWidth } from '@/systems/Layout';
 import { MenuList } from '@/systems/MenuList';
+import { ranking } from '@/systems/Ranking';
 import type { RunSummary } from '@/systems/RunStats';
+import type { RankEntryData } from '@/scenes/RankEntryScene';
 import { prefersTouchControls } from '@/systems/VirtualJoystick';
 import { addBackButton, type BackButton } from '@/systems/BackButton';
 
@@ -42,6 +44,12 @@ export class GameOverScene extends Phaser.Scene {
   public menu!: MenuList;
   /** The table, so a test can read what the run was told it did. */
   public table!: Phaser.GameObjects.Container;
+  /**
+   * The place each run took on the board, by its summary. Kept on the
+   * instance rather than reset in init: the screen is rebuilt when the
+   * language changes, and must not offer the same run up a second time.
+   */
+  private readonly entered = new WeakMap<RunSummary, number>();
 
   public constructor() {
     super(GameOverScene.KEY);
@@ -58,9 +66,14 @@ export class GameOverScene extends Phaser.Scene {
 
     this.add.rectangle(0, 0, width, height, 0x05070b, SCRIM.gameOver).setOrigin(0, 0).setDepth(DEPTH.ui);
 
+    // A run that made the board gets a row for entering it, and asks once
+    // on its own as the screen opens.
+    const qualifies = ranking.qualifies(this.payload.summary.damage);
+    const rowCount = qualifies ? 4 : 3;
+
     // Built first, measured, then everything is centred around it.
     const tableHeight = this.buildTable(width);
-    const rows = 3 * (MENU.buttonHeight + MENU.buttonGap) - MENU.buttonGap;
+    const rows = rowCount * (MENU.buttonHeight + MENU.buttonGap) - MENU.buttonGap;
     const top = centredTop(height, GAME_OVER.headHeight + tableHeight + GAME_OVER.tableGap + rows);
 
     const total = Math.floor(this.payload.survivedMs / 1000);
@@ -98,6 +111,19 @@ export class GameOverScene extends Phaser.Scene {
         { id: 'retry', label: () => t().gameOver.retry, onSelect: () => this.restart() },
         { id: 'menu', label: () => t().gameOver.toTitle, onSelect: () => this.toTitle() },
         { id: 'settings', label: () => t().menu.settings, onSelect: () => this.openSettings() },
+        ...(qualifies
+          ? [
+              {
+                id: 'rank',
+                label: () => {
+                  const place = this.entered.get(this.payload.summary) ?? 0;
+                  return place > 0 ? fill(t().ranking.registered, { place }) : t().ranking.register;
+                },
+                enabled: () => !this.entered.has(this.payload.summary),
+                onSelect: () => this.openEntry(),
+              },
+            ]
+          : []),
       ],
     });
 
@@ -110,6 +136,35 @@ export class GameOverScene extends Phaser.Scene {
       )
       .setOrigin(0.5)
       .setDepth(DEPTH.ui + 1);
+
+    if (qualifies && RANKING.promptOnDeath && !this.entered.has(this.payload.summary)) {
+      this.time.delayedCall(450, () => this.openEntry());
+    }
+  }
+
+  /**
+   * Asks for a name over this screen, which waits underneath — paused, so
+   * a key pressed for the name does not also pick a row here.
+   */
+  private openEntry(): void {
+    if (this.entered.has(this.payload.summary) || !this.scene.isActive()) {
+      return;
+    }
+
+    const { summary, level, survivedMs } = this.payload;
+    const data: RankEntryData = {
+      run: { damage: summary.damage, level, survivedMs },
+      onDone: (place) => {
+        this.scene.resume();
+        if (place > 0) {
+          this.entered.set(summary, place);
+        }
+        this.menu.refresh();
+      },
+    };
+    this.scene.pause();
+    this.scene.launch(SCENES.rankEntry, data);
+    this.scene.bringToTop(SCENES.rankEntry);
   }
 
   /**

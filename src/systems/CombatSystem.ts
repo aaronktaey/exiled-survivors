@@ -347,9 +347,18 @@ export class CombatSystem {
       return;
     }
 
+    // Each body keeps its own cooldown, so every enemy pressed against the
+    // survivor hurts — a crowd is not one hit. Something that does not fight
+    // (a 도망자) never hurts at all.
+    const now = this.scene.time.now;
+    if (enemy.contactDamage <= 0 || now < enemy.contactReadyAt || this.player.shielded) {
+      return;
+    }
+    enemy.contactReadyAt = now + this.player.contactCooldownMs;
+
     // Each kind hits for its own weight: a 거구 costs far more to stand in,
     // and a rare adds whatever its affixes are worth.
-    this.player.takeDamage(enemy.rollDamage(enemy.contactDamage));
+    this.player.takeContact(enemy.rollDamage(enemy.contactDamage));
   };
 
   private onEnemyShotHit: Phaser.Types.Physics.Arcade.ArcadePhysicsCallback = (_player, b) => {
@@ -452,6 +461,7 @@ export class CombatSystem {
     const worth = enemy.xpValue;
     const dropBonus = enemy.dropBonus;
     const wasBoss = enemy.isBoss;
+    const certainSkill = enemy.alwaysDropsSkill;
     const affixes = enemy.affixes.length;
     const scale = this.hooks.dropScale();
     // Pooled: back to the spawner's pool rather than destroyed.
@@ -460,7 +470,8 @@ export class CombatSystem {
     const gem = this.gems.get() as XpGem | null;
     gem?.drop(x, y, worth, this.player);
 
-    const skill = this.hooks.rollSkillDrop(dropBonus, wasBoss);
+    // A 우두머리 and a 도망자 always leave one.
+    const skill = this.hooks.rollSkillDrop(dropBonus, certainSkill);
     if (skill) {
       this.dropSkillAt(x, y, skill);
     }

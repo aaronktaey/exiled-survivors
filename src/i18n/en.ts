@@ -130,6 +130,25 @@ export const en: Strings = {
     hintTouch: 'Tap an entry to choose it',
   },
 
+  ranking: {
+    title: 'Ranking',
+    icon: 'Ranking',
+    empty: 'No records yet — finish a run to put your name up.',
+    place: '#',
+    name: 'Name',
+    damage: 'Damage dealt',
+    champion: '#1  {name}  {damage}',
+    entryTitle: 'Ranked #{place}!',
+    entryLead: '{damage} damage dealt — leave your name (3 letters + 1 emoji)',
+    confirm: 'Enter',
+    skip: 'Skip',
+    entryHintKeyboard: '← → slot   ↑ ↓ or type a letter   Enter to save   Esc to skip',
+    entryHintTouch: 'Pick letters and an emoji with ▲ ▼, then press Enter',
+    register: 'Enter ranking',
+    registered: 'Entered at #{place}',
+    localNote: 'Records on this device. A ranking shared between players is on its way.',
+  },
+
   slot: {
     startTitle: 'Starting skill',
     startSubtitle: 'One skill to take into this run',
@@ -238,7 +257,7 @@ export const en: Strings = {
       공허: 'void',
       오라: 'aura',
     },
-    enemies: { boss: 'Boss', grunt: 'Grunt', brute: 'Brute', runner: 'Runner', shooter: 'Shooter' },
+    enemies: { boss: 'Boss', fugitive: 'Runaway', grunt: 'Grunt', brute: 'Brute', runner: 'Runner', shooter: 'Shooter' },
     gear: {
       rustySword: 'Rusty Sword',
       ironSword: 'Iron Sword',
@@ -375,6 +394,7 @@ export const en: Strings = {
         brute: 'Slow, but very tough, and standing in one costs a great deal.',
         runner: 'Frail and fast. Running away does not shake it.',
         boss: 'One arrives every minute. Very tough and very painful, but killing it always leaves a skill.',
+        fugitive: 'Never fights back. Tough and very fast; every hit sends it running off and it stops a way on. Kill it before it leaves for a sure skill — the first turns up at {first}s, then every {every}s, and each is gone {life}s after it arrives.',
         shooter: 'Stops at a distance and fires. Walk it down, or bring something with reach.',
       },
     },

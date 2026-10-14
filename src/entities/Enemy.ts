@@ -13,9 +13,11 @@ import {
   TEXTURES,
   ENEMY_AFFIXES,
   TIMING,
+  WORLD,
   xpFor,
   type AffixSpec,
   type EnemyKind,
+  type EnemyFleeSpec,
   type EnemyShotSpec,
   type EnemyVolleySpec,
 } from '@/config';
@@ -92,6 +94,12 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
   /** Rares wear a yellow ring and carry affixes; the rest carry none. */
   public rare = false;
   public affixes: readonly AffixSpec[] = [];
+  /** Scene time before which this one's body cannot hurt the survivor again. */
+  public contactReadyAt = 0;
+  /** Left of a kind's lifespan, for the kinds that have one. Public for tests. */
+  public lifeLeftMs = Infinity;
+  /** Where a 도망자 is running to, while it runs. Public for tests. */
+  public fleeTo?: Phaser.Math.Vector2;
 
   private spec = ENEMY_KINDS.grunt;
   private speed: number = ENEMY.speed;
@@ -137,10 +145,13 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
     return this.affixes.map((affix) => affix.name);
   }
 
-/** The ring's colour: gold for a boss, deepening with a rare's affixes. */
+  /** The ring's colour: gold for a boss, deepening with a rare's affixes. */
   public get outlineColor(): number {
     if (this.isBoss) {
       return COLORS.bossOutline;
+    }
+    if (this.spec.flashy) {
+      return COLORS.fugitiveRing;
     }
 
     const tier = Phaser.Math.Clamp(this.affixes.length, 1, RARE_OUTLINE_TIERS.length) - 1;
@@ -185,6 +196,16 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
     return this.kind === 'boss';
   }
 
+  /** A 우두머리 and a 도망자 both always leave a skill. */
+  public get alwaysDropsSkill(): boolean {
+    return this.isBoss || this.spec.guaranteedSkill === true;
+  }
+
+  /** True while a 도망자 is running from a hit. */
+  public get isFleeing(): boolean {
+    return this.fleeTo !== undefined;
+  }
+
   /** True while 냉각 is slowing it down. */
   public get isChilled(): boolean {
     return this.chillMs > 0;
@@ -222,6 +243,10 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
     this.maxHp = this.hp;
     this.flashMs = 0;
     this.chillMs = 0;
+    this.contactReadyAt = 0;
+    this.lifeLeftMs = spec.lifespanMs ?? Infinity;
+    this.fleeTo = undefined;
+    this.setScale(1);
     this.clearTint();
 
     // A little spread so a pack does not move as one rigid blob.
@@ -270,7 +295,7 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
 
   /** The ring that marks a rare, made once and reused by the pool. */
   private drawOutline(): void {
-    if (!this.rare && !this.isBoss) {
+    if (!this.rare && !this.isBoss && !this.spec.flashy) {
       this.outline?.setVisible(false);
       return;
     }
@@ -347,7 +372,9 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
     this.chillMs = 0;
     this.rare = false;
     this.affixes = [];
-    this.outline?.setVisible(false);
+    this.fleeTo = undefined;
+    this.setScale(1);
+    this.outline?.setVisible(false).setScale(1);
     this.healthBar?.setVisible(false);
     this.plate?.setVisible(false);
     this.clearTint();
@@ -377,6 +404,10 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
   /** Returns true when this hit killed it. */
   public takeDamage(amount: number): boolean {
     this.hp -= amount;
+
+    if (this.hp > 0 && this.spec.flee && !this.fleeTo) {
+      this.startFleeing(this.spec.flee);
+    }
 
     if (this.hp > 0) {
       // Flash timed in update rather than a per-hit delayedCall, which would
@@ -415,7 +446,25 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
       this.drawHealthBar();
     }
 
+    // A kind with a lifespan leaves when it runs out, and leaves nothing.
+    if (this.lifeLeftMs !== Infinity) {
+      this.lifeLeftMs -= dt;
+      if (this.lifeLeftMs <= 0) {
+        this.recycle();
+        return;
+      }
+    }
+
+    if (this.spec.flashy) {
+      this.shimmer();
+    }
+
     if (!this.target || !this.body) {
+      return;
+    }
+
+    if (this.spec.flee) {
+      this.run();
       return;
     }
 
@@ -489,6 +538,54 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
 
     this.setVelocity(0, 0);
     return true;
+  }
+
+  /**
+   * Picks where to run: away from the survivor, give or take half the arc,
+   * as far as one scare carries it — and never off the edge of the world.
+   */
+  private startFleeing(flee: EnemyFleeSpec): void {
+    const from = this.target ?? { x: this.x - 1, y: this.y };
+    const away = Phaser.Math.Angle.Between(from.x, from.y, this.x, this.y);
+    const angle = away + Phaser.Math.FloatBetween(-flee.arc / 2, flee.arc / 2);
+    const margin = this.spec.size;
+    this.fleeTo = new Phaser.Math.Vector2(
+      Phaser.Math.Clamp(this.x + Math.cos(angle) * flee.distance, margin, WORLD.width - margin),
+      Phaser.Math.Clamp(this.y + Math.sin(angle) * flee.distance, margin, WORLD.height - margin),
+    );
+  }
+
+  /** Runs to where it was scared to, then stands still until the next hit. */
+  private run(): void {
+    if (!this.fleeTo) {
+      this.setVelocity(0, 0);
+      return;
+    }
+
+    const left = Phaser.Math.Distance.Between(this.x, this.y, this.fleeTo.x, this.fleeTo.y);
+    // Close enough that the next frame would carry it past.
+    if (left <= Math.max(4, (this.currentSpeed * TIMING.maxDeltaMs) / 1000)) {
+      this.fleeTo = undefined;
+      this.setVelocity(0, 0);
+      return;
+    }
+
+    this.scene.physics.moveTo(this, this.fleeTo.x, this.fleeTo.y, this.currentSpeed);
+  }
+
+  /**
+   * What makes a 도망자 impossible to miss: its colour runs round the
+   * rainbow, and it and its gold ring breathe in and out.
+   */
+  private shimmer(): void {
+    const now = this.scene.time.now;
+    const pulse = 1 + 0.12 * Math.sin(now / 140);
+    this.setScale(pulse);
+    this.outline?.setScale(pulse * 1.15);
+    if (this.flashMs <= 0 && this.chillMs <= 0) {
+      const hue = (now / 1200) % 1;
+      this.setTint(Phaser.Display.Color.HSVToRGB(hue, 0.55, 1).color).setTintMode(Phaser.TintModes.MULTIPLY);
+    }
   }
 
   /** The hit flash wins while it lasts, then 냉각 shows through under it. */

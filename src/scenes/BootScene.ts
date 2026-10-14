@@ -11,6 +11,7 @@ import {
   SHARD,
   SKILL_ICONS,
   SLOT,
+  RANKING,
   PLAYER,
   POTION,
   SHOTS,
@@ -58,7 +59,11 @@ export class BootScene extends Phaser.Scene {
     this.createGridTexture();
     this.createSquareTexture(TEXTURES.player, PLAYER.size, COLORS.player);
     for (const kind of Object.values(ENEMY_KINDS)) {
-      this.createSquareTexture(kind.texture, kind.size, kind.color);
+      if (kind.flashy) {
+        this.createFlashyTexture(kind.texture, kind.size);
+      } else {
+        this.createSquareTexture(kind.texture, kind.size, kind.color);
+      }
     }
     this.createSquareTexture(TEXTURES.enemyShot, 8, COLORS.enemyShot);
     this.createShardTexture();
@@ -71,6 +76,7 @@ export class BootScene extends Phaser.Scene {
     this.createBoneTextures();
     this.createAltarTexture();
     this.createThunderIcon();
+    this.createTrophyTexture();
 
 
     createPixelTextTexture(this, TEXTURES.logo, ['EXILED', 'SURVIVORS'], {
@@ -90,6 +96,8 @@ export class BootScene extends Phaser.Scene {
       // play at once, and a reel waiting for 확정 would freeze every run
       // they start — from the title as much as from `#run`.
       (SLOT as { atRunStart: boolean }).atRunStart = false;
+      // And the end of a run does not stop to ask for a name.
+      (RANKING as { promptOnDeath: boolean }).promptOnDeath = false;
     }
     this.scene.start(skipMenu ? SCENES.game : SCENES.menu);
   }
@@ -217,6 +225,53 @@ export class BootScene extends Phaser.Scene {
       graphics.generateTexture(bone.texture, size, size);
       graphics.destroy();
     }
+  }
+
+  /** 랭킹's icon in the title's corner: a gold cup on a stem and a base. */
+  private createTrophyTexture(): void {
+    const size = 48;
+    const graphics = this.add.graphics();
+    graphics.fillStyle(COLORS.fugitiveRing, 1);
+    // The handles, then the cup over them.
+    graphics.lineStyle(4, COLORS.fugitiveRing, 1);
+    graphics.strokeCircle(size * 0.26, size * 0.32, size * 0.1);
+    graphics.strokeCircle(size * 0.74, size * 0.32, size * 0.1);
+    graphics.fillRoundedRect(size * 0.28, size * 0.14, size * 0.44, size * 0.38, size * 0.14);
+    graphics.fillRect(size * 0.45, size * 0.5, size * 0.1, size * 0.18);
+    graphics.fillRect(size * 0.3, size * 0.68, size * 0.4, size * 0.12);
+    graphics.fillStyle(0xffffff, 0.45);
+    graphics.fillRect(size * 0.36, size * 0.2, size * 0.06, size * 0.22);
+    graphics.generateTexture(TEXTURES.trophy, size, size);
+    graphics.destroy();
+  }
+
+  /**
+   * A 도망자: a white four-pointed star with a gold rim, drawn white so the
+   * colour cycling over it in play is pure colour. Everything else on the
+   * field is a square; this is the one thing that is not.
+   */
+  private createFlashyTexture(key: string, size: number): void {
+    const s = Math.round(size * 1.8);
+    const c = s / 2;
+    const star = (r: number, inner: number) => {
+      const points: Phaser.Math.Vector2[] = [];
+      for (let i = 0; i < 8; i++) {
+        const radius = i % 2 === 0 ? r : inner;
+        const angle = -Math.PI / 2 + (i * Math.PI) / 4;
+        points.push(new Phaser.Math.Vector2(c + Math.cos(angle) * radius, c + Math.sin(angle) * radius));
+      }
+      return points;
+    };
+
+    const graphics = this.add.graphics();
+    graphics.fillStyle(COLORS.fugitiveRing, 1);
+    graphics.fillPoints(star(s * 0.5, s * 0.2), true);
+    graphics.fillStyle(0xffffff, 1);
+    graphics.fillPoints(star(s * 0.4, s * 0.15), true);
+    graphics.fillStyle(0xffffff, 1);
+    graphics.fillCircle(c, c, s * 0.12);
+    graphics.generateTexture(key, s, s);
+    graphics.destroy();
   }
 
   /**

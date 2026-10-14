@@ -134,6 +134,25 @@ export const ko: Strings = {
     hintTouch: '항목을 탭해서 선택',
   },
 
+  ranking: {
+    title: '랭킹',
+    icon: '랭킹',
+    empty: '아직 기록이 없습니다 — 한 판 끝내면 이름을 올릴 수 있습니다.',
+    place: '순위',
+    name: '이름',
+    damage: '가한 피해',
+    champion: '1위  {name}  {damage}',
+    entryTitle: '랭킹 {place}위!',
+    entryLead: '가한 피해 {damage} — 이름을 남기세요 (알파벳 3자 + 이모지 1개)',
+    confirm: '등록',
+    skip: '건너뛰기',
+    entryHintKeyboard: '← → 칸 이동   ↑ ↓ 또는 알파벳 입력   Enter 등록   Esc 건너뛰기',
+    entryHintTouch: '▲ ▼로 글자와 이모지를 고르고 등록을 누르세요',
+    register: '랭킹 등록',
+    registered: '랭킹 {place}위로 등록했습니다',
+    localNote: '이 기기의 기록입니다. 플레이어끼리 공유되는 랭킹은 준비 중입니다.',
+  },
+
   slot: {
     startTitle: '시작 스킬',
     startSubtitle: '이번 판에 가지고 들어갈 스킬 하나',
@@ -271,6 +290,7 @@ export const ko: Strings = {
         brute: '느리지만 아주 단단하고, 스치기만 해도 크게 아픕니다.',
         runner: '약하지만 빠릅니다. 도망쳐도 따라붙습니다.',
         boss: '1분마다 한 마리씩 찾아옵니다. 아주 단단하고 아주 아프지만, 쓰러뜨리면 스킬을 반드시 떨어뜨립니다.',
+        fugitive: '공격하지 않습니다. 단단하고 아주 빠르며, 맞을 때마다 달아나 조금 떨어진 곳에서 멈춥니다. 사라지기 전에 잡으면 스킬을 반드시 떨어뜨립니다 — 처음엔 {first}초에, 그 뒤로 {every}초마다 나타나고, 나타난 지 {life}초 뒤에 사라집니다.',
         shooter: '거리를 두고 멈춰 서서 탄을 쏩니다. 가까이 가거나 사거리가 긴 스킬로 잡으세요.',
       },
     },

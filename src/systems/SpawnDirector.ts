@@ -5,6 +5,7 @@ import {
   ALTAR_OFFERS,
   BONE_RUN,
   BOSS,
+  FUGITIVE,
   ENEMY_KINDS,
   SPAWN,
   SPAWN_TABLE,
@@ -38,6 +39,8 @@ export class SpawnDirector {
   private elapsedMs = 0;
   private sinceSpawnMs = 0;
   private sinceBossMs = 0;
+  /** Counts down to the next 도망자. */
+  private untilFugitiveMs: number = FUGITIVE.firstMs;
 
   public constructor(
     scene: Phaser.Scene,
@@ -82,6 +85,7 @@ export class SpawnDirector {
     this.elapsedMs = elapsedMs;
     // A resumed run waits its full minute rather than owing a boss at once.
     this.sinceBossMs = 0;
+    this.untilFugitiveMs = FUGITIVE.firstMs;
   }
 
   /** Total sprites held by the pool, alive or waiting. */
@@ -103,7 +107,7 @@ export class SpawnDirector {
 
   /** How many of each kind are on the field right now. */
   public get aliveByKind(): Record<EnemyKind, number> {
-    const counts = { grunt: 0, brute: 0, runner: 0, shooter: 0, boss: 0 };
+    const counts = { grunt: 0, brute: 0, runner: 0, shooter: 0, boss: 0, fugitive: 0 };
     for (const child of this.group.getChildren()) {
       const enemy = child as Enemy;
       if (enemy.active) {
@@ -134,6 +138,15 @@ export class SpawnDirector {
     while (this.sinceBossMs >= BOSS.intervalMs) {
       this.sinceBossMs -= BOSS.intervalMs;
       this.spawnBoss();
+    }
+
+    // A 도망자 on its own clock too, and only ever one on the field.
+    this.untilFugitiveMs -= delta;
+    if (this.untilFugitiveMs <= 0) {
+      this.untilFugitiveMs = FUGITIVE.intervalMs;
+      if (this.aliveByKind.fugitive < FUGITIVE.maxAlive) {
+        this.spawnFugitive();
+      }
     }
 
     const interval = this.intervalMs;
@@ -180,6 +193,22 @@ export class SpawnDirector {
     boss.spawn(x, y, this.target, 'boss', this.hooks, false, this.hpScale);
     this.hooks.onBossSpawned?.();
     return boss;
+  }
+
+  /**
+   * One 도망자, just off the screen. It does not come to the survivor — it
+   * stands there to be found, and the rim of the screen points at it.
+   */
+  public spawnFugitive(): Enemy | null {
+    const camera = this.scene.cameras.main;
+    const radius = Math.hypot(camera.width, camera.height) / 2 + SPAWN.offscreenMargin;
+    const angle = Phaser.Math.FloatBetween(0, Math.PI * 2);
+    const x = Phaser.Math.Clamp(this.target.x + Math.cos(angle) * radius, 40, WORLD.width - 40);
+    const y = Phaser.Math.Clamp(this.target.y + Math.sin(angle) * radius, 40, WORLD.height - 40);
+
+    const enemy = this.group.get(x, y) as Enemy | null;
+    enemy?.spawn(x, y, this.target, 'fugitive', this.hooks, false, this.hpScale);
+    return enemy;
   }
 
   /** One rare, next to the player. Used by the debug keys and by tests. */

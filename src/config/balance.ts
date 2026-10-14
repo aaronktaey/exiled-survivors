@@ -66,9 +66,15 @@ export const ENEMY = {
   speedVariance: 0.25,
   maxHp: 240,
   contactDamage: 12,
+  /**
+   * How often one enemy's body can hurt the survivor. Each enemy keeps its
+   * own, so a crowd pressed against the survivor all hurt at once — slipping
+   * between enemies is meant to cost. 회피 lengthens it.
+   */
+  contactCooldownMs: 600,
 } as const;
 
-export type EnemyKind = "grunt" | "brute" | "runner" | "shooter" | "boss";
+export type EnemyKind = "grunt" | "brute" | "runner" | "shooter" | "boss" | "fugitive";
 
 /** What a shooting enemy throws. */
 export interface EnemyShotSpec {
@@ -102,6 +108,29 @@ export interface EnemyKindSpec {
   readonly shot?: EnemyShotSpec;
   /** Only the kinds that throw a ring outward have one. */
   readonly volley?: EnemyVolleySpec;
+  /**
+   * Only a 도망자 has one: it does not chase. It stands where it is, and each
+   * hit sends it running from the survivor until it has gone this far.
+   */
+  readonly flee?: EnemyFleeSpec;
+  /** Gone after this long, kill or no kill, and leaving nothing behind. */
+  readonly lifespanMs?: number;
+  /** Killing it always leaves a skill, the way a 우두머리 does. */
+  readonly guaranteedSkill?: boolean;
+  /** Drawn to be seen: a colour that cycles and a gold ring that breathes. */
+  readonly flashy?: boolean;
+}
+
+/** How something that runs from the survivor runs. */
+export interface EnemyFleeSpec {
+  /** How far one scare carries it, in px, before it stops. */
+  readonly distance: number;
+  /**
+   * The spread around straight-away-from-the-survivor that its direction is
+   * picked from, in radians. Wide enough that where it goes cannot be
+   * guessed; never so wide that it runs at you.
+   */
+  readonly arc: number;
 }
 
 /**
@@ -170,6 +199,25 @@ export const ENEMY_KINDS: Record<EnemyKind, EnemyKindSpec> = {
       size: 10,
       lifespanMs: 4000,
     },
+  },
+  /**
+   * 도망자. Not in the spawn table: one turns up on its own clock (FUGITIVE)
+   * and is worth chasing down — it never fights back, it is tough and fast,
+   * and it always leaves a skill. A minute later it is gone either way.
+   */
+  fugitive: {
+    id: "fugitive",
+    name: "도망자",
+    texture: TEXTURES.enemyFugitive,
+    size: 24,
+    color: COLORS.enemyFugitive,
+    maxHp: 2400,
+    speed: 300,
+    contactDamage: 0,
+    flee: { distance: 240, arc: Math.PI * 0.9 },
+    lifespanMs: 60_000,
+    guaranteedSkill: true,
+    flashy: true,
   },
   shooter: {
     id: "shooter",
@@ -550,6 +598,15 @@ export function rareChanceAt(elapsedMs: number): number {
   );
 }
 
+/** 도망자: when one turns up. Only one is ever on the field at a time. */
+export const FUGITIVE = {
+  /** The first one, from the start of the run. */
+  firstMs: 40_000,
+  /** And another this long after the last one turned up. */
+  intervalMs: 75_000,
+  maxAlive: 1,
+} as const;
+
 /** 우두머리: one every so often, worth killing for what it drops. */
 export const BOSS = {
   /** How often one turns up, from the start of the run. */
@@ -809,8 +866,11 @@ export interface SkillBaseStats {
  * The damage numbers are chosen backwards from damage per second, measured
  * against a plain enemy's health (ENEMY.maxHp): a single-target skill does
  * about half of one per second, and the two that hit a crowd do about a
- * third. DPS_TARGET records that intent, and the tests check the stat lines
- * still land on it.
+ * third. DPS_TARGET records that intent.
+ *
+ * Every skill's damage was then raised by a fifth across the board
+ * (2026-10-14), so the stat lines below sit about 20% above these targets on
+ * purpose; nothing reads DPS_TARGET at run time.
  */
 export const DPS_TARGET = {
   /** Fraction of a plain enemy's health per second, for a single-target skill. */
@@ -822,9 +882,10 @@ export const DPS_TARGET = {
 } as const;
 
 export const SKILL_BASE: Record<SkillId, SkillBaseStats> = {
-  // 150 damage once a second: half a plain enemy per second.
+  // 180 damage once a second: three-quarters of a plain enemy per second
+  // (it was 150, half of one, before the across-the-board +20%).
   meleeStrike: {
-    damage: 150,
+    damage: 180,
     attackSpeed: 1,
     range: 66,
     projectileSpeed: 0,
@@ -834,7 +895,7 @@ export const SKILL_BASE: Record<SkillId, SkillBaseStats> = {
     orbitSpeed: 0,
   },
   fireball: {
-    damage: 150,
+    damage: 180,
     attackSpeed: 1,
     range: 100,
     projectileSpeed: 230,
@@ -846,7 +907,7 @@ export const SKILL_BASE: Record<SkillId, SkillBaseStats> = {
   // Two enemies a cast. It was 0.8 casts a second — a third of an enemy per
   // second — and is a fifth faster than that now.
   chainLightning: {
-    damage: 60,
+    damage: 72,
     attackSpeed: 0.96,
     range: 160,
     projectileSpeed: 0,
@@ -857,7 +918,7 @@ export const SKILL_BASE: Record<SkillId, SkillBaseStats> = {
   },
   // It stops at the first body now; what it leaves behind is the 냉각.
   iceSpear: {
-    damage: 100,
+    damage: 120,
     attackSpeed: 1,
     range: 180,
     projectileSpeed: 320,
@@ -867,13 +928,9 @@ export const SKILL_BASE: Record<SkillId, SkillBaseStats> = {
     orbCount: 0,
     orbitSpeed: 0,
   },
-  // An orbit rather than a shot: range is how far out the orbs ride,
-  // orbitSpeed how fast they travel around, and attackSpeed how often one
-  // orb may hit the same enemy again.
-  // A bolt out of the sky every half second onto something nearby. Ten
-  // times the 12 it was asked for, in the scale health is now written in.
+  // A bolt out of the sky once a second onto something nearby.
   thunderStrike: {
-    damage: 80,
+    damage: 96,
     attackSpeed: 1,
     range: 200,
     projectileSpeed: 0,
@@ -882,8 +939,11 @@ export const SKILL_BASE: Record<SkillId, SkillBaseStats> = {
     orbCount: 0,
     orbitSpeed: 0,
   },
+  // An orbit rather than a shot: range is how far out the orbs ride,
+  // orbitSpeed how fast they travel around, and attackSpeed how often one
+  // orb may hit the same enemy again.
   voidOrb: {
-    damage: 50,
+    damage: 60,
     attackSpeed: 1.5,
     range: 90,
     projectileSpeed: 0,

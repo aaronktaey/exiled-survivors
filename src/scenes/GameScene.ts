@@ -248,6 +248,12 @@ export class GameScene extends Phaser.Scene {
         // thing about it that the field does.
         arrowColor: COLORS.bossOutline,
       },
+      {
+        // A 도망자 is the other thing worth walking a long way for.
+        group: this.spawner.group,
+        filter: (object) => (object as Enemy).kind === 'fugitive',
+        arrowColor: COLORS.fugitiveRing,
+      },
       { group: this.combat.altars },
       { group: this.combat.shardDrops },
       { group: this.combat.orbDrops },

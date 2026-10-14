@@ -114,7 +114,8 @@ const title = await scene('MenuScene', `
 console.log('title:', JSON.stringify(title));
 check('장비 and 패시브 have left the list', !title.rows.includes('gear'), title.rows.join(' / '));
 check('and sit as icons in the top-right corner',
-  title.icons.length === 2 && title.icons.every((i) => i.x > title.width * 0.8 && i.y < 60),
+  ['gear', 'passives'].every((id) => title.icons.some((i) => i.id === id)) &&
+    title.icons.every((i) => i.x > title.width * 0.6 && i.y < 60),
   title.icons.map((i) => `${i.label} at ${i.x},${i.y}`).join(' / '));
 check('the 패시브 icon wears a dot while a point is waiting',
   title.icons.find((i) => i.id === 'passives').badge === true);

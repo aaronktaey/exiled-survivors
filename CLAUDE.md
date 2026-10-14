@@ -72,7 +72,7 @@ wrong shape.
 ## The test harness
 
 `tests/` drives a real Chrome over CDP against the dev server and checks the
-running game, not units. 30 suites, ~850 checks. It is the only thing that has
+running game, not units. 32 suites, ~880 checks. It is the only thing that has
 caught most of what has gone wrong here, so run all of it before every commit.
 
 ```sh
@@ -82,7 +82,7 @@ node run-all.mjs test-full test-skills test-balance test-chain test-ice \
   test-void test-enemies test-rare test-boss test-potion test-sfx test-perf \
   test-hud test-expiry test-audio test-touch test-shell test-shell2 test-info \
   test-i18n test-gear test-passive test-responsive test-stats test-bones \
-  test-altar test-slot test-inventory test-locale test-back
+  test-altar test-slot test-inventory test-locale test-back test-fugitive \n  test-ranking
 ```
 
 `run-all.mjs` starts Chrome itself (`CHROME_PATH` overrides where it looks),
@@ -172,6 +172,18 @@ Read `git log` for what changed and when. What is not in the log:
   (`items`, `selected`, `selectedId`, `focus`, `step`, `refresh`) — which is
   why most of test-gear survived the swap. A tap only picks a cell; acting is
   the buttons beside it or Space. The title icon's id is still `gear`.
+- **Contact is per enemy.** A body hurts through `Player.takeContact` on its
+  own `ENEMY.contactCooldownMs`, so a crowd all hurt at once; only thrown
+  things (`takeDamage`) open the survivor's invulnerable window. The debug /
+  test switch `setInvulnerable(true)` still holds off both.
+- **도망자 is table-driven.** `flee`, `lifespanMs`, `guaranteedSkill` and
+  `flashy` on an `ENEMY_KINDS` entry give any kind that behaviour; the
+  fugitive is the only one using them. It spawns on `FUGITIVE`'s clock.
+- **랭킹 is local for now** (`systems/Ranking.ts`, `STORAGE.ranking`). The
+  screens only touch `top`, `qualifies`/`placeFor` and `submit`, so a shared
+  board replaces the store, not the screens. The end screen asks for a name
+  only when `RANKING.promptOnDeath` is on — the harness switches it off like
+  the slot, and `test-ranking` turns it back on.
 - **Known gaps, left on purpose:**
   - A 구슬 can still be spent on the weapon a saved run is holding. Swapping
     is blocked while a run is saved; rerolling it is not.

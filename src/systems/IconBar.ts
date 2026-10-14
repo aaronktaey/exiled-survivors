@@ -41,8 +41,11 @@ export class IconBar {
     const right = scene.scale.width - margin;
     const y = margin + size / 2;
 
+    // Built at x = 0 and placed afterwards: a slot is as wide as its icon or
+    // its label, whichever is wider, so "인벤토리" and "패시브" side by side
+    // do not run into one word.
     buttons.forEach((button, index) => {
-      const x = right - size / 2 - (buttons.length - 1 - index) * (size + gap);
+      const x = 0;
 
       const plate = scene.add
         .rectangle(x, y, size, size, COLORS.panelActive, 0)
@@ -76,6 +79,18 @@ export class IconBar {
 
       this.views.push({ button, image, plate, label, badge });
     });
+
+    let edge = right;
+    for (let i = this.views.length - 1; i >= 0; i--) {
+      const view = this.views[i]!;
+      const slot = Math.max(size, Math.ceil(view.label.width) + 6);
+      const x = edge - slot / 2;
+      view.plate.setX(x);
+      view.image.setX(x);
+      view.label.setX(x);
+      view.badge.setX(x + size / 2 - 2);
+      edge -= slot + gap;
+    }
 
     scene.input.keyboard?.on('keydown', this.onKeyDown, this);
     scene.events.once(Phaser.Scenes.Events.SHUTDOWN, this.destroy, this);

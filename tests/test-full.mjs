@@ -48,6 +48,11 @@ console.log('config:', JSON.stringify(CONFIG));
 
 for (let i = 0; i < 40; i++) { const s = await read(); if (!s.__err) break; await sleep(400); }
 
+// Every body touching the survivor hurts now, so standing still in the
+// crowd for the XP window below would end the run before the level-up
+// checks get to it. Shielded until the death check lifts it.
+await run(`s.player.setInvulnerable(true); return 1;`);
+
 // --- 1. weapon fires and kills ---
 const a = await read();
 await sleep(14000);
@@ -189,8 +194,9 @@ const endRows = await cdp.evaluate(`(() => {
   const s = window.game.scene.getScene('GameOverScene');
   return { ids: s.menu.rows.map(r => r.item.id), labels: s.menu.rows.map(r => r.item.label()) };
 })()`);
+// A run that made the 랭킹 board gets a row for entering it, below the rest.
 check('game over offers 다시하기 · 메인화면 · 옵션',
-  JSON.stringify(endRows.ids) === JSON.stringify(['retry', 'menu', 'settings']),
+  JSON.stringify(endRows.ids.filter((id) => id !== 'rank')) === JSON.stringify(['retry', 'menu', 'settings']),
   endRows.labels.join(' / '));
 
 await cdp.tap('Space', 32, ' ');
