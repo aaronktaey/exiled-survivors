@@ -2,10 +2,13 @@ import Phaser from 'phaser';
 
 import {
   AUDIO,
+  BONES,
+  boneChanceFor,
   COLORS,
   ORBS,
   POTION,
   WEAPON,
+  type BoneId,
   type DropTier,
   type EnemyShotSpec,
   type OrbId,
@@ -13,6 +16,7 @@ import {
 import { Enemy } from '@/entities/Enemy';
 import { EnemyShot } from '@/entities/EnemyShot';
 import { GearDrop } from '@/entities/GearDrop';
+import { BoneDrop } from '@/entities/BoneDrop';
 import { OrbDrop } from '@/entities/OrbDrop';
 import { ShardDrop } from '@/entities/ShardDrop';
 import { dropTierFor, rollOrbDrop, type GearItem } from '@/systems/Gear';
@@ -41,6 +45,13 @@ export interface CombatHooks {
   readonly onShardCollected: () => void;
   /** Called when the player walks over a 구슬. */
   readonly onOrbCollected: (id: OrbId) => void;
+  /** Called when the player walks over a 뼈다귀. */
+  readonly onBoneCollected: (id: BoneId) => void;
+  /**
+   * What this run's 뼈다귀 do to a rolled chance. A 갈비뼈 pays for the
+   * health it gives every enemy by making everything likelier to drop.
+   */
+  readonly dropScale: () => number;
   /** What one of the survivor's critical hits is worth. */
   readonly critMultiplier: () => number;
   /** Called when the player walks over a dropped skill. */
@@ -60,6 +71,7 @@ export class CombatSystem {
   public readonly gearDrops: Phaser.Physics.Arcade.Group;
   public readonly shardDrops: Phaser.Physics.Arcade.Group;
   public readonly orbDrops: Phaser.Physics.Arcade.Group;
+  public readonly boneDrops: Phaser.Physics.Arcade.Group;
 
   private readonly scene: Phaser.Scene;
   private readonly player: Player;
@@ -106,6 +118,7 @@ export class CombatSystem {
     this.gearDrops = scene.physics.add.group({ classType: GearDrop, runChildUpdate: true });
     this.shardDrops = scene.physics.add.group({ classType: ShardDrop, runChildUpdate: true });
     this.orbDrops = scene.physics.add.group({ classType: OrbDrop, runChildUpdate: true });
+    this.boneDrops = scene.physics.add.group({ classType: BoneDrop, runChildUpdate: true });
 
     scene.physics.add.overlap(player, enemies, this.onEnemyTouch, undefined, this);
     scene.physics.add.overlap(player, this.enemyShots, this.onEnemyShotHit, undefined, this);
@@ -115,6 +128,7 @@ export class CombatSystem {
     scene.physics.add.overlap(player, this.gearDrops, this.onGearTouch, undefined, this);
     scene.physics.add.overlap(player, this.shardDrops, this.onShardTouch, undefined, this);
     scene.physics.add.overlap(player, this.orbDrops, this.onOrbTouch, undefined, this);
+    scene.physics.add.overlap(player, this.boneDrops, this.onBoneTouch, undefined, this);
   }
 
   /** Wires a newly acquired projectile weapon into enemy collisions. */
@@ -156,6 +170,17 @@ export class CombatSystem {
 
     drop.drop(x, y, id);
     this.playDropSound(ORBS[id]?.tier ?? 'normal');
+  }
+
+  /** Places a 뼈다귀 directly — used by the kill roll and by debug keys. */
+  public dropBoneAt(x: number, y: number, id: BoneId): void {
+    const drop = this.boneDrops.get() as BoneDrop | null;
+    if (!drop) {
+      return;
+    }
+
+    drop.drop(x, y, id);
+    this.playDropSound(BONES[id]?.tier ?? 'normal');
   }
 
   /** Places a weapon directly — used by the 우두머리 kill and debug keys. */
@@ -342,6 +367,16 @@ export class CombatSystem {
     this.hooks.onOrbCollected(drop.orb);
   };
 
+  private onBoneTouch: Phaser.Types.Physics.Arcade.ArcadePhysicsCallback = (_player, object) => {
+    const drop = object as BoneDrop;
+    if (!drop.active) {
+      return;
+    }
+
+    drop.collect();
+    this.hooks.onBoneCollected(drop.bone);
+  };
+
   private killEnemy(enemy: Enemy): void {
     const { x, y } = enemy;
     // Read the rewards before recycling, which resets the kind and affixes.
@@ -349,6 +384,8 @@ export class CombatSystem {
     const worth = enemy.xpValue;
     const dropBonus = enemy.dropBonus;
     const wasBoss = enemy.isBoss;
+    const affixes = enemy.affixes.length;
+    const scale = this.hooks.dropScale();
     // Pooled: back to the spawner's pool rather than destroyed.
     enemy.recycle();
 
@@ -361,7 +398,7 @@ export class CombatSystem {
     }
 
     // Rolled on its own, so a kill can leave both a skill and a potion.
-    if (Math.random() < POTION.chance) {
+    if (Math.random() < POTION.chance * scale) {
       this.dropPotionAt(x, y);
     }
 
@@ -378,9 +415,18 @@ export class CombatSystem {
 
     // A 구슬 rolls off any kill at all, which is what gives the hundredth
     // 일반 of a run something to be.
-    const orb = rollOrbDrop();
+    const orb = rollOrbDrop(scale);
     if (orb) {
       this.dropOrbAt(x - 18, y, orb.id);
+    }
+
+    // And a 뼈다귀, which is worth more off something that was worth more:
+    // a rare's chance follows how many 속성 it was carrying.
+    for (const bone of Object.values(BONES)) {
+      if (Math.random() < boneChanceFor(bone, { isBoss: wasBoss, affixes }) * scale) {
+        this.dropBoneAt(x, y + 18, bone.id);
+        break;
+      }
     }
   }
 }

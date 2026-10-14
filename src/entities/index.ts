@@ -8,4 +8,5 @@ export { XpGem } from '@/entities/XpGem';
 export { SkillDrop } from '@/entities/SkillDrop';
 export { GroundItem } from '@/entities/GroundItem';
 export { HealthPotion } from '@/entities/HealthPotion';
+export { BoneDrop } from '@/entities/BoneDrop';
 export { OrbDrop } from '@/entities/OrbDrop';

@@ -245,10 +245,13 @@ export function orbApplied(item: GearItem, orb: OrbSpec): GearItem | null {
   return { ...item, prefixes, suffixes };
 }
 
-/** Rolls for a 구슬 off one kill. Returns the one that dropped, if any. */
-export function rollOrbDrop(): OrbSpec | null {
+/**
+ * Rolls for a 구슬 off one kill. `scale` is what the run's 뼈다귀 do to every
+ * drop chance. Returns the one that dropped, if any.
+ */
+export function rollOrbDrop(scale = 1): OrbSpec | null {
   for (const orb of Object.values(ORBS)) {
-    if (Math.random() < orb.chance) {
+    if (Math.random() < orb.chance * scale) {
       return orb;
     }
   }

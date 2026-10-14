@@ -132,6 +132,8 @@ export const TEXTURES = {
   skillOrb: "tex-skill-orb",
   gear: "tex-gear",
   shard: "tex-shard",
+  boneSkull: "tex-bone-skull",
+  boneRib: "tex-bone-rib",
   orbTransmute: "tex-orb-transmute",
   orbChaos: "tex-orb-chaos",
   orbAwaken: "tex-orb-awaken",
@@ -250,6 +252,12 @@ export const DROP_LABEL = {
   gap: 5,
   paddingX: 6,
   paddingY: 3,
+  /**
+   * No tier wears a plate any more: a slab behind the words covered the floor
+   * the drop was lying on, and three slabs at once covered the fight. What
+   * tells them apart is the size, the colour and — on the loudest — the slow
+   * swell. Every one of them leans on its outline to stay readable.
+   */
   tiers: {
     normal: {
       fontSize: "20px",
@@ -266,22 +274,22 @@ export const DROP_LABEL = {
     magic: {
       fontSize: "22px",
       text: "#cfe8ff",
-      plate: 0x0b1626,
-      plateAlpha: 0.92,
-      border: 0x4f9fe0,
-      borderWidth: 2,
-      outlined: false,
+      plate: 0x000000,
+      plateAlpha: 0,
+      border: 0x000000,
+      borderWidth: 0,
+      outlined: true,
       pulse: 0,
     },
     rare: {
       fontSize: "24px",
       text: "#FE0000",
-      plate: 0xffffff,
-      plateAlpha: 1,
-      border: 0xfe0000,
-      borderWidth: 2,
-      outlined: false,
-      /** How far the plate swells and settles again, forever. */
+      plate: 0x000000,
+      plateAlpha: 0,
+      border: 0x000000,
+      borderWidth: 0,
+      outlined: true,
+      /** How far the words swell and settle again, forever. */
       pulse: 0.06,
     },
   },
@@ -484,6 +492,8 @@ export const DAMAGE_NUMBERS = {
    * larger still and settles — the eye catches the movement before it reads
    * the number.
    */
+  /** The dark edge every number carries over the field it lands on. */
+  outline: 2,
   critScale: 1.55,
   critPopScale: 2.1,
   critPopMs: 140,

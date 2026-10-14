@@ -74,6 +74,23 @@ export const zh: Strings = {
     plain: '没有属性',
   },
 
+  bones: {
+    title: '骨头',
+    lead: '仅作用于本局。最多 3 个，开始后即消耗。',
+    held: '{bone} x{count}',
+    inUse: '已用 {count}',
+    clear: '全部取下',
+    start: '以此开始',
+    slots: '已应用的骨头',
+    total: '合计',
+    none: '未应用任何骨头',
+    sumHp: '敌人生命 +{percent}%',
+    sumDrop: '掉落率 +{percent}%',
+    sumBosses: '以首领取代稀有敌人',
+    hintKeyboard: '↑ ↓ 移动   Space 应用   Esc 返回',
+    hintTouch: '点击条目即可应用',
+  },
+
   pause: {
     title: '暂停',
     survived: '生存 {time}    Lv {level}',
@@ -116,6 +133,7 @@ export const zh: Strings = {
     introHintTouch: '拖动摇杆移动 — 攻击自动进行',
     gearFound: '获得 {gear} — 可在主界面装备',
     orbFound: '获得{orb} — 在装备界面使用',
+    boneFound: '获得{bone} — 在下一局开始前应用',
     shardFound: '神圣碎片 {held}/{need}',
     orbMade: '神圣宝珠完成 — 被动点数 +1',
     pickedUp: '获得 {skill}',

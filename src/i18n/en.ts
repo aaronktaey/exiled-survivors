@@ -74,6 +74,23 @@ export const en: Strings = {
     plain: 'No modifiers',
   },
 
+  bones: {
+    title: 'Bones',
+    lead: 'Spent on this run alone. Up to three, and gone once it starts.',
+    held: '{bone} x{count}',
+    inUse: '{count} in',
+    clear: 'Take them all out',
+    start: 'Start like this',
+    slots: 'In the slots',
+    total: 'Together',
+    none: 'Nothing applied',
+    sumHp: 'Enemy health +{percent}%',
+    sumDrop: 'Drops +{percent}%',
+    sumBosses: '우두머리 in place of rares',
+    hintKeyboard: '↑ ↓ to move   Space to apply   Esc to go back',
+    hintTouch: 'Tap one to apply it',
+  },
+
   pause: {
     title: 'PAUSED',
     survived: 'Survived {time}    Lv {level}',
@@ -116,6 +133,7 @@ export const en: Strings = {
     introHintTouch: 'Drag the stick to move — attacks are automatic',
     gearFound: 'Found {gear} — wear it from the title screen',
     orbFound: '{orb} — use it in the 장비창',
+    boneFound: '{bone} — apply it before the next run',
     shardFound: 'Divine Shard {held}/{need}',
     orbMade: 'A Divine Orb — one passive point',
     pickedUp: '{skill} acquired',

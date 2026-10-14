@@ -13,6 +13,7 @@
  * from '@/config' and never has to care which file a constant lives in.
  */
 export * from '@/config/balance';
+export * from '@/config/bones';
 export * from '@/config/equipment';
 export * from '@/config/passives';
 export * from '@/config/visuals';

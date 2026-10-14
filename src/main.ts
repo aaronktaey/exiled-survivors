@@ -9,6 +9,7 @@ import { registerSharpText } from '@/systems/SharpText';
 import { gear, gearBonusFor, orbApplied } from '@/systems/Gear';
 import { gold } from '@/systems/Gold';
 import { critMultiplierFor } from '@/systems/Modifiers';
+import { bones as bonesStore } from '@/systems/Bones';
 import { orbs } from '@/systems/Orbs';
 import { passives } from '@/systems/Passives';
 import { currentCanvasSize } from '@/systems/Viewport';
@@ -18,6 +19,7 @@ import {
   CreditsScene,
   GameOverScene,
   GameScene,
+  BoneScene,
   GearScene,
   InfoScene,
   PassiveScene,
@@ -70,6 +72,7 @@ const config: Phaser.Types.Core.GameConfig = {
     GameOverScene,
     GearScene,
     PassiveScene,
+    BoneScene,
   ],
 };
 
@@ -88,6 +91,7 @@ if (import.meta.env.DEV) {
     passives?: typeof passives;
     gold?: typeof gold;
     orbs?: typeof orbs;
+    bones?: typeof bonesStore;
     orbApplied?: typeof orbApplied;
     critMultiplierFor?: typeof critMultiplierFor;
   };
@@ -99,6 +103,7 @@ if (import.meta.env.DEV) {
   dev.passives = passives;
   dev.gold = gold;
   dev.orbs = orbs;
+  dev.bones = bonesStore;
   dev.orbApplied = orbApplied;
   dev.critMultiplierFor = critMultiplierFor;
 }

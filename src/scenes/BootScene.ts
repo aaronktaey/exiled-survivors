@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 
 import {
+  ALL_BONES,
   ALL_ORBS,
   AUDIO,
   COLORS,
@@ -64,6 +65,7 @@ export class BootScene extends Phaser.Scene {
     this.createDivineShardTexture();
     this.createPassiveTexture();
     this.createOrbTextures();
+    this.createBoneTextures();
 
 
     createPixelTextTexture(this, TEXTURES.logo, ['EXILED', 'SURVIVORS'], {
@@ -165,6 +167,44 @@ export class BootScene extends Phaser.Scene {
 
     graphics.generateTexture(TEXTURES.shard, size, size);
     graphics.destroy();
+  }
+
+  /**
+   * The 뼈다귀: a skull and a rib, drawn plainly enough to read at 18px.
+   * Bone-coloured rather than tinted, because what tells them apart on the
+   * floor is the shape.
+   */
+  private createBoneTextures(): void {
+    for (const bone of ALL_BONES) {
+      const size = 32;
+      const graphics = this.add.graphics();
+
+      graphics.fillStyle(bone.color, 1);
+      if (bone.id === 'skull') {
+        // A dome with a jaw under it, and two sockets cut into the face.
+        graphics.fillRoundedRect(size * 0.16, size * 0.12, size * 0.68, size * 0.56, size * 0.22);
+        graphics.fillRect(size * 0.3, size * 0.6, size * 0.4, size * 0.2);
+        graphics.fillStyle(0x15181f, 1);
+        graphics.fillCircle(size * 0.36, size * 0.38, size * 0.1);
+        graphics.fillCircle(size * 0.64, size * 0.38, size * 0.1);
+        graphics.fillRect(size * 0.46, size * 0.52, size * 0.08, size * 0.1);
+        // The teeth, as gaps in the jaw.
+        graphics.fillRect(size * 0.42, size * 0.6, size * 0.04, size * 0.2);
+        graphics.fillRect(size * 0.54, size * 0.6, size * 0.04, size * 0.2);
+      } else {
+        // A shaft with a knob at each end, laid on the diagonal.
+        graphics.fillRect(size * 0.2, size * 0.44, size * 0.6, size * 0.12);
+        graphics.fillCircle(size * 0.22, size * 0.4, size * 0.11);
+        graphics.fillCircle(size * 0.22, size * 0.6, size * 0.11);
+        graphics.fillCircle(size * 0.78, size * 0.4, size * 0.11);
+        graphics.fillCircle(size * 0.78, size * 0.6, size * 0.11);
+        graphics.fillStyle(0x15181f, 0.25);
+        graphics.fillRect(size * 0.2, size * 0.52, size * 0.6, size * 0.04);
+      }
+
+      graphics.generateTexture(bone.texture, size, size);
+      graphics.destroy();
+    }
   }
 
   /**

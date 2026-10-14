@@ -1,10 +1,20 @@
 import Phaser from 'phaser';
 
-import { COLORS, DEPTH, MENU, SCENES, SCRIM, TEXT, TEXTURES } from '@/config';
+import {
+  COLORS,
+  DEPTH,
+  MENU,
+  SCENES,
+  SCRIM,
+  TEXT,
+  TEXTURES,
+  type BoneId,
+} from '@/config';
 import { PATCH_NOTES } from '@/content/patchNotes';
 import { t } from '@/i18n';
 import { bgm } from '@/systems/Bgm';
 import { IconBar } from '@/systems/IconBar';
+import { bones } from '@/systems/Bones';
 import { orbs } from '@/systems/Orbs';
 import { passives } from '@/systems/Passives';
 import { MenuList } from '@/systems/MenuList';
@@ -171,8 +181,30 @@ export class MenuScene extends Phaser.Scene {
     });
   }
 
+  /**
+   * A fresh run stops at the 뼈다귀 screen first, when there is anything to
+   * spend there. With an empty drawer the screen would be a page of nothing
+   * between the button and the game, so it is skipped.
+   */
   private startRun(fromSave = false): void {
-    this.scene.start(SCENES.game, { save: fromSave ? saveGame.read() : null });
+    if (fromSave || bones.total === 0) {
+      this.scene.start(SCENES.game, { save: fromSave ? saveGame.read() : null });
+      return;
+    }
+
+    this.scene.pause();
+    this.scene.bringToTop(SCENES.bones);
+    this.scene.launch(SCENES.bones, {
+      onStart: (applied: readonly BoneId[]) => {
+        this.scene.resume();
+        this.scene.start(SCENES.game, { save: null, bones: applied });
+      },
+      onCancel: () => {
+        this.scene.stop(SCENES.bones);
+        this.scene.resume();
+        this.menu.refresh();
+      },
+    });
   }
 
   /** The other screens sit on top; the menu waits, deaf, underneath. */

@@ -7,7 +7,11 @@ import {
   GEAR_DROP,
   PAUSE_BUTTON,
   REGEN,
+  NO_BONES,
   SHARD,
+  boneBonusFor,
+  type BoneBonus,
+  type BoneId,
   type OrbId,
   STATS,
   SAVE,
@@ -20,7 +24,7 @@ import {
 } from '@/config';
 import type { Enemy } from '@/entities/Enemy';
 import { Player } from '@/entities/Player';
-import { fill, gearTitle, orbName, skillName, t } from '@/i18n';
+import { boneName, fill, gearTitle, orbName, skillName, t } from '@/i18n';
 import { GameOverScene, type GameOverData } from '@/scenes/GameOverScene';
 import { UpgradeScene, type UpgradeChoiceData } from '@/scenes/UpgradeScene';
 import {
@@ -59,10 +63,11 @@ import {
   regenFor,
   type RunModifiers,
 } from '@/systems/Modifiers';
+import { bones } from '@/systems/Bones';
 import { orbs } from '@/systems/Orbs';
 import { passives } from '@/systems/Passives';
 import { settings } from '@/systems/Settings';
-import { TiltInput, tiltAvailable } from '@/systems/TiltInput';
+import { TiltInput, requestTiltPermission, tiltAvailable } from '@/systems/TiltInput';
 import {
   VirtualJoystick,
   prefersTouchControls,
@@ -96,6 +101,11 @@ const WEAPONS: Record<SkillId, (scene: Phaser.Scene) => Weapon> = {
 export interface GameSceneData {
   /** A run to resume, or null/absent for a fresh one. */
   readonly save?: SavedRun | null;
+  /**
+   * The 뼈다귀 spent on this run. Already taken out of the drawer by the
+   * screen that picked them, so a restart does not spend them twice.
+   */
+  readonly bones?: readonly BoneId[];
 }
 
 /** One queued upgrade popup, from a level-up or a skill pickup. */
@@ -118,6 +128,9 @@ export class GameScene extends Phaser.Scene {
   private damageNumbers!: DamageNumbers;
   private debug!: DebugOverlay;
   private rareTooltip!: RareTooltip;
+  /** The 뼈다귀 this run was started with, and what they add up to. */
+  private bones: BoneId[] = [];
+  public boneBonus: BoneBonus = NO_BONES;
   /** The rim of the screen, pointing at what is just off it. Public for tests. */
   public edgeMarkers!: EdgeMarkers;
   /** What the carried weapon is worth, read once as the run is built. */
@@ -153,6 +166,10 @@ export class GameScene extends Phaser.Scene {
 
   public init(data?: GameSceneData): void {
     this.resuming = data?.save ?? null;
+    // A resumed run keeps the 뼈다귀 it was started with; they were spent
+    // once, at the start, and the save remembers them.
+    this.bones = [...(data?.save?.bones ?? data?.bones ?? [])];
+    this.boneBonus = boneBonusFor(this.bones);
   }
 
   public create(): void {
@@ -182,7 +199,7 @@ export class GameScene extends Phaser.Scene {
 
     this.progression = new Progression();
     // The hook is called later, during play, by which point combat exists.
-    this.spawner = new SpawnDirector(this, this.player, {
+    this.spawner = new SpawnDirector(this, this.player, () => this.boneBonus, {
       fireShot: (x, y, angle, spec) => this.combat.fireEnemyShot(x, y, angle, spec),
       onBossSpawned: () => this.announceBoss(),
     });
@@ -204,6 +221,8 @@ export class GameScene extends Phaser.Scene {
         rollShardDrop: (fromBoss) => fromBoss && Math.random() < SHARD.chance,
         onShardCollected: () => this.onShardCollected(),
         onOrbCollected: (id) => this.onOrbCollected(id),
+        onBoneCollected: (id) => this.onBoneCollected(id),
+        dropScale: () => this.boneBonus.dropScale,
         critMultiplier: () => critMultiplierFor(this.mods),
       },
     );
@@ -295,6 +314,23 @@ export class GameScene extends Phaser.Scene {
         ? new TiltInput(this)
         : new VirtualJoystick(this);
     this.player.attachAnalog(this.analog);
+
+    // iOS hands out orientation only after a press, and 설정 is not the only
+    // way into a run — ask again here, where starting one is the press. A
+    // refusal is the one reliable sign that tilt will never work, so that is
+    // what puts the pad back: a sensor that is merely slow to report is not
+    // second-guessed, and the survivor is never left unable to move.
+    if (this.analog instanceof TiltInput) {
+      void requestTiltPermission().then((granted) => {
+        if (granted || !this.scene.isActive() || !(this.analog instanceof TiltInput)) {
+          return;
+        }
+
+        this.analog.destroy();
+        this.analog = new VirtualJoystick(this);
+        this.player.attachAnalog(this.analog);
+      });
+    }
   }
 
   public override update(_time: number, delta: number): void {
@@ -375,6 +411,7 @@ export class GameScene extends Phaser.Scene {
     }
 
     saveGame.write({
+      bones: this.bones,
       elapsedMs: this.elapsedMs,
       level: this.progression.level,
       xp: this.progression.xp,
@@ -575,6 +612,15 @@ export class GameScene extends Phaser.Scene {
   private onOrbCollected(id: OrbId): void {
     orbs.add(id);
     this.announce(fill(t().game.orbFound, { orb: orbName(id) }));
+  }
+
+  /**
+   * A 뼈다귀 goes into the drawer, not into this run: what it changes is
+   * decided before a run starts, which is the whole of what it is for.
+   */
+  private onBoneCollected(id: BoneId): void {
+    bones.add(id);
+    this.announce(fill(t().game.boneFound, { bone: boneName(id) }));
   }
 
 /**

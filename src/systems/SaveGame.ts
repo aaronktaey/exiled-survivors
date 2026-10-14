@@ -1,4 +1,4 @@
-import { STORAGE } from '@/config';
+import { STORAGE, type BoneId } from '@/config';
 import type { SkillStats } from '@/systems/Progression';
 import type { SkillId } from '@/weapons/skills';
 
@@ -14,6 +14,11 @@ export interface SavedRun {
   readonly skills: Partial<Record<SkillId, SkillStats>>;
   /** The spawner's difficulty clock, which drives rate and the enemy mix. */
   readonly spawnerMs: number;
+  /**
+   * The 뼈다귀 this run was started with. Absent on a save written before
+   * they existed, which just means a run with none.
+   */
+  readonly bones?: readonly BoneId[];
 }
 
 /**

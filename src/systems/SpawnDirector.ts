@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 
 import {
+  BONE_RUN,
   BOSS,
   ENEMY_KINDS,
   SPAWN,
@@ -8,6 +9,7 @@ import {
   WORLD,
   enemyHpScaleAt,
   rareChanceAt,
+  type BoneBonus,
   type EnemyKind,
 } from '@/config';
 import { Enemy, type EnemyHooks } from '@/entities/Enemy';
@@ -28,6 +30,8 @@ export class SpawnDirector {
   private readonly scene: Phaser.Scene;
   private readonly target: Phaser.GameObjects.Components.Transform;
   private readonly hooks: EnemyHooks;
+  /** What this run's 뼈다귀 do. Read, not stored: a run can be restarted. */
+  private readonly bones: () => BoneBonus;
   private elapsedMs = 0;
   private sinceSpawnMs = 0;
   private sinceBossMs = 0;
@@ -35,10 +39,12 @@ export class SpawnDirector {
   public constructor(
     scene: Phaser.Scene,
     target: Phaser.GameObjects.Components.Transform,
+    bones: () => BoneBonus,
     hooks: EnemyHooks,
   ) {
     this.scene = scene;
     this.target = target;
+    this.bones = bones;
     this.hooks = hooks;
 
     this.group = scene.physics.add.group({ classType: Enemy, runChildUpdate: true });
@@ -60,7 +66,7 @@ export class SpawnDirector {
    * run has lasted. Read rather than stored, so it is always the clock's.
    */
   public get hpScale(): number {
-    return enemyHpScaleAt(this.elapsedMs);
+    return enemyHpScaleAt(this.elapsedMs) * this.bones().enemyHpScale;
   }
 
   /** The share of spawns coming up rare right now, after the same clock. */
@@ -253,15 +259,18 @@ export class SpawnDirector {
 
     // One spawn in ten comes up rare at the start, and one more in a hundred
     // for every minute the run has lasted, whatever kind it turned out to be.
-    enemy.spawn(
-      x,
-      y,
-      this.target,
-      kind ?? this.pickKind(),
-      this.hooks,
-      Math.random() < this.rareChance,
-      this.hpScale,
-    );
+    const rare = Math.random() < this.rareChance;
+
+    // A 고대 두개골 sends a 우두머리 in place of every rare, up to what the
+    // field can hold: past that the spawn comes up rare in the ordinary way,
+    // because a run with ten 우두머리 on it is over rather than hard.
+    if (rare && this.bones().raresBecomeBosses && this.aliveBosses < BONE_RUN.maxBosses) {
+      enemy.spawn(x, y, this.target, 'boss', this.hooks, false, this.hpScale);
+      this.hooks.onBossSpawned?.();
+      return true;
+    }
+
+    enemy.spawn(x, y, this.target, kind ?? this.pickKind(), this.hooks, rare, this.hpScale);
     return true;
   }
 }

@@ -114,6 +114,29 @@ export interface Strings {
     readonly plain: string;
   };
 
+  /** 뼈다귀 — the screen that decides what a run is going to be. */
+  readonly bones: {
+    readonly title: string;
+    /** The line under the title, saying what this screen is for. */
+    readonly lead: string;
+    /** A row: "{bone} x{count}". */
+    readonly held: string;
+    /** The right-hand value on a row already in a slot. */
+    readonly inUse: string;
+    readonly clear: string;
+    readonly start: string;
+    /** Heading over the slots. */
+    readonly slots: string;
+    /** What the lot of them comes to. */
+    readonly total: string;
+    readonly none: string;
+    readonly sumHp: string;
+    readonly sumDrop: string;
+    readonly sumBosses: string;
+    readonly hintKeyboard: string;
+    readonly hintTouch: string;
+  };
+
   readonly pause: {
     readonly title: string;
     readonly survived: string;
@@ -162,6 +185,8 @@ export interface Strings {
     readonly gearFound: string;
     /** Shouted when a 구슬 is walked over. */
     readonly orbFound: string;
+    /** And when a 뼈다귀 is. */
+    readonly boneFound: string;
     /** 신성한 조각 picked up: {held} of {need} towards the next 구슬. */
     readonly shardFound: string;
     /** ...and the one that completed it. */
@@ -224,6 +249,9 @@ export interface Strings {
     readonly affixDetails?: Record<string, string>;
     /** Only for the 속성 whose weapon side reads differently. */
     readonly affixGearDetails?: Record<string, string>;
+    readonly bones?: Record<string, string>;
+    readonly boneShorts?: Record<string, string>;
+    readonly boneDetails?: Record<string, string>;
     readonly orbs?: Record<string, string>;
     readonly orbShorts?: Record<string, string>;
     readonly orbDetails?: Record<string, string>;

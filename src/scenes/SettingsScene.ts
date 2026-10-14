@@ -226,17 +226,24 @@ export class SettingsScene extends Phaser.Scene {
   private async cycleMode(direction: -1 | 1): Promise<void> {
     const next = settings.cycleMovementMode(direction).movementMode;
 
-    if (next === 'tilt') {
-      const granted = tiltAvailable() && (await requestTiltPermission());
-      if (!granted) {
-        this.hint.setText(t().settings.tiltRefused);
-        settings.cycleMovementMode(direction);
-      }
-    }
-
     this.drawPreview();
     this.menu.refresh();
     this.setHint();
+
+    if (next !== 'tilt') {
+      return;
+    }
+
+    // Ask here, because a permission prompt has to come off a real press.
+    // A refusal is said out loud and nothing else: putting the setting back
+    // made the row look broken — it would flick to 기울이기 and straight back
+    // to the pad, with no way to tell why. The choice stands, the run asks
+    // again when it starts, and a run that never hears from the sensor
+    // falls back to a pad on its own.
+    const granted = tiltAvailable() && (await requestTiltPermission());
+    if (!granted) {
+      this.hint.setText(t().settings.tiltRefused);
+    }
   }
 
   private setHint(): void {

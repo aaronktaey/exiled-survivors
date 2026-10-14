@@ -78,6 +78,23 @@ export const ko: Strings = {
     plain: '속성 없음',
   },
 
+  bones: {
+    title: '뼈다귀',
+    lead: '이번 판에만 적용됩니다. 최대 3개까지, 시작하면 사라집니다.',
+    held: '{bone} x{count}',
+    inUse: '적용 {count}',
+    clear: '모두 빼기',
+    start: '이대로 시작',
+    slots: '적용한 뼈다귀',
+    total: '합계',
+    none: '아무것도 적용하지 않았습니다',
+    sumHp: '적 체력 +{percent}%',
+    sumDrop: '드랍률 +{percent}%',
+    sumBosses: '희귀 적 대신 우두머리',
+    hintKeyboard: '↑ ↓ 이동   Space 적용   Esc 돌아가기',
+    hintTouch: '항목을 탭해서 적용',
+  },
+
   pause: {
     title: '일시정지',
     survived: '생존 {time}    Lv {level}',
@@ -120,6 +137,7 @@ export const ko: Strings = {
     introHintTouch: '스틱을 끌어 이동 — 공격은 자동',
     gearFound: '{gear} 획득 — 메인화면에서 착용',
     orbFound: '{orb} 획득 — 장비창에서 사용',
+    boneFound: '{bone} 획득 — 다음 판 시작 전에 적용',
     shardFound: '신성한 조각 {held}/{need}',
     orbMade: '신성한 구슬 완성 — 패시브 포인트 +1',
     pickedUp: '{skill} 획득',

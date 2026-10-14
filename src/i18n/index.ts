@@ -1,5 +1,6 @@
 import {
   AFFIXES,
+  BONES,
   ENEMY_KINDS,
   GEAR,
   ORBS,
@@ -8,6 +9,7 @@ import {
   type AffixId,
   type AffixKind,
   type EnemyKind,
+  type BoneId,
   type GearId,
   type OrbId,
   type PassiveId,
@@ -140,6 +142,19 @@ export function affixDetail(id: AffixId): string {
  */
 export function affixGearDetail(id: AffixId, tier: number): string {
   return affixTier(id, tier)?.detail ?? affixDetail(id);
+}
+
+/** The 뼈다귀's full name, its short form, and what it does to a run. */
+export function boneName(id: BoneId): string {
+  return t().names?.bones?.[id] ?? BONES[id].name;
+}
+
+export function boneShort(id: BoneId): string {
+  return t().names?.boneShorts?.[id] ?? BONES[id].short;
+}
+
+export function boneDetail(id: BoneId): string {
+  return t().names?.boneDetails?.[id] ?? BONES[id].detail;
 }
 
 /** The 구슬's full name, its one-word form, and what it does. */

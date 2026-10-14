@@ -75,11 +75,12 @@ export class DamageNumbers {
       .setActive(true)
       .setVisible(true);
 
-    if (crit) {
-      floater.text.setStroke(COLORS.background, DAMAGE_NUMBERS.critOutline);
-    } else {
-      floater.text.setStroke(COLORS.background, 0);
-    }
+    // Every number sits straight on the playfield, so every one of them is
+    // outlined; a critical wears a heavier one along with everything else.
+    floater.text.setStroke(
+      COLORS.background,
+      crit ? DAMAGE_NUMBERS.critOutline : DAMAGE_NUMBERS.outline,
+    );
   }
 
   public update(delta: number): void {

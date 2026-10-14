@@ -74,6 +74,23 @@ export const ja: Strings = {
     plain: '属性なし',
   },
 
+  bones: {
+    title: '骨',
+    lead: 'この回だけに適用されます。最大 3 つ、開始すると無くなります。',
+    held: '{bone} x{count}',
+    inUse: '適用 {count}',
+    clear: 'すべて外す',
+    start: 'この構成で開始',
+    slots: '適用した骨',
+    total: '合計',
+    none: '何も適用していません',
+    sumHp: '敵の体力 +{percent}%',
+    sumDrop: 'ドロップ率 +{percent}%',
+    sumBosses: 'レア敵の代わりにボス',
+    hintKeyboard: '↑ ↓ 移動   Space 適用   Esc 戻る',
+    hintTouch: '項目をタップして適用',
+  },
+
   pause: {
     title: '一時停止',
     survived: '生存 {time}    Lv {level}',
@@ -116,6 +133,7 @@ export const ja: Strings = {
     introHintTouch: 'スティックを引いて移動 — 攻撃は自動',
     gearFound: '{gear} 獲得 — タイトル画面で装備できます',
     orbFound: '{orb} 入手 — 装備画面で使用',
+    boneFound: '{bone} 入手 — 次の回の開始前に適用',
     shardFound: '神聖な欠片 {held}/{need}',
     orbMade: '神聖なオーブ完成 — パッシブポイント +1',
     pickedUp: '{skill} 習得',

@@ -32,6 +32,7 @@ export const SCENES = {
   confirm: "ConfirmScene",
   gameOver: "GameOverScene",
   gear: "GearScene",
+  bones: "BoneScene",
   passives: "PassiveScene",
 } as const;
 
@@ -47,6 +48,8 @@ export const STORAGE = {
   gold: "exiled-survivors:gold:v1",
   /** The 구슬 drawer, which outlives a run beside the stash. */
   orbs: "exiled-survivors:orbs:v1",
+  /** And the 뼈다귀 drawer, spent one run at a time. */
+  bones: "exiled-survivors:bones:v1",
 } as const;
 
 export const SAVE = {
