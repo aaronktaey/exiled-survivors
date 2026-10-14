@@ -13,7 +13,7 @@ const empty = (): OrbCounts =>
  *
  * It sits beside the stash, the tree and the purse, and outlives a run for
  * the same reason they do — a 각성의 구슬 found in a run that ended badly is
- * still yours, and the 장비창 on the title screen is where it gets used.
+ * still yours, and the 인벤토리 on the title screen is where it gets used.
  */
 class OrbStore {
   private current: OrbCounts = empty();

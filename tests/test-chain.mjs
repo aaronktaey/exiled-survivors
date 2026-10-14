@@ -194,17 +194,17 @@ check('one more chain reaches one more enemy',
 // --- 10. both skills share the one 3% roll ---
 const rate = await run(`
   const seen = { fireball: 0, chainLightning: 0 };
-  const N = 60000;
+  const N = 90000;
   let drops = 0;
   for (let i = 0; i < N; i++) {
     const d = s.rollSkillDrop();
     if (d) { drops++; seen[d.id]++; }
   }
-  return { rate: drops / N, seen };
+  return { rate: drops / N, seen, want: window.config.SKILL_DROP.chance };
 `);
 console.log('drop roll:', JSON.stringify(rate));
-check('total drop chance is still ~3%', Math.abs(rate.rate - 0.03) < 0.004,
-  `measured ${(rate.rate * 100).toFixed(2)}%`);
+check('total drop chance is the configured one', Math.abs(rate.rate - rate.want) < rate.want * 0.15,
+  `measured ${(rate.rate * 100).toFixed(2)}%, configured ${(rate.want * 100).toFixed(2)}%`);
 check('the two droppables split it evenly',
   Math.abs(rate.seen.fireball - rate.seen.chainLightning) < rate.seen.fireball * 0.25,
   `화염구 ${rate.seen.fireball} vs 연쇄번개 ${rate.seen.chainLightning}`);

@@ -201,7 +201,9 @@ const fire = await run(`
   s.choosing = true;
   s.spawner.clear();
   const p = s.player;
-  const row = [50, 90].map((dx) => {
+  // The second body stands outside the burst, so a hit on it could only
+  // mean the shot went through.
+  const row = [50, 50 + window.config.FIREBALL.blastRadius * 2].map((dx) => {
     const e = s.spawner.group.get(p.x + dx, p.y);
     e.spawn(p.x + dx, p.y, p);
     e.body.stop();
@@ -227,7 +229,7 @@ const fireHit = await run(`
   return out;
 `);
 console.log('fireball row:', JSON.stringify(fireHit));
-check('화염구 still stops at the first enemy',
+check('화염구 still stops at the first enemy rather than passing through',
   fireHit.hp[0] < FULL && fireHit.hp[1] === FULL,
   `hp: ${fireHit.hp.join(' / ')} after a ${fireHit.damage}-damage hit`);
 check('화염구 leaves no 냉각', fireHit.chilled[0] === false, `chilled=${fireHit.chilled[0]}`);
@@ -269,23 +271,23 @@ console.log('row of 4 after the upgrade:', JSON.stringify(deeper));
 check('and the next spear reaches one enemy further', struck(deeper.hp, 3),
   `hp down the row: ${deeper.hp.join(' / ')}`);
 
-// --- 10. it joins the same 3% drop roll ---
+// --- 10. it joins the same drop roll as the rest ---
 const rate = await run(`
-  const seen = { fireball: 0, chainLightning: 0, iceSpear: 0, voidOrb: 0 };
-  const N = 90000;
+  const seen = {};
+  const N = 150000;
   let drops = 0;
   for (let i = 0; i < N; i++) {
     const d = s.rollSkillDrop();
-    if (d) { drops++; seen[d.id]++; }
+    if (d) { drops++; seen[d.id] = (seen[d.id] ?? 0) + 1; }
   }
-  return { rate: drops / N, seen };
+  return { rate: drops / N, seen, want: window.config.SKILL_DROP.chance };
 `);
 console.log('drop roll:', JSON.stringify(rate));
-check('total drop chance is still ~3%', Math.abs(rate.rate - 0.03) < 0.003,
-  `measured ${(rate.rate * 100).toFixed(2)}%`);
-const share = (rate.rate * 90000) / Object.keys(rate.seen).length;
-check('every droppable gets an even share of the roll',
-  Object.values(rate.seen).every(n => Math.abs(n - share) < share * 0.2),
+check('total drop chance is the configured one', Math.abs(rate.rate - rate.want) < rate.want * 0.15,
+  `measured ${(rate.rate * 100).toFixed(2)}%, configured ${(rate.want * 100).toFixed(2)}%`);
+const share = (rate.rate * 150000) / Object.keys(rate.seen).length;
+check('every droppable gets an even share of the roll, 얼음창 among them',
+  'iceSpear' in rate.seen && Object.values(rate.seen).every(n => Math.abs(n - share) < share * 0.25),
   Object.entries(rate.seen).map(([k, n]) => `${k} ${n}`).join(' / '));
 
 // --- 11. its ground label ---

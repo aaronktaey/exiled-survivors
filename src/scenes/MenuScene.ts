@@ -95,7 +95,7 @@ export class MenuScene extends Phaser.Scene {
       .setOrigin(0.5)
       .setDepth(DEPTH.ui);
 
-    // 장비 and 패시브 live in the corner rather than in the list: they are
+    // 인벤토리 and 패시브 live in the corner rather than in the list: they are
     // where you go between runs, not a way out of the title.
     this.icons = new IconBar(this, [
       {
@@ -105,7 +105,7 @@ export class MenuScene extends Phaser.Scene {
         // A 구슬 in the drawer is something to do in there, the same way a
         // point waiting is something to do in the tree.
         badge: () => orbs.total > 0,
-        onSelect: () => this.openOverlay(SCENES.gear),
+        onSelect: () => this.openOverlay(SCENES.inventory),
       },
       {
         id: 'passives',

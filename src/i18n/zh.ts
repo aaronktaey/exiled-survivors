@@ -28,7 +28,7 @@ export const zh: Strings = {
     load: '继续游戏',
     noSave: '没有存档',
     settings: '设置',
-    gear: '装备',
+    gear: '背包',
     guide: '游戏指南',
     patch: '更新日志',
     credits: '制作人员',
@@ -77,6 +77,19 @@ export const zh: Strings = {
     attack: '攻击力 +{attack}',
     attack2: '攻击速度 +{percent}%',
     plain: '没有属性',
+  },
+
+  inventory: {
+    title: '背包',
+    tabGear: '装备',
+    tabConsumables: '消耗品',
+    empty: '空',
+    held: '持有 {count}',
+    orbUse: '在装备标签中选择武器后使用。',
+    boneUse: '在开始游戏时生效，只对那一局有效。',
+    hintGear: '方向键 移动   Space 装备   {keys} 宝珠   Del 丢弃   Tab 标签   Esc 返回',
+    hintConsumables: '方向键 移动   Tab 标签   Esc 返回',
+    hintTouch: '点击格子查看 — 装备、丢弃与宝珠在旁边的按钮',
   },
 
   bones: {
@@ -146,7 +159,7 @@ export const zh: Strings = {
     introHintKeyboard: 'WASD 或方向键移动 — 攻击自动进行',
     introHintTouch: '拖动摇杆移动 — 攻击自动进行',
     gearFound: '获得 {gear} — 可在主界面装备',
-    orbFound: '获得{orb} — 在装备界面使用',
+    orbFound: '获得{orb} — 在背包中使用',
     boneFound: '获得{bone} — 在下一局开始前应用',
     shardFound: '神圣碎片 {held}/{need}',
     orbMade: '神圣宝珠完成 — 被动点数 +1',

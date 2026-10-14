@@ -357,6 +357,32 @@ export const HUD = {
  * is the quickest way to make it unreadable. One you act on mid-run leaves
  * enough of the field to see what you walked into.
  */
+/**
+ * 인벤토리 — the grid every tab of it is drawn on. Six across and twelve
+ * down, the shape asked for; a cell shrinks to fit the window between the
+ * two bounds, and a tab holding more than one grid's worth turns pages.
+ */
+export const INVENTORY = {
+  cols: 6,
+  rows: 12,
+  cellMax: 40,
+  cellMin: 18,
+  /** Space between cells. */
+  gap: 3,
+  /** A cell's border, by how rare what is in it is. */
+  border: {
+    normal: 0x5a6478,
+    magic: 0x6aa9ff,
+    rare: 0xff4a4a,
+  },
+  /** An empty cell. */
+  empty: 0x151a24,
+  /** The weapon being carried wears a small mark in its corner. */
+  equipped: 0xf2d08a,
+  /** Wide enough to stand the grid and the details side by side. */
+  sideBySideFrom: 640,
+} as const;
+
 export const SCRIM = {
   /** 게임 가이드 · 패치노트 · 설정 · 제작자 정보 · 확인 창. */
   reading: 1,

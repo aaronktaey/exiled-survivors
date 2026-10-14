@@ -121,6 +121,24 @@ export interface Strings {
     readonly plain: string;
   };
 
+  /** 인벤토리 — the tabs everything kept between runs lives in. */
+  readonly inventory: {
+    readonly title: string;
+    readonly tabGear: string;
+    readonly tabConsumables: string;
+    /** In the details pane when the cursor has nothing under it. */
+    readonly empty: string;
+    /** How many of a stackable thing are held. */
+    readonly held: string;
+    /** Where a 구슬 is spent, and when a 뼈다귀 is. */
+    readonly orbUse: string;
+    readonly boneUse: string;
+    /** {keys} is the 구슬 keys, "1~4". */
+    readonly hintGear: string;
+    readonly hintConsumables: string;
+    readonly hintTouch: string;
+  };
+
   /** 뼈다귀 — the screen that decides what a run is going to be. */
   readonly bones: {
     readonly title: string;

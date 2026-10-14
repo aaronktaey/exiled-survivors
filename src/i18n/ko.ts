@@ -32,7 +32,7 @@ export const ko: Strings = {
     load: '불러오기',
     noSave: '저장 없음',
     settings: '설정',
-    gear: '장비',
+    gear: '인벤토리',
     guide: '게임 가이드',
     patch: '패치노트',
     credits: '제작자 정보',
@@ -81,6 +81,19 @@ export const ko: Strings = {
     attack: '공격력 +{attack}',
     attack2: '공격속도 +{percent}%',
     plain: '속성 없음',
+  },
+
+  inventory: {
+    title: '인벤토리',
+    tabGear: '장비',
+    tabConsumables: '소모품',
+    empty: '비어 있음',
+    held: '보유 {count}',
+    orbUse: '장비 탭에서 무기를 골라 사용합니다.',
+    boneUse: '게임 시작 때 적용합니다. 그 판에만 효과가 있습니다.',
+    hintGear: '방향키 이동   Space 착용   {keys} 구슬   Del 버리기   Tab 탭   Esc 돌아가기',
+    hintConsumables: '방향키 이동   Tab 탭   Esc 돌아가기',
+    hintTouch: '칸을 눌러 살펴보기 — 착용·버리기·구슬은 오른쪽 버튼',
   },
 
   bones: {
@@ -150,7 +163,7 @@ export const ko: Strings = {
     introHintKeyboard: 'WASD · 방향키로 이동 — 공격은 자동',
     introHintTouch: '스틱을 끌어 이동 — 공격은 자동',
     gearFound: '{gear} 획득 — 메인화면에서 착용',
-    orbFound: '{orb} 획득 — 장비창에서 사용',
+    orbFound: '{orb} 획득 — 인벤토리에서 사용',
     boneFound: '{bone} 획득 — 다음 판 시작 전에 적용',
     shardFound: '신성한 조각 {held}/{need}',
     orbMade: '신성한 구슬 완성 — 패시브 포인트 +1',

@@ -660,7 +660,7 @@ export class GameScene extends Phaser.Scene {
 
   /**
    * A 구슬 goes into the drawer, not onto the weapon: what it is spent on is
-   * a decision, and the 장비창 is where the weapons are.
+   * a decision, and the 인벤토리 is where the weapons are.
    */
   private onOrbCollected(id: OrbId): void {
     orbs.add(id);

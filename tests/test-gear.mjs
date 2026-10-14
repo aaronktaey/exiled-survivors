@@ -244,8 +244,8 @@ await shot('gear-01-pickup');
 await ev(`(() => { window.game.scene.getScene('GameScene').scene.start('MenuScene'); return 1; })()`);
 await sleep(1700);
 await openIcon('gear');
-const screen = await scene('GearScene', `
-  return { labels: s.menu.rows.map(r => r.label.text), wearing: s.wearing.text, lines: s.lines.text };
+const screen = await scene('InventoryScene', `
+  return { labels: s.menu.items.map(i => i.label()), wearing: s.wearing.text, lines: s.lines.text };
 `);
 console.log('장비창:', JSON.stringify(screen));
 check('장비창 lists the stash, best first',
@@ -259,7 +259,7 @@ check('and reads out what the one under the cursor is worth',
 await shot('gear-02-screen');
 
 await cdp.evaluate(`(() => {
-  const s = window.game.scene.getScene('GearScene');
+  const s = window.game.scene.getScene('InventoryScene');
   s.menu.selected = 0; s.menu.refresh(); return 1;
 })()`);
 await cdp.tap('Space', 32, ' ');
@@ -450,16 +450,15 @@ await ev(`(() => { window.game.scene.getScene('GameScene')?.scene.start('MenuSce
 await sleep(1700);
 await openIcon('gear');
 
-const read = await scene('GearScene', `
+const read = await scene('InventoryScene', `
   s.menu.selected = s.menu.items.findIndex(i => i.id === 'l1');
-  s.menu.scrollTo(s.menu.selected);
-  s.menu.refresh();
-  s.showLines();
+    s.menu.refresh();
+  s.showDetails();
   return { canvas: [s.scale.width, s.scale.height],
-           rows: s.menu.rows.length, items: s.menu.items.length,
+           cells: s.menu.cells.length, items: s.menu.items.length,
            lines: s.lines.text.split('\\n'),
            bottom: Math.round(s.lines.y + s.lines.height),
-           rowBottom: Math.round(Math.max(...s.menu.rows.map(r => r.panel.y + r.panel.height / 2))) };
+           rowBottom: Math.round(Math.max(...s.menu.cells.map(c => c.plate.y + c.plate.height / 2))) };
 `);
 console.log('loaded weapon:', JSON.stringify(read, null, 1));
 const block = read.lines.join(' | ');
@@ -485,18 +484,28 @@ check('none of it runs off the bottom of the screen',
   `read-out ends at ${read.bottom}, the stash at ${read.rowBottom}, of ${read.canvas[1]}`);
 await shot('gear-05-affixes');
 
-// A stash longer than the room it has scrolls rather than overflowing.
-const walk = await scene('GearScene', `
-  const seen = [];
-  for (let i = 0; i < s.menu.items.length; i++) { s.menu.step(1); seen.push(s.menu.selectedId); }
-  return { seen, rows: s.menu.rows.length, items: s.menu.items.length,
-           more: s.menu.more.length, lines: s.lines.text.split('\\n').length };
+// The stash is a grid: six across, twelve down, and every weapon in it is
+// reachable from the keys alone.
+const walk = await scene('InventoryScene', `
+  s.menu.focus(s.menu.items[0].id);
+  const seen = [s.menu.selectedId];
+  for (let i = 0; i < s.menu.items.length; i++) { s.menu.move(1, 0); seen.push(s.menu.selectedId);
+    if (s.menu.selected % window.config.INVENTORY.cols === window.config.INVENTORY.cols - 1 ||
+        s.menu.selected === s.menu.items.length - 1) {
+      // Down a row, then back to its first cell.
+      s.menu.move(0, 1);
+      for (let k = 0; k < window.config.INVENTORY.cols; k++) s.menu.move(-1, 0);
+      seen.push(s.menu.selectedId);
+    } }
+  return { seen, cells: s.menu.cells.length, items: s.menu.items.length, pages: s.menu.pages,
+           shape: [window.config.INVENTORY.cols, window.config.INVENTORY.rows] };
 `);
-console.log('walked the stash:', JSON.stringify(walk));
-check('a stash too long for the screen is windowed, with ▲ ▼ to say so',
-  walk.rows < walk.items && walk.rows >= 2 && walk.more === 2,
-  `${walk.rows} rows for ${walk.items} weapons`);
-check('and every weapon in it is still reachable',
+console.log('walked the stash:', JSON.stringify({ ...walk, seen: walk.seen.length }));
+check('the stash is a grid of six across and twelve down',
+  walk.cells === walk.shape[0] * walk.shape[1] && walk.shape[0] === 6 && walk.shape[1] === 12 &&
+    walk.pages === 1,
+  `${walk.cells} cells, ${walk.pages} page`);
+check('and the arrow keys reach every weapon in it',
   new Set(walk.seen).size === walk.items,
   `${new Set(walk.seen).size} of ${walk.items} reached`);
 await shot('gear-06-scrolled');
@@ -504,10 +513,10 @@ await shot('gear-06-scrolled');
 // --- 10. throwing one away ---
 // Destructive, so it asks first, and what is being carried is not on offer
 // at all — which is also what stops the stash from ever emptying.
-const gearScene = (body) => scene('GearScene', body);
+const gearScene = (body) => scene('InventoryScene', body);
 const armedLook = await gearScene(`
   const i = s.menu.items.findIndex(it => it.id === 'l1');
-  s.menu.selected = i; s.menu.scrollTo(i); s.menu.refresh(); s.showLines();
+  s.menu.selected = i; s.menu.refresh(); s.showDetails();
   const resting = { text: s.discard.text, colour: String(s.discard.style.color), armed: s.armed };
   s.pressDiscard();
   return { resting, asking: { text: s.discard.text, colour: String(s.discard.style.color),
@@ -529,14 +538,14 @@ check('and moving the cursor takes the question back',
 
 const thrown = await gearScene(`
   const i = s.menu.items.findIndex(it => it.id === 'l1');
-  s.menu.selected = i; s.menu.scrollTo(i); s.menu.refresh(); s.showLines();
+  s.menu.selected = i; s.menu.refresh(); s.showDetails();
   s.pressDiscard();
   s.pressDiscard();
   return { stash: window.gear.items.map(i => i.uid) };
 `);
 await sleep(900);
 const afterThrow = await gearScene(`
-  return { items: s.menu.items.length, rows: s.menu.rows.length,
+  return { items: s.menu.items.length,
            stash: window.gear.items.map(i => i.uid),
            stored: JSON.parse(localStorage.getItem('exiled-survivors:gear:v2')).items.map(i => i.uid) };
 `);
@@ -545,14 +554,14 @@ check('the second press throws it away for good',
   !afterThrow.stash.includes('l1') && !afterThrow.stored.includes('l1') &&
     afterThrow.stash.length === 9,
   `${afterThrow.stash.length} left, none of them l1`);
-check('and the screen is measured again around what is left',
-  afterThrow.items === afterThrow.stash.length + 1,
-  `${afterThrow.items} rows of list for ${afterThrow.stash.length} weapons`);
+check('and the grid is laid out again around what is left',
+  afterThrow.items === afterThrow.stash.length,
+  `${afterThrow.items} cells filled for ${afterThrow.stash.length} weapons`);
 
 const inHand = await gearScene(`
   const uid = window.gear.value.equipped;
   const i = s.menu.items.findIndex(it => it.id === uid);
-  s.menu.selected = i; s.menu.scrollTo(i); s.menu.refresh(); s.showLines();
+  s.menu.selected = i; s.menu.refresh(); s.showDetails();
   s.pressDiscard();
   s.pressDiscard();
   return { uid, armed: s.armed, alpha: s.discard.alpha,
@@ -569,7 +578,7 @@ await ev(`(() => { window.gear.equip('l2'); return 1; })()`);
 const starter = await gearScene(`
   s.menu.refresh();
   const i = s.menu.items.findIndex(it => it.id === 'starter');
-  s.menu.selected = i; s.menu.scrollTo(i); s.menu.refresh(); s.showLines();
+  s.menu.selected = i; s.menu.refresh(); s.showDetails();
   s.pressDiscard();
   s.pressDiscard();
   return 1;
@@ -729,7 +738,7 @@ check('the 장비 icon wears a dot while the drawer holds anything',
   orbBadge.badge === true);
 await openIcon('gear');
 
-const orbScreen = await scene('GearScene', `
+const orbScreen = await scene('InventoryScene', `
   s.menu.focus('orbTarget');
   return { buttons: [...s.orbButtons].map(([id, o]) => ({ id, text: o.text, alpha: o.alpha })),
            hint: s.orbHint.text, armed: s.armed,
@@ -750,7 +759,7 @@ check('and none of the row runs off the bottom',
   orbScreen.bottom <= orbScreen.canvas,
   `${orbScreen.bottom} of ${orbScreen.canvas}`);
 
-const asked = await scene('GearScene', `
+const asked = await scene('InventoryScene', `
   s.pressOrb('transmute');
   return { armed: s.armed, text: s.orbButtons.get('transmute').text, hint: s.orbHint.text,
            held: window.orbs.count('transmute') };
@@ -763,9 +772,9 @@ check('and says what it would do',
   asked.hint.includes('변화의 구슬') && asked.hint.includes('1~2'), asked.hint);
 await shot('gear-09-orb-asks');
 
-await scene('GearScene', `s.pressOrb('transmute'); return 1;`);
+await scene('InventoryScene', `s.pressOrb('transmute'); return 1;`);
 await sleep(900);
-const afterOrb = await scene('GearScene', `
+const afterOrb = await scene('InventoryScene', `
   const item = window.gear.items.find(i => i.uid === 'orbTarget');
   return { held: window.orbs.count('transmute'), armed: s.armed,
            lines: item.prefixes.length + item.suffixes.length,
@@ -789,11 +798,11 @@ await ev(`(() => {
   window.gear.replace({ uid: 'orbTarget', id: 'steelSword',
     prefixes: [{ id: 'mighty', tier: 3 }, { id: 'critical', tier: 3 }, { id: 'cruel', tier: 3 }], suffixes: [{ id: 'giant', tier: 3 }, { id: 'swift', tier: 3 }, { id: 'magnetic', tier: 3 }] });
   window.orbs.add('awaken', 2);
-  window.game.scene.getScene('GearScene').scene.restart({ onClose: () => {}, focus: 'orbTarget' });
+  window.game.scene.getScene('InventoryScene').scene.restart({ onClose: () => {}, focus: 'orbTarget' });
   return 1;
 })()`);
 await sleep(1000);
-const refused = await scene('GearScene', `
+const refused = await scene('InventoryScene', `
   const before = window.orbs.count('awaken');
   s.pressOrb('awaken');
   s.pressOrb('awaken');
@@ -810,12 +819,12 @@ check('각성의 구슬 is not spent on a weapon with nowhere to put a line',
 
 // One key per 구슬, in the order they are drawn, however many there are.
 await ev(`(() => { window.orbs.add('explode', 2); return 1; })()`);
-const keyed = await scene('GearScene', `
+const keyed = await scene('InventoryScene', `
   const hint = s.children.list.filter(o => o.type === 'Text')
     .map(o => o.text).find(t => /구슬/.test(t) && /Esc/.test(t)) ?? '';
   s.armed = null;
   s.menu.focus('orbTarget');
-  s.onOrbKey({ code: 'Digit4', repeat: false });
+  s.onKey({ code: 'Digit4', repeat: false });
   const armed = s.armed;
   s.armed = null;
   s.refreshOrbs();
@@ -846,7 +855,7 @@ await ev(`(() => {
 })()`);
 await sleep(1800);
 await openIcon('gear');
-const lockedScreen = await scene('GearScene', `
+const lockedScreen = await scene('InventoryScene', `
   const before = window.gear.value.equipped;
   s.menu.focus('spare');
   s.menu.items.find(i => i.id === 'spare').onSelect();
@@ -864,11 +873,11 @@ await shot('gear-11-locked');
 
 await ev(`(() => {
   localStorage.removeItem('exiled-survivors:save:v1');
-  window.game.scene.getScene('GearScene').scene.restart({ onClose: () => {} });
+  window.game.scene.getScene('InventoryScene').scene.restart({ onClose: () => {} });
   return 1;
 })()`);
 await sleep(900);
-const unlocked = await scene('GearScene', `
+const unlocked = await scene('InventoryScene', `
   s.menu.focus('spare');
   s.menu.items.find(i => i.id === 'spare').onSelect();
   return { locked: s.locked, equipped: window.gear.value.equipped };
@@ -919,11 +928,11 @@ await ev(`(() => {
   window.orbs.reset();
   window.orbs.add('transmute', 3);
   window.orbs.add('awaken', 3);
-  window.game.scene.getScene('GearScene').scene.restart({ onClose: () => {}, focus: 'noted' });
+  window.game.scene.getScene('InventoryScene').scene.restart({ onClose: () => {}, focus: 'noted' });
   return 1;
 })()`);
 await sleep(1000);
-const asksFirst = await scene('GearScene', `
+const asksFirst = await scene('InventoryScene', `
   s.menu.focus('noted');
   s.pressOrb('transmute');
   return { hint: s.orbHint.text };
@@ -932,9 +941,9 @@ check('arming a 구슬 says what it is about to do',
   asksFirst.hint.includes('변화의 구슬') && asksFirst.hint.includes('1~2'),
   asksFirst.hint);
 
-await scene('GearScene', `s.pressOrb('transmute'); return 1;`);
+await scene('InventoryScene', `s.pressOrb('transmute'); return 1;`);
 await sleep(900);
-const afterReroll = await scene('GearScene', `
+const afterReroll = await scene('InventoryScene', `
   const item = window.gear.items.find(i => i.uid === 'noted');
   return { hint: s.orbHint.text,
            lines: item ? item.prefixes.length + item.suffixes.length : null };
@@ -945,14 +954,14 @@ check('and spending it says what it actually did',
     afterReroll.hint.includes(String(afterReroll.lines)),
   afterReroll.hint);
 
-await scene('GearScene', `
+await scene('InventoryScene', `
   s.menu.focus('noted');
   s.pressOrb('awaken');
   s.pressOrb('awaken');
   return 1;
 `);
 await sleep(900);
-const afterAdd = await scene('GearScene', `return { hint: s.orbHint.text };`);
+const afterAdd = await scene('InventoryScene', `return { hint: s.orbHint.text };`);
 console.log('after an add:', JSON.stringify(afterAdd));
 check('an added 속성 is named, with the rung it came out at',
   /각성의 구슬 —/.test(afterAdd.hint) && /\d티어/.test(afterAdd.hint),

@@ -2,7 +2,7 @@ export { BootScene } from '@/scenes/BootScene';
 export { MenuScene } from '@/scenes/MenuScene';
 export { SettingsScene, type SettingsSceneData } from '@/scenes/SettingsScene';
 export { BoneScene } from '@/scenes/BoneScene';
-export { GearScene, type GearSceneData } from '@/scenes/GearScene';
+export { InventoryScene, type InventorySceneData, type InventoryTab } from '@/scenes/InventoryScene';
 export { PassiveScene, type PassiveSceneData } from '@/scenes/PassiveScene';
 export { CreditsScene, type CreditsSceneData } from '@/scenes/CreditsScene';
 export { InfoScene, type InfoSceneData, type InfoTopic } from '@/scenes/InfoScene';

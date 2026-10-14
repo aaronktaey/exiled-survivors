@@ -28,7 +28,7 @@ export const en: Strings = {
     load: 'Continue',
     noSave: 'No save',
     settings: 'Settings',
-    gear: 'Equipment',
+    gear: 'Inventory',
     guide: 'How to Play',
     patch: 'Patch Notes',
     credits: 'Credits',
@@ -77,6 +77,19 @@ export const en: Strings = {
     attack: '+{attack} attack power',
     attack2: '+{percent}% attack speed',
     plain: 'No modifiers',
+  },
+
+  inventory: {
+    title: 'Inventory',
+    tabGear: 'Gear',
+    tabConsumables: 'Consumables',
+    empty: 'Empty',
+    held: 'Held: {count}',
+    orbUse: 'Spent on a weapon from the Gear tab.',
+    boneUse: 'Applied when a run starts, for that run only.',
+    hintGear: 'Arrows move   Space equip   {keys} orbs   Del discard   Tab tabs   Esc back',
+    hintConsumables: 'Arrows move   Tab tabs   Esc back',
+    hintTouch: 'Tap a cell to inspect it — equip, discard and orbs are the buttons beside it',
   },
 
   bones: {
@@ -146,7 +159,7 @@ export const en: Strings = {
     introHintKeyboard: 'WASD or arrows to move — attacks are automatic',
     introHintTouch: 'Drag the stick to move — attacks are automatic',
     gearFound: 'Found {gear} — wear it from the title screen',
-    orbFound: '{orb} — use it in the 장비창',
+    orbFound: '{orb} — use it from the Inventory',
     boneFound: '{bone} — apply it before the next run',
     shardFound: 'Divine Shard {held}/{need}',
     orbMade: 'A Divine Orb — one passive point',

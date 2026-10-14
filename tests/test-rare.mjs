@@ -315,19 +315,21 @@ const drops = await run(`
   s.spawner.clear();
   const measure = (affixCount) => {
     let drops = 0;
-    const N = 40000;
-    for (let i = 0; i < N; i++) if (s.rollSkillDrop(1 + affixCount * 0.5)) drops++;
+    const N = 80000;
+    for (let i = 0; i < N; i++) if (s.rollSkillDrop(1 + affixCount * window.config.RARE.dropBonusPerAffix)) drops++;
     return drops / N;
   };
-  const out = { plain: measure(0), one: measure(1), two: measure(2) };
+  const out = { plain: measure(0), one: measure(1), two: measure(2),
+                want: window.config.SKILL_DROP.chance, per: window.config.RARE.dropBonusPerAffix };
   s.choosing = false;
   return out;
 `);
 console.log('drop rates:', JSON.stringify(drops));
-check('an ordinary kill still drops at 3%', Math.abs(drops.plain - 0.03) < 0.004,
-  `${(drops.plain * 100).toFixed(2)}%`);
-check('one affix is worth +50%, two are worth double',
-  Math.abs(drops.one - 0.045) < 0.005 && Math.abs(drops.two - 0.06) < 0.006,
+const near = (got, want) => Math.abs(got - want) < want * 0.15;
+check('an ordinary kill drops at the configured rate', near(drops.plain, drops.want),
+  `${(drops.plain * 100).toFixed(2)}%, configured ${(drops.want * 100).toFixed(2)}%`);
+check('each affix adds its share of that, and two add twice as much',
+  near(drops.one, drops.want * (1 + drops.per)) && near(drops.two, drops.want * (1 + 2 * drops.per)),
   `1 affix ${(drops.one * 100).toFixed(2)}%, 2 affixes ${(drops.two * 100).toFixed(2)}%`);
 
 const bonus = await run(`

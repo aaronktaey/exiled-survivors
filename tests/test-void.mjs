@@ -281,19 +281,20 @@ await shot('void-02-orbs');
 // --- 10. it joins the drop roll, with its own ground label ---
 const rate = await run(`
   const seen = {};
-  const N = 120000;
+  const N = 150000;
   let drops = 0;
   for (let i = 0; i < N; i++) {
     const d = s.rollSkillDrop();
     if (d) { drops++; seen[d.id] = (seen[d.id] ?? 0) + 1; }
   }
-  return { rate: drops / N, seen };
+  return { rate: drops / N, seen, want: window.config.SKILL_DROP.chance };
 `);
 console.log('drop roll:', JSON.stringify(rate));
-check('the total drop chance is still ~3%', Math.abs(rate.rate - 0.03) < 0.003,
-  `measured ${(rate.rate * 100).toFixed(2)}%`);
+check('the total drop chance is the configured one', Math.abs(rate.rate - rate.want) < rate.want * 0.15,
+  `measured ${(rate.rate * 100).toFixed(2)}%, configured ${(rate.want * 100).toFixed(2)}%`);
+const kinds = Object.keys(rate.seen).length;
 check('공허구체 joined the pool at an even share',
-  Math.abs(rate.seen.voidOrb / (rate.rate * 120000) - 0.25) < 0.05,
+  Math.abs(rate.seen.voidOrb / (rate.rate * 150000) - 1 / kinds) < 0.25 / kinds,
   Object.entries(rate.seen).map(([k, n]) => `${k} ${n}`).join(' / '));
 
 const label = await run(`

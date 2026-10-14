@@ -28,7 +28,7 @@ export const ja: Strings = {
     load: 'つづきから',
     noSave: 'セーブなし',
     settings: '設定',
-    gear: '装備',
+    gear: 'インベントリ',
     guide: '遊び方',
     patch: 'パッチノート',
     credits: 'クレジット',
@@ -77,6 +77,19 @@ export const ja: Strings = {
     attack: '攻撃力 +{attack}',
     attack2: '攻撃速度 +{percent}%',
     plain: '属性なし',
+  },
+
+  inventory: {
+    title: 'インベントリ',
+    tabGear: '装備',
+    tabConsumables: '消耗品',
+    empty: '空き',
+    held: '所持 {count}',
+    orbUse: '装備タブで武器を選んで使います。',
+    boneUse: 'ゲーム開始時に適用します。その回にだけ効果があります。',
+    hintGear: '方向キー 移動   Space 装備   {keys} 球   Del 廃棄   Tab タブ   Esc 戻る',
+    hintConsumables: '方向キー 移動   Tab タブ   Esc 戻る',
+    hintTouch: 'マスを押して確認 — 装備・廃棄・球は横のボタン',
   },
 
   bones: {
@@ -146,7 +159,7 @@ export const ja: Strings = {
     introHintKeyboard: 'WASD・方向キーで移動 — 攻撃は自動',
     introHintTouch: 'スティックを引いて移動 — 攻撃は自動',
     gearFound: '{gear} 獲得 — タイトル画面で装備できます',
-    orbFound: '{orb} 入手 — 装備画面で使用',
+    orbFound: '{orb} 入手 — インベントリで使用',
     boneFound: '{bone} 入手 — 次の回の開始前に適用',
     shardFound: '神聖な欠片 {held}/{need}',
     orbMade: '神聖なオーブ完成 — パッシブポイント +1',

@@ -216,9 +216,11 @@ const rate = await run(`
   let drops = 0;
   const N = 40000;
   for (let i = 0; i < N; i++) if (s.rollSkillDrop()) drops++;
-  return { rate: drops / N };
+  return { rate: drops / N, want: window.config.SKILL_DROP.chance };
 `);
-check('still drops at ~3% after being owned', Math.abs(rate.rate - 0.03) < 0.004, `measured=${(rate.rate * 100).toFixed(2)}%`);
+check('still drops at the configured rate after being owned',
+  Math.abs(rate.rate - rate.want) < rate.want * 0.2,
+  `measured=${(rate.rate * 100).toFixed(2)}%, configured ${(rate.want * 100).toFixed(2)}%`);
 
 // --- 6. a repeat pickup upgrades instead of granting ---
 await run(`

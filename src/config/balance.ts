@@ -855,8 +855,8 @@ export const SKILL_BASE: Record<SkillId, SkillBaseStats> = {
   // A bolt out of the sky every half second onto something nearby. Ten
   // times the 12 it was asked for, in the scale health is now written in.
   thunderStrike: {
-    damage: 120,
-    attackSpeed: 2,
+    damage: 80,
+    attackSpeed: 1,
     range: 200,
     projectileSpeed: 0,
     chainCount: 0,
