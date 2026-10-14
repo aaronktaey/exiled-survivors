@@ -466,7 +466,7 @@ check('every 속성 fills a slot with its rung, its name and what it does',
     /2티어\s+치명\s+치명타 확률 \+40%/.test(block) &&
     /1티어\s+거대\s+최대 체력 \+45%/.test(block) &&
     /5티어\s+신속\s+이동속도 \+12%/.test(block) &&
-    /3티어\s+재생\s+5초당 체력 \+4/.test(block),
+    /3티어\s+자력\s+획득 범위 \+\d+%/.test(block),
   block);
 check('and a slot with nothing in it is drawn as a rule',
   read.lines.filter((l) => /^─+$/.test(l)).length === 1,

@@ -252,22 +252,17 @@ check('and the layers multiply with each other',
   stacked.after === Math.round((stacked.base * stacked.passive + stacked.gear) * 2),
   `(${stacked.base} x ${stacked.passive.toFixed(2)} + ${stacked.gear}) x 2 = ${stacked.after}`);
 
-// --- 6. 재생 comes off the sword, and only off the sword ---
+// --- 6. life does not come back over time from anywhere ---
+// 재생 was taken off weapons, and the tree never had it: health comes back
+// from potions only.
 const regen = await run(`
-  s.player.hp = 5;
-  s.sinceRegenMs = 0;
-  const before = s.player.hp;
-  s.regenerate(5000);
-  const once = s.player.hp;
-  s.regenerate(5000);
-  return { before, once, twice: s.player.hp, gear: s.mods.gear.regen,
-           tree: Object.keys(window.passives.value.ranks),
+  return { gearKeys: Object.keys(s.mods.gear), hasRegenerate: typeof s.regenerate,
            offered: window.config.ALL_PASSIVES.map(p => p.id) };
 `);
 console.log('regen:', JSON.stringify(regen));
-check('재생 pays out in whole points every five seconds',
-  regen.once === regen.before + regen.gear && regen.twice === regen.once + regen.gear,
-  `${regen.before} -> ${regen.once} -> ${regen.twice} (+${regen.gear} a payout)`);
+check('neither the weapon nor the run regenerates anything',
+  !regen.gearKeys.includes('regen') && regen.hasRegenerate === 'undefined',
+  regen.gearKeys.join(' / '));
 check('and the tree has no line of its own for it',
   !regen.offered.includes('regen') && regen.offered.length === 2,
   regen.offered.join(' / '));
