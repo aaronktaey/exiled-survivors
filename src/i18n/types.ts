@@ -45,7 +45,7 @@ export interface Strings {
     readonly buyShard: string;
     /** Gold in the purse. */
     readonly goldHeld: string;
-    /** Said plainly: three lines today, a tree later. */
+    /** Said plainly: separate lines today, a tree later. */
     readonly temporary: string;
   };
 
@@ -209,6 +209,27 @@ export interface Strings {
     readonly registered: string;
     /** A board shared between players is coming; this one is this device's. */
     readonly localNote: string;
+    /** Under the board while it is the shared one, fetching it, or unreachable. */
+    readonly sharedNote: string;
+    readonly loadingNote: string;
+    readonly offlineNote: string;
+  };
+
+  /** 무작위 스킬 — three skills on cards, one to take. */
+  readonly skillPick: {
+    /** A run's first skill. */
+    readonly startTitle: string;
+    readonly startSubtitle: string;
+    /** A 무작위 스킬 walked over. */
+    readonly dropTitle: string;
+    readonly dropSubtitle: string;
+    /** Its name on the ground. */
+    readonly drop: string;
+    /** On a card: not held yet, or held at {level}. */
+    readonly new: string;
+    readonly upgrade: string;
+    readonly hintKeyboard: string;
+    readonly hintTouch: string;
   };
 
   /** 슬롯머신 — the reel a new run spins for its first skill. */

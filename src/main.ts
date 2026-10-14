@@ -31,6 +31,7 @@ import {
   SlotScene,
   RankingScene,
   RankEntryScene,
+  SkillPickScene,
 } from '@/scenes';
 
 // Language first: every scene reads its text as it is built.
@@ -71,6 +72,7 @@ const config: Phaser.Types.Core.GameConfig = {
     SlotScene,
     RankingScene,
     RankEntryScene,
+    SkillPickScene,
     PauseScene,
     SettingsScene,
     CreditsScene,

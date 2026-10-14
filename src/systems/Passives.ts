@@ -14,11 +14,16 @@ export interface PassiveState {
 export interface PassiveBonus {
   readonly damageScale: number;
   readonly attackSpeedScale: number;
+  readonly moveSpeedScale: number;
+  /** 행운, as a share. Nothing reads it yet. */
+  readonly luck: number;
 }
 
 export const NO_PASSIVES: PassiveBonus = {
   damageScale: 1,
   attackSpeedScale: 1,
+  moveSpeedScale: 1,
+  luck: 0,
 };
 
 const DEFAULTS: PassiveState = { shards: 0, points: 0, ranks: {} };
@@ -35,6 +40,8 @@ type Listener = (state: PassiveState) => void;
 export function passiveBonusFor(ranks: PassiveState['ranks']): PassiveBonus {
   let damageScale = 1;
   let attackSpeedScale = 1;
+  let moveSpeedScale = 1;
+  let luck = 0;
 
   for (const spec of Object.values(PASSIVES)) {
     const rank = ranks[spec.id] ?? 0;
@@ -44,9 +51,11 @@ export function passiveBonusFor(ranks: PassiveState['ranks']): PassiveBonus {
 
     damageScale += ((spec.damageScale ?? 1) - 1) * rank;
     attackSpeedScale += ((spec.attackSpeedScale ?? 1) - 1) * rank;
+    moveSpeedScale += ((spec.moveSpeedScale ?? 1) - 1) * rank;
+    luck += (spec.luck ?? 0) * rank;
   }
 
-  return { damageScale, attackSpeedScale };
+  return { damageScale, attackSpeedScale, moveSpeedScale, luck };
 }
 
 /**

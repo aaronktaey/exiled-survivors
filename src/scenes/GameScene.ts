@@ -17,8 +17,7 @@ import {
   SAVE,
   SCENES,
   SKILL_DROP,
-  SKILL_ICONS,
-  SLOT,
+  SKILL_PICK,
   TEXT,
   TEXTURES,
   TIMING,
@@ -28,7 +27,7 @@ import type { Enemy } from '@/entities/Enemy';
 import { Player } from '@/entities/Player';
 import { altarOfferText, boneName, fill, gearTitle, orbName, skillName, t } from '@/i18n';
 import { GameOverScene, type GameOverData } from '@/scenes/GameOverScene';
-import { SlotScene, type SlotData } from '@/scenes/SlotScene';
+import { SkillPickScene, type SkillPickData } from '@/scenes/SkillPickScene';
 import { UpgradeScene, type UpgradeChoiceData } from '@/scenes/UpgradeScene';
 import {
   CombatSystem,
@@ -110,19 +109,21 @@ export interface GameSceneData {
    */
   readonly bones?: readonly BoneId[];
   /**
-   * Spin the 슬롯머신 for a drop skill before play starts. Every fresh run
+   * Open on the three-card choice for the run's first skill. Every fresh run
    * from the title or from 다시하기 does; a resumed run already has its
    * skills, and the dev-only `#run` skips it so the harness lands in play.
    */
-  readonly startSlot?: boolean;
+  readonly startPick?: boolean;
 }
 
 /** One queued upgrade popup, from a level-up or a skill pickup. */
-interface ChoiceRequest {
-  readonly title: string;
-  readonly subtitle: string;
-  readonly skill: SkillId;
-}
+/**
+ * One queued popup: an upgrade for one skill (a level-up, a repeat pickup),
+ * or the three cards a 무작위 스킬 opens.
+ */
+type ChoiceRequest =
+  | { readonly kind: 'upgrade'; readonly title: string; readonly subtitle: string; readonly skill: SkillId }
+  | { readonly kind: 'pick' };
 
 /** The run itself: player, spawning, weapons, pickups and progression. */
 export class GameScene extends Phaser.Scene {
@@ -159,7 +160,7 @@ export class GameScene extends Phaser.Scene {
   private elapsedMs = 0;
   private sinceSaveMs = 0;
   private resuming: SavedRun | null = null;
-  private startSlot = false;
+  private startPick = false;
   /** Popups earned while one was already open. */
   private pendingChoices: ChoiceRequest[] = [];
   private choosing = false;
@@ -174,7 +175,7 @@ export class GameScene extends Phaser.Scene {
 
   public init(data?: GameSceneData): void {
     this.resuming = data?.save ?? null;
-    this.startSlot = data?.startSlot === true && !this.resuming && SLOT.atRunStart;
+    this.startPick = data?.startPick === true && !this.resuming && SKILL_PICK.atRunStart;
     // A resumed run keeps the 뼈다귀 it was started with; they were spent
     // once, at the start, and the save remembers them.
     this.bones = [...(data?.save?.bones ?? data?.bones ?? [])];
@@ -203,6 +204,7 @@ export class GameScene extends Phaser.Scene {
 
     this.player = new Player(this, WORLD.width / 2, WORLD.height / 2);
     this.player.applyGear(this.gearBonus);
+    this.player.applyPassives(this.mods.passive);
     this.cameras.main.startFollow(this.player, true, 0.12, 0.12);
 
     this.progression = new Progression();
@@ -231,6 +233,7 @@ export class GameScene extends Phaser.Scene {
         onOrbCollected: (id) => this.onOrbCollected(id),
         onBoneCollected: (id) => this.onBoneCollected(id),
         onAltarWoke: (offer, x, y) => this.onAltarWoke(offer, x, y),
+        onRandomSkillCollected: () => this.queueChoice({ kind: 'pick' }),
         dropScale: () => this.boneBonus.dropScale,
         critMultiplier: () => critMultiplierFor(this.mods),
       },
@@ -252,12 +255,13 @@ export class GameScene extends Phaser.Scene {
         // A 도망자 is the other thing worth walking a long way for.
         group: this.spawner.group,
         filter: (object) => (object as Enemy).kind === 'fugitive',
-        arrowColor: COLORS.fugitiveRing,
+        arrowColor: COLORS.gold,
       },
       { group: this.combat.altars },
       { group: this.combat.shardDrops },
       { group: this.combat.orbDrops },
       { group: this.combat.gearDrops },
+      { group: this.combat.randomSkillDrops },
       { group: this.combat.skillDrops },
       { group: this.combat.potions },
     ]);
@@ -269,7 +273,7 @@ export class GameScene extends Phaser.Scene {
     // skill instead, so they have something to fight with.
     if (this.resuming) {
       this.restore(this.resuming);
-    } else if (!this.startSlot) {
+    } else if (!this.startPick) {
       this.acquire(UNSPUN_SKILL);
     }
 
@@ -281,21 +285,21 @@ export class GameScene extends Phaser.Scene {
     this.progression.on(Progression.LEVEL_UP, this.onLevelUp, this);
     this.player.once(Player.DIED, this.onPlayerDied, this);
 
-    if (this.startSlot) {
-      this.openStartSlot();
+    if (this.startPick) {
+      this.openStartPick();
     } else if (!this.resuming) {
       this.showIntro();
     }
   }
 
   /**
-   * The run's first drop skill, off the 슬롯머신. The arena is frozen while
-   * the reel turns — the same hold an upgrade choice puts on it — and the
-   * title card waits until the skill is in hand.
+   * The run's first skill: three cards, one to take — there is no basic
+   * attack. The arena is frozen while the choice is open, the same hold an
+   * upgrade puts on it, and the title card waits until the skill is in hand.
    */
-  private openStartSlot(): void {
-    const pool = DROPPABLE_SKILLS.filter((skill) => !this.owned.has(skill.id));
-    if (pool.length === 0) {
+  private openStartPick(): void {
+    const options = this.randomSkills();
+    if (options.length === 0) {
       this.showIntro();
       return;
     }
@@ -303,30 +307,38 @@ export class GameScene extends Phaser.Scene {
     this.choosing = true;
     this.physics.pause();
 
-    const data: SlotData = {
-      title: t().slot.startTitle,
-      subtitle: t().slot.startSubtitle,
-      items: pool.map((skill) => ({
-        label: skillName(skill.id),
-        icon: SKILL_ICONS[skill.id]?.key,
-      })),
-      onResult: (index) => {
-        const skill = pool[index];
+    const data: SkillPickData = {
+      title: t().skillPick.startTitle,
+      subtitle: t().skillPick.startSubtitle,
+      options,
+      owned: [...this.owned],
+      onPick: (skill) => {
         this.choosing = false;
         this.physics.resume();
-        if (skill) {
-          this.acquire(skill.id);
-          this.announce(fill(t().slot.won, { skill: skillName(skill.id) }));
-        }
+        this.acquire(skill);
+        this.announce(fill(t().game.pickedUp, { skill: skillName(skill) }));
         this.showIntro();
-        // Anything earned while the reel turned — nothing, today — goes next.
+        // Anything earned while the cards were up — nothing, today — goes next.
         if (this.pendingChoices.length > 0) {
           this.openNextChoice();
         }
       },
     };
-    this.scene.bringToTop(SlotScene.KEY);
-    this.scene.launch(SlotScene.KEY, data);
+    this.scene.bringToTop(SkillPickScene.KEY);
+    this.scene.launch(SkillPickScene.KEY, data);
+  }
+
+  /**
+   * SKILL_PICK.choices different skills, at even odds, from every skill
+   * there is — held ones included, which come up as 강화.
+   */
+  public randomSkills(): SkillId[] {
+    const pool = DROPPABLE_SKILLS.map((skill) => skill.id);
+    for (let i = pool.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [pool[i], pool[j]] = [pool[j]!, pool[i]!];
+    }
+    return pool.slice(0, SKILL_PICK.choices);
   }
 
   /**
@@ -609,7 +621,7 @@ export class GameScene extends Phaser.Scene {
     this.announce(fill(isNew ? copy.pickedUp : copy.enhancedPickup, { skill: name }));
 
     if (!isNew) {
-      this.queueChoice({ title: name, subtitle: t().upgrade.enhanced, skill });
+      this.queueChoice({ kind: 'upgrade', title: name, subtitle: t().upgrade.enhanced, skill });
     }
   }
 
@@ -821,6 +833,7 @@ export class GameScene extends Phaser.Scene {
     }
 
     this.queueChoice({
+      kind: 'upgrade',
       title: t().upgrade.levelUp,
       subtitle: `${fill(t().upgrade.level, { level })} · ${skillName(skill)}`,
       skill,
@@ -844,6 +857,11 @@ export class GameScene extends Phaser.Scene {
     // Freeze the arena so enemies do not close in while choosing.
     this.physics.pause();
 
+    if (request.kind === 'pick') {
+      this.openPick();
+      return;
+    }
+
     const data: UpgradeChoiceData = {
       ...request,
       // Worked out here, where the live stats are, so an upgrade that has
@@ -855,8 +873,43 @@ export class GameScene extends Phaser.Scene {
     this.scene.launch(UpgradeScene.KEY, data);
   }
 
+  /**
+   * A 무작위 스킬's three cards. A skill not yet held is acquired; one held
+   * already goes on to its own upgrade choice, ahead of anything else queued.
+   */
+  private openPick(): void {
+    const data: SkillPickData = {
+      title: t().skillPick.dropTitle,
+      subtitle: t().skillPick.dropSubtitle,
+      options: this.randomSkills(),
+      owned: [...this.owned],
+      levels: Object.fromEntries([...this.owned].map((id) => [id, this.progression.levelFor(id)])),
+      onPick: (skill) => {
+        if (this.owned.has(skill)) {
+          this.pendingChoices.unshift({
+            kind: 'upgrade',
+            title: skillName(skill),
+            subtitle: t().upgrade.enhanced,
+            skill,
+          });
+        } else {
+          this.acquire(skill);
+          this.announce(fill(t().game.pickedUp, { skill: skillName(skill) }));
+        }
+        this.afterChoice();
+      },
+    };
+    this.scene.bringToTop(SkillPickScene.KEY);
+    this.scene.launch(SkillPickScene.KEY, data);
+  }
+
   private onUpgradePicked(skill: SkillId, upgrade: UpgradeId): void {
     this.progression.apply(skill, upgrade);
+    this.afterChoice();
+  }
+
+  /** One popup is done: open the next, or let the run go on. */
+  private afterChoice(): void {
     this.choosing = false;
 
     if (this.pendingChoices.length > 0) {
@@ -898,7 +951,7 @@ export class GameScene extends Phaser.Scene {
       // Explicitly fresh. A restart with no data of its own keeps whatever
       // the scene was last started with, and after 불러오기 that is the
       // loaded run — which would quietly put a death back where it resumed.
-      onRestart: () => this.scene.restart({ save: null, startSlot: true }),
+      onRestart: () => this.scene.restart({ save: null, startPick: true }),
     };
     this.scene.bringToTop(GameOverScene.KEY);
     this.scene.launch(GameOverScene.KEY, data);

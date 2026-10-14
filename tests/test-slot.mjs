@@ -36,41 +36,38 @@ const plain = await ev(`(() => ({
 check('#run goes straight into play', plain.slot === false && plain.choosing === false,
   JSON.stringify(plain));
 
-// --- 2. a fresh run opens on the reel ---
-// #run turns the reel off so every other suite lands in play; on here.
+// --- 2. the reel, on its own ---
+// A run no longer starts on it (the first skill is three cards now), so it
+// is launched here the way anything that wants a spin would launch it.
 await ev(`(() => {
-  window.config.SLOT.atRunStart = true;
-  window.game.scene.getScene('GameScene').scene.start('GameScene', { save: null, startSlot: true });
+  const g = window.game.scene.getScene('GameScene');
+  g.choosing = true;
+  window.__slotResult = null;
+  const skills = Object.keys(window.config.SKILL_BASE);
+  window.__slotLabels = skills;
+  g.scene.launch('SlotScene', {
+    title: 'probe',
+    items: skills.map((id) => ({ label: id, icon: window.config.SKILL_ICONS[id]?.key })),
+    onResult: (i) => { window.__slotResult = i; },
+  });
   return 1;
 })()`);
-await sleep(1500);
+await sleep(800);
 const opened = await ev(`(() => {
-  const g = window.game.scene.getScene('GameScene');
   const s = window.game.scene.getScene('SlotScene');
-  // There is no basic attack: every skill is a drop skill, 타격 included.
-  const droppable = Object.keys(window.config.SKILL_BASE);
   return {
     active: window.game.scene.isActive('SlotScene'),
-    choosing: g.choosing, physicsPaused: g.physics.world.isPaused,
     labels: s.payload.items.map((i) => i.label),
     icons: s.payload.items.every((i) => i.icon && s.textures.exists(i.icon)),
-    owned: [...g.owned],
     spinning: s.reel.isSpinning,
     speed: s.reel.velocity,
     configured: window.config.SLOT.spinRowsPerSec,
     sound: !!s.spin && s.spin.isPlaying,
-    droppable,
   };
 })()`);
 console.log('opened:', JSON.stringify(opened));
-check('a fresh run opens on the 슬롯머신, with the arena frozen',
-  opened.active && opened.choosing === true && opened.physicsPaused === true);
-check('the reel holds every skill, 타격 among them, each with its icon',
-  opened.labels.length === opened.droppable.length && opened.icons &&
-    opened.labels.includes('낙뢰') && opened.labels.includes('타격'),
-  opened.labels.join(' / '));
-check('and nothing is in hand while it turns — there is no basic attack',
-  opened.owned.length === 0, opened.owned.join(' ') || 'empty-handed');
+check('the reel opens with every item it was handed, each with its icon',
+  opened.active && opened.labels.length >= 5 && opened.icons, opened.labels.join(' / '));
 check('it turns at the configured, readable speed',
   Math.abs(opened.speed - Math.max(opened.configured, 6)) < 1e-6 && opened.speed <= 8,
   `${opened.speed} rows/s`);
@@ -112,17 +109,9 @@ const landed = firstStop?.at;
 await slot(`s.press(); return 1;`);
 
 await sleep(1200);
-const after = await run(`
-  return { slot: window.game.scene.isActive('SlotScene'), choosing: s.choosing,
-           paused: s.physics.world.isPaused, owned: [...s.owned],
-           names: s.weapons.map((w) => w.definition.name) };
-`);
-console.log('after:', JSON.stringify(after));
-check('the skill it stopped on is the one handed out, and the only one',
-  after.slot === false && after.owned.length === 1 &&
-    after.names[0] === opened.labels[landed],
-  `stopped on ${opened.labels[landed]}, got ${after.names.join(' + ')}`);
-check('and the run picks up where it froze', after.choosing === false && after.paused === false);
+const result = await ev(`window.__slotResult`);
+check('the row it stopped on is the one handed back',
+  result === landed, `stopped on ${landed}, handed back ${result}`);
 
 // The reel's own sound stops with it.
 const quiet = await ev(`(() => {
@@ -133,6 +122,7 @@ check('and the spin sound is gone once it has', quiet.spin === true);
 
 // --- 3b. a level-up upgrades one of the skills in hand, at random ---
 const levels = await run(`
+  s.choosing = false;
   s.acquire('fireball');
   const seen = {};
   const was = s.queueChoice;
@@ -164,16 +154,6 @@ await sleep(stopMs + 1200);
 const forced = await ev(`window.__slotResult`);
 check('a caller that sets the result gets exactly that row', forced === 2, `landed on ${forced}`);
 await run(`s.choosing = false; return 1;`);
-
-// --- 5. 다시하기 spins again ---
-await run(`s.player.invulnerableUntil = 0; s.player.setInvulnerable(false); s.player.takeDamage(1e9); return 1;`);
-await sleep(1500);
-await ev(`(() => { const s = window.game.scene.getScene('GameOverScene'); s.payload.onRestart(); return 1; })()`);
-await sleep(1500);
-const again = await ev(`(() => window.game.scene.isActive('SlotScene'))()`);
-check('다시하기 opens on the reel too', again === true);
-await slot(`s.press(); return 1;`);
-await sleep(stopMs + 1400);
 
 // --- 6. 화염구 bursts where it lands ---
 const burst = await run(`

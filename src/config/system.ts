@@ -36,6 +36,7 @@ export const SCENES = {
   passives: "PassiveScene",
   slot: "SlotScene",
   ranking: "RankingScene",
+  skillPick: "SkillPickScene",
   rankEntry: "RankEntryScene",
 } as const;
 
@@ -71,6 +72,28 @@ export const RANKING = {
   letters: ' ABCDEFGHIJKLMNOPQRSTUVWXYZ',
   /** The one emoji a name may carry, picked from these. The blank is none. */
   emoji: ['', '😀', '😎', '🔥', '💀', '👑', '⚔️', '🐉', '👻', '🍀', '⭐', '💎', '🦊', '🐱'],
+  /**
+   * The flags a name may fly, by ISO code. Drawn at boot rather than written
+   * as emoji: Windows has no flag emoji and would show "KR" in letters.
+   * The blank is none.
+   */
+  flags: ['', 'KR', 'JP', 'CN', 'US', 'IN', 'TH', 'CA', 'MX', 'RU', 'TW'],
+  /**
+   * The board shared between players, for now: one object on
+   * restful-api.dev — free, no account, open to the world. Anyone holding
+   * the address can read it and write it, and the service may drop it, so
+   * this is a stopgap until there is a server of our own. When it cannot be
+   * reached the board falls back to this device's records.
+   */
+  shared: {
+    enabled: true as boolean,
+    url: 'https://api.restful-api.dev/objects/ff808181a09d98f701a13a237e415e27',
+    name: 'exiled-survivors-ranking',
+    /** A request that takes longer than this is given up on. */
+    timeoutMs: 6000,
+    /** Above this a damage figure is not believed, and is not shown. */
+    maxDamage: 1e10,
+  },
   /**
    * Whether the end of a run that made the board asks for a name at once.
    * The test harness turns it off so the end screen is what it expects;

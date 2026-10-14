@@ -10,6 +10,7 @@ import {
   FIREBALL,
   ORBS,
   POTION,
+  SKILL_PICK,
   WEAPON,
   rollAltarOffer,
   type AltarOfferId,
@@ -24,6 +25,7 @@ import { EnemyShot } from '@/entities/EnemyShot';
 import { GearDrop } from '@/entities/GearDrop';
 import { BoneDrop } from '@/entities/BoneDrop';
 import { OrbDrop } from '@/entities/OrbDrop';
+import { RandomSkillDrop } from '@/entities/RandomSkillDrop';
 import { ShardDrop } from '@/entities/ShardDrop';
 import { dropTierFor, rollOrbDrop, type GearItem } from '@/systems/Gear';
 import type { RunStats } from '@/systems/RunStats';
@@ -62,6 +64,8 @@ export interface CombatHooks {
   readonly critMultiplier: () => number;
   /** Called when the player walks over a dropped skill. */
   readonly onSkillCollected: (skill: SkillId) => void;
+  /** Called when the player walks over a 무작위 스킬: offer the cards. */
+  readonly onRandomSkillCollected: () => void;
   /** Called when the survivor walks up to a 제단: call up what it offered. */
   readonly onAltarWoke: (offer: AltarOfferId, x: number, y: number) => void;
 }
@@ -80,6 +84,8 @@ export class CombatSystem {
   public readonly shardDrops: Phaser.Physics.Arcade.Group;
   public readonly orbDrops: Phaser.Physics.Arcade.Group;
   public readonly boneDrops: Phaser.Physics.Arcade.Group;
+  /** 무작위 스킬 lying on the ground. */
+  public readonly randomSkillDrops: Phaser.Physics.Arcade.Group;
   /** The 제단 a 우두머리 left. Never picked up; they wake instead. */
   public readonly altars: Phaser.Physics.Arcade.Group;
 
@@ -131,6 +137,7 @@ export class CombatSystem {
     this.shardDrops = scene.physics.add.group({ classType: ShardDrop, runChildUpdate: true });
     this.orbDrops = scene.physics.add.group({ classType: OrbDrop, runChildUpdate: true });
     this.boneDrops = scene.physics.add.group({ classType: BoneDrop, runChildUpdate: true });
+    this.randomSkillDrops = scene.physics.add.group({ classType: RandomSkillDrop, runChildUpdate: true });
     // No overlap: an altar is woken by distance, in its own update.
     this.altars = scene.physics.add.group({ classType: Altar, runChildUpdate: true });
 
@@ -143,6 +150,7 @@ export class CombatSystem {
     scene.physics.add.overlap(player, this.shardDrops, this.onShardTouch, undefined, this);
     scene.physics.add.overlap(player, this.orbDrops, this.onOrbTouch, undefined, this);
     scene.physics.add.overlap(player, this.boneDrops, this.onBoneTouch, undefined, this);
+    scene.physics.add.overlap(player, this.randomSkillDrops, this.onRandomSkillTouch, undefined, this);
   }
 
   /** Wires a newly acquired projectile weapon into enemy collisions. */
@@ -195,6 +203,17 @@ export class CombatSystem {
 
     drop.drop(x, y, id);
     this.playDropSound(BONES[id]?.tier ?? 'normal');
+  }
+
+  /** Places a 무작위 스킬 directly — used by the kill roll and by tests. */
+  public dropRandomSkillAt(x: number, y: number): void {
+    const drop = this.randomSkillDrops.get() as RandomSkillDrop | null;
+    if (!drop) {
+      return;
+    }
+
+    drop.drop(x, y);
+    this.playDropSound('magic');
   }
 
   /** Places a 제단 directly — used by the 우두머리 kill and by tests. */
@@ -444,6 +463,16 @@ export class CombatSystem {
     this.hooks.onOrbCollected(drop.orb);
   };
 
+  private onRandomSkillTouch: Phaser.Types.Physics.Arcade.ArcadePhysicsCallback = (_player, object) => {
+    const drop = object as RandomSkillDrop;
+    if (!drop.active) {
+      return;
+    }
+
+    drop.collect();
+    this.hooks.onRandomSkillCollected();
+  };
+
   private onBoneTouch: Phaser.Types.Physics.Arcade.ArcadePhysicsCallback = (_player, object) => {
     const drop = object as BoneDrop;
     if (!drop.active) {
@@ -474,6 +503,11 @@ export class CombatSystem {
     const skill = this.hooks.rollSkillDrop(dropBonus, certainSkill);
     if (skill) {
       this.dropSkillAt(x, y, skill);
+    }
+
+    // A 무작위 스킬 on its own roll: three cards to choose from, not one.
+    if (Math.random() < SKILL_PICK.dropChance * scale) {
+      this.dropRandomSkillAt(x + 18, y - 18);
     }
 
     // Rolled on its own, so a kill can leave both a skill and a potion.

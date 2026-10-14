@@ -10,7 +10,7 @@ import {
   ICONS,
   SHARD,
   SKILL_ICONS,
-  SLOT,
+  SKILL_PICK,
   RANKING,
   PLAYER,
   POTION,
@@ -77,6 +77,7 @@ export class BootScene extends Phaser.Scene {
     this.createAltarTexture();
     this.createThunderIcon();
     this.createTrophyTexture();
+    this.createFlagTextures();
 
 
     createPixelTextTexture(this, TEXTURES.logo, ['EXILED', 'SURVIVORS'], {
@@ -95,9 +96,12 @@ export class BootScene extends Phaser.Scene {
       // The test harness (it marks the page) and `#run` both want to be in
       // play at once, and a reel waiting for 확정 would freeze every run
       // they start — from the title as much as from `#run`.
-      (SLOT as { atRunStart: boolean }).atRunStart = false;
+      (SKILL_PICK as { atRunStart: boolean }).atRunStart = false;
       // And the end of a run does not stop to ask for a name.
       (RANKING as { promptOnDeath: boolean }).promptOnDeath = false;
+      // And never touches the shared board: a test run must not land on the
+      // ranking every player sees. test-ranking points it at a stand-in.
+      (RANKING.shared as { enabled: boolean }).enabled = false;
     }
     this.scene.start(skipMenu ? SCENES.game : SCENES.menu);
   }
@@ -227,13 +231,128 @@ export class BootScene extends Phaser.Scene {
     }
   }
 
+  /**
+   * The 랭킹 flags, 48 × 32, simplified enough to read at the size a row
+   * of the board draws them. Drawn rather than written as emoji because
+   * Windows has no flag emoji at all — it shows the two letters instead.
+   */
+  private createFlagTextures(): void {
+    const W = 48;
+    const H = 32;
+    const g = this.add.graphics();
+    const stripes = (colors: readonly number[], vertical = false, weights?: readonly number[]) => {
+      const w = weights ?? colors.map(() => 1);
+      const total = w.reduce((a, b) => a + b, 0);
+      let at = 0;
+      colors.forEach((color, i) => {
+        const span = ((vertical ? W : H) * (w[i] ?? 1)) / total;
+        g.fillStyle(color, 1);
+        if (vertical) {
+          g.fillRect(at, 0, Math.ceil(span), H);
+        } else {
+          g.fillRect(0, at, W, Math.ceil(span));
+        }
+        at += span;
+      });
+    };
+    const star = (cx: number, cy: number, r: number, color: number) => {
+      const points: Phaser.Math.Vector2[] = [];
+      for (let i = 0; i < 10; i++) {
+        const radius = i % 2 === 0 ? r : r * 0.42;
+        const a = -Math.PI / 2 + (i * Math.PI) / 5;
+        points.push(new Phaser.Math.Vector2(cx + Math.cos(a) * radius, cy + Math.sin(a) * radius));
+      }
+      g.fillStyle(color, 1);
+      g.fillPoints(points, true);
+    };
+    const draw: Record<string, () => void> = {
+      KR: () => {
+        stripes([0xffffff]);
+        g.fillStyle(0xcd2e3a, 1);
+        g.beginPath();
+        g.slice(W / 2, H / 2, 8, Math.PI, 0, false);
+        g.fillPath();
+        g.fillStyle(0x0047a0, 1);
+        g.beginPath();
+        g.slice(W / 2, H / 2, 8, 0, Math.PI, false);
+        g.fillPath();
+        g.fillStyle(0x000000, 1);
+        for (const [x, y] of [[8, 6], [W - 14, 6], [8, H - 10], [W - 14, H - 10]]) {
+          for (let i = 0; i < 3; i++) g.fillRect(x!, y! + i * 2, 6, 1);
+        }
+      },
+      JP: () => {
+        stripes([0xffffff]);
+        g.fillStyle(0xbc002d, 1);
+        g.fillCircle(W / 2, H / 2, 9);
+      },
+      CN: () => {
+        stripes([0xde2910]);
+        star(10, 9, 6, 0xffde00);
+        star(19, 4, 2, 0xffde00);
+        star(22, 8, 2, 0xffde00);
+        star(22, 13, 2, 0xffde00);
+        star(19, 17, 2, 0xffde00);
+      },
+      US: () => {
+        stripes(Array.from({ length: 13 }, (_, i) => (i % 2 === 0 ? 0xb22234 : 0xffffff)));
+        g.fillStyle(0x3c3b6e, 1);
+        g.fillRect(0, 0, 20, 17);
+        g.fillStyle(0xffffff, 1);
+        for (let y = 3; y < 16; y += 4) for (let x = 3; x < 19; x += 4) g.fillRect(x, y, 1.5, 1.5);
+      },
+      IN: () => {
+        stripes([0xff9933, 0xffffff, 0x138808]);
+        g.lineStyle(1.5, 0x000080, 1);
+        g.strokeCircle(W / 2, H / 2, 4.5);
+      },
+      TH: () => stripes([0xa51931, 0xf4f5f8, 0x2d2a4a, 0xf4f5f8, 0xa51931], false, [1, 1, 2, 1, 1]),
+      CA: () => {
+        stripes([0xd52b1e, 0xffffff, 0xd52b1e], true, [1, 2, 1]);
+        g.fillStyle(0xd52b1e, 1);
+        g.fillTriangle(W / 2, 7, W / 2 - 8, 19, W / 2 + 8, 19);
+        g.fillTriangle(W / 2 - 9, 12, W / 2 + 9, 12, W / 2, 22);
+        g.fillRect(W / 2 - 1, 20, 2, 6);
+      },
+      MX: () => {
+        stripes([0x006847, 0xffffff, 0xce1126], true);
+        g.fillStyle(0x8c5a2b, 1);
+        g.fillCircle(W / 2, H / 2, 4);
+      },
+      RU: () => stripes([0xffffff, 0x0039a6, 0xd52b1e]),
+      TW: () => {
+        stripes([0xfe0000]);
+        g.fillStyle(0x000095, 1);
+        g.fillRect(0, 0, 24, 16);
+        star(12, 8, 5.5, 0xffffff);
+        g.fillStyle(0x000095, 1);
+        g.fillCircle(12, 8, 2.6);
+        g.fillStyle(0xffffff, 1);
+        g.fillCircle(12, 8, 2);
+      },
+    };
+
+    for (const code of RANKING.flags) {
+      const paint = draw[code];
+      if (!code || !paint) {
+        continue;
+      }
+      g.clear();
+      paint();
+      g.lineStyle(1, 0x000000, 0.35);
+      g.strokeRect(0.5, 0.5, W - 1, H - 1);
+      g.generateTexture(`tex-flag-${code}`, W, H);
+    }
+    g.destroy();
+  }
+
   /** 랭킹's icon in the title's corner: a gold cup on a stem and a base. */
   private createTrophyTexture(): void {
     const size = 48;
     const graphics = this.add.graphics();
-    graphics.fillStyle(COLORS.fugitiveRing, 1);
+    graphics.fillStyle(COLORS.gold, 1);
     // The handles, then the cup over them.
-    graphics.lineStyle(4, COLORS.fugitiveRing, 1);
+    graphics.lineStyle(4, COLORS.gold, 1);
     graphics.strokeCircle(size * 0.26, size * 0.32, size * 0.1);
     graphics.strokeCircle(size * 0.74, size * 0.32, size * 0.1);
     graphics.fillRoundedRect(size * 0.28, size * 0.14, size * 0.44, size * 0.38, size * 0.14);
@@ -246,8 +365,8 @@ export class BootScene extends Phaser.Scene {
   }
 
   /**
-   * A 도망자: a white four-pointed star with a gold rim, drawn white so the
-   * colour cycling over it in play is pure colour. Everything else on the
+   * A 도망자: a white four-pointed star, drawn white so the colour cycling
+   * over it in play is pure colour. Everything else on the
    * field is a square; this is the one thing that is not.
    */
   private createFlashyTexture(key: string, size: number): void {
@@ -264,10 +383,8 @@ export class BootScene extends Phaser.Scene {
     };
 
     const graphics = this.add.graphics();
-    graphics.fillStyle(COLORS.fugitiveRing, 1);
-    graphics.fillPoints(star(s * 0.5, s * 0.2), true);
     graphics.fillStyle(0xffffff, 1);
-    graphics.fillPoints(star(s * 0.4, s * 0.15), true);
+    graphics.fillPoints(star(s * 0.5, s * 0.2), true);
     graphics.fillStyle(0xffffff, 1);
     graphics.fillCircle(c, c, s * 0.12);
     graphics.generateTexture(key, s, s);

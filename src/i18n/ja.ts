@@ -19,7 +19,7 @@ export const ja: Strings = {
     shardName: '神聖な欠片',
     buyShard: '神聖な欠片を購入  {price} ゴールド',
     goldHeld: 'ゴールド {gold}',
-    temporary: '暫定版です — 今は三つの行で、枝分かれするツリーは次の作業です。',
+    temporary: '暫定構成です — 今は行ごとに上げる形で、枝分かれするツリーは次の作業です。',
   },
 
   menu: {
@@ -139,7 +139,7 @@ export const ja: Strings = {
     damage: '与えた被害',
     champion: '1 位  {name}  {damage}',
     entryTitle: 'ランキング {place} 位！',
-    entryLead: '与えた被害 {damage} — 名前を残しましょう（英字 3 文字 + 絵文字 1 つ）',
+    entryLead: '与えた被害 {damage} — 名前を残しましょう（英字 3 文字 + 絵文字 1 つ + 国旗）',
     confirm: '登録',
     skip: 'スキップ',
     entryHintKeyboard: '← → 枠移動   ↑ ↓ または英字入力   Enter 登録   Esc スキップ',
@@ -147,6 +147,21 @@ export const ja: Strings = {
     register: 'ランキング登録',
     registered: 'ランキング {place} 位で登録しました',
     localNote: 'この端末の記録です。プレイヤー同士で共有するランキングは準備中です。',
+    sharedNote: '全プレイヤーで共有する暫定ランキングです。',
+    loadingNote: '共有ランキングを読み込み中…',
+    offlineNote: '共有ランキングに接続できないため、この端末の記録を表示しています。',
+  },
+
+  skillPick: {
+    startTitle: '開始スキル',
+    startSubtitle: 'この回に持ち込むスキルをひとつ選んでください',
+    dropTitle: 'ランダムスキル',
+    dropSubtitle: '3 つから 1 つ選びます — 持っているスキルなら強化します',
+    drop: 'ランダムスキル',
+    new: '新スキル',
+    upgrade: '強化 · Lv {level}',
+    hintKeyboard: '← → 移動   Space 選択   (1-3 で直接選択)',
+    hintTouch: '欲しいカードを押してください',
   },
 
   slot: {
@@ -326,10 +341,12 @@ export const ja: Strings = {
       skull: 'レア敵の代わりにボスが現れます',
       rib: '全ての敵の体力 +100%、ドロップ率 +50%',
     },
-    passives: { damage: 'ダメージ', attackSpeed: '攻撃速度' },
+    passives: { damage: 'ダメージ', attackSpeed: '攻撃速度', moveSpeed: '移動速度', luck: '幸運' },
     passiveDetails: {
       damage: 'ダメージ +10%',
       attackSpeed: '攻撃速度 +10%',
+      moveSpeed: '移動速度 +1%',
+      luck: '幸運 +1%（まだ効果なし）',
     },
   },
 

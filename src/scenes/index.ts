@@ -12,5 +12,6 @@ export { GameScene, type GameSceneData } from '@/scenes/GameScene';
 export { UpgradeScene, type UpgradeChoiceData } from '@/scenes/UpgradeScene';
 export { SlotScene, type SlotData } from '@/scenes/SlotScene';
 export { RankingScene, type RankingSceneData } from '@/scenes/RankingScene';
+export { SkillPickScene, type SkillPickData } from '@/scenes/SkillPickScene';
 export { RankEntryScene, type RankEntryData } from '@/scenes/RankEntryScene';
 export { GameOverScene } from '@/scenes/GameOverScene';

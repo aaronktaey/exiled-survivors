@@ -19,7 +19,7 @@ export const en: Strings = {
     shardName: 'Divine Shard',
     buyShard: 'Buy a Divine Shard  {price} gold',
     goldHeld: '{gold} gold',
-    temporary: 'A placeholder: three lines today, a tree with branches next.',
+    temporary: 'A placeholder: separate lines today, a tree with branches next.',
   },
 
   menu: {
@@ -139,7 +139,7 @@ export const en: Strings = {
     damage: 'Damage dealt',
     champion: '#1  {name}  {damage}',
     entryTitle: 'Ranked #{place}!',
-    entryLead: '{damage} damage dealt — leave your name (3 letters + 1 emoji)',
+    entryLead: '{damage} damage dealt — leave your name (3 letters + 1 emoji + a flag)',
     confirm: 'Enter',
     skip: 'Skip',
     entryHintKeyboard: '← → slot   ↑ ↓ or type a letter   Enter to save   Esc to skip',
@@ -147,6 +147,21 @@ export const en: Strings = {
     register: 'Enter ranking',
     registered: 'Entered at #{place}',
     localNote: 'Records on this device. A ranking shared between players is on its way.',
+    sharedNote: 'A temporary ranking shared by every player.',
+    loadingNote: 'Loading the shared ranking…',
+    offlineNote: 'Could not reach the shared ranking — showing this device’s records.',
+  },
+
+  skillPick: {
+    startTitle: 'Starting skill',
+    startSubtitle: 'Pick the one skill to take into this run',
+    dropTitle: 'Random skill',
+    dropSubtitle: 'Pick one of three — one you hold is upgraded',
+    drop: 'Random skill',
+    new: 'New',
+    upgrade: 'Upgrade · Lv {level}',
+    hintKeyboard: '← → to move   Space to pick   (1-3 picks directly)',
+    hintTouch: 'Tap the card you want',
   },
 
   slot: {
@@ -326,10 +341,12 @@ export const en: Strings = {
       skull: 'Bosses walk in where rares would have',
       rib: 'All enemies +100% health, drop rate +50%',
     },
-    passives: { damage: 'Damage', attackSpeed: 'Attack speed' },
+    passives: { damage: 'Damage', attackSpeed: 'Attack speed', moveSpeed: 'Move speed', luck: 'Luck' },
     passiveDetails: {
       damage: 'Damage +10%',
       attackSpeed: 'Attack speed +10%',
+      moveSpeed: 'Move speed +1%',
+      luck: 'Luck +1% (no effect yet)',
     },
   },
 

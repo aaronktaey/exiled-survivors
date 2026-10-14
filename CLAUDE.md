@@ -72,7 +72,7 @@ wrong shape.
 ## The test harness
 
 `tests/` drives a real Chrome over CDP against the dev server and checks the
-running game, not units. 32 suites, ~880 checks. It is the only thing that has
+running game, not units. 33 suites, ~900 checks. It is the only thing that has
 caught most of what has gone wrong here, so run all of it before every commit.
 
 ```sh
@@ -82,7 +82,7 @@ node run-all.mjs test-full test-skills test-balance test-chain test-ice \
   test-void test-enemies test-rare test-boss test-potion test-sfx test-perf \
   test-hud test-expiry test-audio test-touch test-shell test-shell2 test-info \
   test-i18n test-gear test-passive test-responsive test-stats test-bones \
-  test-altar test-slot test-inventory test-locale test-back test-fugitive \n  test-ranking
+  test-altar test-slot test-inventory test-locale test-back test-fugitive \n  test-ranking test-skillpick
 ```
 
 `run-all.mjs` starts Chrome itself (`CHROME_PATH` overrides where it looks),
@@ -137,9 +137,11 @@ Read `git log` for what changed and when. What is not in the log:
   The 제단's rare packs go through the same function. Do not add a second
   spawn path that skips it.
 - **No basic attack.** Every skill, 타격 included, is in `DROPPABLE_SKILLS`;
-  a fresh run holds only what the 슬롯머신 lands on, and a level-up upgrades
-  a random skill in hand. With the reel off (`#run`, the harness) a run
-  starts on `UNSPUN_SKILL` (타격) so suites have something deterministic.
+  a fresh run holds only what it picks off three cards (`SkillPickScene`,
+  `SKILL_PICK`), and a level-up upgrades a random skill in hand. With the
+  choice off (`#run`, the harness) a run starts on `UNSPUN_SKILL` (타격) so
+  suites have something deterministic. A 무작위 스킬 on the ground opens the
+  same three cards; taking one already held queues its upgrade next.
 - **The slot sound is one file in two parts** (`AUDIO.slot`: run / stop),
   levelled quiet on purpose — the user found the first mix far too loud.
   `tools/mix-slot.py` rebuilds `public/assets/slot.mp3` from
@@ -159,14 +161,18 @@ Read `git log` for what changed and when. What is not in the log:
   ordinary kills leave one at `ALTAR.fromKill`, and a 제단 can call up 우두머리, which leave 제단. It is opt-in — nothing
   happens until the survivor walks up — so it is not capped. An altar arms only
   after the survivor has been outside its radius once.
-- **The 슬롯머신 is generic.** `SlotScene` takes labels, icons, an optional
-  `choose()` and an `onResult(index)`; `SlotReel` is the reel on its own.
-  A fresh run opens it only when started with `startSlot: true` (title and
-  다시하기 pass it) and `SLOT.atRunStart` is on. On the dev server, `#run`
-  and the harness (`cdp-lib` marks every page with `window.__harness`)
-  switch `atRunStart` off, so every suite — including the ones that start
-  runs from the title — lands in play; `test-slot` turns it back on. A new suite that wants the reel must do the same. Phaser 4 has no `setMask` under WebGL — the reel fades its edges
-  instead of clipping them.
+- **The 슬롯머신 is generic, and unused for now.** `SlotScene` takes labels,
+  icons, an optional `choose()` and an `onResult(index)`; `SlotReel` is the
+  reel on its own. Runs no longer start on it (that is three cards now); it
+  is kept for the equipment work the user has in mind. Phaser 4 has no
+  `setMask` under WebGL — the reel fades its edges instead of clipping them.
+- **What the harness switches off.** `cdp-lib` marks every page with
+  `window.__harness`, and on the dev server that (or `#run`) turns off
+  `SKILL_PICK.atRunStart`, `RANKING.promptOnDeath` and `RANKING.shared` —
+  so suites land in play, the end screen is what they expect, and no test
+  ever writes to the real shared ranking. A suite that wants one of them
+  turns it back on (`test-skillpick`, `test-ranking`, which also replaces
+  `fetch` with an in-page stand-in for the shared board).
 - **The 인벤토리 replaced the 장비창.** `InventoryScene` (tabs 장비 · 소모품)
   draws every tab on `ItemGrid`, a 6×12 grid that keeps MenuList's handles
   (`items`, `selected`, `selectedId`, `focus`, `step`, `refresh`) — which is
@@ -179,11 +185,14 @@ Read `git log` for what changed and when. What is not in the log:
 - **도망자 is table-driven.** `flee`, `lifespanMs`, `guaranteedSkill` and
   `flashy` on an `ENEMY_KINDS` entry give any kind that behaviour; the
   fugitive is the only one using them. It spawns on `FUGITIVE`'s clock.
-- **랭킹 is local for now** (`systems/Ranking.ts`, `STORAGE.ranking`). The
-  screens only touch `top`, `qualifies`/`placeFor` and `submit`, so a shared
-  board replaces the store, not the screens. The end screen asks for a name
-  only when `RANKING.promptOnDeath` is on — the harness switches it off like
-  the slot, and `test-ranking` turns it back on.
+- **랭킹 is shared through a stopgap.** Every board is kept locally
+  (`STORAGE.ranking`) and folded together with one object on restful-api.dev
+  (`RANKING.shared.url`) — free, no account, readable and writable by anyone
+  with the address, and liable to vanish. Two entries at the same moment can
+  overwrite each other. Replace the store's `pull`/`request` with a real
+  server when there is one; the screens only touch `top`, `placeFor`,
+  `submit`, `refresh` and `source`. Flags are drawn textures
+  (`tex-flag-XX`), not emoji: Windows has no flag emoji.
 - **Known gaps, left on purpose:**
   - A 구슬 can still be spent on the weapon a saved run is holding. Swapping
     is blocked while a run is saved; rerolling it is not.

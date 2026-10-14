@@ -214,6 +214,34 @@ check('사정거리 raises fireball range by a share of its base, and nothing el
   afterRange.melee.range === beforeRange.melee.range,
   `fireball ${beforeRange.fire.range} -> ${afterRange.fire.range}px (+${rangeGain}, ${Math.round((rangeGain / rangeStep.base) * 100)}% of ${rangeStep.base}), melee still ${afterRange.melee.range}px`);
 
+// And it reaches in play: something just past the old range is now fired at.
+const longer = await run(`
+  const was = s.choosing;
+  s.choosing = true;
+  s.spawner.clear();
+  const w = s.weapons.find((x) => x.definition.id === 'fireball');
+  const p = s.player;
+  const st = s.progression.statsFor('fireball');
+  const shoot = (dist, range) => {
+    s.spawner.clear();
+    w.projectiles.getChildren().forEach((b) => b.active && b.despawn());
+    const e = s.spawner.group.get(p.x + dist, p.y); e.spawn(p.x + dist, p.y, p, 'brute');
+    w.sinceShotMs = 99999;
+    w.update(16, { origin: p, enemies: s.spawner.group, damage: 1, cooldownMs: 1, range,
+      projectileSpeed: st.projectileSpeed, chainCount: 0, pierceCount: 0, orbCount: 0, orbitSpeed: 0, hit: () => {} });
+    return w.projectiles.countActive(true);
+  };
+  const base = ${JSON.stringify(rangeStep.base)};
+  const between = (base + st.range) / 2;
+  const out = { atOld: shoot(between, base), atNew: shoot(between, st.range), between };
+  s.spawner.clear();
+  w.projectiles.getChildren().forEach((b) => b.active && b.despawn());
+  s.choosing = was;
+  return out;
+`);
+check('and the longer range is fired at in play, where the old one held off',
+  longer.atOld === 0 && longer.atNew === 1, `an enemy at ${Math.round(longer.between)}px: ${longer.atOld} -> ${longer.atNew} shots`);
+
 // --- 9. 투사체 속도 is the fourth card and raises speed only ---
 await run(`s.onSkillCollected('fireball'); return 1;`);
 await sleep(600);

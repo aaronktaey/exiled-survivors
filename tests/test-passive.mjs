@@ -266,9 +266,35 @@ check('neither the weapon nor the run regenerates anything',
   !regen.gearKeys.includes('regen') && regen.hasRegenerate === 'undefined',
   regen.gearKeys.join(' / '));
 check('and the tree has no line of its own for it',
-  !regen.offered.includes('regen') && regen.offered.length === 2,
+  !regen.offered.includes('regen'),
+  regen.offered.join(' / '));
+check('the tree offers 피해, 공격속도, 이동속도 and 행운',
+  ['damage', 'attackSpeed', 'moveSpeed', 'luck'].every((id) => regen.offered.includes(id)),
   regen.offered.join(' / '));
 await shot('passive-04-run');
+
+// --- 7. 이동속도 is on the survivor; 행운 is held but does nothing yet ---
+const legs = await cdp.evaluate(`(() => {
+  localStorage.setItem('exiled-survivors:passives:v1', JSON.stringify({
+    shards: 0, points: 0, ranks: { moveSpeed: 5, luck: 3 } }));
+  return 1;
+})()`);
+void legs;
+await cdp.send('Page.navigate', { url: 'http://localhost:5173/#run' });
+await sleep(900);
+await cdp.send('Page.reload', {});
+await sleep(4500);
+const moved = await run(`
+  const P = window.config.PASSIVES;
+  return { speed: s.player.moveSpeed, base: window.config.PLAYER.speed * s.mods.gear.moveSpeedScale,
+           perRank: P.moveSpeed.moveSpeedScale - 1, luck: s.mods.passive.luck, luckPerRank: P.luck.luck };
+`);
+console.log('legs:', JSON.stringify(moved));
+check('five ranks of 이동속도 move the survivor five ranks faster',
+  Math.abs(moved.speed - moved.base * (1 + 5 * moved.perRank)) < 1e-6,
+  `${moved.speed.toFixed(1)} against ${moved.base}`);
+check('three ranks of 행운 are counted, for when it starts to matter',
+  Math.abs(moved.luck - 3 * moved.luckPerRank) < 1e-9, `${moved.luck}`);
 
 console.log('\n=== SUMMARY ===');
 const failed = results.filter((r) => !r.p);

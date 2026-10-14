@@ -23,7 +23,8 @@ export const COLORS = {
   enemyBoss: 0x7a1f3d,
   /** 도망자: drawn white so the cycling tint over it reads as pure colour. */
   enemyFugitive: 0xffffff,
-  fugitiveRing: 0xffe066,
+  /** Plain gold: the 랭킹 trophy, and the arrow that points at a 도망자. */
+  gold: 0xffe066,
   bossOutline: 0xffd34d,
   /** 화염구's burst where it lands. */
   fireBlast: 0xff8a3d,

@@ -23,7 +23,7 @@ export const ko: Strings = {
     shardName: '신성한 조각',
     buyShard: '신성한 조각 구매  {price}골드',
     goldHeld: '골드 {gold}',
-    temporary: '임시 구성입니다 — 지금은 세 줄이고, 갈래가 나뉘는 트리는 다음 작업입니다.',
+    temporary: '임시 구성입니다 — 지금은 줄마다 따로 올리고, 갈래가 나뉘는 트리는 다음 작업입니다.',
   },
 
   menu: {
@@ -143,7 +143,7 @@ export const ko: Strings = {
     damage: '가한 피해',
     champion: '1위  {name}  {damage}',
     entryTitle: '랭킹 {place}위!',
-    entryLead: '가한 피해 {damage} — 이름을 남기세요 (알파벳 3자 + 이모지 1개)',
+    entryLead: '가한 피해 {damage} — 이름을 남기세요 (알파벳 3자 + 이모지 1개 + 국기)',
     confirm: '등록',
     skip: '건너뛰기',
     entryHintKeyboard: '← → 칸 이동   ↑ ↓ 또는 알파벳 입력   Enter 등록   Esc 건너뛰기',
@@ -151,6 +151,21 @@ export const ko: Strings = {
     register: '랭킹 등록',
     registered: '랭킹 {place}위로 등록했습니다',
     localNote: '이 기기의 기록입니다. 플레이어끼리 공유되는 랭킹은 준비 중입니다.',
+    sharedNote: '모든 플레이어가 함께 보는 임시 랭킹입니다.',
+    loadingNote: '공유 랭킹을 불러오는 중…',
+    offlineNote: '공유 랭킹에 연결하지 못해 이 기기의 기록을 보여줍니다.',
+  },
+
+  skillPick: {
+    startTitle: '시작 스킬',
+    startSubtitle: '이번 판에 가지고 들어갈 스킬 하나를 고르세요',
+    dropTitle: '무작위 스킬',
+    dropSubtitle: '셋 중 하나를 고르세요 — 가진 스킬이면 강화합니다',
+    drop: '무작위 스킬',
+    new: '새 스킬',
+    upgrade: '강화 · Lv {level}',
+    hintKeyboard: '← → 이동   Space 선택   (1-3 로 바로 선택)',
+    hintTouch: '원하는 카드를 누르세요',
   },
 
   slot: {

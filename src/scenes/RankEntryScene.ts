@@ -1,15 +1,15 @@
 import Phaser from 'phaser';
 
 import { COLORS, DEPTH, RANKING, SCENES, SCRIM, TEXT } from '@/config';
-import { fill, t } from '@/i18n';
+import { fill, language, t } from '@/i18n';
 import { addBackButton, type BackButton } from '@/systems/BackButton';
 import { fitText } from '@/systems/Layout';
-import { ranking, type RankSubmission } from '@/systems/Ranking';
+import { flagTexture, ranking, type RankSubmission } from '@/systems/Ranking';
 import { prefersTouchControls } from '@/systems/VirtualJoystick';
 
 export interface RankEntryData {
   /** The run being entered, without its name. */
-  readonly run: Omit<RankSubmission, 'name' | 'emoji'>;
+  readonly run: Omit<RankSubmission, 'name' | 'emoji' | 'flag'>;
   /** The place it took, or 0 when it was skipped. */
   readonly onDone: (place: number) => void;
 }
@@ -23,10 +23,20 @@ const BUTTON_HEIGHT = 40;
 interface SlotView {
   readonly box: Phaser.GameObjects.Rectangle;
   readonly text: Phaser.GameObjects.Text;
+  /** Only the flag slot draws one. */
+  readonly image?: Phaser.GameObjects.Image;
 }
 
+/** A first entry's flag, guessed from the language the game is in. */
+const FLAG_FOR_LANGUAGE: Record<string, string> = { ko: 'KR', ja: 'JP', zh: 'CN', en: 'US' };
+
+/** Slots in order: the letters, then the emoji, then the flag. */
+const EMOJI_SLOT = RANKING.nameLength;
+const FLAG_SLOT = RANKING.nameLength + 1;
+const SLOT_COUNT = RANKING.nameLength + 2;
+
 /**
- * Entering a name for the board: three letters and one emoji, the way an
+ * Entering a name for the board: three letters, one emoji and a flag, the way an
  * arcade cabinet asks — a slot each, stepped with ▲ ▼, so a phone with no
  * keyboard can do it as easily as a desk can. A keyboard can also just type
  * the letters.
@@ -59,9 +69,11 @@ export class RankEntryScene extends Phaser.Scene {
     // Start on the name entered last time, so a second entry is one press.
     const letters = RANKING.letters;
     const last = ranking.lastName.padEnd(RANKING.nameLength, ' ');
+    const flag = ranking.lastFlag || FLAG_FOR_LANGUAGE[language()] || '';
     this.picks = [
       ...[...last].slice(0, RANKING.nameLength).map((ch) => Math.max(0, letters.indexOf(ch))),
       Math.max(0, (RANKING.emoji as readonly string[]).indexOf(ranking.lastEmoji)),
+      Math.max(0, (RANKING.flags as readonly string[]).indexOf(flag)),
     ];
     // A first entry starts on "A", not on a blank.
     if (!ranking.lastName) {
@@ -79,7 +91,11 @@ export class RankEntryScene extends Phaser.Scene {
   }
 
   public get emoji(): string {
-    return RANKING.emoji[this.picks[RANKING.nameLength] ?? 0] ?? '';
+    return RANKING.emoji[this.picks[EMOJI_SLOT] ?? 0] ?? '';
+  }
+
+  public get flag(): string {
+    return RANKING.flags[this.picks[FLAG_SLOT] ?? 0] ?? '';
   }
 
   public create(): void {
@@ -120,13 +136,14 @@ export class RankEntryScene extends Phaser.Scene {
       width - 16,
     );
 
-    // Three letter slots, a gap, and the emoji slot.
-    const count = RANKING.nameLength + 1;
-    const span = count * SLOT + (count - 1) * SLOT_GAP + SLOT_GAP;
+    // Three letter slots, a gap, then the emoji and the flag. On a narrow
+    // screen the slots shrink rather than run off the sides.
+    const span = SLOT_COUNT * SLOT + (SLOT_COUNT - 1) * SLOT_GAP + SLOT_GAP;
+    const fit = Math.min(1, (width - 24) / span);
     const slotY = top + 100 + ARROW + SLOT / 2;
-    for (let i = 0; i < count; i++) {
-      const x = width / 2 - span / 2 + SLOT / 2 + i * (SLOT + SLOT_GAP) + (i === count - 1 ? SLOT_GAP : 0);
-      this.buildSlot(i, x, slotY);
+    for (let i = 0; i < SLOT_COUNT; i++) {
+      const offset = SLOT / 2 + i * (SLOT + SLOT_GAP) + (i >= EMOJI_SLOT ? SLOT_GAP : 0);
+      this.buildSlot(i, width / 2 + (offset - span / 2) * fit, slotY, SLOT * fit);
     }
 
     const buttonsY = slotY + SLOT / 2 + ARROW + 30 + BUTTON_HEIGHT / 2;
@@ -154,7 +171,12 @@ export class RankEntryScene extends Phaser.Scene {
 
   /** Steps one slot's choice up or down, round and round. */
   public step(slot: number, by: number): void {
-    const size = slot < RANKING.nameLength ? RANKING.letters.length : RANKING.emoji.length;
+    const size =
+      slot < RANKING.nameLength
+        ? RANKING.letters.length
+        : slot === EMOJI_SLOT
+          ? RANKING.emoji.length
+          : RANKING.flags.length;
     this.picks[slot] = (((this.picks[slot] ?? 0) + by) % size + size) % size;
     this.cursor = slot;
     this.refresh();
@@ -168,16 +190,16 @@ export class RankEntryScene extends Phaser.Scene {
     this.done = true;
 
     const place = enter
-      ? ranking.submit({ ...this.payload.run, name: this.name, emoji: this.emoji })
+      ? ranking.submit({ ...this.payload.run, name: this.name, emoji: this.emoji, flag: this.flag })
       : 0;
     const { onDone } = this.payload;
     this.scene.stop();
     onDone(place);
   }
 
-  private buildSlot(index: number, x: number, y: number): void {
+  private buildSlot(index: number, x: number, y: number, size: number): void {
     const box = this.add
-      .rectangle(x, y, SLOT, SLOT, COLORS.panel, 1)
+      .rectangle(x, y, size, size, COLORS.panel, 1)
       .setStrokeStyle(2, COLORS.panelEdge, 1)
       .setDepth(DEPTH.ui + 1)
       .setInteractive({ useHandCursor: true });
@@ -187,13 +209,21 @@ export class RankEntryScene extends Phaser.Scene {
     });
 
     const text = this.add
-      .text(x, y, '', { fontFamily: 'system-ui, sans-serif', fontSize: TEXT.size.banner, color: COLORS.text })
+      .text(x, y, '', {
+        fontFamily: 'system-ui, sans-serif',
+        fontSize: size >= SLOT ? TEXT.size.banner : TEXT.size.heading,
+        color: COLORS.text,
+      })
       .setOrigin(0.5)
       .setDepth(DEPTH.ui + 2);
+    const image =
+      index === FLAG_SLOT
+        ? this.add.image(x, y, '__DEFAULT').setDepth(DEPTH.ui + 2).setVisible(false)
+        : undefined;
 
     const arrow = (dy: number, glyph: string, by: number) => {
       const hit = this.add
-        .rectangle(x, y + dy, SLOT, ARROW, COLORS.panel, 0.001)
+        .rectangle(x, y + dy, size, ARROW, COLORS.panel, 0.001)
         .setDepth(DEPTH.ui + 1)
         .setInteractive({ useHandCursor: true });
       this.add
@@ -202,10 +232,10 @@ export class RankEntryScene extends Phaser.Scene {
         .setDepth(DEPTH.ui + 2);
       hit.on(Phaser.Input.Events.GAMEOBJECT_POINTER_DOWN, () => this.step(index, by));
     };
-    arrow(-(SLOT / 2 + ARROW / 2), '▲', 1);
-    arrow(SLOT / 2 + ARROW / 2, '▼', -1);
+    arrow(-(size / 2 + ARROW / 2), '▲', 1);
+    arrow(size / 2 + ARROW / 2, '▼', -1);
 
-    this.slots.push({ box, text });
+    this.slots.push({ box, text, image });
   }
 
   private button(x: number, y: number, label: string, fillColor: number, onPress: () => void): void {
@@ -223,10 +253,21 @@ export class RankEntryScene extends Phaser.Scene {
 
   private refresh(): void {
     this.slots.forEach((slot, i) => {
-      const isEmoji = i === RANKING.nameLength;
-      const value = isEmoji ? RANKING.emoji[this.picks[i] ?? 0] : RANKING.letters[this.picks[i] ?? 0];
-      // A blank slot shows a dot, so it reads as "empty" rather than broken.
-      slot.text.setText(value && value !== ' ' ? value : '·');
+      const value =
+        i === EMOJI_SLOT
+          ? RANKING.emoji[this.picks[i] ?? 0]
+          : i === FLAG_SLOT
+            ? RANKING.flags[this.picks[i] ?? 0]
+            : RANKING.letters[this.picks[i] ?? 0];
+      // A flag is drawn; a blank slot shows a dot, so it reads as "empty".
+      const drawn = i === FLAG_SLOT && value ? flagTexture(value) : '';
+      if (slot.image) {
+        slot.image.setVisible(drawn !== '');
+        if (drawn) {
+          slot.image.setTexture(drawn).setDisplaySize(slot.box.width * 0.72, slot.box.width * 0.48);
+        }
+      }
+      slot.text.setText(drawn ? '' : value && value !== ' ' ? value : '·');
       slot.box.setStrokeStyle(i === this.cursor ? 3 : 2, i === this.cursor ? COLORS.accentFill : COLORS.panelEdge, 1);
     });
   }
@@ -236,7 +277,7 @@ export class RankEntryScene extends Phaser.Scene {
       return;
     }
 
-    const last = RANKING.nameLength;
+    const last = FLAG_SLOT;
     switch (event.code) {
       case 'ArrowLeft':
         this.cursor = Math.max(0, this.cursor - 1);
@@ -260,7 +301,7 @@ export class RankEntryScene extends Phaser.Scene {
         this.finish(false);
         return;
       case 'Backspace':
-        if (this.cursor < last) {
+        if (this.cursor < RANKING.nameLength) {
           this.picks[this.cursor] = 0;
         }
         this.cursor = Math.max(0, this.cursor - 1);
@@ -272,7 +313,7 @@ export class RankEntryScene extends Phaser.Scene {
 
     // A letter typed goes in the slot under the cursor, and the cursor moves on.
     const key = event.key?.toUpperCase() ?? '';
-    if (/^[A-Z]$/.test(key) && this.cursor < last) {
+    if (/^[A-Z]$/.test(key) && this.cursor < RANKING.nameLength) {
       this.picks[this.cursor] = RANKING.letters.indexOf(key);
       this.cursor = Math.min(last, this.cursor + 1);
       this.refresh();

@@ -174,8 +174,8 @@ const look = await run(`
   s.edgeMarkers.update();
   return { tints, ring: f.outline?.visible === true, tex: f.texture.key };
 `);
-check('its colour keeps changing, and it wears a ring',
-  new Set(look.tints).size >= 3 && look.ring && look.tex === 'tex-enemy-fugitive',
+check('its colour keeps changing, and it wears no ring',
+  new Set(look.tints).size >= 3 && !look.ring && look.tex === 'tex-enemy-fugitive',
   look.tints.map((c) => c.toString(16)).join(' '));
 
 // --- 7. killed, it always leaves a skill ---

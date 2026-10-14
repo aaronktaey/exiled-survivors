@@ -4,7 +4,7 @@ import { COLORS, DEPTH, RANKING, SCENES, SCRIM, TEXT } from '@/config';
 import { t } from '@/i18n';
 import { addBackButton, type BackButton } from '@/systems/BackButton';
 import { fitText } from '@/systems/Layout';
-import { rankLabel, ranking } from '@/systems/Ranking';
+import { flagTexture, rankLabel, ranking } from '@/systems/Ranking';
 
 export interface RankingSceneData {
   readonly onClose: () => void;
@@ -34,6 +34,16 @@ export class RankingScene extends Phaser.Scene {
   public rows: Phaser.GameObjects.Text[][] = [];
 
   private payload!: RankingSceneData;
+  private layout!: {
+    tableWidth: number;
+    rowHeight: number;
+    fontSize: string;
+    columns: { place: number; flag: number; name: number; damage: number };
+  };
+  /** Everything the board's rows draw, so they can be drawn again. */
+  private board?: Phaser.GameObjects.Container;
+  private note!: Phaser.GameObjects.Text;
+  private loading = false;
 
   public constructor() {
     super(RankingScene.KEY);
@@ -69,7 +79,7 @@ export class RankingScene extends Phaser.Scene {
     const left = (width - tableWidth) / 2;
     const rowHeight = Math.min(30, (height - HEAD_Y - 24 - FOOTER) / RANKING.size);
     const fontSize = rowHeight >= 24 ? TEXT.size.body : TEXT.size.hint;
-    const columns = { place: left + 36, name: left + 56, damage: left + tableWidth };
+    const columns = { place: left + 36, flag: left + 50, name: left + 84, damage: left + tableWidth };
 
     const head = (x: number, text: string, origin: number) =>
       this.add
@@ -77,24 +87,69 @@ export class RankingScene extends Phaser.Scene {
         .setOrigin(origin, 0.5)
         .setDepth(DEPTH.ui + 1);
     head(columns.place, copy.place, 1);
-    head(columns.name, copy.name, 0);
+    head(columns.flag, copy.name, 0);
     head(columns.damage, copy.damage, 1);
 
-    const board = ranking.top;
-    if (board.length === 0) {
-      this.add
-        .text(width / 2, HEAD_Y + 60, copy.empty, {
-          fontFamily: 'system-ui, sans-serif',
-          fontSize: TEXT.size.body,
-          color: COLORS.muted,
-          align: 'center',
-          wordWrap: { width: tableWidth },
-        })
-        .setOrigin(0.5, 0)
-        .setDepth(DEPTH.ui + 1);
+    this.layout = { tableWidth, rowHeight, fontSize, columns };
+    this.note = this.add
+      .text(width / 2, height - FOOTER / 2, '', {
+        fontFamily: 'system-ui, sans-serif',
+        fontSize: TEXT.size.hint,
+        color: COLORS.muted,
+      })
+      .setOrigin(0.5)
+      .setDepth(DEPTH.ui + 1);
+
+    // This device's board at once, and the shared one folded in when it
+    // arrives — the rows are drawn again then, not the whole screen.
+    this.drawBoard();
+    this.loading = RANKING.shared.enabled;
+    this.drawNote();
+    const unwatch = ranking.onChange(() => {
+      this.loading = false;
+      this.drawBoard();
+      this.drawNote();
+    });
+    void ranking.refresh().then(() => {
+      if (this.scene.isActive()) {
+        this.loading = false;
+        this.drawNote();
+      }
+    });
+
+    this.input.keyboard?.on('keydown-ESC', this.close, this);
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      unwatch();
+      this.input.keyboard?.off('keydown-ESC', this.close, this);
+    });
+  }
+
+  /** The rows, from the store as it stands. */
+  private drawBoard(): void {
+    const { width } = this.scale;
+    const copy = t().ranking;
+    const { tableWidth, rowHeight, fontSize, columns } = this.layout;
+
+    this.board?.destroy();
+    this.board = this.add.container(0, 0).setDepth(DEPTH.ui + 1);
+    this.rows = [];
+
+    const top = ranking.top;
+    if (top.length === 0) {
+      this.board.add(
+        this.add
+          .text(width / 2, HEAD_Y + 60, copy.empty, {
+            fontFamily: 'system-ui, sans-serif',
+            fontSize: TEXT.size.body,
+            color: COLORS.muted,
+            align: 'center',
+            wordWrap: { width: tableWidth },
+          })
+          .setOrigin(0.5, 0),
+      );
     }
 
-    board.forEach((entry, index) => {
+    top.forEach((entry, index) => {
       const place = index + 1;
       const y = HEAD_Y + 24 + index * rowHeight + rowHeight / 2;
       const lit = place === this.payload.highlight;
@@ -102,39 +157,41 @@ export class RankingScene extends Phaser.Scene {
       const color = lit ? COLORS.accent : place === 1 ? COLORS.gearText : COLORS.text;
 
       if (lit) {
-        this.add
-          .rectangle(width / 2, y, tableWidth + 12, rowHeight, COLORS.panelActive, 1)
-          .setDepth(DEPTH.ui);
+        this.board!.add(this.add.rectangle(width / 2, y, tableWidth + 12, rowHeight, COLORS.panelActive, 1));
       }
 
       const cell = (x: number, text: string, origin: number) =>
         this.add
           .text(x, y, text, { fontFamily: 'system-ui, sans-serif', fontSize, color })
-          .setOrigin(origin, 0.5)
-          .setDepth(DEPTH.ui + 1);
-      this.rows.push([
+          .setOrigin(origin, 0.5);
+      const row = [
         cell(columns.place, String(place), 1),
         cell(columns.name, rankLabel(entry), 0),
         cell(columns.damage, grouped(entry.damage), 1),
-      ]);
+      ];
+      this.board!.add(row);
+      if (entry.flag) {
+        const h = Math.min(18, rowHeight - 4);
+        this.board!.add(
+          this.add.image(columns.flag, y, flagTexture(entry.flag)).setOrigin(0, 0.5).setDisplaySize(h * 1.5, h),
+        );
+      }
+      this.rows.push(row);
     });
+  }
 
-    fitText(
-      this.add
-        .text(width / 2, height - FOOTER / 2, copy.localNote, {
-          fontFamily: 'system-ui, sans-serif',
-          fontSize: TEXT.size.hint,
-          color: COLORS.muted,
-        })
-        .setOrigin(0.5)
-        .setDepth(DEPTH.ui + 1),
-      width - 16,
-    );
-
-    this.input.keyboard?.on('keydown-ESC', this.close, this);
-    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
-      this.input.keyboard?.off('keydown-ESC', this.close, this);
-    });
+  /** Where the board came from: shared, still coming, or this device only. */
+  private drawNote(): void {
+    const copy = t().ranking;
+    const text = !RANKING.shared.enabled
+      ? copy.localNote
+      : this.loading
+        ? copy.loadingNote
+        : ranking.source === 'shared'
+          ? copy.sharedNote
+          : copy.offlineNote;
+    this.note.setText(text);
+    fitText(this.note, this.scale.width - 16);
   }
 
   private close(): void {

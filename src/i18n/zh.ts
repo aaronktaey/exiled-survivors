@@ -19,7 +19,7 @@ export const zh: Strings = {
     shardName: '神圣碎片',
     buyShard: '购买神圣碎片  {price} 金币',
     goldHeld: '金币 {gold}',
-    temporary: '这是临时版本 — 目前为三条线，分支树是下一步的工作。',
+    temporary: '这是临时版本 — 目前各条线分别提升，分支树是下一步的工作。',
   },
 
   menu: {
@@ -139,7 +139,7 @@ export const zh: Strings = {
     damage: '造成伤害',
     champion: '第 1 名  {name}  {damage}',
     entryTitle: '排行榜第 {place} 名！',
-    entryLead: '造成伤害 {damage} — 留下名字吧（3 个字母 + 1 个表情）',
+    entryLead: '造成伤害 {damage} — 留下名字吧（3 个字母 + 1 个表情 + 国旗）',
     confirm: '登记',
     skip: '跳过',
     entryHintKeyboard: '← → 切换格子   ↑ ↓ 或输入字母   Enter 登记   Esc 跳过',
@@ -147,6 +147,21 @@ export const zh: Strings = {
     register: '登记排行',
     registered: '已登记为第 {place} 名',
     localNote: '这是本设备的记录。玩家之间共享的排行榜正在准备中。',
+    sharedNote: '所有玩家共享的临时排行榜。',
+    loadingNote: '正在载入共享排行榜…',
+    offlineNote: '无法连接共享排行榜，显示本设备的记录。',
+  },
+
+  skillPick: {
+    startTitle: '初始技能',
+    startSubtitle: '选择本局带入的一个技能',
+    dropTitle: '随机技能',
+    dropSubtitle: '三选一 — 已持有的技能会被强化',
+    drop: '随机技能',
+    new: '新技能',
+    upgrade: '强化 · Lv {level}',
+    hintKeyboard: '← → 移动   Space 选择   (1-3 直接选择)',
+    hintTouch: '点击想要的卡片',
   },
 
   slot: {
@@ -326,10 +341,12 @@ export const zh: Strings = {
       skull: '稀有敌人改为首领出现',
       rib: '所有敌人生命 +100%，掉落率 +50%',
     },
-    passives: { damage: '伤害', attackSpeed: '攻击速度' },
+    passives: { damage: '伤害', attackSpeed: '攻击速度', moveSpeed: '移动速度', luck: '幸运' },
     passiveDetails: {
       damage: '伤害 +10%',
       attackSpeed: '攻击速度 +10%',
+      moveSpeed: '移动速度 +1%',
+      luck: '幸运 +1%（暂无效果）',
     },
   },
 

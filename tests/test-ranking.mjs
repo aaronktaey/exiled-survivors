@@ -154,7 +154,7 @@ const champ = await scene('MenuScene', `return s.champion?.text ?? null;`);
 check('first place under the logo is the run just entered', /ZED/.test(champ ?? '') && /4,321/.test(champ ?? ''), champ);
 
 // --- 6. a run that does not make a full board does not ask ---
-await ev(`(() => { for (let i = 0; i < 20; i++) window.ranking.submit({ name: 'AAA', emoji: '', damage: 1e7, level: 1, survivedMs: 1 });
+await ev(`(() => { for (let i = 0; i < 20; i++) window.ranking.submit({ name: 'AAA', emoji: '', flag: '', damage: 1e7 + i, level: 1, survivedMs: 1 });
   window.game.scene.getScene('MenuScene').scene.start('GameScene', { save: null }); return 1; })()`);
 await sleep(1500);
 await scene('GameScene', `s.stats.recordDamage(10); s.player.invulnerableUntil = 0; s.player.takeDamage(1e9); return 1;`);
@@ -185,6 +185,82 @@ await cdp.tap('Enter', 13, 'Enter');
 await sleep(1200);
 check('and an arrow hands the keyboard back to the list, where Enter starts a run',
   await active('GameScene'));
+
+// --- 8. a flag goes with the name ---
+await ev(`(() => { window.ranking.reset(); window.ranking.lastFlag = ''; window.config.RANKING.promptOnDeath = true;
+  window.game.scene.getScene('GameScene').scene.start('GameScene', { save: null }); return 1; })()`);
+await sleep(1500);
+await scene('GameScene', `s.stats.recordDamage(777); s.player.invulnerableUntil = 0; s.player.takeDamage(1e9); return 1;`);
+await sleep(2200);
+const flagged = await scene('RankEntryScene', `return { flag: s.flag, slots: s.picks.length };`);
+check('the name entry has a flag slot, starting on the game’s own language',
+  flagged.flag === 'KR' && flagged.slots === 5, JSON.stringify(flagged));
+for (let i = 0; i < 4; i++) { await cdp.tap('ArrowRight', 39, 'ArrowRight'); await sleep(80); }
+await cdp.tap('ArrowUp', 38, 'ArrowUp');
+await sleep(150);
+const stepped = await scene('RankEntryScene', `return { flag: s.flag, cursor: s.cursor };`);
+check('↑ on it steps to the next flag', stepped.flag === 'JP' && stepped.cursor === 4, JSON.stringify(stepped));
+await cdp.tap('Enter', 13, 'Enter');
+await sleep(700);
+const withFlag = await ev(`(() => window.ranking.top[0])()`);
+check('and the flag is entered with the name', withFlag?.flag === 'JP', JSON.stringify(withFlag));
+await ev(`(() => { window.game.scene.getScene('GameOverScene').toTitle(); return 1; })()`);
+await sleep(1200);
+await scene('MenuScene', `s.icons.press('ranking'); return 1;`);
+await sleep(800);
+const drawn = await scene('RankingScene', `
+  const flags = []; s.board.list.forEach((o) => { if (o.type === 'Image') flags.push(o.texture.key); });
+  return flags;
+`);
+check('the board draws it beside the name', drawn.includes('tex-flag-JP'), drawn.join(' '));
+await scene('RankingScene', `s.backButton.press(); return 1;`);
+await sleep(400);
+
+// --- 9. the shared board, against a stand-in for the real one ---
+// The harness never touches the real board; here fetch is replaced by an
+// in-page store that answers the way the real one does.
+const shared = await cdp.send('Runtime.evaluate', { awaitPromise: true, returnByValue: true, expression: `(async () => {
+  const R = window.config.RANKING;
+  const realFetch = window.fetch;
+  const remote = { name: R.shared.name, data: { v: 1, entries: [
+    { name: 'FAR', emoji: '', flag: 'BR', damage: 99999, level: 9, survivedMs: 1, at: '2026-01-01T00:00:00Z' },
+    { name: 'BAD', emoji: '', flag: '', damage: 1e15, level: 1, survivedMs: 1, at: 'x' },
+  ] } };
+  const puts = [];
+  let down = false;
+  window.fetch = async (url, init) => {
+    if (down) throw new TypeError('offline');
+    if (init?.method === 'PUT') { const b = JSON.parse(init.body); puts.push(b); remote.data = b.data; }
+    return new Response(JSON.stringify(remote), { status: 200, headers: { 'Content-Type': 'application/json' } });
+  };
+  R.shared.enabled = true;
+  const out = {};
+  try {
+    out.source = await window.ranking.refresh();
+    out.top = window.ranking.top.map((e) => e.name + ':' + e.flag);
+    window.ranking.submit({ name: 'NEW', emoji: '', flag: 'US', damage: 150000, level: 2, survivedMs: 1 });
+    await new Promise((r) => setTimeout(r, 200));
+    out.put = puts.length ? puts[puts.length - 1].data.entries.map((e) => e.name) : [];
+    out.afterPush = window.ranking.source;
+    down = true;
+    out.offline = await window.ranking.refresh();
+    out.kept = window.ranking.top.length;
+  } finally {
+    window.fetch = realFetch;
+    R.shared.enabled = false;
+  }
+  return out;
+})()` });
+const sh = shared.result?.result?.value ?? {};
+console.log('shared:', JSON.stringify(sh));
+check('the shared board is folded into this one when it is read',
+  sh.source === 'shared' && sh.top?.[0] === 'FAR:', JSON.stringify(sh.top));
+check('a flag it does not offer, and a damage past belief, are not taken from it',
+  !sh.top?.some((n) => n.startsWith('BAD')), JSON.stringify(sh.top));
+check('a run entered here is written back to it, with what was already there',
+  sh.put?.[0] === 'NEW' && sh.put?.includes('FAR') && sh.afterPush === 'shared', JSON.stringify(sh.put));
+check('and when it cannot be reached, this device’s board stays and says so',
+  sh.offline === 'offline' && sh.kept >= 2);
 
 console.log('\n=== SUMMARY ===');
 const failed = results.filter((r) => !r.p);

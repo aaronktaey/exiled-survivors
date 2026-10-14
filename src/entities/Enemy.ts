@@ -150,9 +150,6 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
     if (this.isBoss) {
       return COLORS.bossOutline;
     }
-    if (this.spec.flashy) {
-      return COLORS.fugitiveRing;
-    }
 
     const tier = Phaser.Math.Clamp(this.affixes.length, 1, RARE_OUTLINE_TIERS.length) - 1;
     return RARE_OUTLINE_TIERS[tier] ?? COLORS.rareOutline;
@@ -295,7 +292,7 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
 
   /** The ring that marks a rare, made once and reused by the pool. */
   private drawOutline(): void {
-    if (!this.rare && !this.isBoss && !this.spec.flashy) {
+    if (!this.rare && !this.isBoss) {
       this.outline?.setVisible(false);
       return;
     }
@@ -575,13 +572,12 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
 
   /**
    * What makes a 도망자 impossible to miss: its colour runs round the
-   * rainbow, and it and its gold ring breathe in and out.
+   * rainbow, and it breathes in and out. No ring — the colour is enough.
    */
   private shimmer(): void {
     const now = this.scene.time.now;
     const pulse = 1 + 0.12 * Math.sin(now / 140);
     this.setScale(pulse);
-    this.outline?.setScale(pulse * 1.15);
     if (this.flashMs <= 0 && this.chillMs <= 0) {
       const hue = (now / 1200) % 1;
       this.setTint(Phaser.Display.Color.HSVToRGB(hue, 0.55, 1).color).setTintMode(Phaser.TintModes.MULTIPLY);

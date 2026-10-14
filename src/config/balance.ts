@@ -117,7 +117,7 @@ export interface EnemyKindSpec {
   readonly lifespanMs?: number;
   /** Killing it always leaves a skill, the way a 우두머리 does. */
   readonly guaranteedSkill?: boolean;
-  /** Drawn to be seen: a colour that cycles and a gold ring that breathes. */
+  /** Drawn to be seen: a colour that cycles, and a body that breathes. */
   readonly flashy?: boolean;
 }
 
@@ -807,16 +807,29 @@ export const SKILL_DROP = {
 } as const;
 
 /**
- * ★ 슬롯머신 — the reel a new run spins for its first drop skill, and that
- * anything else wanting a spin (a weapon, later) can reuse.
+ * ★ 무작위 스킬 — three skills on cards, one to take. A run's first skill is
+ * chosen this way, and a 무작위 스킬 lying on the ground opens the same
+ * choice when it is walked over.
  */
-export const SLOT = {
+export const SKILL_PICK = {
+  /** How many cards are offered. */
+  choices: 3,
+  /** Share of kills that leave a 무작위 스킬. A 갈비뼈 raises it. */
+  dropChance: 0.01,
   /**
-   * Whether a fresh run opens on the reel at all. On the dev server the
-   * test harness and `#run` turn it off, so they land in play; test-slot
-   * turns it back on.
+   * Whether a fresh run opens on the choice at all. On the dev server the
+   * test harness and `#run` turn it off, so they land in play holding
+   * UNSPUN_SKILL; test-skillpick turns it back on.
    */
   atRunStart: true as boolean,
+} as const;
+
+/**
+ * ★ 슬롯머신 — a reel that lands on one of a list, kept for anything that
+ * wants a spin (a weapon, later). A run's first skill used to come off it;
+ * that is SKILL_PICK's job now.
+ */
+export const SLOT = {
   /**
    * How fast the reel turns before it is stopped, in rows per second. It
    * cannot go below (rows in the window + 1) ÷ the stop in seconds — 6 for a

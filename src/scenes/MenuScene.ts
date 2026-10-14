@@ -20,7 +20,7 @@ import { passives } from '@/systems/Passives';
 import { MenuList } from '@/systems/MenuList';
 import { saveGame } from '@/systems/SaveGame';
 import { centredTop, fitText } from '@/systems/Layout';
-import { rankLabel, ranking } from '@/systems/Ranking';
+import { flagTexture, rankLabel, ranking } from '@/systems/Ranking';
 import { prefersTouchControls } from '@/systems/VirtualJoystick';
 
 /** How many rows the title lists, for centring it before they are built. */
@@ -35,6 +35,7 @@ export class MenuScene extends Phaser.Scene {
   public icons!: IconBar;
   /** First place under the logo, when there is one. Public for tests. */
   public champion?: Phaser.GameObjects.Text;
+  private championFlag?: Phaser.GameObjects.Image;
 
   public constructor() {
     super(MenuScene.KEY);
@@ -52,7 +53,9 @@ export class MenuScene extends Phaser.Scene {
     // one closes the gap rather than pushing the last row into the hint.
     const gap = height < MENU.shortHeight ? MENU.logoGapShort : MENU.logoGap;
     // First place on the board takes a line under the byline, once there is one.
-    const blockHeight = MENU.logoBlockHeight + (ranking.first ? MENU.championGap : 0);
+    // The line is kept even before anyone is on the board: the shared board
+    // arrives a moment later, and the menu must not jump when it does.
+    const blockHeight = MENU.logoBlockHeight + MENU.championGap;
     const top = centredTop(height, blockHeight + gap + listHeight);
 
     this.addLogo(width, top + MENU.logoHeight / 2);
@@ -165,32 +168,57 @@ export class MenuScene extends Phaser.Scene {
   }
 
   /**
-   * First place on the board, under the logo — the run to beat. Tapping it
-   * opens the board. Nothing is drawn until someone has set one.
+   * First place on the board, under the logo — the run to beat, with its
+   * flag. Tapping it opens the board. Empty until someone has set one, and
+   * redrawn when the shared board arrives with a different first place.
    */
   private addChampion(width: number, y: number): void {
-    const first = ranking.first;
-    this.champion = undefined;
-    if (!first) {
+    this.champion = this.add
+      .text(width / 2, y, '', {
+        fontFamily: 'system-ui, sans-serif',
+        fontSize: TEXT.size.body,
+        color: COLORS.gearText,
+      })
+      .setOrigin(0.5)
+      .setDepth(DEPTH.ui)
+      .setInteractive({ useHandCursor: true });
+    this.champion.on(Phaser.Input.Events.GAMEOBJECT_POINTER_DOWN, () => this.openOverlay(SCENES.ranking));
+    this.championFlag = this.add.image(0, y, '__DEFAULT').setDepth(DEPTH.ui).setVisible(false);
+
+    const draw = () => this.drawChampion(width);
+    draw();
+    const unwatch = ranking.onChange(draw);
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, unwatch);
+    void ranking.refresh();
+  }
+
+  private drawChampion(width: number): void {
+    const label = this.champion;
+    const flag = this.championFlag;
+    if (!label || !flag || !label.active) {
       return;
     }
 
-    this.champion = fitText(
-      this.add
-        .text(width / 2, y, fill(t().ranking.champion, {
-          name: rankLabel(first),
-          damage: Math.round(first.damage).toLocaleString('en-US'),
-        }), {
-          fontFamily: 'system-ui, sans-serif',
-          fontSize: TEXT.size.body,
-          color: COLORS.gearText,
-        })
-        .setOrigin(0.5)
-        .setDepth(DEPTH.ui)
-        .setInteractive({ useHandCursor: true }),
-      width - 32,
+    const first = ranking.first;
+    label.setScale(1).setText(
+      first
+        ? fill(t().ranking.champion, {
+            name: rankLabel(first),
+            damage: Math.round(first.damage).toLocaleString('en-US'),
+          })
+        : '',
     );
-    this.champion.on(Phaser.Input.Events.GAMEOBJECT_POINTER_DOWN, () => this.openOverlay(SCENES.ranking));
+    fitText(label, width - 80);
+    flag.setVisible(Boolean(first?.flag));
+    if (first?.flag) {
+      flag.setTexture(flagTexture(first.flag)).setDisplaySize(24, 16);
+      // The flag sits just ahead of the line, which moves right to make room.
+      const total = label.displayWidth + 30;
+      label.setX(width / 2 + 15);
+      flag.setPosition(width / 2 - total / 2 + 12, label.y);
+    } else {
+      label.setX(width / 2);
+    }
   }
 
   /**
@@ -232,7 +260,7 @@ export class MenuScene extends Phaser.Scene {
    */
   private startRun(fromSave = false): void {
     if (fromSave || bones.total === 0) {
-      this.scene.start(SCENES.game, { save: fromSave ? saveGame.read() : null, startSlot: !fromSave });
+      this.scene.start(SCENES.game, { save: fromSave ? saveGame.read() : null, startPick: !fromSave });
       return;
     }
 
@@ -241,7 +269,7 @@ export class MenuScene extends Phaser.Scene {
     this.scene.launch(SCENES.bones, {
       onStart: (applied: readonly BoneId[]) => {
         this.scene.resume();
-        this.scene.start(SCENES.game, { save: null, bones: applied, startSlot: true });
+        this.scene.start(SCENES.game, { save: null, bones: applied, startPick: true });
       },
       onCancel: () => {
         this.scene.stop(SCENES.bones);

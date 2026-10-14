@@ -15,7 +15,7 @@
  * already here and will not have to move.
  */
 
-export type PassiveId = 'attackSpeed' | 'damage';
+export type PassiveId = 'attackSpeed' | 'damage' | 'moveSpeed' | 'luck';
 
 export interface PassiveSpec {
   readonly id: PassiveId;
@@ -29,6 +29,13 @@ export interface PassiveSpec {
   readonly attackSpeedScale?: number;
   /** Multiplies every skill's damage, per rank. */
   readonly damageScale?: number;
+  /** Multiplies the survivor's move speed, per rank. */
+  readonly moveSpeedScale?: number;
+  /**
+   * 행운, per rank, as a share. Nothing reads it yet — it is bought and
+   * shown now so the points spent on it are there when it starts to count.
+   */
+  readonly luck?: number;
 }
 
 export const PASSIVES: Record<PassiveId, PassiveSpec> = {
@@ -45,6 +52,20 @@ export const PASSIVES: Record<PassiveId, PassiveSpec> = {
     detail: '공격속도 +10%',
     maxRank: 10,
     attackSpeedScale: 1.1,
+  },
+  moveSpeed: {
+    id: 'moveSpeed',
+    name: '이동속도',
+    detail: '이동속도 +1%',
+    maxRank: 10,
+    moveSpeedScale: 1.01,
+  },
+  luck: {
+    id: 'luck',
+    name: '행운',
+    detail: '행운 +1% (아직 효과 없음)',
+    maxRank: 10,
+    luck: 0.01,
   },
 };
 

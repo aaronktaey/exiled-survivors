@@ -27,6 +27,8 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   private level = 1;
   /** What the carried weapon is worth to this survivor. */
   private gear: GearBonus = NO_BONUS;
+  /** The tree's 이동속도, layered under the weapon's 신속. */
+  private passiveSpeed = 1;
   private maxHpValue: number = PLAYER.maxHp;
   private analog?: AnalogInput;
   private invulnerableUntil = 0;
@@ -82,11 +84,11 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
 
     // Keys win when both are live; the stick is analogue, so a partial tilt
     // moves proportionally slower.
-    let speed = PLAYER.speed * this.gear.moveSpeedScale;
+    let speed = PLAYER.speed * this.passiveSpeed * this.gear.moveSpeedScale;
     if (this.heading.lengthSq() > 0) {
       this.heading.normalize();
     } else if (this.analog) {
-      speed = PLAYER.speed * this.gear.moveSpeedScale * this.analog.read(this.heading);
+      speed = PLAYER.speed * this.passiveSpeed * this.gear.moveSpeedScale * this.analog.read(this.heading);
     }
 
     this.setVelocity(this.heading.x * speed, this.heading.y * speed);
@@ -124,6 +126,16 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   public setLevel(level: number): void {
     this.level = level;
     this.drawHealthBar();
+  }
+
+  /** What the passive tree does to the survivor's own body. */
+  public applyPassives(bonus: { readonly moveSpeedScale: number }): void {
+    this.passiveSpeed = bonus.moveSpeedScale;
+  }
+
+  /** Move speed right now, before a stick's tilt. Public for tests. */
+  public get moveSpeed(): number {
+    return PLAYER.speed * this.passiveSpeed * this.gear.moveSpeedScale;
   }
 
   /** Debug switch: holds i-frames open indefinitely. */
