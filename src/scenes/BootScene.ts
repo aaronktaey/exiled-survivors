@@ -10,6 +10,7 @@ import {
   ICONS,
   SHARD,
   SKILL_ICONS,
+  SLOT,
   PLAYER,
   POTION,
   SHOTS,
@@ -47,7 +48,9 @@ export class BootScene extends Phaser.Scene {
     this.load.image(TEXTURES.skillOrb, `${base}${ICONS.skillOrb.file}`);
 
     for (const icon of Object.values(SKILL_ICONS)) {
-      this.load.image(icon.key, `${base}${icon.file}`);
+      if (icon.file) {
+        this.load.image(icon.key, `${base}${icon.file}`);
+      }
     }
   }
 
@@ -67,6 +70,7 @@ export class BootScene extends Phaser.Scene {
     this.createOrbTextures();
     this.createBoneTextures();
     this.createAltarTexture();
+    this.createThunderIcon();
 
 
     createPixelTextTexture(this, TEXTURES.logo, ['EXILED', 'SURVIVORS'], {
@@ -80,6 +84,13 @@ export class BootScene extends Phaser.Scene {
     // Dev-only shortcut past the title, so the integration harness can drive
     // a run without clicking through the menu first.
     const skipMenu = import.meta.env.DEV && window.location.hash === '#run';
+    const harness = (window as { __harness?: boolean }).__harness === true;
+    if (import.meta.env.DEV && (skipMenu || harness)) {
+      // The test harness (it marks the page) and `#run` both want to be in
+      // play at once, and a reel waiting for 확정 would freeze every run
+      // they start — from the title as much as from `#run`.
+      (SLOT as { atRunStart: boolean }).atRunStart = false;
+    }
     this.scene.start(skipMenu ? SCENES.game : SCENES.menu);
   }
 
@@ -206,6 +217,38 @@ export class BootScene extends Phaser.Scene {
       graphics.generateTexture(bone.texture, size, size);
       graphics.destroy();
     }
+  }
+
+  /**
+   * 낙뢰's icon, drawn rather than loaded: a yellow bolt on a dark disc, the
+   * same 32px the pack's icons are, so the drop and the card size it alike.
+   */
+  private createThunderIcon(): void {
+    const key = SKILL_ICONS.thunderStrike?.key;
+    if (!key || this.textures.exists(key)) {
+      return;
+    }
+
+    const size = 32;
+    const graphics = this.add.graphics();
+    graphics.fillStyle(0x1b2340, 1);
+    graphics.fillCircle(size / 2, size / 2, size * 0.47);
+    graphics.lineStyle(2, COLORS.lightningGlow, 1);
+    graphics.strokeCircle(size / 2, size / 2, size * 0.44);
+    graphics.fillStyle(0xffe066, 1);
+    graphics.fillPoints(
+      [
+        new Phaser.Math.Vector2(size * 0.58, size * 0.1),
+        new Phaser.Math.Vector2(size * 0.28, size * 0.55),
+        new Phaser.Math.Vector2(size * 0.48, size * 0.55),
+        new Phaser.Math.Vector2(size * 0.38, size * 0.9),
+        new Phaser.Math.Vector2(size * 0.74, size * 0.42),
+        new Phaser.Math.Vector2(size * 0.53, size * 0.42),
+      ],
+      true,
+    );
+    graphics.generateTexture(key, size, size);
+    graphics.destroy();
   }
 
   /**

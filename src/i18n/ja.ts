@@ -117,6 +117,15 @@ export const ja: Strings = {
     hintTouch: '項目をタップして選択',
   },
 
+  slot: {
+    startTitle: '開始スキル',
+    startSubtitle: 'この回に持ち込むスキルをひとつ',
+    confirm: '決定',
+    hintKeyboard: 'Space または Enter で決定',
+    hintTouch: '決定を押して止める',
+    won: '{skill} を獲得',
+  },
+
   upgrade: {
     levelUp: 'LEVEL UP',
     level: 'Lv {level}',
@@ -191,13 +200,15 @@ export const ja: Strings = {
       chainLightning: '連鎖雷',
       iceSpear: '氷槍',
       voidOrb: '虚無球',
+      thunderStrike: '落雷',
     },
     skillSummaries: {
       meleeStrike: '最も近い敵へ短く振り抜き、範囲内の敵をまとめて叩きます。',
-      fireball: '最も近い敵へ火の玉を投げます。最初に当たった敵で弾けます。',
+      fireball: '最も近い敵へ火の玉を投げます。最初に当たった敵で弾け、周りの敵も巻き込みます。',
       chainLightning: '即着の雷が敵を打ち、近くの次の敵へ移ります。同じ敵は二度打ちません。',
       iceSpear: '敵を貫いて進み、かすめた敵すべてに冷却（移動速度 -15%）を与えます。',
       voidOrb: '球が時計回りに周回し、触れた敵を叩きます。狙いは不要です。',
+      thunderStrike: '周囲の敵ひとりに空から雷を落とします。その敵が倒れると、半分の確率ですぐにもう一度落ちます。',
     },
     tags: {
       물리: '物理',
@@ -212,6 +223,7 @@ export const ja: Strings = {
       냉기: '冷気',
       관통: '貫通',
       공허: '虚無',
+      오라: 'オーラ',
     },
     enemies: { boss: 'ボス', grunt: '雑兵', brute: '巨漢', runner: '俊足', shooter: '射手' },
     gear: {

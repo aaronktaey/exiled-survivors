@@ -34,6 +34,7 @@ export const SCENES = {
   gear: "GearScene",
   bones: "BoneScene",
   passives: "PassiveScene",
+  slot: "SlotScene",
 } as const;
 
 /** Keys the browser keeps our state under. Bump the suffix to invalidate. */
@@ -169,6 +170,8 @@ export const AUDIO = {
     iceSpear: { files: ['assets/iceSpear.mp3'], volume: 0.4 },
     // The orbs touch something most frames, so this one is held well apart.
     voidOrb: { files: ['assets/voidSphere.mp3'], volume: 0.35, gapMs: 600 },
+    // No clip of its own yet: it borrows 연쇄번개's crack, a little quieter.
+    thunderStrike: { files: ['assets/chainLightening1.mp3'], volume: 0.35, gapMs: 200 },
   } as Partial<
     Record<
       SkillId,

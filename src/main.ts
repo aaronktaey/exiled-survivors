@@ -27,6 +27,7 @@ import {
   PauseScene,
   SettingsScene,
   UpgradeScene,
+  SlotScene,
 } from '@/scenes';
 
 // Language first: every scene reads its text as it is built.
@@ -64,6 +65,7 @@ const config: Phaser.Types.Core.GameConfig = {
     MenuScene,
     GameScene,
     UpgradeScene,
+    SlotScene,
     PauseScene,
     SettingsScene,
     CreditsScene,

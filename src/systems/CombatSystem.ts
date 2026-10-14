@@ -6,6 +6,8 @@ import {
   BONES,
   boneChanceFor,
   COLORS,
+  DEPTH,
+  FIREBALL,
   ORBS,
   POTION,
   WEAPON,
@@ -87,6 +89,7 @@ export class CombatSystem {
   private readonly damageNumbers: DamageNumbers;
   private readonly hooks: CombatHooks;
   private readonly stats: RunStats;
+  private readonly enemies: Phaser.Physics.Arcade.Group;
 
   public constructor(
     scene: Phaser.Scene,
@@ -103,6 +106,7 @@ export class CombatSystem {
     this.damageNumbers = damageNumbers;
     this.stats = stats;
     this.hooks = hooks;
+    this.enemies = enemies;
 
     this.gems = scene.physics.add.group({
       classType: XpGem,
@@ -290,12 +294,52 @@ export class CombatSystem {
     // Spend the pierce before the hit: a kill recycles the enemy, and the
     // shot has to know whether it is done either way.
     const carriesOn = shot.consumePierce();
+    const { x, y } = enemy;
     this.hit(enemy, shot.damage);
+
+    if (shot.blastRadius > 0) {
+      this.blast(x, y, shot.blastRadius, shot.damage, enemy);
+    }
 
     if (!carriesOn) {
       shot.despawn();
     }
   };
+
+  /**
+   * A burst where a shot landed: everything within `radius` takes the same
+   * damage, except the body it landed on, which has already had it. The
+   * victims are gathered before any of them is hit, because a kill recycles
+   * a sprite and the pool could hand it straight back.
+   */
+  public blast(x: number, y: number, radius: number, damage: number, spared?: Enemy): number {
+    const caught: Enemy[] = [];
+    for (const child of this.enemies.getChildren()) {
+      const other = child as Enemy;
+      if (other.active && other !== spared &&
+          Phaser.Math.Distance.Between(x, y, other.x, other.y) <= radius) {
+        caught.push(other);
+      }
+    }
+
+    caught.forEach((other) => this.hit(other, damage));
+
+    const flash = this.scene.add
+      .circle(x, y, radius, COLORS.fireBlast, 0.35)
+      .setStrokeStyle(2, COLORS.fireBlast, 0.9)
+      .setDepth(DEPTH.vfx)
+      .setScale(0.4);
+    this.scene.tweens.add({
+      targets: flash,
+      scale: 1,
+      alpha: 0,
+      duration: FIREBALL.flashMs,
+      ease: 'Quad.easeOut',
+      onComplete: () => flash.destroy(),
+    });
+
+    return caught.length;
+  }
 
   private onEnemyTouch: Phaser.Types.Physics.Arcade.ArcadePhysicsCallback = (_player, b) => {
     const enemy = b as unknown as Enemy;

@@ -167,6 +167,18 @@ export interface Strings {
     readonly hintTouch: string;
   };
 
+  /** 슬롯머신 — the reel a new run spins for its first skill. */
+  readonly slot: {
+    /** Over the reel when a run starts. */
+    readonly startTitle: string;
+    readonly startSubtitle: string;
+    readonly confirm: string;
+    readonly hintKeyboard: string;
+    readonly hintTouch: string;
+    /** Banner once the skill is in hand: {skill} is its name. */
+    readonly won: string;
+  };
+
   readonly upgrade: {
     readonly levelUp: string;
     readonly level: string;

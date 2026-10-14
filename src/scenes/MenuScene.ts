@@ -188,7 +188,7 @@ export class MenuScene extends Phaser.Scene {
    */
   private startRun(fromSave = false): void {
     if (fromSave || bones.total === 0) {
-      this.scene.start(SCENES.game, { save: fromSave ? saveGame.read() : null });
+      this.scene.start(SCENES.game, { save: fromSave ? saveGame.read() : null, startSlot: !fromSave });
       return;
     }
 
@@ -197,7 +197,7 @@ export class MenuScene extends Phaser.Scene {
     this.scene.launch(SCENES.bones, {
       onStart: (applied: readonly BoneId[]) => {
         this.scene.resume();
-        this.scene.start(SCENES.game, { save: null, bones: applied });
+        this.scene.start(SCENES.game, { save: null, bones: applied, startSlot: true });
       },
       onCancel: () => {
         this.scene.stop(SCENES.bones);

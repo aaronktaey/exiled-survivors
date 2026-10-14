@@ -17,6 +17,8 @@ import {
   SAVE,
   SCENES,
   SKILL_DROP,
+  SKILL_ICONS,
+  SLOT,
   TEXT,
   TEXTURES,
   TIMING,
@@ -26,6 +28,7 @@ import type { Enemy } from '@/entities/Enemy';
 import { Player } from '@/entities/Player';
 import { altarOfferText, boneName, fill, gearTitle, orbName, skillName, t } from '@/i18n';
 import { GameOverScene, type GameOverData } from '@/scenes/GameOverScene';
+import { SlotScene, type SlotData } from '@/scenes/SlotScene';
 import { UpgradeScene, type UpgradeChoiceData } from '@/scenes/UpgradeScene';
 import {
   CombatSystem,
@@ -81,6 +84,7 @@ import {
   LEVEL_UP_SKILL,
   MeleeStrike,
   VoidOrb,
+  ThunderStrike,
   STARTING_SKILLS,
   type SkillDefinition,
   type SkillId,
@@ -94,6 +98,7 @@ const WEAPONS: Record<SkillId, (scene: Phaser.Scene) => Weapon> = {
   chainLightning: (scene) => new ChainLightning(scene),
   iceSpear: (scene) => new IceSpear(scene),
   voidOrb: (scene) => new VoidOrb(scene),
+  thunderStrike: (scene) => new ThunderStrike(scene),
 };
 
 /** What the title screen hands over when a run starts. */
@@ -105,6 +110,12 @@ export interface GameSceneData {
    * screen that picked them, so a restart does not spend them twice.
    */
   readonly bones?: readonly BoneId[];
+  /**
+   * Spin the 슬롯머신 for a drop skill before play starts. Every fresh run
+   * from the title or from 다시하기 does; a resumed run already has its
+   * skills, and the dev-only `#run` skips it so the harness lands in play.
+   */
+  readonly startSlot?: boolean;
 }
 
 /** One queued upgrade popup, from a level-up or a skill pickup. */
@@ -149,6 +160,7 @@ export class GameScene extends Phaser.Scene {
   private elapsedMs = 0;
   private sinceSaveMs = 0;
   private resuming: SavedRun | null = null;
+  private startSlot = false;
   /** Popups earned while one was already open. */
   private pendingChoices: ChoiceRequest[] = [];
   private choosing = false;
@@ -163,6 +175,7 @@ export class GameScene extends Phaser.Scene {
 
   public init(data?: GameSceneData): void {
     this.resuming = data?.save ?? null;
+    this.startSlot = data?.startSlot === true && !this.resuming && SLOT.atRunStart;
     // A resumed run keeps the 뼈다귀 it was started with; they were spent
     // once, at the start, and the save remembers them.
     this.bones = [...(data?.save?.bones ?? data?.bones ?? [])];
@@ -261,9 +274,52 @@ export class GameScene extends Phaser.Scene {
     this.progression.on(Progression.LEVEL_UP, this.onLevelUp, this);
     this.player.once(Player.DIED, this.onPlayerDied, this);
 
-    if (!this.resuming) {
+    if (this.startSlot) {
+      this.openStartSlot();
+    } else if (!this.resuming) {
       this.showIntro();
     }
+  }
+
+  /**
+   * The run's first drop skill, off the 슬롯머신. The arena is frozen while
+   * the reel turns — the same hold an upgrade choice puts on it — and the
+   * title card waits until the skill is in hand.
+   */
+  private openStartSlot(): void {
+    const pool = DROPPABLE_SKILLS.filter((skill) => !this.owned.has(skill.id));
+    if (pool.length === 0) {
+      this.showIntro();
+      return;
+    }
+
+    this.choosing = true;
+    this.physics.pause();
+
+    const data: SlotData = {
+      title: t().slot.startTitle,
+      subtitle: t().slot.startSubtitle,
+      items: pool.map((skill) => ({
+        label: skillName(skill.id),
+        icon: SKILL_ICONS[skill.id]?.key,
+      })),
+      onResult: (index) => {
+        const skill = pool[index];
+        this.choosing = false;
+        this.physics.resume();
+        if (skill) {
+          this.acquire(skill.id);
+          this.announce(fill(t().slot.won, { skill: skillName(skill.id) }));
+        }
+        this.showIntro();
+        // Anything earned while the reel turned — nothing, today — goes next.
+        if (this.pendingChoices.length > 0) {
+          this.openNextChoice();
+        }
+      },
+    };
+    this.scene.bringToTop(SlotScene.KEY);
+    this.scene.launch(SlotScene.KEY, data);
   }
 
   /**
@@ -825,7 +881,7 @@ export class GameScene extends Phaser.Scene {
       // Explicitly fresh. A restart with no data of its own keeps whatever
       // the scene was last started with, and after 불러오기 that is the
       // loaded run — which would quietly put a death back where it resumed.
-      onRestart: () => this.scene.restart({ save: null }),
+      onRestart: () => this.scene.restart({ save: null, startSlot: true }),
     };
     this.scene.bringToTop(GameOverScene.KEY);
     this.scene.launch(GameOverScene.KEY, data);

@@ -16,9 +16,16 @@ export type SkillTag =
   | '연쇄'
   | '냉기'
   | '관통'
-  | '공허';
+  | '공허'
+  | '오라';
 
-export type SkillId = 'meleeStrike' | 'fireball' | 'chainLightning' | 'iceSpear' | 'voidOrb';
+export type SkillId =
+  | 'meleeStrike'
+  | 'fireball'
+  | 'chainLightning'
+  | 'iceSpear'
+  | 'voidOrb'
+  | 'thunderStrike';
 
 export interface SkillDefinition {
   readonly id: SkillId;
@@ -43,7 +50,7 @@ export const SKILLS: Record<SkillId, SkillDefinition> = {
     name: '화염구',
     tags: ['투사체', '원거리', '주문', '화염'],
     upgrades: ['damage', 'attackSpeed', 'range', 'projectileSpeed'],
-    summary: '가장 가까운 적에게 불덩이를 던집니다. 처음 맞은 적에게서 터집니다.',
+    summary: '가장 가까운 적에게 불덩이를 던집니다. 처음 맞은 적에게서 터지며, 주변의 적도 함께 불에 휩싸입니다.',
   },
   chainLightning: {
     id: 'chainLightning',
@@ -66,6 +73,13 @@ export const SKILLS: Record<SkillId, SkillDefinition> = {
     upgrades: ['damage', 'orbitSpeed', 'orbCount'],
     summary: '구체가 주위를 시계방향으로 돌며 닿는 적을 때립니다. 겨냥이 필요 없습니다.',
   },
+  thunderStrike: {
+    id: 'thunderStrike',
+    name: '낙뢰',
+    tags: ['오라', '주문', '번개'],
+    upgrades: ['damage', 'attackSpeed', 'range'],
+    summary: '주위의 적 하나에게 하늘에서 벼락을 내립니다. 그 적이 죽으면 절반의 확률로 곧바로 한 번 더 떨어집니다.',
+  },
 };
 
 /** Skills the player starts a run with. */
@@ -80,6 +94,7 @@ export const DROPPABLE_SKILLS: readonly SkillDefinition[] = [
   SKILLS.chainLightning,
   SKILLS.iceSpear,
   SKILLS.voidOrb,
+  SKILLS.thunderStrike,
 ];
 
 export const ALL_SKILLS: readonly SkillDefinition[] = Object.values(SKILLS);

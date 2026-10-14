@@ -72,7 +72,7 @@ wrong shape.
 ## The test harness
 
 `tests/` drives a real Chrome over CDP against the dev server and checks the
-running game, not units. 26 suites, ~710 checks. It is the only thing that has
+running game, not units. 27 suites, ~730 checks. It is the only thing that has
 caught most of what has gone wrong here, so run all of it before every commit.
 
 ```sh
@@ -82,7 +82,7 @@ node run-all.mjs test-full test-skills test-balance test-chain test-ice \
   test-void test-enemies test-rare test-boss test-potion test-sfx test-perf \
   test-hud test-expiry test-audio test-touch test-shell test-shell2 test-info \
   test-i18n test-gear test-passive test-responsive test-stats test-bones \
-  test-altar
+  test-altar test-slot
 ```
 
 `run-all.mjs` starts Chrome itself (`CHROME_PATH` overrides where it looks),
@@ -140,6 +140,14 @@ Read `git log` for what changed and when. What is not in the log:
   and a 제단 can call up 우두머리, which leave 제단. It is opt-in — nothing
   happens until the survivor walks up — so it is not capped. An altar arms only
   after the survivor has been outside its radius once.
+- **The 슬롯머신 is generic.** `SlotScene` takes labels, icons, an optional
+  `choose()` and an `onResult(index)`; `SlotReel` is the reel on its own.
+  A fresh run opens it only when started with `startSlot: true` (title and
+  다시하기 pass it) and `SLOT.atRunStart` is on. On the dev server, `#run`
+  and the harness (`cdp-lib` marks every page with `window.__harness`)
+  switch `atRunStart` off, so every suite — including the ones that start
+  runs from the title — lands in play; `test-slot` turns it back on. A new suite that wants the reel must do the same. Phaser 4 has no `setMask` under WebGL — the reel fades its edges
+  instead of clipping them.
 - **Known gaps, left on purpose:**
   - A 구슬 can still be spent on the weapon a saved run is holding. Swapping
     is blocked while a run is saved; rerolling it is not.

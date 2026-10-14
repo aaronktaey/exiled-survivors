@@ -30,7 +30,11 @@ export interface GuideChapter {
 }
 
 const seconds = (ms: number): number => Math.round(ms / 1000);
-const percent = (fraction: number): string => `${Math.round(fraction * 100)}%`;
+/** "10%", or "1.5%" when a whole number would lie about it. */
+const percent = (fraction: number): string => {
+  const tenths = Math.round(fraction * 1000) / 10;
+  return `${Number.isInteger(tenths) ? tenths : tenths.toFixed(1)}%`;
+};
 const round = (value: number): string =>
   Number.isInteger(value) ? String(value) : value.toFixed(1);
 

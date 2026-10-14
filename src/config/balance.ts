@@ -26,6 +26,7 @@ export const BALANCE = {
     chainLightning: 1,
     iceSpear: 1,
     voidOrb: 1,
+    thunderStrike: 1,
   } as Record<SkillId, number>,
 };
 
@@ -648,6 +649,28 @@ export const MELEE = {
   flashMs: 150,
 } as const;
 
+/** 화염구 bursts where it lands, hurting everything around the first hit. */
+export const FIREBALL = {
+  /** Everything this close to the first hit takes the shot's damage too. */
+  blastRadius: 60,
+  /** How long the burst stays on screen. */
+  flashMs: 220,
+} as const;
+
+/** 낙뢰: a bolt out of the sky onto something near the survivor. */
+export const THUNDER = {
+  /**
+   * When a strike kills, the chance it strikes again at once. Each recast
+   * rolls its own, so a crowd of the nearly dead can take several in a row.
+   */
+  recastChance: 0.5,
+  /** A ceiling on recasts from one cast, so a lucky streak ends. */
+  maxRecasts: 20,
+  /** How far above its target the bolt starts, in px. */
+  height: 220,
+  flashMs: 200,
+} as const;
+
 /** The instant arc 연쇄번개 draws as it walks through a crowd. */
 export const LIGHTNING = {
   /** How far the arc may jump from one victim to the next. */
@@ -707,8 +730,31 @@ export const GROUND_ITEM = {
 } as const;
 
 export const SKILL_DROP = {
-  /** Chance that killing an enemy drops a skill. */
-  chance: 0.03,
+  /**
+   * Chance that killing an enemy drops a skill. Halved when every run began
+   * handing one out on the 슬롯머신, so the field is not where most of them
+   * come from any more.
+   */
+  chance: 0.015,
+} as const;
+
+/**
+ * ★ 슬롯머신 — the reel a new run spins for its first drop skill, and that
+ * anything else wanting a spin (a weapon, later) can reuse.
+ */
+export const SLOT = {
+  /**
+   * Whether a fresh run opens on the reel at all. On the dev server the
+   * test harness and `#run` turn it off, so they land in play; test-slot
+   * turns it back on.
+   */
+  atRunStart: true as boolean,
+  /** How fast the reel turns before it is stopped, in rows per second. */
+  spinRowsPerSec: 14,
+  /** How long it keeps turning after 확정, slowing all the way down. */
+  stopMs: 1000,
+  /** How long the stopped row is held up before the result is handed back. */
+  holdMs: 700,
 } as const;
 
 /** Health potions, rolled separately from the skill drop. */
@@ -806,6 +852,18 @@ export const SKILL_BASE: Record<SkillId, SkillBaseStats> = {
   // An orbit rather than a shot: range is how far out the orbs ride,
   // orbitSpeed how fast they travel around, and attackSpeed how often one
   // orb may hit the same enemy again.
+  // A bolt out of the sky every half second onto something nearby. Ten
+  // times the 12 it was asked for, in the scale health is now written in.
+  thunderStrike: {
+    damage: 120,
+    attackSpeed: 2,
+    range: 200,
+    projectileSpeed: 0,
+    chainCount: 0,
+    pierceCount: 0,
+    orbCount: 0,
+    orbitSpeed: 0,
+  },
   voidOrb: {
     damage: 50,
     attackSpeed: 1.5,

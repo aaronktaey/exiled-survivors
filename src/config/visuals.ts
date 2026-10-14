@@ -22,6 +22,8 @@ export const COLORS = {
   /** 우두머리: a dark slab with a gold ring around it. */
   enemyBoss: 0x7a1f3d,
   bossOutline: 0xffd34d,
+  /** 화염구's burst where it lands. */
+  fireBlast: 0xff8a3d,
   /** 제단: dark stone with an ember on top, so it reads as a threat. */
   altarStone: 0x4a4f5c,
   altarFlame: 0xff5a3c,
@@ -160,12 +162,14 @@ export const TEXTURES = {
  * assets/icons/CREDITS.txt). Stand-ins until there is art of our own: the
  * drop on the ground wears it, and so does the upgrade card.
  */
-export const SKILL_ICONS: Record<string, { readonly file: string; readonly key: string }> = {
+export const SKILL_ICONS: Record<string, { readonly file?: string; readonly key: string }> = {
   meleeStrike: { file: 'assets/icons/skill-meleeStrike.png', key: 'tex-skill-meleeStrike' },
   fireball: { file: 'assets/icons/skill-fireball.png', key: 'tex-skill-fireball' },
   chainLightning: { file: 'assets/icons/skill-chainLightning.png', key: 'tex-skill-chainLightning' },
   iceSpear: { file: 'assets/icons/skill-iceSpear.png', key: 'tex-skill-iceSpear' },
   voidOrb: { file: 'assets/icons/skill-voidOrb.png', key: 'tex-skill-voidOrb' },
+  // No file: drawn at boot until the pack has a bolt that fits.
+  thunderStrike: { key: 'tex-skill-thunderStrike' },
 };
 
 /** How big a skill icon is drawn, on the ground and on a card. */

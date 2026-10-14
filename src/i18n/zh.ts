@@ -117,6 +117,15 @@ export const zh: Strings = {
     hintTouch: '点按条目进行选择',
   },
 
+  slot: {
+    startTitle: '初始技能',
+    startSubtitle: '本局带入的一个技能',
+    confirm: '确定',
+    hintKeyboard: '按 Space 或 Enter 确定',
+    hintTouch: '点击确定停下',
+    won: '获得 {skill}',
+  },
+
   upgrade: {
     levelUp: 'LEVEL UP',
     level: 'Lv {level}',
@@ -191,13 +200,15 @@ export const zh: Strings = {
       chainLightning: '连锁闪电',
       iceSpear: '冰枪',
       voidOrb: '虚空球',
+      thunderStrike: '落雷',
     },
     skillSummaries: {
       meleeStrike: '朝最近的敌人短促挥击，范围内的敌人一并命中。',
-      fireball: '向最近的敌人投出火球，命中第一个敌人后炸开。',
+      fireball: '向最近的敌人投出火球，命中第一个敌人后炸开，周围的敌人也会被波及。',
       chainLightning: '瞬发闪电命中敌人后跳向最近的下一个，不会重复命中同一个。',
       iceSpear: '穿透敌人前进，并给掠过的所有敌人附加冰冷（移动速度 -15%）。',
       voidOrb: '球体顺时针环绕你，扫到的敌人都会受伤，无需瞄准。',
+      thunderStrike: '从天上降下一道雷劈向你周围的一名敌人。若其死亡，有一半概率立刻再落一道。',
     },
     tags: {
       물리: '物理',
@@ -212,6 +223,7 @@ export const zh: Strings = {
       냉기: '冰冷',
       관통: '穿透',
       공허: '虚空',
+      오라: '光环',
     },
     enemies: { boss: '首领', grunt: '杂兵', brute: '巨汉', runner: '疾走者', shooter: '射手' },
     gear: {

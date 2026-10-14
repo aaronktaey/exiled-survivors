@@ -1,16 +1,11 @@
 import Phaser from 'phaser';
 
-import { COLORS, DEPTH, LIGHTNING } from '@/config';
+import { DEPTH, LIGHTNING } from '@/config';
 import type { Enemy } from '@/entities/Enemy';
 import { sfx } from '@/systems/Sfx';
+import { drawBolt } from '@/weapons/bolt';
 import { SKILLS } from '@/weapons/skills';
 import { findNearestEnemy, type Weapon, type WeaponContext } from '@/weapons/Weapon';
-
-/** The two strokes a bolt is drawn with: a soft glow under a bright core. */
-const STROKES = [
-  { width: LIGHTNING.glowWidth, color: COLORS.lightningGlow, alpha: 0.35 },
-  { width: LIGHTNING.coreWidth, color: COLORS.lightning, alpha: 1 },
-] as const;
 
 /**
  * Drop-only skill: an instant arc that strikes the nearest enemy and then
@@ -80,39 +75,11 @@ export class ChainLightning implements Weapon {
   private showBolt(path: readonly number[]): void {
     this.bolt.clear();
     for (let i = 0; i + 3 < path.length; i += 2) {
-      this.drawLink(path[i]!, path[i + 1]!, path[i + 2]!, path[i + 3]!);
+      drawBolt(this.bolt, path[i]!, path[i + 1]!, path[i + 2]!, path[i + 3]!);
     }
 
     this.scene.tweens.killTweensOf(this.bolt);
     this.bolt.setAlpha(1);
     this.scene.tweens.add({ targets: this.bolt, alpha: 0, duration: LIGHTNING.flashMs });
-  }
-
-  /** One zig-zagging link, kinked sideways off the straight line. */
-  private drawLink(x1: number, y1: number, x2: number, y2: number): void {
-    const dx = x2 - x1;
-    const dy = y2 - y1;
-    const length = Math.hypot(dx, dy) || 1;
-    // Unit normal, so a kink of `jitter` px is `jitter` px whatever the span.
-    const nx = -dy / length;
-    const ny = dx / length;
-
-    const points = [x1, y1];
-    for (let i = 1; i < LIGHTNING.segments; i++) {
-      const t = i / LIGHTNING.segments;
-      const kink = Phaser.Math.FloatBetween(-LIGHTNING.jitter, LIGHTNING.jitter);
-      points.push(x1 + dx * t + nx * kink, y1 + dy * t + ny * kink);
-    }
-    points.push(x2, y2);
-
-    for (const stroke of STROKES) {
-      this.bolt.lineStyle(stroke.width, stroke.color, stroke.alpha);
-      this.bolt.beginPath();
-      this.bolt.moveTo(points[0]!, points[1]!);
-      for (let i = 2; i < points.length; i += 2) {
-        this.bolt.lineTo(points[i]!, points[i + 1]!);
-      }
-      this.bolt.strokePath();
-    }
   }
 }

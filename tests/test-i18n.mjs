@@ -130,7 +130,13 @@ check('its contents list is in English too',
   guide.chapters.join('/') === 'The goal/Controls/Growing/Skills/Enemies', guide.chapters.join(' / '));
 check('skills and enemies are named in English',
   /Void Orb/.test(guide.text) && /Shooter/.test(guide.text) && /Chain Lightning/.test(guide.text));
-check('the numbers still come from the config', /10%/.test(guide.text) && /3%/.test(guide.text));
+const pctOf = await ev(`(() => {
+  const p = (f) => { const t = Math.round(f * 1000) / 10; return (Number.isInteger(t) ? t : t.toFixed(1)) + '%'; };
+  return { rare: p(window.config.RARE.chance), skill: p(window.config.SKILL_DROP.chance) };
+})()`);
+check('the numbers still come from the config',
+  guide.text.includes(pctOf.rare) && guide.text.includes(pctOf.skill),
+  `${pctOf.rare}, ${pctOf.skill}`);
 await shot('i18n-04-guide-en');
 await cdp.tap('Escape', 27, 'Escape');
 await sleep(600);

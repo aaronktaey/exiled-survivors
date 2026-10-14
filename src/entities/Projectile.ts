@@ -14,6 +14,8 @@ export interface LaunchSpec {
   readonly pierce: number;
   /** 냉각 applied to whatever it hits, in ms. 0 for none. */
   readonly chillMs: number;
+  /** Bursts where it lands, hurting everything this close too. 0 for none. */
+  readonly blastRadius?: number;
   readonly texture: string;
   /** Drawn size. Width runs along the flight path. */
   readonly width: number;
@@ -28,6 +30,8 @@ export class Projectile extends Phaser.Physics.Arcade.Image {
   public damage = 0;
   /** 냉각 this shot leaves on contact, in ms. */
   public chillMs = 0;
+  /** How far its burst reaches from the first hit. 0 for none. */
+  public blastRadius = 0;
 
   private remainingMs = 0;
   /** Enemies left to pass through before it fizzles. */
@@ -43,6 +47,7 @@ export class Projectile extends Phaser.Physics.Arcade.Image {
   public launch(x: number, y: number, angle: number, spec: LaunchSpec): void {
     this.damage = spec.damage;
     this.chillMs = spec.chillMs;
+    this.blastRadius = spec.blastRadius ?? 0;
     this.pierceLeft = Math.max(0, Math.round(spec.pierce));
     this.struck.clear();
 

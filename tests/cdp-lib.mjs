@@ -36,6 +36,10 @@ export async function connect(port = 9333) {
   // And raise the window, so key events land and the renderer is not
   // throttled for being behind something else.
   await send('Page.bringToFront');
+  // Say who is driving, before any page script runs: the game turns off the
+  // things that wait on a person (the 슬롯머신 at the start of a run), so a
+  // suite that starts a run from the title still lands in play.
+  await send('Page.addScriptToEvaluateOnNewDocument', { source: 'window.__harness = true;' });
 
   const evaluate = async (expr) => {
     const r = await send('Runtime.evaluate', { expression: `(() => { try { return JSON.stringify(${expr}); } catch (e) { return JSON.stringify({ __err: String(e) }); } })()`, returnByValue: true });

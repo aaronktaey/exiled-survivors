@@ -117,6 +117,15 @@ export const en: Strings = {
     hintTouch: 'Tap an entry to choose it',
   },
 
+  slot: {
+    startTitle: 'Starting skill',
+    startSubtitle: 'One skill to take into this run',
+    confirm: 'Stop',
+    hintKeyboard: 'Space or Enter to stop',
+    hintTouch: 'Tap Stop to stop the reel',
+    won: '{skill} acquired',
+  },
+
   upgrade: {
     levelUp: 'LEVEL UP',
     level: 'Lv {level}',
@@ -191,13 +200,15 @@ export const en: Strings = {
       chainLightning: 'Chain Lightning',
       iceSpear: 'Ice Spear',
       voidOrb: 'Void Orb',
+      thunderStrike: 'Thunderstrike',
     },
     skillSummaries: {
       meleeStrike: 'A short swing at the nearest enemy, catching everything in the arc.',
-      fireball: 'Throws a bolt at the nearest enemy. It bursts on the first body it meets.',
+      fireball: 'Throws a bolt at the nearest enemy. It bursts on the first body it meets, and everything close by burns with it.',
       chainLightning: 'An instant arc that jumps from victim to victim, never hitting the same one twice.',
       iceSpear: 'Runs a line through the crowd, chilling everything it passes (-15% move speed).',
       voidOrb: 'Orbs ride around you clockwise and hurt whatever they sweep through. No aiming.',
+      thunderStrike: 'Calls a bolt out of the sky onto one enemy near you. If it dies, there is an even chance another bolt falls at once.',
     },
     tags: {
       물리: 'physical',
@@ -212,6 +223,7 @@ export const en: Strings = {
       냉기: 'cold',
       관통: 'pierce',
       공허: 'void',
+      오라: 'aura',
     },
     enemies: { boss: 'Boss', grunt: 'Grunt', brute: 'Brute', runner: 'Runner', shooter: 'Shooter' },
     gear: {
