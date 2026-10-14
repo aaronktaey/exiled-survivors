@@ -116,8 +116,15 @@ suite on its own: `node run-all.mjs test-gear`.
 1. `npx tsc --noEmit`
 2. `npx vite build`
 3. the full regression above, green
-4. a patch note in `src/content/patchNotes.ts`, **all four languages**, under
-   the newest version block
+4. a patch note in `src/content/patchNotes.ts`, **all four languages**, as a
+   **new version entry for every deploy** (0.20 → 0.21 → …). Write it by
+   comparing the previous version's notes — and `git diff` since the commit
+   that shipped them — with the game as it now is: only the net change, in
+   its final state. No line for something added and taken out again, no
+   number that has been retuned since, nothing that repeats or contradicts
+   the entry below. Read every number off config, not memory. Never append
+   to a version that has already deployed. (The user asked for this on
+   2026-10-14, after 0.20 had grown into a log of intermediate states.)
 5. commit, push, wait for the Pages run, then load the live site and look
 
 Commit messages are Korean, and say *why* rather than restating the diff.
