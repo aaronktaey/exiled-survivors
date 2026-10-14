@@ -415,7 +415,7 @@ export class CombatSystem {
 
     // A 구슬 rolls off any kill at all, which is what gives the hundredth
     // 일반 of a run something to be.
-    const orb = rollOrbDrop(scale);
+    const orb = rollOrbDrop(scale, wasBoss);
     if (orb) {
       this.dropOrbAt(x - 18, y, orb.id);
     }

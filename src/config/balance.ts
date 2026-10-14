@@ -50,6 +50,12 @@ export const PLAYER = {
 
 /** Shared defaults; the plain chaser is built from these. */
 export const ENEMY = {
+  /**
+   * Angle between one bolt of a 연발 fan and the next. Wide enough that the
+   * wedge has to be stepped out of rather than leaned away from, narrow
+   * enough that it still reads as one shot.
+   */
+  fanRadians: 0.18,
   size: 16,
   speed: 70,
   speedVariance: 0.25,
@@ -207,7 +213,8 @@ export type AffixId =
   | "honed"
   | "regrowth"
   | "evasive"
-  | "magnetic";
+  | "magnetic"
+  | "volleying";
 
 export type AffixKind = "prefix" | "suffix";
 
@@ -221,6 +228,12 @@ export interface EnemyAffixEffect {
   readonly damageScale?: number;
   /** Chance each of its hits lands for RARE.critMultiplier instead. */
   readonly critChance?: number;
+  /**
+   * Extra bolts per shot, thrown in a fan around the aimed one. Only the
+   * kinds that shoot have anywhere to put these, which is what `rangedOnly`
+   * on the 속성 is for.
+   */
+  readonly extraShots?: number;
 }
 
 /** What the same 속성 does for whoever is holding the weapon it is on. */
@@ -276,6 +289,11 @@ export interface AffixSpec {
    * its tooltip rather than by a tier list.
    */
   readonly enemy?: EnemyAffixEffect;
+  /**
+   * Only rolls on an enemy that shoots. An 속성 that adds bolts means
+   * nothing on something that walks up and hits you.
+   */
+  readonly rangedOnly?: boolean;
   /** What it does on a weapon, rung by rung. Tier 1 first. */
   readonly gearTiers?: readonly AffixTierSpec[];
 }
@@ -373,6 +391,15 @@ export const AFFIXES: Record<AffixId, AffixSpec> = {
       (v) => ({ attackBonus: v }),
       [5, 4, 3, 2, 1],
     ),
+  },
+
+  volleying: {
+    id: "volleying",
+    kind: "prefix",
+    name: "연발",
+    detail: "투사체 +2",
+    enemy: { extraShots: 2 },
+    rangedOnly: true,
   },
 
   // --- 접미어: what it does for whoever is carrying it ---
@@ -647,7 +674,7 @@ export const POTION = {
   /** Chance that killing an enemy drops one. */
   chance: 0.02,
   /** Fraction of max HP it restores. */
-  healFraction: 0.5,
+  healFraction: 0.2,
   size: 16,
 } as const;
 

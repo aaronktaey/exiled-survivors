@@ -24,8 +24,9 @@ import {
   orbShort,
   t,
 } from '@/i18n';
-import { gear, gearBonusFor, orbApplied, type GearItem } from '@/systems/Gear';
+import { gear, gearBonusFor, orbApplied, type GearItem, type OrbOutcome } from '@/systems/Gear';
 import { orbs } from '@/systems/Orbs';
+import { saveGame } from '@/systems/SaveGame';
 import { centredTop, fitText, fitWidth } from '@/systems/Layout';
 import { MenuList } from '@/systems/MenuList';
 import { prefersTouchControls } from '@/systems/VirtualJoystick';
@@ -38,6 +39,8 @@ export interface GearSceneData {
    * the cursor would jump to the top of the stash on every single reroll.
    */
   readonly focus?: string;
+  /** What the last 구슬 did, shown until the cursor moves off the weapon. */
+  readonly note?: string;
 }
 
 /** A percentage, as a reader would say it: "+50%", not "+50.0000001%". */
@@ -53,11 +56,11 @@ const FOOTER = 56;
 const EMPTY_SLOT = '─'.repeat(22);
 /**
  * What the read-out always costs: the weapon's own line, a heading and three
- * slots for the 접두어, the same for the 접미어, and one spare for a line
- * long enough to wrap. Fixed, because the slots are drawn whether or not
- * anything is in them — which is the point of drawing them.
+ * slots for the 접두어, and the same for the 접미어. Fixed, because the slots
+ * are drawn whether or not anything is in them — which is the point of
+ * drawing them. Nothing in it wraps, so there is no spare line.
  */
-const READ_OUT_LINES = 1 + (1 + GEAR_DROP.maxPrefixes) + (1 + GEAR_DROP.maxSuffixes) + 1;
+const READ_OUT_LINES = 1 + (1 + GEAR_DROP.maxPrefixes) + (1 + GEAR_DROP.maxSuffixes);
 /** Wide enough to stand the stash and the read-out beside each other. */
 const COLUMNS_FROM = 760;
 /** The 버리기 button under the read-out, and the air around it. */
@@ -66,7 +69,7 @@ const DISCARD_HEIGHT = 30;
 const DISCARD_WIDTH = 200;
 /** The row of 구슬 buttons under that, and the line explaining one. */
 const ORB_BLOCK = 40;
-const ORB_DETAIL_BLOCK = 26;
+const ORB_DETAIL_BLOCK = 34;
 
 /**
  * 장비창 — the stash, and which weapon goes out with you next time.
@@ -101,6 +104,13 @@ export class GearScene extends Phaser.Scene {
    * 각성의 구슬 is a thousand ordinary ones.
    */
   public armed: 'discard' | OrbId | null = null;
+  /**
+   * True while a run is sitting in the save slot. That run went out with
+   * one weapon and will be resumed with whatever is in hand, so swapping
+   * now would quietly hand it a different sword than it was played with.
+   * Public so a test can read it.
+   */
+  public locked = false;
 
   public constructor() {
     super(GearScene.KEY);
@@ -108,6 +118,7 @@ export class GearScene extends Phaser.Scene {
 
   public init(data: GearSceneData): void {
     this.payload = data;
+    this.locked = saveGame.read() !== null;
     // The scene instance outlives a launch, and an armed button left over
     // from last time would throw the first weapon away on one press.
     this.armed = null;
@@ -228,7 +239,11 @@ export class GearScene extends Phaser.Scene {
         .text(
           width / 2,
           height - 28,
-          prefersTouchControls() ? copy.hintTouch : copy.hintKeyboard,
+          this.locked
+            ? copy.lockedHint
+            : prefersTouchControls()
+              ? copy.hintTouch
+              : copy.hintKeyboard,
           { fontFamily: 'system-ui, sans-serif', fontSize: TEXT.size.hint, color: COLORS.muted },
         )
         .setOrigin(0.5)
@@ -317,8 +332,11 @@ export class GearScene extends Phaser.Scene {
       this.orbButtons.set(orb.id, label);
     });
 
+    // Clamped clear of the footer: this line is the longest thing on the
+    // screen and it is the one that says what a 구슬 just did.
+    const hintY = Math.min(y + ORB_BLOCK / 2 + 4, this.scale.height - FOOTER - 16);
     this.orbHint = this.add
-      .text(x, y + ORB_BLOCK / 2 + 4, '', {
+      .text(x, hintY, '', {
         fontFamily: 'system-ui, sans-serif',
         fontSize: TEXT.size.hint,
         color: COLORS.muted,
@@ -369,15 +387,59 @@ export class GearScene extends Phaser.Scene {
       return;
     }
 
-    const changed = orbApplied(item, spec);
-    if (!changed || !orbs.spend(id)) {
+    const outcome = orbApplied(item, spec);
+    if (!outcome || !orbs.spend(id)) {
       return;
     }
 
-    gear.replace(changed);
+    if (outcome.item) {
+      gear.replace(outcome.item);
+    } else {
+      // A 폭발의 구슬 that went off. The weapon is gone; the store puts a
+      // 녹슨 검 back if that leaves the survivor with nothing at all.
+      gear.discardAnyway(item.uid);
+    }
+
     // The weapon is a different height to read out now, so the whole screen
-    // is measured again — with the cursor left on the weapon it was spent on.
-    this.scene.restart({ ...this.payload, focus: item.uid });
+    // is measured again — with the cursor left on the weapon it was spent on
+    // and a line saying what the 구슬 actually did.
+    this.scene.restart({
+      ...this.payload,
+      focus: outcome.item ? item.uid : undefined,
+      note: GearScene.noteFor(spec.id, outcome),
+    });
+  }
+
+  /**
+   * What a 구슬 just did, in one line. A reroll that came up short and a
+   * weapon that did not survive a 폭발의 구슬 are both things to be told
+   * rather than left to work out from a read-out that changed.
+   */
+  private static noteFor(id: OrbId, outcome: OrbOutcome): string {
+    const copy = t().gear;
+    const orb = orbName(id);
+
+    if (outcome.kind === 'destroyed') {
+      return fill(copy.orbDestroyed, { orb });
+    }
+
+    if (outcome.kind === 'upgrade' && outcome.line && outcome.from) {
+      return fill(copy.orbUpgraded, {
+        orb,
+        from: `${affixName(outcome.from.id)} ${fill(copy.tier, { tier: outcome.from.tier })}`,
+        to: `${affixName(outcome.line.id)} ${fill(copy.tier, { tier: outcome.line.tier })}`,
+      });
+    }
+
+    if (outcome.kind === 'add' && outcome.line) {
+      return fill(copy.orbAdded, {
+        orb,
+        affix: `${affixName(outcome.line.id)} ${fill(copy.tier, { tier: outcome.line.tier })}`,
+      });
+    }
+
+    const lines = (outcome.item?.prefixes.length ?? 0) + (outcome.item?.suffixes.length ?? 0);
+    return fill(copy.orbRerolled, { orb, count: lines });
   }
 
   private refreshOrbs(): void {
@@ -406,9 +468,15 @@ export class GearScene extends Phaser.Scene {
     });
 
     const armedOrb = ALL_ORBS.find((orb) => orb.id === this.armed);
-    this.orbHint.setText(
-      armedOrb ? `${orbName(armedOrb.id)} — ${orbDetail(armedOrb.id)}` : '',
-    );
+    if (armedOrb) {
+      this.orbHint.setColor(COLORS.muted);
+      this.orbHint.setText(`${orbName(armedOrb.id)} — ${orbDetail(armedOrb.id)}`);
+      return;
+    }
+
+    // Nothing armed: the line carries what the last one did instead.
+    this.orbHint.setColor(this.payload.note ? COLORS.gearText : COLORS.muted);
+    this.orbHint.setText(this.payload.note ?? '');
   }
 
   /** The weapon under the cursor, if the cursor is on one at all. */
@@ -497,8 +565,16 @@ export class GearScene extends Phaser.Scene {
     ].join('\n');
   }
 
-  /** Puts a weapon on and repaints the rows, so the mark follows it. */
+  /**
+   * Puts a weapon on and repaints the rows, so the mark follows it. Refused
+   * while a run is saved: that run is resumed with whatever is in hand, and
+   * swapping now would hand it a sword it never went out with.
+   */
   private wear(uid: string): void {
+    if (this.locked) {
+      return;
+    }
+
     gear.equip(uid);
     this.refreshWearing();
     this.menu.refresh();

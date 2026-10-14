@@ -96,8 +96,15 @@ export interface Strings {
     readonly orbConfirm: string;
     /** Shown when the stash holds none of a 구슬 at all. */
     readonly orbNone: string;
+    /** What a 구슬 just did, said out loud afterwards. */
+    readonly orbRerolled: string;
+    readonly orbAdded: string;
+    readonly orbUpgraded: string;
+    readonly orbDestroyed: string;
     readonly hintKeyboard: string;
     readonly hintTouch: string;
+    /** Shown instead, while a saved run has a weapon in hand. */
+    readonly lockedHint: string;
     /** "접두어" / "접미어", heading the slots of each kind. */
     readonly prefix: string;
     readonly suffix: string;

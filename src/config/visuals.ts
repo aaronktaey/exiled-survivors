@@ -137,6 +137,7 @@ export const TEXTURES = {
   orbTransmute: "tex-orb-transmute",
   orbChaos: "tex-orb-chaos",
   orbAwaken: "tex-orb-awaken",
+  orbExplode: "tex-orb-explode",
   passive: "tex-passive",
   logo: "tex-logo",
 } as const;
@@ -289,6 +290,12 @@ export const DROP_LABEL = {
       border: 0x000000,
       borderWidth: 0,
       outlined: true,
+      /**
+       * White, where every other label is outlined in the dark the field is
+       * made of. Red on near-black needs the light behind it, and it is the
+       * one name worth seeing from across the floor.
+       */
+      outline: "#ffffff",
       /** How far the words swell and settle again, forever. */
       pulse: 0.06,
     },

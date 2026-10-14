@@ -90,7 +90,7 @@ import { TEXTURES } from '@/config/visuals';
  * Adding one means a line in ORBS, a name in the locales, and nothing else:
  * the stash, the drop, the label and the button all read this table.
  */
-export type OrbId = 'transmute' | 'chaos' | 'awaken';
+export type OrbId = 'transmute' | 'chaos' | 'awaken' | 'explode';
 
 export interface OrbSpec {
   readonly id: OrbId;
@@ -102,6 +102,8 @@ export interface OrbSpec {
   readonly detail: string;
   /** Share of kills that leave one. */
   readonly chance: number;
+  /** When set, only a 우두머리 leaves it, at `chance`. */
+  readonly fromBossOnly?: boolean;
   /** How loudly it lands: its nameplate and its drop sound both read this. */
   readonly tier: 'normal' | 'magic' | 'rare';
   readonly color: number;
@@ -114,6 +116,16 @@ export interface OrbSpec {
   readonly reroll?: { readonly min: number; readonly max: number };
   /** Or adds this many lines to whatever is already on it. */
   readonly add?: number;
+  /**
+   * Or takes one 속성 already on it, rolls a different one in its place and
+   * puts that one rung higher — at the risk of the weapon not surviving it.
+   */
+  readonly upgrade?: {
+    /** How many rungs better the replacement comes out. */
+    readonly steps: number;
+    /** Share of uses that destroy the weapon instead. */
+    readonly destroyChance: number;
+  };
 }
 
 export const ORBS: Record<OrbId, OrbSpec> = {
@@ -149,6 +161,18 @@ export const ORBS: Record<OrbId, OrbSpec> = {
     color: 0xffd34d,
     texture: TEXTURES.orbAwaken,
     add: 1,
+  },
+  explode: {
+    id: 'explode',
+    name: '폭발의 구슬',
+    short: '폭발',
+    detail: '속성 1개를 한 단계 높은 것으로 — 20% 확률로 장비 파괴',
+    chance: 0.01,
+    tier: 'rare',
+    color: 0xff7a3d,
+    texture: TEXTURES.orbExplode,
+    fromBossOnly: true,
+    upgrade: { steps: 1, destroyChance: 0.2 },
   },
 };
 

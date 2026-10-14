@@ -71,7 +71,7 @@ export class DropLabel {
       fontFamily: 'system-ui, sans-serif',
       fontSize: style.fontSize,
       color: style.text,
-      stroke: TEXT.outline.color,
+      stroke: (style as { outline?: string }).outline ?? TEXT.outline.color,
       strokeThickness: style.outlined ? outlineWidth(style.fontSize) : 0,
     });
     this.label.setText(text);

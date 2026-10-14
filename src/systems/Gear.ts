@@ -203,6 +203,21 @@ export function rollAffixLines(count: number): {
 export const MAX_AFFIX_LINES = GEAR_DROP.maxPrefixes + GEAR_DROP.maxSuffixes;
 
 /**
+ * What one 구슬 did. The screen reads this back out afterwards: a reroll that
+ * came up short and a weapon that did not survive a 폭발의 구슬 are both
+ * things the player has to be told rather than left to work out.
+ */
+export interface OrbOutcome {
+  /** The weapon after it, or null when the 구슬 destroyed it. */
+  readonly item: GearItem | null;
+  readonly kind: 'reroll' | 'add' | 'upgrade' | 'destroyed';
+  /** The line that came out of it, for an add or an upgrade. */
+  readonly line?: AffixLine;
+  /** And the one it replaced, for an upgrade. */
+  readonly from?: AffixLine;
+}
+
+/**
  * What a 구슬 does to a weapon, or null when it would do nothing — a
  * 각성의 구슬 on a weapon already carrying six, which must not be spent.
  *
@@ -210,12 +225,19 @@ export const MAX_AFFIX_LINES = GEAR_DROP.maxPrefixes + GEAR_DROP.maxSuffixes;
  * a 혼돈의 구슬 can turn a four-line weapon into two, and that is why it is
  * worth hesitating over.
  */
-export function orbApplied(item: GearItem, orb: OrbSpec): GearItem | null {
+export function orbApplied(item: GearItem, orb: OrbSpec): OrbOutcome | null {
   if (orb.reroll) {
     const span = orb.reroll.max - orb.reroll.min + 1;
     const count = orb.reroll.min + Math.floor(Math.random() * span);
     const rolled = rollAffixLines(Math.min(count, MAX_AFFIX_LINES));
-    return { ...item, prefixes: rolled.prefixes, suffixes: rolled.suffixes };
+    return {
+      item: { ...item, prefixes: rolled.prefixes, suffixes: rolled.suffixes },
+      kind: 'reroll',
+    };
+  }
+
+  if (orb.upgrade) {
+    return explode(item, orb.upgrade);
   }
 
   const held = item.prefixes.length + item.suffixes.length;
@@ -225,6 +247,7 @@ export function orbApplied(item: GearItem, orb: OrbSpec): GearItem | null {
 
   const prefixes: AffixLine[] = [...item.prefixes];
   const suffixes: AffixLine[] = [...item.suffixes];
+  let added: AffixLine | undefined;
   for (let i = 0; i < orb.add; i++) {
     const canPrefix = prefixes.length < GEAR_DROP.maxPrefixes && PREFIXES.length > 0;
     const canSuffix = suffixes.length < GEAR_DROP.maxSuffixes && SUFFIXES.length > 0;
@@ -239,18 +262,69 @@ export function orbApplied(item: GearItem, orb: OrbSpec): GearItem | null {
       break;
     }
 
-    (takePrefix ? prefixes : suffixes).push({ id: picked.id, tier: rollAffixTier(picked.id) });
+    const line = { id: picked.id, tier: rollAffixTier(picked.id) };
+    (takePrefix ? prefixes : suffixes).push(line);
+    added = line;
   }
 
-  return { ...item, prefixes, suffixes };
+  return { item: { ...item, prefixes, suffixes }, kind: 'add', line: added };
+}
+
+/**
+ * 폭발의 구슬: one 속성 already on the weapon is thrown away, a different one
+ * of the same kind rolled in its place, and that one comes out a rung better
+ * than the one it replaced. A fifth of the time the weapon does not survive
+ * it — which is the whole reason it is worth hesitating over, and why the
+ * screen asks before spending one.
+ */
+function explode(
+  item: GearItem,
+  upgrade: { readonly steps: number; readonly destroyChance: number },
+): OrbOutcome | null {
+  const lines = [...item.prefixes, ...item.suffixes];
+  if (lines.length === 0) {
+    return null;
+  }
+
+  if (Math.random() < upgrade.destroyChance) {
+    return { item: null, kind: 'destroyed' };
+  }
+
+  const index = Math.floor(Math.random() * lines.length);
+  const from = lines[index]!;
+  const fromPrefix = index < item.prefixes.length;
+  const pool = fromPrefix ? PREFIXES : SUFFIXES;
+  const picked = pool[Math.floor(Math.random() * pool.length)];
+  if (!picked) {
+    return null;
+  }
+
+  // Tier 1 is the best there is, so a rung better is a smaller number, and
+  // something already at the top stays there.
+  const tier = Math.max(1, from.tier - upgrade.steps);
+  const line = { id: picked.id, tier: affixTier(picked.id, tier)?.tier ?? tier };
+
+  const prefixes = [...item.prefixes];
+  const suffixes = [...item.suffixes];
+  if (fromPrefix) {
+    prefixes[index] = line;
+  } else {
+    suffixes[index - item.prefixes.length] = line;
+  }
+
+  return { item: { ...item, prefixes, suffixes }, kind: 'upgrade', line, from };
 }
 
 /**
  * Rolls for a 구슬 off one kill. `scale` is what the run's 뼈다귀 do to every
  * drop chance. Returns the one that dropped, if any.
  */
-export function rollOrbDrop(scale = 1): OrbSpec | null {
+export function rollOrbDrop(scale = 1, fromBoss = false): OrbSpec | null {
   for (const orb of Object.values(ORBS)) {
+    if (orb.fromBossOnly && !fromBoss) {
+      continue;
+    }
+
     if (Math.random() < orb.chance * scale) {
       return orb;
     }
@@ -377,6 +451,20 @@ class GearStore {
       ...this.value,
       items: this.value.items.map((held) => (held.uid === item.uid ? item : held)),
     });
+    return true;
+  }
+
+  /**
+   * Takes one out whether or not it is being carried. Only a 폭발의 구슬
+   * does this: what was in hand is gone, and `sanitise` hands back a
+   * 녹슨 검 rather than leaving the survivor with nothing.
+   */
+  public discardAnyway(uid: string): boolean {
+    if (!this.value.items.some((item) => item.uid === uid)) {
+      return false;
+    }
+
+    this.commit({ ...this.value, items: this.value.items.filter((item) => item.uid !== uid) });
     return true;
   }
 

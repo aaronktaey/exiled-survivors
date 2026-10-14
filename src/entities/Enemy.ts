@@ -32,15 +32,26 @@ const ENEMY_AFFIX_POOL = ENEMY_AFFIXES;
  * Repeats are allowed — there are fewer affix kinds than the ceiling, and
  * a doubled 거대 is a fine way to say "much bigger".
  */
-function rollAffixes(): readonly AffixSpec[] {
+/**
+ * The 속성 this kind has anywhere to put. 연발 adds bolts to a shot, which
+ * means nothing on something that walks up and hits you, so it only goes on
+ * the kinds that shoot.
+ */
+function poolFor(kind: EnemyKind): readonly AffixSpec[] {
+  const ranged = ENEMY_KINDS[kind]?.shot !== undefined;
+  return ranged ? ENEMY_AFFIX_POOL : ENEMY_AFFIX_POOL.filter((affix) => !affix.rangedOnly);
+}
+
+function rollAffixes(kind: EnemyKind): readonly AffixSpec[] {
   const picked: AffixSpec[] = [];
+  const pool = poolFor(kind);
 
   while (picked.length < RARE.maxAffixes) {
     if (picked.length >= RARE.minAffixes && Math.random() >= RARE.extraAffixChance) {
       break;
     }
 
-    const affix = ENEMY_AFFIX_POOL[Math.floor(Math.random() * ENEMY_AFFIX_POOL.length)];
+    const affix = pool[Math.floor(Math.random() * pool.length)];
     if (affix) {
       picked.push(affix);
     }
@@ -100,6 +111,8 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
   private healthBar?: Phaser.GameObjects.Graphics;
   private plate?: Phaser.GameObjects.Text;
   private hpScale = 1;
+  /** Bolts beyond the aimed one, from 연발. */
+  private extraShots = 0;
   private speedScale = 1;
   private damageScale = 1;
   private critChance = 0;
@@ -199,7 +212,7 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
     this.spec = spec;
     this.hooks = hooks;
     this.target = target;
-    this.applyAffixes(rare ? rollAffixes() : []);
+    this.applyAffixes(rare ? rollAffixes(kind) : []);
     // Three things decide what it walks in with: the kind, whatever 속성 it
     // was born with, and how long the run has already lasted.
     this.hp = Math.max(
@@ -237,6 +250,7 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
     this.speedScale = 1;
     this.damageScale = 1;
     this.critChance = 0;
+    this.extraShots = 0;
 
     for (const affix of affixes) {
       // The same affix can be drawn twice, and then it stacks: the scales
@@ -250,6 +264,7 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
       this.speedScale *= effect.speedScale ?? 1;
       this.damageScale *= effect.damageScale ?? 1;
       this.critChance = Math.min(1, this.critChance + (effect.critChance ?? 0));
+      this.extraShots += effect.extraShots ?? 0;
     }
   }
 
@@ -452,8 +467,20 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
     if (distance <= shot.range && this.shotCooldownMs <= 0 && this.target) {
       this.shotCooldownMs = shot.cooldownMs;
       const angle = Phaser.Math.Angle.Between(this.x, this.y, this.target.x, this.target.y);
-      // A rare's bolt carries its own multipliers, rolled as it leaves.
-      this.hooks?.fireShot(this.x, this.y, angle, { ...shot, damage: this.rollDamage(shot.damage) });
+
+      // 연발 throws the extra bolts in a fan around the aimed one, so a
+      // 사수 wearing it covers a wedge rather than a line: stepping aside
+      // is still the answer, but one step is no longer enough.
+      const total = 1 + this.extraShots;
+      const spread = ENEMY.fanRadians * (total - 1);
+      for (let i = 0; i < total; i++) {
+        const offset = total === 1 ? 0 : -spread / 2 + (spread / (total - 1)) * i;
+        // A rare's bolt carries its own multipliers, rolled as it leaves.
+        this.hooks?.fireShot(this.x, this.y, angle + offset, {
+          ...shot,
+          damage: this.rollDamage(shot.damage),
+        });
+      }
     }
 
     if (distance > shot.standoff) {

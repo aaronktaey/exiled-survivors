@@ -244,11 +244,24 @@ export class BootScene extends Phaser.Scene {
           ],
           true,
         );
-      } else {
+      } else if (orb.id === 'awaken') {
         // A cross with the arms stepping outward: one more of something.
         const arm = size * 0.07;
         graphics.fillRect(half - arm / 2, size * 0.22, arm, size * 0.56);
         graphics.fillRect(size * 0.22, half - arm / 2, size * 0.56, arm);
+      } else {
+        // A crack across the face: it may not survive its own use.
+        graphics.fillPoints(
+          [
+            new Phaser.Math.Vector2(half - size * 0.04, size * 0.18),
+            new Phaser.Math.Vector2(half + size * 0.12, half - size * 0.04),
+            new Phaser.Math.Vector2(half + size * 0.02, half),
+            new Phaser.Math.Vector2(half + size * 0.14, size * 0.82),
+            new Phaser.Math.Vector2(half - size * 0.06, half + size * 0.04),
+            new Phaser.Math.Vector2(half + size * 0.02, half - size * 0.02),
+          ],
+          true,
+        );
       }
 
       // A highlight, last, so it sits over the mark.
