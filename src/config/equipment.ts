@@ -33,12 +33,12 @@ export const GEAR_BASE = {
   /**
    * Attack power of the first tier, and what one step up the roster adds.
    *
-   * These are flat damage on every skill, and a skill starts at 15, so they
-   * are deliberately small: at 3 and 3 the top sword was worth +80% damage
+   * These are flat damage on every skill, and a skill starts at 150, so they
+   * are deliberately small: at 30 and 30 the top sword was worth +80% damage
    * on its own and nothing else in the run could compete with it.
    */
-  tier1Attack: 1,
-  attackPerTier: 1,
+  tier1Attack: 10,
+  attackPerTier: 10,
 } as const;
 
 /** Attack power for a tier, so the roster stays in step with the dial. */

@@ -105,6 +105,7 @@ const grant = await run(`
     popup: window.game.scene.isActive('UpgradeScene'),
     name: w.definition.name, tags: w.definition.tags, upgrades: w.definition.upgrades,
     stats: s.progression.statsFor('iceSpear'),
+    base: window.config.SKILL_BASE.iceSpear,
     hasProjectiles: !!w.projectiles,
   };
 `);
@@ -112,9 +113,9 @@ console.log('granted:', JSON.stringify(grant));
 check('얼음창 is 주문·냉기·투사체',
   grant.name === '얼음창' && JSON.stringify(grant.tags) === JSON.stringify(['주문', '냉기', '투사체']),
   `${grant.tags}`);
-check('base line is 10 damage, 1/s, 180px, 320px/s, and two pierces',
-  grant.stats.damage === 10 && grant.stats.attackSpeed === 1 && grant.stats.range === 180 &&
-  grant.stats.projectileSpeed === 320 && grant.stats.pierceCount === 2,
+check('it starts on its configured stat line',
+  ['damage', 'attackSpeed', 'range', 'projectileSpeed', 'pierceCount']
+    .every((k) => grant.stats[k] === grant.base[k]) && grant.base.pierceCount > 0,
   `dmg=${grant.stats.damage} as=${grant.stats.attackSpeed} range=${grant.stats.range} speed=${grant.stats.projectileSpeed} pierce=${grant.stats.pierceCount}`);
 check('it throws a projectile', grant.hasProjectiles === true);
 check('first pickup grants it without a popup', grant.popup === false);

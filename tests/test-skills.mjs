@@ -74,7 +74,7 @@ const meleeHelpers = `
   };
   const st = () => s.progression.statsFor('meleeStrike');
   const swing = () => { const w = s.weapons[0]; w.sinceSwingMs = 99999;
-    w.update(16, { origin: p, enemies: s.spawner.group, damage: 99, cooldownMs: 1,
+    w.update(16, { origin: p, enemies: s.spawner.group, damage: 1e9, cooldownMs: 1,
       range: st().range, projectileSpeed: st().projectileSpeed, hit: s.combat.hit }); };
 `;
 
@@ -327,15 +327,21 @@ const dials = await run(`
   return { hp, configured: Progression.enemyHealth, fire: s.damageOf('fireball'), melee: s.damageOf('meleeStrike'),
            fireStat: s.progression.statsFor('fireball').damage,
            meleeStat: s.progression.statsFor('meleeStrike').damage,
-           sword: s.gearBonus.attack };
+           sword: s.gearBonus.attack,
+           passive: s.mods.passive.damageScale,
+           fireBase: window.config.SKILL_BASE.fireball.damage,
+           meleeBase: window.config.SKILL_BASE.meleeStrike.damage };
 `);
 console.log('dials:', JSON.stringify(dials));
 check('enemy hp follows enemyHpScale', dials.hp === dials.configured,
   `hp=${dials.hp} at enemyHpScale=1 (configured maxHp=${dials.configured})`);
-// At a dial of 1 the stat passes straight through, plus whatever the sword
-// in hand adds — the same flat number on every skill.
+// At a dial of 1 the base, lifted by the tree, plus whatever the sword in
+// hand adds — the same flat number on every skill — and then the run's own
+// picks over the lot (Modifiers.damageFor).
+const folded = (base, stat) => Math.round((base * dials.passive + dials.sword) * (stat / base));
 check('damage is the stat plus the sword, at a dial of 1',
-  dials.fire === dials.fireStat + dials.sword && dials.melee === dials.meleeStat + dials.sword,
+  dials.fire === folded(dials.fireBase, dials.fireStat) &&
+    dials.melee === folded(dials.meleeBase, dials.meleeStat),
   `fireball ${dials.fireStat}+${dials.sword} -> ${dials.fire}, melee ${dials.meleeStat}+${dials.sword} -> ${dials.melee}`);
 
 console.log('\n=== SUMMARY ===');

@@ -32,7 +32,11 @@ export const BALANCE = {
 export const PLAYER = {
   size: 20,
   speed: 220,
-  maxHp: 20,
+  /**
+   * Every health and damage figure in the game is written ten times what it
+   * was, so a tuning step of 1 is a tenth of what it used to be.
+   */
+  maxHp: 200,
   /** Invulnerability after taking a hit, so contact does not drain instantly. */
   invulnerableMs: 600,
   /**
@@ -59,8 +63,8 @@ export const ENEMY = {
   size: 16,
   speed: 70,
   speedVariance: 0.25,
-  maxHp: 24,
-  contactDamage: 1,
+  maxHp: 240,
+  contactDamage: 12,
 } as const;
 
 export type EnemyKind = "grunt" | "brute" | "runner" | "shooter" | "boss";
@@ -121,9 +125,9 @@ export const ENEMY_KINDS: Record<EnemyKind, EnemyKindSpec> = {
     texture: TEXTURES.enemyBrute,
     size: 26,
     color: COLORS.enemyBrute,
-    maxHp: 120,
+    maxHp: 1200,
     speed: 42,
-    contactDamage: 3,
+    contactDamage: 36,
   },
   runner: {
     id: "runner",
@@ -131,9 +135,9 @@ export const ENEMY_KINDS: Record<EnemyKind, EnemyKindSpec> = {
     texture: TEXTURES.enemyRunner,
     size: 12,
     color: COLORS.enemyRunner,
-    maxHp: 15,
+    maxHp: 150,
     speed: 160,
-    contactDamage: 1,
+    contactDamage: 12,
   },
   /**
    * 우두머리. Not in the spawn table: one arrives on the clock instead, and
@@ -145,16 +149,16 @@ export const ENEMY_KINDS: Record<EnemyKind, EnemyKindSpec> = {
     texture: TEXTURES.enemyBoss,
     size: 44,
     color: COLORS.enemyBoss,
-    maxHp: 500,
+    maxHp: 5000,
     speed: 40,
-    contactDamage: 5,
+    contactDamage: 60,
     /**
      * Every so often it throws a ring of bolts outward, which is what makes
      * standing still beside a 우두머리 a losing idea. It aims at nothing:
      * the ring goes everywhere, and the gap between bolts is the way out.
      */
     volley: {
-      damage: 5,
+      damage: 60,
       speed: 150,
       /** Seconds between rings, not between bolts. */
       cooldownMs: 5_000,
@@ -172,11 +176,11 @@ export const ENEMY_KINDS: Record<EnemyKind, EnemyKindSpec> = {
     texture: TEXTURES.enemyShooter,
     size: 16,
     color: COLORS.enemyShooter,
-    maxHp: 24,
+    maxHp: 240,
     speed: 50,
-    contactDamage: 1,
+    contactDamage: 12,
     shot: {
-      damage: 3,
+      damage: 36,
       speed: 230,
       /** One every four seconds: a 사수 is a nuisance, not a turret. */
       cooldownMs: 4000,
@@ -755,9 +759,9 @@ export const DPS_TARGET = {
 } as const;
 
 export const SKILL_BASE: Record<SkillId, SkillBaseStats> = {
-  // 15 damage once a second: half a plain enemy per second.
+  // 150 damage once a second: half a plain enemy per second.
   meleeStrike: {
-    damage: 15,
+    damage: 150,
     attackSpeed: 1,
     range: 66,
     projectileSpeed: 0,
@@ -767,7 +771,7 @@ export const SKILL_BASE: Record<SkillId, SkillBaseStats> = {
     orbitSpeed: 0,
   },
   fireball: {
-    damage: 15,
+    damage: 150,
     attackSpeed: 1,
     range: 100,
     projectileSpeed: 230,
@@ -778,7 +782,7 @@ export const SKILL_BASE: Record<SkillId, SkillBaseStats> = {
   },
   // Two enemies a cast at 0.8 casts a second: a third of an enemy per second.
   chainLightning: {
-    damage: 6,
+    damage: 60,
     attackSpeed: 0.8,
     range: 160,
     projectileSpeed: 0,
@@ -789,7 +793,7 @@ export const SKILL_BASE: Record<SkillId, SkillBaseStats> = {
   },
   // It stops at the first body now; what it leaves behind is the 냉각.
   iceSpear: {
-    damage: 10,
+    damage: 100,
     attackSpeed: 1,
     range: 180,
     projectileSpeed: 320,
@@ -803,7 +807,7 @@ export const SKILL_BASE: Record<SkillId, SkillBaseStats> = {
   // orbitSpeed how fast they travel around, and attackSpeed how often one
   // orb may hit the same enemy again.
   voidOrb: {
-    damage: 5,
+    damage: 50,
     attackSpeed: 1.5,
     range: 90,
     projectileSpeed: 0,
@@ -886,8 +890,11 @@ export const UPGRADE_CAP: Partial<Record<UpgradeKey, number>> = {
  * to a passive point when the 우두머리 rolls have not been kind.
  */
 export const ECONOMY = {
-  /** Damage dealt per gold earned. */
-  damagePerGold: 100,
+  /**
+   * Damage dealt per gold earned. Raised with the x10 damage scale, so a
+   * run pays what it paid before.
+   */
+  damagePerGold: 1000,
   /** What one 신성한 조각 costs. */
   shardPrice: 100,
 } as const;
@@ -905,8 +912,12 @@ export const STATS = {
  */
 export const XP = {
   size: 8,
-  /** Multiplies the whole thing. The dial to turn for levelling pace. */
-  scale: 0.035,
+  /**
+   * Multiplies the whole thing. The dial to turn for levelling pace. A
+   * tenth of what it was when health was written ten times smaller, so
+   * levelling keeps its pace.
+   */
+  scale: 0.0035,
   /** One point of contact damage, counted as this much health. */
   contactWeight: 12,
   /** And one point of ranged damage, which costs you more to avoid. */

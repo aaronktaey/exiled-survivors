@@ -200,6 +200,7 @@ const folded = await run(`
       window.config.attackForTier(window.config.GEAR.steelSword.tier) *
         window.config.AFFIXES.mighty.gearTiers.find(t => t.tier === 3).gear.attackScale,
     ),
+    base: window.config.SKILL_BASE.meleeStrike.damage,
     lines: [...window.gear.equipped.prefixes, ...window.gear.equipped.suffixes].map(l => l.id),
     wantMaxHp: Math.round(
       window.config.PLAYER.maxHp *
@@ -210,11 +211,11 @@ const folded = await run(`
 console.log('folded:', JSON.stringify(folded));
 // The base, lifted by the tree, with the weapon added to the result.
 const wantDamage = Math.round(
-  15 * folded.passive.damageScale + folded.gear.attack,
+  folded.base * folded.passive.damageScale + folded.gear.attack,
 );
 check('패시브 lifts the skill, then 장비 is added to the result',
   folded.damage === wantDamage,
-  `15 x ${folded.passive.damageScale.toFixed(2)} + ${folded.gear.attack} = ${folded.damage}`);
+  `${folded.base} x ${folded.passive.damageScale.toFixed(2)} + ${folded.gear.attack} = ${folded.damage}`);
 check('and the sword is the tier, scaled by 강력',
   folded.gear.attack === folded.wantAttack,
   `+${folded.gear.attack}, wanted +${folded.wantAttack}`);
@@ -231,7 +232,7 @@ check('거대 is on the bar it starts the run with',
 
 // Within a layer the picks add up on the base; between layers they multiply.
 const stacked = await run(`
-  const base = 15;
+  const base = window.config.SKILL_BASE.meleeStrike.damage;
   const before = s.damageOf('meleeStrike');
   // Five picks of +20% is +100% of the base, not 1.2 to the fifth.
   for (let i = 0; i < 5; i++) s.progression.apply('meleeStrike', 'damage');

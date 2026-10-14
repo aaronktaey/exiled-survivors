@@ -57,11 +57,12 @@ const start = await run(`
     melee: s.damageOf('meleeStrike'),
     stat: s.progression.statsFor('meleeStrike').damage,
     loadout: s.hud.skillsLabel.text,
+    first: window.config.attackForTier(1),
   };
 `);
 console.log('starter:', JSON.stringify(start));
 check('the starting sword carries the first tier of attack power',
-  start.bonus.attack === 1, `+${start.bonus.attack}`);
+  start.bonus.attack === start.first, `+${start.bonus.attack}`);
 check('and it lands on what a skill hits for',
   start.melee === start.stat + start.bonus.attack,
   `${start.stat} + ${start.bonus.attack} = ${start.melee}`);
@@ -86,11 +87,14 @@ const attacks = await ev(`(() => {
   const ids = ['rustySword', 'ironSword', 'steelSword', 'runedSword'];
   return {
     attack: ids.map(id => window.gearBonusFor({ uid: 'probe', id, prefixes: [], suffixes: [] }).attack),
+    want: ids.map(id => window.config.attackForTier(window.config.GEAR[id].tier)),
+    step: window.config.GEAR_BASE.attackPerTier,
   };
 })()`);
 console.log('tier attack:', JSON.stringify(attacks.attack));
-check('each step up the roster is worth one more attack',
-  JSON.stringify(attacks.attack) === JSON.stringify([1, 2, 3, 4]),
+check('each step up the roster is worth one more step of attack',
+  JSON.stringify(attacks.attack) === JSON.stringify(attacks.want) &&
+    attacks.attack.every((a, i) => i === 0 || a - attacks.attack[i - 1] === attacks.step),
   attacks.attack.join(' / '));
 
 // --- 3. an ordinary kill leaves none, a 우두머리 always does ---
@@ -269,13 +273,16 @@ await pick('MenuScene', 'start');
 await sleep(2400);
 const carried = await run(`
   const rung = window.config.AFFIXES.swift.gearTiers.find(t => t.tier === 3);
+  const mighty = window.config.AFFIXES.mighty.gearTiers.find(t => t.tier === 3);
   return { bonus: s.gearBonus, max: s.player.maxHp, hp: s.player.hp,
+           wantAttack: Math.round(window.config.attackForTier(window.config.GEAR.steelSword.tier) *
+             mighty.gear.attackScale),
            wantSwift: rung.gear.moveSpeedScale,
            melee: s.damageOf('meleeStrike'), stat: s.progression.statsFor('meleeStrike').damage };
 `);
 console.log('carried into the run:', JSON.stringify(carried));
 check('the next run goes out with it',
-  carried.bonus.attack === 5 && carried.melee === carried.stat + 5,
+  carried.bonus.attack === carried.wantAttack && carried.melee === carried.stat + carried.wantAttack,
   `+${carried.bonus.attack} attack, melee ${carried.melee}`);
 check('and its 신속 is on the survivor, not just on paper',
   Math.abs(carried.bonus.moveSpeedScale - carried.wantSwift) < 0.001,

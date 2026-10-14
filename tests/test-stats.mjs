@@ -82,6 +82,7 @@ check('damage is what the enemies actually absorbed, overkill aside',
   `${fought.damage} against ${fought.expected} of enemy health`);
 
 // --- 3. the run is paid for it ---
+const ECON = await ev(`(() => ({ ...window.config.ECONOMY }))()`);
 const died = await run(`
   s.player.invulnerableUntil = 0;
   s.player.takeDamage(99999);
@@ -97,8 +98,8 @@ console.log('summary:', JSON.stringify({ ...over.summary, skills: over.summary.s
 check('the end-of-run screen is handed the run it just played',
   over.summary.damage === died.damage && over.summary.kills === planned,
   `${over.summary.damage} damage, ${over.summary.kills} kills`);
-check('gold is a hundredth of the damage, rounded down',
-  over.summary.gold === Math.floor(died.damage / 100) && over.gold === over.summary.gold,
+check('gold is the damage over the configured rate, rounded down',
+  over.summary.gold === Math.floor(died.damage / ECON.damagePerGold) && over.gold === over.summary.gold,
   `${died.damage} damage -> ${over.summary.gold} gold`);
 
 // --- 4. and reads it out ---
@@ -143,17 +144,19 @@ const poor = await scene('PassiveScene', `
 `);
 console.log('shop, short of it:', JSON.stringify(poor));
 check('the shop row is the first thing on 패시브',
-  poor.id === 'buyShard' && /100/.test(poor.label), poor.label);
+  poor.id === 'buyShard' && poor.label.includes(String(ECON.shardPrice)), poor.label);
 check('and it is closed while the purse is short',
-  poor.gold < 100 && poor.enabled === false, `${poor.gold} gold`);
+  poor.gold < ECON.shardPrice && poor.enabled === false, `${poor.gold} gold`);
 
-await ev(`(() => { window.gold.earn(25000); return 1; })()`);
+// Enough damage for two and a half shards, whatever a shard and a gold cost.
+await ev(`(() => { const e = window.config.ECONOMY;
+  window.gold.earn(e.damagePerGold * e.shardPrice * 2.5); return 1; })()`);
 await ev(`(() => { window.game.scene.getScene('PassiveScene').scene.restart({ onClose: () => {} }); return 1; })()`);
 await sleep(900);
 const rich = await scene('PassiveScene', `
   return { enabled: s.menu.rows[0].item.enabled(), gold: window.gold.value, purse: s.purse.text };
 `);
-check('and opens once there is enough', rich.gold >= 100 && rich.enabled === true,
+check('and opens once there is enough', rich.gold >= ECON.shardPrice && rich.enabled === true,
   `${rich.gold} gold`);
 check('the purse is read out on the screen',
   rich.purse.includes(`골드 ${rich.gold}`), rich.purse);
@@ -170,14 +173,15 @@ const bought = await scene('PassiveScene', `
 `);
 console.log('bought:', JSON.stringify(bought));
 check('buying takes a hundred gold and leaves a shard',
-  bought.gold === rich.gold - 100 && bought.stored.shards === 1,
+  bought.gold === rich.gold - ECON.shardPrice && bought.stored.shards === 1,
   `${rich.gold} -> ${bought.gold} gold, ${bought.stored.shards} shard`);
 await shot('stats-02-shop');
 
 // Ten of them finish a 구슬, bought or found.
 const tenth = await ev(`(() => {
   const s = window.game.scene.getScene('PassiveScene');
-  window.gold.earn(100000);
+  const e = window.config.ECONOMY;
+  window.gold.earn(e.damagePerGold * e.shardPrice * 10);
   for (let i = 0; i < 9; i++) {
     s.menu.selected = 0;
     s.menu.rows[0].item.onSelect();

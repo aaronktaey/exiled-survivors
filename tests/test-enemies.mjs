@@ -62,29 +62,36 @@ const kinds = await run(`
     e.recycle();
   }
   s.choosing = false;
+  out.spec = Object.fromEntries(['grunt', 'brute', 'runner', 'shooter'].map((k) =>
+    [k, { hp: window.config.ENEMY_KINDS[k].maxHp, contact: window.config.ENEMY_KINDS[k].contactDamage }]));
   return out;
 `);
+const SPEC = kinds.spec;
 console.log('kinds:', JSON.stringify(kinds, null, 1));
-check('일반: the configured HP, contact 1', kinds.grunt.hp === FULL && kinds.grunt.contact === 1,
+check('일반: the configured HP and contact', kinds.grunt.hp === FULL && kinds.grunt.contact === SPEC.grunt.contact,
   `hp=${kinds.grunt.hp} contact=${kinds.grunt.contact} speed≈${kinds.grunt.speed}`);
-check('거구: 120 HP and the slowest of the four',
-  kinds.brute.hp === 120 && kinds.brute.speed < kinds.grunt.speed,
+check('거구: its configured HP and the slowest of the four',
+  kinds.brute.hp === SPEC.brute.hp && kinds.brute.speed < kinds.grunt.speed,
   `hp=${kinds.brute.hp} speed≈${kinds.brute.speed} vs 일반 ≈${kinds.grunt.speed}`);
 check('거구 hits hardest on contact and pays the most XP',
-  kinds.brute.contact === 3 && kinds.brute.xp > kinds.grunt.xp,
+  kinds.brute.contact === SPEC.brute.contact &&
+    Object.values(SPEC).every((k) => k.contact <= SPEC.brute.contact) &&
+    kinds.brute.xp > kinds.grunt.xp,
   `contact=${kinds.brute.contact} xp=${kinds.brute.xp} vs 일반 ${kinds.grunt.xp}`);
 check('거구 is visibly bigger', kinds.brute.drawn[0] === 26 && kinds.brute.body[0] === 26,
   `drawn ${kinds.brute.drawn.join('x')}, body ${kinds.brute.body.join('x')}`);
 check('질주: fastest and frailest',
-  kinds.runner.hp === 15 && kinds.runner.speed > kinds.grunt.speed * 1.5,
+  kinds.runner.hp === SPEC.runner.hp &&
+    Object.values(SPEC).every((k) => k.hp >= SPEC.runner.hp) &&
+    kinds.runner.speed > kinds.grunt.speed * 1.5,
   `hp=${kinds.runner.hp} speed≈${kinds.runner.speed}`);
 check('사수: its own stat line and texture',
-  kinds.shooter.hp === 24 && kinds.shooter.tex === 'tex-enemy-shooter' &&
+  kinds.shooter.hp === SPEC.shooter.hp && kinds.shooter.tex === 'tex-enemy-shooter' &&
   kinds.shooter.xp >= kinds.grunt.xp,
   `hp=${kinds.shooter.hp} xp=${kinds.shooter.xp} ${kinds.shooter.tex}`);
 check('each kind draws its own texture',
   new Set(['grunt', 'brute', 'runner', 'shooter'].map(k => kinds[k].tex)).size === 4,
-  Object.values(kinds).map(k => k.tex.replace('tex-enemy', '')).join(' '));
+  ['grunt', 'brute', 'runner', 'shooter'].map(k => kinds[k].tex.replace('tex-enemy', '')).join(' '));
 
 // --- 2. stronger kinds unlock as the run goes on ---
 const unlocks = await run(`
@@ -125,23 +132,27 @@ const soak = await run(`
   const crit = window.config.PLAYER.critChance;
   window.config.PLAYER.critChance = 0;
   const p = s.player;
+  // One 얼음창 hit at its base line, whatever that is tuned to.
+  const dmg = window.config.SKILL_BASE.iceSpear.damage;
   const take = (kind) => {
     const e = s.spawner.group.get(p.x + 300, p.y + 300);
     e.spawn(p.x + 300, p.y + 300, p, kind);
+    const want = Math.ceil(e.hp / dmg);
     let hits = 0;
-    while (e.active && hits < 40) { s.combat.hit(e, 10); hits++; }
-    return hits;
+    while (e.active && hits < 400) { s.combat.hit(e, dmg); hits++; }
+    return { hits, want };
   };
-  const out = { grunt: take('grunt'), brute: take('brute'), runner: take('runner') };
+  const out = { dmg, grunt: take('grunt'), brute: take('brute'), runner: take('runner') };
   window.config.PLAYER.critChance = crit;
   s.spawner.clear();
   s.choosing = false;
   return out;
 `);
-console.log('hits to kill at 10 damage:', JSON.stringify(soak));
-check('10 damage kills 일반 in 3, 거구 in 12, 질주 in 2',
-  soak.grunt === 3 && soak.brute === 12 && soak.runner === 2,
-  `일반 ${soak.grunt} / 거구 ${soak.brute} / 질주 ${soak.runner}`);
+console.log('hits to kill:', JSON.stringify(soak));
+check('each kind takes as many hits as its health says',
+  ['grunt', 'brute', 'runner'].every((k) => soak[k].hits === soak[k].want) &&
+    soak.brute.hits > soak.grunt.hits && soak.grunt.hits >= soak.runner.hits,
+  `${soak.dmg} a hit: 일반 ${soak.grunt.hits} / 거구 ${soak.brute.hits} / 질주 ${soak.runner.hits}`);
 
 // --- 5. a 사수 keeps its distance and shoots ---
 await run(`
@@ -201,7 +212,8 @@ check('an enemy bolt lands for 2 and disappears',
 const contact = await run(`
   s.spawner.clear();
   const p = s.player;
-  p.hp = 20;
+  // From a full bar: three bumps must not end the run the later checks need.
+  p.hp = p.maxHp;
   const bump = (kind) => {
     p.invulnerableUntil = 0;
     const before = p.hp;
@@ -212,13 +224,14 @@ const contact = await run(`
     return before - p.hp;
   };
   const out = { grunt: bump('grunt'), brute: bump('brute'), runner: bump('runner') };
-  p.hp = 20;
+  p.hp = p.maxHp;
   s.spawner.clear();
   return out;
 `);
 console.log('contact damage:', JSON.stringify(contact));
-check('거구 contact costs 3, the others 1',
-  contact.grunt === 1 && contact.brute === 3 && contact.runner === 1,
+check('each kind costs its own contact damage',
+  ['grunt', 'brute', 'runner'].every((k) => contact[k] === SPEC[k].contact) &&
+    contact.brute > contact.grunt,
   `일반 ${contact.grunt} / 거구 ${contact.brute} / 질주 ${contact.runner}`);
 
 // --- 8. the gem is worth what the kind is worth ---
