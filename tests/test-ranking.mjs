@@ -163,6 +163,29 @@ const quiet = await ev(`(() => ({ entry: window.game.scene.isActive('RankEntrySc
   row: !!window.game.scene.getScene('GameOverScene').menu.items.find((i) => i.id === 'rank') }))()`);
 check('a run that would not make the board is not asked, and gets no row', !quiet.entry && !quiet.row);
 
+// --- 7. Tab to the trophy and Enter opens the board, and only the board ---
+// One key used to reach both the icon and the list under it: the board
+// opened and 게임 시작 fired with it, putting a run under the board.
+await ev(`(() => { window.game.scene.getScene('GameOverScene').toTitle(); return 1; })()`);
+await sleep(1200);
+for (let i = 0; i < 3; i++) { await cdp.tap('Tab', 9, 'Tab'); await sleep(150); }
+await cdp.tap('Enter', 13, 'Enter');
+await sleep(900);
+const tabbed = await ev(`(() => ({ board: window.game.scene.isActive('RankingScene'),
+  run: window.game.scene.isActive('GameScene') }))()`);
+check('Tab to the 랭킹 icon and Enter opens the board without starting a run',
+  tabbed.board && !tabbed.run, JSON.stringify(tabbed));
+await scene('RankingScene', `s.backButton.press(); return 1;`);
+await sleep(500);
+await cdp.tap('ArrowDown', 40, 'ArrowDown');
+await sleep(150);
+await cdp.tap('ArrowUp', 38, 'ArrowUp');
+await sleep(150);
+await cdp.tap('Enter', 13, 'Enter');
+await sleep(1200);
+check('and an arrow hands the keyboard back to the list, where Enter starts a run',
+  await active('GameScene'));
+
 console.log('\n=== SUMMARY ===');
 const failed = results.filter((r) => !r.p);
 console.log(`${results.length - failed.length}/${results.length} passed`);

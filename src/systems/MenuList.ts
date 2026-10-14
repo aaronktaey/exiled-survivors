@@ -31,6 +31,12 @@ export interface MenuListOptions {
   readonly onCancel?: () => void;
   /** The cursor landed on a different row. */
   readonly onMove?: (id: string) => void;
+  /**
+   * True while something else on the screen has the keyboard — the title's
+   * corner icons, walked to with Tab. Space and Enter are theirs then, not
+   * the list's, or one press would open an icon and start a run at once.
+   */
+  readonly keysElsewhere?: () => boolean;
 }
 
 const UP_CODES = ['KeyW', 'ArrowUp'];
@@ -75,6 +81,7 @@ export class MenuList {
   /** ▲ and ▼, on a list too long to show at once. */
   private readonly more: Phaser.GameObjects.Text[] = [];
   private readonly onCancel?: () => void;
+  private readonly keysElsewhere?: () => boolean;
   private readonly onMove?: (id: string) => void;
 
   /** Index into the items, not into the rows. */
@@ -88,6 +95,7 @@ export class MenuList {
     this.scene = scene;
     this.items = options.items;
     this.onCancel = options.onCancel;
+    this.keysElsewhere = options.keysElsewhere;
     this.onMove = options.onMove;
 
     const width = fitWidth(options.width ?? MENU.buttonWidth, scene.scale.width);
@@ -366,6 +374,9 @@ export class MenuList {
     } else if (RIGHT_CODES.includes(event.code)) {
       this.adjust(1);
     } else if (SELECT_CODES.includes(event.code)) {
+      if (this.keysElsewhere?.()) {
+        return;
+      }
       this.activate();
     } else if (event.code === 'Escape') {
       this.onCancel?.();

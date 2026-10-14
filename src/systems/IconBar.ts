@@ -72,6 +72,12 @@ export class IconBar {
         .setVisible(button.badge?.() ?? false);
 
       plate.on(Phaser.Input.Events.GAMEOBJECT_POINTER_OVER, () => this.focus(index));
+      // Leaving it hands the keyboard back, or Space would stay the icon's.
+      plate.on(Phaser.Input.Events.GAMEOBJECT_POINTER_OUT, () => {
+        if (this.focused === index) {
+          this.focus(-1);
+        }
+      });
       plate.on(Phaser.Input.Events.GAMEOBJECT_POINTER_DOWN, () => {
         this.focus(index);
         button.onSelect();
@@ -129,11 +135,24 @@ export class IconBar {
     this.refresh();
   }
 
+  /** True while Tab has walked to one of the icons. */
+  public get hasFocus(): boolean {
+    return this.focused >= 0;
+  }
+
   private onKeyDown(event: KeyboardEvent): void {
     if (event.code === 'Tab') {
       // Or the browser walks its own focus ring out of the canvas.
       event.preventDefault();
       this.focus((this.focused + 1) % this.views.length);
+      return;
+    }
+
+    // Up and down are the list's: they take the keyboard back from the icons.
+    if (['ArrowUp', 'ArrowDown', 'KeyW', 'KeyS'].includes(event.code)) {
+      if (this.focused >= 0) {
+        this.focus(-1);
+      }
       return;
     }
 

@@ -59,6 +59,7 @@ export class MenuScene extends Phaser.Scene {
 
     const saved = saveGame.read();
     this.menu = new MenuList(this, {
+      keysElsewhere: () => this.icons?.hasFocus === true,
       x: width / 2,
       y: top + blockHeight + gap + MENU.buttonHeight / 2,
       items: [

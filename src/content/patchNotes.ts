@@ -55,6 +55,7 @@ export const PATCH_NOTES: readonly PatchNote[] = [
         '모든 스킬의 기본 피해 20% 증가 — 타격·화염구 180, 얼음창 120, 낙뢰 96, 연쇄번개 72, 공허구체 60.',
         '랭킹이 생겼습니다(임시, 이 기기의 기록) — 시작 화면 오른쪽 위 트로피 아이콘에서 가한 피해 1~20위를 볼 수 있고, 로고 아래에 1위가 표시됩니다.',
         '판이 끝났을 때 20위 안에 들면 이름을 묻습니다 — 알파벳 3자와 이모지 1개까지. ▲ ▼로 고르거나 키보드로 바로 입력합니다. 건너뛰어도 게임 오버 화면의 랭킹 등록으로 다시 할 수 있습니다.',
+        '시작 화면에서 Tab으로 오른쪽 위 아이콘을 고른 뒤 Enter/Space를 누르면, 그 화면이 열리면서 게임 시작도 함께 눌리던 문제를 고쳤습니다. 방향키를 누르면 다시 목록을 고릅니다.',
       ],
       en: [
         'The Honed (flat attack) and Regrowth (life every 5s) modifiers are gone from weapons. Flat attack now comes only from the sword’s tier, and life comes back only from potions.',
@@ -93,6 +94,7 @@ export const PATCH_NOTES: readonly PatchNote[] = [
         'Every skill’s base damage +20% — Strike and Fireball 180, Ice Spear 120, Thunderstrike 96, Chain Lightning 72, Void Orb 60.',
         'A ranking (temporary, kept on this device) — the trophy at the top right of the title lists the 20 highest damage totals, and first place shows under the logo.',
         'A run that makes the top 20 asks for a name — up to 3 letters and 1 emoji, picked with ▲ ▼ or typed straight in. Skipped, it can still be entered from Enter ranking on the Game Over screen.',
+        'Fixed Tab-ing to a corner icon on the title and pressing Enter/Space also pressing New Run underneath it. An arrow key hands the keys back to the list.',
       ],
       ja: [
         '装備の属性から鋭利（攻撃力 +）と再生（5 秒ごとに体力 +）を削除しました。固定攻撃力は剣の段階からのみ、体力回復はポーションからのみ得られます。',
@@ -131,6 +133,7 @@ export const PATCH_NOTES: readonly PatchNote[] = [
         '全スキルの基本被害 20% 上昇 — 打撃・火球 180、氷槍 120、落雷 96、連鎖雷 72、虚無球 60。',
         'ランキングを追加しました（暫定、この端末の記録）— タイトル右上のトロフィーから与えた被害の 1〜20 位が見られ、ロゴの下に 1 位が表示されます。',
         '回が終わって 20 位以内に入ると名前を聞きます — 英字 3 文字と絵文字 1 つまで。▲ ▼ で選ぶかキーボードで直接入力します。スキップしてもゲームオーバー画面のランキング登録からやり直せます。',
+        'タイトルで Tab で右上のアイコンを選んで Enter/Space を押すと、その画面と同時にゲーム開始も押されていた問題を直しました。方向キーで一覧に戻ります。',
       ],
       zh: [
         '装备词缀中删除了锐利（攻击力 +）和再生（每 5 秒生命 +）。固定攻击力只来自剑的阶级，生命回复只来自药水。',
@@ -169,6 +172,7 @@ export const PATCH_NOTES: readonly PatchNote[] = [
         '所有技能基础伤害提高 20% — 打击、火球 180，冰枪 120，落雷 96，连锁闪电 72，虚空球 60。',
         '新增排行榜（临时，本设备记录）— 在标题画面右上角的奖杯处可查看造成伤害的第 1~20 名，标志下方显示第 1 名。',
         '一局结束时进入前 20 名会询问名字 — 最多 3 个字母和 1 个表情，用 ▲ ▼ 选择或直接用键盘输入。跳过后仍可在游戏结束画面的登记排行中重新登记。',
+        '修复了在标题画面用 Tab 选中右上角图标后按 Enter/Space，会同时触发开始游戏的问题。按方向键即可回到列表。',
       ],
     },
   },
