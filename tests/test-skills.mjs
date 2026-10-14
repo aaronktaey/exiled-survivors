@@ -296,7 +296,7 @@ const levels = await run(`
                   melee: p.levelFor('meleeStrike') };
 
   s.hud.update(0, 0, s.loadout());
-  const line = s.hud.skillsLabel.text;
+  const line = s.hud.loadoutText;
   s.choosing = false;
   return { before, start, after, line };
 `);

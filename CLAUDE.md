@@ -72,7 +72,7 @@ wrong shape.
 ## The test harness
 
 `tests/` drives a real Chrome over CDP against the dev server and checks the
-running game, not units. 35 suites, ~920 checks. It is the only thing that has
+running game, not units. 36 suites, ~935 checks. It is the only thing that has
 caught most of what has gone wrong here, so run all of it before every commit.
 
 ```sh
@@ -82,7 +82,8 @@ node run-all.mjs test-full test-skills test-balance test-chain test-ice \
   test-void test-enemies test-rare test-boss test-potion test-sfx test-perf \
   test-hud test-expiry test-audio test-touch test-shell test-shell2 test-info \
   test-i18n test-gear test-passive test-responsive test-stats test-bones \
-  test-altar test-slot test-inventory test-locale test-back test-fugitive \n  test-ranking test-skillpick test-mango test-web
+  test-altar test-slot test-inventory test-locale test-back test-fugitive \
+  test-ranking test-skillpick test-mango test-web test-loadout
 ```
 
 `run-all.mjs` starts Chrome itself (`CHROME_PATH` overrides where it looks),
@@ -210,6 +211,13 @@ Read `git log` for what changed and when. What is not in the log:
   shards, a `fromBossOnly` 구슬, a 뼈다귀 with `fromKill: 0`) and what is
   certain are not multiplied. A new drop should go through the same
   `bonus` in `CombatSystem.killEnemy`.
+- **Reading holds the run.** The HUD's skills are icons (`Hud.slots`); a
+  mouse over one opens a card spelling its DPS out (`GameScene.breakdownOf`,
+  the same folds as `damageOf`/`cooldownOf`), and a mouse over a rare shows
+  its 속성. Either sets `GameScene.inspecting`, which skips `update()` and
+  pauses physics until the pointer moves off. A touch shows the same without
+  the hold — on a phone that finger is steering. A popup that closes while
+  something is being read leaves the arena paused (`held`).
 - **Known gaps, left on purpose:**
   - A 구슬 can still be spent on the weapon a saved run is holding. Swapping
     is blocked while a run is saved; rerolling it is not.

@@ -23,10 +23,10 @@ export const BALANCE = {
   damageScale: {
     meleeStrike: 1,
     fireball: 1,
-    chainLightning: 1,
-    iceSpear: 1,
-    voidOrb: 1,
-    thunderStrike: 1,
+    chainLightning: 0.6,
+    iceSpear: 0.8,
+    voidOrb: 1.2,
+    thunderStrike: 0.8,
   } as Record<SkillId, number>,
 };
 
@@ -45,9 +45,9 @@ export const PLAYER = {
    * 치명 속성 adds to this rather than being the only way to have any, so a
    * crit read-out is worth watching from the first run.
    */
-  critChance: 0.05,
+  critChance: 0.03,
   /** What one of those is worth, before 잔혹 raises it. */
-  critMultiplier: 1.5,
+  critMultiplier: 1.3,
   /** XP gems within this range drift toward the player. */
   pickupRadius: 110,
   pickupSpeed: 420,
@@ -74,7 +74,13 @@ export const ENEMY = {
   contactCooldownMs: 600,
 } as const;
 
-export type EnemyKind = "grunt" | "brute" | "runner" | "shooter" | "boss" | "fugitive";
+export type EnemyKind =
+  | "grunt"
+  | "brute"
+  | "runner"
+  | "shooter"
+  | "boss"
+  | "fugitive";
 
 /** What a shooting enemy throws. */
 export interface EnemyShotSpec {
@@ -624,7 +630,8 @@ function rampMinutes(elapsedMs: number): { early: number; late: number } {
  */
 export function enemyHpScaleAt(elapsedMs: number): number {
   const { early, late } = rampMinutes(elapsedMs);
-  const lateStep = 1 + (DIFFICULTY.hpScalePerMinute - 1) * DIFFICULTY.lateMultiplier;
+  const lateStep =
+    1 + (DIFFICULTY.hpScalePerMinute - 1) * DIFFICULTY.lateMultiplier;
   return DIFFICULTY.hpScalePerMinute ** early * lateStep ** late;
 }
 
@@ -634,7 +641,8 @@ export function rareChanceAt(elapsedMs: number): number {
   return Math.min(
     1,
     RARE.chance +
-      DIFFICULTY.rareChancePerMinute * (early + late * DIFFICULTY.lateMultiplier),
+      DIFFICULTY.rareChancePerMinute *
+        (early + late * DIFFICULTY.lateMultiplier),
   );
 }
 

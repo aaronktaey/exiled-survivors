@@ -186,6 +186,17 @@ export const ja: Strings = {
     level: 'Lv {level}',
     enemies: '敵 {count}',
     dps: 'DPS {dps}',
+    formulaDamage: '被害 {damage} = (基本 {base} × パッシブ {passive} + 装備 {gear}) × 強化 {run}',
+    formulaRate: '毎秒 {rate} 回 = 基本 {base} × パッシブ {passive} × 装備 {gear} × 強化 {run}',
+    formulaMango: ' × マンゴー {mango}',
+    formulaScale: ' × 補正 {scale}',
+    formulaCap: '毎秒最大 {rate} 回（クールダウン下限）',
+    formulaTargets: '対象 {targets} = {parts}',
+    targetChain: '連鎖 {n}',
+    targetPierce: '貫通 {n}',
+    targetOrbs: '追加の球 {n}',
+    formulaDps: 'DPS {dps} = {damage} × {rate} × {targets}',
+    formulaNote: 'クリティカルは含まない値です',
   },
 
   game: {

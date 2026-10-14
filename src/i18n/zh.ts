@@ -186,6 +186,17 @@ export const zh: Strings = {
     level: 'Lv {level}',
     enemies: '敌人 {count}',
     dps: 'DPS {dps}',
+    formulaDamage: '伤害 {damage} = (基础 {base} × 被动 {passive} + 装备 {gear}) × 强化 {run}',
+    formulaRate: '每秒 {rate} 次 = 基础 {base} × 被动 {passive} × 装备 {gear} × 强化 {run}',
+    formulaMango: ' × 芒果 {mango}',
+    formulaScale: ' × 修正 {scale}',
+    formulaCap: '每秒最多 {rate} 次（冷却下限）',
+    formulaTargets: '目标 {targets} = {parts}',
+    targetChain: '连锁 {n}',
+    targetPierce: '穿透 {n}',
+    targetOrbs: '额外球体 {n}',
+    formulaDps: 'DPS {dps} = {damage} × {rate} × {targets}',
+    formulaNote: '不含暴击',
   },
 
   game: {

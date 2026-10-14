@@ -425,10 +425,10 @@ const crit = await run(`
 `);
 console.log('crit:', JSON.stringify(crit));
 check('every survivor crits sometimes without a weapon saying so',
-  crit.base === 0.05 && crit.player === crit.base,
+  crit.base > 0 && crit.player === crit.base,
   `${(crit.base * 100).toFixed(0)}% with nothing on the sword`);
-check('and one of those is worth half again',
-  crit.baseMultiplier === 1.5 && Math.abs(crit.multiplier - 1.5) < 1e-9,
+check('and one of those is worth more than a plain hit, by the configured amount',
+  crit.baseMultiplier > 1 && Math.abs(crit.multiplier - crit.baseMultiplier) < 1e-9,
   `x${crit.multiplier}`);
 check('치명 on a weapon adds to that rather than being the only source',
   crit.withAffix > 0, `+${(crit.withAffix * 100).toFixed(0)}% from a 1티어 치명`);

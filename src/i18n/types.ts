@@ -256,9 +256,26 @@ export interface Strings {
   readonly hud: {
     readonly level: string;
     readonly enemies: string;
-    /** Damage one hit lands. */
     /** Damage per second, counting everything the skill touches. */
     readonly dps: string;
+    /**
+     * The lines of a skill's hover card, which spell its DPS out the way the
+     * run computes it. {placeholders} are filled with the live numbers.
+     */
+    readonly formulaDamage: string;
+    readonly formulaRate: string;
+    /** Added to the rate line while a 하얀 망고 is working. */
+    readonly formulaMango: string;
+    /** Appended to the damage line when the skill's balance dial is not 1. */
+    readonly formulaScale: string;
+    /** A line of its own when the cooldown floor holds the rate down. */
+    readonly formulaCap: string;
+    readonly formulaTargets: string;
+    readonly targetChain: string;
+    readonly targetPierce: string;
+    readonly targetOrbs: string;
+    readonly formulaDps: string;
+    readonly formulaNote: string;
   };
 
   readonly game: {

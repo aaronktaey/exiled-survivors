@@ -155,7 +155,7 @@ for (let i = 0; i < 20; i++) {
   await sleep(400);
   const ready = await cdp.evaluate(`(() => {
     const s = window.game.scene.getScene('GameScene');
-    return { ok: !!(s && s.hud && s.hud.skillsLabel), active: window.game.scene.scenes.filter(x => x.scene.isActive()).map(x => x.scene.key) };
+    return { ok: !!(s && s.hud && s.hud.slots), active: window.game.scene.scenes.filter(x => x.scene.isActive()).map(x => x.scene.key) };
   })()`);
   if (ready.ok) break;
   const warn = await cdp.evaluate(`({ open: window.game.scene.isActive('ConfirmScene') })`);
@@ -165,7 +165,7 @@ const run = await scene('GameScene', `
   return {
     intro: s.children.list.filter(o => o.type === 'Text').map(o => o.text),
     enemies: s.hud.enemiesLabel.text,
-    skills: s.hud.skillsLabel.text,
+    skills: s.hud.loadoutText,
   };
 `);
 console.log('run text:', JSON.stringify(run));

@@ -56,7 +56,7 @@ const start = await run(`
     hp: s.player.hp, max: s.player.maxHp,
     melee: s.damageOf('meleeStrike'),
     stat: s.progression.statsFor('meleeStrike').damage,
-    loadout: s.hud.skillsLabel.text,
+    loadout: s.hud.loadoutText,
     first: window.config.attackForTier(1),
   };
 `);

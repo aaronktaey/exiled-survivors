@@ -110,8 +110,7 @@ const counts = await cdp.evaluate(`(() => {
   const s = window.game.scene.getScene('GameScene');
   const h = s.hud;
   return {
-    skills: { text: h.skillsLabel.text, x: Math.round(h.skillsLabel.x), y: Math.round(h.skillsLabel.y),
-              size: h.skillsLabel.style.fontSize, stroke: h.skillsLabel.style.strokeThickness },
+    skills: { text: h.loadoutText },
     enemies: { text: h.enemiesLabel.text, x: Math.round(h.enemiesLabel.x),
                y: Math.round(h.enemiesLabel.y), ox: h.enemiesLabel.originX },
     clock: { x: Math.round(h.clockLabel.x), y: Math.round(h.clockLabel.y),
@@ -196,7 +195,8 @@ check('and every one of them has a dark outline behind it',
 // The readout sits straight on the playfield, so it is the one that needs it.
 const outlined = await cdp.evaluate(`(() => {
   const h = window.game.scene.getScene('GameScene').hud;
-  return { stroke: h.skillsLabel.style.strokeThickness, colour: h.skillsLabel.style.stroke,
+  const level = h.slots[0].level;
+  return { stroke: level.style.strokeThickness, colour: level.style.stroke,
            clock: h.clockLabel.style.strokeThickness };
 })()`);
 check('the outline is dark, and thicker on bigger type',

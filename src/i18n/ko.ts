@@ -190,6 +190,17 @@ export const ko: Strings = {
     level: 'Lv {level}',
     enemies: '적 {count}',
     dps: 'DPS {dps}',
+    formulaDamage: '피해 {damage} = (기본 {base} × 패시브 {passive} + 장비 {gear}) × 강화 {run}',
+    formulaRate: '초당 {rate}회 = 기본 {base} × 패시브 {passive} × 장비 {gear} × 강화 {run}',
+    formulaMango: ' × 망고 {mango}',
+    formulaScale: ' × 보정 {scale}',
+    formulaCap: '초당 최대 {rate}회 (재사용 대기 하한)',
+    formulaTargets: '대상 {targets} = {parts}',
+    targetChain: '연쇄 {n}',
+    targetPierce: '관통 {n}',
+    targetOrbs: '추가 구체 {n}',
+    formulaDps: 'DPS {dps} = {damage} × {rate} × {targets}',
+    formulaNote: '치명타는 들어가지 않은 값입니다',
   },
 
   game: {

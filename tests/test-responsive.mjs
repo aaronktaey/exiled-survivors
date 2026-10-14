@@ -78,15 +78,17 @@ const hud = await run(`
   const h = s.hud;
   return {
     width: s.scale.width,
-    skills: { x: Math.round(h.skillsLabel.x), y: Math.round(h.skillsLabel.y),
-              right: Math.round(h.skillsLabel.x + h.skillsLabel.width) },
+    skills: { x: Math.round(h.barBounds.x), y: Math.round(h.barBounds.y),
+              right: Math.round(h.barBounds.right) },
+    count: { bottom: Math.round(h.enemiesLabel.y + h.enemiesLabel.height) },
     clock: { x: Math.round(h.clockLabel.x), left: Math.round(h.clockLabel.x - h.clockLabel.width / 2),
              bottom: Math.round(h.clockLabel.y + h.clockLabel.height) },
   };
 `);
 console.log('hud:', JSON.stringify(hud));
 check('the loadout drops under the clock instead of through it',
-  hud.skills.y >= hud.clock.bottom, `loadout at y=${hud.skills.y}, clock ends at ${hud.clock.bottom}`);
+  hud.skills.y >= hud.clock.bottom && hud.skills.y >= hud.count.bottom,
+  `loadout at y=${hud.skills.y}, clock ends at ${hud.clock.bottom}, count at ${hud.count.bottom}`);
 check('and still fits the width', hud.skills.right <= hud.width,
   `${hud.skills.right} of ${hud.width}`);
 

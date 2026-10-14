@@ -15,6 +15,40 @@ export interface PatchNote {
 
 export const PATCH_NOTES: readonly PatchNote[] = [
   {
+    version: '0.23',
+    date: '2026-10-14',
+    changes: {
+      ko: [
+        '전투 화면 왼쪽 위의 스킬 현황이 글줄 대신 보유 스킬 아이콘으로 바뀌었습니다. 아이콘 귀퉁이의 숫자가 그 스킬의 레벨입니다.',
+        '스킬 아이콘에 마우스를 올리면 그 스킬의 DPS 계산식이 나옵니다 — 한 번의 피해(기본 × 패시브 + 장비, 그리고 강화), 초당 횟수(망고 포함), 한 번에 맞히는 대상 수, 그리고 이 셋을 곱한 DPS. 치명타는 들어가지 않은 값입니다.',
+        '마우스를 올려 스킬 계산식이나 희귀 적의 속성을 읽는 동안에는 전투가 멈춥니다. 마우스를 떼면 이어집니다. 터치 화면에서는 이동하는 손가락과 겹치기 때문에 멈추지 않습니다.',
+        '모든 생존자의 기본 치명타 확률이 5%에서 3%로, 치명타 피해가 1.5배에서 1.3배로 낮아졌습니다(잔혹 속성은 여전히 그 위에 더해집니다).',
+        '스킬별 피해 보정 — 연쇄번개 -40%, 얼음창 -20%, 낙뢰 -20%, 공허구체 +20%. 계산식 카드에는 보정으로 표시됩니다.',
+      ],
+      en: [
+        'The skill readout at the top left is now a row of icons for the skills you hold instead of lines of text. The number in each icon’s corner is that skill’s level.',
+        'Hovering a skill icon shows how its DPS is worked out — damage per hit (base × passive + weapon, then upgrades), hits per second (mango included), how many enemies one hit reaches, and the DPS those three multiply to. Crits are not counted.',
+        'The fight pauses while the mouse is reading a skill’s formula or a rare’s affixes, and carries on when it moves away. On a touch screen it does not pause, since the finger reading is usually the one steering.',
+        'Every survivor’s base crit chance drops from 5% to 3%, and a crit is worth 1.3× instead of 1.5× (Cruel still adds on top).',
+        'Per-skill damage balance — Chain Lightning -40%, Ice Spear -20%, Thunderstrike -20%, Void Orb +20%. The formula card shows it as balance.',
+      ],
+      ja: [
+        '戦闘画面左上のスキル状況が、文字の行から所持スキルのアイコンに変わりました。アイコンの隅の数字がそのスキルのレベルです。',
+        'スキルアイコンにマウスを乗せると、そのスキルの DPS の計算式が出ます — 1 回の被害（基本 × パッシブ + 装備、そして強化）、毎秒の回数（マンゴー込み）、1 回で当たる対象の数、そしてその 3 つを掛けた DPS。クリティカルは含まない値です。',
+        'マウスを乗せてスキルの計算式やレア敵の属性を読んでいる間は戦闘が止まります。マウスを離すと続きます。タッチ画面では移動する指と重なるため止まりません。',
+        '全ての生存者の基本クリティカル率が 5% から 3% に、クリティカル被害が 1.5 倍から 1.3 倍に下がりました（残酷の属性は引き続きその上に加算されます）。',
+        'スキルごとの被害補正 — 連鎖雷 -40%、氷槍 -20%、落雷 -20%、虚無球 +20%。計算式カードには補正として表示されます。',
+      ],
+      zh: [
+        '战斗画面左上的技能状况由文字行改为持有技能的图标。图标角落的数字是该技能的等级。',
+        '将鼠标移到技能图标上会显示该技能的 DPS 计算式 — 单次伤害（基础 × 被动 + 装备，再乘强化）、每秒次数（含芒果）、一次命中的目标数，以及三者相乘得到的 DPS。不含暴击。',
+        '用鼠标查看技能计算式或稀有敌人的属性时，战斗会暂停；移开鼠标后继续。触屏上因为查看的手指通常也在操控移动，所以不会暂停。',
+        '所有幸存者的基础暴击率由 5% 降为 3%，暴击伤害由 1.5 倍降为 1.3 倍（残酷属性仍在其上叠加）。',
+        '各技能伤害修正 — 连锁闪电 -40%、冰枪 -20%、落雷 -20%、虚空球 +20%。计算式卡片中以修正显示。',
+      ],
+    },
+  },
+  {
     version: '0.22',
     date: '2026-10-14',
     changes: {

@@ -330,8 +330,11 @@ export const HUD = {
    * drops below the clock block instead of sitting beside it.
    */
   narrowWidth: 640,
-  /** Where the loadout starts once it has dropped. */
-  narrowTop: 54,
+  /** Where the loadout starts once it has dropped: under the enemy count. */
+  narrowTop: 70,
+  /** One skill in the loadout bar, and the gap between two. */
+  skillSlot: 34,
+  skillGap: 6,
   /** Left edge of the run readout, clear of the pause button in the corner. */
   leftInset: 56,
   /** XP bar spans the full width along the very bottom edge. */

@@ -16,6 +16,7 @@ import {
   STATS,
   SAVE,
   SCENES,
+  SKILL_BASE,
   SKILL_DROP,
   SKILL_PICK,
   MANGO,
@@ -168,6 +169,11 @@ export class GameScene extends Phaser.Scene {
   /** Popups earned while one was already open. */
   private pendingChoices: ChoiceRequest[] = [];
   private choosing = false;
+  /**
+   * What the mouse is reading: a skill's card, a rare's 속성. Either holds
+   * the run still until the pointer moves off it.
+   */
+  private inspecting = { skill: false, rare: false };
   private over = false;
   private invulnerable = false;
   /** Round-robin cursor for the debug drop key. */
@@ -191,6 +197,7 @@ export class GameScene extends Phaser.Scene {
     this.sinceSaveMs = 0;
     this.pendingChoices = [];
     this.choosing = false;
+    this.inspecting = { skill: false, rare: false };
     this.over = false;
     this.invulnerable = false;
     this.weapons = [];
@@ -246,7 +253,7 @@ export class GameScene extends Phaser.Scene {
         critMultiplier: () => critMultiplierFor(this.mods),
       },
     );
-    this.hud = new Hud(this, this.progression);
+    this.hud = new Hud(this, this.progression, (hold) => this.setInspecting('skill', hold));
     this.debug = new DebugOverlay(this, this.debugActions());
     this.rareTooltip = new RareTooltip(this, this.spawner.group);
     // In the order they matter: a 우두머리 before a 신성한 조각, and both
@@ -323,7 +330,9 @@ export class GameScene extends Phaser.Scene {
       owned: [...this.owned],
       onPick: (skill) => {
         this.choosing = false;
-        this.physics.resume();
+        if (!this.held) {
+          this.physics.resume();
+        }
         this.acquire(skill);
         this.announce(fill(t().game.pickedUp, { skill: skillName(skill) }));
         this.showIntro();
@@ -422,6 +431,10 @@ export class GameScene extends Phaser.Scene {
     if (this.over || this.choosing) {
       return;
     }
+    // Reading a card or a rare under the mouse: nothing moves meanwhile.
+    if (this.held) {
+      return;
+    }
 
     // One long frame (a tab regaining focus, a GC pause) must not teleport
     // the world, so every system downstream runs on a clamped delta.
@@ -510,12 +523,51 @@ export class GameScene extends Phaser.Scene {
    * list can be read while the run is frozen.
    */
   private armInspect(): void {
-    this.input.on(Phaser.Input.Events.POINTER_MOVE, (pointer: Phaser.Input.Pointer) => {
-      this.rareTooltip.inspectAt(pointer.x, pointer.y);
-    });
-    this.input.on(Phaser.Input.Events.POINTER_DOWN, (pointer: Phaser.Input.Pointer) => {
-      this.rareTooltip.inspectAt(pointer.x, pointer.y);
-    });
+    // Under a mouse the run waits while the list is read. A finger shows
+    // it without the wait: on a phone that finger is usually steering.
+    const inspect = (pointer: Phaser.Input.Pointer): void => {
+      const found = this.rareTooltip.inspectAt(pointer.x, pointer.y);
+      this.setInspecting('rare', found && !pointer.wasTouch);
+    };
+    this.input.on(Phaser.Input.Events.POINTER_MOVE, inspect);
+    this.input.on(Phaser.Input.Events.POINTER_DOWN, inspect);
+    // A mouse that leaves the window is not reading anything any more.
+    this.input.on(Phaser.Input.Events.GAME_OUT, () => this.stopInspecting());
+  }
+
+  /** Whether something under the mouse is holding the run. */
+  private get held(): boolean {
+    return this.inspecting.skill || this.inspecting.rare;
+  }
+
+  /**
+   * Starts or ends one kind of reading, and freezes or frees the arena when
+   * that changes whether anything is being read. A popup already holds the
+   * arena on its own, and lets it go only once nothing is being read.
+   */
+  private setInspecting(source: 'skill' | 'rare', on: boolean): void {
+    const before = this.held;
+    this.inspecting[source] = on;
+    if (before === this.held || this.over || this.choosing) {
+      return;
+    }
+    if (this.held) {
+      this.physics.pause();
+    } else {
+      this.physics.resume();
+    }
+  }
+
+  private stopInspecting(): void {
+    this.rareTooltip.hide();
+    this.hud.point(-1);
+    this.setInspecting('rare', false);
+    this.setInspecting('skill', false);
+  }
+
+  /** Whether the run is standing still for a card or a rare. Public for tests. */
+  public get inspectHeld(): boolean {
+    return this.held;
   }
 
   /** The live enemies, for anything drawing over a frozen run. */
@@ -582,7 +634,7 @@ export class GameScene extends Phaser.Scene {
     }
 
     this.writeSave();
-    this.rareTooltip.hide();
+    this.stopInspecting();
     this.scene.pause();
     this.scene.bringToTop(SCENES.pause);
     this.scene.launch(SCENES.pause, {
@@ -744,12 +796,70 @@ export class GameScene extends Phaser.Scene {
       // HUD is the number the enemies are getting.
       const perSecond = 1000 / this.cooldownOf(id);
       const targets = 1 + stats.chainCount + stats.pierceCount + Math.max(0, stats.orbCount - 1);
+      const damage = this.damageOf(id);
       return {
+        id,
         name: skillName(id),
         level: this.progression.levelFor(id),
-        dps: this.damageOf(id) * perSecond * targets,
+        dps: damage * perSecond * targets,
+        breakdown: this.breakdownOf(id, damage, perSecond, targets),
       };
     });
+  }
+
+  /**
+   * The hover card's lines: the same folds as `damageOf` and `cooldownOf`,
+   * written out factor by factor, so what the card adds up to is what the
+   * bar says.
+   */
+  private breakdownOf(skill: SkillId, damage: number, perSecond: number, targets: number): string[] {
+    const copy = t().hud;
+    const stats = this.progression.statsFor(skill);
+    const base = SKILL_BASE[skill];
+    const num = (value: number, digits = 2): string => String(Number(value.toFixed(digits)));
+    const runScale = (from: number, to: number): number => (from === 0 ? 1 : to / from);
+
+    const scale = BALANCE.damageScale[skill] ?? 1;
+    const damageLine =
+      fill(copy.formulaDamage, {
+        damage,
+        base: num(base.damage),
+        passive: num(this.mods.passive.damageScale),
+        gear: num(this.mods.gear.attack),
+        run: num(runScale(base.damage, stats.damage)),
+      }) + (scale === 1 ? '' : fill(copy.formulaScale, { scale: num(scale) }));
+
+    const mango = this.player?.mangoActive ? MANGO.attackSpeedScale : 1;
+    const rateLine =
+      fill(copy.formulaRate, {
+        rate: num(perSecond),
+        base: num(base.attackSpeed),
+        passive: num(this.mods.passive.attackSpeedScale),
+        gear: num(this.mods.gear.attackSpeedScale),
+        run: num(runScale(base.attackSpeed, stats.attackSpeed)),
+      }) + (mango === 1 ? '' : fill(copy.formulaMango, { mango: num(mango) }));
+    const capped = this.cooldownOf(skill) <= STATS.minCooldownMs;
+
+    const extras = [
+      [copy.targetChain, stats.chainCount],
+      [copy.targetPierce, stats.pierceCount],
+      [copy.targetOrbs, Math.max(0, stats.orbCount - 1)],
+    ] as const;
+    const parts = ['1', ...extras.filter(([, n]) => n > 0).map(([label, n]) => fill(label, { n }))];
+
+    return [
+      damageLine,
+      rateLine,
+      ...(capped ? [fill(copy.formulaCap, { rate: num(perSecond) })] : []),
+      fill(copy.formulaTargets, { targets, parts: parts.join(' + ') }),
+      fill(copy.formulaDps, {
+        dps: num(damage * perSecond * targets, 1),
+        damage,
+        rate: num(perSecond),
+        targets,
+      }),
+      copy.formulaNote,
+    ];
   }
 
   /**
@@ -942,7 +1052,9 @@ export class GameScene extends Phaser.Scene {
       return;
     }
 
-    this.physics.resume();
+    if (!this.held) {
+      this.physics.resume();
+    }
   }
 
   private onPlayerDied(): void {

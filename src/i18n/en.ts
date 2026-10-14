@@ -186,6 +186,17 @@ export const en: Strings = {
     level: 'Lv {level}',
     enemies: 'Enemies {count}',
     dps: 'DPS {dps}',
+    formulaDamage: 'Damage {damage} = (base {base} × passive {passive} + weapon {gear}) × upgrades {run}',
+    formulaRate: '{rate}/s = base {base} × passive {passive} × weapon {gear} × upgrades {run}',
+    formulaMango: ' × mango {mango}',
+    formulaScale: ' × balance {scale}',
+    formulaCap: 'capped at {rate}/s (shortest cooldown)',
+    formulaTargets: 'Targets {targets} = {parts}',
+    targetChain: 'chain {n}',
+    targetPierce: 'pierce {n}',
+    targetOrbs: 'extra orbs {n}',
+    formulaDps: 'DPS {dps} = {damage} × {rate} × {targets}',
+    formulaNote: 'Critical hits are not counted',
   },
 
   game: {
