@@ -113,7 +113,7 @@ export class SkillPickScene extends Phaser.Scene {
     this.cards = this.payload.options.map((skill, index) => {
       const x = across ? centerX + (index - (count - 1) / 2) * (cardWidth + CARD_GAP) : centerX;
       const y = across ? firstY : firstY + index * (cardHeight + CARD_GAP);
-      return this.buildCard(skill, x, y, cardWidth, cardHeight, !across);
+      return this.buildCard(index, skill, x, y, cardWidth, cardHeight, !across);
     });
 
     const lastBottom = this.cards.length
@@ -152,7 +152,14 @@ export class SkillPickScene extends Phaser.Scene {
     onPick(card.skill);
   }
 
+  /**
+   * One card. Its index is handed in rather than read off `this.cards`: the
+   * cards are built inside the map that fills that array, so it is still
+   * empty here — every card once took index 0, and the mouse picked the
+   * first card whichever one it was over.
+   */
   private buildCard(
+    index: number,
     skill: SkillId,
     x: number,
     y: number,
@@ -217,7 +224,6 @@ export class SkillPickScene extends Phaser.Scene {
       .setOrigin(origin, 0)
       .setDepth(DEPTH.ui + 1);
 
-    const index = this.cards.length;
     panel.on(Phaser.Input.Events.GAMEOBJECT_POINTER_OVER, () => {
       if (!this.picked) {
         this.selected = index;

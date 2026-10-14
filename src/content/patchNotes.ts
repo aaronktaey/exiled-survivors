@@ -15,6 +15,24 @@ export interface PatchNote {
 
 export const PATCH_NOTES: readonly PatchNote[] = [
   {
+    version: '0.21',
+    date: '2026-10-14',
+    changes: {
+      ko: [
+        '스킬 카드(시작 스킬, 무작위 스킬)를 마우스로 고를 때 커서가 따라가지 않고, 어느 카드를 눌러도 첫 번째 카드가 선택되던 문제를 고쳤습니다.',
+      ],
+      en: [
+        'Fixed choosing a skill card (starting skill, Random skill) with the mouse: the cursor did not follow, and clicking any card took the first one.',
+      ],
+      ja: [
+        'スキルカード（開始スキル、ランダムスキル）をマウスで選ぶとき、カーソルが追従せず、どのカードを押しても 1 枚目が選ばれていた問題を修正しました。',
+      ],
+      zh: [
+        '修复了用鼠标选择技能卡（初始技能、随机技能）时光标不跟随、点击任何一张都会选中第一张的问题。',
+      ],
+    },
+  },
+  {
     version: '0.20',
     date: '2026-10-14',
     changes: {

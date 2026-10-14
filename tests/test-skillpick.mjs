@@ -61,14 +61,32 @@ check('as many different skills as configured, each a real one',
   opened.options.join(' / '));
 await shot('skillpick-01-start');
 
+// With a real mouse: the page is a scaled canvas, so a card's place in the
+// game is turned into where it is on the page before the pointer goes there.
+const cardsOnPage = await pick(`
+  const r = window.game.canvas.getBoundingClientRect();
+  const k = r.width / s.scale.width;
+  return s.cards.map((c) => ({ x: r.left + c.x * k, y: r.top + c.y * k }));
+`);
+const mouse = (type, at) => cdp.send('Input.dispatchMouseEvent',
+  { type, x: at.x, y: at.y, button: 'left', buttons: type === 'mouseReleased' ? 0 : 1, clickCount: 1 });
 await sleep(400);
-await cdp.tap('Digit2', 50, '2');
+const hovered = [];
+for (const at of cardsOnPage) {
+  await cdp.send('Input.dispatchMouseEvent', { type: 'mouseMoved', x: at.x, y: at.y });
+  await sleep(120);
+  hovered.push(await pick(`return s.selected;`));
+}
+check('the cursor follows the mouse onto each card in turn',
+  JSON.stringify(hovered) === JSON.stringify(cardsOnPage.map((_, i) => i)), hovered.join(' '));
+await mouse('mousePressed', cardsOnPage[2]);
+await mouse('mouseReleased', cardsOnPage[2]);
 await sleep(900);
 const took = await run(`return { owned: [...s.owned], choosing: s.choosing, paused: s.physics.world.isPaused,
   pick: window.game.scene.isActive('SkillPickScene') };`);
-check('2 takes the second card, and only that skill is in hand',
-  JSON.stringify(took.owned) === JSON.stringify([opened.options[1]]) && !took.pick,
-  `took ${took.owned.join(', ')}`);
+check('clicking the third card takes the third card, and only that skill is in hand',
+  JSON.stringify(took.owned) === JSON.stringify([opened.options[2]]) && !took.pick,
+  `clicked ${opened.options[2]}, took ${took.owned.join(', ')}`);
 check('and the run goes on', took.choosing === false && took.paused === false);
 
 // --- 3. over many runs, every skill can be offered ---
@@ -172,6 +190,13 @@ await sleep(1500);
 await ev(`(() => { window.game.scene.getScene('GameOverScene').payload.onRestart(); return 1; })()`);
 await sleep(1500);
 check('다시하기 opens on the cards too', await active('SkillPickScene'));
+const again = await pick(`return s.payload.options;`);
+await sleep(400);
+await cdp.tap('Digit2', 50, '2');
+await sleep(900);
+const keyed = await run(`return [...s.owned];`);
+check('and 2 on the keyboard takes the second card',
+  JSON.stringify(keyed) === JSON.stringify([again[1]]), `took ${keyed.join(', ')}`);
 
 console.log('\n=== SUMMARY ===');
 const failed = results.filter((r) => !r.p);
