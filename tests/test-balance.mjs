@@ -322,6 +322,28 @@ check('it steps on the minute rather than creeping up to it',
   curve.underAMinute.hp === 1 && curve.underAMinute.rare === curve.base,
   `at 59s still x${curve.underAMinute.hp}`);
 
+// Past the late minute every step is lateMultiplier times as big.
+const late = await run(`
+  const d = window.config.DIFFICULTY;
+  const out = [];
+  for (const m of [d.lateFromMinute, d.lateFromMinute + 1, d.lateFromMinute + 2, d.lateFromMinute + 5]) {
+    s.spawner.seed(m * 60000);
+    out.push({ m, hp: s.spawner.hpScale, rare: s.spawner.rareChance });
+  }
+  s.spawner.seed(0);
+  return { d, out, base: window.config.RARE.chance };
+`);
+const L = late.d.lateFromMinute;
+const lateStep = 1 + (late.d.hpScalePerMinute - 1) * late.d.lateMultiplier;
+check('from the late minute on, each minute’s health step is that many times bigger',
+  late.out.every(({ m, hp }) =>
+    Math.abs(hp - late.d.hpScalePerMinute ** L * lateStep ** (m - L)) < 1e-6 * hp),
+  late.out.map(({ m, hp }) => `${m}m x${hp.toFixed(2)}`).join(' / '));
+check('and so is the rare step',
+  late.out.every(({ m, rare }) => Math.abs(rare - Math.min(1,
+    late.base + late.d.rareChancePerMinute * (L + (m - L) * late.d.lateMultiplier))) < 1e-9),
+  late.out.map(({ m, rare }) => `${m}m ${(rare * 100).toFixed(0)}%`).join(' / '));
+
 const walked = await run(`
   s.choosing = true;
   const base = window.config.ENEMY_KINDS.grunt.maxHp;

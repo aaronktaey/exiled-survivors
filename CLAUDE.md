@@ -72,7 +72,7 @@ wrong shape.
 ## The test harness
 
 `tests/` drives a real Chrome over CDP against the dev server and checks the
-running game, not units. 33 suites, ~900 checks. It is the only thing that has
+running game, not units. 35 suites, ~920 checks. It is the only thing that has
 caught most of what has gone wrong here, so run all of it before every commit.
 
 ```sh
@@ -82,7 +82,7 @@ node run-all.mjs test-full test-skills test-balance test-chain test-ice \
   test-void test-enemies test-rare test-boss test-potion test-sfx test-perf \
   test-hud test-expiry test-audio test-touch test-shell test-shell2 test-info \
   test-i18n test-gear test-passive test-responsive test-stats test-bones \
-  test-altar test-slot test-inventory test-locale test-back test-fugitive \n  test-ranking test-skillpick
+  test-altar test-slot test-inventory test-locale test-back test-fugitive \n  test-ranking test-skillpick test-mango test-web
 ```
 
 `run-all.mjs` starts Chrome itself (`CHROME_PATH` overrides where it looks),
@@ -101,6 +101,10 @@ suite on its own: `node run-all.mjs test-gear`.
 - **A hidden Chrome window stops Phaser's loop**, which fails every check at
   once for a reason that has nothing to do with the game. `cdp-lib.mjs` pins
   the page visible and raises the window on connect; leave that in.
+- **Phaser calls `Math.random` when it makes a new Text.** A probe that
+  pins `Math.random` to force a drop roll must first fill every pool the
+  kill can draw from (drop one of each and collect it) with the real roll,
+  or the first new label throws "reading 'context'" — see test-mango.
 - **`cdp.evaluate` hands results back as one JSON string.** Returning
   everything on screen (the patch notes, every chapter of the guide) overflows
   it and the suite dies with `undefined`. Return the answer, not the corpus.
@@ -200,6 +204,12 @@ Read `git log` for what changed and when. What is not in the log:
   server when there is one; the screens only touch `top`, `placeFor`,
   `submit`, `refresh` and `source`. Flags are drawn textures
   (`tex-flag-XX`), not emoji: Windows has no flag emoji.
+- **One drop rule.** Every ordinary drop is multiplied by the kill's
+  `Enemy.dropBonus`: 1 + `RARE.dropBonusPerAffix` per 속성 on a rare,
+  1 + `BOSS.dropBonus` for a 우두머리. What only a 우두머리 leaves (gear,
+  shards, a `fromBossOnly` 구슬, a 뼈다귀 with `fromKill: 0`) and what is
+  certain are not multiplied. A new drop should go through the same
+  `bonus` in `CombatSystem.killEnemy`.
 - **Known gaps, left on purpose:**
   - A 구슬 can still be spent on the weapon a saved run is holding. Swapping
     is blocked while a run is saved; rerolling it is not.

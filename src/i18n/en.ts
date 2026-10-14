@@ -194,6 +194,8 @@ export const en: Strings = {
     introHintTouch: 'Drag the stick to move — attacks are automatic',
     gearFound: 'Found {gear} — wear it from the title screen',
     orbFound: '{orb} — use it from the Inventory',
+    mango: 'White Mango',
+    mangoEaten: 'White Mango! Untouchable for {seconds}s · attack and move speed +100%',
     boneFound: '{bone} — apply it before the next run',
     shardFound: 'Divine Shard {held}/{need}',
     orbMade: 'A Divine Orb — one passive point',
@@ -253,7 +255,7 @@ export const en: Strings = {
       meleeStrike: 'A short swing at the nearest enemy, catching everything in the arc.',
       fireball: 'Throws a bolt at the nearest enemy. It bursts on the first body it meets, and everything close by burns with it.',
       chainLightning: 'An instant arc that jumps from victim to victim, never hitting the same one twice.',
-      iceSpear: 'Runs a line through the crowd, chilling everything it passes (-15% move speed).',
+      iceSpear: 'Runs a line through the crowd, chilling everything it passes (-30% move speed).',
       voidOrb: 'Orbs ride around you clockwise and hurt whatever they sweep through. No aiming.',
       thunderStrike: 'Calls a bolt out of the sky onto one enemy near you. If it dies, there is an even chance another bolt falls at once.',
     },
@@ -289,6 +291,7 @@ export const en: Strings = {
       evasive: 'Evasive',
       magnetic: 'Magnetic',
       volleying: 'Volleying',
+      spider: 'Spider',
     },
     affixDetails: {
       giant: 'Health +50%',
@@ -300,6 +303,7 @@ export const en: Strings = {
       evasive: 'Invulnerable window +30%',
       magnetic: 'Pickup range +40%',
       volleying: '+2 projectiles',
+      spider: 'Leaves a web where it dies — -30% move speed for a minute',
     },
     affixGearDetails: {
       mighty: 'Damage +{value}%',
@@ -420,7 +424,7 @@ export const en: Strings = {
       lines: [
         '{chance} of enemies come up rare, wearing a coloured ring.',
         'A rare carries {min} to {max} affixes; the more it stacks, the deeper the ring. Repeats stack their effect.',
-        'Each affix raises its skill drop chance by {dropBonus}. Dangerous, but worth killing.',
+        'Each affix raises every drop chance by {dropBonus}, and a Boss raises them by {bossBonus} — except what only a Boss leaves and what is certain anyway. Dangerous, but worth killing.',
       ],
     },
     drops: {

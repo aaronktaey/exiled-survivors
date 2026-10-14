@@ -176,7 +176,9 @@ const slow = await run(`
   return out;
 `);
 console.log('chill:', JSON.stringify(slow));
-check('냉각 takes 15% off the move speed', slow.ratio === 0.85, `speed x${slow.ratio}`);
+const CHILL = await cdp.evaluate(`window.config.CHILL.slowFactor`);
+const CHILLED = Number((1 - CHILL).toFixed(3));
+check('냉각 takes its configured share off the move speed', slow.ratio === CHILLED, `speed x${slow.ratio}`);
 check('a chilled enemy is tinted', slow.tint === '45cfc6', `#${slow.tint}`);
 check('냉각 wears off after 2s', slow.stillChilled === false && slow.recovered === true,
   `back to full speed: ${slow.recovered}`);
@@ -193,7 +195,7 @@ const stack = await run(`
   s.spawner.clear();
   return out;
 `);
-check('three chills do not stack into a deeper slow', stack.ratio === 0.85, `speed x${stack.ratio}`);
+check('three chills do not stack into a deeper slow', stack.ratio === CHILLED, `speed x${stack.ratio}`);
 
 // --- 7. 화염구 still bursts on the first body ---
 const fire = await run(`

@@ -311,13 +311,15 @@ function explode(
  * Rolls for a 구슬 off one kill. `scale` is what the run's 뼈다귀 do to every
  * drop chance. Returns the one that dropped, if any.
  */
-export function rollOrbDrop(scale = 1, fromBoss = false): OrbSpec | null {
+export function rollOrbDrop(scale = 1, fromBoss = false, bonus = 1): OrbSpec | null {
   for (const orb of Object.values(ORBS)) {
     if (orb.fromBossOnly && !fromBoss) {
       continue;
     }
 
-    if (Math.random() < orb.chance * scale) {
+    // A 구슬 only a 우두머리 leaves is not raised by the kill's own bonus.
+    const chance = orb.chance * scale * (orb.fromBossOnly ? 1 : bonus);
+    if (Math.random() < chance) {
       return orb;
     }
   }

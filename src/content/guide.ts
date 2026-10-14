@@ -111,6 +111,7 @@ export function guideChapters(): readonly GuideChapter[] {
               min: RARE.minAffixes,
               max: RARE.maxAffixes,
               dropBonus: percent(RARE.dropBonusPerAffix),
+              bossBonus: percent(BOSS.dropBonus),
             }),
           ),
         },

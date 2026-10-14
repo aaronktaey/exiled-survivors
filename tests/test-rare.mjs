@@ -341,11 +341,18 @@ const bonus = await run(`
   plain.spawn(0, 0, s.player, 'grunt');
   out.plainBonus = plain.dropBonus;
   plain.recycle();
+  const boss = s.spawner.group.get(0, 0);
+  boss.spawn(0, 0, s.player, 'boss');
+  out.bossBonus = boss.dropBonus;
+  boss.recycle();
+  out.per = window.config.RARE.dropBonusPerAffix;
+  out.bossWant = 1 + window.config.BOSS.dropBonus;
   return out;
 `);
-check('the enemy itself reports the right multiplier',
-  bonus.bonus === 1 + bonus.affixes * 0.5 && bonus.plainBonus === 1,
-  `${bonus.affixes} affixes -> x${bonus.bonus}, ordinary -> x${bonus.plainBonus}`);
+check('the enemy itself reports the right multiplier — rare, ordinary and 우두머리',
+  Math.abs(bonus.bonus - (1 + bonus.affixes * bonus.per)) < 1e-9 && bonus.plainBonus === 1 &&
+    bonus.bossBonus === bonus.bossWant,
+  `${bonus.affixes} affixes -> x${bonus.bonus}, ordinary -> x${bonus.plainBonus}, 우두머리 -> x${bonus.bossBonus}`);
 
 // --- 8. potions are a fifth as common as they were ---
 const potions = await run(`

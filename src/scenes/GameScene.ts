@@ -18,6 +18,7 @@ import {
   SCENES,
   SKILL_DROP,
   SKILL_PICK,
+  MANGO,
   TEXT,
   TEXTURES,
   TIMING,
@@ -46,6 +47,7 @@ import {
   type UpgradeId,
 } from '@/systems';
 import { EdgeMarkers } from '@/systems/EdgeMarkers';
+import { WebField } from '@/systems/WebField';
 import { RareTooltip } from '@/systems/RareTooltip';
 import { sfx } from '@/systems/Sfx';
 import { saveGame, type SavedRun } from '@/systems/SaveGame';
@@ -136,6 +138,8 @@ export class GameScene extends Phaser.Scene {
   private hud!: Hud;
   private separation!: Separation;
   private damageNumbers!: DamageNumbers;
+  /** The 거미줄 on the ground. Public for tests. */
+  public webs!: WebField;
   private debug!: DebugOverlay;
   private rareTooltip!: RareTooltip;
   /** The 뼈다귀 this run was started with, and what they add up to. */
@@ -215,6 +219,7 @@ export class GameScene extends Phaser.Scene {
     });
     this.separation = new Separation(this.spawner.group, this.player);
     this.damageNumbers = new DamageNumbers(this);
+    this.webs = new WebField(this);
     this.stats = new RunStats();
     this.combat = new CombatSystem(
       this,
@@ -234,6 +239,9 @@ export class GameScene extends Phaser.Scene {
         onBoneCollected: (id) => this.onBoneCollected(id),
         onAltarWoke: (offer, x, y) => this.onAltarWoke(offer, x, y),
         onRandomSkillCollected: () => this.queueChoice({ kind: 'pick' }),
+        onWeb: (x, y, stacks) => this.webs.spawn(x, y, stacks),
+        onMangoCollected: () =>
+          this.announce(fill(t().game.mangoEaten, { seconds: Math.round(MANGO.durationMs / 1000) })),
         dropScale: () => this.boneBonus.dropScale,
         critMultiplier: () => critMultiplierFor(this.mods),
       },
@@ -261,6 +269,7 @@ export class GameScene extends Phaser.Scene {
       { group: this.combat.shardDrops },
       { group: this.combat.orbDrops },
       { group: this.combat.gearDrops },
+      { group: this.combat.mangoDrops },
       { group: this.combat.randomSkillDrops },
       { group: this.combat.skillDrops },
       { group: this.combat.potions },
@@ -419,7 +428,9 @@ export class GameScene extends Phaser.Scene {
     const dt = Math.min(delta, TIMING.maxDeltaMs);
     this.elapsedMs += dt;
 
+    this.player.webbed = this.webs.update(dt, this.player.x, this.player.y);
     this.player.update();
+    this.player.tickBuffs(dt);
     this.spawner.update(dt);
     this.separation.update();
 
@@ -719,7 +730,9 @@ export class GameScene extends Phaser.Scene {
   /** The same fold, for how often that skill goes off. */
   private cooldownOf(skill: SkillId): number {
     const upgraded = this.progression.statsFor(skill).attackSpeed;
-    const rate = attackSpeedFor(skill, upgraded, this.mods);
+    // A 하얀 망고 doubles every skill's pace while it lasts.
+    const mango = this.player?.mangoActive ? MANGO.attackSpeedScale : 1;
+    const rate = attackSpeedFor(skill, upgraded, this.mods) * mango;
     return Math.max(STATS.minCooldownMs, 1000 / Math.max(rate, 0.01));
   }
 
@@ -826,7 +839,11 @@ export class GameScene extends Phaser.Scene {
    */
   private onLevelUp(level: number): void {
     this.player.setLevel(level);
-    const held = [...this.owned];
+    // Only a skill that still has an upgrade to take: one at every ceiling
+    // would open a popup with no cards in it.
+    const held = [...this.owned].filter(
+      (id) => upgradeOptionsFor(SKILLS[id], this.progression.statsFor(id)).length > 0,
+    );
     const skill = held[Math.floor(Math.random() * held.length)];
     if (!skill) {
       return;
@@ -862,11 +879,18 @@ export class GameScene extends Phaser.Scene {
       return;
     }
 
+    // Worked out here, where the live stats are, so an upgrade that has hit
+    // its ceiling is simply not offered — and a skill with none left gets no
+    // popup at all.
+    const options = upgradeOptionsFor(SKILLS[request.skill], this.progression.statsFor(request.skill));
+    if (options.length === 0) {
+      this.afterChoice();
+      return;
+    }
+
     const data: UpgradeChoiceData = {
       ...request,
-      // Worked out here, where the live stats are, so an upgrade that has
-      // hit its ceiling is simply not offered.
-      options: upgradeOptionsFor(SKILLS[request.skill], this.progression.statsFor(request.skill)),
+      options,
       onPick: (upgrade) => this.onUpgradePicked(request.skill, upgrade),
     };
     this.scene.bringToTop(UpgradeScene.KEY);

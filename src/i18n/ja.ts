@@ -194,6 +194,8 @@ export const ja: Strings = {
     introHintTouch: 'スティックを引いて移動 — 攻撃は自動',
     gearFound: '{gear} 獲得 — タイトル画面で装備できます',
     orbFound: '{orb} 入手 — インベントリで使用',
+    mango: '白いマンゴー',
+    mangoEaten: '白いマンゴー！{seconds} 秒間無敵 · 攻撃速度と移動速度 +100%',
     boneFound: '{bone} 入手 — 次の回の開始前に適用',
     shardFound: '神聖な欠片 {held}/{need}',
     orbMade: '神聖なオーブ完成 — パッシブポイント +1',
@@ -253,7 +255,7 @@ export const ja: Strings = {
       meleeStrike: '最も近い敵へ短く振り抜き、範囲内の敵をまとめて叩きます。',
       fireball: '最も近い敵へ火の玉を投げます。最初に当たった敵で弾け、周りの敵も巻き込みます。',
       chainLightning: '即着の雷が敵を打ち、近くの次の敵へ移ります。同じ敵は二度打ちません。',
-      iceSpear: '敵を貫いて進み、かすめた敵すべてに冷却（移動速度 -15%）を与えます。',
+      iceSpear: '敵を貫いて進み、かすめた敵すべてに冷却（移動速度 -30%）を与えます。',
       voidOrb: '球が時計回りに周回し、触れた敵を叩きます。狙いは不要です。',
       thunderStrike: '周囲の敵ひとりに空から雷を落とします。その敵が倒れると、半分の確率ですぐにもう一度落ちます。',
     },
@@ -289,6 +291,7 @@ export const ja: Strings = {
       evasive: '回避',
       magnetic: '磁力',
       volleying: '連射',
+      spider: '蜘蛛',
     },
     affixDetails: {
       giant: '体力 +50%',
@@ -300,6 +303,7 @@ export const ja: Strings = {
       evasive: '無敵時間 +30%',
       magnetic: '取得範囲 +40%',
       volleying: '投射物 +2',
+      spider: '倒れた場所に蜘蛛の巣 — 1 分間移動速度 -30%',
     },
     affixGearDetails: {
       mighty: '被害 +{value}%',
@@ -420,7 +424,7 @@ export const ja: Strings = {
       lines: [
         '敵の {chance} がレアとして現れ、縁取りを帯びます。',
         '属性を {min}~{max} 個持ち、多いほど縁の色が濃くなります。同じ効果は重なって累積します。',
-        '属性 1 個につきスキルのドロップ率が {dropBonus} 上がります。危険な分だけ見返りがあります。',
+        '属性 1 個につきすべてのドロップ率が {dropBonus}、ボスは {bossBonus} 上がります — ボスだけが落とすものと確定ドロップを除きます。危険な分だけ見返りがあります。',
       ],
     },
     drops: {

@@ -123,9 +123,13 @@ check('the bolt is drawn', line.boltAlpha === 1 && line.boltCommands > 0,
   `alpha=${line.boltAlpha}, ${line.boltCommands} draw commands`);
 
 // --- 4. the arc cannot jump further than its chain radius ---
-const gapped = await castAt([30, 200]);
-check('a 200px gap breaks the chain', gapped.hp[0] < FULL && gapped.hp[1] === FULL,
-  `hp: ${gapped.hp.join(' / ')} (chainRadius is 120px)`);
+const RADIUS = await cdp.evaluate(`window.config.LIGHTNING.chainRadius`);
+const gapped = await castAt([30, Math.round(RADIUS * 1.2)]);
+check('a gap past the chain radius breaks the chain', gapped.hp[0] < FULL && gapped.hp[1] === FULL,
+  `hp: ${gapped.hp.join(' / ')} (chainRadius is ${RADIUS}px)`);
+const close = await castAt([30, Math.round(RADIUS * 0.85)]);
+check('and one inside it does not', close.hp[0] < FULL && close.hp[1] < FULL,
+  `hp: ${close.hp.join(' / ')}`);
 
 // --- 5. nobody is struck twice when the crowd runs out ---
 const pair = await castAt([30, 60]);

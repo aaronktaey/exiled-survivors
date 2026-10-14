@@ -194,6 +194,8 @@ export const zh: Strings = {
     introHintTouch: '拖动摇杆移动 — 攻击自动进行',
     gearFound: '获得 {gear} — 可在主界面装备',
     orbFound: '获得{orb} — 在背包中使用',
+    mango: '白芒果',
+    mangoEaten: '白芒果！{seconds} 秒无敌 · 攻击速度与移动速度 +100%',
     boneFound: '获得{bone} — 在下一局开始前应用',
     shardFound: '神圣碎片 {held}/{need}',
     orbMade: '神圣宝珠完成 — 被动点数 +1',
@@ -253,7 +255,7 @@ export const zh: Strings = {
       meleeStrike: '朝最近的敌人短促挥击，范围内的敌人一并命中。',
       fireball: '向最近的敌人投出火球，命中第一个敌人后炸开，周围的敌人也会被波及。',
       chainLightning: '瞬发闪电命中敌人后跳向最近的下一个，不会重复命中同一个。',
-      iceSpear: '穿透敌人前进，并给掠过的所有敌人附加冰冷（移动速度 -15%）。',
+      iceSpear: '穿透敌人前进，并给掠过的所有敌人附加冰冷（移动速度 -30%）。',
       voidOrb: '球体顺时针环绕你，扫到的敌人都会受伤，无需瞄准。',
       thunderStrike: '从天上降下一道雷劈向你周围的一名敌人。若其死亡，有一半概率立刻再落一道。',
     },
@@ -289,6 +291,7 @@ export const zh: Strings = {
       evasive: '闪避',
       magnetic: '磁力',
       volleying: '连射',
+      spider: '蜘蛛',
     },
     affixDetails: {
       giant: '生命 +50%',
@@ -300,6 +303,7 @@ export const zh: Strings = {
       evasive: '无敌时间 +30%',
       magnetic: '拾取范围 +40%',
       volleying: '弹射物 +2',
+      spider: '死亡处留下蛛网 — 1 分钟内移动速度 -30%',
     },
     affixGearDetails: {
       mighty: '伤害 +{value}%',
@@ -420,7 +424,7 @@ export const zh: Strings = {
       lines: [
         '{chance} 的敌人会以稀有形态出现，并带有彩色描边。',
         '稀有敌人拥有 {min}~{max} 个属性，数量越多描边越深。重复的效果会叠加。',
-        '每个属性使其技能掉落率提高 {dropBonus}。危险，但值得击杀。',
+        '每个属性使所有掉落率提高 {dropBonus}，首领提高 {bossBonus} — 只有首领掉落的物品与必定掉落的除外。危险，但值得击杀。',
       ],
     },
     drops: {

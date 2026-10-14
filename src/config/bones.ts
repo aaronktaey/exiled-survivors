@@ -43,15 +43,15 @@ export interface BoneSpec {
   readonly tier: 'normal' | 'magic' | 'rare';
   /** Whether more than one can go into the same run. */
   readonly stackable: boolean;
-  /** Share of ordinary kills that leave one. */
+  /**
+   * Share of ordinary kills that leave one. A rare's 속성 and a 우두머리 raise
+   * it the way they raise every drop (RARE.dropBonusPerAffix, BOSS.dropBonus).
+   */
   readonly fromKill: number;
   /**
-   * What each 속성 on a rare adds, as a multiple of `fromKill`. A rare is
-   * worth more than an ordinary enemy and a six-line rare worth more again,
-   * so what it leaves behind follows what it was.
+   * Only for a 뼈다귀 no ordinary kill leaves (fromKill 0): the share of
+   * 우두머리 kills that do, raised by nothing.
    */
-  readonly perAffix: number;
-  /** Share of 우두머리 kills that leave one. */
   readonly fromBoss: number;
   readonly run: BoneEffect;
 }
@@ -69,8 +69,6 @@ export const BONES: Record<BoneId, BoneSpec> = {
     // 우두머리 with one.
     stackable: false,
     fromKill: 0.001,
-    perAffix: 1,
-    /** A 우두머리 never leaves one — it is what the skull makes more of. */
     fromBoss: 0,
     run: { raresBecomeBosses: true },
   },
@@ -85,7 +83,6 @@ export const BONES: Record<BoneId, BoneSpec> = {
     /** Three of them is a real decision: x8 health for x3.4 the drops. */
     stackable: true,
     fromKill: 0,
-    perAffix: 0,
     fromBoss: 0.05,
     run: { enemyHpScale: 2, dropScale: 1.5 },
   },
@@ -108,16 +105,20 @@ export const BONE_RUN = {
   size: 18,
 } as const;
 
-/** What one kill is worth in 뼈다귀, by what it was. */
+/**
+ * What one kill is worth in 뼈다귀. `bonus` is the kill's own drop
+ * multiplier — a rare's 속성, a 우두머리's — which a 뼈다귀 only a 우두머리
+ * leaves does not get.
+ */
 export function boneChanceFor(
   spec: BoneSpec,
-  kind: { readonly isBoss: boolean; readonly affixes: number },
+  kind: { readonly isBoss: boolean; readonly bonus: number },
 ): number {
-  if (kind.isBoss) {
-    return spec.fromBoss;
+  if (spec.fromKill <= 0) {
+    return kind.isBoss ? spec.fromBoss : 0;
   }
 
-  return spec.fromKill * (1 + spec.perAffix * kind.affixes);
+  return spec.fromKill * kind.bonus;
 }
 
 /** Everything a run's 뼈다귀 add up to. */

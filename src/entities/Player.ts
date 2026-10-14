@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 
-import { COLORS, DEPTH, ENEMY, HUD, PLAYER, TEXTURES } from '@/config';
+import { COLORS, DEPTH, ENEMY, HUD, MANGO, PLAYER, TEXTURES, WEB } from '@/config';
 import { fill, t } from '@/i18n';
 import { NO_BONUS, type GearBonus } from '@/systems/Gear';
 import type { AnalogInput } from '@/systems/VirtualJoystick';
@@ -29,6 +29,10 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   private gear: GearBonus = NO_BONUS;
   /** The tree's 이동속도, layered under the weapon's 신속. */
   private passiveSpeed = 1;
+  /** Left of a 하얀 망고, in ms. Public for tests. */
+  public mangoLeftMs = 0;
+  /** True while standing in a 거미줄. Set by the run each frame. */
+  public webbed = false;
   private maxHpValue: number = PLAYER.maxHp;
   private analog?: AnalogInput;
   private invulnerableUntil = 0;
@@ -84,11 +88,11 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
 
     // Keys win when both are live; the stick is analogue, so a partial tilt
     // moves proportionally slower.
-    let speed = PLAYER.speed * this.passiveSpeed * this.gear.moveSpeedScale;
+    let speed = this.moveSpeed;
     if (this.heading.lengthSq() > 0) {
       this.heading.normalize();
     } else if (this.analog) {
-      speed = PLAYER.speed * this.passiveSpeed * this.gear.moveSpeedScale * this.analog.read(this.heading);
+      speed = this.moveSpeed * this.analog.read(this.heading);
     }
 
     this.setVelocity(this.heading.x * speed, this.heading.y * speed);
@@ -135,7 +139,44 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
 
   /** Move speed right now, before a stick's tilt. Public for tests. */
   public get moveSpeed(): number {
-    return PLAYER.speed * this.passiveSpeed * this.gear.moveSpeedScale;
+    const mango = this.mangoActive ? MANGO.moveSpeedScale : 1;
+    const web = this.webbed ? 1 - WEB.slow : 1;
+    return PLAYER.speed * this.passiveSpeed * this.gear.moveSpeedScale * mango * web;
+  }
+
+  /** True while a 하얀 망고 is working. */
+  public get mangoActive(): boolean {
+    return this.mangoLeftMs > 0;
+  }
+
+  /** Eats a 하얀 망고: untouchable and twice as quick for MANGO.durationMs. */
+  public eatMango(): void {
+    this.mangoLeftMs = MANGO.durationMs;
+    // A hit's blink would fight the rainbow; the rainbow wins.
+    this.scene.tweens.killTweensOf(this);
+    this.setAlpha(1);
+  }
+
+  /**
+   * Runs a 하얀 망고 down by the run's own clock — it is ticked from the
+   * run's update, so it waits while a choice is open rather than running
+   * out behind it. While it lasts the survivor runs through the rainbow,
+   * the way a 도망자 does.
+   */
+  public tickBuffs(delta: number): void {
+    if (this.mangoLeftMs <= 0) {
+      return;
+    }
+
+    this.mangoLeftMs = Math.max(0, this.mangoLeftMs - delta);
+    if (this.mangoLeftMs > 0) {
+      const hue = (this.scene.time.now / 400) % 1;
+      this.setTint(Phaser.Display.Color.HSVToRGB(hue, 0.65, 1).color).setTintMode(Phaser.TintModes.FILL);
+      this.setScale(1 + 0.1 * Math.sin(this.scene.time.now / 90));
+    } else {
+      this.clearTint();
+      this.setScale(1);
+    }
   }
 
   /** Debug switch: holds i-frames open indefinitely. */
@@ -162,7 +203,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
    */
   public takeDamage(amount: number): void {
     const now = this.scene.time.now;
-    if (!this.isAlive || now < this.invulnerableUntil) {
+    if (!this.isAlive || now < this.invulnerableUntil || this.mangoActive) {
       return;
     }
 
@@ -178,7 +219,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
    * Only the debug switch holds it off.
    */
   public takeContact(amount: number): void {
-    if (!this.isAlive || this.shielded) {
+    if (!this.isAlive || this.shielded || this.mangoActive) {
       return;
     }
 

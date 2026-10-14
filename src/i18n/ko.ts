@@ -198,6 +198,8 @@ export const ko: Strings = {
     introHintTouch: '스틱을 끌어 이동 — 공격은 자동',
     gearFound: '{gear} 획득 — 메인화면에서 착용',
     orbFound: '{orb} 획득 — 인벤토리에서 사용',
+    mango: '하얀 망고',
+    mangoEaten: '하얀 망고! {seconds}초간 무적 · 공격속도와 이동속도 +100%',
     boneFound: '{bone} 획득 — 다음 판 시작 전에 적용',
     shardFound: '신성한 조각 {held}/{need}',
     orbMade: '신성한 구슬 완성 — 패시브 포인트 +1',
@@ -314,7 +316,7 @@ export const ko: Strings = {
       lines: [
         '적 {chance}는 희귀로 등장하며 테두리를 두릅니다.',
         '속성을 {min}~{max}개 가지며, 많을수록 테두리 색이 진해집니다. 같은 효과가 중복되면 효과는 누적됩니다.',
-        '속성 1개당 스킬 드랍률이 {dropBonus} 올라갑니다. 위험한 만큼 값어치가 있습니다.',
+        '속성 1개당 모든 드랍률이 {dropBonus} 올라가고, 우두머리는 {bossBonus} 올라갑니다 — 우두머리만 떨어뜨리는 것과 반드시 떨어지는 것은 빼고. 위험한 만큼 값어치가 있습니다.',
       ],
     },
     drops: {

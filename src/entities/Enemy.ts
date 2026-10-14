@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 
 import {
   BALANCE,
+  BOSS,
   CHILL,
   COLORS,
   DEPTH,
@@ -135,8 +136,14 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
     return this.spec.contactDamage;
   }
 
-  /** How much more likely this one is to leave a skill behind. */
+  /**
+   * What this kill multiplies every ordinary drop chance by: +10% a 속성 on
+   * a rare, +200% for a 우두머리 (both tuned in balance.ts).
+   */
   public get dropBonus(): number {
+    if (this.isBoss) {
+      return 1 + BOSS.dropBonus;
+    }
     return 1 + this.affixes.length * RARE.dropBonusPerAffix;
   }
 
@@ -196,6 +203,11 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
   /** A 우두머리 and a 도망자 both always leave a skill. */
   public get alwaysDropsSkill(): boolean {
     return this.isBoss || this.spec.guaranteedSkill === true;
+  }
+
+  /** How many 거미 this one carries — how wide a web it leaves. */
+  public get webStacks(): number {
+    return this.affixes.filter((affix) => affix.enemy?.web === true).length;
   }
 
   /** True while a 도망자 is running from a hit. */

@@ -9,9 +9,11 @@ import {
   DEPTH,
   FIREBALL,
   ORBS,
+  MANGO,
   POTION,
   SKILL_PICK,
   WEAPON,
+  WORLD,
   rollAltarOffer,
   type AltarOfferId,
   type BoneId,
@@ -26,6 +28,7 @@ import { GearDrop } from '@/entities/GearDrop';
 import { BoneDrop } from '@/entities/BoneDrop';
 import { OrbDrop } from '@/entities/OrbDrop';
 import { RandomSkillDrop } from '@/entities/RandomSkillDrop';
+import { MangoDrop } from '@/entities/MangoDrop';
 import { ShardDrop } from '@/entities/ShardDrop';
 import { dropTierFor, rollOrbDrop, type GearItem } from '@/systems/Gear';
 import type { RunStats } from '@/systems/RunStats';
@@ -64,10 +67,29 @@ export interface CombatHooks {
   readonly critMultiplier: () => number;
   /** Called when the player walks over a dropped skill. */
   readonly onSkillCollected: (skill: SkillId) => void;
+  /** A rare with the 거미 속성 died here: lay its web. */
+  readonly onWeb: (x: number, y: number, stacks: number) => void;
+  /** Called when the player walks over a 하얀 망고. */
+  readonly onMangoCollected: () => void;
   /** Called when the player walks over a 무작위 스킬: offer the cards. */
   readonly onRandomSkillCollected: () => void;
   /** Called when the survivor walks up to a 제단: call up what it offered. */
   readonly onAltarWoke: (offer: AltarOfferId, x: number, y: number) => void;
+}
+
+/** How far inside the edge of the world anything is let fall. */
+const DROP_MARGIN = 24;
+
+/**
+ * A spot on the ground, pulled back inside the world. Drops are placed a
+ * little way off the kill — a 제단 a long way — and a kill near the edge
+ * would otherwise leave them where nobody can walk.
+ */
+function inWorld(x: number, y: number): [number, number] {
+  return [
+    Phaser.Math.Clamp(x, DROP_MARGIN, WORLD.width - DROP_MARGIN),
+    Phaser.Math.Clamp(y, DROP_MARGIN, WORLD.height - DROP_MARGIN),
+  ];
 }
 
 /**
@@ -86,6 +108,8 @@ export class CombatSystem {
   public readonly boneDrops: Phaser.Physics.Arcade.Group;
   /** 무작위 스킬 lying on the ground. */
   public readonly randomSkillDrops: Phaser.Physics.Arcade.Group;
+  /** 하얀 망고 lying on the ground. */
+  public readonly mangoDrops: Phaser.Physics.Arcade.Group;
   /** The 제단 a 우두머리 left. Never picked up; they wake instead. */
   public readonly altars: Phaser.Physics.Arcade.Group;
 
@@ -138,6 +162,7 @@ export class CombatSystem {
     this.orbDrops = scene.physics.add.group({ classType: OrbDrop, runChildUpdate: true });
     this.boneDrops = scene.physics.add.group({ classType: BoneDrop, runChildUpdate: true });
     this.randomSkillDrops = scene.physics.add.group({ classType: RandomSkillDrop, runChildUpdate: true });
+    this.mangoDrops = scene.physics.add.group({ classType: MangoDrop, runChildUpdate: true });
     // No overlap: an altar is woken by distance, in its own update.
     this.altars = scene.physics.add.group({ classType: Altar, runChildUpdate: true });
 
@@ -151,6 +176,7 @@ export class CombatSystem {
     scene.physics.add.overlap(player, this.orbDrops, this.onOrbTouch, undefined, this);
     scene.physics.add.overlap(player, this.boneDrops, this.onBoneTouch, undefined, this);
     scene.physics.add.overlap(player, this.randomSkillDrops, this.onRandomSkillTouch, undefined, this);
+    scene.physics.add.overlap(player, this.mangoDrops, this.onMangoTouch, undefined, this);
   }
 
   /** Wires a newly acquired projectile weapon into enemy collisions. */
@@ -166,12 +192,14 @@ export class CombatSystem {
 
   /** Places a potion directly — used by the kill roll and by debug keys. */
   public dropPotionAt(x: number, y: number): void {
+    [x, y] = inWorld(x, y);
     const potion = this.potions.get() as HealthPotion | null;
     potion?.drop(x, y);
   }
 
   /** Places a 신성한 조각 directly — used by the kill and by debug keys. */
   public dropShardAt(x: number, y: number): void {
+    [x, y] = inWorld(x, y);
     const shard = this.shardDrops.get() as ShardDrop | null;
     if (!shard) {
       return;
@@ -185,6 +213,7 @@ export class CombatSystem {
 
   /** Places a 구슬 directly — used by the kill roll and by debug keys. */
   public dropOrbAt(x: number, y: number, id: OrbId): void {
+    [x, y] = inWorld(x, y);
     const drop = this.orbDrops.get() as OrbDrop | null;
     if (!drop) {
       return;
@@ -196,6 +225,7 @@ export class CombatSystem {
 
   /** Places a 뼈다귀 directly — used by the kill roll and by debug keys. */
   public dropBoneAt(x: number, y: number, id: BoneId): void {
+    [x, y] = inWorld(x, y);
     const drop = this.boneDrops.get() as BoneDrop | null;
     if (!drop) {
       return;
@@ -205,8 +235,21 @@ export class CombatSystem {
     this.playDropSound(BONES[id]?.tier ?? 'normal');
   }
 
+  /** Places a 하얀 망고 directly — used by the kill roll and by tests. */
+  public dropMangoAt(x: number, y: number): void {
+    [x, y] = inWorld(x, y);
+    const drop = this.mangoDrops.get() as MangoDrop | null;
+    if (!drop) {
+      return;
+    }
+
+    drop.drop(x, y);
+    this.playDropSound('rare');
+  }
+
   /** Places a 무작위 스킬 directly — used by the kill roll and by tests. */
   public dropRandomSkillAt(x: number, y: number): void {
+    [x, y] = inWorld(x, y);
     const drop = this.randomSkillDrops.get() as RandomSkillDrop | null;
     if (!drop) {
       return;
@@ -218,6 +261,7 @@ export class CombatSystem {
 
   /** Places a 제단 directly — used by the 우두머리 kill and by tests. */
   public dropAltarAt(x: number, y: number, offer: AltarOfferId): Altar | null {
+    [x, y] = inWorld(x, y);
     const altar = this.altars.get() as Altar | null;
     if (!altar) {
       return null;
@@ -232,6 +276,7 @@ export class CombatSystem {
 
   /** Places a weapon directly — used by the 우두머리 kill and debug keys. */
   public dropGearAt(x: number, y: number, item: GearItem): void {
+    [x, y] = inWorld(x, y);
     const drop = this.gearDrops.get() as GearDrop | null;
     if (!drop) {
       return;
@@ -243,6 +288,7 @@ export class CombatSystem {
 
   /** Places a drop directly — used by the spawner's roll and by debug keys. */
   public dropSkillAt(x: number, y: number, skill: SkillDefinition): void {
+    [x, y] = inWorld(x, y);
     const drop = this.skillDrops.get() as SkillDrop | null;
     if (!drop) {
       return;
@@ -463,6 +509,17 @@ export class CombatSystem {
     this.hooks.onOrbCollected(drop.orb);
   };
 
+  private onMangoTouch: Phaser.Types.Physics.Arcade.ArcadePhysicsCallback = (_player, object) => {
+    const drop = object as MangoDrop;
+    if (!drop.active) {
+      return;
+    }
+
+    drop.collect();
+    this.player.eatMango();
+    this.hooks.onMangoCollected();
+  };
+
   private onRandomSkillTouch: Phaser.Types.Physics.Arcade.ArcadePhysicsCallback = (_player, object) => {
     const drop = object as RandomSkillDrop;
     if (!drop.active) {
@@ -491,13 +548,21 @@ export class CombatSystem {
     const dropBonus = enemy.dropBonus;
     const wasBoss = enemy.isBoss;
     const certainSkill = enemy.alwaysDropsSkill;
-    const affixes = enemy.affixes.length;
+    const webStacks = enemy.webStacks;
     const scale = this.hooks.dropScale();
+    // Every ordinary drop below is raised by what this kill was: a rare's
+    // 속성, a 우두머리. What only a 우두머리 leaves, and what is certain, is not.
+    const bonus = scale * dropBonus;
     // Pooled: back to the spawner's pool rather than destroyed.
     enemy.recycle();
 
     const gem = this.gems.get() as XpGem | null;
     gem?.drop(x, y, worth, this.player);
+
+    // A 거미 leaves its web where it fell.
+    if (webStacks > 0) {
+      this.hooks.onWeb(x, y, webStacks);
+    }
 
     // A 우두머리 and a 도망자 always leave one.
     const skill = this.hooks.rollSkillDrop(dropBonus, certainSkill);
@@ -506,12 +571,17 @@ export class CombatSystem {
     }
 
     // A 무작위 스킬 on its own roll: three cards to choose from, not one.
-    if (Math.random() < SKILL_PICK.dropChance * scale) {
+    if (Math.random() < SKILL_PICK.dropChance * bonus) {
       this.dropRandomSkillAt(x + 18, y - 18);
     }
 
+    // 하얀 망고: one kill in a thousand, before what raises it.
+    if (Math.random() < MANGO.chance * bonus) {
+      this.dropMangoAt(x - 18, y - 18);
+    }
+
     // Rolled on its own, so a kill can leave both a skill and a potion.
-    if (Math.random() < POTION.chance * scale) {
+    if (Math.random() < POTION.chance * bonus) {
       this.dropPotionAt(x, y);
     }
 
@@ -528,22 +598,25 @@ export class CombatSystem {
 
     // And a 제단 — always off a 우두머리, now and then off anything else —
     // set back from the rest so that picking those up does not wake it.
-    const altarChance = wasBoss ? ALTAR.fromBoss : ALTAR.fromKill * scale;
+    const altarChance = wasBoss ? ALTAR.fromBoss : ALTAR.fromKill * bonus;
     if (Math.random() < altarChance) {
-      this.dropAltarAt(x, y - ALTAR.dropOffset, rollAltarOffer());
+      // Above the kill, or below it when above would be off the map — set
+      // back either way, so picking the loot up does not wake it.
+      const above = y - ALTAR.dropOffset;
+      const altarY = above >= DROP_MARGIN ? above : y + ALTAR.dropOffset;
+      this.dropAltarAt(x, altarY, rollAltarOffer());
     }
 
     // A 구슬 rolls off any kill at all, which is what gives the hundredth
     // 일반 of a run something to be.
-    const orb = rollOrbDrop(scale, wasBoss);
+    const orb = rollOrbDrop(scale, wasBoss, dropBonus);
     if (orb) {
       this.dropOrbAt(x - 18, y, orb.id);
     }
 
-    // And a 뼈다귀, which is worth more off something that was worth more:
-    // a rare's chance follows how many 속성 it was carrying.
+    // And a 뼈다귀, worth more off something that was worth more.
     for (const bone of Object.values(BONES)) {
-      if (Math.random() < boneChanceFor(bone, { isBoss: wasBoss, affixes }) * scale) {
+      if (Math.random() < boneChanceFor(bone, { isBoss: wasBoss, bonus: dropBonus }) * scale) {
         this.dropBoneAt(x, y + 18, bone.id);
         break;
       }

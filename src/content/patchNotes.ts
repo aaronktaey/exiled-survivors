@@ -15,6 +15,56 @@ export interface PatchNote {
 
 export const PATCH_NOTES: readonly PatchNote[] = [
   {
+    version: '0.22',
+    date: '2026-10-14',
+    changes: {
+      ko: [
+        '새 아이템 하얀 망고 — 적이 0.1% 확률로 떨어뜨립니다. 먹으면 5초 동안 피해를 받지 않고, 모든 스킬의 공격속도와 이동속도가 100% 오르며, 그동안 몸이 무지개빛으로 빛납니다.',
+        '드랍률 규칙을 하나로 맞췄습니다 — 희귀 적은 속성 하나당 모든 드랍률 +10%, 우두머리는 +200%. 우두머리만 떨어뜨리는 것(장비, 신성한 조각, 폭발의 구슬, 갈비뼈)과 반드시 떨어지는 것은 빼고 적용됩니다.',
+        '그래서 희귀 적의 스킬 드랍 보너스는 속성당 +50%에서 +10%로 바뀌었고, 고대 두개골도 같은 규칙을 따라 이제 우두머리가 기본 확률의 3배로 떨어뜨립니다.',
+        '10분부터는 매 분 적에게 붙는 강화가 5배가 됩니다 — 체력은 분당 +10%에서 +50%(곱연산), 희귀 적 확률은 분당 +1%p에서 +5%p.',
+        '스킬의 피해량과 공격속도 강화는 각각 20번까지 고를 수 있습니다. 더 올릴 것이 없는 스킬은 레벨업 선택지에 나오지 않습니다.',
+        '새 희귀 적 속성 거미 — 죽은 자리에 1분 동안 거미줄을 남겨, 그 안에서는 이동속도가 30% 느려집니다. 거미가 겹쳐 붙은 적일수록 거미줄이 넓습니다. 거미줄 여러 개가 겹쳐도 더 느려지지는 않습니다.',
+        '얼음창의 냉각이 이동속도 -15%에서 -30%로 강해졌습니다.',
+        '연쇄번개가 옮겨붙는 거리를 30% 줄였습니다(120 → 84). 첫 적을 노리는 사거리는 그대로입니다.',
+        '고친 것 — 맵 가장자리에서 쓰러진 우두머리의 제단이 맵 바깥에 생기던 문제. 이제 모든 드랍이 맵 안에 떨어지고, 제단은 위가 막혀 있으면 아래쪽에 놓입니다.',
+      ],
+      en: [
+        'New item, White Mango — enemies leave one 0.1% of the time. Eating it makes you untouchable for 5 seconds and doubles every skill’s attack speed and your move speed, and you glow through the rainbow while it lasts.',
+        'One drop rule for everything — each affix on a rare raises every drop chance by 10%, and a Boss raises them by 200%. It does not apply to what only a Boss leaves (gear, Divine Shards, the Explosion Orb, the Rib) or to drops that are certain.',
+        'So a rare’s skill-drop bonus is +10% per affix instead of +50%, and the Ancient Skull follows the same rule — a Boss now drops it at three times the base chance.',
+        'From minute 10, each minute’s enemy buff is five times as strong — health goes from +10% to +50% a minute (compounding), and the rare chance from +1 to +5 points a minute.',
+        'Damage and attack-speed upgrades can be taken 20 times each per skill. A skill with nothing left to take is no longer offered on a level-up.',
+        'New rare affix, Spider — it leaves a web where it dies for a minute, and inside it you move 30% slower. The more Spider a rare carries, the wider the web. Standing in two webs is no slower than in one.',
+        'Ice Spear’s chill is stronger — -30% move speed instead of -15%.',
+        'Chain Lightning jumps 30% shorter (120 → 84). Its range to the first enemy is unchanged.',
+        'Fixed: a Boss killed at the edge of the map could leave its altar outside it. Every drop now lands inside the map, and an altar with no room above goes below.',
+      ],
+      ja: [
+        '新アイテム「白いマンゴー」— 敵が 0.1% の確率で落とします。食べると 5 秒間被害を受けず、全スキルの攻撃速度と移動速度が 100% 上がり、その間体が虹色に光ります。',
+        'ドロップ率の規則をひとつにまとめました — レア敵は属性 1 個につき全ドロップ率 +10%、ボスは +200%。ボスだけが落とすもの（装備、神聖な欠片、爆発の球、肋骨）と確定ドロップには適用されません。',
+        'そのためレア敵のスキルドロップ補正は属性ごとに +50% から +10% になり、古代の頭蓋骨も同じ規則に従ってボスが基本確率の 3 倍で落とすようになりました。',
+        '10 分からは毎分敵に付く強化が 5 倍になります — 体力は毎分 +10% から +50%（乗算）、レア敵の確率は毎分 +1%p から +5%p。',
+        'スキルの被害と攻撃速度の強化はそれぞれ 20 回まで選べます。上げるものが残っていないスキルはレベルアップの選択肢に出ません。',
+        '新しいレア敵の属性「蜘蛛」— 倒れた場所に 1 分間蜘蛛の巣を残し、その中では移動速度が 30% 遅くなります。蜘蛛が重なって付いた敵ほど巣が広くなります。巣が重なってもそれ以上は遅くなりません。',
+        '氷槍の冷却が移動速度 -15% から -30% に強くなりました。',
+        '連鎖雷が移る距離を 30% 短くしました（120 → 84）。最初の敵を狙う射程はそのままです。',
+        '修正 — マップの端で倒れたボスの祭壇がマップの外に出ていた問題。すべてのドロップがマップ内に落ち、祭壇は上に余地がなければ下に置かれます。',
+      ],
+      zh: [
+        '新道具「白芒果」— 敌人有 0.1% 概率掉落。吃下后 5 秒内不受伤害，所有技能的攻击速度与移动速度提高 100%，期间身体会发出彩虹光。',
+        '统一了掉落率规则 — 稀有敌人每个属性使所有掉落率 +10%，首领 +200%。只有首领掉落的物品（装备、神圣碎片、爆炸宝珠、肋骨）与必定掉落的不适用。',
+        '因此稀有敌人的技能掉落加成由每个属性 +50% 改为 +10%，远古头骨也遵循同一规则，首领现在会以基础概率的 3 倍掉落它。',
+        '从第 10 分钟起，每分钟附加给敌人的强化变为 5 倍 — 生命由每分钟 +10% 变为 +50%（乘算），稀有敌人概率由每分钟 +1%p 变为 +5%p。',
+        '技能的伤害与攻击速度强化各最多可选 20 次。没有可强化项的技能不会出现在升级选项中。',
+        '新稀有敌人属性「蜘蛛」— 死亡处留下持续 1 分钟的蛛网，在其中移动速度降低 30%。身上蜘蛛属性越多，蛛网越大。多张蛛网重叠也不会更慢。',
+        '冰枪的冰冷效果由移动速度 -15% 增强为 -30%。',
+        '连锁闪电的跳跃距离缩短 30%（120 → 84），瞄准第一个敌人的射程不变。',
+        '修复 — 在地图边缘被击杀的首领，其祭坛会出现在地图外的问题。现在所有掉落都会落在地图内，上方没有空间时祭坛会放在下方。',
+      ],
+    },
+  },
+  {
     version: '0.21',
     date: '2026-10-14',
     changes: {

@@ -271,6 +271,9 @@ export interface Strings {
     readonly orbFound: string;
     /** And when a 뼈다귀 is. */
     readonly boneFound: string;
+    /** 하얀 망고: its name on the ground, and what is shouted when eaten. */
+    readonly mango: string;
+    readonly mangoEaten: string;
     /** 신성한 조각 picked up: {held} of {need} towards the next 구슬. */
     readonly shardFound: string;
     /** ...and the one that completed it. */

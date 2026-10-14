@@ -302,8 +302,9 @@ const chilled = await run(`
   s.choosing = false;
   return out;
 `);
-check('냉각 slows every kind by 15%',
-  Object.values(chilled).every(r => r === 0.85), JSON.stringify(chilled));
+const CHILLED = Number((1 - await cdp.evaluate(`window.config.CHILL.slowFactor`)).toFixed(3));
+check('냉각 slows every kind by its configured share',
+  Object.values(chilled).every(r => r === CHILLED), JSON.stringify(chilled));
 
 // --- 11. the debug overlay reports and summons the mix ---
 await fkey('F1', 112);

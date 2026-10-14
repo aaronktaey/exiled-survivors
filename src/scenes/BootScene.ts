@@ -78,6 +78,7 @@ export class BootScene extends Phaser.Scene {
     this.createThunderIcon();
     this.createTrophyTexture();
     this.createFlagTextures();
+    this.createMangoTexture();
 
 
     createPixelTextTexture(this, TEXTURES.logo, ['EXILED', 'SURVIVORS'], {
@@ -343,6 +344,29 @@ export class BootScene extends Phaser.Scene {
       g.strokeRect(0.5, 0.5, W - 1, H - 1);
       g.generateTexture(`tex-flag-${code}`, W, H);
     }
+    g.destroy();
+  }
+
+  /**
+   * 하얀 망고: a pale, almost white mango leaning on its side, with a green
+   * leaf at the stem and a soft blush, so it reads as fruit and not a gem.
+   */
+  private createMangoTexture(): void {
+    const size = 32;
+    const g = this.add.graphics();
+    g.fillStyle(0xfff8e6, 1);
+    g.fillEllipse(size * 0.5, size * 0.56, size * 0.78, size * 0.62);
+    g.fillStyle(0xffe7b8, 1);
+    g.fillEllipse(size * 0.6, size * 0.64, size * 0.42, size * 0.3);
+    g.fillStyle(0xffffff, 0.9);
+    g.fillEllipse(size * 0.36, size * 0.46, size * 0.16, size * 0.1);
+    g.lineStyle(1.5, 0xd9c79a, 1);
+    g.strokeEllipse(size * 0.5, size * 0.56, size * 0.78, size * 0.62);
+    g.fillStyle(0x4caf50, 1);
+    g.fillTriangle(size * 0.5, size * 0.26, size * 0.74, size * 0.12, size * 0.66, size * 0.3);
+    g.lineStyle(2, 0x6b4f2a, 1);
+    g.lineBetween(size * 0.5, size * 0.28, size * 0.48, size * 0.18);
+    g.generateTexture(TEXTURES.mango, size, size);
     g.destroy();
   }
 

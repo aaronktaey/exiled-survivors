@@ -5,6 +5,7 @@ import {
   SKILL_BASE,
   STATS,
   UPGRADE_CAP,
+  UPGRADE_MAX_PICKS,
   upgradeShown,
   upgradeStep,
   xpToNextLevel,
@@ -59,10 +60,26 @@ export function upgradeOptionsFor(
     // An upgrade at its ceiling is not offered: a pick that does nothing is
     // worse than one fewer card.
     .filter((id) => {
+      if (stats === undefined) {
+        return true;
+      }
       const cap = UPGRADE_CAP[id];
-      return cap === undefined || stats === undefined || stats[id] < cap;
+      const picks = UPGRADE_MAX_PICKS[id];
+      return (
+        (cap === undefined || stats[id] < cap) &&
+        (picks === undefined || picksTaken(skill.id, stats, id) < picks)
+      );
     })
     .map((id) => ({ id, ...optionText(id, skill.id) }));
+}
+
+/**
+ * How many times this upgrade has been taken on this skill, counted back out
+ * of the stat the same way the level is.
+ */
+export function picksTaken(skill: SkillId, stats: SkillStats, upgrade: UpgradeId): number {
+  const step = upgradeStep(skill, upgrade);
+  return step > 0 ? Math.round((stats[upgrade] - SKILL_BASE[skill][upgrade]) / step) : 0;
 }
 
 /**
@@ -141,6 +158,10 @@ export class Progression extends Phaser.Events.EventEmitter {
 
   public apply(skill: SkillId, upgrade: UpgradeId): void {
     const stats = this.statsFor(skill);
+    const picks = UPGRADE_MAX_PICKS[upgrade];
+    if (picks !== undefined && picksTaken(skill, stats, upgrade) >= picks) {
+      return;
+    }
     const cap = UPGRADE_CAP[upgrade];
     const raised = stats[upgrade] + upgradeStep(skill, upgrade);
 

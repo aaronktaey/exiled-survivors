@@ -27,28 +27,36 @@ await cdp.send('Page.reload', {});
 await sleep(4500);
 
 // --- 1. what each kill is worth in 뼈다귀 ---
+// A kill's own bonus — +10% a 속성 on a rare, +200% for a 우두머리 — raises
+// the 고대 두개골 like any drop, and does not touch the 갈비뼈, which only a
+// 우두머리 leaves. Every number is read off the config.
 const chances = await ev(`(() => {
-  const f = window.config.boneChanceFor;
-  const B = window.config.BONES;
+  const c = window.config;
+  const f = c.boneChanceFor;
+  const B = c.BONES;
+  const rare = (n) => 1 + n * c.RARE.dropBonusPerAffix;
+  const boss = 1 + c.BOSS.dropBonus;
   return {
-    skullPlain: f(B.skull, { isBoss: false, affixes: 0 }),
-    skullRare1: f(B.skull, { isBoss: false, affixes: 1 }),
-    skullRare6: f(B.skull, { isBoss: false, affixes: 6 }),
-    skullBoss: f(B.skull, { isBoss: true, affixes: 0 }),
-    ribPlain: f(B.rib, { isBoss: false, affixes: 3 }),
-    ribBoss: f(B.rib, { isBoss: true, affixes: 0 }),
+    base: B.skull.fromKill, ribBase: B.rib.fromBoss, rare1: rare(1), rare6: rare(6), boss,
+    skullPlain: f(B.skull, { isBoss: false, bonus: 1 }),
+    skullRare1: f(B.skull, { isBoss: false, bonus: rare(1) }),
+    skullRare6: f(B.skull, { isBoss: false, bonus: rare(6) }),
+    skullBoss: f(B.skull, { isBoss: true, bonus: boss }),
+    ribPlain: f(B.rib, { isBoss: false, bonus: rare(3) }),
+    ribBoss: f(B.rib, { isBoss: true, bonus: boss }),
   };
 })()`);
 console.log('chances:', JSON.stringify(chances));
-check('고대 두개골 comes off one ordinary kill in a thousand',
-  chances.skullPlain === 0.001, `${(chances.skullPlain * 100).toFixed(2)}%`);
-check('and off a rare by how many 속성 it was carrying',
-  chances.skullRare1 === 0.002 && chances.skullRare6 === 0.007,
-  `one 속성 ${(chances.skullRare1 * 100).toFixed(1)}%, six ${(chances.skullRare6 * 100).toFixed(1)}%`);
-check('a 우두머리 never leaves one — it is what the skull makes more of',
-  chances.skullBoss === 0);
-check('갈비뼈 comes off a 우두머리 and nothing else',
-  chances.ribBoss === 0.05 && chances.ribPlain === 0,
+const near = (a, b) => Math.abs(a - b) < 1e-12;
+check('고대 두개골 comes off an ordinary kill at its own chance',
+  chances.skullPlain === chances.base && chances.base > 0, `${(chances.skullPlain * 100).toFixed(2)}%`);
+check('and off a rare by its 속성, the same bonus as every drop',
+  near(chances.skullRare1, chances.base * chances.rare1) && near(chances.skullRare6, chances.base * chances.rare6),
+  `one 속성 ${(chances.skullRare1 * 100).toFixed(3)}%, six ${(chances.skullRare6 * 100).toFixed(3)}%`);
+check('a 우두머리 raises it too, by the 우두머리 bonus',
+  near(chances.skullBoss, chances.base * chances.boss), `${(chances.skullBoss * 100).toFixed(2)}%`);
+check('갈비뼈 comes off a 우두머리 and nothing else, at its own chance and no more',
+  chances.ribBoss === chances.ribBase && chances.ribPlain === 0,
   `${(chances.ribBoss * 100).toFixed(0)}% off a 우두머리`);
 
 // --- 2. they land, read right, and go into the drawer ---

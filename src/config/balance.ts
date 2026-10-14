@@ -265,7 +265,8 @@ export type AffixId =
   | "frenzied"
   | "evasive"
   | "magnetic"
-  | "volleying";
+  | "volleying"
+  | "spider";
 
 export type AffixKind = "prefix" | "suffix";
 
@@ -285,6 +286,11 @@ export interface EnemyAffixEffect {
    * on the 속성 is for.
    */
   readonly extraShots?: number;
+  /**
+   * Leaves a 거미줄 where it dies (WEB). Each copy of the 속성 it carries
+   * makes the web wider.
+   */
+  readonly web?: boolean;
 }
 
 /** What the same 속성 does for whoever is holding the weapon it is on. */
@@ -447,6 +453,13 @@ export const AFFIXES: Record<AffixId, AffixSpec> = {
     enemy: { extraShots: 2 },
     rangedOnly: true,
   },
+  spider: {
+    id: "spider",
+    kind: "suffix",
+    name: "거미",
+    detail: "죽은 자리에 거미줄 — 1분간 이동속도 -30%",
+    enemy: { web: true },
+  },
 
   // --- 접미어: what it does for whoever is carrying it ---
   giant: {
@@ -557,8 +570,12 @@ export const RARE = {
   extraAffixChance: 0.45,
   /** What a 치명 hit is worth. */
   critMultiplier: 2,
-  /** Each affix it carries raises its skill drop chance by this much. */
-  dropBonusPerAffix: 0.5,
+  /**
+   * Each affix it carries raises every drop chance by this much — skills,
+   * potions, 구슬, 뼈다귀, 제단, everything — except what only a 우두머리
+   * leaves and what is certain anyway.
+   */
+  dropBonusPerAffix: 0.1,
   /** The yellow ring: how thick, and how far outside the sprite it sits. */
   outlineWidth: 2,
   outlinePadding: 5,
@@ -578,6 +595,14 @@ export const RARE = {
 export const DIFFICULTY = {
   hpScalePerMinute: 1.1,
   rareChancePerMinute: 0.01,
+  /**
+   * From this minute on, each minute's step is `lateMultiplier` times what
+   * it was: +10% health a minute becomes +50%, compounding the same way,
+   * and +1%p of rares becomes +5%p. The first ten minutes are the run; past
+   * them the field is meant to close in fast.
+   */
+  lateFromMinute: 10,
+  lateMultiplier: 5,
 } as const;
 
 /** Whole minutes the run has lasted. */
@@ -585,16 +610,31 @@ export function runMinutes(elapsedMs: number): number {
   return Math.max(0, Math.floor(elapsedMs / 60_000));
 }
 
-/** What an enemy spawning now is worth in health, for the clock alone. */
+/** Minutes before the late ramp, and minutes into it. */
+function rampMinutes(elapsedMs: number): { early: number; late: number } {
+  const minutes = runMinutes(elapsedMs);
+  const early = Math.min(minutes, DIFFICULTY.lateFromMinute);
+  return { early, late: minutes - early };
+}
+
+/**
+ * What an enemy spawning now is worth in health, for the clock alone: each
+ * early minute multiplies it by hpScalePerMinute, each late one by a step
+ * `lateMultiplier` times as big (1.1 a minute, then 1.5).
+ */
 export function enemyHpScaleAt(elapsedMs: number): number {
-  return DIFFICULTY.hpScalePerMinute ** runMinutes(elapsedMs);
+  const { early, late } = rampMinutes(elapsedMs);
+  const lateStep = 1 + (DIFFICULTY.hpScalePerMinute - 1) * DIFFICULTY.lateMultiplier;
+  return DIFFICULTY.hpScalePerMinute ** early * lateStep ** late;
 }
 
 /** The share of spawns that come up rare, after the same clock. */
 export function rareChanceAt(elapsedMs: number): number {
+  const { early, late } = rampMinutes(elapsedMs);
   return Math.min(
     1,
-    RARE.chance + DIFFICULTY.rareChancePerMinute * runMinutes(elapsedMs),
+    RARE.chance +
+      DIFFICULTY.rareChancePerMinute * (early + late * DIFFICULTY.lateMultiplier),
   );
 }
 
@@ -609,6 +649,12 @@ export const FUGITIVE = {
 
 /** 우두머리: one every so often, worth killing for what it drops. */
 export const BOSS = {
+  /**
+   * What a 우두머리 adds to every drop chance an ordinary kill rolls (+200%
+   * is three times the chance). Not to what only a 우두머리 leaves, and not
+   * to what it leaves for certain.
+   */
+  dropBonus: 2,
   /** How often one turns up, from the start of the run. */
   intervalMs: 60_000,
   /** How far outside the usual spawn ring it enters. */
@@ -741,8 +787,11 @@ export const THUNDER = {
 
 /** The instant arc 연쇄번개 draws as it walks through a crowd. */
 export const LIGHTNING = {
-  /** How far the arc may jump from one victim to the next. */
-  chainRadius: 120,
+  /**
+   * How far the arc may jump from one victim to the next. Its reach to the
+   * first victim is the skill's own range; this is only the jumps.
+   */
+  chainRadius: 84,
   /** How long the bolt stays on screen. */
   flashMs: 170,
   /** Zig-zag resolution, and how far each kink strays from a straight line. */
@@ -760,10 +809,27 @@ export const VOID_ORB = {
   hitPadding: 2,
 } as const;
 
+/**
+ * 거미줄 — what a rare with the 거미 속성 leaves where it dies: a patch of
+ * ground that slows the survivor while they stand in it. Webs do not stack:
+ * standing in two is as slow as standing in one.
+ */
+export const WEB = {
+  /** Fraction of the survivor's move speed taken away inside one. */
+  slow: 0.3,
+  /** How long one lies there. */
+  durationMs: 60_000,
+  /** Its radius with one 거미, and what each further 거미 on the rare adds. */
+  radius: 60,
+  radiusPerExtra: 30,
+  /** The oldest goes when there would be more than this. */
+  maxActive: 40,
+} as const;
+
 /** The 냉각 debuff 얼음창 leaves on whatever it passes through. */
 export const CHILL = {
   /** Fraction of move speed taken away while it lasts. */
-  slowFactor: 0.15,
+  slowFactor: 0.3,
   /** How long it lasts after the hit that applied it, in ms. */
   durationMs: 2000,
   /** Tint worn while chilled, so a slowed enemy is readable at a glance. */
@@ -842,6 +908,23 @@ export const SLOT = {
   stopMs: 1000,
   /** How long the stopped row is held up before the result is handed back. */
   holdMs: 700,
+} as const;
+
+/**
+ * 하얀 망고 — a few seconds of being untouchable and twice as quick. Rare on
+ * purpose: a rare's 속성 and a 우두머리 raise it like any other drop.
+ */
+export const MANGO = {
+  /** Share of kills that leave one. */
+  chance: 0.001,
+  /** How long it lasts once eaten. */
+  durationMs: 5000,
+  /** Multiplies every skill's attacks per second while it lasts (+100%). */
+  attackSpeedScale: 2,
+  /** And the survivor's move speed (+100%). */
+  moveSpeedScale: 2,
+  /** How big it is drawn on the ground. */
+  size: 22,
 } as const;
 
 /** Health potions, rolled separately from the skill drop. */
@@ -1028,6 +1111,15 @@ export function upgradeShown(skill: SkillId, upgrade: UpgradeKey): number {
 /** Ceilings on the upgrades that add structure rather than numbers. */
 export const UPGRADE_CAP: Partial<Record<UpgradeKey, number>> = {
   chainCount: 7,
+};
+
+/**
+ * How many times one skill can take each of these upgrades. Past it the
+ * card is no longer offered — the run's other picks are where to go next.
+ */
+export const UPGRADE_MAX_PICKS: Partial<Record<UpgradeKey, number>> = {
+  damage: 20,
+  attackSpeed: 20,
 };
 
 /**
