@@ -481,9 +481,10 @@ export class CombatSystem {
       this.dropShardAt(x + 18, y);
     }
 
-    // And a 제단, set back from the rest so that picking those up does not
-    // wake it by accident.
-    if (wasBoss && Math.random() < ALTAR.fromBoss) {
+    // And a 제단 — always off a 우두머리, now and then off anything else —
+    // set back from the rest so that picking those up does not wake it.
+    const altarChance = wasBoss ? ALTAR.fromBoss : ALTAR.fromKill * scale;
+    if (Math.random() < altarChance) {
       this.dropAltarAt(x, y - ALTAR.dropOffset, rollAltarOffer());
     }
 

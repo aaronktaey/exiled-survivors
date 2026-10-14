@@ -186,6 +186,21 @@ export const AUDIO = {
     file: 'assets/bossAlert.mp3',
     volume: 0.6,
   },
+  /**
+   * The 슬롯머신, as one file in three parts: the spin (a seamless loop, for
+   * as long as the reel turns), the clunk when 확정 is pressed, and the
+   * fanfare when it lands. Mixed from the five clips in assets-src/slot by
+   * tools/mix-slot.py, which prints these offsets — re-run it and copy them
+   * here if the clips change.
+   */
+  slot: {
+    key: 'sfx-slot',
+    file: 'assets/slot.mp3',
+    volume: 0.5,
+    run: { start: 0, duration: 6.6 },
+    stop: { start: 6.9, duration: 1.071 },
+    win: { start: 8.271, duration: 4.9973 },
+  },
 } as const;
 
 /**

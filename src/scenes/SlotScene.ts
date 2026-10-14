@@ -4,6 +4,7 @@ import { COLORS, DEPTH, SCENES, SCRIM, SKILL_ICON_SIZE, SLOT, TEXT } from '@/con
 import { t } from '@/i18n';
 import { fitText } from '@/systems/Layout';
 import { SlotReel, type SlotItem } from '@/systems/SlotReel';
+import { sfx } from '@/systems/Sfx';
 import { prefersTouchControls } from '@/systems/VirtualJoystick';
 
 /** What anything wanting a spin hands the slot machine. */
@@ -52,6 +53,8 @@ export class SlotScene extends Phaser.Scene {
   private unlocked = false;
   private pressed = false;
   private done = false;
+  /** The spin's loop, while it plays. Public so a test can hear it. */
+  public spin: Phaser.Sound.BaseSound | null = null;
 
   public constructor() {
     super(SlotScene.KEY);
@@ -141,9 +144,15 @@ export class SlotScene extends Phaser.Scene {
     // a flag the clock flips instead of a precomputed timestamp.
     this.time.delayedCall(SlotScene.INPUT_LOCK_MS, () => { this.unlocked = true; });
     this.input.keyboard?.on('keydown', this.onKeyDown, this);
+    // The reel's sound, under it for as long as it turns.
+    this.spin = sfx.startSlotSpin(this);
+
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       this.input.keyboard?.off('keydown', this.onKeyDown, this);
       this.reel.destroy();
+      this.tweens.killTweensOf(this.spin ?? {});
+      this.spin?.destroy();
+      this.spin = null;
     });
   }
 
@@ -169,10 +178,25 @@ export class SlotScene extends Phaser.Scene {
     const chosen = this.payload.choose?.() ?? Math.floor(Math.random() * count);
     const index = Phaser.Math.Clamp(Math.floor(chosen), 0, Math.max(0, count - 1));
     this.reel.stop(index, (landed) => this.land(landed));
+
+    // The clunk of the brake, and the spin dying away with the reel.
+    sfx.playSlot(this, 'stop');
+    const spin = this.spin;
+    if (spin) {
+      this.tweens.add({
+        targets: spin,
+        volume: 0,
+        duration: SLOT.stopMs,
+        onComplete: () => spin.stop(),
+      });
+    }
   }
 
   /** Holds the result up for a moment, then hands it back and closes. */
   private land(index: number): void {
+    // The fanfare outlives the screen: it plays on the game's sound manager,
+    // so it carries on into the run the skill was won for.
+    sfx.playSlot(this, 'win');
     this.time.delayedCall(SLOT.holdMs, () => {
       if (this.done) {
         return;

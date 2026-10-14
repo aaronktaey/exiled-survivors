@@ -26,9 +26,15 @@ type ReelState = 'spinning' | 'stopping' | 'stopped';
  * to the bottom, round and round.
  *
  * `stop(index)` slows it over SLOT.stopMs and lands it exactly on `index`.
- * The slowing is one smooth curve that starts at the speed it was turning
- * and ends at rest, chosen so the distance it covers comes out on the right
- * row — the reel never jumps, never speeds up and never creeps back.
+ * The slowing is one smooth curve from the speed it was turning to rest,
+ * and it never jumps, never speeds up and never creeps back.
+ *
+ * How it lands on the right item without spinning fast: the row it will
+ * come to rest on is decided the moment `stop` is called, and at that
+ * moment it is still above the window, out of sight — so that row is simply
+ * written with the result. Nothing on screen changes; the reel rolls the
+ * result in from the top as if it had always been there. That is what lets
+ * the reel turn slowly enough to read.
  *
  * It knows nothing about skills: anything that wants a spin hands it labels
  * and icons and is told which one it stopped on. Its owner calls `update`
@@ -44,6 +50,8 @@ export class SlotReel {
 
   /** Rows travelled, as a float. The item at the centre is `round(pos) mod n`. */
   private pos = 0;
+  /** The landing row, written with the result once `stop` decides it. */
+  private landingRow?: number;
   private state: ReelState = 'spinning';
   private speed: number;
 
@@ -53,6 +61,8 @@ export class SlotReel {
   private stopBend = 0;
   private stopElapsed = 0;
   private stopTarget = 0;
+  /** What the landing row shows. */
+  private result = 0;
   private onStopped?: (index: number) => void;
 
   public constructor(
@@ -65,13 +75,13 @@ export class SlotReel {
     this.items = items;
     this.options = options;
 
-    // Fast enough that the slowing curve can always land on the right row
-    // without ever speeding up or running backwards: a stop may have to
-    // cover up to half a lap (plus rounding) more or less than an even
-    // slowdown would, and the curve absorbs that only while the reel turns
-    // at least 3(n + 1) rows over the stop.
+    // An even slowdown covers speed × time / 2 rows, and the landing row has
+    // to start that far away still out of sight — above the window's top
+    // edge. Below this the result would have to be written onto a row the
+    // player can already see, so this is the floor on how slowly it turns.
     const n = Math.max(1, items.length);
-    this.speed = Math.max(SLOT.spinRowsPerSec, (3 * (n + 1)) / (SLOT.stopMs / 1000));
+    const floor = (options.visibleRows + 1) / (SLOT.stopMs / 1000);
+    this.speed = Math.max(SLOT.spinRowsPerSec, floor);
     // Start somewhere random, so two spins do not open on the same row.
     this.pos = Math.random() * n;
 
@@ -117,8 +127,7 @@ export class SlotReel {
 
   /** The item at the centre row right now. */
   public get centred(): number {
-    const n = this.items.length;
-    return (((Math.round(this.pos) % n) + n) % n);
+    return this.itemAt(Math.round(this.pos));
   }
 
   public get isSpinning(): boolean {
@@ -153,15 +162,15 @@ export class SlotReel {
 
     const n = this.items.length;
     const T = SLOT.stopMs / 1000;
-    // An even slowdown from `speed` to rest covers speed * T / 2 rows. Pick
-    // the landing row nearest that, then bend the curve by the difference.
+    // An even slowdown from `speed` to rest covers speed * T / 2 rows. Land
+    // on the whole row nearest that — but never one already in sight — and
+    // bend the curve by the fraction of a row it is off.
     const even = (this.speed * T) / 2;
     const target = ((index % n) + n) % n;
-    let landing = Math.round(this.pos + even);
-    landing += (((target - landing) % n) + n) % n;
-    if (landing - this.pos - even > n / 2) {
-      landing -= n;
-    }
+    const edge = this.options.visibleRows / 2;
+    const landing = Math.max(Math.round(this.pos + even), Math.ceil(this.pos + edge));
+    this.landingRow = landing;
+    this.result = target;
 
     this.stopFrom = this.pos;
     this.stopDistance = landing - this.pos;
@@ -203,6 +212,15 @@ export class SlotReel {
     this.container.destroy();
   }
 
+  /** Which item row k shows: its own in the cycle, or the result on the landing row. */
+  private itemAt(k: number): number {
+    if (k === this.landingRow) {
+      return this.result;
+    }
+    const n = this.items.length;
+    return ((k % n) + n) % n;
+  }
+
   /**
    * Places each row. Row k sits at (pos - k) rows below the centre, so as
    * pos grows every row slides down and the next item comes in at the top.
@@ -220,7 +238,7 @@ export class SlotReel {
     this.rows.forEach((row, slot) => {
       // Slots cover k = base - half .. base + half.
       const k = base - half + slot;
-      const item = this.items[((k % n) + n) % n]!;
+      const item = this.items[this.itemAt(k)]!;
       row.holder.setY((this.pos - k) * rowHeight);
 
       if (row.text.text !== item.label) {

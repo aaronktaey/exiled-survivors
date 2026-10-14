@@ -89,8 +89,15 @@ const fromKills = await run(`
     return { made, dist: last ? Math.hypot(last.x - at.x, last.y - at.y) : null };
   };
   const bosses = [kill('boss'), kill('boss'), kill('boss'), kill('boss'), kill('boss')];
+  // Ordinary kills leave one only now and then: off, then certain, so each
+  // side of that is a fixed answer rather than a roll.
+  const chance = window.config.ALTAR.fromKill;
+  window.config.ALTAR.fromKill = 0;
   const others = ['grunt', 'brute', 'runner', 'shooter'].map(kill);
-  const out = { was, bosses, others };
+  window.config.ALTAR.fromKill = 1;
+  const certain = ['grunt', 'shooter'].map(kill);
+  window.config.ALTAR.fromKill = chance;
+  const out = { was, bosses, others, certain, chance };
   s.combat.altars.getChildren().forEach(a => a.active && a.collect());
   s.choosing = false;
   return out;
@@ -102,9 +109,14 @@ check('every 우두머리 kill leaves a 제단',
 check('set back by its offset from where the 우두머리 fell',
   fromKills.bosses.every(b => Math.abs(b.dist - table.altar.dropOffset) < 1),
   `${fromKills.bosses[0].dist?.toFixed(1)}px`);
-check('and no other kill leaves one',
+check('an ordinary kill leaves one only at its own chance — never at 0%',
   fromKills.others.every(o => o.made === 0),
   fromKills.others.map(o => o.made).join(' '));
+check('and always at 100%, set back the same way',
+  fromKills.certain.every(o => o.made === 1 && Math.abs(o.dist - table.altar.dropOffset) < 1),
+  fromKills.certain.map(o => o.made).join(' '));
+check('the ordinary chance is a small one, well below the 우두머리 one',
+  fromKills.chance > 0 && fromKills.chance < fromKills.was, `${fromKills.chance} vs ${fromKills.was}`);
 
 // --- 4. it says what it will call up, in every offer ---
 const plates = await run(`

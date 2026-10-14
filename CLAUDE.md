@@ -136,8 +136,16 @@ Read `git log` for what changed and when. What is not in the log:
   `BONE_RUN.maxBosses` are up, and an ordinary enemy after — never a rare.
   The 제단's rare packs go through the same function. Do not add a second
   spawn path that skips it.
+- **No basic attack.** Every skill, 타격 included, is in `DROPPABLE_SKILLS`;
+  a fresh run holds only what the 슬롯머신 lands on, and a level-up upgrades
+  a random skill in hand. With the reel off (`#run`, the harness) a run
+  starts on `UNSPUN_SKILL` (타격) so suites have something deterministic.
+- **The slot sound is one file in three parts** (`AUDIO.slot`: run / stop /
+  win). Its sources are in `assets-src/slot`, not `public`, and
+  `tools/mix-slot.py` rebuilds `public/assets/slot.mp3` and prints the
+  offsets to copy into config.
 - **제단 chain on purpose.** Every 우두머리 leaves a 제단 (`ALTAR.fromBoss`),
-  and a 제단 can call up 우두머리, which leave 제단. It is opt-in — nothing
+  ordinary kills leave one at `ALTAR.fromKill`, and a 제단 can call up 우두머리, which leave 제단. It is opt-in — nothing
   happens until the survivor walks up — so it is not capped. An altar arms only
   after the survivor has been outside its radius once.
 - **The 슬롯머신 is generic.** `SlotScene` takes labels, icons, an optional

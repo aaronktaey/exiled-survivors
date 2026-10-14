@@ -82,14 +82,13 @@ export const SKILLS: Record<SkillId, SkillDefinition> = {
   },
 };
 
-/** Skills the player starts a run with. */
-export const STARTING_SKILLS: readonly SkillId[] = ['meleeStrike'];
-
-/** Which skill a level-up point is spent on. */
-export const LEVEL_UP_SKILL: SkillId = 'meleeStrike';
-
-/** Skills enemies can drop. One roll, then an even pick from this list. */
+/**
+ * Skills enemies can drop, and what the 슬롯머신 at the start of a run picks
+ * from. There is no basic attack any more: 타격 is one of them like the rest,
+ * and a run starts holding only what the reel lands on.
+ */
 export const DROPPABLE_SKILLS: readonly SkillDefinition[] = [
+  SKILLS.meleeStrike,
   SKILLS.fireball,
   SKILLS.chainLightning,
   SKILLS.iceSpear,
@@ -98,3 +97,10 @@ export const DROPPABLE_SKILLS: readonly SkillDefinition[] = [
 ];
 
 export const ALL_SKILLS: readonly SkillDefinition[] = Object.values(SKILLS);
+
+/**
+ * What a fresh run holds when it starts without the reel — the dev server's
+ * `#run` and the test harness turn the reel off so they land in play, and
+ * they need something to fight with that is the same every time.
+ */
+export const UNSPUN_SKILL: SkillId = 'meleeStrike';

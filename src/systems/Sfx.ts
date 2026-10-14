@@ -22,6 +22,7 @@ export const sfx = {
     const base = import.meta.env.BASE_URL;
 
     scene.load.audio(AUDIO.bossAlert.key, `${base}${AUDIO.bossAlert.file}`);
+    scene.load.audio(AUDIO.slot.key, `${base}${AUDIO.slot.file}`);
 
     for (const [skill, clip] of Object.entries(AUDIO.skills)) {
       if (!clip) {
@@ -65,6 +66,32 @@ export const sfx = {
     }
 
     scene.sound.play(AUDIO.bossAlert.key, { volume: AUDIO.bossAlert.volume });
+  },
+
+  /**
+   * The 슬롯머신's spin: one section of the slot file, looping, handed back
+   * so the reel can fade it when it stops. Null when the file did not load.
+   */
+  startSlotSpin(scene: Phaser.Scene): Phaser.Sound.BaseSound | null {
+    const clip = AUDIO.slot;
+    if (!scene.cache.audio.exists(clip.key)) {
+      return null;
+    }
+
+    const spin = scene.sound.add(clip.key, { volume: clip.volume });
+    spin.addMarker({ name: 'run', ...clip.run, config: { loop: true, volume: clip.volume } });
+    spin.play('run');
+    return spin;
+  },
+
+  /** One of the slot file's one-shots: the clunk on 확정, or the landing. */
+  playSlot(scene: Phaser.Scene, part: 'stop' | 'win'): void {
+    const clip = AUDIO.slot;
+    if (!scene.cache.audio.exists(clip.key)) {
+      return;
+    }
+
+    scene.sound.play(clip.key, { name: part, ...clip[part], config: { volume: clip.volume } });
   },
 
   /** A random variant, avoiding an immediate repeat when there is a choice. */

@@ -314,7 +314,8 @@ export const en: Strings = {
       heading: 'Growing',
       lines: [
         'Every kill drops an XP gem. Walk near and it comes to you.',
-        'A level-up offers upgrades for {starters}.',
+        'Every run starts on a slot machine that picks your first skill. There is no basic attack.',
+        'A level-up picks one of the skills you hold at random and offers upgrades for it.',
         'Picking up a skill offers upgrades for that skill. The first copy arrives plain, with no upgrade.',
         'Upgrades are tracked per skill: raising Fireball leaves Strike exactly as it was.',
       ],

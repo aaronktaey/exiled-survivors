@@ -34,6 +34,10 @@ const drain = async () => {
   }
 };
 
+// Say where to be rather than reload whatever the last suite left open —
+// one that ends on the title screen would otherwise leave no run to read.
+await cdp.send('Page.navigate', { url: 'http://localhost:5173/#run' });
+await sleep(800);
 await cdp.send('Page.reload', {});
 await sleep(3800);
 await drain();
@@ -230,14 +234,22 @@ check('투사체 속도 raises speed by a share of its base, and nothing else',
   afterSpeed.range === beforeSpeed.range && afterSpeed.damage === beforeSpeed.damage,
   `${beforeSpeed.projectileSpeed} -> ${afterSpeed.projectileSpeed}px/s (+${speedGain}), range ${afterSpeed.range}px`);
 
-// --- 10. a level-up still spends on 타격, with two options ---
-await run(`s.progression.addXp(s.progression.xpToNext); return 1;`);
+// --- 10. a level-up spends on a skill in hand ---
+// Which one is random; the roll is pinned to the first skill held (타격,
+// which the harness starts on) so the two-card layout can be measured.
+const held = await run(`
+  const roll = Math.random;
+  Math.random = () => 0;
+  s.progression.addXp(s.progression.xpToNext);
+  Math.random = roll;
+  return [...s.owned];
+`);
 await sleep(600);
 const level = await popup();
-check('level-up still targets 타격 with two picks',
-  level.open === true && level.skill === 'meleeStrike' && level.cards.length === 2 &&
-  level.title === 'LEVEL UP',
-  `skill=${level.skill} cards=${level.cards?.map(c => c.label).join(' | ')}`);
+check('a level-up offers the picks of a skill in hand',
+  level.open === true && held.includes(level.skill) && level.title === 'LEVEL UP' &&
+    level.skill === held[0] && level.cards.length === 2,
+  `skill=${level.skill} of ${held.join(', ')} cards=${level.cards?.map(c => c.label).join(' | ')}`);
 check('two cards stay at full width', level.cards?.every(c => c.w === 260),
   `${level.cards?.map(c => c.w).join('/')}px`);
 await shot('balance-02-level-up');

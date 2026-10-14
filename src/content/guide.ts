@@ -14,7 +14,7 @@ import {
 } from '@/config';
 import { enemyName, fill, skillName, skillSummary, t, tagName } from '@/i18n';
 import { dpsFromStats, upgradeOptionsFor } from '@/systems/Progression';
-import { ALL_SKILLS, DROPPABLE_SKILLS, STARTING_SKILLS } from '@/weapons/skills';
+import { ALL_SKILLS, DROPPABLE_SKILLS } from '@/weapons/skills';
 
 /** One block of the guide: a heading and the lines under it. */
 export interface GuideSection {
@@ -72,7 +72,7 @@ export function guideChapters(): readonly GuideChapter[] {
       sections: [
         {
           heading: g.growth.heading,
-          lines: g.growth.lines.map((line) => fill(line, { starters: starterNames() })),
+          lines: [...g.growth.lines],
         },
         {
           heading: g.drops.heading,
@@ -116,10 +116,6 @@ export function guideChapters(): readonly GuideChapter[] {
       ],
     },
   ];
-}
-
-function starterNames(): string {
-  return STARTING_SKILLS.map((id) => skillName(id)).join(' · ');
 }
 
 /** Every skill: what it is, what it does, and what it upgrades into. */

@@ -81,11 +81,10 @@ import {
   SKILLS,
   Fireball,
   IceSpear,
-  LEVEL_UP_SKILL,
   MeleeStrike,
   VoidOrb,
   ThunderStrike,
-  STARTING_SKILLS,
+  UNSPUN_SKILL,
   type SkillDefinition,
   type SkillId,
   type Weapon,
@@ -258,12 +257,14 @@ export class GameScene extends Phaser.Scene {
     ]);
     this.armInspect();
 
-    for (const skill of STARTING_SKILLS) {
-      this.acquire(skill);
-    }
-
+    // There is no basic attack: a fresh run holds what the 슬롯머신 lands
+    // on, a resumed one what it was saved with. Only when the reel is off —
+    // the dev server's `#run`, the test harness — does it start on a fixed
+    // skill instead, so they have something to fight with.
     if (this.resuming) {
       this.restore(this.resuming);
+    } else if (!this.startSlot) {
+      this.acquire(UNSPUN_SKILL);
     }
 
     this.attachTouchControls();
@@ -801,12 +802,22 @@ export class GameScene extends Phaser.Scene {
   }
 
   /** Level-up points are spent on the basic attack only. */
+  /**
+   * A level-up upgrades one of the skills in hand, picked at random — there
+   * is no basic attack for it to go to any more. The card says which.
+   */
   private onLevelUp(level: number): void {
     this.player.setLevel(level);
+    const held = [...this.owned];
+    const skill = held[Math.floor(Math.random() * held.length)];
+    if (!skill) {
+      return;
+    }
+
     this.queueChoice({
       title: t().upgrade.levelUp,
-      subtitle: fill(t().upgrade.level, { level }),
-      skill: LEVEL_UP_SKILL,
+      subtitle: `${fill(t().upgrade.level, { level })} · ${skillName(skill)}`,
+      skill,
     });
   }
 

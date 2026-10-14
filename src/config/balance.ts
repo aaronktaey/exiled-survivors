@@ -592,6 +592,11 @@ export const ALTAR = {
   /** Share of 우두머리 kills that leave one. 1 is every one of them. */
   fromBoss: 1,
   /**
+   * Share of every other kill that leaves one, rares included. A 갈비뼈
+   * raises it the way it raises every other drop.
+   */
+  fromKill: 0.01,
+  /**
    * How far from the kill it lands. Far enough that picking up what the
    * 우두머리 dropped does not set it off by accident.
    */
@@ -749,8 +754,14 @@ export const SLOT = {
    * turns it back on.
    */
   atRunStart: true as boolean,
-  /** How fast the reel turns before it is stopped, in rows per second. */
-  spinRowsPerSec: 14,
+  /**
+   * How fast the reel turns before it is stopped, in rows per second. It
+   * cannot go below (rows in the window + 1) ÷ the stop in seconds — 6 for a
+   * five-row window and a one-second stop — because the row it lands on has
+   * to be out of sight when 확정 is pressed. Slower than that needs a
+   * longer `stopMs`.
+   */
+  spinRowsPerSec: 6,
   /** How long it keeps turning after 확정, slowing all the way down. */
   stopMs: 1000,
   /** How long the stopped row is held up before the result is handed back. */

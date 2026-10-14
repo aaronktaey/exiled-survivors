@@ -47,8 +47,8 @@ await sleep(1500);
 const opened = await ev(`(() => {
   const g = window.game.scene.getScene('GameScene');
   const s = window.game.scene.getScene('SlotScene');
-  const droppable = window.config && Object.keys(window.config.SKILL_BASE)
-    .filter((id) => id !== 'meleeStrike');
+  // There is no basic attack: every skill is a drop skill, 타격 included.
+  const droppable = Object.keys(window.config.SKILL_BASE);
   return {
     active: window.game.scene.isActive('SlotScene'),
     choosing: g.choosing, physicsPaused: g.physics.world.isPaused,
@@ -57,18 +57,24 @@ const opened = await ev(`(() => {
     owned: [...g.owned],
     spinning: s.reel.isSpinning,
     speed: s.reel.velocity,
+    configured: window.config.SLOT.spinRowsPerSec,
+    sound: !!s.spin && s.spin.isPlaying,
     droppable,
   };
 })()`);
 console.log('opened:', JSON.stringify(opened));
 check('a fresh run opens on the 슬롯머신, with the arena frozen',
   opened.active && opened.choosing === true && opened.physicsPaused === true);
-check('the reel holds every drop skill, each with its icon',
+check('the reel holds every skill, 타격 among them, each with its icon',
   opened.labels.length === opened.droppable.length && opened.icons &&
-    opened.labels.includes('낙뢰'),
+    opened.labels.includes('낙뢰') && opened.labels.includes('타격'),
   opened.labels.join(' / '));
-check('and only the starting skill is in hand while it turns',
-  JSON.stringify(opened.owned) === JSON.stringify(['meleeStrike']), opened.owned.join(' '));
+check('and nothing is in hand while it turns — there is no basic attack',
+  opened.owned.length === 0, opened.owned.join(' ') || 'empty-handed');
+check('it turns at the configured, readable speed',
+  Math.abs(opened.speed - Math.max(opened.configured, 6)) < 1e-6 && opened.speed <= 8,
+  `${opened.speed} rows/s`);
+check('and its sound plays under it', opened.sound === true);
 
 const turning = [];
 for (let i = 0; i < 4; i++) {
@@ -112,11 +118,34 @@ const after = await run(`
            names: s.weapons.map((w) => w.definition.name) };
 `);
 console.log('after:', JSON.stringify(after));
-check('the skill it stopped on is the one handed out',
-  after.slot === false && after.owned.length === 2 &&
-    after.names[1] === opened.labels[landed],
+check('the skill it stopped on is the one handed out, and the only one',
+  after.slot === false && after.owned.length === 1 &&
+    after.names[0] === opened.labels[landed],
   `stopped on ${opened.labels[landed]}, got ${after.names.join(' + ')}`);
 check('and the run picks up where it froze', after.choosing === false && after.paused === false);
+
+// The reel's own sound stops with it.
+const quiet = await ev(`(() => {
+  const s = window.game.scene.getScene('SlotScene');
+  return { spin: s.spin === null || !s.spin.isPlaying };
+})()`);
+check('and the spin sound is gone once it has', quiet.spin === true);
+
+// --- 3b. a level-up upgrades one of the skills in hand, at random ---
+const levels = await run(`
+  s.acquire('fireball');
+  const seen = {};
+  const was = s.queueChoice;
+  s.queueChoice = (req) => { seen[req.skill] = (seen[req.skill] ?? 0) + 1; };
+  for (let i = 0; i < 200; i++) s.onLevelUp(s.progression.level);
+  s.queueChoice = was;
+  return { seen, owned: [...s.owned] };
+`);
+console.log('level-ups:', JSON.stringify(levels));
+check('a level-up offers one of the skills in hand, picked at random',
+  Object.keys(levels.seen).every((k) => levels.owned.includes(k)) &&
+    levels.owned.every((k) => (levels.seen[k] ?? 0) > 40),
+  Object.entries(levels.seen).map(([k, n]) => `${k} ${n}`).join(' / '));
 
 // --- 4. its odds are the caller's ---
 await ev(`(() => {
