@@ -1,6 +1,8 @@
 import Phaser from 'phaser';
 
 import {
+  ALTAR,
+  ALTAR_OFFERS,
   BONE_RUN,
   BOSS,
   ENEMY_KINDS,
@@ -9,6 +11,7 @@ import {
   WORLD,
   enemyHpScaleAt,
   rareChanceAt,
+  type AltarOfferId,
   type BoneBonus,
   type EnemyKind,
 } from '@/config';
@@ -260,17 +263,76 @@ export class SpawnDirector {
     // One spawn in ten comes up rare at the start, and one more in a hundred
     // for every minute the run has lasted, whatever kind it turned out to be.
     const rare = Math.random() < this.rareChance;
-
-    // A 고대 두개골 sends a 우두머리 in place of every rare, up to what the
-    // field can hold: past that the spawn comes up rare in the ordinary way,
-    // because a run with ten 우두머리 on it is over rather than hard.
-    if (rare && this.bones().raresBecomeBosses && this.aliveBosses < BONE_RUN.maxBosses) {
-      enemy.spawn(x, y, this.target, 'boss', this.hooks, false, this.hpScale);
+    if (this.place(enemy, x, y, kind ?? this.pickKind(), rare)) {
       this.hooks.onBossSpawned?.();
-      return true;
+    }
+    return true;
+  }
+
+  /**
+   * Starts one enemy, with the 고대 두개골 standing between the roll and the
+   * field: under it nothing comes up rare at all. A rare is a 우두머리
+   * instead while the field has room for one, and past BONE_RUN.maxBosses it
+   * is an ordinary one of its kind — a run with ten 우두머리 on it is over
+   * rather than hard, and a rare slipping through is the one thing the
+   * skull promises does not happen.
+   *
+   * Returns true when what walked in is a 우두머리 the skull made.
+   */
+  private place(enemy: Enemy, x: number, y: number, kind: EnemyKind, rare: boolean): boolean {
+    if (rare && this.bones().raresBecomeBosses) {
+      if (this.aliveBosses < BONE_RUN.maxBosses) {
+        enemy.spawn(x, y, this.target, 'boss', this.hooks, false, this.hpScale);
+        return true;
+      }
+
+      enemy.spawn(x, y, this.target, kind, this.hooks, false, this.hpScale);
+      return false;
     }
 
-    enemy.spawn(x, y, this.target, kind ?? this.pickKind(), this.hooks, rare, this.hpScale);
-    return true;
+    enemy.spawn(x, y, this.target, kind, this.hooks, rare, this.hpScale);
+    return false;
+  }
+
+  /**
+   * What a 제단 calls up when it wakes: its whole crowd at once, standing
+   * evenly round a ring about it. Outside the usual cap — the survivor asked
+   * for these — and through the same rule as any other spawn, so under a
+   * 고대 두개골 a rare pack is 우두머리 up to the ceiling and plain after.
+   *
+   * Returns how many came.
+   */
+  public summon(x: number, y: number, offerId: AltarOfferId): number {
+    const offer = ALTAR_OFFERS[offerId];
+    if (!offer) {
+      return 0;
+    }
+
+    let spawned = 0;
+    let horn = offer.kind === 'boss';
+    // The ring starts at a random turn, so two altars do not line up.
+    const turn = Phaser.Math.FloatBetween(0, Math.PI * 2);
+    for (let i = 0; i < offer.count; i++) {
+      const angle = turn + (i / offer.count) * Math.PI * 2;
+      const ex = Phaser.Math.Clamp(x + Math.cos(angle) * ALTAR.summonRadius, 0, WORLD.width);
+      const ey = Phaser.Math.Clamp(y + Math.sin(angle) * ALTAR.summonRadius, 0, WORLD.height);
+      const enemy = this.group.get(ex, ey) as Enemy | null;
+      if (!enemy) {
+        break;
+      }
+
+      if (offer.kind === 'boss') {
+        enemy.spawn(ex, ey, this.target, 'boss', this.hooks, false, this.hpScale);
+      } else if (this.place(enemy, ex, ey, offer.kind, offer.rare)) {
+        horn = true;
+      }
+      spawned += 1;
+    }
+
+    // One horn for the lot, not one per 우두머리.
+    if (horn) {
+      this.hooks.onBossSpawned?.();
+    }
+    return spawned;
   }
 }

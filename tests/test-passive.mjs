@@ -194,13 +194,13 @@ const folded = await run(`
     stat: s.progression.statsFor('meleeStrike').damage,
     cooldown: Math.round(s.cooldownOf('meleeStrike')),
     maxHp: s.player.maxHp,
-    // The sword is its tier's attack plus 예리, the lot scaled by 강력 —
-    // every one of those is tuned, and 속성 now carry a rung as well.
+    // The sword is its tier's attack scaled by 강력. The save also carries
+    // 예리 and 재생, which are gone: they must fall off rather than count.
     wantAttack: Math.round(
-      (window.config.attackForTier(window.config.GEAR.steelSword.tier) +
-        window.config.AFFIXES.honed.gearTiers.find(t => t.tier === 3).gear.attackBonus) *
+      window.config.attackForTier(window.config.GEAR.steelSword.tier) *
         window.config.AFFIXES.mighty.gearTiers.find(t => t.tier === 3).gear.attackScale,
     ),
+    lines: [...window.gear.equipped.prefixes, ...window.gear.equipped.suffixes].map(l => l.id),
     wantMaxHp: Math.round(
       window.config.PLAYER.maxHp *
         window.config.AFFIXES.giant.gearTiers.find(t => t.tier === 3).gear.maxHpScale,
@@ -215,9 +215,12 @@ const wantDamage = Math.round(
 check('패시브 lifts the skill, then 장비 is added to the result',
   folded.damage === wantDamage,
   `15 x ${folded.passive.damageScale.toFixed(2)} + ${folded.gear.attack} = ${folded.damage}`);
-check('and the sword is the tier plus 예리, scaled by 강력',
+check('and the sword is the tier, scaled by 강력',
   folded.gear.attack === folded.wantAttack,
   `+${folded.gear.attack}, wanted +${folded.wantAttack}`);
+check('a saved 예리 and 재생 fall off the weapon instead of counting',
+  JSON.stringify(folded.lines) === JSON.stringify(['mighty', 'giant']),
+  folded.lines.join(' / '));
 check('attack speed folds the same way',
   Math.abs(folded.cooldown - 1000 / (1 * 1.1 * 1)) < 2,
   `${folded.cooldown}ms`);

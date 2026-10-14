@@ -50,8 +50,6 @@ export interface GearBonus {
   readonly moveSpeedScale: number;
   readonly pickupScale: number;
   readonly invulnerableScale: number;
-  /** Health returned every REGEN.periodMs. */
-  readonly regen: number;
   readonly critChance: number;
   /** Added to RARE.critMultiplier when one lands. */
   readonly critMultiplierBonus: number;
@@ -64,7 +62,6 @@ export const NO_BONUS: GearBonus = {
   moveSpeedScale: 1,
   pickupScale: 1,
   invulnerableScale: 1,
-  regen: 0,
   critChance: 0,
   critMultiplierBonus: 0,
 };
@@ -112,38 +109,33 @@ export function gearBonusFor(item: GearItem | null): GearBonus {
     return NO_BONUS;
   }
 
-  let attackBonus = 0;
   let attackScale = 1;
   let attackSpeedScale = 1;
   let maxHpScale = 1;
   let moveSpeedScale = 1;
   let pickupScale = 1;
   let invulnerableScale = 1;
-  let regen = 0;
   let critChance = 0;
   let critMultiplierBonus = 0;
 
   for (const { effect } of affixesOf(item)) {
-    attackBonus += effect.attackBonus ?? 0;
     attackScale *= effect.attackScale ?? 1;
     attackSpeedScale *= effect.attackSpeedScale ?? 1;
     maxHpScale *= effect.maxHpScale ?? 1;
     moveSpeedScale *= effect.moveSpeedScale ?? 1;
     pickupScale *= effect.pickupScale ?? 1;
     invulnerableScale *= effect.invulnerableScale ?? 1;
-    regen += effect.regen ?? 0;
     critChance = Math.min(1, critChance + (effect.critChance ?? 0));
     critMultiplierBonus += effect.critMultiplierBonus ?? 0;
   }
 
   return {
-    attack: Math.round((attackForTier(GEAR[item.id].tier) + attackBonus) * attackScale),
+    attack: Math.round(attackForTier(GEAR[item.id].tier) * attackScale),
     attackSpeedScale,
     maxHpScale,
     moveSpeedScale,
     pickupScale,
     invulnerableScale,
-    regen,
     critChance,
     critMultiplierBonus,
   };

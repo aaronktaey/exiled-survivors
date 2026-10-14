@@ -1,5 +1,6 @@
 import {
   AFFIXES,
+  ALTAR_OFFERS,
   BONES,
   ENEMY_KINDS,
   GEAR,
@@ -8,6 +9,7 @@ import {
   PASSIVES,
   type AffixId,
   type AffixKind,
+  type AltarOfferId,
   type EnemyKind,
   type BoneId,
   type GearId,
@@ -142,6 +144,23 @@ export function affixDetail(id: AffixId): string {
  */
 export function affixGearDetail(id: AffixId, tier: number): string {
   return affixTier(id, tier)?.detail ?? affixDetail(id);
+}
+
+/**
+ * What a 제단 will call up — "우두머리 3마리", "희귀 사수 10마리" — built
+ * from the enemy's own name, so a new offer needs no line in the locales.
+ */
+export function altarOfferText(id: AltarOfferId): string {
+  const offer = ALTAR_OFFERS[id];
+  if (!offer) {
+    return '';
+  }
+
+  const copy = t().game;
+  return fill(offer.rare ? copy.altarCrowdRare : copy.altarCrowd, {
+    kind: enemyName(offer.kind),
+    count: offer.count,
+  });
 }
 
 /** The 뼈다귀's full name, its short form, and what it does to a run. */

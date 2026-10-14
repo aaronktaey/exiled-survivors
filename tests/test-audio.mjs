@@ -82,8 +82,8 @@ const byRarity = await run(`
     { lines: 0, item: weapon([], []) },
     { lines: 1, item: weapon(['mighty'], []) },
     { lines: 2, item: weapon(['mighty'], ['swift']) },
-    { lines: 3, item: weapon(['mighty', 'honed'], ['swift']) },
-    { lines: 5, item: weapon(['mighty', 'honed', 'cruel'], ['swift', 'giant']) },
+    { lines: 3, item: weapon(['mighty', 'frenzied'], ['swift']) },
+    { lines: 5, item: weapon(['mighty', 'frenzied', 'cruel'], ['swift', 'giant']) },
   ];
 
   const mgr = s.sound;

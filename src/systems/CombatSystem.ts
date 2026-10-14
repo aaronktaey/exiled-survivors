@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 
 import {
+  ALTAR,
   AUDIO,
   BONES,
   boneChanceFor,
@@ -8,11 +9,14 @@ import {
   ORBS,
   POTION,
   WEAPON,
+  rollAltarOffer,
+  type AltarOfferId,
   type BoneId,
   type DropTier,
   type EnemyShotSpec,
   type OrbId,
 } from '@/config';
+import { Altar } from '@/entities/Altar';
 import { Enemy } from '@/entities/Enemy';
 import { EnemyShot } from '@/entities/EnemyShot';
 import { GearDrop } from '@/entities/GearDrop';
@@ -56,6 +60,8 @@ export interface CombatHooks {
   readonly critMultiplier: () => number;
   /** Called when the player walks over a dropped skill. */
   readonly onSkillCollected: (skill: SkillId) => void;
+  /** Called when the survivor walks up to a 제단: call up what it offered. */
+  readonly onAltarWoke: (offer: AltarOfferId, x: number, y: number) => void;
 }
 
 /**
@@ -72,6 +78,8 @@ export class CombatSystem {
   public readonly shardDrops: Phaser.Physics.Arcade.Group;
   public readonly orbDrops: Phaser.Physics.Arcade.Group;
   public readonly boneDrops: Phaser.Physics.Arcade.Group;
+  /** The 제단 a 우두머리 left. Never picked up; they wake instead. */
+  public readonly altars: Phaser.Physics.Arcade.Group;
 
   private readonly scene: Phaser.Scene;
   private readonly player: Player;
@@ -119,6 +127,8 @@ export class CombatSystem {
     this.shardDrops = scene.physics.add.group({ classType: ShardDrop, runChildUpdate: true });
     this.orbDrops = scene.physics.add.group({ classType: OrbDrop, runChildUpdate: true });
     this.boneDrops = scene.physics.add.group({ classType: BoneDrop, runChildUpdate: true });
+    // No overlap: an altar is woken by distance, in its own update.
+    this.altars = scene.physics.add.group({ classType: Altar, runChildUpdate: true });
 
     scene.physics.add.overlap(player, enemies, this.onEnemyTouch, undefined, this);
     scene.physics.add.overlap(player, this.enemyShots, this.onEnemyShotHit, undefined, this);
@@ -181,6 +191,20 @@ export class CombatSystem {
 
     drop.drop(x, y, id);
     this.playDropSound(BONES[id]?.tier ?? 'normal');
+  }
+
+  /** Places a 제단 directly — used by the 우두머리 kill and by tests. */
+  public dropAltarAt(x: number, y: number, offer: AltarOfferId): Altar | null {
+    const altar = this.altars.get() as Altar | null;
+    if (!altar) {
+      return null;
+    }
+
+    altar.drop(x, y, offer, this.player, (woke) =>
+      this.hooks.onAltarWoke(woke.offer, woke.x, woke.y),
+    );
+    this.playDropSound(Altar.tierFor(offer));
+    return altar;
   }
 
   /** Places a weapon directly — used by the 우두머리 kill and debug keys. */
@@ -411,6 +435,12 @@ export class CombatSystem {
     // And half of them leave a 신성한 조각 beside it.
     if (this.hooks.rollShardDrop(wasBoss)) {
       this.dropShardAt(x + 18, y);
+    }
+
+    // And a 제단, set back from the rest so that picking those up does not
+    // wake it by accident.
+    if (wasBoss && Math.random() < ALTAR.fromBoss) {
+      this.dropAltarAt(x, y - ALTAR.dropOffset, rollAltarOffer());
     }
 
     // A 구슬 rolls off any kill at all, which is what gives the hundredth

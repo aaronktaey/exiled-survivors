@@ -6,9 +6,8 @@
  * 신성한 구슬, and one 구슬 is one point. A point buys a rank of one of the
  * two lines below, and the ranks stack.
  *
- * Health regeneration is not one of them: the 재생 속성 on a weapon is where
- * that lives, and having it in both places made the tree the thing you took
- * first and the weapon's line worth nothing.
+ * Health regeneration is not one of them, and no longer anywhere else
+ * either: life comes back from potions.
  *
  * It is deliberately flat lines rather than a tree: the shape — which
  * node unlocks which — is the next piece of work, and everything underneath

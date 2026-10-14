@@ -22,6 +22,9 @@ export const COLORS = {
   /** 우두머리: a dark slab with a gold ring around it. */
   enemyBoss: 0x7a1f3d,
   bossOutline: 0xffd34d,
+  /** 제단: dark stone with an ember on top, so it reads as a threat. */
+  altarStone: 0x4a4f5c,
+  altarFlame: 0xff5a3c,
   /** Enemy fire, kept well away from any colour the player's own shots use. */
   enemyShot: 0xff7a9c,
   /** The ring around a rare at one affix, and its tooltip heading. */
@@ -134,6 +137,7 @@ export const TEXTURES = {
   shard: "tex-shard",
   boneSkull: "tex-bone-skull",
   boneRib: "tex-bone-rib",
+  altar: "tex-altar",
   orbTransmute: "tex-orb-transmute",
   orbChaos: "tex-orb-chaos",
   orbAwaken: "tex-orb-awaken",

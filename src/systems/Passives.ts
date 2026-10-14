@@ -14,7 +14,6 @@ export interface PassiveState {
 export interface PassiveBonus {
   readonly damageScale: number;
   readonly attackSpeedScale: number;
-  /** Health returned every REGEN.periodMs. */
 }
 
 export const NO_PASSIVES: PassiveBonus = {

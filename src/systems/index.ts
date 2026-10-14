@@ -43,6 +43,5 @@ export {
   attackSpeedFor,
   critMultiplierFor,
   damageFor,
-  regenFor,
   type RunModifiers,
 } from '@/systems/Modifiers';

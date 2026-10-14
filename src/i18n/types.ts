@@ -200,6 +200,14 @@ export interface Strings {
     readonly orbMade: string;
     readonly pickedUp: string;
     readonly enhancedPickup: string;
+    /** The plate over a 제단: {enemies} is what it will call up. */
+    readonly altarOffer: string;
+    /** One offer's crowd: {kind} is the enemy's name, {count} how many. */
+    readonly altarCrowd: string;
+    /** ...and the same, when every one of them comes up rare. */
+    readonly altarCrowdRare: string;
+    /** Shouted when one wakes. */
+    readonly altarWoke: string;
   };
 
   readonly rare: {

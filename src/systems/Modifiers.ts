@@ -60,8 +60,3 @@ export function attackSpeedFor(skill: SkillId, upgraded: number, mods: RunModifi
 export function critMultiplierFor(mods: RunModifiers): number {
   return PLAYER.critMultiplier + mods.gear.critMultiplierBonus;
 }
-
-/** Health returned every REGEN.periodMs, from the tree and from the weapon. */
-export function regenFor(mods: RunModifiers): number {
-  return mods.gear.regen;
-}

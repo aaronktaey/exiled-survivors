@@ -6,11 +6,11 @@ import {
   DEPTH,
   GEAR_DROP,
   PAUSE_BUTTON,
-  REGEN,
   NO_BONES,
   SHARD,
   boneBonusFor,
   type BoneBonus,
+  type AltarOfferId,
   type BoneId,
   type OrbId,
   STATS,
@@ -24,7 +24,7 @@ import {
 } from '@/config';
 import type { Enemy } from '@/entities/Enemy';
 import { Player } from '@/entities/Player';
-import { boneName, fill, gearTitle, orbName, skillName, t } from '@/i18n';
+import { altarOfferText, boneName, fill, gearTitle, orbName, skillName, t } from '@/i18n';
 import { GameOverScene, type GameOverData } from '@/scenes/GameOverScene';
 import { UpgradeScene, type UpgradeChoiceData } from '@/scenes/UpgradeScene';
 import {
@@ -60,7 +60,6 @@ import {
   attackSpeedFor,
   critMultiplierFor,
   damageFor,
-  regenFor,
   type RunModifiers,
 } from '@/systems/Modifiers';
 import { bones } from '@/systems/Bones';
@@ -137,8 +136,6 @@ export class GameScene extends Phaser.Scene {
   private gearBonus: GearBonus = NO_BONUS;
   /** 패시브 and 장비 together, in the order they are applied. */
   private mods: RunModifiers = NO_MODIFIERS;
-  /** Counts up to REGEN.periodMs, then pays out. */
-  private sinceRegenMs = 0;
   /** What this run has done, read out on the screen that ends it. */
   private stats!: RunStats;
   /** The touch steering in use, so a settings change can replace it. */
@@ -191,7 +188,6 @@ export class GameScene extends Phaser.Scene {
     // 패시브 first, then 장비, then whatever the run itself adds.
     this.gearBonus = gearBonusFor(gear.equipped);
     this.mods = { passive: passives.bonus, gear: this.gearBonus };
-    this.sinceRegenMs = 0;
 
     this.player = new Player(this, WORLD.width / 2, WORLD.height / 2);
     this.player.applyGear(this.gearBonus);
@@ -222,6 +218,7 @@ export class GameScene extends Phaser.Scene {
         onShardCollected: () => this.onShardCollected(),
         onOrbCollected: (id) => this.onOrbCollected(id),
         onBoneCollected: (id) => this.onBoneCollected(id),
+        onAltarWoke: (offer, x, y) => this.onAltarWoke(offer, x, y),
         dropScale: () => this.boneBonus.dropScale,
         critMultiplier: () => critMultiplierFor(this.mods),
       },
@@ -239,6 +236,7 @@ export class GameScene extends Phaser.Scene {
         // thing about it that the field does.
         arrowColor: COLORS.bossOutline,
       },
+      { group: this.combat.altars },
       { group: this.combat.shardDrops },
       { group: this.combat.orbDrops },
       { group: this.combat.gearDrops },
@@ -345,7 +343,6 @@ export class GameScene extends Phaser.Scene {
     // the world, so every system downstream runs on a clamped delta.
     const dt = Math.min(delta, TIMING.maxDeltaMs);
     this.elapsedMs += dt;
-    this.regenerate(dt);
 
     this.player.update();
     this.spawner.update(dt);
@@ -623,7 +620,17 @@ export class GameScene extends Phaser.Scene {
     this.announce(fill(t().game.boneFound, { bone: boneName(id) }));
   }
 
-/**
+  /**
+   * A 제단 the survivor walked up to: what it offered arrives, all at once,
+   * in a ring around it. It is the one spawn the survivor asks for, so it
+   * says what it is.
+   */
+  private onAltarWoke(offer: AltarOfferId, x: number, y: number): void {
+    this.spawner.summon(x, y, offer);
+    this.announce(fill(t().game.altarWoke, { enemies: altarOfferText(offer) }));
+  }
+
+  /**
    * One skill's damage per hit: the tree, then the weapon, then the run,
    * and the per-skill balance dial over the lot.
    */
@@ -632,29 +639,6 @@ export class GameScene extends Phaser.Scene {
     // Whole numbers: a percentage from the tree would otherwise put a
     // decimal point on every damage number that floats off an enemy.
     return Math.round(damageFor(skill, upgraded, this.mods) * (BALANCE.damageScale[skill] ?? 1));
-  }
-
-  /**
-   * 재생, from the tree and from the weapon, paid out in whole points every
-   * REGEN.periodMs rather than drifting a fraction per frame.
-   */
-  private regenerate(dt: number): void {
-    const perPeriod = regenFor(this.mods);
-    if (perPeriod <= 0 || !this.player.isAlive) {
-      return;
-    }
-
-    this.sinceRegenMs += dt;
-    while (this.sinceRegenMs >= REGEN.periodMs) {
-      this.sinceRegenMs -= REGEN.periodMs;
-      const healed = this.player.heal(perPeriod);
-      if (healed > 0) {
-        this.damageNumbers.spawn(this.player.x, this.player.y - 18, healed, {
-          prefix: '+',
-          color: COLORS.healText,
-        });
-      }
-    }
   }
 
   /** The same fold, for how often that skill goes off. */
@@ -729,6 +713,7 @@ export class GameScene extends Phaser.Scene {
         gems: this.combat.gems.countActive(true),
         drops: this.combat.skillDrops.countActive(true),
         potions: this.combat.potions.countActive(true),
+        altars: this.combat.altars.countActive(true),
         damageNumbers: this.damageNumbers.activeCount,
         hpScale: this.spawner.hpScale,
         rareChance: this.spawner.rareChance,

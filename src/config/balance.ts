@@ -210,8 +210,6 @@ export type AffixId =
   | "mighty"
   | "cruel"
   | "frenzied"
-  | "honed"
-  | "regrowth"
   | "evasive"
   | "magnetic"
   | "volleying";
@@ -240,8 +238,6 @@ export interface EnemyAffixEffect {
 export interface GearAffixEffect {
   /** Multiplies the weapon's attack power. */
   readonly attackScale?: number;
-  /** Flat attack power, added before any scale. */
-  readonly attackBonus?: number;
   /** Multiplies every skill's attacks per second. */
   readonly attackSpeedScale?: number;
   /** Multiplies the survivor's maximum health. */
@@ -252,8 +248,6 @@ export interface GearAffixEffect {
   readonly critChance?: number;
   /** Adds to what a critical hit is worth, over RARE.critMultiplier. */
   readonly critMultiplierBonus?: number;
-  /** Health returned every REGEN.periodMs. */
-  readonly regen?: number;
   /** Multiplies the invulnerable window after taking a hit. */
   readonly invulnerableScale?: number;
   /** Multiplies how far a gem has to be before it drifts over. */
@@ -283,8 +277,8 @@ export interface AffixSpec {
   readonly detail: string;
   /**
    * What it does on an enemy. An 속성 rolls there only where it has
-   * something to do: 자력 would mean nothing to an enemy, and the run has no
-   * enemy regeneration to hang 재생 on, so those are weapon-only. An enemy's
+   * something to do: 자력 would mean nothing to an enemy, so it is
+   * weapon-only. An enemy's
    * 속성 has no tier — it is one number, and a rare is read by its ring and
    * its tooltip rather than by a tier list.
    */
@@ -324,14 +318,19 @@ function tiers(
 
 /**
  * The roster, picked from the categories Path of Exile puts on an item and
- * narrowed to what this game can actually express. Added flat damage, a
- * damage percentage, critical chance and critical damage, attack speed,
- * maximum life, movement speed and regeneration all have somewhere to go.
+ * narrowed to what this game can actually express. A damage percentage,
+ * critical chance and critical damage, attack speed, maximum life and
+ * movement speed all have somewhere to go.
  * Resistances, accuracy and attributes do not — there are no damage types,
  * no miss chance and no attributes — so they are left out rather than
  * invented. 자력 is the one that is not a PoE line: the pickup radius is
  * this genre's own utility stat, and it is the only place a utility suffix
  * had to go.
+ *
+ * 예리 (flat attack power) and 재생 (life over time) used to be here too.
+ * Flat attack now comes only from the sword's own tier, and life comes back
+ * only from potions. A weapon saved with either line loses that line the
+ * next time the stash is read.
  */
 export const AFFIXES: Record<AffixId, AffixSpec> = {
   // --- 접두어: what it does to whatever it is pointed at ---
@@ -381,18 +380,6 @@ export const AFFIXES: Record<AffixId, AffixSpec> = {
       [30, 25, 20, 15, 10],
     ),
   },
-  honed: {
-    id: "honed",
-    kind: "prefix",
-    name: "예리",
-    detail: "공격력 +1",
-    gearTiers: tiers(
-      (v) => `공격력 +${v}`,
-      (v) => ({ attackBonus: v }),
-      [5, 4, 3, 2, 1],
-    ),
-  },
-
   volleying: {
     id: "volleying",
     kind: "prefix",
@@ -425,17 +412,6 @@ export const AFFIXES: Record<AffixId, AffixSpec> = {
       (v) => `이동속도 +${v}%`,
       (v) => ({ moveSpeedScale: 1 + v / 100 }),
       [36, 30, 24, 18, 12],
-    ),
-  },
-  regrowth: {
-    id: "regrowth",
-    kind: "suffix",
-    name: "재생",
-    detail: "5초당 체력 +2",
-    gearTiers: tiers(
-      (v) => `5초당 체력 +${v}`,
-      (v) => ({ regen: v }),
-      [6, 5, 4, 3, 2],
     ),
   },
   evasive: {
@@ -495,11 +471,6 @@ export function rollAffixTier(id: AffixId): number {
 
   return ladder[ladder.length - 1]?.tier ?? LEGACY_AFFIX_TIER;
 }
-
-/** How often regeneration pays out, for 재생 and for the passive tree. */
-export const REGEN = {
-  periodMs: 5000,
-} as const;
 
 /** The ones a rare enemy can be born with. */
 export const ENEMY_AFFIXES: readonly AffixSpec[] = Object.values(
@@ -575,6 +546,73 @@ export const BOSS = {
   /** How far outside the usual spawn ring it enters. */
   extraDistance: 40,
 } as const;
+
+/**
+ * ★ 제단 — what a 우두머리 always leaves behind besides its loot.
+ *
+ * It is an offer, not a reward: each one is written with what it will call
+ * up, and nothing happens until the survivor walks up to it. Then the crowd
+ * it promised arrives in a ring around it, and whatever they drop is the
+ * pay. Walking past one is always allowed.
+ *
+ * Adding an offer is a line in ALTAR_OFFERS — the label, the summon and the
+ * weighting all read the table. Its words are built from the enemy's own
+ * name and the count, so it needs no line in the locales.
+ */
+export interface AltarOfferSpec {
+  readonly kind: EnemyKind;
+  readonly count: number;
+  /** Every one of them comes up rare, with rolled 속성. */
+  readonly rare: boolean;
+  /** How often this one is what the altar offers, against the others. */
+  readonly weight: number;
+}
+
+export type AltarOfferId =
+  | "bosses"
+  | "rareShooters"
+  | "rareBrutes"
+  | "rareGrunts"
+  | "runnerSwarm";
+
+export const ALTAR_OFFERS: Record<AltarOfferId, AltarOfferSpec> = {
+  bosses: { kind: "boss", count: 3, rare: false, weight: 1 },
+  rareShooters: { kind: "shooter", count: 10, rare: true, weight: 2 },
+  rareBrutes: { kind: "brute", count: 6, rare: true, weight: 2 },
+  rareGrunts: { kind: "grunt", count: 15, rare: true, weight: 3 },
+  runnerSwarm: { kind: "runner", count: 40, rare: false, weight: 3 },
+};
+
+export const ALTAR = {
+  /** Share of 우두머리 kills that leave one. 1 is every one of them. */
+  fromBoss: 1,
+  /**
+   * How far from the kill it lands. Far enough that picking up what the
+   * 우두머리 dropped does not set it off by accident.
+   */
+  dropOffset: 90,
+  /** How close the survivor has to come for it to wake. */
+  activateRadius: 34,
+  /** How far from the altar the summoned crowd stands when it arrives. */
+  summonRadius: 200,
+  /** How big it is drawn. */
+  size: 28,
+} as const;
+
+/** One offer, drawn by weight. */
+export function rollAltarOffer(): AltarOfferId {
+  const rows = Object.entries(ALTAR_OFFERS) as [AltarOfferId, AltarOfferSpec][];
+  const total = rows.reduce((sum, [, offer]) => sum + offer.weight, 0);
+  let roll = Math.random() * total;
+  for (const [id, offer] of rows) {
+    roll -= offer.weight;
+    if (roll < 0) {
+      return id;
+    }
+  }
+
+  return rows[rows.length - 1]![0];
+}
 
 /**
  * Weighted spawn table. A kind only joins the draw once the run is old

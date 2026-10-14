@@ -72,7 +72,7 @@ wrong shape.
 ## The test harness
 
 `tests/` drives a real Chrome over CDP against the dev server and checks the
-running game, not units. 25 suites, ~690 checks. It is the only thing that has
+running game, not units. 26 suites, ~710 checks. It is the only thing that has
 caught most of what has gone wrong here, so run all of it before every commit.
 
 ```sh
@@ -81,7 +81,8 @@ cd tests
 node run-all.mjs test-full test-skills test-balance test-chain test-ice \
   test-void test-enemies test-rare test-boss test-potion test-sfx test-perf \
   test-hud test-expiry test-audio test-touch test-shell test-shell2 test-info \
-  test-i18n test-gear test-passive test-responsive test-stats test-bones
+  test-i18n test-gear test-passive test-responsive test-stats test-bones \
+  test-altar
 ```
 
 `run-all.mjs` starts Chrome itself (`CHROME_PATH` overrides where it looks),
@@ -130,6 +131,15 @@ Read `git log` for what changed and when. What is not in the log:
   number that would make something unplayable, implement it with a documented
   ceiling in config and say so in the report (that is why
   `BONE_RUN.maxBosses` exists).
+- **One rule for the 고대 두개골.** Every spawn that rolls rare goes through
+  `SpawnDirector.place`: under the skull it is a 우두머리 while fewer than
+  `BONE_RUN.maxBosses` are up, and an ordinary enemy after — never a rare.
+  The 제단's rare packs go through the same function. Do not add a second
+  spawn path that skips it.
+- **제단 chain on purpose.** Every 우두머리 leaves a 제단 (`ALTAR.fromBoss`),
+  and a 제단 can call up 우두머리, which leave 제단. It is opt-in — nothing
+  happens until the survivor walks up — so it is not capped. An altar arms only
+  after the survivor has been outside its radius once.
 - **Known gaps, left on purpose:**
   - A 구슬 can still be spent on the weapon a saved run is holding. Swapping
     is blocked while a run is saved; rerolling it is not.

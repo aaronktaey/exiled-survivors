@@ -175,11 +175,11 @@ const rolled = await run(`
 console.log('split:', JSON.stringify(rolled));
 check('the offensive 속성 roll as 접두어',
   JSON.stringify(rolled.prefixes) ===
-    JSON.stringify(['critical', 'cruel', 'frenzied', 'honed', 'mighty']),
+    JSON.stringify(['critical', 'cruel', 'frenzied', 'mighty']),
   rolled.prefixes.join(' / '));
 check('the defensive and utility ones roll as 접미어',
   JSON.stringify(rolled.suffixes) ===
-    JSON.stringify(['evasive', 'giant', 'magnetic', 'regrowth', 'swift']),
+    JSON.stringify(['evasive', 'giant', 'magnetic', 'swift']),
   rolled.suffixes.join(' / '));
 check('and every line comes out at one of the five rungs',
   JSON.stringify(rolled.tiers) === JSON.stringify([1, 2, 3, 4, 5]),
@@ -340,10 +340,10 @@ const ladder = await run(`
   };
   out.plain = gearAt([], []);
   out.two = gearAt(['mighty'], ['swift']);
-  out.three = gearAt(['mighty', 'honed'], ['swift']);
-  out.four = gearAt(['mighty', 'honed'], ['swift', 'giant']);
-  out.five = gearAt(['mighty', 'honed', 'cruel'], ['swift', 'giant']);
-  out.six = gearAt(['mighty', 'honed', 'cruel'], ['swift', 'giant', 'regrowth']);
+  out.three = gearAt(['mighty', 'frenzied'], ['swift']);
+  out.four = gearAt(['mighty', 'frenzied'], ['swift', 'giant']);
+  out.five = gearAt(['mighty', 'frenzied', 'cruel'], ['swift', 'giant']);
+  out.six = gearAt(['mighty', 'frenzied', 'cruel'], ['swift', 'giant', 'magnetic']);
 
   s.combat.dropShardAt(-800, -800);
   out.shard = read(s.combat.shardDrops.getChildren().find(d => d.active));
@@ -396,8 +396,8 @@ await run(`
   const put = (uid, prefixes, suffixes) =>
     s.combat.dropGearAt(-800, -800, { uid, id: 'steelSword', prefixes, suffixes });
   put('b-plain', [], []);
-  put('b-magic', ['mighty', 'honed'], ['swift']);
-  put('b-rare', ['mighty', 'honed', 'cruel'], ['swift', 'giant']);
+  put('b-magic', ['mighty', 'frenzied'], ['swift']);
+  put('b-rare', ['mighty', 'frenzied', 'cruel'], ['swift', 'giant']);
   return { onGround: s.combat.gearDrops.countActive(true) };
 `);
 await sleep(600);
@@ -422,15 +422,15 @@ const LOADED = [
   { uid: 'starter', id: 'rustySword', prefixes: [], suffixes: [] },
   { uid: 'l1', id: 'runedSword',
     prefixes: [{ id: 'mighty', tier: 1 }, { id: 'critical', tier: 2 }],
-    suffixes: [{ id: 'giant', tier: 1 }, { id: 'swift', tier: 5 }, { id: 'regrowth', tier: 3 }] },
+    suffixes: [{ id: 'giant', tier: 1 }, { id: 'swift', tier: 5 }, { id: 'magnetic', tier: 3 }] },
   { uid: 'l2', id: 'steelSword', prefixes: [{ id: 'frenzied', tier: 3 }], suffixes: [{ id: 'magnetic', tier: 3 }] },
   { uid: 'l3', id: 'steelSword', prefixes: [{ id: 'cruel', tier: 3 }], suffixes: [] },
-  { uid: 'l4', id: 'ironSword', prefixes: [{ id: 'honed', tier: 3 }], suffixes: [{ id: 'evasive', tier: 3 }] },
+  { uid: 'l4', id: 'ironSword', prefixes: [{ id: 'mighty', tier: 4 }], suffixes: [{ id: 'evasive', tier: 3 }] },
   { uid: 'l5', id: 'ironSword', prefixes: [], suffixes: [] },
   { uid: 'l6', id: 'rustySword', prefixes: [{ id: 'mighty', tier: 3 }], suffixes: [] },
   { uid: 'l7', id: 'rustySword', prefixes: [], suffixes: [{ id: 'giant', tier: 3 }] },
   { uid: 'l8', id: 'rustySword', prefixes: [{ id: 'critical', tier: 3 }], suffixes: [{ id: 'swift', tier: 3 }] },
-  { uid: 'l9', id: 'ironSword', prefixes: [{ id: 'frenzied', tier: 3 }], suffixes: [{ id: 'regrowth', tier: 3 }] },
+  { uid: 'l9', id: 'ironSword', prefixes: [{ id: 'frenzied', tier: 3 }], suffixes: [{ id: 'giant', tier: 2 }] },
 ];
 await ev(`(() => {
   localStorage.setItem('exiled-survivors:gear:v2', JSON.stringify(
@@ -599,7 +599,7 @@ const orbSpread = await ev(`(() => {
     chaos: spread('chaos', weapon(['mighty','critical'], ['giant','swift']), 3000),
     awakenOnFour: spread('awaken', weapon(['mighty','critical'], ['giant','swift']), 600),
     awakenOnSix: spread('awaken',
-      weapon(['mighty','critical','cruel'], ['giant','swift','regrowth']), 100),
+      weapon(['mighty','critical','cruel'], ['giant','swift','magnetic']), 100),
   };
 })()`);
 console.log('구슬 spreads:', JSON.stringify(orbSpread));
@@ -780,7 +780,7 @@ await shot('gear-10-orb-used');
 // A 구슬 that would do nothing cannot be spent at all.
 await ev(`(() => {
   window.gear.replace({ uid: 'orbTarget', id: 'steelSword',
-    prefixes: [{ id: 'mighty', tier: 3 }, { id: 'critical', tier: 3 }, { id: 'cruel', tier: 3 }], suffixes: [{ id: 'giant', tier: 3 }, { id: 'swift', tier: 3 }, { id: 'regrowth', tier: 3 }] });
+    prefixes: [{ id: 'mighty', tier: 3 }, { id: 'critical', tier: 3 }, { id: 'cruel', tier: 3 }], suffixes: [{ id: 'giant', tier: 3 }, { id: 'swift', tier: 3 }, { id: 'magnetic', tier: 3 }] });
   window.orbs.add('awaken', 2);
   window.game.scene.getScene('GearScene').scene.restart({ onClose: () => {}, focus: 'orbTarget' });
   return 1;

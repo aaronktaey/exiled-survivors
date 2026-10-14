@@ -205,15 +205,15 @@ const skulled = await run(`
   s.spawner.clear();
   const was = window.config.RARE.chance;
   window.config.RARE.chance = 1;
-  let bosses = 0, rares = 0;
+  let bosses = 0, rares = 0, plain = 0;
   for (let i = 0; i < 12; i++) {
     s.spawner.spawnBurst(1);
     const live = s.spawner.group.getChildren().filter(e => e.active);
     const last = live[live.length - 1];
-    if (last && last.isBoss) bosses++; else if (last && last.rare) rares++;
+    if (last && last.isBoss) bosses++; else if (last && last.rare) rares++; else if (last) plain++;
   }
   window.config.RARE.chance = was;
-  const out = { bosses, rares, alive: s.spawner.aliveBosses,
+  const out = { bosses, rares, plain, alive: s.spawner.aliveBosses,
                 cap: window.config.BONE_RUN.maxBosses };
   s.spawner.clear();
   s.choosing = false;
@@ -222,9 +222,9 @@ const skulled = await run(`
 console.log('under a 고대 두개골:', JSON.stringify(skulled));
 check('고대 두개골 sends a 우두머리 in place of a rare',
   skulled.bosses > 0, `${skulled.bosses} of 12 spawns`);
-check('up to what the field can hold, and rares again past that',
-  skulled.bosses === skulled.cap && skulled.rares > 0,
-  `${skulled.bosses} 우두머리 (cap ${skulled.cap}), then ${skulled.rares} rares`);
+check('up to what the field can hold, and never a rare past that',
+  skulled.bosses === skulled.cap && skulled.rares === 0 && skulled.plain > 0,
+  `${skulled.bosses} 우두머리 (cap ${skulled.cap}), then ${skulled.plain} plain, ${skulled.rares} rares`);
 
 // --- 6. a resumed run is still played by them ---
 await run(`s.writeSave(); return 1;`);

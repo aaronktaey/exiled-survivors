@@ -66,6 +66,7 @@ export class BootScene extends Phaser.Scene {
     this.createPassiveTexture();
     this.createOrbTextures();
     this.createBoneTextures();
+    this.createAltarTexture();
 
 
     createPixelTextTexture(this, TEXTURES.logo, ['EXILED', 'SURVIVORS'], {
@@ -205,6 +206,34 @@ export class BootScene extends Phaser.Scene {
       graphics.generateTexture(bone.texture, size, size);
       graphics.destroy();
     }
+  }
+
+  /**
+   * The 제단: a stepped stone block with an ember burning on top. Grey and
+   * squat where every pickup is bright and round, so it does not read as
+   * something to walk over for free.
+   */
+  private createAltarTexture(): void {
+    const size = 32;
+    const graphics = this.add.graphics();
+
+    // Base step, the block, and the slab across the top.
+    graphics.fillStyle(COLORS.altarStone, 1);
+    graphics.fillRect(size * 0.12, size * 0.8, size * 0.76, size * 0.14);
+    graphics.fillRect(size * 0.24, size * 0.5, size * 0.52, size * 0.32);
+    graphics.fillRect(size * 0.16, size * 0.42, size * 0.68, size * 0.1);
+    // A seam down the block, so it reads as stone rather than a box.
+    graphics.fillStyle(0x15181f, 0.35);
+    graphics.fillRect(size * 0.48, size * 0.52, size * 0.04, size * 0.28);
+
+    // The ember: a wide flame with a hotter core.
+    graphics.fillStyle(COLORS.altarFlame, 1);
+    graphics.fillTriangle(size * 0.3, size * 0.42, size * 0.7, size * 0.42, size * 0.5, size * 0.06);
+    graphics.fillStyle(0xffd34d, 1);
+    graphics.fillTriangle(size * 0.4, size * 0.42, size * 0.6, size * 0.42, size * 0.5, size * 0.2);
+
+    graphics.generateTexture(TEXTURES.altar, size, size);
+    graphics.destroy();
   }
 
   /**
