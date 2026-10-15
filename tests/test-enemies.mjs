@@ -94,20 +94,25 @@ check('each kind draws its own texture',
   ['grunt', 'brute', 'runner', 'shooter'].map(k => kinds[k].tex.replace('tex-enemy', '')).join(' '));
 
 // --- 2. stronger kinds unlock as the run goes on ---
+// Each kind is checked just before and at its own unlockMs, read off config.
 const unlocks = await run(`
   const at = (ms) => { s.spawner.elapsedMs = ms; return [...s.spawner.unlockedKinds]; };
-  const out = { t0: at(0), t30: at(30000), t55: at(55000), t80: at(80000) };
+  const rows = window.config.SPAWN_TABLE.map(r => ({
+    kind: r.kind,
+    at: r.unlockMs / 1000,
+    before: r.unlockMs > 0 ? at(r.unlockMs - 1).includes(r.kind) : false,
+    after: at(r.unlockMs).includes(r.kind),
+  }));
+  const out = { t0: at(0), rows };
   s.spawner.elapsedMs = 0;
   return out;
 `);
 console.log('unlocks:', JSON.stringify(unlocks));
-check('the first half minute is 일반 only',
+check('the start is 일반 only',
   JSON.stringify(unlocks.t0) === JSON.stringify(['grunt']), `${unlocks.t0}`);
-check('질주 joins at 25s, 사수 at 50s, 거구 at 75s',
-  unlocks.t30.includes('runner') && !unlocks.t30.includes('shooter') &&
-  unlocks.t55.includes('shooter') && !unlocks.t55.includes('brute') &&
-  unlocks.t80.length === 4,
-  `30s: ${unlocks.t30} | 55s: ${unlocks.t55} | 80s: ${unlocks.t80}`);
+check('each kind joins exactly at its unlock time',
+  unlocks.rows.every(r => !r.before && r.after),
+  unlocks.rows.map(r => `${r.kind} ${r.at}s`).join(' | '));
 
 // --- 3. the draw is weighted ---
 const mix = await run(`

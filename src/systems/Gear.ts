@@ -327,23 +327,41 @@ export function rollOrbDrop(scale = 1, fromBoss = false, bonus = 1): OrbSpec | n
   return null;
 }
 
-/**
- * A weapon as a 우두머리 leaves it: a base from the roster, then affix lines
- * that each have to win their own roll. Repeats are allowed, the way a rare
- * enemy can be born doubly 거대 — there are fewer affixes than the ceiling,
- * and a second 강력 is a fine way to say "much harder".
- */
-export function rollGearItem(): GearItem {
+/** A base from the whole roster by weight, the way a 우두머리 picks one. */
+function rollGearBase(): GearSpec {
   const total = Object.values(GEAR).reduce((sum, spec) => sum + spec.weight, 0);
   let roll = Math.random() * total;
-  let base: GearSpec = GEAR[STARTING_GEAR];
   for (const spec of Object.values(GEAR)) {
     roll -= spec.weight;
     if (roll <= 0) {
-      base = spec;
-      break;
+      return spec;
     }
   }
+
+  return GEAR[STARTING_GEAR];
+}
+
+/**
+ * The weapon an ordinary kill leaves, if any: only a base with `fromKill`
+ * set can, each on its own roll raised by the kill's `bonus`.
+ */
+export function rollGearFromKill(bonus = 1): GearItem | null {
+  for (const spec of Object.values(GEAR)) {
+    if (spec.fromKill !== undefined && Math.random() < spec.fromKill * bonus) {
+      return rollGearItem(spec);
+    }
+  }
+
+  return null;
+}
+
+/**
+ * A weapon as it drops: a base — `base`, or one from the roster by weight —
+ * then affix lines that each have to win their own roll. Repeats are allowed,
+ * the way a rare enemy can be born doubly 거대 — there are fewer affixes than
+ * the ceiling, and a second 강력 is a fine way to say "much harder".
+ */
+export function rollGearItem(base: GearSpec = rollGearBase()): GearItem {
 
   const prefixes: AffixLine[] = [];
   const suffixes: AffixLine[] = [];

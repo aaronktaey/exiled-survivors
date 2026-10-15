@@ -33,31 +33,34 @@ await cdp.send('Page.reload', {});
 await sleep(3800);
 await drain();
 
-// --- 1. the clock sends one in every minute ---
+// --- 1. the clock sends the first in at firstMs, then one every intervalMs ---
 const schedule = await run(`
   s.choosing = true;
   s.spawner.clear();
-  s.spawner.sinceBossMs = 0;
+  const B = window.config.BOSS;
+  s.spawner.untilBossMs = B.firstMs;
   const seen = [];
-  // Four minutes of run time, a second at a time.
-  for (let second = 1; second <= 240; second++) {
+  // The first one and three more, a second at a time.
+  const span = (B.firstMs + 3 * B.intervalMs) / 1000;
+  const want = [0, 1, 2, 3].map(i => (B.firstMs + i * B.intervalMs) / 1000);
+  for (let second = 1; second <= span; second++) {
     s.spawner.update(1000);
     const bosses = s.spawner.aliveBosses;
     if (bosses > seen.length) seen.push(second);
     // Clear the field so the ordinary spawn cap never gets in the way.
     for (const e of [...s.spawner.group.getChildren()]) if (e.active && !e.isBoss) e.recycle();
   }
-  const out = { seen, alive: s.spawner.aliveBosses, nextIn: Math.round(s.spawner.nextBossMs / 1000) };
+  const out = { seen, want, every: B.intervalMs / 1000, alive: s.spawner.aliveBosses, nextIn: Math.round(s.spawner.nextBossMs / 1000) };
   s.spawner.clear();
   s.choosing = false;
   return out;
 `);
 console.log('boss schedule:', JSON.stringify(schedule));
-check('a 우두머리 arrives on every minute mark',
-  JSON.stringify(schedule.seen) === JSON.stringify([60, 120, 180, 240]),
-  `at ${schedule.seen.join('s, ')}s`);
+check('a 우두머리 arrives at the first mark and on every interval after',
+  JSON.stringify(schedule.seen) === JSON.stringify(schedule.want),
+  `at ${schedule.seen.join('s, ')}s (want ${schedule.want.join('s, ')}s)`);
 check('the countdown to the next one is readable',
-  schedule.nextIn >= 0 && schedule.nextIn <= 60, `${schedule.nextIn}s to go`);
+  schedule.nextIn >= 0 && schedule.nextIn <= schedule.every, `${schedule.nextIn}s to go`);
 
 // --- 2. what it is ---
 const stats = await run(`
@@ -184,13 +187,13 @@ await fkey('F1', 112);
 // --- 6. a live minute really does produce one ---
 await run(`
   s.spawner.clear();
-  s.spawner.sinceBossMs = 0;
+  s.spawner.untilBossMs = window.config.BOSS.intervalMs;
   s.player.setInvulnerable(true);
   window.__bosses = 0;
   const spawn = s.spawner.spawnBoss.bind(s.spawner);
   s.spawner.spawnBoss = () => { window.__bosses++; return spawn(); };
   // Wind the clock to just before the mark; the run does the last bit itself.
-  s.spawner.sinceBossMs = 58000;
+  s.spawner.untilBossMs = 2000;
   return 1;
 `);
 await sleep(3500);

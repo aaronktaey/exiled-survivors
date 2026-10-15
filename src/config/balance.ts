@@ -23,7 +23,7 @@ export const BALANCE = {
   damageScale: {
     meleeStrike: 1,
     fireball: 1,
-    chainLightning: 0.6,
+    chainLightning: 0.7,
     iceSpear: 0.8,
     voidOrb: 1.2,
     thunderStrike: 0.8,
@@ -663,8 +663,10 @@ export const BOSS = {
    * to what it leaves for certain.
    */
   dropBonus: 2,
-  /** How often one turns up, from the start of the run. */
-  intervalMs: 60_000,
+  /** The first one, from the start of the run. */
+  firstMs: 120_000,
+  /** And another this long after the last one turned up. */
+  intervalMs: 120_000,
   /** How far outside the usual spawn ring it enters. */
   extraDistance: 40,
 } as const;
@@ -752,7 +754,7 @@ export const SPAWN_TABLE: readonly {
 }[] = [
   { kind: "grunt", weight: 60, unlockMs: 0 },
   { kind: "runner", weight: 22, unlockMs: 25_000 },
-  { kind: "shooter", weight: 16, unlockMs: 50_000 },
+  { kind: "shooter", weight: 16, unlockMs: 90_000 },
   { kind: "brute", weight: 12, unlockMs: 75_000 },
 ];
 
@@ -924,7 +926,7 @@ export const SLOT = {
  */
 export const MANGO = {
   /** Share of kills that leave one. */
-  chance: 0.001,
+  chance: 0.003,
   /** How long it lasts once eaten. */
   durationMs: 5000,
   /** Multiplies every skill's attacks per second while it lasts (+100%). */
@@ -1035,7 +1037,7 @@ export const SKILL_BASE: Record<SkillId, SkillBaseStats> = {
   // A bolt out of the sky once a second onto something nearby.
   thunderStrike: {
     damage: 96,
-    attackSpeed: 1,
+    attackSpeed: 1.2,
     range: 200,
     projectileSpeed: 0,
     chainCount: 0,

@@ -207,10 +207,13 @@ Read `git log` for what changed and when. What is not in the log:
   (`tex-flag-XX`), not emoji: Windows has no flag emoji.
 - **One drop rule.** Every ordinary drop is multiplied by the kill's
   `Enemy.dropBonus`: 1 + `RARE.dropBonusPerAffix` per 속성 on a rare,
-  1 + `BOSS.dropBonus` for a 우두머리. What only a 우두머리 leaves (gear,
-  shards, a `fromBossOnly` 구슬, a 뼈다귀 with `fromKill: 0`) and what is
-  certain are not multiplied. A new drop should go through the same
-  `bonus` in `CombatSystem.killEnemy`.
+  1 + `BOSS.dropBonus` for a 우두머리. What only a 우두머리 leaves (its
+  certain weapon, shards, a `fromBossOnly` 구슬, a 뼈다귀 with `fromKill: 0`)
+  and what is certain are not multiplied. A new drop should go through the
+  same `bonus` in `CombatSystem.killEnemy`.
+- **Weapons by tier.** A 우두머리 always leaves one, weighted over the whole
+  `GEAR` roster. A sword with `fromKill` set (tier 3 and 4 now) can also
+  come off any kill at that chance × `bonus`; without it, 우두머리 only.
 - **Reading holds the run.** The HUD's skills are icons (`Hud.slots`); a
   mouse over one opens a card spelling its DPS out (`GameScene.breakdownOf`,
   the same folds as `damageOf`/`cooldownOf`), and a mouse over a rare shows

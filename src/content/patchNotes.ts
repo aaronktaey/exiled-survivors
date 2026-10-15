@@ -15,6 +15,44 @@ export interface PatchNote {
 
 export const PATCH_NOTES: readonly PatchNote[] = [
   {
+    version: '0.24',
+    date: '2026-10-15',
+    changes: {
+      ko: [
+        '사수가 50초 대신 1분 30초부터 나타납니다.',
+        '우두머리가 1분마다 대신, 2분에 처음 나타나고 그 뒤로 2분마다 나타납니다.',
+        '하얀 망고가 떨어질 확률이 0.1%에서 0.3%로 3배가 되었습니다.',
+        '새 1티어 무기 오니고로시 — 녹슨 검과 같은 공격력의 검으로, 우두머리가 떨어뜨립니다.',
+        '무기 드랍 규칙이 바뀌었습니다 — 1·2티어 무기는 우두머리만 떨어뜨리고, 3·4티어 무기는 일반 적도 드물게 떨어뜨립니다(강철 검 0.1%, 룬 각인 검 0.05%, 희귀 적과 우두머리 보너스 적용). 우두머리는 여전히 처치할 때마다 무기 한 자루를 반드시 떨어뜨립니다.',
+        '연쇄번개의 피해 보정이 -40%에서 -30%로, 낙뢰의 공격속도가 초당 1회에서 1.2회로 올랐습니다.',
+      ],
+      en: [
+        'Shooters now first appear at 1:30 instead of 0:50.',
+        'Bosses no longer come every minute: the first arrives at 2:00, then one every two minutes.',
+        'White Mango drops three times as often — 0.3% instead of 0.1%.',
+        'New tier-1 weapon, Onigoroshi — a sword as strong as the Rusty Sword, left by Bosses.',
+        'New weapon drop rule — tier 1 and 2 weapons come only from Bosses, while tier 3 and 4 weapons can also drop from any enemy, rarely (Steel Sword 0.1%, Runed Sword 0.05%, raised by rare and Boss bonuses). A Boss still always leaves one weapon.',
+        'Chain Lightning’s damage balance goes from -40% to -30%, and Thunderstrike attacks 1.2 times a second instead of once.',
+      ],
+      ja: [
+        '射手が 50 秒ではなく 1 分 30 秒から現れます。',
+        'ボスは 1 分ごとではなく、2 分に最初に現れ、その後は 2 分ごとに現れます。',
+        '白いマンゴーのドロップ率が 0.1% から 0.3% へ 3 倍になりました。',
+        '新しいティア 1 武器「鬼殺し」— 錆びた剣と同じ攻撃力の剣で、ボスが落とします。',
+        '武器のドロップ規則が変わりました — ティア 1・2 の武器はボスだけが落とし、ティア 3・4 の武器は通常の敵もまれに落とします（鋼の剣 0.1%、ルーンの剣 0.05%、レア敵とボスの補正が適用されます）。ボスは引き続き倒すたびに必ず武器を一振り落とします。',
+        '連鎖雷の被害補正が -40% から -30% に、落雷の攻撃速度が毎秒 1 回から 1.2 回に上がりました。',
+      ],
+      zh: [
+        '射手改为从 1 分 30 秒起出现，而不是 50 秒。',
+        '首领不再每分钟出现：第一只在 2 分钟时出现，之后每 2 分钟一只。',
+        '白芒果的掉落率由 0.1% 提高到 0.3%，为原来的 3 倍。',
+        '新的 1 阶武器「鬼杀」— 与生锈的剑攻击力相同的剑，由首领掉落。',
+        '武器掉落规则改变 — 1、2 阶武器只由首领掉落，3、4 阶武器普通敌人也会偶尔掉落（钢剑 0.1%、符文剑 0.05%，适用稀有敌人与首领加成）。首领仍然每次击杀必定掉落一把武器。',
+        '连锁闪电的伤害修正由 -40% 改为 -30%，落雷的攻击速度由每秒 1 次提高到 1.2 次。',
+      ],
+    },
+  },
+  {
     version: '0.23',
     date: '2026-10-14',
     changes: {

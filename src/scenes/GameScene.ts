@@ -4,7 +4,6 @@ import {
   BALANCE,
   COLORS,
   DEPTH,
-  GEAR_DROP,
   PAUSE_BUTTON,
   NO_BONES,
   SHARD,
@@ -56,6 +55,7 @@ import {
   NO_BONUS,
   gear,
   gearBonusFor,
+  rollGearFromKill,
   rollGearItem,
   type GearBonus,
   type GearItem,
@@ -238,7 +238,7 @@ export class GameScene extends Phaser.Scene {
       {
         rollSkillDrop: (bonus, guaranteed) => this.rollSkillDrop(bonus, guaranteed),
         onSkillCollected: (skill) => this.onSkillCollected(skill),
-        rollGearDrop: (fromBoss) => this.rollGearDrop(fromBoss),
+        rollGearDrop: (fromBoss, bonus) => this.rollGearDrop(fromBoss, bonus),
         onGearCollected: (found) => this.onGearCollected(found),
         rollShardDrop: (fromBoss) => fromBoss && Math.random() < SHARD.chance,
         onShardCollected: () => this.onShardCollected(),
@@ -705,16 +705,13 @@ export class GameScene extends Phaser.Scene {
   }
 
   /**
-   * The weapon a kill leaves behind. Only a 우두머리 leaves one, and it
-   * always does — one a minute, which is what makes walking towards one
-   * worth the trouble. What it is, and what it rolled, is Gear's business.
+   * The weapon a kill leaves behind. A 우두머리 always leaves one, from the
+   * whole roster; an ordinary kill now and then leaves one of the swords
+   * that can come off anything. What it is, and what it rolled, is Gear's
+   * business.
    */
-  private rollGearDrop(fromBoss: boolean): GearItem | null {
-    if (GEAR_DROP.fromBossOnly && !fromBoss) {
-      return null;
-    }
-
-    return rollGearItem();
+  private rollGearDrop(fromBoss: boolean, bonus = 1): GearItem | null {
+    return fromBoss ? rollGearItem() : rollGearFromKill(bonus);
   }
 
   /**

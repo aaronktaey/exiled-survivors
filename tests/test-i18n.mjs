@@ -207,7 +207,8 @@ const rare = await scene('GameScene', `
 `);
 console.log('rare + drop:', JSON.stringify(rare));
 check('a rare lists its affixes in English',
-  rare.title === 'RARE' && /(Giant|Swift|Deadly|Mighty)/.test(rare.tooltip),
+  // Any affix can come up (거미 included), so: English words and no Hangul.
+  rare.title === 'RARE' && /[A-Za-z]{3,}/.test(rare.tooltip) && !/[가-힣]/.test(rare.tooltip),
   `${rare.title}: ${rare.tooltip.replace(/\n/g, ' | ')}`);
 check('a dropped skill is labelled in English', rare.plate === 'Void Orb', rare.plate);
 await shot('i18n-06-run-en');

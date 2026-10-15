@@ -2,6 +2,7 @@ import {
   BOSS,
   FUGITIVE,
   ENEMY_KINDS,
+  GEAR,
   GROUND_ITEM,
   PLAYER,
   POTION,
@@ -84,6 +85,11 @@ export function guideChapters(): readonly GuideChapter[] {
               heal: percent(POTION.healFraction),
               life: seconds(GROUND_ITEM.lifespanMs),
               warning: seconds(GROUND_ITEM.warningMs),
+              tier: Math.min(
+                ...Object.values(GEAR)
+                  .filter((spec) => spec.fromKill !== undefined)
+                  .map((spec) => spec.tier),
+              ),
             }),
           ),
         },
@@ -172,7 +178,10 @@ function enemyLines(): readonly string[] {
       contact: boss.contactDamage,
       xp: xpFor(boss),
     }),
-    `   ${fill(g.notes.boss, { bossEvery: seconds(BOSS.intervalMs) })}`,
+    `   ${fill(g.notes.boss, {
+      first: seconds(BOSS.firstMs),
+      every: seconds(BOSS.intervalMs),
+    })}`,
   );
 
   const fugitive = ENEMY_KINDS.fugitive;

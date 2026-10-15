@@ -74,18 +74,24 @@ check('a plain sword changes nothing else',
 const tiers = await ev(`(() => {
   const s = window.game.scene.getScene('GameScene');
   const roll = s.rollGearDrop.bind(s);
+  const roster = Object.keys(window.config.GEAR);
   const seen = {};
-  for (let i = 0; i < 4000 && Object.keys(seen).length < 4; i++) {
+  for (let i = 0; i < 8000 && Object.keys(seen).length < roster.length; i++) {
     const item = roll(true);
     seen[item.id] = seen[item.id] ?? { id: item.id };
   }
-  return { ids: Object.keys(seen) };
+  return { ids: Object.keys(seen), roster };
 })()`);
-check('the roster is four swords', tiers.ids.length === 4, tiers.ids.join(' / '));
+check('a 우두머리 can leave every sword on the roster, 오니고로시 included',
+  tiers.ids.length === tiers.roster.length && tiers.ids.includes('onigoroshi'),
+  tiers.ids.join(' / '));
 
 const attacks = await ev(`(() => {
-  const ids = ['rustySword', 'ironSword', 'steelSword', 'runedSword'];
+  const ids = Object.keys(window.config.GEAR)
+    .sort((a, b) => window.config.GEAR[a].tier - window.config.GEAR[b].tier);
   return {
+    ids,
+    tiers: ids.map(id => window.config.GEAR[id].tier),
     attack: ids.map(id => window.gearBonusFor({ uid: 'probe', id, prefixes: [], suffixes: [] }).attack),
     want: ids.map(id => window.config.attackForTier(window.config.GEAR[id].tier)),
     step: window.config.GEAR_BASE.attackPerTier,
@@ -94,23 +100,38 @@ const attacks = await ev(`(() => {
 console.log('tier attack:', JSON.stringify(attacks.attack));
 check('each step up the roster is worth one more step of attack',
   JSON.stringify(attacks.attack) === JSON.stringify(attacks.want) &&
-    attacks.attack.every((a, i) => i === 0 || a - attacks.attack[i - 1] === attacks.step),
+    attacks.attack.every((a, i) => i === 0 ||
+      a - attacks.attack[i - 1] === (attacks.tiers[i] - attacks.tiers[i - 1]) * attacks.step),
   attacks.attack.join(' / '));
+check('오니고로시 is a tier-1 sword, as strong as the one a run starts with',
+  attacks.tiers[attacks.ids.indexOf('onigoroshi')] === 1 &&
+    attacks.attack[attacks.ids.indexOf('onigoroshi')] === attacks.attack[attacks.ids.indexOf('rustySword')],
+  `tier ${attacks.tiers[attacks.ids.indexOf('onigoroshi')]}`);
 
-// --- 3. an ordinary kill leaves none, a 우두머리 always does ---
+// --- 3. an ordinary kill leaves only the swords marked fromKill; a 우두머리 always one ---
 const drops = await run(`
   s.choosing = true;
   s.spawner.clear();
   s.combat.gearDrops.getChildren().forEach(d => d.active && d.collect());
 
-  let ordinary = 0;
-  for (let i = 0; i < 500; i++) {
+  // Raise every fromKill sword's chance for the measurement, then put it back.
+  const G = window.config.GEAR;
+  const marked = Object.values(G).filter(g => g.fromKill !== undefined);
+  const was = marked.map(g => g.fromKill);
+  marked.forEach(g => { g.fromKill = 0.05; });
+  const ordinaryIds = {};
+  for (let i = 0; i < 1000; i++) {
     const e = s.spawner.group.get(600, 600);
     e.spawn(600, 600, s.player, 'grunt');
     s.combat.hit(e, 999999);
+    for (const d of s.combat.gearDrops.getChildren()) {
+      if (d.active && d.item) { ordinaryIds[d.item.id] = (ordinaryIds[d.item.id] ?? 0) + 1; d.collect(); }
+    }
   }
-  ordinary = s.combat.gearDrops.countActive(true);
-  s.combat.gearDrops.getChildren().forEach(d => d.active && d.collect());
+  marked.forEach((g, i) => { g.fromKill = was[i]; });
+  const allowed = marked.map(g => g.id);
+  const lowTiers = Object.values(G).filter(g => g.fromKill === undefined).map(g => g.tier);
+  const ordinary = Object.values(ordinaryIds).reduce((a, b) => a + b, 0);
 
   const N = 10;
   for (let i = 0; i < N; i++) {
@@ -124,11 +145,16 @@ const drops = await run(`
   s.combat.gems.getChildren().forEach(g => g.active && g.collect());
   s.spawner.clear();
   s.choosing = false;
-  return { ordinary, fromBosses, N };
+  return { ordinary, ordinaryIds, allowed, lowTiers, fromBosses, N };
 `);
 console.log('drops:', JSON.stringify(drops));
-check('500 ordinary kills leave no equipment at all', drops.ordinary === 0,
-  `${drops.ordinary} dropped`);
+check('tier 1 and 2 swords are boss-only, the rest can drop off any kill',
+  JSON.stringify([...new Set(drops.lowTiers)].sort()) === JSON.stringify([1, 2]) &&
+    drops.allowed.length > 0 && drops.allowed.every(id => id !== 'rustySword' && id !== 'onigoroshi' && id !== 'ironSword'),
+  `boss-only tiers ${[...new Set(drops.lowTiers)].join(', ')}; any kill: ${drops.allowed.join(', ')}`);
+check('ordinary kills leave only the swords marked fromKill',
+  drops.ordinary > 0 && Object.keys(drops.ordinaryIds).every(id => drops.allowed.includes(id)),
+  JSON.stringify(drops.ordinaryIds));
 check('and every 우두머리 leaves one', drops.fromBosses === drops.N,
   `${drops.fromBosses} of ${drops.N}`);
 

@@ -49,7 +49,7 @@ export interface CombatHooks {
    */
   readonly rollSkillDrop: (bonus: number, guaranteed: boolean) => SkillDefinition | null;
   /** A weapon to leave behind, or null when nothing is owed. */
-  readonly rollGearDrop: (fromBoss: boolean) => GearItem | null;
+  readonly rollGearDrop: (fromBoss: boolean, bonus: number) => GearItem | null;
   readonly onGearCollected: (item: GearItem) => void;
   /** True when this kill also owes a 신성한 조각. */
   readonly rollShardDrop: (fromBoss: boolean) => boolean;
@@ -575,7 +575,7 @@ export class CombatSystem {
       this.dropRandomSkillAt(x + 18, y - 18);
     }
 
-    // 하얀 망고: one kill in a thousand, before what raises it.
+    // 하얀 망고: rare, before what raises it.
     if (Math.random() < MANGO.chance * bonus) {
       this.dropMangoAt(x - 18, y - 18);
     }
@@ -585,8 +585,8 @@ export class CombatSystem {
       this.dropPotionAt(x, y);
     }
 
-    // Only a 우두머리 leaves a weapon, and it always does.
-    const found = this.hooks.rollGearDrop(wasBoss);
+    // A 우두머리 always leaves a weapon; anything else, rarely, a good one.
+    const found = this.hooks.rollGearDrop(wasBoss, bonus);
     if (found) {
       this.dropGearAt(x, y, found);
     }

@@ -38,7 +38,8 @@ export class SpawnDirector {
   private readonly bones: () => BoneBonus;
   private elapsedMs = 0;
   private sinceSpawnMs = 0;
-  private sinceBossMs = 0;
+  /** Counts down to the next 우두머리. */
+  private untilBossMs: number = BOSS.firstMs;
   /** Counts down to the next 도망자. */
   private untilFugitiveMs: number = FUGITIVE.firstMs;
 
@@ -83,8 +84,10 @@ export class SpawnDirector {
   /** Puts the clock back where a saved run left it. */
   public seed(elapsedMs: number): void {
     this.elapsedMs = elapsedMs;
-    // A resumed run waits its full minute rather than owing a boss at once.
-    this.sinceBossMs = 0;
+    // A resumed run waits out the first one, or a full interval after it,
+    // rather than owing a boss at once.
+    this.untilBossMs =
+      elapsedMs < BOSS.firstMs ? BOSS.firstMs - elapsedMs : BOSS.intervalMs;
     this.untilFugitiveMs = FUGITIVE.firstMs;
   }
 
@@ -132,11 +135,11 @@ export class SpawnDirector {
   public update(delta: number): void {
     this.elapsedMs += delta;
     this.sinceSpawnMs += delta;
-    this.sinceBossMs += delta;
+    this.untilBossMs -= delta;
 
-    // One 우두머리 a minute, on its own clock and outside the usual cap.
-    while (this.sinceBossMs >= BOSS.intervalMs) {
-      this.sinceBossMs -= BOSS.intervalMs;
+    // 우두머리 on their own clock, outside the usual cap.
+    while (this.untilBossMs <= 0) {
+      this.untilBossMs += BOSS.intervalMs;
       this.spawnBoss();
     }
 
@@ -161,7 +164,7 @@ export class SpawnDirector {
 
   /** Milliseconds until the next 우두머리. */
   public get nextBossMs(): number {
-    return Math.max(0, BOSS.intervalMs - this.sinceBossMs);
+    return Math.max(0, this.untilBossMs);
   }
 
   /** How many 우두머리 are on the field. */

@@ -3,7 +3,7 @@
  * 우두머리 carrying.
  *
  * A weapon is a base plus its 속성. The base gives flat attack power,
- * which is added to every skill's damage, and the roster is four swords a
+ * which is added to every skill's damage, and the roster is swords a
  * step apart. The affixes are the same ones a rare enemy wears, split into
  * prefixes and suffixes the way Path of Exile splits them — see AFFIXES in
  * balance.ts.
@@ -13,7 +13,7 @@
 
 export type GearSlot = 'weapon';
 
-export type GearId = 'rustySword' | 'ironSword' | 'steelSword' | 'runedSword';
+export type GearId = 'rustySword' | 'onigoroshi' | 'ironSword' | 'steelSword' | 'runedSword';
 
 export interface GearSpec {
   readonly id: GearId;
@@ -27,6 +27,11 @@ export interface GearSpec {
    * commoner, so the better swords stay worth waiting for.
    */
   readonly weight: number;
+  /**
+   * Share of ordinary kills that leave this one, raised by the kill's drop
+   * bonus like any other drop. Unset, only a 우두머리 leaves it.
+   */
+  readonly fromKill?: number;
 }
 
 export const GEAR_BASE = {
@@ -47,9 +52,25 @@ export const attackForTier = (tier: number): number =>
 
 export const GEAR: Record<GearId, GearSpec> = {
   rustySword: { id: 'rustySword', slot: 'weapon', tier: 1, name: '녹슨 검', weight: 4 },
+  onigoroshi: { id: 'onigoroshi', slot: 'weapon', tier: 1, name: '오니고로시', weight: 4 },
   ironSword: { id: 'ironSword', slot: 'weapon', tier: 2, name: '무쇠 검', weight: 3 },
-  steelSword: { id: 'steelSword', slot: 'weapon', tier: 3, name: '강철 검', weight: 2 },
-  runedSword: { id: 'runedSword', slot: 'weapon', tier: 4, name: '룬 각인 검', weight: 1 },
+  // From tier 3 up, any kill can leave one too — rarely.
+  steelSword: {
+    id: 'steelSword',
+    slot: 'weapon',
+    tier: 3,
+    name: '강철 검',
+    weight: 2,
+    fromKill: 0.001,
+  },
+  runedSword: {
+    id: 'runedSword',
+    slot: 'weapon',
+    tier: 4,
+    name: '룬 각인 검',
+    weight: 1,
+    fromKill: 0.0005,
+  },
 };
 
 export const ALL_GEAR: readonly GearSpec[] = Object.values(GEAR);
@@ -58,11 +79,6 @@ export const ALL_GEAR: readonly GearSpec[] = Object.values(GEAR);
 export const STARTING_GEAR: GearId = 'rustySword';
 
 export const GEAR_DROP = {
-  /**
-   * Only a 우두머리 leaves one, and it always does. One a minute, which is
-   * what makes a 우두머리 worth walking towards.
-   */
-  fromBossOnly: true,
   /**
    * Each affix line has to win its own roll, and the roll repeats until one
    * fails: a fifth of drops carry a line, a twenty-fifth carry two, and a
