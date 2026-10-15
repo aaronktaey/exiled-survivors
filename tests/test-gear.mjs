@@ -1028,7 +1028,7 @@ const implicits = await ev(`(() => {
   for (const id of Object.keys(G)) {
     const im = G[id].implicit ?? {};
     const ok = (b) =>
-      b.lifeLeech === (im.lifeLeech ?? 0) &&
+      b.projectileBlock === (im.projectileBlock ?? 0) &&
       b.extraProjectiles === (im.extraProjectiles ?? 0) &&
       b.damageScale === (im.damageScale ?? 1) &&
       (im.skillAttackSpeed ? b.skillAttackSpeed[im.skillAttackSpeed.skill] === im.skillAttackSpeed.scale
@@ -1129,42 +1129,42 @@ check('and an orbiting skill keeps one more orb in the air',
 check('the DPS card counts the extra shot',
   runed.card.includes('투사체 ' + (1 + runed.extra)), runed.card);
 
-// 오니고로시: a share of what was dealt comes back as health.
-const strike = (id) => hold(id).then(() => run(`
-  s.choosing = true;
-  s.spawner.clear();
-  const was = window.config.PLAYER.critChance;
-  window.config.PLAYER.critChance = 0;
+// 오니고로시: a share of the enemy's shots are turned aside. The roll is
+// pinned either side of the configured chance, so nothing is left to luck.
+const shoot = (id, roll) => hold(id).then(() => run(`
   const p = s.player;
-  p.hp = 10;
-  s.combat.leechPool = 0;
-  const e = s.spawner.group.get(p.x + 300, p.y);
-  e.spawn(p.x + 300, p.y, p, 'brute', undefined, false, 50);
-  const hp = e.hp;
-  s.combat.hit(e, hp);
-  const out = { dealt: hp, healed: p.hp - 10, rate: p.lifeLeech };
-  window.config.PLAYER.critChance = was;
-  s.spawner.clear();
-  s.choosing = false;
+  p.hp = p.maxHp;
+  p.invulnerableUntil = 0;
+  const shot = { active: true, damage: 10, despawn() { this.active = false; } };
+  const real = Math.random;
+  Math.random = () => ${roll};
+  s.combat.onEnemyShotHit(p, shot);
+  Math.random = real;
+  const out = { lost: p.maxHp - p.hp, gone: !shot.active, chance: p.projectileBlock };
+  p.hp = p.maxHp;
+  p.invulnerableUntil = 0;
   return out;
 `));
-const leech = await strike('onigoroshi');
-const noLeech = await strike('rustySword');
-console.log('leech:', JSON.stringify({ leech, noLeech }));
-check('오니고로시 heals by its share of the damage dealt',
-  leech.rate > 0 && leech.healed === Math.floor(leech.dealt * leech.rate) && leech.healed > 0,
-  `${leech.dealt} dealt × ${leech.rate} → +${leech.healed} HP`);
-check('and a sword without it heals nothing', noLeech.healed === 0, `+${noLeech.healed} HP`);
+const blockAt = await ev(`(() => window.config.GEAR.onigoroshi.implicit.projectileBlock)()`);
+const blocked = await shoot('onigoroshi', blockAt - 0.001);
+const through = await shoot('onigoroshi', blockAt + 0.001);
+const plain = await shoot('rustySword', 0);
+console.log('block:', JSON.stringify({ blockAt, blocked, through, plain }));
+check('오니고로시 stops a shot under its chance — no damage, the shot is gone',
+  blockAt > 0 && blocked.lost === 0 && blocked.gone && blocked.chance === blockAt,
+  `${blockAt * 100}%: lost ${blocked.lost}`);
+check('and one over it lands as usual', through.lost > 0, `lost ${through.lost}`);
+check('a sword without it stops nothing', plain.lost > 0 && plain.chance === 0, `lost ${plain.lost}`);
 
 // The 인벤토리 reads it out, on its own line.
 const readout = await ev(`(() => {
   const Inv = window.game.scene.getScene('InventoryScene').constructor;
   const G = window.config.GEAR;
   const text = Inv.describe({ uid: 'r', id: 'onigoroshi', prefixes: [], suffixes: [] });
-  return { text, want: Number((G.onigoroshi.implicit.lifeLeech * 100).toFixed(2)) + '%' };
+  return { text, want: Number((G.onigoroshi.implicit.projectileBlock * 100).toFixed(2)) + '%' };
 })()`);
 check('the 인벤토리 reads the 고정 속성 out with its number',
-  readout.text.split('\n')[0].endsWith(' · 고정: 가한 피해의 ' + readout.want + '만큼 흡혈'),
+  readout.text.split('\n')[0].endsWith(' · 고정: ' + readout.want + ' 확률로 적의 투사체를 막아냄'),
   readout.text.split('\n')[0]);
 
 // --- 장비 합성: three of the same sword for a chance at the one above ---

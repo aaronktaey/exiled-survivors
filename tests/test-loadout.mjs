@@ -140,7 +140,7 @@ await sleep(400);
 const reading2 = await run(`return { shown: s.rareTooltip.visible, elapsed: s.elapsedMs, paused: s.physics.world.isPaused };`);
 check('hovering a rare shows its 속성 and holds the run',
   reading.shown && reading.held && reading2.paused && reading2.elapsed === reading.elapsed,
-  `${reading.elapsed} -> ${reading2.elapsed}`);
+  `shown=${reading.shown} held=${reading.held} paused=${reading2.paused} ${reading.elapsed} -> ${reading2.elapsed}`);
 await shot('loadout-02-rare');
 await move(away);
 await sleep(300);

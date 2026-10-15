@@ -168,6 +168,7 @@ export const ko: Strings = {
     personalEmpty: '아직 끝낸 판이 없습니다. 한 판 하고 오세요!',
     personalNote: '이 기기에 남은 내 기록입니다 — 로그인하면 계정과 함께 저장됩니다.',
     personalSyncedNote: '계정과 함께 저장되는 내 기록입니다.',
+    resetsIn: '매일 오전 {hour}시(한국 시간) 초기화 · {left} 남음',
     mine: '내 최고 기록: {place}위 · {damage}',
     mineNone: '아직 올린 기록이 없습니다',
     enteredAfterLogin: '로그인했습니다 — 기록을 랭킹에 올렸습니다',
@@ -270,6 +271,7 @@ export const ko: Strings = {
   },
 
   game: {
+    blocked: '막음',
     intro: 'Exile, do something!',
     introHintKeyboard: 'WASD · 방향키로 이동 — 공격은 자동',
     introHintTouch: '스틱을 끌어 이동 — 공격은 자동',
@@ -619,7 +621,7 @@ export const ko: Strings = {
         {
           title: '하얀 망고',
           lines: [
-            '{mangoChance} 확률. 먹으면 {mangoSecs}초 동안 피해를 받지 않고, 모든 스킬의 공격속도와 이동속도가 {mangoBoost} 오릅니다.',
+            '어떤 적을 잡아도 {mangoChance} 확률이며, 희귀 적·우두머리·갈비뼈로 오르지 않습니다. 먹으면 {mangoSecs}초 동안 피해를 받지 않고, 모든 스킬의 공격속도와 이동속도가 {mangoBoost} 오릅니다.',
           ],
         },
         {
@@ -706,7 +708,7 @@ export const ko: Strings = {
           title: '랭킹',
           lines: [
             '랭킹에는 로그인한 계정만 올릴 수 있고, 그 판에 준 총 피해로 순위를 매깁니다. 이름 {nameLength}글자와 아이콘 · 국기를 고르며, 계정마다 이름 하나와 최고 기록 하나만 올라갑니다.',
-            '상위 {rankSize}명까지 보여 주며, 다른 플레이어와 함께 쓰는 순위표입니다. 로그인하면 내 최고 기록과 순위도 보입니다.',
+            '상위 {rankSize}명까지 보여 주며, 다른 플레이어와 함께 쓰는 순위표입니다. 매일 오전 {rankResetHour}시(한국 시간)에 새로 시작하고, 로그인하면 오늘의 내 최고 기록과 순위도 보입니다.',
             '내 기록 탭에는 로그인과 상관없이 내가 끝낸 판 중 상위 {rankSize}개가 날짜 · 레벨 · 버틴 시간과 함께 남습니다. ← → 로 탭을 바꿉니다.',
           ],
         },

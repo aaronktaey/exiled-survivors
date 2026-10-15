@@ -99,7 +99,7 @@ check('when it runs out, speed and colour are back and hits land again',
   !ended.active && !ended.tint && Math.abs(ended.speed - ended.base) < 1e-6 && ended.hurt === 5,
   JSON.stringify(ended));
 
-// --- 3. one drop rule: +10% a 속성, +200% for a 우두머리 ---
+// --- 3. one drop rule: +10% a 속성, +200% for a 우두머리 (not the 망고) ---
 // The roll is pinned: Math.random answers a fixed number, so each drop
 // either clears its threshold or does not, with nothing left to chance.
 const rule = await run(`
@@ -135,6 +135,7 @@ const rule = await run(`
   const out = {
     // Just above an ordinary kill's 20%: only what is raised clears it.
     plain: kill('grunt', 0, 0.2 + 0.001),
+    plainHit: kill('grunt', 0, 0.2 - 0.001),
     rare2: kill('grunt', 2, 0.2 * (1 + 2 * per) - 0.001),
     rare2miss: kill('grunt', 2, 0.2 * (1 + 2 * per) + 0.001),
     bossKill: kill('boss', 0, 0.2 * boss - 0.001),
@@ -149,10 +150,13 @@ const rule = await run(`
 console.log('rule:', JSON.stringify(rule));
 check('an ordinary kill rolls the plain chance', rule.plain.potion === 0 && rule.plain.mango === 0);
 check('each 속성 on a rare raises it by its share — no more',
-  rule.rare2.potion === 1 && rule.rare2.mango === 1 && rule.rare2miss.potion === 0,
+  rule.rare2.potion === 1 && rule.rare2miss.potion === 0,
   `two 속성: x${(1 + 2 * rule.per).toFixed(2)}`);
-check('a 우두머리 raises it by its own bonus', rule.bossKill.potion === 1 && rule.bossKill.mango === 1,
+check('a 우두머리 raises it by its own bonus', rule.bossKill.potion === 1,
   `x${rule.boss}`);
+check('하얀 망고 is the same off every kill: nothing raises it',
+  rule.plainHit.mango === 1 && rule.rare2.mango === 0 && rule.bossKill.mango === 0,
+  JSON.stringify({ plain: rule.plainHit.mango, rare: rule.rare2.mango, boss: rule.bossKill.mango }));
 check('and what only a 우두머리 leaves is not raised — it still leaves exactly its weapon',
   rule.bossKill.gear === 1);
 

@@ -262,6 +262,8 @@ export interface Strings {
     readonly personalEmpty: string;
     readonly personalNote: string;
     readonly personalSyncedNote: string;
+    /** Over the shared board: {hour} it starts over at, {left} as h:mm:ss. */
+    readonly resetsIn: string;
     /** Under the board, signed in: {place} and {damage} of the account's best. */
     readonly mine: string;
     readonly mineNone: string;
@@ -393,6 +395,8 @@ export interface Strings {
   };
 
   readonly game: {
+    /** Over the survivor when a shot is turned aside (오니고로시). */
+    readonly blocked: string;
     readonly intro: string;
     readonly introHintKeyboard: string;
     readonly introHintTouch: string;

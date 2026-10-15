@@ -72,6 +72,27 @@ check('first place is under the logo', /1위/.test(title.champion ?? '') && /25,
 check('and the corner has a 랭킹 icon', title.icon);
 await shot('ranking-01-title');
 
+const daily = await ev(`(() => {
+  const r = window.ranking;
+  const kept = JSON.parse(localStorage.getItem('exiled-survivors:ranking:v1'));
+  const start = window.config.rankingDayStart(Date.now());
+  const old = { name: 'OLD', emoji: '', flag: '', damage: 1e7, level: 1, survivedMs: 9000,
+                at: new Date(start - 1000).toISOString() };
+  localStorage.setItem('exiled-survivors:ranking:v1', JSON.stringify([old, ...kept]));
+  r.loaded = false;
+  const out = { names: r.top.map((e) => e.name), first: r.first?.name, start,
+    next: window.config.nextRankingReset(Date.now()) };
+  localStorage.setItem('exiled-survivors:ranking:v1', JSON.stringify(kept));
+  r.loaded = false;
+  return out;
+})()`);
+const kst = new Date(daily.start + 9 * 3600000);
+check('a run from before the day’s reset is off the board',
+  !daily.names.includes('OLD') && daily.first !== 'OLD' && daily.names.length === 20, JSON.stringify(daily.names.slice(0, 3)));
+check('and the day starts at 05:00 Korean time, a day before the next reset',
+  kst.getUTCHours() === 5 && kst.getUTCMinutes() === 0 && daily.next - daily.start === 86400000,
+  new Date(daily.start).toISOString());
+
 await scene('MenuScene', `s.icons.press('ranking'); return 1;`);
 await sleep(800);
 const board = await scene('RankingScene', `
@@ -231,15 +252,20 @@ await sleep(1200);
 await ev(`(() => { for (let i = 1; i <= 3; i++) window.personal.record({ damage: i * 1000, level: i + 4, survivedMs: 65000 * i }); return 1; })()`);
 await scene('MenuScene', `s.icons.press('ranking'); return 1;`);
 await sleep(800);
-const opened = await scene('RankingScene', `return { tab: s.tab, tabs: s.tabs.size };`);
+const opened = await scene('RankingScene', `return { tab: s.tab, tabs: s.tabs.size,
+  reset: s.resetLine?.visible ? s.resetLine.text : '', hour: window.config.RANKING.dailyReset.hour };`);
 check('the board opens on 전체 랭킹, with a 내 기록 tab beside it', opened.tab === 'shared' && opened.tabs === 2,
   JSON.stringify(opened));
+check('and says when it starts over, counting down to it',
+  opened.reset.includes(`오전 ${opened.hour}시`) && /\d+:\d\d:\d\d 남음/.test(opened.reset), opened.reset);
 await scene('RankingScene', `s.tabs.get('personal').emit('pointerdown', s.input.activePointer); return 1;`);
 await sleep(300);
 const mineTab = await scene('RankingScene', `
   return { tab: s.tab, rows: s.rows.map((r) => r.map((c) => c.text)), canvas: s.scale.height,
            bottom: s.rows.length ? Math.max(...s.rows.map((r) => r[0].y)) : 0 };
 `);
+check('내 기록 does not start over, so the countdown is not on it',
+  (await scene('RankingScene', `return s.resetLine.visible;`)) === false);
 check('pressing it lists this player’s own runs, best first, with level and time',
   mineTab.tab === 'personal' && mineTab.rows.length === 4 && mineTab.rows[0][0] === '1' &&
     mineTab.rows[0][2] === '7' && mineTab.rows[0][3] === '3:15' && mineTab.rows[0][4] === '3,000' &&
@@ -266,7 +292,7 @@ const shared = await cdp.send('Runtime.evaluate', { awaitPromise: true, returnBy
   const R = window.config.RANKING;
   const realFetch = window.fetch;
   const board = [
-    { name: 'FAR', emoji: '', flag: 'TW', damage: 99999, level: 9, survivedMs: 60000, at: '2026-01-01T00:00:00Z' },
+    { name: 'FAR', emoji: '', flag: 'TW', damage: 99999, level: 9, survivedMs: 60000, at: new Date().toISOString() },
     { name: 'BAD', emoji: '', flag: '', damage: 1e15, level: 1, survivedMs: 1, at: 'x' },
   ];
   const posts = [];

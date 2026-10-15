@@ -56,10 +56,16 @@ export class DamageNumbers {
     x: number,
     y: number,
     amount: number,
-    style?: { readonly prefix?: string; readonly color?: string; readonly crit?: boolean },
+    style?: {
+      readonly prefix?: string;
+      readonly color?: string;
+      readonly crit?: boolean;
+      /** A word in place of the number: a blocked shot says so. */
+      readonly text?: string;
+    },
   ): void {
     const floater = this.take();
-    const shown = Number.isInteger(amount) ? String(amount) : amount.toFixed(1);
+    const shown = style?.text ?? (Number.isInteger(amount) ? String(amount) : amount.toFixed(1));
     const crit = style?.crit === true;
 
     floater.remainingMs = crit ? DAMAGE_NUMBERS.critLifespanMs : DAMAGE_NUMBERS.lifespanMs;

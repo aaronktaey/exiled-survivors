@@ -164,6 +164,7 @@ export const ja: Strings = {
     personalEmpty: 'まだ終えた回がありません。一回遊んでみましょう！',
     personalNote: 'この端末に残った自分の記録です — ログインするとアカウントと一緒に保存されます。',
     personalSyncedNote: 'アカウントと一緒に保存される自分の記録です。',
+    resetsIn: '毎日 {hour}:00（韓国時間）にリセット · 残り {left}',
     mine: '自己ベスト：{place} 位 · {damage}',
     mineNone: 'まだ登録した記録がありません',
     enteredAfterLogin: 'ログインしました — 記録をランキングに登録しました',
@@ -266,6 +267,7 @@ export const ja: Strings = {
   },
 
   game: {
+    blocked: '防御',
     intro: 'Exile, do something!',
     introHintKeyboard: 'WASD・方向キーで移動 — 攻撃は自動',
     introHintTouch: 'スティックを引いて移動 — 攻撃は自動',
@@ -362,7 +364,7 @@ export const ja: Strings = {
       runedSword: 'ルーンの剣',
     },
     gearImplicits: {
-      onigoroshi: '与えた被害の {value} を吸血',
+      onigoroshi: '{value} の確率で敵の投射物を防ぐ',
       runedSword: 'スキルの投射物 +{value} 個',
       steelSword: '被害 +{value}',
       ironSword: '攻撃速度 +{value}',
@@ -434,8 +436,8 @@ export const ja: Strings = {
     },
     passives: { damage: 'ダメージ', attackSpeed: '攻撃速度', moveSpeed: '移動速度', luck: '幸運' },
     passiveDetails: {
-      damage: 'ダメージ +10%',
-      attackSpeed: '攻撃速度 +10%',
+      damage: 'ダメージ +3%',
+      attackSpeed: '攻撃速度 +3%',
       moveSpeed: '移動速度 +1%',
       luck: '幸運 +1%（まだ効果なし）',
     },
@@ -733,7 +735,7 @@ export const ja: Strings = {
         {
           title: '白いマンゴー',
           lines: [
-            '{mangoChance} の確率。食べると {mangoSecs} 秒間被害を受けず、全スキルの攻撃速度と移動速度が {mangoBoost} 上がります。',
+            'どの敵からも {mangoChance} の確率で、レア敵・ボス・肋骨では上がりません。食べると {mangoSecs} 秒間被害を受けず、全スキルの攻撃速度と移動速度が {mangoBoost} 上がります。',
           ],
         },
         {
@@ -820,7 +822,7 @@ export const ja: Strings = {
           title: 'ランキング',
           lines: [
             'ランキングに登録できるのはログインしたアカウントだけで、その回に与えた総被害で順位が決まります。名前 {nameLength} 文字とアイコン · 国旗を選び、アカウントごとに名前 1 つと最高記録 1 つだけが載ります。',
-            '上位 {rankSize} 人まで表示し、ほかのプレイヤーと共有する順位表です。ログインすると自分の最高記録と順位も表示されます。',
+            '上位 {rankSize} 人まで表示し、ほかのプレイヤーと共有する順位表です。毎日 {rankResetHour}:00（韓国時間）に新しく始まり、ログインすると今日の自分の最高記録と順位も表示されます。',
             '自分の記録タブには、ログインの有無に関係なく自分の上位 {rankSize} 回が日付・レベル・生存時間とともに残ります。← → でタブを切り替えます。',
           ],
         },

@@ -33,8 +33,11 @@ execSync(`npx wrangler d1 migrations apply DB --local --persist-to "${state}"`, 
 // One account named in ADMIN_USERS, signed in to through the test provider as "boss".
 execSync(
   `npx wrangler d1 execute DB --local --persist-to "${state}" --command "` +
-    `INSERT INTO users (id, created_at, display_name) VALUES ('admin-user', 0, 'boss'); ` +
-    `INSERT INTO identities (provider, subject, user_id) VALUES ('test', 'boss', 'admin-user')"`,
+    `INSERT INTO users (id, created_at, display_name, rank_name) VALUES ('admin-user', 0, 'boss', 'OLD'); ` +
+    `INSERT INTO identities (provider, subject, user_id) VALUES ('test', 'boss', 'admin-user'); ` +
+    // A best from a day long gone: the board starts over every day, so it must not show.
+    `INSERT INTO daily_best (day, user_id, entry_id, damage, level, survived_ms, at) ` +
+    `VALUES (0, 'admin-user', 0, 999999999, 50, 3600000, '1970-01-01T00:00:00.000Z')"`,
   { cwd: ROOT, env, stdio: 'ignore' },
 );
 const worker = spawn(
@@ -176,6 +179,11 @@ try {
   const bobs = await read(await bob.call('/api/ranking/me'));
   check('and an account can ask where its best stands', bobs.body?.place === 2 && bobs.body?.best?.damage === 40000,
     JSON.stringify(bobs.body));
+  const bossBest = await read(await boss.call('/api/ranking/me'));
+  check('a best from an earlier day is on neither the board nor the account’s own standing',
+    !kept.body?.entries?.some((e) => e.name === 'OLD' || e.damage === 999999999) &&
+      bossBest.body?.best === null && bossBest.body?.place === 0,
+    JSON.stringify({ board: kept.body?.entries?.map((e) => e.name), boss: bossBest.body }));
 
   // --- the cloud save ---
   const empty = await read(await alice.call('/api/save'));

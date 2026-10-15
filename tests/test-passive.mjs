@@ -125,13 +125,14 @@ await shot('passive-02-title');
 await openIcon('passives');
 const screen = await scene('PassiveScene', `
   return { labels: s.menu.rows.map(r => r.label.text), details: s.menu.rows.map(r => r.detail.text),
+           want: [window.config.PASSIVES.damage.detail, window.config.PASSIVES.attackSpeed.detail].join(' / '),
            purse: s.purse.text, enabled: s.menu.rows.map(r => r.item.enabled ? r.item.enabled() : true) };
 `);
 console.log('패시브:', JSON.stringify(screen));
 // The first row is the shop; the lines follow it, and 돌아가기 ends it.
 // 재생 is not among them any more: that is the sword's line to carry.
 check('패시브 lists its lines, each at rank zero',
-  screen.labels.slice(1, 3).join(' / ') === '피해 +10% / 공격속도 +10%' &&
+  screen.labels.slice(1, 3).join(' / ') === screen.want &&
     screen.details.slice(1, 3).every((d) => d === '0 / 10') &&
     !screen.labels.some((l) => /5초당/.test(l)),
   screen.labels.join(' / '));
@@ -225,8 +226,8 @@ check('a saved 예리 and 재생 fall off the weapon instead of counting',
   JSON.stringify(folded.lines) === JSON.stringify(['mighty', 'giant']),
   folded.lines.join(' / '));
 check('attack speed folds the same way',
-  Math.abs(folded.cooldown - 1000 / (1 * 1.1 * 1)) < 2,
-  `${folded.cooldown}ms`);
+  Math.abs(folded.cooldown - 1000 / (1 * folded.passive.attackSpeedScale * 1)) < 2,
+  `${folded.cooldown}ms at x${folded.passive.attackSpeedScale}`);
 // Written without a rung, so 거대 comes back at the middle one. Both the
 // rung and the survivor's own bar are tuned in balance.ts, so read them.
 check('거대 is on the bar it starts the run with',

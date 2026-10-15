@@ -91,6 +91,8 @@ node run-all.mjs test-full test-skills test-balance test-chain test-ice \
 ```
 
 `run-all.mjs` starts Chrome itself (`CHROME_PATH` overrides where it looks),
+waits for the game to be up before each suite (the first load after a source
+edit is slow while Vite transforms it, and the suites' own sleeps are fixed),
 clears storage between suites and writes screenshots to `tests/shots/`. One
 suite on its own: `node run-all.mjs test-gear`.
 
@@ -212,15 +214,19 @@ Read `git log` for what changed and when. What is not in the log:
   `RANKING.shared.turnstileSiteKey`. The screens only touch `top`,
   `placeFor`, `submit`, `refresh` and `source`. Flags are drawn textures
   (`tex-flag-XX`), not emoji: Windows has no flag emoji.
-  The board reads table `best` (one row per account, upserted only when a
-  run beats it; migration 0003), never the whole `entries` history — that
-  scan would spend D1's free daily reads. The server stores whole numbers
+  The board reads table `daily_best` (one row per account per day, upserted
+  only when a run beats that day's; migration 0004), never the whole
+  `entries` history — that scan would spend D1's free daily reads. The day
+  starts at `RANKING.dailyReset` (05:00 KST); `rankingDayStart` /
+  `nextRankingReset` in system.ts are shared by the Worker and the client,
+  the edge cache key carries the day, and the client store drops entries
+  from before it. The server stores whole numbers
   only: a run's time is a float, and 0.30 shipped rejecting every run while
   the client said it was entered. 내 기록 is the client's own
   (`systems/PersonalBest.ts`, `STORAGE.personal`), every run that ends,
   signed in or not, synced with the rest of localStorage. The name last
   entered is remembered in `STORAGE.rankName`.
-  To look at the live database: `npm run db -- "SELECT * FROM best"`
+  To look at the live database: `npm run db -- "SELECT * FROM daily_best"`
   (read-only queries only, unless the user asks; the dashboard's D1 console
   works too).
 - **Cloudflare.** One Worker with static assets: `dist/` is served without
@@ -283,7 +289,8 @@ Read `git log` for what changed and when. What is not in the log:
   320 kbps original is `assets-src/music/Constance.mp3`.
 - **One drop rule.** Every ordinary drop is multiplied by the kill's
   `Enemy.dropBonus`: 1 + `RARE.dropBonusPerAffix` per 속성 on a rare,
-  1 + `BOSS.dropBonus` for a 우두머리. What only a 우두머리 leaves (its
+  1 + `BOSS.dropBonus` for a 우두머리. The 하얀 망고 is the one exception
+  the user asked for: a flat `MANGO.chance` off every kill. What only a 우두머리 leaves (its
   certain weapon, shards, a `fromBossOnly` 구슬, a 뼈다귀 with `fromKill: 0`)
   and what is certain are not multiplied. A new drop should go through the
   same `bonus` in `CombatSystem.killEnemy`.
@@ -295,8 +302,9 @@ Read `git log` for what changed and when. What is not in the log:
 - **고정 속성 are on the base, not the item.** `GEAR[id].implicit` (one
   effect each, Korean `detail` with `{value}`/`{skill}`, renamed through
   `names.gearImplicits`) is folded into `GearBonus` by `gearBonusFor`, outside
-  the 접두어/접미어 slots. 흡혈 is pooled in `CombatSystem.leech` and paid in
-  whole HP; the extra projectile is `WeaponContext.extraProjectiles` (one more
+  the 접두어/접미어 slots. 오니고로시's `projectileBlock` is rolled in
+  `CombatSystem.onEnemyShotHit`, only for a shot that would hurt; the extra
+  projectile is `WeaponContext.extraProjectiles` (one more
   shot per cast, or one more orb).
 - **장비 합성 is decided before it is shown.** `gear.combine(uids)` checks
   (`combineProblem`), rolls `GEAR_COMBINE.successChance`, spends the swords

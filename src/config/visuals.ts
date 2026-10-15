@@ -52,6 +52,8 @@ export const COLORS = {
   logoShadow: 0xe0564a,
   damageText: "#ffe9a3",
   debugText: "#7ef0b0",
+  /** "막음" over the survivor when 오니고로시 turns a shot aside. */
+  blockText: "#9fd8ff",
   fireball: 0xffa63d,
   /** Bright core of a lightning arc, over a wider soft glow. */
   lightning: 0xdff1ff,

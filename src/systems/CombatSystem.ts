@@ -21,6 +21,7 @@ import {
   type EnemyShotSpec,
   type OrbId,
 } from '@/config';
+import { t } from '@/i18n';
 import { Altar } from '@/entities/Altar';
 import { Enemy } from '@/entities/Enemy';
 import { EnemyShot } from '@/entities/EnemyShot';
@@ -120,8 +121,6 @@ export class CombatSystem {
   private readonly hooks: CombatHooks;
   private readonly stats: RunStats;
   private readonly enemies: Phaser.Physics.Arcade.Group;
-  /** 흡혈 owed but not yet a whole point of health. */
-  private leechPool = 0;
 
   public constructor(
     scene: Phaser.Scene,
@@ -336,31 +335,11 @@ export class CombatSystem {
     // health left is worth two, not whatever the number on the card said.
     const absorbed = Math.min(dealt, enemy.hp);
     this.stats.recordDamage(absorbed);
-    this.leech(absorbed);
 
     if (enemy.takeDamage(dealt)) {
       this.killEnemy(enemy);
     }
   };
-
-  /**
-   * 흡혈: a share of what was dealt comes back as health. A tenth of a percent
-   * of one hit is a fraction of a point, so it is pooled and handed over in
-   * whole points — health stays a whole number on the bar.
-   */
-  private leech(absorbed: number): void {
-    const rate = this.player.lifeLeech;
-    if (rate <= 0 || absorbed <= 0) {
-      return;
-    }
-
-    this.leechPool += absorbed * rate;
-    const whole = Math.floor(this.leechPool);
-    if (whole > 0) {
-      this.leechPool -= whole;
-      this.player.heal(whole);
-    }
-  }
 
   private onProjectileHit: Phaser.Types.Physics.Arcade.ArcadePhysicsCallback = (a, b) => {
     const shot = a as unknown as Projectile;
@@ -456,6 +435,15 @@ export class CombatSystem {
     }
 
     shot.despawn();
+    // 오니고로시: a share of the shots that would land are turned aside.
+    // Only one that would hurt is rolled — not one inside the window after a hit.
+    if (this.player.wouldTakeShot && Math.random() < this.player.projectileBlock) {
+      this.damageNumbers.spawn(this.player.x, this.player.y - 18, 0, {
+        text: t().game.blocked,
+        color: COLORS.blockText,
+      });
+      return;
+    }
     this.player.takeDamage(shot.damage);
   };
 
@@ -598,8 +586,8 @@ export class CombatSystem {
       this.dropRandomSkillAt(x + 18, y - 18);
     }
 
-    // 하얀 망고: rare, before what raises it.
-    if (Math.random() < MANGO.chance * bonus) {
+    // 하얀 망고: the same off every kill — nothing raises it.
+    if (Math.random() < MANGO.chance) {
       this.dropMangoAt(x - 18, y - 18);
     }
 

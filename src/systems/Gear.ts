@@ -59,8 +59,8 @@ export interface GearBonus {
   readonly damageScale: number;
   /** One skill's own attack-speed multiplier, on top of attackSpeedScale. */
   readonly skillAttackSpeed: Partial<Record<SkillId, number>>;
-  /** Share of the damage dealt that comes back as health. */
-  readonly lifeLeech: number;
+  /** Chance an enemy's shot is stopped before it hurts. */
+  readonly projectileBlock: number;
   /** More shots from a skill that throws, more orbs on one that orbits. */
   readonly extraProjectiles: number;
 }
@@ -76,7 +76,7 @@ export const NO_BONUS: GearBonus = {
   critMultiplierBonus: 0,
   damageScale: 1,
   skillAttackSpeed: {},
-  lifeLeech: 0,
+  projectileBlock: 0,
   extraProjectiles: 0,
 };
 
@@ -161,7 +161,7 @@ export function gearBonusFor(item: GearItem | null): GearBonus {
     critMultiplierBonus,
     damageScale: implicit?.damageScale ?? 1,
     skillAttackSpeed,
-    lifeLeech: implicit?.lifeLeech ?? 0,
+    projectileBlock: implicit?.projectileBlock ?? 0,
     extraProjectiles: implicit?.extraProjectiles ?? 0,
   };
 }

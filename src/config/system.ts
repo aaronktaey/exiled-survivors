@@ -112,12 +112,31 @@ export const RANKING = {
     turnstileSiteKey: '0x4AAAAAAFXSrV0Ay68wbrSe' as string,
   },
   /**
+   * The shared board starts over every day at this hour, in the time zone
+   * `utcOffsetHours` from UTC — 05:00 in Korea. 내 기록 does not.
+   */
+  dailyReset: { hour: 5, utcOffsetHours: 9 },
+  /**
    * Whether the end of a run that made the board asks for a name at once.
    * The test harness turns it off so the end screen is what it expects;
    * test-ranking turns it back on.
    */
   promptOnDeath: true as boolean,
 } as const;
+
+const DAY_MS = 86_400_000;
+
+/** When the shared board's current day began, in ms since the epoch. */
+export function rankingDayStart(now: number): number {
+  const { hour, utcOffsetHours } = RANKING.dailyReset;
+  const shift = (utcOffsetHours - hour) * 3_600_000;
+  return Math.floor((now + shift) / DAY_MS) * DAY_MS - shift;
+}
+
+/** When the shared board next starts over. */
+export function nextRankingReset(now: number): number {
+  return rankingDayStart(now) + DAY_MS;
+}
 
 /**
  * 계정 — optional sign-in. Signed in, the player's records are copied to the

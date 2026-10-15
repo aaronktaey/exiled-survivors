@@ -41,7 +41,21 @@ export async function connect(port = 9333) {
   // suite that starts a run from the title still lands in play.
   await send('Page.addScriptToEvaluateOnNewDocument', { source: 'window.__harness = true;' });
 
+  // Suites wait a fixed time after loading the page, and once in a while the
+  // game takes longer than that to come up — every check then reads
+  // `undefined` off a game that is not there yet. Anything that asks the
+  // game something first waits, briefly, for it to exist.
+  const READY = "!!(window.game && window.game.scene && window.game.scene.getScenes(true).length > 0)";
+  const ready = async () => {
+    for (let i = 0; i < 60; i++) {
+      const r = await send('Runtime.evaluate', { expression: READY, returnByValue: true });
+      if (r.result?.result?.value === true) return;
+      await sleep(250);
+    }
+  };
+
   const evaluate = async (expr) => {
+    if (expr.includes('window.game')) await ready();
     const r = await send('Runtime.evaluate', { expression: `(() => { try { return JSON.stringify(${expr}); } catch (e) { return JSON.stringify({ __err: String(e) }); } })()`, returnByValue: true });
     const v = r.result?.result?.value;
     return v ? JSON.parse(v) : { __err: 'no value', raw: JSON.stringify(r).slice(0, 200) };

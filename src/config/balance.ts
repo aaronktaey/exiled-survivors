@@ -828,7 +828,13 @@ export const WEB = {
   /** Fraction of the survivor's move speed taken away inside one. */
   slow: 0.3,
   /** How long one lies there. */
-  durationMs: 60_000,
+  durationMs: 10_000,
+  /** How long it takes to fade out at the end of that. */
+  fadeMs: 3_000,
+  /** How faint it is: the fill, and the strands drawn over it. */
+  fillAlpha: 0.05,
+  strandAlpha: 0.22,
+  strandWidth: 1,
   /** Its radius with one 거미, and what each further 거미 on the rare adds. */
   radius: 60,
   radiusPerExtra: 30,
@@ -927,11 +933,12 @@ export const SLOT = {
 
 /**
  * 하얀 망고 — a few seconds of being untouchable and twice as quick. Rare on
- * purpose: a rare's 속성 and a 우두머리 raise it like any other drop.
+ * purpose, and the same off every kill: no rare's 속성, 우두머리 or 갈비뼈
+ * raises it.
  */
 export const MANGO = {
-  /** Share of kills that leave one. */
-  chance: 0.003,
+  /** Share of kills that leave one, whatever was killed. */
+  chance: 0.001,
   /** How long it lasts once eaten. */
   durationMs: 5000,
   /** Multiplies every skill's attacks per second while it lasts (+100%). */

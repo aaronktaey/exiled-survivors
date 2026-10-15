@@ -12,7 +12,6 @@ interface Web {
 }
 
 /** How long before it goes that a web starts to fade. */
-const FADE_MS = 5000;
 
 /**
  * 거미줄 — the webs rares with the 거미 속성 leave where they die.
@@ -48,9 +47,9 @@ export class WebField {
 
     const radius = WEB.radius + WEB.radiusPerExtra * (stacks - 1);
     const graphics = this.scene.add.graphics({ x, y }).setDepth(DEPTH.pickups - 2);
-    graphics.fillStyle(0xdfe6f0, 0.12);
+    graphics.fillStyle(0xdfe6f0, WEB.fillAlpha);
     graphics.fillCircle(0, 0, radius);
-    graphics.lineStyle(1.5, 0xe8eef7, 0.5);
+    graphics.lineStyle(WEB.strandWidth, 0xe8eef7, WEB.strandAlpha);
     // Spokes, then rings round them: the shape says "web" at a glance.
     const spokes = 8;
     for (let i = 0; i < spokes; i++) {
@@ -94,7 +93,7 @@ export class WebField {
         continue;
       }
 
-      web.graphics.setAlpha(Math.min(1, web.leftMs / FADE_MS));
+      web.graphics.setAlpha(Math.min(1, web.leftMs / WEB.fadeMs));
       if (!inside && Phaser.Math.Distance.Between(x, y, web.x, web.y) <= web.radius) {
         inside = true;
       }

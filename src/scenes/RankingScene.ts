@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 
-import { ACCOUNT, COLORS, DEPTH, RANKING, SCENES, SCRIM, TEXT } from '@/config';
+import { ACCOUNT, COLORS, DEPTH, RANKING, SCENES, SCRIM, TEXT, nextRankingReset } from '@/config';
 import { fill, t } from '@/i18n';
 import { account, accountRequest } from '@/systems/Account';
 import { addBackButton, type BackButton } from '@/systems/BackButton';
@@ -38,7 +38,9 @@ const TITLE_Y = 34;
 const TABS_Y = 70;
 const TAB_W = 130;
 const TAB_H = 28;
-const HEAD_Y = 102;
+/** When the shared board starts over, and how long until it does. */
+const RESET_Y = 94;
+const HEAD_Y = 116;
 const FOOTER = 52;
 
 /**
@@ -60,6 +62,10 @@ export class RankingScene extends Phaser.Scene {
   public tabs = new Map<RankingTab, Phaser.GameObjects.Rectangle>();
   private tabLabels = new Map<RankingTab, Phaser.GameObjects.Text>();
   private heads?: Phaser.GameObjects.Container;
+  /** "매일 오전 5시 초기화 · 3:12:05 남음", on the shared tab. Public for tests. */
+  public resetLine?: Phaser.GameObjects.Text;
+  /** The reset the line is counting down to. */
+  private resetAt = 0;
 
   private payload!: RankingSceneData;
   private layout!: {
@@ -85,6 +91,8 @@ export class RankingScene extends Phaser.Scene {
     this.tab = data.tab ?? 'shared';
     this.tabs = new Map();
     this.tabLabels = new Map();
+    this.resetLine = undefined;
+    this.resetAt = 0;
     // The scene outlives a launch, and someone else may be signed in now.
     this.mine = '';
   }
@@ -117,6 +125,17 @@ export class RankingScene extends Phaser.Scene {
     const columns = { place: left + 36, flag: left + 50, name: left + 84, damage: left + tableWidth };
 
     this.buildTabs(width);
+    this.resetLine = this.add
+      .text(width / 2, RESET_Y, '', {
+        fontFamily: 'system-ui, sans-serif',
+        fontSize: TEXT.size.hint,
+        color: COLORS.gearText,
+      })
+      .setOrigin(0.5)
+      .setDepth(DEPTH.ui + 1);
+    this.resetAt = nextRankingReset(Date.now());
+    this.tickReset();
+    this.time.addEvent({ delay: 1000, loop: true, callback: () => this.tickReset() });
     this.layout = { tableWidth, rowHeight, fontSize, columns };
     this.note = this.add
       .text(width / 2, height - FOOTER / 2, '', {
@@ -205,6 +224,30 @@ export class RankingScene extends Phaser.Scene {
     this.lightTabs();
     this.drawBoard();
     this.drawNote();
+    this.tickReset();
+  }
+
+  /**
+   * The countdown to the shared board's reset. When it runs out, the board
+   * on screen is yesterday's: it is drawn again (the store keeps only today's)
+   * and the server asked for the new one.
+   */
+  private tickReset(): void {
+    const line = this.resetLine;
+    if (!line) {
+      return;
+    }
+    const now = Date.now();
+    if (now >= this.resetAt) {
+      this.resetAt = nextRankingReset(now);
+      this.drawBoard();
+      void ranking.refresh();
+    }
+    const seconds = Math.max(0, Math.floor((this.resetAt - now) / 1000));
+    const left = `${Math.floor(seconds / 3600)}:${String(Math.floor(seconds / 60) % 60).padStart(2, '0')}:${String(seconds % 60).padStart(2, '0')}`;
+    line.setVisible(this.tab === 'shared');
+    line.setText(fill(t().ranking.resetsIn, { hour: RANKING.dailyReset.hour, left }));
+    fitText(line.setScale(1), this.scale.width);
   }
 
   /** The rows, from the store as it stands. */

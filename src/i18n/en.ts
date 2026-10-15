@@ -164,6 +164,7 @@ export const en: Strings = {
     personalEmpty: 'No finished runs yet — go play one!',
     personalNote: 'Your runs on this device — sign in to keep them with your account.',
     personalSyncedNote: 'Your runs, kept with your account.',
+    resetsIn: 'Resets daily at {hour}:00 Korea time · {left} left',
     mine: 'Your best: #{place} · {damage}',
     mineNone: 'No runs entered yet',
     enteredAfterLogin: 'Signed in — your run is on the ranking',
@@ -266,6 +267,7 @@ export const en: Strings = {
   },
 
   game: {
+    blocked: 'Blocked',
     intro: 'Exile, do something!',
     introHintKeyboard: 'WASD or arrows to move — attacks are automatic',
     introHintTouch: 'Drag the stick to move — attacks are automatic',
@@ -362,7 +364,7 @@ export const en: Strings = {
       runedSword: 'Runed Sword',
     },
     gearImplicits: {
-      onigoroshi: 'Leeches {value} of damage dealt as life',
+      onigoroshi: '{value} chance to block enemy projectiles',
       runedSword: '+{value} projectile on skills',
       steelSword: '+{value} damage',
       ironSword: '+{value} attack speed',
@@ -434,8 +436,8 @@ export const en: Strings = {
     },
     passives: { damage: 'Damage', attackSpeed: 'Attack speed', moveSpeed: 'Move speed', luck: 'Luck' },
     passiveDetails: {
-      damage: 'Damage +10%',
-      attackSpeed: 'Attack speed +10%',
+      damage: 'Damage +3%',
+      attackSpeed: 'Attack speed +3%',
       moveSpeed: 'Move speed +1%',
       luck: 'Luck +1% (no effect yet)',
     },
@@ -733,7 +735,7 @@ export const en: Strings = {
         {
           title: 'White Mango',
           lines: [
-            '{mangoChance} of the time. For {mangoSecs}s after eating it you take no damage, and every skill’s attack speed and your move speed are {mangoBoost}.',
+            '{mangoChance} of the time off any kill — rares, bosses and Ribs do not raise it. For {mangoSecs}s after eating it you take no damage, and every skill’s attack speed and your move speed are {mangoBoost}.',
           ],
         },
         {
@@ -820,7 +822,7 @@ export const en: Strings = {
           title: 'Ranking',
           lines: [
             'Only signed-in accounts can put runs on the ranking, ranked by the total damage of the run. Pick a {nameLength}-letter name, an icon and a flag; each account has one name and one best run on the board.',
-            'It shows the top {rankSize}, and the board is shared with other players. Signed in, you also see your own best and where it stands.',
+            'It shows the top {rankSize}, and the board is shared with other players. It starts over every day at {rankResetHour}:00 Korea time; signed in, you also see your own best today and where it stands.',
             'The My runs tab keeps your own top {rankSize} runs, signed in or not, with the date, level and time survived. ← → switches tabs.',
           ],
         },

@@ -302,7 +302,7 @@ export async function logout(request: Request, env: Env): Promise<Response> {
 /** Everything an account holds, removed: its runs, its save, its sign-ins. */
 export async function removeAccount(env: Env, userId: string): Promise<void> {
   await env.DB.batch([
-    env.DB.prepare('DELETE FROM best WHERE user_id = ?1').bind(userId),
+    env.DB.prepare('DELETE FROM daily_best WHERE user_id = ?1').bind(userId),
     env.DB.prepare('DELETE FROM entries WHERE user_id = ?1').bind(userId),
     env.DB.prepare('DELETE FROM saves WHERE user_id = ?1').bind(userId),
     env.DB.prepare('DELETE FROM sessions WHERE user_id = ?1').bind(userId),

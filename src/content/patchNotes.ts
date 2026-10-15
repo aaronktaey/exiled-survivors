@@ -15,6 +15,44 @@ export interface PatchNote {
 
 export const PATCH_NOTES: readonly PatchNote[] = [
   {
+    version: '0.33',
+    date: '2026-10-15',
+    changes: {
+      ko: [
+        '전체 랭킹이 매일 오전 5시(한국 시간)에 초기화됩니다. 랭킹 화면에 초기화까지 남은 시간이 표시됩니다. 내 기록은 초기화되지 않습니다.',
+        '오니고로시의 고정 속성이 흡혈에서 \'30% 확률로 적의 투사체를 막아냄\'으로 바뀌었습니다.',
+        '모든 무기의 기본 공격력이 절반이 되었습니다 — 녹슨 검 5 · 무쇠 검 10 · 강철 검 15 · 룬 각인 검 20 · 오니고로시 25.',
+        '패시브의 피해와 공격속도가 포인트당 +10%에서 +3%로 바뀌었습니다.',
+        '하얀 망고의 드랍률이 0.1%로 내려가고, 희귀 적·우두머리·갈비뼈로 오르지 않습니다.',
+        '거미줄이 10초 동안만 남고, 더 옅게 보입니다.',
+      ],
+      en: [
+        'The shared ranking now starts over every day at 05:00 Korea time, and the ranking screen counts down to it. My runs are not reset.',
+        'Onigoroshi’s implicit is now "30% chance to block enemy projectiles" instead of life leech.',
+        'Every weapon’s base attack is halved — Rusty Sword 5, Iron Sword 10, Steel Sword 15, Runed Sword 20, Onigoroshi 25.',
+        'The Damage and Attack Speed passives give +3% a point instead of +10%.',
+        'The White Mango drops 0.1% of the time, and rares, bosses and Ribs no longer raise it.',
+        'Webs last only 10 seconds and are fainter.',
+      ],
+      ja: [
+        '全体ランキングが毎日 5:00（韓国時間）にリセットされ、ランキング画面にリセットまでの残り時間が表示されます。自分の記録はリセットされません。',
+        '鬼殺しの固定属性が吸血から「30% の確率で敵の投射物を防ぐ」に変わりました。',
+        '全ての武器の基本攻撃力が半分になりました — 錆びた剣 5 · 鉄の剣 10 · 鋼の剣 15 · ルーンの剣 20 · 鬼殺し 25。',
+        'パッシブのダメージと攻撃速度が 1 ポイントあたり +10% から +3% になりました。',
+        '白いマンゴーのドロップ率が 0.1% に下がり、レア敵・ボス・肋骨で上がらなくなりました。',
+        '蜘蛛の巣は 10 秒だけ残り、より薄く見えます。',
+      ],
+      zh: [
+        '全部排行现在每天 5:00（韩国时间）重置，排行榜画面会显示距离重置的剩余时间。我的记录不会重置。',
+        '鬼杀的固定属性由吸血改为“30% 几率格挡敌人的投射物”。',
+        '所有武器的基础攻击力减半 — 生锈的剑 5 · 铁剑 10 · 钢剑 15 · 符文剑 20 · 鬼杀 25。',
+        '被动的伤害与攻击速度由每点 +10% 改为 +3%。',
+        '白芒果的掉落率降为 0.1%，且不再受稀有敌人、首领和肋骨的提高。',
+        '蛛网只保留 10 秒，并且更淡。',
+      ],
+    },
+  },
+  {
     version: '0.32',
     date: '2026-10-15',
     changes: {

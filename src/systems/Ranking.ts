@@ -1,4 +1,4 @@
-import { ACCOUNT, RANKING, STORAGE } from '@/config';
+import { ACCOUNT, RANKING, STORAGE, rankingDayStart } from '@/config';
 import { account, accountRequest } from '@/systems/Account';
 import { turnstileToken } from '@/systems/Turnstile';
 
@@ -61,10 +61,17 @@ export const flagTexture = (code: string): string => `tex-flag-${code}`;
 const sameEntry = (a: RankEntry, b: RankEntry): boolean =>
   a.at === b.at && a.name === b.name && a.damage === b.damage;
 
-/** Best first, a tie to whoever got there first, cut to the board's size. */
+/**
+ * Today's entries, best first, a tie to whoever got there first, cut to the
+ * board's size — so one from before the reset never holds a place.
+ */
 function ordered(entries: readonly RankEntry[]): RankEntry[] {
+  const since = rankingDayStart(Date.now());
   const unique: RankEntry[] = [];
   for (const entry of entries) {
+    if (!(Date.parse(entry.at) >= since)) {
+      continue;
+    }
     if (!unique.some((held) => sameEntry(held, entry))) {
       unique.push(entry);
     }
@@ -135,14 +142,20 @@ class RankingStore {
    * does not beat it would change nothing there, so it is not offered.
    */
   public myBest: number | null = null;
+  /** The board's day `myBest` was read on (rankingDayStart). */
+  private myBestDay = 0;
   private namesLoaded = false;
 
-  /** The board, best first. */
+  /**
+   * The board, best first — today's only. The shared board starts over at
+   * RANKING.dailyReset, and so does whatever this device kept of it.
+   */
   public get top(): readonly RankEntry[] {
     if (!this.loaded) {
       this.load();
     }
-    return this.current;
+    const since = rankingDayStart(Date.now());
+    return this.current.filter((entry) => Date.parse(entry.at) >= since);
   }
 
   /** First place, if anyone has set one. */
@@ -168,7 +181,9 @@ class RankingStore {
    * account's own best there.
    */
   public qualifies(damage: number): boolean {
-    return this.placeFor(damage) > 0 && (this.myBest === null || damage > this.myBest);
+    // A best from before the reset is no longer on the board.
+    const best = this.myBestDay === rankingDayStart(Date.now()) ? this.myBest : null;
+    return this.placeFor(damage) > 0 && (best === null || damage > best);
   }
 
   /** The name, emoji and flag last entered, read back from storage once. */
@@ -261,11 +276,13 @@ class RankingStore {
   private async lookUpMine(): Promise<void> {
     if (!ACCOUNT.enabled || !account.signedIn) {
       this.myBest = null;
+      this.myBestDay = rankingDayStart(Date.now());
       return;
     }
     const reply = await accountRequest('/api/ranking/me', { cache: 'no-store' });
     const best = (reply.body as { best?: { damage?: number } | null } | null)?.best;
     this.myBest = reply.ok && best ? Number(best.damage) || null : null;
+    this.myBestDay = rankingDayStart(Date.now());
   }
 
   public reset(): void {
@@ -295,7 +312,9 @@ class RankingStore {
     const entries = reply.ok ? entriesOf(reply.body) : null;
     if (entries) {
       this.source = 'shared';
-      this.myBest = Math.max(this.myBest ?? 0, run.damage);
+      const today = this.myBestDay === rankingDayStart(Date.now()) ? this.myBest : null;
+      this.myBest = Math.max(today ?? 0, run.damage);
+      this.myBestDay = rankingDayStart(Date.now());
       this.commit(ordered(entries));
       return;
     }

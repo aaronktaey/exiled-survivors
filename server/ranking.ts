@@ -1,16 +1,19 @@
 /**
  * The shared ranking.
  *
- *   GET  /api/ranking      the board: each account's best run, best first,
- *                          cached at the edge briefly
- *   GET  /api/ranking/me   the signed-in account's best, and where it stands
+ *   GET  /api/ranking      the board: each account's best run today, best
+ *                          first, cached at the edge briefly
+ *   GET  /api/ranking/me   the signed-in account's best today, and where it stands
+ *
+ * "Today" is the board's day (RANKING.dailyReset): it starts over at 05:00
+ * Korean time, and every query is scoped to the day it is asked in.
  *   POST /api/ranking      one run handed in by a signed-in account
  *
  * Only accounts hand runs in, and an account has one name on the board —
  * set by the run it hands in — so a name cannot be worn by a crowd. The
  * rules a run has to pass are the game's own (RANKING) plus RULES.
  */
-import { RANKING } from '../src/config/system';
+import { RANKING, nextRankingReset, rankingDayStart } from '../src/config/system';
 import { sessionUser } from './auth';
 import type { Env } from './env';
 import { hex, json, readJson, sameOrigin, sha256 } from './http';
@@ -52,22 +55,27 @@ export interface RankRow {
 }
 
 /**
- * Each account's best run, best first, a tie to whoever got there first —
- * read off the `best` table (one row per account), so a look costs the rows
- * it shows rather than the whole history.
+ * Each account's best run of the day, best first, a tie to whoever got there
+ * first — read off `daily_best` (one row per account per day, indexed by day
+ * and damage), so a look costs the rows it shows rather than the history.
  */
 const BOARD = `
   SELECT b.user_id AS userId, u.rank_name AS name, u.rank_emoji AS emoji, u.rank_flag AS flag,
          b.damage, b.level, b.survived_ms AS survivedMs, b.at
-    FROM best b JOIN users u ON u.id = b.user_id
+    FROM daily_best b JOIN users u ON u.id = b.user_id
+   WHERE b.day = ?2
    ORDER BY b.damage DESC, b.at ASC`;
 
-async function topRows(env: Env): Promise<(RankRow & { userId: string })[]> {
+async function topRows(env: Env, day: number): Promise<(RankRow & { userId: string })[]> {
   const result = await env.DB.prepare(`${BOARD} LIMIT ?1`)
-    .bind(RANKING.size)
+    .bind(RANKING.size, day)
     .all<RankRow & { userId: string }>();
   return result.results ?? [];
 }
+
+/** The edge's copy of one day's board: a new day is a new key, so a reset is never served stale. */
+const boardKey = (request: Request, day: number): string =>
+  new URL(`${BOARD_PATH}?day=${day}`, request.url).toString();
 
 const publicRows = (rows: readonly (RankRow & { userId: string })[]): RankRow[] =>
   rows.map(({ name, emoji, flag, damage, level, survivedMs, at }) => ({ name, emoji, flag, damage, level, survivedMs, at }));
@@ -75,14 +83,18 @@ const publicRows = (rows: readonly (RankRow & { userId: string })[]): RankRow[] 
 /** The board, from the edge's copy when it has a fresh one. */
 export async function board(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
   const cache = caches.default;
-  const key = new Request(new URL(BOARD_PATH, request.url).toString(), { method: 'GET' });
+  const now = Date.now();
+  const day = rankingDayStart(now);
+  const key = new Request(boardKey(request, day), { method: 'GET' });
   const hit = await cache.match(key);
   if (hit) {
     return hit;
   }
 
-  const response = json({ entries: publicRows(await topRows(env)) }, 200, {
-    'Cache-Control': `public, max-age=${RULES.cacheSeconds}`,
+  // Never kept past the reset.
+  const untilReset = Math.max(1, Math.floor((nextRankingReset(now) - now) / 1000));
+  const response = json({ entries: publicRows(await topRows(env, day)) }, 200, {
+    'Cache-Control': `public, max-age=${Math.min(RULES.cacheSeconds, untilReset)}`,
   });
   ctx.waitUntil(cache.put(key, response.clone()));
   return response;
@@ -94,18 +106,19 @@ export async function mine(request: Request, env: Env): Promise<Response> {
   if (!user) {
     return json({ best: null, place: null }, 200, { 'Cache-Control': 'no-store' });
   }
+  const day = rankingDayStart(Date.now());
   const best = await env.DB.prepare(
-    'SELECT damage, level, survived_ms AS survivedMs, at FROM best WHERE user_id = ?1',
+    'SELECT damage, level, survived_ms AS survivedMs, at FROM daily_best WHERE day = ?2 AND user_id = ?1',
   )
-    .bind(user.id)
+    .bind(user.id, day)
     .first<{ damage: number; level: number; survivedMs: number; at: string }>();
   if (!best) {
     return json({ best: null, place: 0 }, 200, { 'Cache-Control': 'no-store' });
   }
   const above = await env.DB.prepare(
-    'SELECT COUNT(*) AS n FROM best WHERE damage > ?1 OR (damage = ?1 AND at < ?2)',
+    'SELECT COUNT(*) AS n FROM daily_best WHERE day = ?3 AND (damage > ?1 OR (damage = ?1 AND at < ?2))',
   )
-    .bind(best.damage, best.at)
+    .bind(best.damage, best.at, day)
     .first<{ n: number }>();
   return json(
     {
@@ -246,7 +259,8 @@ export async function submit(request: Request, env: Env, ctx: ExecutionContext):
   }
 
   // The name on the board is the account's: this run sets it. The run goes
-  // into the history, and onto the board only if it beats the account's best.
+  // into the history, and onto today's board only if it beats the account's
+  // best today.
   const at = new Date(now).toISOString();
   const damage = Math.floor(Number(run.damage));
   const level = Math.floor(Number(run.level));
@@ -264,24 +278,26 @@ export async function submit(request: Request, env: Env, ctx: ExecutionContext):
     ).bind(run.name, run.emoji, run.flag, damage, level, survivedMs, at, now, address, user.id),
   ]);
   const entryId = Number(inserted[1]?.meta.last_row_id ?? 0);
+  const day = rankingDayStart(now);
   await env.DB.prepare(
-    `INSERT INTO best (user_id, entry_id, damage, level, survived_ms, at) VALUES (?1, ?2, ?3, ?4, ?5, ?6)
-     ON CONFLICT (user_id) DO UPDATE SET entry_id = excluded.entry_id, damage = excluded.damage,
+    `INSERT INTO daily_best (day, user_id, entry_id, damage, level, survived_ms, at)
+     VALUES (?7, ?1, ?2, ?3, ?4, ?5, ?6)
+     ON CONFLICT (day, user_id) DO UPDATE SET entry_id = excluded.entry_id, damage = excluded.damage,
        level = excluded.level, survived_ms = excluded.survived_ms, at = excluded.at
-     WHERE excluded.damage > best.damage`,
+     WHERE excluded.damage > daily_best.damage`,
   )
-    .bind(user.id, entryId, damage, level, survivedMs, at)
+    .bind(user.id, entryId, damage, level, survivedMs, at, day)
     .run();
 
   // The board this run is on, straight from the database, and the edge's
   // copy here dropped so the next look sees it too.
-  const rows = await topRows(env);
+  const rows = await topRows(env, day);
   const place = rows.findIndex((row) => row.userId === user.id) + 1;
-  ctx.waitUntil(caches.default.delete(new URL(BOARD_PATH, request.url).toString()));
+  ctx.waitUntil(caches.default.delete(boardKey(request, day)));
   return json({ ok: true, place, entries: publicRows(rows) });
 }
 
 /** After an account is deleted, the board should not wait out its cache to forget it. */
 export function forgetBoard(request: Request, ctx: ExecutionContext): void {
-  ctx.waitUntil(caches.default.delete(new URL(BOARD_PATH, request.url).toString()));
+  ctx.waitUntil(caches.default.delete(boardKey(request, rankingDayStart(Date.now()))));
 }

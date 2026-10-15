@@ -164,6 +164,7 @@ export const zh: Strings = {
     personalEmpty: '还没有结束过的对局，先去玩一局吧！',
     personalNote: '这是本设备上的个人记录 — 登录后会与账号一起保存。',
     personalSyncedNote: '与账号一起保存的个人记录。',
+    resetsIn: '每天 {hour}:00（韩国时间）重置 · 剩余 {left}',
     mine: '我的最佳：第 {place} 名 · {damage}',
     mineNone: '还没有登记的记录',
     enteredAfterLogin: '已登录 — 记录已登上排行榜',
@@ -266,6 +267,7 @@ export const zh: Strings = {
   },
 
   game: {
+    blocked: '格挡',
     intro: 'Exile, do something!',
     introHintKeyboard: 'WASD 或方向键移动 — 攻击自动进行',
     introHintTouch: '拖动摇杆移动 — 攻击自动进行',
@@ -362,7 +364,7 @@ export const zh: Strings = {
       runedSword: '符文剑',
     },
     gearImplicits: {
-      onigoroshi: '造成伤害的 {value} 转为吸血',
+      onigoroshi: '{value} 几率格挡敌人的投射物',
       runedSword: '技能投射物 +{value} 个',
       steelSword: '伤害 +{value}',
       ironSword: '攻击速度 +{value}',
@@ -434,8 +436,8 @@ export const zh: Strings = {
     },
     passives: { damage: '伤害', attackSpeed: '攻击速度', moveSpeed: '移动速度', luck: '幸运' },
     passiveDetails: {
-      damage: '伤害 +10%',
-      attackSpeed: '攻击速度 +10%',
+      damage: '伤害 +3%',
+      attackSpeed: '攻击速度 +3%',
       moveSpeed: '移动速度 +1%',
       luck: '幸运 +1%（暂无效果）',
     },
@@ -729,7 +731,7 @@ export const zh: Strings = {
         {
           title: '白芒果',
           lines: [
-            '{mangoChance} 几率。吃下后 {mangoSecs} 秒内不受伤害，所有技能的攻击速度和移动速度提高 {mangoBoost}。',
+            '击杀任何敌人都是 {mangoChance} 几率，稀有敌人、首领和肋骨都不会提高它。吃下后 {mangoSecs} 秒内不受伤害，所有技能的攻击速度和移动速度提高 {mangoBoost}。',
           ],
         },
         {
@@ -814,7 +816,7 @@ export const zh: Strings = {
           title: '排行榜',
           lines: [
             '只有已登录的账号可以登上排行榜，按这一局造成的总伤害排名。选择 {nameLength} 个字母的名字和图标 · 国旗，每个账号在榜上只有一个名字和一条最佳记录。',
-            '显示前 {rankSize} 名，是与其他玩家共享的排行榜。登录后还会显示自己的最佳记录和名次。',
+            '显示前 {rankSize} 名，是与其他玩家共享的排行榜。每天 {rankResetHour}:00（韩国时间）重新开始，登录后还会显示自己今天的最佳记录和名次。',
             '我的记录标签页无论是否登录，都会保留自己前 {rankSize} 局，附带日期、等级与存活时间。用 ← → 切换标签页。',
           ],
         },

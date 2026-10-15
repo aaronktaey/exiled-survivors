@@ -211,8 +211,8 @@ export function gearImplicitText(id: GearId): string {
 
   const pct = (fraction: number): string => `${Number((fraction * 100).toFixed(2))}%`;
   const value =
-    implicit.lifeLeech !== undefined
-      ? pct(implicit.lifeLeech)
+    implicit.projectileBlock !== undefined
+      ? pct(implicit.projectileBlock)
       : implicit.extraProjectiles !== undefined
         ? String(implicit.extraProjectiles)
         : implicit.damageScale !== undefined

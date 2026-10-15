@@ -105,9 +105,9 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   }
 
   /** Chance one of this survivor's hits lands for the crit multiplier. */
-  /** Share of the damage dealt that comes back as health (the weapon's). */
-  public get lifeLeech(): number {
-    return this.gear.lifeLeech;
+  /** Chance an enemy's shot is stopped before it hurts (the weapon's). */
+  public get projectileBlock(): number {
+    return this.gear.projectileBlock;
   }
 
   public get critChance(): number {
@@ -206,9 +206,14 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
    * survivor's own invulnerable window, so a volley landing at once is one
    * hit rather than eighteen.
    */
+  /** Whether a thrown thing landing now would hurt: alive, outside the window, no 망고. */
+  public get wouldTakeShot(): boolean {
+    return this.isAlive && this.scene.time.now >= this.invulnerableUntil && !this.mangoActive;
+  }
+
   public takeDamage(amount: number): void {
     const now = this.scene.time.now;
-    if (!this.isAlive || now < this.invulnerableUntil || this.mangoActive) {
+    if (!this.wouldTakeShot) {
       return;
     }
 

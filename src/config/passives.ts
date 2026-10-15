@@ -42,16 +42,16 @@ export const PASSIVES: Record<PassiveId, PassiveSpec> = {
   damage: {
     id: 'damage',
     name: '피해',
-    detail: '피해 +10%',
+    detail: '피해 +3%',
     maxRank: 10,
-    damageScale: 1.1,
+    damageScale: 1.03,
   },
   attackSpeed: {
     id: 'attackSpeed',
     name: '공격속도',
-    detail: '공격속도 +10%',
+    detail: '공격속도 +3%',
     maxRank: 10,
-    attackSpeedScale: 1.1,
+    attackSpeedScale: 1.03,
   },
   moveSpeed: {
     id: 'moveSpeed',

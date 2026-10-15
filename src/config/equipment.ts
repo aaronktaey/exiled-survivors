@@ -29,8 +29,8 @@ export interface GearImplicit {
    * `names.gearImplicits`.
    */
   readonly detail: string;
-  /** Share of the damage dealt that comes back as health. */
-  readonly lifeLeech?: number;
+  /** Chance an enemy's shot that reaches the survivor is stopped, doing nothing. */
+  readonly projectileBlock?: number;
   /** More shots from every skill that throws, and more orbs on one that orbits. */
   readonly extraProjectiles?: number;
   /** Multiplies every skill's damage. */
@@ -71,10 +71,11 @@ export const GEAR_BASE = {
    *
    * These are flat damage on every skill, and a skill starts at 150, so they
    * are deliberately small: at 30 and 30 the top sword was worth +80% damage
-   * on its own and nothing else in the run could compete with it.
+   * on its own and nothing else in the run could compete with it. Halved
+   * again from 10 and 10 on 2026-10-15.
    */
-  lowestAttack: 10,
-  attackPerTier: 10,
+  lowestAttack: 5,
+  attackPerTier: 5,
 } as const;
 
 export const GEAR: Record<GearId, GearSpec> = {
@@ -84,7 +85,7 @@ export const GEAR: Record<GearId, GearSpec> = {
     tier: 1,
     name: '오니고로시',
     weight: 0.5,
-    implicit: { detail: '가한 피해의 {value}만큼 흡혈', lifeLeech: 0.001 },
+    implicit: { detail: '{value} 확률로 적의 투사체를 막아냄', projectileBlock: 0.3 },
   },
   runedSword: {
     id: 'runedSword',

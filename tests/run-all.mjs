@@ -76,7 +76,19 @@ const clearStorage = async () => {
     ws.send(JSON.stringify({ id: 2, method: 'Page.navigate',
       params: { url: 'http://localhost:5173/#run' } }));
     await new Promise((res) => { ws.onmessage = res; });
-    await sleep(3500);
+    // Wait for the game to be up rather than a fixed time: the first load
+    // after a source edit has Vite transform it afresh, and takes far longer
+    // than the suites' own fixed sleeps allow. Loaded once here, it is warm
+    // for the reloads the suite does itself.
+    await sleep(1500);
+    for (let i = 0; i < 80; i++) {
+      ws.send(JSON.stringify({ id: 100 + i, method: 'Runtime.evaluate',
+        params: { expression: "!!window.game?.scene?.isActive('GameScene')", returnByValue: true } }));
+      const reply = await new Promise((res) => { ws.onmessage = (m) => res(JSON.parse(m.data)); });
+      if (reply.result?.result?.value === true) break;
+      await sleep(250);
+    }
+    await sleep(500);
     ws.close();
   } catch {
     // Nothing stored yet, or the page is still coming up.

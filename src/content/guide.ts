@@ -200,6 +200,7 @@ function values(): Record<string, string | number> {
     rows: INVENTORY.rows,
     nameLength: RANKING.nameLength,
     rankSize: RANKING.size,
+    rankResetHour: RANKING.dailyReset.hour,
   };
 }
 
