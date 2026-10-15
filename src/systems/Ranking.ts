@@ -1,4 +1,5 @@
 import { RANKING, STORAGE } from '@/config';
+import { turnstileToken } from '@/systems/Turnstile';
 
 /** One place on the board. */
 export interface RankEntry {
@@ -93,18 +94,27 @@ function clean(raw: unknown): RankEntry | null {
   };
 }
 
+/** The entries in a reply from the server, or null when it is not a board. */
+function entriesOf(body: unknown): RankEntry[] | null {
+  const entries = (body as { entries?: unknown } | null)?.entries;
+  if (!Array.isArray(entries)) {
+    return null;
+  }
+  return entries.map(clean).filter((entry): entry is RankEntry => entry !== null);
+}
+
 type Listener = (entries: readonly RankEntry[]) => void;
 
 /**
  * 랭킹 — the best runs by damage dealt, best first, RANKING.size of them.
  *
  * Every board is kept on this device, so it opens at once and survives
- * having no connection. On top of that it is shared, for now, through one
- * object on a free public store (RANKING.shared): `refresh` pulls the
- * shared board and folds it into the local one, and `submit` puts a run on
- * the local board at once and then folds the two together and writes the
- * result back. Two runs entered at the same moment can overwrite each other
- * — a stopgap's price, until there is a server of our own.
+ * having no connection. The board that counts is the server's (the game's
+ * Worker, RANKING.shared): `refresh` fetches it and it replaces this
+ * device's, and `submit` puts a run on this device's board at once, hands
+ * it in, and takes the board the server sends back. A run the server turns
+ * down — a typed-in number, too many too fast — is dropped again by the
+ * next board it sends.
  *
  * The screens only ever touch `top`, `placeFor`, `submit`, `refresh` and
  * `source`, which is what lets the store change underneath them.
@@ -168,11 +178,11 @@ class RankingStore {
     this.lastFlag = entry.flag;
 
     this.commit(ordered([...this.top, entry]));
-    void this.push();
+    void this.push(run);
     return place;
   }
 
-  /** Pulls the shared board and folds it into this one. */
+  /** Fetches the server's board, which becomes this device's. */
   public async refresh(): Promise<RankSource> {
     if (!RANKING.shared.enabled) {
       this.source = 'local';
@@ -187,7 +197,7 @@ class RankingStore {
     }
 
     this.source = 'shared';
-    this.commit(ordered([...this.top, ...remote]));
+    this.commit(ordered(remote));
     return this.source;
   }
 
@@ -200,43 +210,45 @@ class RankingStore {
     return () => this.listeners.delete(listener);
   }
 
-  /** Folds the shared board and this one together and writes the result back. */
-  private async push(): Promise<void> {
+  /** Hands the run in, and takes the board the server answers with. */
+  private async push(run: RankSubmission): Promise<void> {
     if (!RANKING.shared.enabled) {
       return;
     }
 
-    const remote = await this.pull();
-    if (remote === null) {
+    const token = await turnstileToken(RANKING.shared.turnstileSiteKey, RANKING.shared.timeoutMs);
+    const reply = await this.request('POST', { ...run, token: token ?? '' });
+    if (reply.status === 0) {
+      // No connection: the run stays on this device's board.
       this.source = 'offline';
       this.notify();
       return;
     }
 
-    const merged = ordered([...remote, ...this.top]);
-    this.commit(merged);
-    const ok = await this.request('PUT', {
-      name: RANKING.shared.name,
-      data: { v: 1, entries: merged },
-    });
-    this.source = ok ? 'shared' : 'offline';
-    this.notify();
-  }
-
-  /** The shared board's entries, or null when it cannot be reached. */
-  private async pull(): Promise<RankEntry[] | null> {
-    const body = await this.request('GET');
-    if (!body || typeof body !== 'object') {
-      return null;
+    const entries = reply.ok ? entriesOf(reply.body) : null;
+    if (entries) {
+      this.source = 'shared';
+      this.commit(ordered(entries));
+      return;
     }
-    const entries = (body as { data?: { entries?: unknown } }).data?.entries;
-    return (Array.isArray(entries) ? entries : [])
-      .map(clean)
-      .filter((entry): entry is RankEntry => entry !== null);
+    // Turned down: the server's board, without it, is the one to show.
+    await this.refresh();
   }
 
-  /** One request to the shared store, given up on after RANKING.shared.timeoutMs. */
-  private async request(method: 'GET' | 'PUT', payload?: unknown): Promise<unknown> {
+  /** The server's board, or null when it cannot be reached. */
+  private async pull(): Promise<RankEntry[] | null> {
+    const reply = await this.request('GET');
+    return reply.ok ? entriesOf(reply.body) : null;
+  }
+
+  /**
+   * One request to the server, given up on after RANKING.shared.timeoutMs.
+   * `status` is 0 when it never answered at all.
+   */
+  private async request(
+    method: 'GET' | 'POST',
+    payload?: unknown,
+  ): Promise<{ ok: boolean; status: number; body: unknown }> {
     const controller = typeof AbortController === 'function' ? new AbortController() : undefined;
     const timer = setTimeout(() => controller?.abort(), RANKING.shared.timeoutMs);
     try {
@@ -246,12 +258,10 @@ class RankingStore {
         body: payload ? JSON.stringify(payload) : undefined,
         signal: controller?.signal,
       });
-      if (!response.ok) {
-        return null;
-      }
-      return await response.json();
+      const body: unknown = await response.json().catch(() => null);
+      return { ok: response.ok, status: response.status, body };
     } catch {
-      return null;
+      return { ok: false, status: 0, body: null };
     } finally {
       clearTimeout(timer);
     }

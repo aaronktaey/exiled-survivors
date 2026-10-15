@@ -1,0 +1,63 @@
+name: Deploy to Cloudflare
+
+# The game and its ranking API are one Worker (wrangler.jsonc): every push to
+# main builds the game, brings the database's tables up to date, and deploys.
+# Needs two repository secrets: CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID.
+# Until they exist, the job says so and does nothing.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Let a running deploy finish; queue at most one more.
+concurrency:
+  group: cloudflare
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+    steps:
+      - name: Check the account is connected
+        id: ready
+        run: |
+          if [ -z "$CLOUDFLARE_API_TOKEN" ] || [ -z "$CLOUDFLARE_ACCOUNT_ID" ]; then
+            echo "::notice::CLOUDFLARE_API_TOKEN / CLOUDFLARE_ACCOUNT_ID are not set yet; skipping the Cloudflare deploy."
+            echo "go=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "go=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/checkout@v4
+        if: steps.ready.outputs.go == 'true'
+
+      - uses: actions/setup-node@v4
+        if: steps.ready.outputs.go == 'true'
+        with:
+          node-version: '22'
+          cache: npm
+
+      - if: steps.ready.outputs.go == 'true'
+        run: npm ci
+
+      # Type checks for the game and the Worker, then the build the Worker serves.
+      - if: steps.ready.outputs.go == 'true'
+        run: npm run build
+
+      # Tables first, so the code that reads them never arrives before them.
+      - if: steps.ready.outputs.go == 'true'
+        run: npx wrangler d1 migrations apply DB --remote
+
+      - if: steps.ready.outputs.go == 'true'
+        run: npx wrangler deploy
+
+      # www, sent on to the bare domain.
+      - if: steps.ready.outputs.go == 'true'
+        run: npx wrangler deploy --config wrangler.www.jsonc

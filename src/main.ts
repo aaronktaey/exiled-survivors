@@ -1,3 +1,6 @@
+// First of all: a player's things brought over from the old address are
+// written in before any store reads storage (see CarryOver.ts).
+import '@/systems/CarryOver';
 import Phaser from 'phaser';
 
 import './style.css';
