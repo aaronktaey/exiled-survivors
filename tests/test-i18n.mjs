@@ -114,24 +114,29 @@ await shot('i18n-03-title-en');
 // --- 5. the guide and the notes come through too ---
 await choose('MenuScene', 'guide');
 const guide = await scene('InfoScene', `
-  // The chapters hold every line; the page only holds the open one.
+  // The chapters hold every line; the page only holds the open tab.
   const NL = String.fromCharCode(10);
   return {
     title: s.children.list.filter(o => o.type === 'Text')[0].text,
     chapters: s.chapters.map(c => c.title),
+    tabs: s.tabEntries.map(e => e.text),
     text: s.chapters
-      .map(c => c.title + NL + c.sections.map(x => x.heading + NL + x.lines.join(NL)).join(NL))
+      .map(c => c.title + NL + c.tabs.map(tb => tb.title + NL + tb.cards.map(
+        k => [k.title, ...k.facts, ...k.lines].join(NL)).join(NL)).join(NL))
       .join(NL),
   };
 `);
 check('the guide is in English', guide.title === 'How to Play' && /The goal/.test(guide.text),
   guide.chapters.join(' / '));
-check('its contents list is in English too',
-  guide.chapters.join('/') === 'The goal/Controls/Growing/Skills/Enemies', guide.chapters.join(' / '));
-check('skills and enemies are named in English',
-  /Void Orb/.test(guide.text) && /Shooter/.test(guide.text) && /Chain Lightning/.test(guide.text));
+check('its contents list and tabs are in English too',
+  guide.chapters.join('/') === 'Basics/Combat/Skills/Enemies/Items/Progression' &&
+    guide.tabs.join('/') === 'The goal/Controls/Mobile/Saving',
+  `${guide.chapters.join(' / ')} — ${guide.tabs.join(' / ')}`);
+check('skills, enemies and items are named in English',
+  /Void Orb/.test(guide.text) && /Shooter/.test(guide.text) && /Chain Lightning/.test(guide.text) &&
+    /Onigoroshi/.test(guide.text) && /White Mango/.test(guide.text));
 const pctOf = await ev(`(() => {
-  const p = (f) => { const t = Math.round(f * 1000) / 10; return (Number.isInteger(t) ? t : t.toFixed(1)) + '%'; };
+  const p = (f) => Number((f * 100).toFixed(2)) + '%';
   return { rare: p(window.config.RARE.chance), skill: p(window.config.SKILL_DROP.chance) };
 })()`);
 check('the numbers still come from the config',

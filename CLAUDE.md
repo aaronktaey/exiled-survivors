@@ -222,6 +222,16 @@ Read `git log` for what changed and when. What is not in the log:
   the 접두어/접미어 slots. 흡혈 is pooled in `CombatSystem.leech` and paid in
   whole HP; the extra projectile is `WeaponContext.extraProjectiles` (one more
   shot per cast, or one more orb).
+- **The guide is chapters → tabs → cards** (`src/content/guide.ts`,
+  `InfoScene`). Prose lives in each locale's `guide.cards[tab]` with
+  `{placeholders}` that `values()` in guide.ts fills from config — a new
+  number needs a key there, never a literal in the copy. Lists (skills,
+  enemies, 속성, 구슬, 뼈다귀, swords, 패시브) are built from their tables,
+  so a new entry gets a card by itself; test-info's 누락 검사 fails if any
+  table entry has no card or a placeholder is left unfilled. The page is
+  drawn by a camera of its own (`pageCam`) whose viewport is the reading
+  window — `setMask` is a no-op under WebGL in Phaser 4, and that is what
+  the old guide had been relying on.
 - **A thrown skill has no range of its own.** For a skill with a
   `projectileSpeed`, `rangeFromStats` scales its base range by speed against
   base speed — targeting and flight both — so no thrown skill offers 사거리.

@@ -227,6 +227,8 @@ export const en: Strings = {
     guideTitle: 'How to Play',
     hintKeyboard: '↑ ↓ or the wheel to scroll   ·   Esc to go back',
     hintTouch: 'Swipe up and down   ·   Close to go back',
+    guideHintKeyboard: '↑ ↓ chapter   ← → tab   wheel · PageUp/Down scroll   Esc back',
+    guideHintTouch: 'Tap a chapter or tab   ·   swipe up and down',
   },
 
   credits: {
@@ -376,100 +378,413 @@ export const en: Strings = {
   },
 
   guideChapters: {
-    goal: 'The goal',
-    controls: 'Controls',
-    growth: 'Growing',
+    basics: 'Basics',
+    combat: 'Combat',
     skills: 'Skills',
     enemies: 'Enemies',
+    items: 'Items',
+    progress: 'Progression',
+  },
+
+  guideTabs: {
+    goal: 'The goal',
+    controls: 'Controls',
+    mobile: 'Mobile',
+    saving: 'Saving',
+    levels: 'Levelling',
+    getSkills: 'Getting skills',
+    damage: 'Damage',
+    common: 'Enemies',
+    boss: 'Boss',
+    fugitive: 'Runaway',
+    rares: 'Rares',
+    difficulty: 'Difficulty',
+    dropRules: 'Drop rules',
+    field: 'On the ground',
+    gear: 'Gear',
+    affixes: 'Affixes',
+    orbs: 'Orbs',
+    bones: 'Bones',
+    passives: 'Passives',
+    inventory: 'Inventory',
+    ranking: 'Ranking',
   },
 
   guide: {
-    goal: {
-      heading: 'The goal',
-      lines: [
-        'Stay alive as long as you can against a crowd that never stops coming.',
-        'You have {hp} health. Touching an enemy or taking a bolt costs some of it; at zero the run ends.',
-        'Every attack is automatic. Your job is where to stand, and what to upgrade.',
+    cards: {
+      goal: [
+        {
+          title: 'The goal',
+          lines: [
+            'Stay alive as long as you can while the enemies keep coming.',
+            'You have {hp} health. Touching an enemy or being hit by its shots takes some away, and at 0 the run is over.',
+            'Every attack fires on its own. Your part is where you stand, and what you choose to upgrade.',
+          ],
+        },
+        {
+          title: 'How a run goes',
+          lines: [
+            'New Run → pick Bones (if you have any) → pick one of {choices} skill cards → fight.',
+            'The first Boss arrives at {bossFirst}s, then one every {bossEvery}s.',
+            'The longer it lasts, the tougher new enemies are and the more of them come up rare.',
+            'When you die, the results screen sums the run up, and you leave by Run again, the title screen or Settings.',
+          ],
+        },
+      ],
+      controls: [
+        {
+          title: 'Keyboard and mouse',
+          lines: [
+            'WASD or the arrow keys to move.',
+            'Esc or the button at the top left to pause.',
+            'Hover a skill icon at the top left for how its DPS is worked out, or a rare for its affixes. The fight waits while you read.',
+          ],
+        },
+        {
+          title: 'Choice screens',
+          lines: [
+            'Arrows move the caret; Space, a click, a tap or a number key picks.',
+            'Movement keys never confirm a pick, so a key held down to walk cannot choose for you.',
+            'For a moment after a choice screen opens, it takes no input.',
+          ],
+        },
+        {
+          title: 'Menus',
+          lines: [
+            'Every screen is left by the back button at the top left, or Esc.',
+            'In this guide ↑↓ turn the chapter, ←→ the tab, and the wheel, a drag or PageUp/PageDown scroll.',
+          ],
+        },
+      ],
+      mobile: [
+        {
+          title: 'Moving',
+          lines: [
+            'Choose one of two in Settings.',
+            'Pad where you touch — nothing is shown until a finger lands, and the pad appears there. Its size is in Settings.',
+            'Tilt — tilt the device to move. The angle it first reads is neutral, so hold it however is comfortable.',
+          ],
+        },
+        {
+          title: 'Touch',
+          lines: [
+            'Tapping a skill icon or a rare shows the same as hovering does. That finger is also steering, so the fight does not wait.',
+            'The device’s back button pauses.',
+          ],
+        },
+      ],
+      saving: [
+        {
+          title: 'Autosave',
+          lines: [
+            'The run saves every {autosave}s and every time you pause.',
+            'Leave with "Save and quit to title" on the pause menu, then pick it up again with Continue on the title screen.',
+            'Dying deletes the save. A save is for stopping for a while, not for taking a death back.',
+          ],
+        },
+        {
+          title: 'While a run is saved',
+          lines: [
+            'The weapon in hand cannot be swapped, so the run you load is played with the sword it went out with.',
+            'The language cannot be changed mid-run.',
+          ],
+        },
+      ],
+      levels: [
+        {
+          title: 'Experience',
+          lines: [
+            'Kills drop XP gems. Within {pickup}px they drift to you, and they never disappear.',
+            'Tougher enemies are worth more, and a rare is worth more for each of its affixes.',
+          ],
+        },
+        {
+          title: 'Levelling up',
+          lines: [
+            'On a level up one of your skills is picked at random, and you choose an upgrade for it.',
+            'Upgrades stay on their own skill: raising Fireball leaves Strike as it was.',
+            'Number upgrades add a share of the base each time: three picks of +20% are +60% of the base.',
+            'Damage and attack speed can each be taken {maxPicks} times per skill, and chains go up to {chainCap}. A maxed upgrade is no longer offered.',
+          ],
+        },
+        {
+          title: 'Skill level',
+          lines: [
+            'The number in a skill icon’s corner is its level: 1 when you get it, and one more for every upgrade.',
+          ],
+        },
+      ],
+      getSkills: [
+        {
+          title: 'The first skill',
+          lines: ['A run starts by choosing one of {choices} skill cards. There is no basic attack.'],
+        },
+        {
+          title: 'Skill drops',
+          lines: [
+            'Enemies drop a skill {skillChance} of the time. Bosses and Runaways always drop one.',
+            'A skill you do not have comes in at its base stats; one you have opens its upgrade choice.',
+          ],
+        },
+        {
+          title: 'Random skill',
+          lines: [
+            'Enemies drop one {randomSkillChance} of the time. Walking over it offers {choices} skill cards to choose from.',
+            'Choosing a skill you already have goes straight on to its upgrade.',
+          ],
+        },
+      ],
+      damage: [
+        {
+          title: 'One hit',
+          lines: [
+            '(skill damage × passives + weapon attack) × weapon implicit × run upgrades × per-skill balance.',
+            'Effects apply passives → weapon → run upgrades, and the layers multiply. Within a layer, picks add up on the base.',
+          ],
+        },
+        {
+          title: 'Critical hits',
+          lines: [
+            'Any hit has a {critChance} chance to be critical and deal {critMulti}× damage.',
+            '{critAffix} on the weapon raises the chance, {cruelAffix} the multiplier.',
+          ],
+        },
+        {
+          title: 'Attack speed',
+          lines: [
+            'Attacks per second = skill base × passives × weapon × run upgrades, and ×{mangoRate} while a White Mango lasts.',
+            'The gap between attacks never goes below {minCooldown}ms.',
+          ],
+        },
+        {
+          title: 'The DPS card',
+          lines: [
+            'Hover a skill icon mid-run and the sum above is spelled out with that skill’s numbers. Crits are not counted in it.',
+          ],
+        },
+      ],
+      common: [
+        {
+          title: 'Enemies',
+          lines: [
+            'They appear off screen and close in, and more kinds join as the run goes on.',
+            'Each body hurts on its own when it touches you, so being surrounded hurts all at once.',
+            'The gap between spawns starts at {spawnStart}s and shrinks to {spawnMin}s, with at most {maxAlive} on the field.',
+          ],
+        },
+      ],
+      boss: [
+        {
+          title: 'What a Boss leaves',
+          lines: [
+            'A skill and a sword every time, and an altar every time.',
+            'A Divine Shard {shardChance} and a Rib {ribChance} of the time. {bossOnlyOrbs} also comes only from Bosses.',
+            'Every other drop is {bossBonus} more likely.',
+          ],
+        },
+      ],
+      fugitive: [
+        {
+          title: 'Catching one',
+          lines: [
+            'The marker on the edge of the screen points the way to it.',
+            'Long reach and many hits help. Every hit sends it a little further off.',
+          ],
+        },
+      ],
+      rares: [
+        {
+          title: 'Rares',
+          lines: [
+            '{rareChance} of enemies come up rare, more as the run goes on. A ring around them marks them out.',
+            'They carry {rareMin}–{rareMax} affixes, and the more they carry the deeper the ring. The same affix twice stacks.',
+            'Hover or tap one to see its affixes.',
+            'Every affix makes every drop {dropBonus} more likely. Worth the risk.',
+          ],
+        },
+      ],
+      difficulty: [
+        {
+          title: 'As time goes on',
+          lines: [
+            'Every minute, new enemies get {hpStep} health (compounding) and {rareStep} more of them come up rare.',
+            'From minute {lateFrom} each step is {lateMult}× as big — {hpLate} health and {rareLate} rares a minute.',
+            'Enemies already out stay as they are; it changes the ones that arrive after.',
+          ],
+        },
+        {
+          title: 'When they arrive',
+          lines: [
+            'Runners from {runnerAt}s, Shooters from {shooterAt}s, Brutes from {bruteAt}s.',
+            'The first Boss at {bossFirst}s, then every {bossEvery}s. The first Runaway at {fugFirst}s, then every {fugEvery}s.',
+          ],
+        },
+      ],
+      dropRules: [
+        {
+          title: 'Drop chances',
+          lines: [
+            'Each affix on a rare raises every drop chance by {dropBonus}, and a Boss raises them by {bossBonus}.',
+            'What only a Boss leaves, and what is certain anyway, does not get this bonus.',
+            'A run with Ribs in it raises every drop chance further.',
+          ],
+        },
+        {
+          title: 'On the ground',
+          lines: [
+            'Everything but XP disappears after {life}s, blinking faster and faster for the last {warning}s.',
+            'A drop’s rarity shows in the colour of its label and the sound it lands with.',
+          ],
+        },
+      ],
+      field: [
+        {
+          title: 'XP gem',
+          lines: ['Every kill drops one, and it never disappears. It drifts to you once you are close.'],
+        },
+        {
+          title: 'Skill',
+          lines: ['{skillChance} of the time. New skills come in as they are; one you have opens its upgrade choice.'],
+        },
+        {
+          title: 'Random skill',
+          lines: ['{randomSkillChance} of the time. Walking over it offers {choices} skill cards to choose from.'],
+        },
+        {
+          title: 'Health potion',
+          lines: [
+            '{potionChance} of the time. Restores {heal} of your maximum health.',
+            'At full health it is left where it is rather than wasted.',
+          ],
+        },
+        {
+          title: 'White Mango',
+          lines: [
+            '{mangoChance} of the time. For {mangoSecs}s after eating it you take no damage, and every skill’s attack speed and your move speed are {mangoBoost}.',
+          ],
+        },
+        {
+          title: 'Altar',
+          lines: [
+            'Every Boss leaves one, and other enemies {altarChance} of the time.',
+            'It calls up the enemies written over it. It only wakes when you walk up to it, and you may walk past — you have to have been away from it once before it can wake.',
+            'What it can call: {altarOffers}.',
+          ],
+        },
+        {
+          title: 'Divine Shard',
+          lines: [
+            'Bosses drop one {shardChance} of the time. {perOrb} make a Divine Orb, which is {points} passive point.',
+          ],
+        },
+      ],
+      gear: [
+        {
+          title: 'Gear',
+          lines: [
+            'Every Boss drops a sword. Tier {fromKillTiers} swords also rarely drop from ordinary enemies.',
+            'The lower a sword’s tier number, the stronger it is. Its attack power is added to every skill’s hit.',
+            'Swords you pick up go to the stash; you equip them from the Inventory on the title screen.',
+            'A sword can carry up to {maxPrefix} prefixes (offence) and {maxPrefix} suffixes (defence and movement). Each line is a {affixChance} roll, and every success rolls for another.',
+            'The implicit is fixed by the kind of sword, and is always there however many prefixes and suffixes it has.',
+          ],
+        },
+      ],
+      affixes: [
+        {
+          title: 'Affixes',
+          lines: [
+            'Rares and weapons share the same affixes. Prefixes are offence; suffixes are defence and movement.',
+            'On a weapon an affix comes in {tierCount} tiers, and tier 1 is the strongest and the rarest.',
+          ],
+        },
+      ],
+      orbs: [
+        {
+          title: 'Orbs',
+          lines: [
+            'Consumables that reroll or add to a weapon’s affixes. Use them on a sword from the Gear tab of the Inventory.',
+          ],
+        },
+      ],
+      bones: [
+        {
+          title: 'Bones',
+          lines: [
+            'Before a run, put in up to {maxBones} to change that run. Bones put in are spent.',
+            'Both New Run and Run again go through the Bones screen; with none to spend it is skipped.',
+            'A loaded run keeps the Bones it was started with.',
+            'Even with an Ancient Skull, only {maxBosses} Bosses are out at once; past that the rare spawns are ordinary enemies.',
+          ],
+        },
+      ],
+      passives: [
+        {
+          title: 'Passives',
+          lines: [
+            '{perOrb} Divine Shards make a Divine Orb, and an orb is {points} passive point.',
+            'Spend points from Passives on the title screen. Passives apply to every run.',
+          ],
+        },
+      ],
+      inventory: [
+        {
+          title: 'Gear tab',
+          lines: [
+            'Your swords sit in a {cols}×{rows} grid. Pick a cell and its attack power, implicit and affixes are read out beside it.',
+            'Equip, discard and orbs are the buttons beside it, or Space. The sword in hand cannot be discarded.',
+          ],
+        },
+        {
+          title: 'Consumables tab',
+          lines: ['How many orbs and Bones you hold, and where each is spent.'],
+        },
+      ],
+      ranking: [
+        {
+          title: 'Ranking',
+          lines: [
+            'When you die, the total damage of the run can go on the ranking. Pick a {nameLength}-letter name, an icon and a flag.',
+            'It shows the top {rankSize}, and the board is shared with other players.',
+          ],
+        },
       ],
     },
-    controls: {
-      heading: 'Controls',
-      lines: [
-        'WASD or the arrow keys to move.',
-        'Esc, the button in the top-left corner, or Back on a phone to pause.',
-        'Upgrade screen: arrows move the caret; Space, a click, a tap or 1-4 takes a card.',
-        'The movement keys cannot confirm. They are held down while playing, and a popup appearing under a held key used to pick for you.',
-        'Point at a rare enemy — hover or press — to see what it is carrying. This works while paused too.',
-      ],
-    },
-    mobile: {
-      heading: 'On a phone',
-      lines: [
-        'Settings offers two ways to steer.',
-        'Pad under finger — invisible until you touch, then it appears right there. Its size is yours to set.',
-        'Tilt — tilt the device to move. The angle you are already holding becomes level.',
-      ],
-    },
-    growth: {
-      heading: 'Growing',
-      lines: [
-        'Every kill drops an XP gem. Walk near and it comes to you.',
-        'Every run starts on a slot machine that picks your first skill. There is no basic attack.',
-        'A level-up picks one of the skills you hold at random and offers upgrades for it.',
-        'Picking up a skill offers upgrades for that skill. The first copy arrives plain, with no upgrade.',
-        'Upgrades are tracked per skill: raising Fireball leaves Strike exactly as it was.',
-      ],
-    },
-    skills: {
-      heading: 'Skills',
-      stats: '   {damage} a hit · {rate}/s · {dps} DPS · {range}px reach',
-      upgrades: '   Upgrades: {picks}',
-      starter: 'starting skill',
-    },
-    enemies: {
-      heading: 'Enemies',
-      stats: '{name}  {hp} health · {contact} contact damage · {xp} XP',
-      fromStart: 'from the start',
-      unlocksAt: 'from {time}s',
-      notes: {
+    labels: {
+      skillStats: 'Damage {damage} · {rate}/s · DPS {dps}',
+      skillRange: 'Range {range}px',
+      skillProjectile: 'Projectile speed {speed} — reach grows with it, in proportion',
+      skillUpgrades: 'Upgrades: {picks}',
+      skillScale: 'Per-skill damage balance ×{scale}',
+      enemyStats: 'Health {hp} · Contact {contact} · XP {xp} · Speed {speed}',
+      fromStart: 'From the start',
+      unlocksAt: 'From {time}s',
+      shot: 'Shot damage {damage} · every {every}s · range {range}px',
+      volley: 'Every {every}s, {count} shots in every direction · {damage} each',
+      enemyNotes: {
         grunt: 'Walks straight at you. There are a lot of them.',
         brute: 'Slow, but very tough, and standing in one costs a great deal.',
         runner: 'Frail and fast. Running away does not shake it.',
-        boss: 'The first arrives at {first}s, then one every {every}s. Very tough and very painful, but killing it always leaves a skill.',
-        fugitive: 'Never fights back. Tough and very fast; every hit sends it running off and it stops a way on. Kill it before it leaves for a sure skill — the first turns up at {first}s, then every {every}s, and each is gone {life}s after it arrives.',
         shooter: 'Stops at a distance and fires. Walk it down, or bring something with reach.',
+        boss: 'The first arrives at {first}s, then one every {every}s. Very tough and very painful.',
+        fugitive: 'Never fights back. Tough and very fast; every hit sends it running off, and it stops a way on. The first turns up at {first}s, then every {every}s, and each is gone {life}s later. Catch it for a sure skill.',
       },
-    },
-    rares: {
-      heading: 'Rare enemies',
-      lines: [
-        '{chance} of enemies come up rare, wearing a coloured ring.',
-        'A rare carries {min} to {max} affixes; the more it stacks, the deeper the ring. Repeats stack their effect.',
-        'Each affix raises every drop chance by {dropBonus}, and a Boss raises them by {bossBonus} — except what only a Boss leaves and what is certain anyway. Dangerous, but worth killing.',
-      ],
-    },
-    drops: {
-      heading: 'Drops',
-      lines: [
-        'XP gems — one per kill, and they never expire.',
-        'Skills — {skillChance} chance. A skill you already have opens an upgrade instead.',
-        'Health potions — {potionChance} chance, worth {heal} of your maximum. A full health bar leaves them lying there.',
-        'Equipment — every Boss leaves a sword. The lower a sword’s tier number, the stronger it is, and tier {tiers} swords also rarely drop from any enemy. Walking over it puts it in your stash; you equip it from the Inventory on the title screen.',
-        'Every sword carries one implicit of its own, regardless of how many prefixes and suffixes it has — {implicits}.',
-        'Altar — every Boss leaves one behind. It calls up the enemies written over it, and only wakes when you walk up to it. Passing it by is fine.',
-        'A dropped sword may roll modifiers — prefixes are offensive, suffixes defensive or utility. They are the same ones rare enemies wear.',
-        'Divine Shards — half of Boss kills leave one. Ten make a Divine Orb, which is one passive point.',
-        'What is applied to you goes in one order: passives, then the weapon, then whatever the run itself has added.',
-        'Everything except gems disappears after {life}s, blinking faster over the last {warning}s.',
-      ],
-    },
-    saving: {
-      heading: 'Saving',
-      lines: [
-        'The run saves itself every {autosave}s and whenever you pause.',
-        'Quit from the pause menu with "Save and quit to title", then pick it up again with Continue.',
-        'Dying clears the save. It is a way to stop and come back, not a way to undo a death.',
-      ],
+      affixEnemy: 'On a rare: {detail}',
+      affixWeapon: 'On a weapon: {ladder}',
+      affixRung: 'T{tier} {value}',
+      affixRangedOnly: 'Only on enemies that shoot',
+      affixWeaponOnly: 'Weapons only',
+      affixEnemyOnly: 'Rares only',
+      chanceKill: '{chance} per kill',
+      chanceBoss: '{chance} per Boss kill',
+      gearTier: 'Tier {tier} · +{attack} attack power',
+      gearImplicit: 'Implicit: {text}',
+      gearBossShare: '{share} of the swords a Boss leaves',
+      gearFromKill: '{chance} per ordinary kill',
+      gearBossOnly: 'Only Bosses drop it',
+      boneStack: 'More than one can go into a run',
+      boneSingle: 'Only one can go into a run',
+      passiveRank: '{detail} a rank · up to {max} ranks',
     },
   },
 };

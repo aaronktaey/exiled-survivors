@@ -1,223 +1,479 @@
 import {
+  AFFIXES,
+  ALL_BONES,
+  ALL_ORBS,
+  ALL_PASSIVES,
+  ALTAR,
+  ALTAR_OFFERS,
+  BALANCE,
+  BONE_RUN,
+  BONES,
   BOSS,
-  FUGITIVE,
+  DIFFICULTY,
   ENEMY_KINDS,
+  FUGITIVE,
   GEAR,
+  GEAR_DROP,
   GROUND_ITEM,
+  INVENTORY,
+  MANGO,
   PLAYER,
   POTION,
+  RANKING,
   RARE,
   SAVE,
+  SHARD,
   SKILL_BASE,
   SKILL_DROP,
+  SKILL_PICK,
+  SPAWN,
   SPAWN_TABLE,
+  STATS,
+  UPGRADE_CAP,
+  UPGRADE_MAX_PICKS,
+  attackForTier,
   xpFor,
+  type AffixId,
+  type AltarOfferId,
   type EnemyKind,
+  type GuideTone,
 } from '@/config';
 import {
+  affixDetail,
+  affixGearDetail,
+  affixKindName,
+  affixName,
+  altarOfferText,
+  boneDetail,
+  boneName,
   enemyName,
   fill,
   gearImplicitText,
   gearName,
+  orbDetail,
+  orbName,
+  passiveDetail,
+  passiveName,
   skillName,
   skillSummary,
   t,
   tagName,
 } from '@/i18n';
+import type { GuideChapterId, GuideTabId } from '@/i18n/types';
 import { dpsFromStats, upgradeOptionsFor } from '@/systems/Progression';
-import { ALL_SKILLS, DROPPABLE_SKILLS } from '@/weapons/skills';
+import { ALL_SKILLS } from '@/weapons/skills';
 
-/** One block of the guide: a heading and the lines under it. */
-export interface GuideSection {
-  readonly heading: string;
+/**
+ * One card on a guide page: a title in its tone's colour, a few short facts
+ * under it, and the lines that explain. Drawn with a border in that colour,
+ * so a page reads as a set of things rather than one wall of text.
+ */
+export interface GuideCard {
+  readonly title: string;
+  readonly tone: GuideTone;
+  readonly facts: readonly string[];
   readonly lines: readonly string[];
+}
+
+/** One tab across the top of a chapter's page. */
+export interface GuideTab {
+  readonly id: string;
+  readonly title: string;
+  readonly cards: readonly GuideCard[];
 }
 
 /** A chapter of the guide, as the contents list offers it. */
 export interface GuideChapter {
   readonly id: string;
   readonly title: string;
-  readonly sections: readonly GuideSection[];
+  readonly tabs: readonly GuideTab[];
 }
 
-const seconds = (ms: number): number => Math.round(ms / 1000);
+const seconds = (ms: number): string => round(ms / 1000);
+
+/** "10%", or "1.5%" when a whole number would lie about it. */
+const percent = (fraction: number): string => {
+  const hundredths = Math.round(fraction * 10000) / 100;
+  return `${Number(hundredths.toFixed(2))}%`;
+};
+
+/** "+10%" for a multiplier of 1.1. */
+const raise = (scale: number): string => `+${percent(scale - 1)}`;
+
+/** Percentage points, for a share that is added rather than multiplied. */
+const points = (fraction: number): string => `+${Number((fraction * 100).toFixed(2))}%p`;
+
+const round = (value: number): string =>
+  Number.isInteger(value) ? String(value) : String(Number(value.toFixed(1)));
 
 /** A set of tiers as the guide writes it: "3" or "3~5". */
 const tierSpan = (tiers: readonly number[]): string => {
+  if (tiers.length === 0) {
+    return '';
+  }
   const low = Math.min(...tiers);
   const high = Math.max(...tiers);
   return low === high ? `${low}` : `${low}~${high}`;
 };
-/** "10%", or "1.5%" when a whole number would lie about it. */
-const percent = (fraction: number): string => {
-  const tenths = Math.round(fraction * 1000) / 10;
-  return `${Number.isInteger(tenths) ? tenths : tenths.toFixed(1)}%`;
-};
-const round = (value: number): string =>
-  Number.isInteger(value) ? String(value) : value.toFixed(1);
+
+/** When a kind joins the spawn table, in seconds. */
+const unlockOf = (kind: EnemyKind): string =>
+  seconds(SPAWN_TABLE.find((row) => row.kind === kind)?.unlockMs ?? 0);
 
 /**
- * The guide, in the current language, split into the chapters the contents
- * list offers. Every number is read from the live config, so the text
- * cannot drift away from the game it describes.
+ * Every number a prose card can ask for, read off the live config. One
+ * table for all of them, so a locale can use any number on any card.
+ */
+function values(): Record<string, string | number> {
+  const affixTierCount = Math.max(
+    ...Object.values(AFFIXES).map((affix) => affix.gearTiers?.length ?? 0),
+  );
+
+  return {
+    hp: PLAYER.maxHp,
+    choices: SKILL_PICK.choices,
+    bossFirst: seconds(BOSS.firstMs),
+    bossEvery: seconds(BOSS.intervalMs),
+    fugFirst: seconds(FUGITIVE.firstMs),
+    fugEvery: seconds(FUGITIVE.intervalMs),
+    autosave: seconds(SAVE.autosaveMs),
+    pickup: PLAYER.pickupRadius,
+    maxPicks: Math.max(UPGRADE_MAX_PICKS.damage ?? 0, UPGRADE_MAX_PICKS.attackSpeed ?? 0),
+    chainCap: UPGRADE_CAP.chainCount ?? 0,
+    skillChance: percent(SKILL_DROP.chance),
+    randomSkillChance: percent(SKILL_PICK.dropChance),
+    critChance: percent(PLAYER.critChance),
+    critMulti: round(PLAYER.critMultiplier),
+    critAffix: affixName('critical'),
+    cruelAffix: affixName('cruel'),
+    mangoRate: round(MANGO.attackSpeedScale),
+    minCooldown: STATS.minCooldownMs,
+    spawnStart: seconds(SPAWN.startIntervalMs),
+    spawnMin: seconds(SPAWN.minIntervalMs),
+    maxAlive: SPAWN.maxAlive,
+    shardChance: percent(SHARD.chance),
+    ribChance: percent(BONES.rib.fromBoss),
+    bossOnlyOrbs: ALL_ORBS.filter((orb) => orb.fromBossOnly)
+      .map((orb) => orbName(orb.id))
+      .join(', '),
+    bossBonus: `+${percent(BOSS.dropBonus)}`,
+    dropBonus: `+${percent(RARE.dropBonusPerAffix)}`,
+    rareChance: percent(RARE.chance),
+    rareMin: RARE.minAffixes,
+    rareMax: RARE.maxAffixes,
+    hpStep: raise(DIFFICULTY.hpScalePerMinute),
+    rareStep: points(DIFFICULTY.rareChancePerMinute),
+    lateFrom: DIFFICULTY.lateFromMinute,
+    lateMult: DIFFICULTY.lateMultiplier,
+    hpLate: `+${percent((DIFFICULTY.hpScalePerMinute - 1) * DIFFICULTY.lateMultiplier)}`,
+    rareLate: points(DIFFICULTY.rareChancePerMinute * DIFFICULTY.lateMultiplier),
+    runnerAt: unlockOf('runner'),
+    shooterAt: unlockOf('shooter'),
+    bruteAt: unlockOf('brute'),
+    life: seconds(GROUND_ITEM.lifespanMs),
+    warning: seconds(GROUND_ITEM.warningMs),
+    potionChance: percent(POTION.chance),
+    heal: percent(POTION.healFraction),
+    mangoChance: percent(MANGO.chance),
+    mangoSecs: seconds(MANGO.durationMs),
+    mangoBoost: raise(MANGO.attackSpeedScale),
+    altarChance: percent(ALTAR.fromKill),
+    altarOffers: (Object.keys(ALTAR_OFFERS) as AltarOfferId[])
+      .map((id) => altarOfferText(id))
+      .join(', '),
+    perOrb: SHARD.perOrb,
+    points: SHARD.pointsPerOrb,
+    fromKillTiers: tierSpan(
+      Object.values(GEAR)
+        .filter((spec) => spec.fromKill !== undefined)
+        .map((spec) => spec.tier),
+    ),
+    maxPrefix: GEAR_DROP.maxPrefixes,
+    affixChance: percent(GEAR_DROP.affixChance),
+    tierCount: affixTierCount,
+    maxBones: BONE_RUN.maxApplied,
+    maxBosses: BONE_RUN.maxBosses,
+    cols: INVENTORY.cols,
+    rows: INVENTORY.rows,
+    nameLength: RANKING.nameLength,
+    rankSize: RANKING.size,
+  };
+}
+
+/** The tone a tab's prose is drawn in, when it is not plain information. */
+const PROSE_TONE: Partial<Record<GuideTabId, GuideTone>> = {
+  common: 'enemy',
+  boss: 'boss',
+  fugitive: 'enemy',
+  rares: 'rare',
+  field: 'item',
+  gear: 'gear',
+  affixes: 'rare',
+  orbs: 'orb',
+  bones: 'bone',
+  passives: 'passive',
+};
+
+/** A tab's prose, filled. */
+function prose(tab: GuideTabId, numbers: Record<string, string | number>): GuideCard[] {
+  return t().guide.cards[tab].map((card) => ({
+    title: fill(card.title, numbers),
+    tone: PROSE_TONE[tab] ?? 'info',
+    facts: [],
+    lines: card.lines.map((line) => fill(line, numbers)),
+  }));
+}
+
+/**
+ * The guide, in the current language: chapters down the side, tabs across
+ * each one, cards on each tab. Every number is read from the live config,
+ * and every list — skills, enemies, 속성, 구슬, 뼈다귀, swords, 패시브 —
+ * is read from its table, so a new entry turns up here without a line of
+ * copy being written for it.
  */
 export function guideChapters(): readonly GuideChapter[] {
-  const g = t().guide;
-  const titles = t().guideChapters;
+  const numbers = values();
+  const chapters = t().guideChapters;
+  const tabTitles = t().guideTabs;
+  const tab = (id: GuideTabId, cards: readonly GuideCard[]): GuideTab => ({
+    id,
+    title: tabTitles[id],
+    cards,
+  });
+  const chapter = (id: GuideChapterId, tabs: readonly GuideTab[]): GuideChapter => ({
+    id,
+    title: chapters[id],
+    tabs,
+  });
 
   return [
-    {
-      id: 'goal',
-      title: titles.goal,
-      sections: [
-        {
-          heading: g.goal.heading,
-          lines: g.goal.lines.map((line) => fill(line, { hp: PLAYER.maxHp })),
-        },
-      ],
-    },
-    {
-      id: 'controls',
-      title: titles.controls,
-      sections: [
-        { heading: g.controls.heading, lines: [...g.controls.lines] },
-        { heading: g.mobile.heading, lines: [...g.mobile.lines] },
-      ],
-    },
-    {
-      id: 'growth',
-      title: titles.growth,
-      sections: [
-        {
-          heading: g.growth.heading,
-          lines: [...g.growth.lines],
-        },
-        {
-          heading: g.drops.heading,
-          lines: g.drops.lines.map((line) =>
-            fill(line, {
-              skillChance: percent(SKILL_DROP.chance),
-              potionChance: percent(POTION.chance),
-              heal: percent(POTION.healFraction),
-              life: seconds(GROUND_ITEM.lifespanMs),
-              warning: seconds(GROUND_ITEM.warningMs),
-              implicits: Object.values(GEAR)
-                .filter((spec) => spec.implicit !== undefined)
-                .map((spec) => `${gearName(spec.id)}: ${gearImplicitText(spec.id)}`)
-                .join(' · '),
-              tiers: tierSpan(
-                Object.values(GEAR)
-                  .filter((spec) => spec.fromKill !== undefined)
-                  .map((spec) => spec.tier),
-              ),
-            }),
-          ),
-        },
-        {
-          heading: g.saving.heading,
-          lines: g.saving.lines.map((line) => fill(line, { autosave: seconds(SAVE.autosaveMs) })),
-        },
-      ],
-    },
-    {
-      id: 'skills',
-      title: titles.skills,
-      sections: [{ heading: g.skills.heading, lines: skillLines() }],
-    },
-    {
-      id: 'enemies',
-      title: titles.enemies,
-      sections: [
-        { heading: g.enemies.heading, lines: enemyLines() },
-        {
-          heading: g.rares.heading,
-          lines: g.rares.lines.map((line) =>
-            fill(line, {
-              chance: percent(RARE.chance),
-              min: RARE.minAffixes,
-              max: RARE.maxAffixes,
-              dropBonus: percent(RARE.dropBonusPerAffix),
-              bossBonus: percent(BOSS.dropBonus),
-            }),
-          ),
-        },
-      ],
-    },
+    chapter('basics', [
+      tab('goal', prose('goal', numbers)),
+      tab('controls', prose('controls', numbers)),
+      tab('mobile', prose('mobile', numbers)),
+      tab('saving', prose('saving', numbers)),
+    ]),
+    chapter('combat', [
+      tab('levels', prose('levels', numbers)),
+      tab('getSkills', prose('getSkills', numbers)),
+      tab('damage', prose('damage', numbers)),
+    ]),
+    chapter(
+      'skills',
+      ALL_SKILLS.map((skill) => ({
+        id: skill.id,
+        title: skillName(skill.id),
+        cards: [skillCard(skill.id)],
+      })),
+    ),
+    chapter('enemies', [
+      tab('common', [...prose('common', numbers), ...commonEnemyCards()]),
+      tab('boss', [bossCard(), ...prose('boss', numbers)]),
+      tab('fugitive', [fugitiveCard(), ...prose('fugitive', numbers)]),
+      tab('rares', [...prose('rares', numbers), ...rareAffixCards()]),
+      tab('difficulty', prose('difficulty', numbers)),
+    ]),
+    chapter('items', [
+      tab('dropRules', prose('dropRules', numbers)),
+      tab('field', prose('field', numbers)),
+      tab('gear', [...prose('gear', numbers), ...gearCards()]),
+      tab('affixes', [...prose('affixes', numbers), ...affixCards()]),
+      tab('orbs', [...prose('orbs', numbers), ...orbCards()]),
+      tab('bones', [...prose('bones', numbers), ...boneCards()]),
+    ]),
+    chapter('progress', [
+      tab('passives', [...prose('passives', numbers), ...passiveCards()]),
+      tab('inventory', prose('inventory', numbers)),
+      tab('ranking', prose('ranking', numbers)),
+    ]),
   ];
 }
 
-/** Every skill: what it is, what it does, and what it upgrades into. */
-function skillLines(): readonly string[] {
-  const g = t().guide.skills;
+/** One skill: what it is, what it does, its numbers and its upgrades. */
+function skillCard(id: (typeof ALL_SKILLS)[number]['id']): GuideCard {
+  const g = t().guide.labels;
+  const skill = ALL_SKILLS.find((candidate) => candidate.id === id) ?? ALL_SKILLS[0];
+  const base = SKILL_BASE[skill.id];
+  const scale = BALANCE.damageScale[skill.id] ?? 1;
+  const picks = upgradeOptionsFor(skill).map((option) => option.label.replace(/\s*\+.*$/, ''));
 
-  return ALL_SKILLS.flatMap((skill) => {
-    const base = SKILL_BASE[skill.id];
-    const picks = upgradeOptionsFor(skill).map((option) => option.label.replace(/\s*\+.*$/, ''));
-    const dropped = DROPPABLE_SKILLS.some((candidate) => candidate.id === skill.id);
-    const tags = skill.tags.map((tag) => tagName(tag)).join(' · ');
-
-    return [
-      `${skillName(skill.id)}  [${tags}]${dropped ? '' : `  (${g.starter})`}`,
-      `   ${skillSummary(skill.id)}`,
-      fill(g.stats, {
+  return {
+    title: skillName(skill.id),
+    tone: 'skill',
+    facts: [
+      skill.tags.map((tag) => tagName(tag)).join(' · '),
+      fill(g.skillStats, {
         damage: round(base.damage),
         rate: round(base.attackSpeed),
         dps: round(dpsFromStats(base)),
-        range: base.range,
       }),
-      fill(g.upgrades, { picks: picks.join(' / ') }),
-    ];
+      base.projectileSpeed > 0
+        ? `${fill(g.skillRange, { range: base.range })} · ${fill(g.skillProjectile, { speed: base.projectileSpeed })}`
+        : fill(g.skillRange, { range: base.range }),
+      ...(scale === 1 ? [] : [fill(g.skillScale, { scale: round(scale) })]),
+    ],
+    lines: [skillSummary(skill.id), fill(g.skillUpgrades, { picks: picks.join(' / ') })],
+  };
+}
+
+/** The line of numbers every enemy card opens on. */
+function enemyStats(kind: EnemyKind): string {
+  const spec = ENEMY_KINDS[kind];
+  return fill(t().guide.labels.enemyStats, {
+    hp: spec.maxHp,
+    contact: spec.contactDamage,
+    xp: xpFor(spec),
+    speed: spec.speed,
   });
 }
 
-/** Every enemy, in the order the run meets it, with the boss last. */
-function enemyLines(): readonly string[] {
-  const g = t().guide.enemies;
-  const order = [...SPAWN_TABLE].sort((a, b) => a.unlockMs - b.unlockMs);
+/** Every kind the spawn table sends, in the order a run meets them. */
+function commonEnemyCards(): GuideCard[] {
+  const g = t().guide.labels;
+  return [...SPAWN_TABLE]
+    .sort((a, b) => a.unlockMs - b.unlockMs)
+    .map(({ kind, unlockMs }) => {
+      const spec = ENEMY_KINDS[kind];
+      const shot = spec.shot;
+      return {
+        title: enemyName(kind),
+        tone: 'enemy' as const,
+        facts: [
+          enemyStats(kind),
+          unlockMs > 0 ? fill(g.unlocksAt, { time: seconds(unlockMs) }) : g.fromStart,
+          ...(shot
+            ? [fill(g.shot, { damage: shot.damage, every: seconds(shot.cooldownMs), range: shot.range })]
+            : []),
+        ],
+        lines: [g.enemyNotes[kind] ?? ''],
+      };
+    });
+}
 
-  const lines = order.flatMap(({ kind, unlockMs }) => {
-    const spec = ENEMY_KINDS[kind as EnemyKind];
-    const when = unlockMs > 0 ? fill(g.unlocksAt, { time: seconds(unlockMs) }) : g.fromStart;
+function bossCard(): GuideCard {
+  const g = t().guide.labels;
+  const volley = ENEMY_KINDS.boss.volley;
+  return {
+    title: enemyName('boss'),
+    tone: 'boss',
+    facts: [
+      enemyStats('boss'),
+      ...(volley
+        ? [fill(g.volley, { every: seconds(volley.cooldownMs), count: volley.count, damage: volley.damage })]
+        : []),
+    ],
+    lines: [
+      fill(g.enemyNotes.boss ?? '', { first: seconds(BOSS.firstMs), every: seconds(BOSS.intervalMs) }),
+    ],
+  };
+}
 
-    return [
-      fill(g.stats, {
-        name: enemyName(kind),
-        hp: spec.maxHp,
-        contact: spec.contactDamage,
-        xp: xpFor(spec),
+function fugitiveCard(): GuideCard {
+  const g = t().guide.labels;
+  return {
+    title: enemyName('fugitive'),
+    tone: 'enemy',
+    facts: [enemyStats('fugitive')],
+    lines: [
+      fill(g.enemyNotes.fugitive ?? '', {
+        first: seconds(FUGITIVE.firstMs),
+        every: seconds(FUGITIVE.intervalMs),
+        life: seconds(ENEMY_KINDS.fugitive.lifespanMs ?? 0),
       }),
-      `   ${g.notes[kind]} (${when})`,
-    ];
+    ],
+  };
+}
+
+/** What can be on a rare: every 속성 with an enemy side. */
+function rareAffixCards(): GuideCard[] {
+  const g = t().guide.labels;
+  return (Object.keys(AFFIXES) as AffixId[])
+    .filter((id) => AFFIXES[id].enemy !== undefined)
+    .map((id) => ({
+      title: affixName(id),
+      tone: 'rare' as const,
+      facts: AFFIXES[id].rangedOnly ? [g.affixRangedOnly] : [],
+      lines: [affixDetail(id)],
+    }));
+}
+
+/** Every 속성, both sides of it: on a rare, and rung by rung on a weapon. */
+function affixCards(): GuideCard[] {
+  const g = t().guide.labels;
+  return (Object.keys(AFFIXES) as AffixId[]).map((id) => {
+    const spec = AFFIXES[id];
+    const where = !spec.enemy ? g.affixWeaponOnly : !spec.gearTiers ? g.affixEnemyOnly : '';
+    const ladder = (spec.gearTiers ?? [])
+      .map((rung) => fill(g.affixRung, { tier: rung.tier, value: affixGearDetail(id, rung.tier) }))
+      .join(' · ');
+
+    return {
+      title: affixName(id),
+      tone: 'rare' as const,
+      facts: [
+        affixKindName(spec.kind),
+        ...(where ? [where] : []),
+        ...(spec.rangedOnly ? [g.affixRangedOnly] : []),
+      ],
+      lines: [
+        ...(spec.enemy ? [fill(g.affixEnemy, { detail: affixDetail(id) })] : []),
+        ...(ladder ? [fill(g.affixWeapon, { ladder })] : []),
+      ],
+    };
   });
+}
 
-  const boss = ENEMY_KINDS.boss;
-  lines.push(
-    fill(g.stats, {
-      name: enemyName('boss'),
-      hp: boss.maxHp,
-      contact: boss.contactDamage,
-      xp: xpFor(boss),
-    }),
-    `   ${fill(g.notes.boss, {
-      first: seconds(BOSS.firstMs),
-      every: seconds(BOSS.intervalMs),
-    })}`,
-  );
+/** Every sword, best first: its tier, its 고정 속성, and where it comes from. */
+function gearCards(): GuideCard[] {
+  const g = t().guide.labels;
+  const roster = Object.values(GEAR).sort((a, b) => a.tier - b.tier);
+  const total = roster.reduce((sum, spec) => sum + spec.weight, 0);
 
-  const fugitive = ENEMY_KINDS.fugitive;
-  lines.push(
-    fill(g.stats, {
-      name: enemyName('fugitive'),
-      hp: fugitive.maxHp,
-      contact: fugitive.contactDamage,
-      xp: xpFor(fugitive),
-    }),
-    `   ${fill(g.notes.fugitive, {
-      first: seconds(FUGITIVE.firstMs),
-      every: seconds(FUGITIVE.intervalMs),
-      life: seconds(fugitive.lifespanMs ?? 0),
-    })}`,
-  );
+  return roster.map((spec) => ({
+    title: gearName(spec.id),
+    tone: 'gear' as const,
+    facts: [fill(g.gearTier, { tier: spec.tier, attack: attackForTier(spec.tier) })],
+    lines: [
+      ...(spec.implicit ? [fill(g.gearImplicit, { text: gearImplicitText(spec.id) })] : []),
+      fill(g.gearBossShare, { share: percent(total > 0 ? spec.weight / total : 0) }),
+      spec.fromKill !== undefined
+        ? fill(g.gearFromKill, { chance: percent(spec.fromKill) })
+        : g.gearBossOnly,
+    ],
+  }));
+}
 
-  return lines;
+function orbCards(): GuideCard[] {
+  const g = t().guide.labels;
+  return ALL_ORBS.map((orb) => ({
+    title: orbName(orb.id),
+    tone: 'orb' as const,
+    facts: [fill(orb.fromBossOnly ? g.chanceBoss : g.chanceKill, { chance: percent(orb.chance) })],
+    lines: [orbDetail(orb.id)],
+  }));
+}
+
+function boneCards(): GuideCard[] {
+  const g = t().guide.labels;
+  return ALL_BONES.map((bone) => ({
+    title: boneName(bone.id),
+    tone: 'bone' as const,
+    facts: [
+      bone.fromKill > 0
+        ? fill(g.chanceKill, { chance: percent(bone.fromKill) })
+        : fill(g.chanceBoss, { chance: percent(bone.fromBoss) }),
+      bone.stackable ? g.boneStack : g.boneSingle,
+    ],
+    lines: [boneDetail(bone.id)],
+  }));
+}
+
+function passiveCards(): GuideCard[] {
+  const g = t().guide.labels;
+  return ALL_PASSIVES.map((passive) => ({
+    title: passiveName(passive.id),
+    tone: 'passive' as const,
+    facts: [fill(g.passiveRank, { detail: passiveDetail(passive.id), max: passive.maxRank })],
+    lines: [],
+  }));
 }

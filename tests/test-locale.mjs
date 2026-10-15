@@ -106,10 +106,13 @@ for (const lang of ['en', 'ja', 'zh']) {
       const s = window.game.scene.getScene('InfoScene');
       const hangul = /[\\uac00-\\ud7a3]/;
       const out = [];
-      for (const c of s.chapters) for (const x of c.sections) for (const l of [x.heading, ...x.lines]) {
-        if (hangul.test(l)) out.push(l.slice(0, 90));
+      // Every chapter, tab and card — and no {placeholder} left unfilled.
+      for (const c of s.chapters) for (const tb of c.tabs) for (const k of tb.cards) {
+        for (const l of [c.title, tb.title, k.title, ...k.facts, ...k.lines]) {
+          if (hangul.test(l) || /[{}]|undefined|NaN/.test(l)) out.push(l.slice(0, 90));
+        }
       }
-      return out.slice(0, 12);
+      return [...new Set(out)].slice(0, 12);
     })()`);
     data.forEach((line) => leaks.push(`[${topic} text] ${line}`));
     await close('InfoScene');

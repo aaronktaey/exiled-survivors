@@ -1,8 +1,8 @@
 import Phaser from 'phaser';
 
-import { COLORS, DEPTH, INFO, SCENES, SCRIM, TEXT } from '@/config';
-import { fitWidth } from '@/systems/Layout';
-import { guideChapters, type GuideChapter, type GuideSection } from '@/content/guide';
+import { COLORS, DEPTH, GUIDE_TONES, INFO, SCENES, SCRIM, TEXT } from '@/config';
+import { fitText, fitWidth } from '@/systems/Layout';
+import { guideChapters, type GuideCard, type GuideChapter } from '@/content/guide';
 import { PATCH_NOTES } from '@/content/patchNotes';
 import { language, t } from '@/i18n';
 import { prefersTouchControls } from '@/systems/VirtualJoystick';
@@ -18,26 +18,49 @@ export interface InfoSceneData {
 const title = (topic: InfoTopic): string =>
   topic === 'patch' ? t().info.patchTitle : t().info.guideTitle;
 
-/** 패치노트, as the one chapter it is. */
+/** 패치노트, as the one chapter it is: a card per version, newest first. */
 function patchChapter(): GuideChapter {
   return {
     id: 'patch',
     title: t().info.patchTitle,
-    sections: PATCH_NOTES.map((note) => ({
-      heading: `v${note.version}   ${note.date}`,
-      // Korean is the fallback: an entry always has it, a new language may
-      // not have caught up with the newest note yet.
-      lines: (note.changes[language()] ?? note.changes.ko).map((change) => `· ${change}`),
-    })),
+    tabs: [
+      {
+        id: 'patch',
+        title: t().info.patchTitle,
+        cards: PATCH_NOTES.map((note) => ({
+          title: `v${note.version}   ${note.date}`,
+          tone: 'patch' as const,
+          facts: [],
+          // Korean is the fallback: an entry always has it, a new language
+          // may not have caught up with the newest note yet.
+          lines: note.changes[language()] ?? note.changes.ko,
+        })),
+      },
+    ],
   };
+}
+
+/** Below this width the contents list moves from the side to a row on top. */
+const SIDE_CONTENTS_FROM = 600;
+
+/** One plate in a row of choices: a chapter, or a tab. */
+interface Plate {
+  readonly box: Phaser.GameObjects.Rectangle;
+  readonly label: Phaser.GameObjects.Text;
 }
 
 /**
  * The reading screen: 게임 가이드 and 패치노트.
  *
- * The guide is long enough that one scroll was a poor way through it, so it
- * has a contents list down the side — up and down pick a chapter, and the
- * page beside it changes. The notes are a single chapter and simply scroll.
+ * The guide is chapters (down the side, or across the top on a narrow
+ * screen), each chapter a row of tabs, each tab a page of cards. A card is
+ * bordered and titled in the colour of what it is about, so a page reads as
+ * a set of things rather than one wall of text. ↑↓ walk the chapters, ←→ the
+ * tabs, and the page scrolls under the wheel, a drag or PageUp / PageDown.
+ *
+ * The page is drawn by a camera of its own whose viewport is the reading
+ * window: Phaser 4 has no `setMask` under WebGL, and a viewport clips for
+ * free. Scrolling moves that camera.
  */
 export class InfoScene extends Phaser.Scene {
   public static readonly KEY = SCENES.info;
@@ -45,17 +68,29 @@ export class InfoScene extends Phaser.Scene {
   public backButton?: BackButton;
 
   private payload!: InfoSceneData;
-  private chapters: readonly GuideChapter[] = [];
-  private tocEntries: Phaser.GameObjects.Text[] = [];
-  private page!: Phaser.GameObjects.Container;
+  /** Everything this screen can show. Public so a test can read it all. */
+  public chapters: readonly GuideChapter[] = [];
+  /** The contents list's labels, and the open chapter's tabs. Public for tests. */
+  public tocEntries: Phaser.GameObjects.Text[] = [];
+  public tabEntries: Phaser.GameObjects.Text[] = [];
+  /** What is on the page now. Public so a test can read what is shown. */
+  public page!: Phaser.GameObjects.Container;
+  public chapter = 0;
+  public tab = 0;
+  public maxScroll = 0;
+
+  private tocPlates: Plate[] = [];
+  private tabPlates: Plate[] = [];
+  private pageCam!: Phaser.Cameras.Scene2D.Camera;
   private bar?: Phaser.GameObjects.Rectangle;
   private barTrack?: Phaser.GameObjects.Rectangle;
 
-  private chapter = 0;
   private scrollY = 0;
-  private maxScroll = 0;
   private viewTop = 0;
   private viewHeight = 0;
+  private viewBottom = 0;
+  /** Where the tab row starts: under the title, or under a top contents row. */
+  private tabsTop = 0;
   private contentLeft = 0;
   private contentWidth = 0;
   /** Where a drag started, in screen px, or null when nothing is held. */
@@ -68,13 +103,26 @@ export class InfoScene extends Phaser.Scene {
   public init(data: InfoSceneData): void {
     this.payload = data;
     this.chapter = 0;
+    this.tab = 0;
     this.scrollY = 0;
-    // The scene instance outlives a launch: last time's entries are already
+    // The scene instance outlives a launch: last time's objects are already
     // destroyed, and 패치노트 has no contents list to replace them with.
     this.tocEntries = [];
+    this.tocPlates = [];
+    this.tabEntries = [];
+    this.tabPlates = [];
+    this.bar = undefined;
+    this.barTrack = undefined;
   }
 
   public create(): void {
+    // A camera added last time is still on the manager; start from the main.
+    for (const camera of [...this.cameras.cameras]) {
+      if (camera !== this.cameras.main) {
+        this.cameras.remove(camera);
+      }
+    }
+
     this.backButton = addBackButton(this, () => this.close());
     const { width, height } = this.scale;
     this.chapters = this.payload.topic === 'patch' ? [patchChapter()] : guideChapters();
@@ -89,109 +137,294 @@ export class InfoScene extends Phaser.Scene {
       .setOrigin(0.5)
       .setDepth(DEPTH.ui + 1);
 
-    this.viewTop = INFO.contentTop;
-    this.viewHeight = height - INFO.contentTop - INFO.contentBottom;
+    this.viewBottom = height - INFO.contentBottom;
 
     // The page is as wide as it wants, or as wide as the screen allows.
     const pageWidth = fitWidth(INFO.contentWidth, width, INFO.sideMargin);
+    const left = (width - pageWidth) / 2;
     const hasContents = this.chapters.length > 1;
-    if (hasContents) {
-      // Contents down the left, the chapter beside it. On a narrow screen
-      // the list gives up room first, down to a floor it still reads at.
-      const toc = Math.max(INFO.tocMinWidth, Math.min(INFO.tocWidth, pageWidth * 0.3));
-      this.contentLeft = (width - pageWidth) / 2 + toc;
-      this.contentWidth = pageWidth - toc;
-      this.buildContents((width - pageWidth) / 2);
+    if (hasContents && width >= SIDE_CONTENTS_FROM) {
+      // Contents down the left, the chapter beside it.
+      const toc = Math.max(INFO.tocMinWidth, Math.min(INFO.tocWidth, pageWidth * 0.26));
+      this.contentLeft = left + toc + INFO.tocGutter;
+      this.contentWidth = pageWidth - toc - INFO.tocGutter;
+      this.buildSideContents(left, toc);
+      this.tabsTop = INFO.contentTop;
     } else {
-      this.contentLeft = (width - pageWidth) / 2;
+      this.contentLeft = left;
       this.contentWidth = pageWidth;
+      // On a narrow screen the chapters are a row of their own over the tabs.
+      this.tabsTop = hasContents
+        ? INFO.contentTop + this.buildTopContents(left, pageWidth) + INFO.tabGap
+        : INFO.contentTop;
     }
 
+    // The page and its camera: the page lives at the world origin, and the
+    // camera's viewport is wherever the reading window is on screen.
     this.page = this.add.container(0, 0).setDepth(DEPTH.ui + 1);
-    const shape = this.make.graphics({}, false);
-    shape.fillRect(0, this.viewTop, width, this.viewHeight);
-    this.page.setMask(shape.createGeometryMask());
+    this.cameras.main.ignore(this.page);
+    this.pageCam = this.cameras.add(this.contentLeft, INFO.contentTop, this.contentWidth, 1);
 
     this.buildCloseButton(width);
-    this.add
-      .text(
-        width / 2,
-        height - 24,
-        prefersTouchControls() ? t().info.hintTouch : t().info.hintKeyboard,
-        { fontFamily: 'system-ui, sans-serif', fontSize: TEXT.size.hint, color: COLORS.muted },
-      )
-      .setOrigin(0.5)
-      .setDepth(DEPTH.ui + 1);
+    const copy = t().info;
+    const touch = prefersTouchControls();
+    const hint = hasContents
+      ? touch
+        ? copy.guideHintTouch
+        : copy.guideHintKeyboard
+      : touch
+        ? copy.hintTouch
+        : copy.hintKeyboard;
+    fitText(
+      this.add
+        .text(width / 2, height - 24, hint, {
+          fontFamily: 'system-ui, sans-serif',
+          fontSize: TEXT.size.hint,
+          color: COLORS.muted,
+        })
+        .setOrigin(0.5)
+        .setDepth(DEPTH.ui + 1),
+      width,
+    );
 
     this.armInput();
     this.showChapter(0);
   }
 
-  /** The contents list: one line per chapter, the current one lit. */
-  private buildContents(left: number): void {
-    this.tocEntries = this.chapters.map((entry, index) => {
-      const text = this.add
-        .text(left, this.viewTop + index * INFO.tocLineHeight, entry.title, {
-          fontFamily: 'system-ui, sans-serif',
-          fontSize: INFO.headingSize,
-          color: COLORS.muted,
-        })
-        .setDepth(DEPTH.ui + 1)
-        .setInteractive({ useHandCursor: true });
+  // --- the rows of choices ---
 
-      text.on(Phaser.Input.Events.GAMEOBJECT_POINTER_DOWN, () => this.showChapter(index));
-      return text;
+  /** A plate with a label in it: the shape a chapter and a tab both take. */
+  private plate(x: number, y: number, label: string, onPress: () => void, width?: number): Plate {
+    const text = this.add
+      .text(0, 0, label, {
+        fontFamily: 'system-ui, sans-serif',
+        fontSize: INFO.tabSize,
+        color: COLORS.muted,
+      })
+      .setOrigin(0.5)
+      .setDepth(DEPTH.ui + 2);
+    const w = width ?? Math.ceil(text.width) + INFO.tabPadX * 2;
+    const box = this.add
+      .rectangle(x + w / 2, y + INFO.tabHeight / 2, w, INFO.tabHeight, COLORS.panel, 0.9)
+      .setStrokeStyle(1, COLORS.panelEdge, 1)
+      .setDepth(DEPTH.ui + 1)
+      .setInteractive({ useHandCursor: true });
+    text.setPosition(box.x, box.y);
+    box.on(Phaser.Input.Events.GAMEOBJECT_POINTER_DOWN, onPress);
+    return { box, label: text };
+  }
+
+  /** Lays plates left to right, wrapping, from `top`; returns the height used. */
+  private row(
+    left: number,
+    top: number,
+    width: number,
+    labels: readonly string[],
+    onPress: (index: number) => void,
+  ): { plates: Plate[]; height: number } {
+    let x = left;
+    let y = top;
+    const plates = labels.map((label, index) => {
+      const made = this.plate(x, y, label, () => onPress(index));
+      if (x > left && x + made.box.width > left + width) {
+        // Over the edge: this one starts the next row.
+        x = left;
+        y += INFO.tabHeight + INFO.tabGap;
+        made.box.setPosition(x + made.box.width / 2, y + INFO.tabHeight / 2);
+        made.label.setPosition(made.box.x, made.box.y);
+      }
+      x += made.box.width + INFO.tabGap;
+      return made;
+    });
+    return { plates, height: plates.length > 0 ? y - top + INFO.tabHeight : 0 };
+  }
+
+  /** The contents list down the left: a plate per chapter. */
+  private buildSideContents(left: number, width: number): void {
+    this.tocPlates = this.chapters.map((entry, index) =>
+      this.plate(
+        left,
+        INFO.contentTop + index * (INFO.tocItemHeight + INFO.tocItemGap),
+        entry.title,
+        () => this.showChapter(index),
+        width,
+      ),
+    );
+    this.tocEntries = this.tocPlates.map((p) => p.label);
+  }
+
+  /** The contents as a row of their own, on a narrow screen. */
+  private buildTopContents(left: number, width: number): number {
+    const { plates, height } = this.row(
+      left,
+      INFO.contentTop,
+      width,
+      this.chapters.map((c) => c.title),
+      (index) => this.showChapter(index),
+    );
+    this.tocPlates = plates;
+    this.tocEntries = plates.map((p) => p.label);
+    return height;
+  }
+
+  /** The open chapter's tabs, over the page. Nothing for a one-tab chapter. */
+  private buildTabs(): number {
+    for (const plate of this.tabPlates) {
+      plate.box.destroy();
+      plate.label.destroy();
+    }
+    this.tabPlates = [];
+    this.tabEntries = [];
+
+    const tabs = this.chapters[this.chapter]?.tabs ?? [];
+    if (tabs.length <= 1) {
+      return 0;
+    }
+
+    const { plates, height } = this.row(
+      this.contentLeft,
+      this.tabsTop,
+      this.contentWidth,
+      tabs.map((tab) => tab.title),
+      (index) => this.showTab(index),
+    );
+    this.tabPlates = plates;
+    this.tabEntries = plates.map((p) => p.label);
+    return height + INFO.tabsBottomGap;
+  }
+
+  /** Lights the chosen plate in a row and dims the rest. */
+  private static light(plates: readonly Plate[], active: number, edge: number): void {
+    plates.forEach((plate, i) => {
+      const on = i === active;
+      plate.box.setFillStyle(on ? COLORS.panelActive : COLORS.panel, on ? 1 : 0.9);
+      plate.box.setStrokeStyle(on ? 2 : 1, on ? edge : COLORS.panelEdge, 1);
+      plate.label.setColor(on ? COLORS.text : COLORS.muted);
+      plate.label.setAlpha(on ? 1 : 0.8);
     });
   }
 
-  /** Lays a chapter out and puts the page back to the top. */
+  // --- the page ---
+
+  /** Opens a chapter on its first tab. */
   private showChapter(index: number): void {
     this.chapter = Phaser.Math.Wrap(index, 0, this.chapters.length);
+    // A chapter lights red and a tab blue, so the two rows read apart when
+    // a narrow screen stacks them.
+    InfoScene.light(this.tocPlates, this.chapter, COLORS.accentFill);
+
+    const tabsHeight = this.buildTabs();
+    this.viewTop = this.tabsTop + tabsHeight;
+    this.viewHeight = Math.max(40, this.viewBottom - this.viewTop);
+    this.pageCam.setViewport(this.contentLeft, this.viewTop, this.contentWidth, this.viewHeight);
+
+    this.showTab(0);
+  }
+
+  /** Lays a tab's cards out and puts the page back to the top. */
+  private showTab(index: number): void {
+    const tabs = this.chapters[this.chapter]?.tabs ?? [];
+    this.tab = tabs.length > 0 ? Phaser.Math.Wrap(index, 0, tabs.length) : 0;
+    InfoScene.light(this.tabPlates, this.tab, GUIDE_TONES.info.edge);
     this.scrollY = 0;
 
     this.page.removeAll(true);
-    const height = this.layout(this.chapters[this.chapter]?.sections ?? []);
+    const height = this.layout(tabs[this.tab]?.cards ?? []);
     this.maxScroll = Math.max(0, height - this.viewHeight);
 
-    this.tocEntries.forEach((entry, i) => {
-      const active = i === this.chapter;
-      entry.setColor(active ? COLORS.accent : COLORS.muted);
-      entry.setAlpha(active ? 1 : 0.75);
-    });
-
+    // Everything but the page is drawn by the main camera only.
+    this.pageCam.ignore(this.children.list.filter((child) => child !== this.page));
     this.buildScrollbar();
     this.applyScroll();
   }
 
-  /** Stacks the sections into the page; returns how tall it came out. */
-  private layout(sections: readonly GuideSection[]): number {
-    let y = this.viewTop;
-
-    sections.forEach((section, index) => {
+  /** Stacks the cards into the page; returns how tall it came out. */
+  private layout(cards: readonly GuideCard[]): number {
+    let y = 0;
+    cards.forEach((card, index) => {
       if (index > 0) {
-        y += INFO.sectionGap;
+        y += INFO.cardGap;
       }
+      y += this.drawCard(card, y);
+    });
+    return y;
+  }
 
-      const heading = this.add.text(this.contentLeft, y, section.heading, {
+  /**
+   * One card: a bordered panel with a bar down its left side in the card's
+   * colour, the title in that colour, its facts smaller and lighter, then
+   * its lines, each with a bullet and a hanging indent.
+   */
+  private drawCard(card: GuideCard, top: number): number {
+    const tone = GUIDE_TONES[card.tone];
+    const width = this.contentWidth;
+    const innerX = INFO.cardBar + INFO.cardPad;
+    const innerWidth = width - innerX - INFO.cardPad;
+    const texts: Phaser.GameObjects.Text[] = [];
+    let y = top + INFO.cardPad;
+
+    const heading = this.add.text(innerX, y, card.title, {
+      fontFamily: 'system-ui, sans-serif',
+      fontSize: INFO.cardTitleSize,
+      fontStyle: 'bold',
+      color: tone.title,
+      wordWrap: { width: innerWidth },
+    });
+    texts.push(heading);
+    y += heading.height;
+
+    if (card.facts.length > 0) {
+      y += 6;
+      const facts = this.add.text(innerX, y, card.facts.join('\n'), {
         fontFamily: 'system-ui, sans-serif',
-        fontSize: INFO.headingSize,
-        color: COLORS.accent,
+        fontSize: INFO.factSize,
+        color: INFO.factColor,
+        lineSpacing: 4,
+        wordWrap: { width: innerWidth },
       });
-      this.page.add(heading);
-      y += heading.height + INFO.headingGap;
+      texts.push(facts);
+      y += facts.height;
+    }
 
-      const body = this.add.text(this.contentLeft, y, [...section.lines], {
+    const bullet = 14;
+    card.lines.forEach((line, index) => {
+      y += index === 0 ? 10 : INFO.lineSpacing;
+      texts.push(
+        this.add.text(innerX, y, '•', {
+          fontFamily: 'system-ui, sans-serif',
+          fontSize: INFO.lineSize,
+          color: tone.title,
+        }),
+      );
+      const body = this.add.text(innerX + bullet, y, line, {
         fontFamily: 'system-ui, sans-serif',
         fontSize: INFO.lineSize,
         color: COLORS.text,
-        lineSpacing: INFO.lineSpacing,
-        wordWrap: { width: this.contentWidth },
+        lineSpacing: 4,
+        wordWrap: { width: innerWidth - bullet },
       });
-      this.page.add(body);
+      texts.push(body);
       y += body.height;
     });
 
-    return y - this.viewTop;
+    const height = y + INFO.cardPad - top;
+    const panel = this.add.graphics();
+    panel.fillStyle(INFO.cardFill, INFO.cardFillAlpha);
+    panel.fillRoundedRect(0, top, width, height, INFO.cardRadius);
+    panel.lineStyle(INFO.cardEdge, tone.edge, 0.85);
+    panel.strokeRoundedRect(0, top, width, height, INFO.cardRadius);
+    panel.fillStyle(tone.edge, 1);
+    panel.fillRoundedRect(0, top, INFO.cardBar, height, {
+      tl: INFO.cardRadius,
+      bl: INFO.cardRadius,
+      tr: 0,
+      br: 0,
+    });
+
+    // The panel first, so it sits under its own words.
+    this.page.add(panel);
+    this.page.add(texts);
+    return height;
   }
 
   private buildScrollbar(): void {
@@ -204,7 +437,7 @@ export class InfoScene extends Phaser.Scene {
       return;
     }
 
-    const x = this.contentLeft + this.contentWidth + 16;
+    const x = this.contentLeft + this.contentWidth + 8;
     this.barTrack = this.add
       .rectangle(x, this.viewTop, 3, this.viewHeight, COLORS.panelEdge, 1)
       .setOrigin(0.5, 0)
@@ -218,6 +451,7 @@ export class InfoScene extends Phaser.Scene {
       .rectangle(x, this.viewTop, 3, thumbHeight, COLORS.accentFill, 1)
       .setOrigin(0.5, 0)
       .setDepth(DEPTH.ui + 2);
+    this.pageCam.ignore([this.barTrack, this.bar]);
   }
 
   /** A tappable 닫기, for touch screens with no Esc key. */
@@ -267,6 +501,7 @@ export class InfoScene extends Phaser.Scene {
 
   private onKeyDown(event: KeyboardEvent): void {
     const chaptered = this.chapters.length > 1;
+    const tabbed = (this.chapters[this.chapter]?.tabs.length ?? 0) > 1;
 
     switch (event.code) {
       case 'ArrowUp':
@@ -284,6 +519,18 @@ export class InfoScene extends Phaser.Scene {
           this.showChapter(this.chapter + 1);
         } else {
           this.scrollBy(INFO.keyStep);
+        }
+        break;
+      case 'ArrowLeft':
+      case 'KeyA':
+        if (tabbed) {
+          this.showTab(this.tab - 1);
+        }
+        break;
+      case 'ArrowRight':
+      case 'KeyD':
+        if (tabbed) {
+          this.showTab(this.tab + 1);
         }
         break;
       case 'PageUp':
@@ -318,7 +565,7 @@ export class InfoScene extends Phaser.Scene {
   }
 
   private applyScroll(): void {
-    this.page.setY(-this.scrollY);
+    this.pageCam.setScroll(0, this.scrollY);
 
     if (this.bar) {
       const travel = this.viewHeight - this.bar.height;

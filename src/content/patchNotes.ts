@@ -15,6 +15,40 @@ export interface PatchNote {
 
 export const PATCH_NOTES: readonly PatchNote[] = [
   {
+    version: '0.27',
+    date: '2026-10-15',
+    changes: {
+      ko: [
+        '게임 가이드를 새로 정리했습니다 — 기본 · 전투 · 스킬 · 적 · 아이템 · 영구 성장 여섯 장으로 나누고, 장마다 하위 탭을 두었습니다. ↑↓로 장, ←→로 탭을 넘기고, 장과 탭은 눌러서도 고를 수 있습니다.',
+        '내용은 테두리를 두른 카드로 보여 주고, 다루는 대상에 따라 색을 나눴습니다 — 스킬은 금색, 적은 빨간색, 희귀와 속성은 주황색, 장비는 구리색, 구슬은 보라색.',
+        '빠져 있던 내용을 채웠습니다 — 무작위 스킬, 하얀 망고, 치명타와 피해 계산, 난이도 상승, 우두머리가 남기는 것, 속성 전체와 무기 티어별 수치, 검마다의 고정 속성과 드랍 확률, 구슬, 뼈다귀, 패시브, 인벤토리, 랭킹.',
+        '옛 내용을 바로잡았습니다 — 첫 스킬은 슬롯머신이 아니라 카드 3장 중에서 고르고, 무기 착용은 인벤토리에서 합니다.',
+        '패치노트도 버전마다 카드로 나뉘어 읽기 쉬워졌고, 스크롤할 때 내용이 제목 위로 넘쳐 보이던 문제가 없어졌습니다.',
+      ],
+      en: [
+        'The guide has been rewritten — six chapters (Basics, Combat, Skills, Enemies, Items, Progression), each with its own tabs. ↑↓ turn the chapter and ←→ the tab, and both can be tapped as well.',
+        'Everything is laid out on bordered cards, coloured by what they are about — skills gold, enemies red, rares and affixes orange, gear copper, orbs purple.',
+        'What was missing is in — random skills, the White Mango, crits and how damage is worked out, the difficulty ramp, what a Boss leaves, every affix with its weapon tiers, each sword’s implicit and drop chance, orbs, Bones, passives, the Inventory and the ranking.',
+        'Outdated lines are fixed — the first skill is picked from three cards rather than a slot machine, and weapons are equipped from the Inventory.',
+        'The patch notes are a card per version too, and scrolling no longer lets the page show over the title.',
+      ],
+      ja: [
+        '遊び方を作り直しました — 基本 · 戦闘 · スキル · 敵 · アイテム · 永続成長の 6 章に分け、章ごとにタブを設けました。↑↓ で章、←→ でタブを切り替え、章とタブはタップでも選べます。',
+        '内容は枠付きのカードで表示し、扱う対象ごとに色を分けました — スキルは金、敵は赤、レアと属性は橙、装備は銅、球は紫。',
+        '抜けていた内容を補いました — ランダムスキル、白いマンゴー、クリティカルと被害の計算、難易度の上昇、ボスが残すもの、全属性と武器のティア別数値、剣ごとの固定属性とドロップ率、球、骨、パッシブ、インベントリ、ランキング。',
+        '古い内容を直しました — 最初のスキルはスロットマシンではなくカード 3 枚から選び、武器はインベントリで装備します。',
+        'パッチノートもバージョンごとのカードになって読みやすくなり、スクロール時に内容がタイトルの上にはみ出して見える問題がなくなりました。',
+      ],
+      zh: [
+        '重新整理了游戏指南 — 分为基础 · 战斗 · 技能 · 敌人 · 道具 · 永久成长六章，每章都有子标签。↑↓ 切换章节，←→ 切换标签，也可以直接点击章节和标签。',
+        '内容以带边框的卡片显示，并按对象区分颜色 — 技能金色、敌人红色、稀有与属性橙色、装备铜色、宝珠紫色。',
+        '补上了缺失的内容 — 随机技能、白芒果、暴击与伤害计算、难度提升、首领留下的东西、全部属性及武器各阶数值、每把剑的固定属性与掉落率、宝珠、骨头、被动、背包、排行榜。',
+        '修正了过时的内容 — 第一个技能是从 3 张卡中选择而不是老虎机，武器在背包中装备。',
+        '更新日志也按版本分成卡片，更易阅读，滚动时内容不再溢出到标题上方。',
+      ],
+    },
+  },
+  {
     version: '0.26',
     date: '2026-10-15',
     changes: {

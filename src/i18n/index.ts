@@ -24,7 +24,7 @@ import type { Language, Strings } from '@/i18n/types';
 import { objectParticle, subjectParticle, towardParticle } from '@/systems/korean';
 import { SKILLS, type SkillId, type SkillTag } from '@/weapons/skills';
 
-export type { Language, Strings, GuideBlock } from '@/i18n/types';
+export type { Language, Strings, GuideCardCopy } from '@/i18n/types';
 
 const TABLES: Record<Language, Strings> = { ko, en, ja, zh };
 

@@ -36,31 +36,35 @@ const choose = async (key, id) => {
 };
 /** What the info page is showing, and where it is scrolled to. */
 const page = () => scene('InfoScene', `
-  // The guide shows one chapter at a time: shown is what is on screen, and
-  // text is every chapter, which is what the coverage checks read.
+  // The guide shows one tab at a time: shown is what is on screen, and
+  // text is every chapter, tab and card, which is what the coverage checks read.
   const NL = String.fromCharCode(10);
   const all = (s.chapters ?? []).map(
-    c => c.title + NL + c.sections.map(x => x.heading + NL + x.lines.join(NL)).join(NL)
+    c => c.title + NL + c.tabs.map(tb => tb.title + NL + tb.cards.map(
+      k => [k.title, ...k.facts, ...k.lines].join(NL)).join(NL)).join(NL)
   ).join(NL);
   return {
     topic: s.payload.topic,
     title: s.children.list.filter(o => o.type === 'Text').map(o => o.text)[0],
     chapters: (s.chapters ?? []).map(c => c.title),
     chapter: s.chapter,
+    tab: s.tab,
+    tabs: (s.tabEntries ?? []).map(e => e.text),
     toc: (s.tocEntries ?? []).map(e => ({ text: e.text, alpha: e.alpha })),
     // The patch notes have outgrown what one evaluate can hand back whole,
     // and these checks only ever look for phrases in it — so the phrases are
     // looked for in the page and the answers sent, not every character.
-    shown: s.page.list.map(o => o.text).join(NL).slice(0, 16000),
+    shown: s.page.list.filter(o => o.type === 'Text').map(o => o.text).join(NL).slice(0, 16000),
     text: all.slice(0, 16000),
     has: (() => {
-      const whole = all + NL + s.page.list.map(o => o.text).join(NL);
+      const whole = all + NL + s.page.list.filter(o => o.type === 'Text').map(o => o.text).join(NL);
       return { versions: whole.includes('v0.9'), rares: whole.includes('희귀 적') };
     })(),
     blocks: s.page.list.length,
     scrollY: Math.round(s.scrollY),
     maxScroll: Math.round(s.maxScroll),
-    pageY: Math.round(s.page.y),
+    // The page stays put and its own camera scrolls over it.
+    camY: Math.round(s.pageCam.scrollY),
     barY: s.bar ? Math.round(s.bar.y) : null,
   };
 `);
@@ -117,8 +121,8 @@ await cdp.tap('ArrowDown', 40, 'ArrowDown');
 await sleep(250);
 const scrolled = await page();
 check('the arrow keys scroll it',
-  scrolled.scrollY > 0 && scrolled.pageY === -scrolled.scrollY,
-  `scrollY=${scrolled.scrollY}, page at ${scrolled.pageY}`);
+  scrolled.scrollY > 0 && scrolled.camY === scrolled.scrollY,
+  `scrollY=${scrolled.scrollY}, page camera at ${scrolled.camY}`);
 check('the scrollbar follows', scrolled.barY > notes.barY, `bar ${notes.barY} -> ${scrolled.barY}`);
 
 await cdp.tap('ArrowUp', 38, 'ArrowUp');
@@ -151,58 +155,143 @@ check('Esc closes it and hands the title back', closed.info === false && closed.
 // --- 5. the guide, from the title ---
 await choose('MenuScene', 'guide');
 const guide = await page();
-console.log('guide chapters:', guide.chapters.join(' | '));
+console.log('guide chapters:', guide.chapters.join(' | '), '— tabs:', guide.tabs.join(' | '));
 check('게임 가이드 opens', guide.topic === 'guide' && guide.title === '게임 가이드');
-check('it has a contents list of 목표/조작/성장/스킬/적',
-  guide.chapters.join('/') === '목표/조작/성장/스킬/적' && guide.toc.length === 5,
+check('it has a contents list of 기본/전투/스킬/적/아이템/영구 성장',
+  guide.chapters.join('/') === '기본/전투/스킬/적/아이템/영구 성장' && guide.toc.length === 6,
   guide.chapters.join(' / '));
-check('it covers the whole game',
-  ['목표', '조작', '모바일', '성장', '스킬', '적', '희귀', '드랍', '저장'].every(h => guide.text.includes(h)),
-  guide.chapters.join(' / '));
-check('the skills are listed with their tags and upgrades',
-  ['타격', '화염구', '연쇄번개', '얼음창', '공허구체'].every(n => guide.text.includes(n)) &&
-  guide.text.includes('강화:'),
-  '5 skills');
+check('and each chapter opens on a row of its own tabs',
+  guide.tab === 0 && guide.tabs.join('/') === '목표/조작/모바일/저장', guide.tabs.join(' / '));
+
+// 누락 검사: everything the tables hold is in the guide, read off the tables
+// themselves — a new enemy, 속성, 구슬, 뼈다귀, sword, 패시브 or skill
+// that the guide does not mention fails here.
+const coverage = await scene('InfoScene', `
+  const c = window.config;
+  const NL = String.fromCharCode(10);
+  const cards = s.chapters.flatMap(ch => ch.tabs.flatMap(tb => tb.cards));
+  const words = s.chapters.flatMap(ch => [ch.title, ...ch.tabs.flatMap(tb => [tb.title,
+    ...tb.cards.flatMap(k => [k.title, ...k.facts, ...k.lines])])]);
+  const all = words.join(NL);
+  const titles = new Set(cards.map(k => k.title));
+  const names = {
+    enemies: Object.values(c.ENEMY_KINDS).map(e => e.name),
+    affixes: Object.values(c.AFFIXES).map(a => a.name),
+    orbs: Object.values(c.ORBS).map(o => o.name),
+    bones: Object.values(c.BONES).map(b => b.name),
+    gear: Object.values(c.GEAR).map(g => g.name),
+    passives: Object.values(c.PASSIVES).map(p => p.name),
+  };
+  const missing = Object.fromEntries(Object.entries(names).map(([k, list]) => [k, list.filter(n => !titles.has(n))]));
+  const skillChapter = s.chapters.find(ch => ch.id === 'skills');
+  return {
+    missing,
+    skillTabs: skillChapter.tabs.length,
+    skillCards: skillChapter.tabs.every(tb => tb.cards.length > 0 && tb.cards[0].title === tb.title),
+    skills: Object.keys(c.SKILL_BASE).length,
+    unfilled: words.filter(w => /[{}]/.test(w)).slice(0, 5),
+    broken: words.filter(w => /undefined|NaN/.test(w)).slice(0, 5),
+    emptyTabs: s.chapters.flatMap(ch => ch.tabs.filter(tb => tb.cards.length === 0).map(tb => tb.id)),
+    has: ['하얀 망고', '무작위 스킬', '제단', '신성한 조각', '치명타', '인벤토리', '랭킹', '고정']
+      .filter(w => !all.includes(w)),
+  };
+`);
+console.log('coverage:', JSON.stringify(coverage));
+check('every enemy, 속성, 구슬, 뼈다귀, sword and 패시브 has a card of its own',
+  Object.values(coverage.missing).every(list => list.length === 0), JSON.stringify(coverage.missing));
+check('every skill has a tab, opening on its own card',
+  coverage.skillTabs === coverage.skills && coverage.skillCards,
+  `${coverage.skillTabs} tabs for ${coverage.skills} skills`);
+check('and the rest of the game is covered too',
+  coverage.has.length === 0, coverage.has.length ? `missing ${coverage.has.join(', ')}` : 'all there');
+check('no tab is empty, and no placeholder is left unfilled',
+  coverage.emptyTabs.length === 0 && coverage.unfilled.length === 0 && coverage.broken.length === 0,
+  JSON.stringify({ empty: coverage.emptyTabs, unfilled: coverage.unfilled, broken: coverage.broken }));
+
 const tuned = await ev(`(() => {
   const c = window.config;
-  const pct = (n) => (n * 100).toFixed(n * 100 < 1 ? 1 : 0).replace(/\.0$/, '') + '%';
-  return { rare: pct(c.RARE.chance), skill: pct(c.SKILL_DROP.chance), potion: pct(c.POTION.chance) };
+  const pct = (n) => Number((n * 100).toFixed(2)) + '%';
+  return { rare: pct(c.RARE.chance), skill: pct(c.SKILL_DROP.chance), potion: pct(c.POTION.chance),
+           mango: pct(c.MANGO.chance), hp: String(c.ENEMY_KINDS.brute.maxHp) };
 })()`);
 check('the numbers come from the live config',
   guide.text.includes(tuned.rare) && guide.text.includes(tuned.skill) &&
-    guide.text.includes(tuned.potion),
-  `rare ${tuned.rare}, skill ${tuned.skill}, potion ${tuned.potion}`);
+    guide.text.includes(tuned.potion) && guide.text.includes(tuned.mango) && guide.text.includes(tuned.hp),
+  `rare ${tuned.rare}, skill ${tuned.skill}, potion ${tuned.potion}, mango ${tuned.mango}, 거구 ${tuned.hp}`);
 
-// One chapter at a time, and the arrows walk the contents.
-check('only the chosen chapter is on the page',
-  guide.chapter === 0 && guide.shown.includes('목표') && !guide.shown.includes('공허구체'),
-  `${guide.shown.split('\n').length} blocks of ${guide.text.split('\n').length}`);
-check('the chosen entry is the lit one',
+// One tab at a time; ↑↓ walk the chapters, ←→ the tabs.
+check('only the chosen tab is on the page',
+  guide.chapter === 0 && guide.shown.includes('목표') && !guide.shown.includes('공허구체') &&
+    !guide.shown.includes('WASD'),
+  `${guide.shown.split('\n').length} lines shown`);
+check('the chosen chapter is the lit one',
   guide.toc[0].alpha === 1 && guide.toc[1].alpha < 1,
   guide.toc.map(e => `${e.text}:${e.alpha}`).join(' '));
 await shot('info-03-guide');
 
+await cdp.tap('ArrowRight', 39, 'ArrowRight');
+await sleep(250);
+const nextTab = await page();
+check('→ opens the next tab of the same chapter',
+  nextTab.chapter === 0 && nextTab.tab === 1 && nextTab.shown.includes('WASD'),
+  nextTab.tabs[nextTab.tab]);
+
 await cdp.tap('ArrowDown', 40, 'ArrowDown');
 await sleep(250);
 const second = await page();
-check('↓ opens the next chapter', second.chapter === 1 && second.shown !== guide.shown,
-  guide.chapters[second.chapter]);
+check('↓ opens the next chapter, on its first tab', second.chapter === 1 && second.tab === 0 &&
+  second.shown !== guide.shown, `${guide.chapters[second.chapter]} · ${second.tabs[second.tab]}`);
 check('the page starts at the top of it', second.scrollY === 0);
 
 await cdp.tap('ArrowDown', 40, 'ArrowDown');
-await cdp.tap('ArrowDown', 40, 'ArrowDown');
 await sleep(250);
 const skills = await page();
-check('the 스킬 chapter lists all five',
-  skills.chapter === 3 &&
-  ['타격', '화염구', '연쇄번개', '얼음창', '공허구체'].every(n => skills.shown.includes(n)),
-  guide.chapters[skills.chapter]);
+check('the 스킬 chapter has a tab per skill',
+  skills.chapter === 2 && skills.tabs.length === coverage.skills &&
+    ['타격', '화염구', '연쇄번개', '얼음창', '공허구체', '낙뢰'].every(n => skills.tabs.includes(n)),
+  skills.tabs.join(' / '));
+check('and the open one shows its numbers and upgrades',
+  /DPS/.test(skills.shown) && /강화:/.test(skills.shown), skills.shown.split('\n').slice(0, 3).join(' | '));
 await shot('info-03b-guide-skills');
+
+// A tab is pressed as well as stepped to.
+const tabAt = await scene('InfoScene', `
+  const p = s.tabPlates[2].box;
+  return { x: Math.round(p.x), y: Math.round(p.y) };
+`);
+await clickAt(tabAt.x, tabAt.y);
+const clicked = await page();
+check('clicking a tab opens it', clicked.chapter === 2 && clicked.tab === 2, clicked.tabs[clicked.tab]);
 
 await cdp.tap('ArrowUp', 38, 'ArrowUp');
 await sleep(250);
 const backUp = await page();
-check('↑ walks back up the contents', backUp.chapter === 2, guide.chapters[backUp.chapter]);
+check('↑ walks back up the contents', backUp.chapter === 1, guide.chapters[backUp.chapter]);
+
+// Every tab, drawn: nothing runs past the page's right edge, every card is
+// a card (a panel under its words), and the titles are in colour.
+const drawn = await scene('InfoScene', `
+  const out = { tabs: 0, over: [], plain: [], panels: 0 };
+  s.chapters.forEach((ch, ci) => {
+    s.showChapter(ci);
+    ch.tabs.forEach((tb, ti) => {
+      s.showTab(ti);
+      out.tabs += 1;
+      const texts = s.page.list.filter(o => o.type === 'Text');
+      const panels = s.page.list.filter(o => o.type === 'Graphics');
+      out.panels += panels.length;
+      const right = Math.max(...texts.map(o => o.x + o.displayWidth));
+      if (right > s.contentWidth + 1) out.over.push(ch.id + '/' + tb.id + ' ' + Math.round(right));
+      if (panels.length !== tb.cards.length) out.plain.push(ch.id + '/' + tb.id);
+    });
+  });
+  s.showChapter(0);
+  return out;
+`);
+console.log('drawn:', JSON.stringify(drawn));
+check('every tab draws inside the page, a bordered panel per card',
+  drawn.tabs > 15 && drawn.over.length === 0 && drawn.plain.length === 0,
+  `${drawn.tabs} tabs, ${drawn.panels} cards${drawn.over.length ? ', over: ' + drawn.over.join(' ') : ''}${drawn.plain.length ? ', bare: ' + drawn.plain.join(' ') : ''}`);
 await cdp.tap('Escape', 27, 'Escape');
 await sleep(500);
 
@@ -219,7 +308,7 @@ await sleep(500);
 await choose('MenuScene', 'guide');
 const third = await page();
 check('and the guide opens again after that',
-  third.topic === 'guide' && third.chapters.length === 5 && third.toc.length === 5,
+  third.topic === 'guide' && third.chapters.length === 6 && third.toc.length === 6,
   `${third.chapters.length} chapters`);
 await cdp.tap('Escape', 27, 'Escape');
 await sleep(500);

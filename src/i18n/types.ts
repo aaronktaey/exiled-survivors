@@ -8,10 +8,41 @@
  */
 export type Language = 'ko' | 'en' | 'ja' | 'zh';
 
-export interface GuideBlock {
-  readonly heading: string;
+/** One card of the guide as a locale writes it: a title and its lines. */
+export interface GuideCardCopy {
+  readonly title: string;
   readonly lines: readonly string[];
 }
+
+/** The guide's chapters, down the contents list. */
+export type GuideChapterId = 'basics' | 'combat' | 'skills' | 'enemies' | 'items' | 'progress';
+
+/**
+ * Every tab that is written out in prose. The 스킬 chapter's tabs are the
+ * skills themselves, named by the skills, so they are not here.
+ */
+export type GuideTabId =
+  | 'goal'
+  | 'controls'
+  | 'mobile'
+  | 'saving'
+  | 'levels'
+  | 'getSkills'
+  | 'damage'
+  | 'common'
+  | 'boss'
+  | 'fugitive'
+  | 'rares'
+  | 'difficulty'
+  | 'dropRules'
+  | 'field'
+  | 'gear'
+  | 'affixes'
+  | 'orbs'
+  | 'bones'
+  | 'passives'
+  | 'inventory'
+  | 'ranking';
 
 export interface Strings {
   /** What this language calls itself, for the 설정 row. */
@@ -320,6 +351,9 @@ export interface Strings {
     readonly guideTitle: string;
     readonly hintKeyboard: string;
     readonly hintTouch: string;
+    /** The guide's own, which has chapters and tabs to walk as well. */
+    readonly guideHintKeyboard: string;
+    readonly guideHintTouch: string;
   };
 
   readonly credits: {
@@ -379,32 +413,58 @@ export interface Strings {
     readonly passiveDetails?: Record<string, string>;
   };
 
-  /** 게임 가이드. The builder fills the placeholders from the live config. */
-  /** Chapter names for the guide's table of contents. */
-  readonly guideChapters: {
-    readonly goal: string;
-    readonly controls: string;
-    readonly growth: string;
-    readonly skills: string;
-    readonly enemies: string;
-  };
+  /**
+   * 게임 가이드: chapters down the side, tabs across each chapter, cards on
+   * each tab. The builder fills every {placeholder} from the live config, so
+   * a number is never written here.
+   */
+  readonly guideChapters: Record<GuideChapterId, string>;
+  readonly guideTabs: Record<GuideTabId, string>;
 
   readonly guide: {
-    readonly goal: GuideBlock;
-    readonly controls: GuideBlock;
-    readonly mobile: GuideBlock;
-    readonly growth: GuideBlock;
-    readonly skills: { readonly heading: string; readonly stats: string; readonly upgrades: string; readonly starter: string };
-    readonly enemies: {
-      readonly heading: string;
-      readonly stats: string;
+    /** The prose each tab opens on; the cards built from tables follow it. */
+    readonly cards: Record<GuideTabId, readonly GuideCardCopy[]>;
+    /** The pieces the cards built from the tables are put together from. */
+    readonly labels: {
+      /** "피해 {damage} · 초당 {rate}회 · DPS {dps}" */
+      readonly skillStats: string;
+      readonly skillRange: string;
+      /** For a skill that throws: its speed, and that reach follows it. */
+      readonly skillProjectile: string;
+      readonly skillUpgrades: string;
+      /** When the per-skill balance dial is not 1. */
+      readonly skillScale: string;
+      readonly enemyStats: string;
       readonly fromStart: string;
       readonly unlocksAt: string;
+      /** A 사수's bolt: {damage}, {every} seconds, {range} px. */
+      readonly shot: string;
+      /** A 우두머리's ring: {count} bolts of {damage}, every {every} seconds. */
+      readonly volley: string;
       /** A line each on how that kind behaves, keyed by enemy kind. */
-      readonly notes: Record<string, string>;
+      readonly enemyNotes: Record<string, string>;
+      /** What an 속성 does on a rare: {detail}. */
+      readonly affixEnemy: string;
+      /** What it does on a weapon, rung by rung: {ladder}. */
+      readonly affixWeapon: string;
+      /** One rung of that ladder: {tier}, {value}. */
+      readonly affixRung: string;
+      readonly affixRangedOnly: string;
+      readonly affixWeaponOnly: string;
+      readonly affixEnemyOnly: string;
+      /** Drop chances: off any kill, off a 우두머리 only. */
+      readonly chanceKill: string;
+      readonly chanceBoss: string;
+      readonly gearTier: string;
+      readonly gearImplicit: string;
+      /** Its share of what a 우두머리 leaves: {share}. */
+      readonly gearBossShare: string;
+      readonly gearFromKill: string;
+      readonly gearBossOnly: string;
+      readonly boneStack: string;
+      readonly boneSingle: string;
+      /** {detail} a rank, up to {max} ranks. */
+      readonly passiveRank: string;
     };
-    readonly rares: { readonly heading: string; readonly lines: readonly string[] };
-    readonly drops: { readonly heading: string; readonly lines: readonly string[] };
-    readonly saving: GuideBlock;
   };
 }

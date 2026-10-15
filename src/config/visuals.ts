@@ -464,15 +464,73 @@ export const INFO = {
   tocWidth: 180,
   /** ...which gives up width first, but never below this. */
   tocMinWidth: 96,
-  tocLineHeight: 38,
+  /** One chapter's plate in the contents list, and the gap under it. */
+  tocItemHeight: 34,
+  tocItemGap: 6,
+  /** Space between the contents list and the page beside it. */
+  tocGutter: 14,
   headingSize: '20px',
   headingGap: 8,
   lineSize: '16px',
   lineSpacing: 7,
   sectionGap: 22,
+  /** The row of tabs over a chapter's page, wrapping onto more rows. */
+  tabHeight: 30,
+  tabGap: 6,
+  tabPadX: 12,
+  tabSize: '15px',
+  /** Air between the last row of tabs and the page under it. */
+  tabsBottomGap: 10,
+  /** One card on the page: its padding, the gap to the next, its corners. */
+  cardPad: 14,
+  cardGap: 12,
+  cardRadius: 8,
+  cardEdge: 1.5,
+  /** The coloured bar down a card's left side. */
+  cardBar: 4,
+  cardFill: 0x141924,
+  cardFillAlpha: 0.92,
+  cardTitleSize: '18px',
+  /** A card's quick facts, under its title, smaller and lighter. */
+  factSize: '14px',
+  factColor: '#b9c7e0',
   /** How far one press of an arrow key moves the page. */
   keyStep: 48,
 } as const;
+
+/**
+ * What a guide card is about, which is what colour its edge and title are:
+ * a skill reads gold, an enemy red, an item green — the same colours those
+ * things are on the field, so the page and the run agree.
+ */
+export type GuideTone =
+  | 'info'
+  | 'tip'
+  | 'skill'
+  | 'enemy'
+  | 'boss'
+  | 'rare'
+  | 'item'
+  | 'gear'
+  | 'orb'
+  | 'bone'
+  | 'passive'
+  | 'patch';
+
+export const GUIDE_TONES: Record<GuideTone, { readonly edge: number; readonly title: string }> = {
+  info: { edge: 0x5ea8ff, title: '#9fd0ff' },
+  tip: { edge: 0x7ef0b0, title: '#9ff5c6' },
+  skill: { edge: 0xffc14d, title: '#ffd27a' },
+  enemy: { edge: 0xe0564a, title: '#ff8a7e' },
+  boss: { edge: 0xffd34d, title: '#ffd34d' },
+  rare: { edge: 0xff8a1f, title: '#ffae2e' },
+  item: { edge: 0x7ef0b0, title: '#9ff5c6' },
+  gear: { edge: 0xc08a3e, title: '#f2d08a' },
+  orb: { edge: 0xb07cff, title: '#d2b6ff' },
+  bone: { edge: 0xd8c79f, title: '#e9e3d2' },
+  passive: { edge: 0x5fd3c0, title: '#a8f0e4' },
+  patch: { edge: 0x5ea8ff, title: '#9fd0ff' },
+};
 
 /**
  * A rare's ring, by how many affixes it carries: pale gold for one, deeper

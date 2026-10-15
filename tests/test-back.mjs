@@ -25,8 +25,12 @@ const probe = (key) => ev(`(() => {
   if (!b) return { has: false };
   const box = b.plate.getBounds();
   const hit = [];
+  // Something the main camera does not draw is drawn by another one, at a
+  // place of its own — the guide's page is — so its world spot means nothing.
+  const main = s.cameras.main;
   const walk = (list) => {
     for (const o of list) {
+      if ((o.cameraFilter & main.id) !== 0) continue;
       if (o.list) walk(o.list);
       if (o === b.plate || o === b.label || !o.visible || o.alpha === 0 || !o.getBounds) continue;
       if (o.type !== 'Text' && !(o.input && o.input.enabled)) continue;
