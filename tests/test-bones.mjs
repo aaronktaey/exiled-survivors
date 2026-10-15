@@ -28,8 +28,8 @@ await sleep(4500);
 
 // --- 1. what each kill is worth in 뼈다귀 ---
 // A kill's own bonus — +10% a 속성 on a rare, +200% for a 우두머리 — raises
-// the 고대 두개골 like any drop, and does not touch the 갈비뼈, which only a
-// 우두머리 leaves. Every number is read off the config.
+// both 뼈다귀 like any drop: the 갈비뼈 comes off any kill now, the same as
+// a 혼돈의 구슬. Every number is read off the config.
 const chances = await ev(`(() => {
   const c = window.config;
   const f = c.boneChanceFor;
@@ -37,7 +37,7 @@ const chances = await ev(`(() => {
   const rare = (n) => 1 + n * c.RARE.dropBonusPerAffix;
   const boss = 1 + c.BOSS.dropBonus;
   return {
-    base: B.skull.fromKill, ribBase: B.rib.fromBoss, rare1: rare(1), rare6: rare(6), boss,
+    base: B.skull.fromKill, ribBase: B.rib.fromKill, chaos: c.ORBS.chaos.chance, rare1: rare(1), rare3: rare(3), rare6: rare(6), boss,
     skullPlain: f(B.skull, { isBoss: false, bonus: 1 }),
     skullRare1: f(B.skull, { isBoss: false, bonus: rare(1) }),
     skullRare6: f(B.skull, { isBoss: false, bonus: rare(6) }),
@@ -55,9 +55,10 @@ check('and off a rare by its 속성, the same bonus as every drop',
   `one 속성 ${(chances.skullRare1 * 100).toFixed(3)}%, six ${(chances.skullRare6 * 100).toFixed(3)}%`);
 check('a 우두머리 raises it too, by the 우두머리 bonus',
   near(chances.skullBoss, chances.base * chances.boss), `${(chances.skullBoss * 100).toFixed(2)}%`);
-check('갈비뼈 comes off a 우두머리 and nothing else, at its own chance and no more',
-  chances.ribBoss === chances.ribBase && chances.ribPlain === 0,
-  `${(chances.ribBoss * 100).toFixed(0)}% off a 우두머리`);
+check('갈비뼈 comes off any kill at a 혼돈의 구슬’s chance, raised like every drop',
+  chances.ribBase > 0 && chances.ribBase === chances.chaos &&
+    near(chances.ribPlain, chances.ribBase * chances.rare3) && near(chances.ribBoss, chances.ribBase * chances.boss),
+  `${(chances.ribBase * 100).toFixed(2)}%, ${(chances.ribBoss * 100).toFixed(2)}% off a 우두머리`);
 
 // --- 2. they land, read right, and go into the drawer ---
 const drops = await run(`

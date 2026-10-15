@@ -68,6 +68,7 @@ const OVERLAYS = [
   ['PassiveScene', '{}'],
   ['AccountScene', '{}'],
   ['ConflictScene', '{}'],
+  ['FilterScene', '{}'],
 ];
 
 for (const [w, h, shape] of [[0, 0, 'landscape'], [420, 860, 'upright']]) {

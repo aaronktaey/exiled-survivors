@@ -75,7 +75,7 @@ wrong shape.
 ## The test harness
 
 `tests/` drives a real Chrome over CDP against the dev server and checks the
-running game, not units. 40 suites, ~1050 checks. It is the only thing that has
+running game, not units. 41 suites, ~1060 checks. It is the only thing that has
 caught most of what has gone wrong here, so run all of it before every commit.
 
 ```sh
@@ -87,7 +87,7 @@ node run-all.mjs test-full test-skills test-balance test-chain test-ice \
   test-i18n test-gear test-passive test-responsive test-stats test-bones \
   test-altar test-slot test-inventory test-locale test-back test-fugitive \
   test-ranking test-skillpick test-mango test-web test-loadout \
-  test-carry test-api test-account test-live
+  test-carry test-api test-account test-live test-filter
 ```
 
 `run-all.mjs` starts Chrome itself (`CHROME_PATH` overrides where it looks),
@@ -245,7 +245,8 @@ Read `git log` for what changed and when. What is not in the log:
   Cloudflare deploys keep working (Actions run on private repos). Confirm
   with the user before changing visibility.
 - **계정 (optional sign-in).** `server/auth.ts`: OAuth 2.0 code flow for
-  Google, Kakao, Facebook and X (`server/providers.ts`), each offered only
+  Google, Facebook and X (`server/providers.ts`; Kakao was taken out on the
+  user's word, 2026-10-15), each offered only
   once its `*_CLIENT_ID`/`*_CLIENT_SECRET` Worker secrets exist; no email is
   asked for. Sessions are an HttpOnly cookie whose hash lives in D1;
   `AUTH_SECRET` signs the 10-minute cookie that carries state and the PKCE
@@ -276,6 +277,12 @@ Read `git log` for what changed and when. What is not in the log:
   Worker secret `ADMIN_USERS` (comma separated; `/api/me` answers
   `admin: true`). A run any F-key changed (`DebugOverlay.used`, kept in the
   save as `devUsed`) goes on neither the ranking nor 내 기록.
+- **아이템 필터.** `config/itemFilter.ts` builds a switch per kind of drop
+  from the tables (구슬, 뼈다귀, swords by base and by rarity, plus potion,
+  skill, 무작위 스킬, 망고, 조각); `systems/ItemFilter.ts` keeps the ones
+  switched off (`STORAGE.itemFilter`, synced with the rest). Every
+  `CombatSystem.drop*At` asks it first, so a switched-off drop never lands —
+  a new drop function must too. `FilterScene` is the title's 필터 icon.
 - **Live update.** Every build ships `version.json` (`{ build }`, the commit
   on CI) and is compiled knowing its own id (`__BUILD_ID__`, vite.config.ts).
   `systems/LiveUpdate.ts` asks every `LIVE_UPDATE.checkEveryMs` and when the

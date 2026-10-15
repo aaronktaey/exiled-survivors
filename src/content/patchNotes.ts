@@ -15,6 +15,40 @@ export interface PatchNote {
 
 export const PATCH_NOTES: readonly PatchNote[] = [
   {
+    version: '0.35',
+    date: '2026-10-15',
+    changes: {
+      ko: [
+        '아이템 필터 — 시작 화면 모서리의 필터에서 아이템마다 켜고 끌 수 있습니다. 끈 아이템은 게임에서 떨어지지 않습니다. 장비는 등급(일반·마법·희귀)과 종류가 모두 켜져 있어야 떨어집니다.',
+        '폭발의 구슬이 우두머리뿐 아니라 모든 적에게서 0.1% 확률로 떨어집니다.',
+        '갈비뼈도 모든 적에게서 혼돈의 구슬과 같은 0.1% 확률로 떨어집니다.',
+        '변화의 구슬 드랍률이 0.5%, 혼돈의 구슬이 0.1%로 바뀌었습니다.',
+        '카카오 로그인을 없앴습니다.',
+      ],
+      en: [
+        'Item Filter — Filter in the corner of the title screen switches each kind of drop on or off. Anything switched off never drops in a run. A weapon drops only when both its rarity (Normal, Magic, Rare) and its kind are on.',
+        'The Explosion Orb now drops from any enemy at 0.1%, not only from Bosses.',
+        'The Rib now drops from any enemy too, at the same 0.1% as the Chaos Orb.',
+        'The Transmutation Orb drops 0.5% of the time and the Chaos Orb 0.1%.',
+        'Kakao sign-in has been removed.',
+      ],
+      ja: [
+        'アイテムフィルター — タイトル画面の隅のフィルターでアイテムごとにオン・オフできます。オフにしたアイテムはゲームで落ちません。装備は等級（ノーマル・マジック・レア）と種類の両方がオンのときだけ落ちます。',
+        '爆発の球がボスだけでなく、すべての敵から 0.1% の確率で落ちるようになりました。',
+        '肋骨もすべての敵から、混沌の球と同じ 0.1% の確率で落ちます。',
+        '変化の球のドロップ率が 0.5%、混沌の球が 0.1% になりました。',
+        'Kakao ログインをなくしました。',
+      ],
+      zh: [
+        '物品过滤 — 在标题画面角落的过滤中可以逐项开关物品。关闭的物品不会在游戏中掉落。装备需等级（普通·魔法·稀有）和种类都开启才会掉落。',
+        '爆炸宝珠现在不只首领，所有敌人都会以 0.1% 几率掉落。',
+        '肋骨也会从所有敌人身上以与混沌宝珠相同的 0.1% 几率掉落。',
+        '变化宝珠的掉落率改为 0.5%，混沌宝珠改为 0.1%。',
+        '移除了 Kakao 登录。',
+      ],
+    },
+  },
+  {
     version: '0.34',
     date: '2026-10-15',
     changes: {

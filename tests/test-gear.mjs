@@ -715,7 +715,7 @@ const rates = await ev(`(() => {
   const seen = {};
   const want = {};
   for (const orb of Object.values(ORBS)) { seen[orb.id] = 0; want[orb.id] = orb.chance; }
-  // A 폭발의 구슬 only comes off a 우두머리, so it is rolled against those.
+  // A 구슬 only a 우두머리 leaves (none now) would be rolled against those.
   for (let i = 0; i < N; i++) {
     for (const orb of Object.values(ORBS)) {
       if (orb.fromBossOnly) continue;
@@ -948,9 +948,9 @@ check('otherwise it swaps one 속성 for another a rung better',
   `every upgrade moved one rung, and the count of 속성 never changed`);
 check('and it cannot be spent on a weapon with no 속성 to work on',
   explode.onBare === null);
-check('it comes off a 우두머리 and nothing else, one kill in a hundred',
-  explode.chance === 0.01 && explode.bossOnly === true,
-  `${(explode.chance * 100).toFixed(0)}% from a 우두머리`);
+check('it comes off any kill now, at its own chance',
+  explode.chance > 0 && explode.bossOnly === false,
+  `${(explode.chance * 100).toFixed(2)}% a kill`);
 
 // --- 15. a 구슬 says what it did ---
 await ev(`(() => {

@@ -1,5 +1,5 @@
 /**
- * The ways in: Google, Kakao, Facebook and X, each an OAuth 2.0
+ * The ways in: Google, Facebook and X, each an OAuth 2.0
  * authorization-code flow. A provider is offered only when its client id and
  * secret are set as Worker secrets, so adding one is a matter of keys.
  *
@@ -8,13 +8,11 @@
  */
 import { hex, hmac } from './http';
 
-export type ProviderId = 'google' | 'kakao' | 'facebook' | 'twitter' | 'test';
+export type ProviderId = 'google' | 'facebook' | 'twitter' | 'test';
 
 export interface ProviderEnv {
   readonly GOOGLE_CLIENT_ID?: string;
   readonly GOOGLE_CLIENT_SECRET?: string;
-  readonly KAKAO_CLIENT_ID?: string;
-  readonly KAKAO_CLIENT_SECRET?: string;
   readonly FACEBOOK_CLIENT_ID?: string;
   readonly FACEBOOK_CLIENT_SECRET?: string;
   readonly TWITTER_CLIENT_ID?: string;
@@ -74,28 +72,6 @@ export const PROVIDERS: Record<Exclude<ProviderId, 'test'>, ProviderSpec> = {
     async profile(token) {
       const me = await getJson('https://openidconnect.googleapis.com/v1/userinfo', token);
       return { subject: String(me.sub ?? ''), name: String(me.name ?? '') };
-    },
-  },
-  kakao: {
-    id: 'kakao',
-    authorize: 'https://kauth.kakao.com/oauth/authorize',
-    token: 'https://kauth.kakao.com/oauth/token',
-    scope: 'profile_nickname',
-    pkce: false,
-    tokenAuth: 'body',
-    clientId: (env) => env.KAKAO_CLIENT_ID,
-    // Kakao's client secret is optional; when it is switched on for the app
-    // it has to be sent, so it is sent whenever it is set.
-    clientSecret: (env) => env.KAKAO_CLIENT_SECRET,
-    ready: (env) => Boolean(env.KAKAO_CLIENT_ID),
-    async profile(token) {
-      const me = await getJson('https://kapi.kakao.com/v2/user/me', token);
-      const account = me.kakao_account as { profile?: { nickname?: string } } | undefined;
-      const properties = me.properties as { nickname?: string } | undefined;
-      return {
-        subject: String(me.id ?? ''),
-        name: String(account?.profile?.nickname ?? properties?.nickname ?? ''),
-      };
     },
   },
   facebook: {
@@ -160,4 +136,4 @@ export const TEST_PROVIDER: ProviderSpec = {
 };
 
 /** The order the buttons are offered in. */
-export const PROVIDER_ORDER: readonly ProviderId[] = ['google', 'kakao', 'facebook', 'twitter'];
+export const PROVIDER_ORDER: readonly ProviderId[] = ['google', 'facebook', 'twitter'];

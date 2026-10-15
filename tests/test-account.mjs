@@ -27,7 +27,7 @@ const FAKE = `
   (() => {
     const KEY = '__fake_server';
     const load = () => JSON.parse(sessionStorage.getItem(KEY) || 'null') || {
-      user: null, providers: ['google', 'kakao'], save: { data: null, updatedAt: 0 }, board: [], calls: [],
+      user: null, providers: ['google', 'facebook'], save: { data: null, updatedAt: 0 }, board: [], calls: [],
     };
     const store = (s) => sessionStorage.setItem(KEY, JSON.stringify(s));
     window.__fake = { load, store };
@@ -83,7 +83,7 @@ try {
   await sleep(700);
   const out = await scene('AccountScene', `return { rows: s.menu.items.map(i => i.id), accents: s.menu.items.map(i => i.accent ?? null), lead: s.lead.text };`);
   check('signed out, it offers each way in the server has, in its own colours',
-    JSON.stringify(out.rows) === JSON.stringify(['login:google', 'login:kakao', 'privacy']) &&
+    JSON.stringify(out.rows) === JSON.stringify(['login:google', 'login:facebook', 'privacy']) &&
       out.accents[0] !== null && out.accents[1] !== null && /로그인하면/.test(out.lead),
     JSON.stringify(out));
   await shot('account-01-signed-out');

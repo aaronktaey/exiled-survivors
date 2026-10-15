@@ -133,6 +133,7 @@ export const TEXTURES = {
   glow: "tex-glow",
   /** The 계정 icon on the title: a head and shoulders. */
   account: "tex-account",
+  filter: "tex-filter",
   grid: "tex-grid",
   player: "tex-player",
   enemy: "tex-enemy",
@@ -335,7 +336,6 @@ export const DROP_LABEL = {
  */
 export const ACCOUNT_BUTTONS: Record<string, { readonly fill: number; readonly text: string; readonly edge: number }> = {
   google: { fill: 0xffffff, text: '#1f1f1f', edge: 0xdadce0 },
-  kakao: { fill: 0xfee500, text: '#191919', edge: 0xfee500 },
   facebook: { fill: 0x1877f2, text: '#ffffff', edge: 0x1877f2 },
   twitter: { fill: 0x000000, text: '#ffffff', edge: 0x5b6170 },
   test: { fill: 0x2b3445, text: '#f4f1e8', edge: 0x5ea8ff },

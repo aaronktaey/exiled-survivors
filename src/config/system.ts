@@ -40,6 +40,7 @@ export const SCENES = {
   rankEntry: "RankEntryScene",
   account: "AccountScene",
   conflict: "ConflictScene",
+  filter: "FilterScene",
 } as const;
 
 /** Keys the browser keeps our state under. Bump the suffix to invalidate. */
@@ -62,6 +63,8 @@ export const STORAGE = {
   personal: "exiled-survivors:personal:v1",
   /** The name, emoji and flag last entered on the ranking, to start on next time. */
   rankName: "exiled-survivors:rank-name:v1",
+  /** 아이템 필터: the drops switched off. */
+  itemFilter: "exiled-survivors:item-filter:v1",
   /** Which account this browser's records were last synced with, and when. */
   sync: "exiled-survivors:sync:v1",
   /**

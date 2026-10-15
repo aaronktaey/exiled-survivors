@@ -82,8 +82,9 @@ export const BONES: Record<BoneId, BoneSpec> = {
     tier: 'magic',
     /** Three of them is a real decision: x8 health for x3.4 the drops. */
     stackable: true,
-    fromKill: 0,
-    fromBoss: 0.05,
+    // The same as a 혼돈의 구슬: off any kill, raised like any other drop.
+    fromKill: 0.001,
+    fromBoss: 0,
     run: { enemyHpScale: 2, dropScale: 1.5 },
   },
 };

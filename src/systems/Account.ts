@@ -8,7 +8,7 @@
  */
 import { ACCOUNT } from '@/config';
 
-export type ProviderId = 'google' | 'kakao' | 'facebook' | 'twitter' | 'test';
+export type ProviderId = 'google' | 'facebook' | 'twitter' | 'test';
 
 export interface AccountUser {
   readonly id: string;

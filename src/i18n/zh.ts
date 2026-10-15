@@ -22,6 +22,22 @@ export const zh: Strings = {
     temporary: '这是临时版本 — 目前各条线分别提升，分支树是下一步的工作。',
   },
 
+  filter: {
+    title: '物品过滤',
+    icon: '过滤',
+    lead: '关闭的物品不会在游戏中掉落 · 装备需等级和种类都开启才会显示',
+    sections: { supplies: '消耗品', orbs: '宝珠', bones: '骨头', rarity: '装备等级', bases: '装备种类' },
+    items: { potion: '生命药水', skill: '技能', randomSkill: '随机技能', mango: '白芒果', shard: '神圣碎片' },
+    itemsShort: { potion: '药水', skill: '技能', randomSkill: '随机', mango: '芒果', shard: '碎片' },
+    rarity: { normal: '普通', magic: '魔法', rare: '稀有' },
+    shown: '显示',
+    hidden: '隐藏',
+    showAll: '全部显示',
+    hiddenCount: '已隐藏 {count} 个',
+    allShown: '全部显示中',
+    hintKeyboard: '方向键 移动   Space 切换   Esc 返回',
+    hintTouch: '点击图标切换',
+  },
   menu: {
     updating: '正在更新到新版本…',
     byline: 'created by whitemango',
@@ -181,8 +197,8 @@ export const zh: Strings = {
     offline: '无法连接服务器。请稍后再试。',
     retry: '重试',
     signedIn: '已用 {provider} 登录 — {name}',
-    providers: { google: '使用 Google 登录', kakao: '使用 Kakao 登录', facebook: '使用 Facebook 登录', twitter: '使用 X 登录', test: '测试登录' },
-    providerNames: { google: 'Google', kakao: 'Kakao', facebook: 'Facebook', twitter: 'X', test: '测试' },
+    providers: { google: '使用 Google 登录', facebook: '使用 Facebook 登录', twitter: '使用 X 登录', test: '测试登录' },
+    providerNames: { google: 'Google', facebook: 'Facebook', twitter: 'X', test: '测试' },
     logout: '退出登录',
     remove: '删除账号',
     removeConfirm: '确定删除吗？再按一次即删除',
@@ -559,7 +575,7 @@ export const zh: Strings = {
         {
           title: '账号',
           lines: [
-            '登录是可选的。在标题画面的账号中用 Google、Kakao 等社交账号登录后，记录（装备·被动·宝珠·骨头·存档·设置）会保存到账号，可以在其他设备上继续游玩。',
+            '登录是可选的。在标题画面的账号中用 Google 等社交账号登录后，记录（装备·被动·宝珠·骨头·存档·设置）会保存到账号，可以在其他设备上继续游玩。',
             '本设备与账号的记录不同时，会询问要保留哪一份。没有选择的那一份将会丢失。',
             '登录只使用账号的唯一编号和显示名称，不收集电子邮箱。可以在账号画面退出登录或删除账号。',
           ],
@@ -649,7 +665,7 @@ export const zh: Strings = {
           title: '首领留下的东西',
           lines: [
             '必定掉落一个技能和一把剑，并必定留下一座祭坛。',
-            '有 {shardChance} 几率掉落神圣碎片，{ribChance} 几率掉落肋骨。{bossOnlyOrbs}也只由首领掉落。',
+            '有 {shardChance} 几率掉落神圣碎片，神圣碎片只由首领掉落。',
             '其余所有掉落的几率提高 {bossBonus}。',
           ],
         },
@@ -733,6 +749,13 @@ export const zh: Strings = {
           title: '白芒果',
           lines: [
             '击杀任何敌人都是 {mangoChance} 几率，稀有敌人、首领和肋骨都不会提高它。吃下后 {mangoSecs} 秒内不受伤害，所有技能的攻击速度和移动速度提高 {mangoBoost}。',
+          ],
+        },
+        {
+          title: '物品过滤',
+          lines: [
+            '在标题画面的过滤中可以逐项开关物品。关闭的物品不会在游戏中掉落。',
+            '装备需等级（普通·魔法·稀有）和种类都开启才会掉落。设置会随账号一起保存。',
           ],
         },
         {

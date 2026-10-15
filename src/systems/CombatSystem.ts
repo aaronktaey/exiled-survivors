@@ -22,6 +22,7 @@ import {
   type OrbId,
 } from '@/config';
 import { t } from '@/i18n';
+import { itemFilter } from '@/systems/ItemFilter';
 import { Altar } from '@/entities/Altar';
 import { Enemy } from '@/entities/Enemy';
 import { EnemyShot } from '@/entities/EnemyShot';
@@ -193,6 +194,9 @@ export class CombatSystem {
 
   /** Places a potion directly — used by the kill roll and by debug keys. */
   public dropPotionAt(x: number, y: number): void {
+    if (!itemFilter.shows('potion')) {
+      return;
+    }
     [x, y] = inWorld(x, y);
     const potion = this.potions.get() as HealthPotion | null;
     potion?.drop(x, y);
@@ -200,6 +204,9 @@ export class CombatSystem {
 
   /** Places a 신성한 조각 directly — used by the kill and by debug keys. */
   public dropShardAt(x: number, y: number): void {
+    if (!itemFilter.shows('shard')) {
+      return;
+    }
     [x, y] = inWorld(x, y);
     const shard = this.shardDrops.get() as ShardDrop | null;
     if (!shard) {
@@ -214,6 +221,9 @@ export class CombatSystem {
 
   /** Places a 구슬 directly — used by the kill roll and by debug keys. */
   public dropOrbAt(x: number, y: number, id: OrbId): void {
+    if (!itemFilter.shows(`orb:${id}`)) {
+      return;
+    }
     [x, y] = inWorld(x, y);
     const drop = this.orbDrops.get() as OrbDrop | null;
     if (!drop) {
@@ -226,6 +236,9 @@ export class CombatSystem {
 
   /** Places a 뼈다귀 directly — used by the kill roll and by debug keys. */
   public dropBoneAt(x: number, y: number, id: BoneId): void {
+    if (!itemFilter.shows(`bone:${id}`)) {
+      return;
+    }
     [x, y] = inWorld(x, y);
     const drop = this.boneDrops.get() as BoneDrop | null;
     if (!drop) {
@@ -238,6 +251,9 @@ export class CombatSystem {
 
   /** Places a 하얀 망고 directly — used by the kill roll and by tests. */
   public dropMangoAt(x: number, y: number): void {
+    if (!itemFilter.shows('mango')) {
+      return;
+    }
     [x, y] = inWorld(x, y);
     const drop = this.mangoDrops.get() as MangoDrop | null;
     if (!drop) {
@@ -250,6 +266,9 @@ export class CombatSystem {
 
   /** Places a 무작위 스킬 directly — used by the kill roll and by tests. */
   public dropRandomSkillAt(x: number, y: number): void {
+    if (!itemFilter.shows('randomSkill')) {
+      return;
+    }
     [x, y] = inWorld(x, y);
     const drop = this.randomSkillDrops.get() as RandomSkillDrop | null;
     if (!drop) {
@@ -277,6 +296,10 @@ export class CombatSystem {
 
   /** Places a weapon directly — used by the 우두머리 kill and debug keys. */
   public dropGearAt(x: number, y: number, item: GearItem): void {
+    // 아이템 필터: a switched-off drop never lands.
+    if (!itemFilter.showsGear(item)) {
+      return;
+    }
     [x, y] = inWorld(x, y);
     const drop = this.gearDrops.get() as GearDrop | null;
     if (!drop) {
@@ -289,6 +312,9 @@ export class CombatSystem {
 
   /** Places a drop directly — used by the spawner's roll and by debug keys. */
   public dropSkillAt(x: number, y: number, skill: SkillDefinition): void {
+    if (!itemFilter.shows('skill')) {
+      return;
+    }
     [x, y] = inWorld(x, y);
     const drop = this.skillDrops.get() as SkillDrop | null;
     if (!drop) {

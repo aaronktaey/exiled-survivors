@@ -22,6 +22,22 @@ export const ja: Strings = {
     temporary: '暫定構成です — 今は行ごとに上げる形で、枝分かれするツリーは次の作業です。',
   },
 
+  filter: {
+    title: 'アイテムフィルター',
+    icon: 'フィルター',
+    lead: 'オフにしたアイテムはゲームで落ちません · 装備は等級と種類の両方がオンのときだけ表示されます',
+    sections: { supplies: '消耗品', orbs: '球', bones: '骨', rarity: '装備の等級', bases: '装備の種類' },
+    items: { potion: '回復ポーション', skill: 'スキル', randomSkill: 'ランダムスキル', mango: '白いマンゴー', shard: '神聖な欠片' },
+    itemsShort: { potion: 'ポーション', skill: 'スキル', randomSkill: 'ランダム', mango: 'マンゴー', shard: '欠片' },
+    rarity: { normal: 'ノーマル', magic: 'マジック', rare: 'レア' },
+    shown: '表示',
+    hidden: '非表示',
+    showAll: 'すべて表示',
+    hiddenCount: '{count} 個非表示',
+    allShown: 'すべて表示中',
+    hintKeyboard: '方向キー 移動   Space 切り替え   Esc 戻る',
+    hintTouch: 'アイコンをタップして切り替え',
+  },
   menu: {
     updating: '新しいバージョンに更新します…',
     byline: 'created by whitemango',
@@ -181,8 +197,8 @@ export const ja: Strings = {
     offline: 'サーバーに接続できません。しばらくしてからもう一度お試しください。',
     retry: 'もう一度',
     signedIn: '{provider} でログイン中 — {name}',
-    providers: { google: 'Google でログイン', kakao: 'Kakao でログイン', facebook: 'Facebook でログイン', twitter: 'X でログイン', test: 'テストログイン' },
-    providerNames: { google: 'Google', kakao: 'Kakao', facebook: 'Facebook', twitter: 'X', test: 'テスト' },
+    providers: { google: 'Google でログイン', facebook: 'Facebook でログイン', twitter: 'X でログイン', test: 'テストログイン' },
+    providerNames: { google: 'Google', facebook: 'Facebook', twitter: 'X', test: 'テスト' },
     logout: 'ログアウト',
     remove: 'アカウント削除',
     removeConfirm: '本当に削除しますか？もう一度押すと削除されます',
@@ -559,7 +575,7 @@ export const ja: Strings = {
         {
           title: 'アカウント',
           lines: [
-            'ログインは任意です。タイトル画面のアカウントから Google や Kakao などのソーシャルアカウントでログインすると、記録（装備・パッシブ・球・骨・セーブした回・設定）がアカウントに保存され、ほかの端末でも続きから遊べます。',
+            'ログインは任意です。タイトル画面のアカウントから Google などのソーシャルアカウントでログインすると、記録（装備・パッシブ・球・骨・セーブした回・設定）がアカウントに保存され、ほかの端末でも続きから遊べます。',
             'この端末とアカウントの記録が異なる場合は、どちらを使うか確認します。選ばなかった方は失われます。',
             'ログインにはアカウントの固有番号と表示名だけを使い、メールアドレスは受け取りません。アカウント画面からログアウトやアカウント削除ができます。',
           ],
@@ -653,7 +669,7 @@ export const ja: Strings = {
           title: 'ボスが残すもの',
           lines: [
             'スキル 1 つと剣 1 本を必ず落とし、祭壇を 1 つ必ず残します。',
-            '神聖な欠片を {shardChance}、肋骨を {ribChance} の確率で落とします。{bossOnlyOrbs}もボスだけが落とします。',
+            '神聖な欠片を {shardChance} の確率で落とします。神聖な欠片はボスだけが落とします。',
             'そのほかのドロップはすべて確率が {bossBonus} 上がります。',
           ],
         },
@@ -737,6 +753,13 @@ export const ja: Strings = {
           title: '白いマンゴー',
           lines: [
             'どの敵からも {mangoChance} の確率で、レア敵・ボス・肋骨では上がりません。食べると {mangoSecs} 秒間被害を受けず、全スキルの攻撃速度と移動速度が {mangoBoost} 上がります。',
+          ],
+        },
+        {
+          title: 'アイテムフィルター',
+          lines: [
+            'タイトル画面のフィルターでアイテムごとにオン・オフできます。オフにしたアイテムはゲームで落ちません。',
+            '装備は等級（ノーマル・マジック・レア）と種類の両方がオンのときだけ落ちます。設定はアカウントと一緒に保存されます。',
           ],
         },
         {

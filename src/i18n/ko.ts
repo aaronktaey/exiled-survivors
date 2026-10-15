@@ -26,6 +26,22 @@ export const ko: Strings = {
     temporary: '임시 구성입니다 — 지금은 줄마다 따로 올리고, 갈래가 나뉘는 트리는 다음 작업입니다.',
   },
 
+  filter: {
+    title: '아이템 필터',
+    icon: '필터',
+    lead: '눌러서 끈 아이템은 게임에서 떨어지지 않습니다 · 장비는 등급과 종류가 모두 켜져 있어야 보입니다',
+    sections: { supplies: '소모품', orbs: '구슬', bones: '뼈다귀', rarity: '장비 등급', bases: '장비 종류' },
+    items: { potion: '체력 포션', skill: '스킬', randomSkill: '무작위 스킬', mango: '하얀 망고', shard: '신성한 조각' },
+    itemsShort: { potion: '포션', skill: '스킬', randomSkill: '무작위', mango: '망고', shard: '조각' },
+    rarity: { normal: '일반', magic: '마법', rare: '희귀' },
+    shown: '보임',
+    hidden: '숨김',
+    showAll: '모두 보이기',
+    hiddenCount: '{count}개 숨김',
+    allShown: '모두 보이는 중',
+    hintKeyboard: '방향키 이동   Space 켜기/끄기   Esc 돌아가기',
+    hintTouch: '아이콘을 눌러 켜고 끕니다',
+  },
   menu: {
     updating: '새 버전으로 업데이트합니다…',
     byline: 'created by whitemango',
@@ -185,8 +201,8 @@ export const ko: Strings = {
     offline: '서버에 연결할 수 없습니다. 잠시 뒤 다시 시도해 주세요.',
     retry: '다시 시도',
     signedIn: '{provider} 계정으로 로그인 중 — {name}',
-    providers: { google: 'Google로 로그인', kakao: '카카오로 로그인', facebook: 'Facebook으로 로그인', twitter: 'X로 로그인', test: '시험 로그인' },
-    providerNames: { google: 'Google', kakao: '카카오', facebook: 'Facebook', twitter: 'X', test: '시험' },
+    providers: { google: 'Google로 로그인', facebook: 'Facebook으로 로그인', twitter: 'X로 로그인', test: '시험 로그인' },
+    providerNames: { google: 'Google', facebook: 'Facebook', twitter: 'X', test: '시험' },
     logout: '로그아웃',
     remove: '계정 삭제',
     removeConfirm: '정말 삭제할까요? 한 번 더 누르면 삭제됩니다',
@@ -443,7 +459,7 @@ export const ko: Strings = {
         {
           title: '계정',
           lines: [
-            '로그인은 선택입니다. 시작 화면의 계정에서 Google·Kakao 같은 소셜 계정으로 로그인하면 기록(장비·패시브·구슬·뼈다귀·저장된 판·설정)이 계정에 저장되어 다른 기기에서도 이어서 할 수 있습니다.',
+            '로그인은 선택입니다. 시작 화면의 계정에서 Google 같은 소셜 계정으로 로그인하면 기록(장비·패시브·구슬·뼈다귀·저장된 판·설정)이 계정에 저장되어 다른 기기에서도 이어서 할 수 있습니다.',
             '이 기기와 계정의 기록이 서로 다르면 어느 쪽을 쓸지 묻습니다. 고르지 않은 쪽은 사라집니다.',
             '로그인에는 계정 고유번호와 표시 이름만 쓰며 이메일은 받지 않습니다. 계정 화면에서 로그아웃하거나 계정을 삭제할 수 있습니다.',
           ],
@@ -539,7 +555,7 @@ export const ko: Strings = {
           title: '우두머리가 남기는 것',
           lines: [
             '스킬 하나와 검 한 자루를 반드시 떨어뜨리고, 제단 하나를 반드시 남깁니다.',
-            '신성한 조각을 {shardChance}, 갈비뼈를 {ribChance} 확률로 떨어뜨립니다. {bossOnlyOrbs}도 우두머리만 떨어뜨립니다.',
+            '신성한 조각을 {shardChance} 확률로 떨어뜨립니다. 신성한 조각은 우두머리만 떨어뜨립니다.',
             '그 밖의 모든 드랍은 확률이 {bossBonus} 올라갑니다.',
           ],
         },
@@ -623,6 +639,13 @@ export const ko: Strings = {
           title: '하얀 망고',
           lines: [
             '어떤 적을 잡아도 {mangoChance} 확률이며, 희귀 적·우두머리·갈비뼈로 오르지 않습니다. 먹으면 {mangoSecs}초 동안 피해를 받지 않고, 모든 스킬의 공격속도와 이동속도가 {mangoBoost} 오릅니다.',
+          ],
+        },
+        {
+          title: '아이템 필터',
+          lines: [
+            '시작 화면의 필터에서 아이템마다 켜고 끌 수 있습니다. 끈 아이템은 게임에서 떨어지지 않습니다.',
+            '장비는 등급(일반·마법·희귀)과 종류가 모두 켜져 있어야 떨어집니다. 설정은 계정과 함께 저장됩니다.',
           ],
         },
         {

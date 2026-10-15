@@ -151,7 +151,7 @@ for (const lang of ['en', 'ja', 'zh']) {
   await close('AccountScene');
   await ev(`(() => {
     window.account.user = { id: 'u', provider: 'google', name: 'A', rank: { name: '', emoji: '', flag: '' } };
-    window.account.providers = ['google', 'kakao'];
+    window.account.providers = ['google', 'facebook'];
     window.cloudSave.conflict = { local: {}, server: {}, serverAt: 1 };
     window.cloudSave.status = 'conflict';
     return 1;

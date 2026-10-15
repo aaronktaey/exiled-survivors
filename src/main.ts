@@ -20,10 +20,12 @@ import { critMultiplierFor } from '@/systems/Modifiers';
 import { bones as bonesStore } from '@/systems/Bones';
 import { orbs } from '@/systems/Orbs';
 import { passives } from '@/systems/Passives';
+import { itemFilter } from '@/systems/ItemFilter';
 import { currentCanvasSize } from '@/systems/Viewport';
 import {
   AccountScene,
   ConflictScene,
+  FilterScene,
   BootScene,
   ConfirmScene,
   CreditsScene,
@@ -93,6 +95,7 @@ const config: Phaser.Types.Core.GameConfig = {
     BoneScene,
     AccountScene,
     ConflictScene,
+    FilterScene,
   ],
 };
 
@@ -120,6 +123,7 @@ if (import.meta.env.DEV) {
     ranking?: typeof ranking;
     liveUpdate?: typeof liveUpdate;
     personal?: typeof personal;
+    itemFilter?: typeof itemFilter;
     account?: typeof account;
     cloudSave?: typeof cloudSave;
   };
@@ -137,6 +141,7 @@ if (import.meta.env.DEV) {
   dev.ranking = ranking;
   dev.liveUpdate = liveUpdate;
   dev.personal = personal;
+  dev.itemFilter = itemFilter;
   dev.account = account;
   dev.cloudSave = cloudSave;
 }

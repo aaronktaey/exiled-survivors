@@ -147,6 +147,12 @@ export class MenuScene extends Phaser.Scene {
         label: () => t().ranking.icon,
         onSelect: () => this.openOverlay(SCENES.ranking),
       },
+      {
+        id: 'filter',
+        texture: TEXTURES.filter,
+        label: () => t().filter.icon,
+        onSelect: () => this.openOverlay(SCENES.filter),
+      },
       ...(ACCOUNT.enabled
         ? [
             {

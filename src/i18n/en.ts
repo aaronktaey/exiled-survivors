@@ -22,6 +22,22 @@ export const en: Strings = {
     temporary: 'A placeholder: separate lines today, a tree with branches next.',
   },
 
+  filter: {
+    title: 'Item Filter',
+    icon: 'Filter',
+    lead: 'Anything switched off never drops in a run · a weapon shows only when both its rarity and its kind are on',
+    sections: { supplies: 'Supplies', orbs: 'Orbs', bones: 'Bones', rarity: 'Rarity', bases: 'Weapons' },
+    items: { potion: 'Potion', skill: 'Skill', randomSkill: 'Random Skill', mango: 'White Mango', shard: 'Divine Shard' },
+    itemsShort: { potion: 'Potion', skill: 'Skill', randomSkill: 'Random', mango: 'Mango', shard: 'Shard' },
+    rarity: { normal: 'Normal', magic: 'Magic', rare: 'Rare' },
+    shown: 'shown',
+    hidden: 'hidden',
+    showAll: 'Show all',
+    hiddenCount: '{count} hidden',
+    allShown: 'Everything shown',
+    hintKeyboard: 'Arrows move   Space switch   Esc back',
+    hintTouch: 'Tap an icon to switch it',
+  },
   menu: {
     updating: 'Updating to the new version…',
     byline: 'created by whitemango',
@@ -181,8 +197,8 @@ export const en: Strings = {
     offline: 'The server cannot be reached. Please try again in a moment.',
     retry: 'Try again',
     signedIn: 'Signed in with {provider} — {name}',
-    providers: { google: 'Sign in with Google', kakao: 'Sign in with Kakao', facebook: 'Sign in with Facebook', twitter: 'Sign in with X', test: 'Test sign-in' },
-    providerNames: { google: 'Google', kakao: 'Kakao', facebook: 'Facebook', twitter: 'X', test: 'Test' },
+    providers: { google: 'Sign in with Google', facebook: 'Sign in with Facebook', twitter: 'Sign in with X', test: 'Test sign-in' },
+    providerNames: { google: 'Google', facebook: 'Facebook', twitter: 'X', test: 'Test' },
     logout: 'Sign out',
     remove: 'Delete account',
     removeConfirm: 'Really delete it? Press once more to delete',
@@ -559,7 +575,7 @@ export const en: Strings = {
         {
           title: 'Account',
           lines: [
-            'Signing in is optional. Sign in from Account on the title screen with a social account such as Google or Kakao, and your records (gear, passives, orbs, Bones, the saved run, settings) are kept on your account, so you can carry on from another device.',
+            'Signing in is optional. Sign in from Account on the title screen with a social account such as Google, and your records (gear, passives, orbs, Bones, the saved run, settings) are kept on your account, so you can carry on from another device.',
             'If this device and your account hold different records, you are asked which to keep. The other set is lost.',
             'Signing in uses only your account’s ID and display name — no email. You can sign out or delete the account from the Account screen.',
           ],
@@ -653,7 +669,7 @@ export const en: Strings = {
           title: 'What a Boss leaves',
           lines: [
             'A skill and a sword every time, and an altar every time.',
-            'A Divine Shard {shardChance} and a Rib {ribChance} of the time. {bossOnlyOrbs} also comes only from Bosses.',
+            'A Divine Shard {shardChance} of the time — only Bosses drop them.',
             'Every other drop is {bossBonus} more likely.',
           ],
         },
@@ -737,6 +753,13 @@ export const en: Strings = {
           title: 'White Mango',
           lines: [
             '{mangoChance} of the time off any kill — rares, bosses and Ribs do not raise it. For {mangoSecs}s after eating it you take no damage, and every skill’s attack speed and your move speed are {mangoBoost}.',
+          ],
+        },
+        {
+          title: 'Item Filter',
+          lines: [
+            'Filter on the title screen switches each kind of drop on or off. Anything switched off never drops in a run.',
+            'A weapon drops only when both its rarity (Normal, Magic, Rare) and its kind are on. The filter is kept with your account.',
           ],
         },
         {

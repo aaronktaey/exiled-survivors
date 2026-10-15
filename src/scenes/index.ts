@@ -17,3 +17,4 @@ export { RankEntryScene, type RankEntryData } from '@/scenes/RankEntryScene';
 export { GameOverScene } from '@/scenes/GameOverScene';
 export { AccountScene, type AccountSceneData } from '@/scenes/AccountScene';
 export { ConflictScene, type ConflictSceneData } from '@/scenes/ConflictScene';
+export { FilterScene, type FilterSceneData } from '@/scenes/FilterScene';

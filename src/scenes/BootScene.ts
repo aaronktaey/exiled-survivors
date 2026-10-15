@@ -83,6 +83,7 @@ export class BootScene extends Phaser.Scene {
     this.createLightPillarTexture();
     this.createGlowTexture();
     this.createAccountTexture();
+    this.createFilterTexture();
 
 
     createPixelTextTexture(this, TEXTURES.logo, ['EXILED', 'SURVIVORS'], {
@@ -171,6 +172,26 @@ export class BootScene extends Phaser.Scene {
     g.fillCircle(size / 2, size * 0.36, size * 0.17);
     g.fillRoundedRect(size * 0.2, size * 0.6, size * 0.6, size * 0.3, { tl: size * 0.3, tr: size * 0.3, bl: 4, br: 4 });
     g.generateTexture(TEXTURES.account, size, size);
+    g.destroy();
+  }
+
+  /** The 아이템 필터 icon: a funnel, in the menu's own pale colour. */
+  private createFilterTexture(): void {
+    const size = 48;
+    const g = this.add.graphics();
+    g.fillStyle(COLORS.textFill, 1);
+    g.fillPoints(
+      [
+        new Phaser.Math.Vector2(size * 0.12, size * 0.16),
+        new Phaser.Math.Vector2(size * 0.88, size * 0.16),
+        new Phaser.Math.Vector2(size * 0.58, size * 0.52),
+        new Phaser.Math.Vector2(size * 0.58, size * 0.84),
+        new Phaser.Math.Vector2(size * 0.42, size * 0.74),
+        new Phaser.Math.Vector2(size * 0.42, size * 0.52),
+      ],
+      true,
+    );
+    g.generateTexture(TEXTURES.filter, size, size);
     g.destroy();
   }
 

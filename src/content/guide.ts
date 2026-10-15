@@ -7,7 +7,6 @@ import {
   ALTAR_OFFERS,
   BALANCE,
   BONE_RUN,
-  BONES,
   BOSS,
   DIFFICULTY,
   ENEMY_KINDS,
@@ -153,10 +152,6 @@ function values(): Record<string, string | number> {
     spawnMin: seconds(SPAWN.minIntervalMs),
     maxAlive: SPAWN.maxAlive,
     shardChance: percent(SHARD.chance),
-    ribChance: percent(BONES.rib.fromBoss),
-    bossOnlyOrbs: ALL_ORBS.filter((orb) => orb.fromBossOnly)
-      .map((orb) => orbName(orb.id))
-      .join(', '),
     bossBonus: `+${percent(BOSS.dropBonus)}`,
     dropBonus: `+${percent(RARE.dropBonusPerAffix)}`,
     rareChance: percent(RARE.chance),

@@ -80,6 +80,26 @@ export interface Strings {
     readonly temporary: string;
   };
 
+  /** 아이템 필터: the switches for what drops, reached from the title. */
+  readonly filter: {
+    readonly title: string;
+    /** Under the title icon. */
+    readonly icon: string;
+    readonly lead: string;
+    readonly sections: { readonly supplies: string; readonly orbs: string; readonly bones: string; readonly rarity: string; readonly bases: string };
+    readonly items: { readonly potion: string; readonly skill: string; readonly randomSkill: string; readonly mango: string; readonly shard: string };
+    /** The same, short enough to sit under an icon. */
+    readonly itemsShort: { readonly potion: string; readonly skill: string; readonly randomSkill: string; readonly mango: string; readonly shard: string };
+    readonly rarity: { readonly normal: string; readonly magic: string; readonly rare: string };
+    readonly shown: string;
+    readonly hidden: string;
+    readonly showAll: string;
+    /** {count} switched off. */
+    readonly hiddenCount: string;
+    readonly allShown: string;
+    readonly hintKeyboard: string;
+    readonly hintTouch: string;
+  };
   readonly menu: {
     /** Over the title while it reloads onto a new version. */
     readonly updating: string;
