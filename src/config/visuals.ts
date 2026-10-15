@@ -508,7 +508,12 @@ export const MENU = {
   /** That logo plus the byline under it. */
   logoBlockHeight: 150,
   /** Byline to the 랭킹 first-place line under it, which adds this much. */
-  championGap: 26,
+  championGap: 28,
+  /** First place to the line under it with second and third, which adds this much. */
+  podiumGap: 26,
+  /** First place shines: its glow breathes between these, and a spark rises this often. */
+  championGlow: { min: 2, max: 12, periodMs: 1100, color: '#ffb300' },
+  championSparkMs: 240,
   /** Gap between that block and the first row, and the same on a short one. */
   logoGap: 34,
   logoGapShort: 18,

@@ -112,6 +112,13 @@ let total = 0;
 let passed = 0;
 const broken = [];
 
+// Right after a source edit the dev server reloads any open page a moment
+// later, and a suite that has just started is cut off by it. One page load
+// up front, given time for that reload to come and go, takes it instead.
+await ensureChrome();
+await clearStorage();
+await sleep(3000);
+
 for (const name of suites) {
   await ensureChrome();
   await clearStorage();
@@ -130,6 +137,7 @@ for (const name of suites) {
     console.log(`   ${line}`);
   }
   if (!counts) console.log(r.out.split('\n').slice(-12).join('\n'));
+  if (process.env.SHOW_OUT) console.log(r.out);
 }
 
 console.log(`\nTOTAL ${passed}/${total} across ${suites.length} suites`);

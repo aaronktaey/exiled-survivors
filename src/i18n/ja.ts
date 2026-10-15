@@ -161,6 +161,7 @@ export const ja: Strings = {
     name: '名前',
     damage: '与えた被害',
     champion: '1 位  {name}  {damage}',
+    podium: '{place} 位  {name}  {damage}',
     entryTitle: 'ランキング {place} 位！',
     entryLead: '与えた被害 {damage} — 名前を残しましょう（英字 3 文字 + 絵文字 1 つ + 国旗）',
     confirm: '登録',

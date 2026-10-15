@@ -15,6 +15,24 @@ export interface PatchNote {
 
 export const PATCH_NOTES: readonly PatchNote[] = [
   {
+    version: '0.36',
+    date: '2026-10-16',
+    changes: {
+      ko: [
+        '시작 화면에 전체 랭킹 3위까지 표시됩니다. 1위는 트로피와 함께 금빛으로 빛나고 반짝이며, 2·3위는 그 아래 줄에 나옵니다. 누르면 랭킹 화면이 열립니다.',
+      ],
+      en: [
+        'The title screen now shows the top three of the shared ranking. First place shines in gold with a cup and sparks; second and third sit on the line below. Tap them to open the ranking.',
+      ],
+      ja: [
+        'タイトル画面に全体ランキングの 3 位までが表示されます。1 位はトロフィーとともに金色に輝き、2・3 位はその下の行に並びます。押すとランキング画面が開きます。',
+      ],
+      zh: [
+        '标题画面会显示全部排行的前三名。第一名带着奖杯闪耀金光，第二、三名在下一行。点击即可打开排行榜。',
+      ],
+    },
+  },
+  {
     version: '0.35',
     date: '2026-10-15',
     changes: {

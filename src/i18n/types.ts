@@ -258,6 +258,8 @@ export interface Strings {
     readonly damage: string;
     /** Under the logo: {name} and {damage} of first place. */
     readonly champion: string;
+    /** Second and third under it on the title: {place}, {name}, {damage}. */
+    readonly podium: string;
     /** The name-entry popup. {place} is where the run would land. */
     readonly entryTitle: string;
     readonly entryLead: string;

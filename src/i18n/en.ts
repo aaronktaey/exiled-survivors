@@ -161,6 +161,7 @@ export const en: Strings = {
     name: 'Name',
     damage: 'Damage dealt',
     champion: '#1  {name}  {damage}',
+    podium: '#{place}  {name}  {damage}',
     entryTitle: 'Ranked #{place}!',
     entryLead: '{damage} damage dealt — leave your name (3 letters + 1 emoji + a flag)',
     confirm: 'Enter',

@@ -44,6 +44,12 @@ export class MenuScene extends Phaser.Scene {
   /** First place under the logo, when there is one. Public for tests. */
   public champion?: Phaser.GameObjects.Text;
   private championFlag?: Phaser.GameObjects.Image;
+  private championCup?: Phaser.GameObjects.Image;
+  /** Second and third place, on the line under first. Public for tests. */
+  public podium: Phaser.GameObjects.Text[] = [];
+  private podiumFlags: Phaser.GameObjects.Image[] = [];
+  /** First place's sparks, while there is a first place. */
+  private sparks?: Phaser.Time.TimerEvent;
   /** Reloading onto a new version: the title takes no more input. */
   public updating = false;
   /** "새 버전으로 업데이트합니다…", while it is. Public for tests. */
@@ -57,6 +63,9 @@ export class MenuScene extends Phaser.Scene {
     // The scene outlives a launch.
     this.updating = false;
     this.updatingText = undefined;
+    this.podium = [];
+    this.podiumFlags = [];
+    this.sparks = undefined;
   }
 
   public create(): void {
@@ -73,7 +82,7 @@ export class MenuScene extends Phaser.Scene {
     // First place on the board takes a line under the byline, once there is one.
     // The line is kept even before anyone is on the board: the shared board
     // arrives a moment later, and the menu must not jump when it does.
-    const blockHeight = MENU.logoBlockHeight + MENU.championGap;
+    const blockHeight = MENU.logoBlockHeight + MENU.championGap + MENU.podiumGap;
     const top = centredTop(height, blockHeight + gap + listHeight);
 
     this.addLogo(width, top + MENU.logoHeight / 2);
@@ -247,22 +256,57 @@ export class MenuScene extends Phaser.Scene {
   }
 
   /**
-   * First place on the board, under the logo — the run to beat, with its
-   * flag. Tapping it opens the board. Empty until someone has set one, and
-   * redrawn when the shared board arrives with a different first place.
+   * The top of the board, under the logo: first place, the run to beat, in
+   * gold with a cup, a breathing glow and sparks rising off it; second and
+   * third quietly on the line under it. Tapping any of it opens the board.
+   * Empty until someone has set one, and redrawn when the shared board
+   * arrives with a different top three.
    */
   private addChampion(width: number, y: number): void {
     this.champion = this.add
       .text(width / 2, y, '', {
         fontFamily: 'system-ui, sans-serif',
-        fontSize: TEXT.size.body,
-        color: COLORS.gearText,
+        fontSize: TEXT.size.label,
+        fontStyle: 'bold',
+        color: '#ffd76a',
+        stroke: '#3a2600',
+        strokeThickness: 4,
       })
+      // The glow is on the letters, not their outline: on both, it reads as a yellow block.
+      .setShadow(0, 0, MENU.championGlow.color, MENU.championGlow.min, false, true)
       .setOrigin(0.5)
-      .setDepth(DEPTH.ui)
+      .setDepth(DEPTH.ui + 1)
       .setInteractive({ useHandCursor: true });
     this.champion.on(Phaser.Input.Events.GAMEOBJECT_POINTER_DOWN, () => this.openOverlay(SCENES.ranking));
-    this.championFlag = this.add.image(0, y, '__DEFAULT').setDepth(DEPTH.ui).setVisible(false);
+    this.championFlag = this.add.image(0, y, '__DEFAULT').setDepth(DEPTH.ui + 1).setVisible(false);
+    this.championCup = this.add.image(0, y, TEXTURES.trophy).setDisplaySize(22, 22).setDepth(DEPTH.ui + 1).setVisible(false);
+
+    // The glow breathes.
+    const glow = { blur: MENU.championGlow.min };
+    this.tweens.add({
+      targets: glow,
+      blur: MENU.championGlow.max,
+      duration: MENU.championGlow.periodMs,
+      yoyo: true,
+      repeat: -1,
+      ease: 'Sine.easeInOut',
+      onUpdate: () => this.champion?.active && this.champion.setShadowBlur(glow.blur),
+    });
+
+    for (let i = 0; i < 2; i++) {
+      const text = this.add
+        .text(width / 2, y + MENU.podiumGap, '', {
+          fontFamily: 'system-ui, sans-serif',
+          fontSize: TEXT.size.hint,
+          color: COLORS.muted,
+        })
+        .setOrigin(0, 0.5)
+        .setDepth(DEPTH.ui)
+        .setInteractive({ useHandCursor: true });
+      text.on(Phaser.Input.Events.GAMEOBJECT_POINTER_DOWN, () => this.openOverlay(SCENES.ranking));
+      this.podium.push(text);
+      this.podiumFlags.push(this.add.image(0, y + MENU.podiumGap, '__DEFAULT').setDepth(DEPTH.ui).setVisible(false));
+    }
 
     const draw = () => this.drawChampion(width);
     draw();
@@ -279,6 +323,7 @@ export class MenuScene extends Phaser.Scene {
     }
 
     const first = ranking.first;
+    this.shine(Boolean(first));
     label.setScale(1).setText(
       first
         ? fill(t().ranking.champion, {
@@ -287,17 +332,100 @@ export class MenuScene extends Phaser.Scene {
           })
         : '',
     );
-    fitText(label, width - 80);
+    fitText(label, width - 110);
+    // Cup, flag, then the line — the whole of it centred.
+    const cup = this.championCup;
+    const lead = (first ? 28 : 0) + (first?.flag ? 30 : 0);
+    const total = label.displayWidth + lead;
+    const start = width / 2 - total / 2;
+    cup?.setVisible(Boolean(first)).setPosition(start + 11, label.y);
     flag.setVisible(Boolean(first?.flag));
     if (first?.flag) {
-      flag.setTexture(flagTexture(first.flag)).setDisplaySize(24, 16);
-      // The flag sits just ahead of the line, which moves right to make room.
-      const total = label.displayWidth + 30;
-      label.setX(width / 2 + 15);
-      flag.setPosition(width / 2 - total / 2 + 12, label.y);
-    } else {
-      label.setX(width / 2);
+      flag.setTexture(flagTexture(first.flag)).setDisplaySize(24, 16).setPosition(start + 28 + 12, label.y);
     }
+    label.setX(start + lead + label.displayWidth / 2);
+
+    this.drawPodium(width);
+  }
+
+  /** Second and third, side by side under first place, each with its flag. */
+  private drawPodium(width: number): void {
+    const top = ranking.top;
+    const gap = 28;
+    let total = 0;
+    this.podium.forEach((text, i) => {
+      const entry = top[i + 1];
+      const flag = this.podiumFlags[i]!;
+      text.setScale(1).setText(
+        entry
+          ? fill(t().ranking.podium, {
+              place: i + 2,
+              name: rankLabel(entry),
+              damage: Math.round(entry.damage).toLocaleString('en-US'),
+            })
+          : '',
+      );
+      flag.setVisible(Boolean(entry?.flag));
+      if (entry?.flag) {
+        flag.setTexture(flagTexture(entry.flag)).setDisplaySize(18, 12);
+      }
+      if (entry) {
+        total += (total > 0 ? gap : 0) + (entry.flag ? 22 : 0) + text.width;
+      }
+    });
+    // Too wide for a phone: drawn smaller rather than run off the edge.
+    const scale = Math.min(1, (width - 40) / Math.max(1, total));
+    let x = width / 2 - (total * scale) / 2;
+    this.podium.forEach((text, i) => {
+      if (!text.text) {
+        return;
+      }
+      const flag = this.podiumFlags[i]!;
+      if (flag.visible) {
+        flag.setScale(flag.scaleX * scale, flag.scaleY * scale).setX(x + 9 * scale);
+        x += 22 * scale;
+      }
+      text.setScale(scale).setX(x);
+      x += text.width * scale + gap * scale;
+    });
+  }
+
+  /** Sparks rise off first place while there is one. */
+  private shine(on: boolean): void {
+    if (!on) {
+      this.sparks?.remove();
+      this.sparks = undefined;
+      return;
+    }
+    if (this.sparks) {
+      return;
+    }
+    this.sparks = this.time.addEvent({
+      delay: MENU.championSparkMs,
+      loop: true,
+      callback: () => {
+        const label = this.champion;
+        if (!label?.active || !label.text) {
+          return;
+        }
+        const x = label.x + (Math.random() - 0.5) * label.displayWidth;
+        const y = label.y + (Math.random() - 0.5) * label.displayHeight * 0.6;
+        const spark = this.add
+          .image(x, y, TEXTURES.glow)
+          .setDisplaySize(10, 10)
+          .setTint(Math.random() < 0.5 ? 0xffe27a : 0xfff4d6)
+          .setBlendMode(Phaser.BlendModes.ADD)
+          .setDepth(DEPTH.ui + 2);
+        this.tweens.add({
+          targets: spark,
+          y: y - 14,
+          alpha: 0,
+          scale: spark.scale * 0.4,
+          duration: 700,
+          onComplete: () => spark.destroy(),
+        });
+      },
+    });
   }
 
   /**

@@ -105,6 +105,11 @@ suite on its own: `node run-all.mjs test-gear`.
   an exact figure must either turn the base chance off for the measurement
   (`window.config.PLAYER.critChance = 0`, put back after) or assert "was hit"
   rather than "was hit for exactly N".
+- **`cdp.evaluate` waits for the dev handles it names.** Just after a source
+  edit the first page loads take ~8s while Vite transforms afresh, longer
+  than any suite's fixed sleep; a probe that reads `window.ranking` (or any
+  handle) first waits up to 30s for that handle and a running scene. A new
+  dev handle goes in `HANDLES` in cdp-lib as well as in main.ts.
 - **A hidden Chrome window stops Phaser's loop**, which fails every check at
   once for a reason that has nothing to do with the game. `cdp-lib.mjs` pins
   the page visible and raises the window on connect; leave that in.

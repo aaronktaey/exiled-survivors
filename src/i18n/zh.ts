@@ -161,6 +161,7 @@ export const zh: Strings = {
     name: '名字',
     damage: '造成伤害',
     champion: '第 1 名  {name}  {damage}',
+    podium: '第 {place} 名  {name}  {damage}',
     entryTitle: '排行榜第 {place} 名！',
     entryLead: '造成伤害 {damage} — 留下名字吧（3 个字母 + 1 个表情 + 国旗）',
     confirm: '登记',

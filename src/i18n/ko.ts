@@ -165,6 +165,7 @@ export const ko: Strings = {
     name: '이름',
     damage: '가한 피해',
     champion: '1위  {name}  {damage}',
+    podium: '{place}위  {name}  {damage}',
     entryTitle: '랭킹 {place}위!',
     entryLead: '가한 피해 {damage} — 이름을 남기세요 (알파벳 3자 + 이모지 1개 + 국기)',
     confirm: '등록',

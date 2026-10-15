@@ -65,10 +65,17 @@ check('a run below twentieth does not make it; one above first takes first',
 await ev(`(() => { window.game.scene.getScene('MenuScene').scene.restart(); return 1; })()`);
 await sleep(1000);
 const title = await scene('MenuScene', `
-  return { champion: s.champion?.text ?? null, icon: !!s.icons.views.find((v) => v.button.id === 'ranking') };
+  return { champion: s.champion?.text ?? null, icon: !!s.icons.views.find((v) => v.button.id === 'ranking'),
+    podium: s.podium.map((p) => p.text), right: Math.max(...s.podium.map((p) => p.x + p.displayWidth)),
+    width: s.scale.width, champY: s.champion.y, podY: s.podium[0]?.y };
 `);
 check('first place is under the logo', /1위/.test(title.champion ?? '') && /25,000/.test(title.champion ?? ''),
   title.champion);
+check('and second and third on the line under it, inside the screen',
+  /2위/.test(title.podium?.[0] ?? '') && /24,000/.test(title.podium?.[0] ?? '') &&
+    /3위/.test(title.podium?.[1] ?? '') && /23,000/.test(title.podium?.[1] ?? '') &&
+    title.podY > title.champY && title.right <= title.width,
+  JSON.stringify(title.podium));
 check('and the corner has a 랭킹 icon', title.icon);
 await shot('ranking-01-title');
 
