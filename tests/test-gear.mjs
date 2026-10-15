@@ -1163,6 +1163,171 @@ check('the 인벤토리 reads the 고정 속성 out with its number',
   readout.text.split('\n')[0].endsWith(' · 고정: 가한 피해의 ' + readout.want + '만큼 흡혈'),
   readout.text.split('\n')[0]);
 
+// --- 장비 합성: three of the same sword for a chance at the one above ---
+const rules = await ev(`(() => {
+  const G = window.config.GEAR, C = window.config.GEAR_COMBINE, g = window.gear;
+  const fill = (id, n, prefix) => { for (let i = 0; i < n; i++) g.add({ uid: prefix + i, id, prefixes: [], suffixes: [] }); };
+  g.reset();
+  fill('rustySword', C.count, 'r'); fill('onigoroshi', C.count, 'o'); fill('ironSword', 1, 'i');
+  const starter = g.value.equipped;
+  const out = {
+    count: C.count,
+    short: g.combineProblem(['r0', 'r1']),
+    mixed: g.combineProblem(['r0', 'r1', 'i0']),
+    equipped: g.combineProblem(['r0', 'r1', starter]),
+    top: g.combineProblem(['o0', 'o1', 'o2']),
+    fine: g.combineProblem(['r0', 'r1', 'r2']),
+  };
+
+  // A success and a failure, the roll pinned for the one call that decides it.
+  const pinned = (value, uids) => { const roll = Math.random; Math.random = () => value;
+    try { return g.combine(uids); } finally { Math.random = roll; } };
+  const win = pinned(0, ['r0', 'r1', 'r2']);
+  out.win = { success: win?.success, id: win?.item?.id, lines: win ? win.item.prefixes.length + win.item.suffixes.length : -1,
+    tierUp: win?.item ? G[win.item.id].tier === G.rustySword.tier - 1 : false,
+    spent: ['r0', 'r1', 'r2'].every(uid => !g.value.items.some(it => it.uid === uid)),
+    kept: g.value.items.some(it => it.uid === win?.item?.uid) };
+  fill('rustySword', C.count, 'q');
+  const before = g.value.items.length;
+  const lose = pinned(0.999, ['q0', 'q1', 'q2']);
+  out.lose = { success: lose?.success, item: lose?.item, lost: before - g.value.items.length };
+
+  // And how often it takes, over many — against the configured chance.
+  let wins = 0; const N = 600;
+  for (let i = 0; i < N; i++) {
+    fill('ironSword', C.count, 'm' + i + '_');
+    if (g.combine(['m' + i + '_0', 'm' + i + '_1', 'm' + i + '_2'])?.success) wins++;
+    for (const it of [...g.value.items]) if (it.uid !== g.value.equipped) g.discard(it.uid);
+  }
+  out.rate = wins / N; out.want = C.successChance;
+  g.reset();
+  return out;
+})()`);
+console.log('combine rules:', JSON.stringify(rules));
+check('합성 takes exactly that many of one sword, none in hand, and not the top tier',
+  rules.short === 'count' && rules.mixed === 'mixed' && rules.equipped === 'equipped' &&
+    rules.top === 'top' && rules.fine === null,
+  `${rules.short} / ${rules.mixed} / ${rules.equipped} / ${rules.top} / ${rules.fine}`);
+check('a success spends the three and gives the sword one tier up, with no 속성',
+  rules.win.success === true && rules.win.tierUp && rules.win.lines === 0 && rules.win.spent && rules.win.kept,
+  JSON.stringify(rules.win));
+check('a failure spends the three and gives nothing',
+  rules.lose.success === false && rules.lose.item === null && rules.lose.lost === rules.count,
+  JSON.stringify(rules.lose));
+check('and it takes about as often as configured',
+  Math.abs(rules.rate - rules.want) < 0.06, `${(rules.rate * 100).toFixed(1)}% (want ${rules.want * 100}%)`);
+
+// On the screen: pick, run, watch, and land on what came of it.
+const combineScreen = async (roll) => {
+  await ev(`(() => {
+    const g = window.gear; g.reset();
+    for (let i = 0; i < 3; i++) g.add({ uid: 'c' + i, id: 'ironSword', prefixes: [], suffixes: [] });
+    return 1;
+  })()`);
+  await ev(`(() => { const s = window.game.scene.getScene('InventoryScene');
+    if (window.game.scene.isActive('InventoryScene')) s.scene.restart({ onClose: s.payload.onClose, tab: 'gear' });
+    return 1; })()`);
+  await sleep(700);
+  const picking = await scene('InventoryScene', `
+    s.menu.focus('c0'); s.pressCombine(); s.togglePick('c1'); s.togglePick('c2');
+    return { picked: [...s.combining], button: s.combineButton.text, hint: s.orbHint.text };
+  `);
+  const started = await scene('InventoryScene', `
+    const roll = Math.random; Math.random = () => ${roll};
+    try { s.pressCombine(); } finally { Math.random = roll; }
+    return { busy: s.busy, items: window.gear.items.length };
+  `);
+  // Keys are ignored while it plays out.
+  await cdp.tap('Escape', 27, 'Escape');
+  const fx = await ev(`window.config.COMBINE_FX`);
+  await sleep(fx.gatherMs + 900);
+  const mid = await scene('InventoryScene', `return { busy: s.busy, open: window.game.scene.isActive('InventoryScene') };`);
+  await sleep(fx.chargeMs + Math.max(fx.flashMs, fx.burstMs) + fx.holdMs);
+  const after = await scene('InventoryScene', `return { busy: s.busy, note: s.orbHint?.text ?? '',
+    heading: s.heading.text, items: window.gear.items.map(i => i.id) };`);
+  return { picking, started, mid, after };
+};
+// From a fresh title, whatever screen the checks above left open.
+await cdp.send('Page.navigate', { url: 'http://localhost:5173/' });
+await cdp.send('Page.reload', {});
+await sleep(4200);
+await openIcon('gear');
+const lost = await combineScreen(0.999);
+console.log('combine (fail):', JSON.stringify(lost));
+check('picking three puts them in the 합성 and the button says so',
+  lost.picking.picked.length === 3 && lost.picking.button === '합성하기' && /20%|%/.test(lost.picking.hint),
+  `${lost.picking.button} — ${lost.picking.hint}`);
+check('the light plays out over the screen, which takes no keys meanwhile',
+  lost.started.busy === true && lost.mid.busy === true && lost.mid.open === true,
+  JSON.stringify({ started: lost.started, mid: lost.mid }));
+check('a failure comes back with the three gone and says so',
+  lost.after.busy === false && /합성 실패/.test(lost.after.note) && !lost.after.items.includes('ironSword'),
+  `${lost.after.note} — ${lost.after.items.join(', ')}`);
+await shot('gear-combine-fail');
+
+const won = await combineScreen(0);
+console.log('combine (success):', JSON.stringify(won));
+check('a success comes back on the new sword, one tier up, and says so',
+  won.after.busy === false && /합성 성공/.test(won.after.note) && won.after.items.includes('steelSword') &&
+    won.after.heading === '강철 검',
+  `${won.after.note} — ${won.after.heading}`);
+await shot('gear-combine-success');
+
+const combineReset = await scene('InventoryScene', `
+  window.gear.reset();
+  s.scene.restart({ onClose: s.payload.onClose, tab: 'gear' });
+  return 1;
+`);
+await sleep(700);
+const why = await scene('InventoryScene', `
+  s.menu.focus(window.gear.value.equipped); s.pressCombine();
+  return { combining: s.combining, why: s.combineWhy, line: s.orbHint.text };
+`);
+check('pressing 합성 on the sword in hand says why it cannot',
+  combineReset === 1 && why.combining === null && /착용 중/.test(why.line), why.line);
+await cdp.tap('Escape', 27, 'Escape');
+await sleep(500);
+
+// --- 희귀 drops stand in a pillar of light ---
+await cdp.send('Page.navigate', { url: 'http://localhost:5173/#run' });
+await cdp.send('Page.reload', {});
+await sleep(4200);
+const pillars = await run(`
+  s.player.setInvulnerable(true);
+  s.choosing = true;
+  s.spawner.clear();
+  const p = s.player;
+  const full = { prefixes: [{ id: 'mighty', tier: 1 }, { id: 'critical', tier: 1 }, { id: 'cruel', tier: 1 }],
+    suffixes: [{ id: 'giant', tier: 1 }, { id: 'swift', tier: 1 }, { id: 'magnetic', tier: 1 }] };
+  s.combat.dropGearAt(p.x - 300, p.y, { uid: 'loud', id: 'runedSword', ...full });
+  s.combat.dropGearAt(p.x + 300, p.y, { uid: 'plain', id: 'ironSword', prefixes: [], suffixes: [] });
+  const drops = s.combat.gearDrops.getChildren().filter(d => d.active);
+  const loud = drops.find(d => d.item.uid === 'loud'), plain = drops.find(d => d.item.uid === 'plain');
+  const out = {
+    loud: { on: loud.nameplate.pillar.visible, x: Math.round(loud.nameplate.pillar.x - loud.x),
+      under: loud.nameplate.pillar.depth < loud.depth, alpha: loud.nameplate.pillar.alpha },
+    plain: plain.nameplate.pillar.visible,
+  };
+  s.combat.dropMangoAt(p.x, p.y - 300);
+  const mango = s.combat.mangoDrops.getChildren().find(d => d.active);
+  out.mango = mango?.nameplate.pillar?.visible === true;
+  loud.collect();
+  out.gone = loud.nameplate.pillar.visible;
+  s.combat.dropAltarAt(p.x, p.y + 300, 'bosses');
+  const altar = s.combat.altars.getChildren().find(a => a.active);
+  out.altar = altar?.nameplate.pillar === undefined;
+  return out;
+`);
+console.log('pillars:', JSON.stringify(pillars));
+check('a 희귀 drop stands in a pale pillar of light, under it and centred on it',
+  pillars.loud.on === true && pillars.loud.x === 0 && pillars.loud.under && pillars.loud.alpha > 0 && pillars.loud.alpha < 1 &&
+    pillars.mango === true,
+  JSON.stringify(pillars.loud));
+check('an ordinary drop has none, and a picked-up one takes its pillar with it',
+  pillars.plain === false && pillars.gone === false, JSON.stringify({ plain: pillars.plain, gone: pillars.gone }));
+check('an altar, which is not picked up, stands in none', pillars.altar === true);
+await shot('gear-pillar');
+
 console.log('\n=== SUMMARY ===');
 const failed = results.filter((r) => !r.p);
 console.log(`${results.length - failed.length}/${results.length} passed`);

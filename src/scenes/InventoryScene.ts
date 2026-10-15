@@ -3,8 +3,12 @@ import Phaser from 'phaser';
 import {
   ALL_BONES,
   ALL_ORBS,
+  AUDIO,
   COLORS,
+  COMBINE_FX,
   DEPTH,
+  GEAR,
+  GEAR_COMBINE,
   GEAR_DROP,
   INVENTORY,
   ORBS,
@@ -22,6 +26,7 @@ import {
   boneName,
   fill,
   gearImplicitText,
+  gearName,
   gearTitle,
   orbDetail,
   orbName,
@@ -34,6 +39,7 @@ import {
   gear,
   gearBonusFor,
   orbApplied,
+  type CombineOutcome,
   type GearItem,
   type OrbOutcome,
 } from '@/systems/Gear';
@@ -123,6 +129,22 @@ export class InventoryScene extends Phaser.Scene {
   private equipPlate?: Phaser.GameObjects.Rectangle;
   public discard?: Phaser.GameObjects.Text;
   private discardPlate?: Phaser.GameObjects.Rectangle;
+  /** 합성, and the plate behind it. Public so a test can press it. */
+  public combineButton?: Phaser.GameObjects.Text;
+  private combinePlate?: Phaser.GameObjects.Rectangle;
+  /**
+   * The swords picked for a 합성, in the order they were picked, or null
+   * when no 합성 is being put together. Public so a test can read it.
+   */
+  public combining: string[] | null = null;
+  /** True while the light is playing out; nothing else is taken meanwhile. */
+  public busy = false;
+  /** The gold frames over the picked cells, one per sword a 합성 takes. */
+  private combineMarks: Phaser.GameObjects.Rectangle[] = [];
+  /** Why the last press of 합성 did nothing, until the cursor moves. */
+  public combineWhy: string | null = null;
+  /** Where the light gathers: the middle of the grid. */
+  private gridCentre = { x: 0, y: 0 };
   /** The 구슬 buttons, by id. Public so a test can press one. */
   public orbButtons = new Map<OrbId, Phaser.GameObjects.Text>();
   private orbPlates = new Map<OrbId, Phaser.GameObjects.Rectangle>();
@@ -167,6 +189,12 @@ export class InventoryScene extends Phaser.Scene {
     this.equipPlate = undefined;
     this.discard = undefined;
     this.discardPlate = undefined;
+    this.combineButton = undefined;
+    this.combinePlate = undefined;
+    this.combining = null;
+    this.busy = false;
+    this.combineWhy = null;
+    this.combineMarks = [];
     this.orbHint = undefined;
   }
 
@@ -239,6 +267,14 @@ export class InventoryScene extends Phaser.Scene {
       depth: DEPTH.ui + 1,
       onMove: () => this.showDetails(),
     });
+    this.gridCentre = { x: gridLeft + gridWidth / 2, y: gridTop + rowsSpan(cell) / 2 };
+    this.combineMarks = Array.from({ length: GEAR_COMBINE.count }, () =>
+      this.add
+        .rectangle(0, 0, cell + 2, cell + 2, COMBINE_FX.success, 0.18)
+        .setStrokeStyle(2, COMBINE_FX.success, 1)
+        .setDepth(DEPTH.ui + 3)
+        .setVisible(false),
+    );
 
     this.pageLabel = this.add
       .text(gridLeft + gridWidth / 2, gridTop + rowsSpan(cell) + 8, '', {
@@ -361,7 +397,7 @@ export class InventoryScene extends Phaser.Scene {
         tier: dropTierFor(item),
         marked: () => gear.value.equipped === item.uid,
         label: () => gearTitle(item),
-        onSelect: () => this.wear(item.uid),
+        onSelect: () => (this.combining ? this.togglePick(item.uid) : this.wear(item.uid)),
       }));
     }
 
@@ -393,6 +429,16 @@ export class InventoryScene extends Phaser.Scene {
   }
 
   private onKey(event: KeyboardEvent): void {
+    // While the light plays out, the screen is watched, not driven.
+    if (this.busy) {
+      return;
+    }
+    // Esc backs out of a 합성 being put together before it leaves the screen.
+    if (event.code === 'Escape' && this.combining) {
+      this.cancelCombine();
+      return;
+    }
+
     switch (event.code) {
       case 'ArrowLeft':
       case 'KeyA':
@@ -429,6 +475,11 @@ export class InventoryScene extends Phaser.Scene {
       case 'Backspace':
         if (!event.repeat) {
           this.pressDiscard();
+        }
+        return;
+      case 'KeyC':
+        if (!event.repeat && this.tab === 'gear') {
+          this.pressCombine();
         }
         return;
       case 'Escape':
@@ -470,6 +521,7 @@ export class InventoryScene extends Phaser.Scene {
 
     // A question asked about one thing does not carry over to the next.
     this.armed = null;
+    this.combineWhy = null;
 
     if (this.tab === 'gear') {
       const item = this.selected();
@@ -479,6 +531,7 @@ export class InventoryScene extends Phaser.Scene {
       this.refreshEquip();
       this.refreshDiscard();
       this.refreshOrbs();
+      this.refreshCombine();
       return;
     }
 
@@ -522,9 +575,9 @@ export class InventoryScene extends Phaser.Scene {
     return gear.items.find((held) => held.uid === this.menu.selectedId);
   }
 
-  /** 착용 and 버리기, side by side. Returns the bottom of the row. */
+  /** 착용, 버리기 and 합성, side by side. Returns the bottom of the row. */
   private buildActions(x: number, y: number, paneWidth: number): number {
-    const width = Math.min(150, (paneWidth - 12) / 2);
+    const width = Math.min(130, (paneWidth - 24) / 3);
     const make = (cx: number, onPress: () => void) => {
       const plate = this.add
         .rectangle(cx, y, width, BUTTON_HEIGHT, COLORS.panelActive, 0)
@@ -543,7 +596,7 @@ export class InventoryScene extends Phaser.Scene {
       return { plate, label };
     };
 
-    const equip = make(x - width / 2 - 6, () => {
+    const equip = make(x - width - 12, () => {
       const item = this.selected();
       if (item) {
         this.wear(item.uid);
@@ -552,9 +605,13 @@ export class InventoryScene extends Phaser.Scene {
     this.equip = equip.label;
     this.equipPlate = equip.plate;
 
-    const discard = make(x + width / 2 + 6, () => this.pressDiscard());
+    const discard = make(x, () => this.pressDiscard());
     this.discard = discard.label;
     this.discardPlate = discard.plate;
+
+    const combine = make(x + width + 12, () => this.pressCombine());
+    this.combineButton = combine.label;
+    this.combinePlate = combine.plate;
 
     return y + BUTTON_HEIGHT / 2;
   }
@@ -623,6 +680,9 @@ export class InventoryScene extends Phaser.Scene {
 
   /** First press asks, second press spends it. */
   public pressOrb(id: OrbId): void {
+    if (this.combining || this.busy) {
+      return;
+    }
     const item = this.selected();
     const spec = ORBS[id];
     if (!item || !spec || !this.canUse(id)) {
@@ -740,6 +800,9 @@ export class InventoryScene extends Phaser.Scene {
 
   /** First press asks, second press throws it away. */
   public pressDiscard(): void {
+    if (this.combining || this.busy) {
+      return;
+    }
     const item = this.selected();
     if (!this.canDiscard(item) || !item) {
       return;
@@ -837,7 +900,7 @@ export class InventoryScene extends Phaser.Scene {
    * went out with.
    */
   private wear(uid: string): void {
-    if (this.locked) {
+    if (this.locked || this.combining || this.busy) {
       return;
     }
 
@@ -851,7 +914,442 @@ export class InventoryScene extends Phaser.Scene {
     this.refreshOrbs();
   }
 
+  // --- 합성: three of the same sword for a chance at the one above ---
+
+  /** The swords that could go into a 합성 with this one: the same kind, not in hand. */
+  private combinable(id: GearItem['id']): GearItem[] {
+    return gear.items.filter((held) => held.id === id && held.uid !== gear.value.equipped);
+  }
+
+  /** Why a 합성 cannot start from this sword, or null when it can. */
+  private combineBlock(item: GearItem | undefined): string | null {
+    const copy = t().gear;
+    if (!item) {
+      return '';
+    }
+    if (item.uid === gear.value.equipped) {
+      return copy.combineEquipped;
+    }
+    if (!Object.values(GEAR).some((spec) => spec.tier === GEAR[item.id].tier - 1)) {
+      return copy.combineTop;
+    }
+    if (this.combinable(item.id).length < GEAR_COMBINE.count) {
+      return fill(copy.combineShort, { count: GEAR_COMBINE.count });
+    }
+    return null;
+  }
+
+  /**
+   * One button, three jobs: starts a 합성 from the sword under the cursor,
+   * adds or takes back the sword under the cursor while one is being put
+   * together, and — once enough are picked — runs it.
+   */
+  public pressCombine(): void {
+    if (this.busy || this.tab !== 'gear') {
+      return;
+    }
+
+    const item = this.selected();
+    if (!this.combining) {
+      const block = this.combineBlock(item);
+      if (block !== null) {
+        this.combineWhy = block || null;
+        this.refreshCombine();
+        return;
+      }
+      if (!item) {
+        return;
+      }
+      this.combining = [item.uid];
+      this.armed = null;
+      this.showDetails();
+      return;
+    }
+
+    // Once enough are picked the button runs it; taking one back out is Space
+    // on its cell.
+    if (this.combining.length >= GEAR_COMBINE.count) {
+      this.runCombine();
+      return;
+    }
+    if (item) {
+      this.togglePick(item.uid);
+    }
+  }
+
+  /** Adds a sword to the 합성 being put together, or takes it back out. */
+  public togglePick(uid: string): void {
+    if (!this.combining || this.busy) {
+      return;
+    }
+
+    const first = gear.items.find((held) => held.uid === this.combining?.[0]);
+    const item = gear.items.find((held) => held.uid === uid);
+    if (!item) {
+      return;
+    }
+
+    if (this.combining.includes(uid)) {
+      this.combining = this.combining.filter((picked) => picked !== uid);
+      if (this.combining.length === 0) {
+        this.combining = null;
+      }
+    } else if (
+      first &&
+      item.id === first.id &&
+      uid !== gear.value.equipped &&
+      this.combining.length < GEAR_COMBINE.count
+    ) {
+      this.combining = [...this.combining, uid];
+    }
+    this.showDetails();
+  }
+
+  /** Puts the 합성 back down, nothing spent. */
+  public cancelCombine(): void {
+    if (this.busy) {
+      return;
+    }
+    this.combining = null;
+    this.showDetails();
+  }
+
+  /** The button's words, the frames over the picked cells, and the line under the 구슬. */
+  private refreshCombine(): void {
+    const copy = t().gear;
+    const picked = this.combining ?? [];
+    const first = gear.items.find((held) => held.uid === picked[0]);
+
+    // Frames over the picked swords on this page; the rest of the page dims
+    // to what could still join them.
+    const perPage = INVENTORY.cols * INVENTORY.rows;
+    const start = this.menu.page * perPage;
+    let mark = 0;
+    this.combineMarks.forEach((frame) => frame.setVisible(false));
+    this.menu.cells.forEach((view, slot) => {
+      const uid = this.menu.items[start + slot]?.id;
+      const held = uid ? gear.items.find((item) => item.uid === uid) : undefined;
+      const fits =
+        !this.combining ||
+        !held ||
+        (first !== undefined && held.id === first.id && held.uid !== gear.value.equipped);
+      view.plate.setAlpha(fits ? 1 : 0.3);
+      view.icon.setAlpha(fits ? 1 : 0.3);
+      if (uid && picked.includes(uid)) {
+        this.combineMarks[mark++]?.setPosition(view.plate.x, view.plate.y).setVisible(true);
+      }
+    });
+
+    if (!this.combineButton || !this.combinePlate) {
+      return;
+    }
+
+    const ready = picked.length >= GEAR_COMBINE.count;
+    const block = this.combining ? null : this.combineBlock(this.selected());
+    const live = this.combining !== null || block === null;
+    this.combineButton.setText(
+      !this.combining
+        ? copy.combine
+        : ready
+          ? copy.combineGo
+          : fill(copy.combinePick, { n: picked.length, count: GEAR_COMBINE.count }),
+    );
+    this.combineButton.setColor(this.combining ? COLORS.accent : COLORS.muted);
+    this.combineButton.setAlpha(live ? 1 : 0.35);
+    this.combinePlate.setFillStyle(COLORS.panelActive, this.combining ? 0.55 : 0);
+    this.combinePlate.setAlpha(live ? 1 : 0.35);
+
+    if (!this.orbHint) {
+      return;
+    }
+    if (this.combining && first) {
+      const above = Object.values(GEAR)
+        .filter((spec) => spec.tier === GEAR[first.id].tier - 1)
+        .map((spec) => gearName(spec.id))
+        .join(' / ');
+      this.orbHint.setColor(COLORS.gearText);
+      this.orbHint.setText(
+        ready
+          ? fill(copy.combineReady, {
+              chance: `${Math.round(GEAR_COMBINE.successChance * 100)}%`,
+              target: above,
+              count: GEAR_COMBINE.count,
+            })
+          : fill(copy.combineHint, { gear: gearName(first.id), n: picked.length, count: GEAR_COMBINE.count }),
+      );
+      return;
+    }
+    // Pressed on something that cannot be combined: say why, in place of the 구슬 line.
+    if (this.combineWhy) {
+      this.orbHint.setColor(COLORS.accent);
+      this.orbHint.setText(this.combineWhy);
+    }
+  }
+
+  /**
+   * Spends the picked swords — the outcome is decided and saved first — then
+   * plays the light out and brings the screen back on whatever came of it.
+   */
+  private runCombine(): void {
+    const picked = this.combining ?? [];
+    const first = gear.items.find((held) => held.uid === picked[0]);
+    if (!first || gear.combineProblem(picked) !== null) {
+      return;
+    }
+
+    // Where each sword's light starts: its own cell if it is on this page,
+    // the middle of the grid's edge if it is on another.
+    const perPage = INVENTORY.cols * INVENTORY.rows;
+    const start = this.menu.page * perPage;
+    const sources = picked.map((uid) => {
+      const slot = this.menu.items.findIndex((cell) => cell.id === uid) - start;
+      const view = slot >= 0 && slot < perPage ? this.menu.cells[slot] : undefined;
+      return view ? { x: view.plate.x, y: view.plate.y } : { x: this.gridCentre.x, y: this.menu.cells[0]?.plate.y ?? 0 };
+    });
+
+    const outcome = gear.combine(picked);
+    if (!outcome) {
+      return;
+    }
+
+    this.busy = true;
+    this.combining = null;
+    this.combineMarks.forEach((frame) => frame.setVisible(false));
+    const copy = t().gear;
+    const note = outcome.success && outcome.item
+      ? fill(copy.combineSuccess, { gear: gearName(outcome.item.id) })
+      : fill(copy.combineFail, { gear: gearName(first.id), count: GEAR_COMBINE.count });
+
+    this.playCombine(sources, this.gridCentre, outcome, () => {
+      this.busy = false;
+      this.scene.restart({
+        onClose: this.payload.onClose,
+        tab: 'gear',
+        focus: outcome.item?.uid,
+        note,
+      });
+    });
+  }
+
+  /**
+   * The light: out of each sword, into one point, three seconds of shining
+   * that grows brighter and quicker, then a burst of smoke and sparks on a
+   * failure or a white flash and the new sword on a success.
+   */
+  private playCombine(
+    sources: readonly { x: number; y: number }[],
+    target: { x: number; y: number },
+    outcome: CombineOutcome,
+    done: () => void,
+  ): void {
+    const fx = COMBINE_FX;
+    const depth = DEPTH.ui + 20;
+    const { width, height } = this.scale;
+    const add = Phaser.BlendModes.ADD;
+    const glow = (x: number, y: number, size: number, tint: number, alpha = 1) =>
+      this.add
+        .image(x, y, TEXTURES.glow)
+        .setDisplaySize(size, size)
+        .setTint(tint)
+        .setBlendMode(add)
+        .setAlpha(alpha)
+        .setDepth(depth + 2);
+    const fade = (target: Phaser.GameObjects.Image, ms: number, grow = 1) =>
+      this.tweens.add({
+        targets: target,
+        alpha: 0,
+        scaleX: target.scaleX * grow,
+        scaleY: target.scaleY * grow,
+        duration: ms,
+        onComplete: () => target.destroy(),
+      });
+
+    // The screen darkens, and takes every press for itself until it is done.
+    const scrim = this.add
+      .rectangle(0, 0, width, height, 0x000000, fx.scrim)
+      .setOrigin(0, 0)
+      .setDepth(depth)
+      .setAlpha(0)
+      .setInteractive();
+    this.tweens.add({ targets: scrim, alpha: 1, duration: 250 });
+
+    // 1. Light leaves each sword and travels to the meeting point, trailing.
+    const motes = sources.map((from) => {
+      fade(glow(from.x, from.y, 60, fx.light, 0.9), 450, 1.6);
+      return glow(from.x, from.y, 30, fx.light);
+    });
+    const trail = this.time.addEvent({
+      delay: 40,
+      loop: true,
+      callback: () => motes.forEach((mote) => fade(glow(mote.x, mote.y, 18, fx.light, 0.6), 320, 0.4)),
+    });
+    this.tweens.add({
+      targets: motes,
+      x: target.x,
+      y: target.y,
+      duration: fx.gatherMs,
+      ease: 'Cubic.easeIn',
+      onComplete: () => {
+        trail.remove();
+        motes.forEach((mote) => mote.destroy());
+        charge();
+      },
+    });
+
+    // 2. Gathered: it shines for three seconds, brighter and quicker.
+    const charge = () => {
+      const halo = glow(target.x, target.y, 150, fx.light, 0.3);
+      const core = glow(target.x, target.y, 44, 0xffffff);
+      const rays = this.add.graphics().setDepth(depth + 1).setBlendMode(add).setPosition(target.x, target.y);
+      rays.fillStyle(fx.light, 1);
+      for (let i = 0; i < 10; i++) {
+        const a = (i / 10) * Math.PI * 2;
+        rays.fillTriangle(0, 0, Math.cos(a - 0.05) * 120, Math.sin(a - 0.05) * 120, Math.cos(a + 0.05) * 120, Math.sin(a + 0.05) * 120);
+      }
+      rays.setAlpha(0);
+
+      this.tweens.add({ targets: core, scale: core.scale * 2.2, duration: fx.chargeMs, ease: 'Sine.easeIn' });
+      this.tweens.add({ targets: rays, alpha: 0.35, angle: 220, duration: fx.chargeMs, ease: 'Sine.easeIn' });
+      const breath = this.tweens.add({
+        targets: halo,
+        alpha: 0.7,
+        duration: 320,
+        yoyo: true,
+        repeat: -1,
+        ease: 'Sine.easeInOut',
+      });
+      // Sparks drawn in from all round, faster as the light builds.
+      let gap = 140;
+      const spark = (): void => {
+        const a = Math.random() * Math.PI * 2;
+        const r = 90 + Math.random() * 60;
+        const mote = glow(target.x + Math.cos(a) * r, target.y + Math.sin(a) * r, 14, fx.light, 0.9);
+        this.tweens.add({
+          targets: mote,
+          x: target.x,
+          y: target.y,
+          alpha: 0.2,
+          duration: 380,
+          ease: 'Quad.easeIn',
+          onComplete: () => mote.destroy(),
+        });
+        gap = Math.max(35, gap * 0.93);
+        sparks = this.time.delayedCall(gap, spark);
+      };
+      let sparks = this.time.delayedCall(gap, spark);
+
+      this.time.delayedCall(fx.chargeMs, () => {
+        sparks.remove();
+        breath.remove();
+        rays.destroy();
+        if (outcome.success) {
+          succeed(core, halo);
+        } else {
+          fail(core, halo);
+        }
+      });
+    };
+
+    // 3a. It does not take: a pop, sparks and smoke.
+    const fail = (core: Phaser.GameObjects.Image, halo: Phaser.GameObjects.Image) => {
+      core.setTint(fx.failure);
+      fade(core, 220, 2.4);
+      fade(halo, 260, 1.8);
+      fade(glow(target.x, target.y, 200, fx.failure, 0.9), fx.burstMs * 0.6, 1.8);
+      for (let i = 0; i < 18; i++) {
+        const a = Math.random() * Math.PI * 2;
+        const r = 70 + Math.random() * 120;
+        const bit = glow(target.x, target.y, 10 + Math.random() * 10, i % 3 === 0 ? 0xffffff : fx.failure);
+        this.tweens.add({
+          targets: bit,
+          x: target.x + Math.cos(a) * r,
+          y: target.y + Math.sin(a) * r,
+          alpha: 0,
+          duration: fx.burstMs,
+          ease: 'Cubic.easeOut',
+          onComplete: () => bit.destroy(),
+        });
+      }
+      for (let i = 0; i < 6; i++) {
+        const puff = this.add
+          .image(target.x + (Math.random() - 0.5) * 40, target.y + (Math.random() - 0.5) * 40, TEXTURES.glow)
+          .setDisplaySize(60, 60)
+          .setTint(fx.smoke)
+          .setAlpha(0.7)
+          .setDepth(depth + 1);
+        this.tweens.add({
+          targets: puff,
+          y: puff.y - 30,
+          alpha: 0,
+          scale: puff.scale * 2.4,
+          duration: fx.burstMs * 1.6,
+          ease: 'Sine.easeOut',
+          onComplete: () => puff.destroy(),
+        });
+      }
+      this.cameras.main.shake(260, 0.012);
+      this.play('sfx-fireball-0', 0.6);
+      this.time.delayedCall(fx.burstMs + fx.holdMs, done);
+    };
+
+    // 3b. It takes: a white flash, a starburst, and the new sword in the light.
+    const succeed = (core: Phaser.GameObjects.Image, halo: Phaser.GameObjects.Image) => {
+      core.setTint(fx.success);
+      fade(core, fx.flashMs, 3);
+      fade(halo, fx.flashMs, 3);
+      const flash = this.add
+        .rectangle(0, 0, width, height, 0xffffff, 1)
+        .setOrigin(0, 0)
+        .setDepth(depth + 4)
+        .setAlpha(0);
+      this.tweens.add({
+        targets: flash,
+        alpha: 0.85,
+        duration: fx.flashMs * 0.25,
+        yoyo: true,
+        hold: 60,
+        onComplete: () => flash.destroy(),
+      });
+      const burst = this.add.graphics().setDepth(depth + 1).setBlendMode(add).setPosition(target.x, target.y);
+      burst.fillStyle(fx.success, 1);
+      for (let i = 0; i < 16; i++) {
+        const a = (i / 16) * Math.PI * 2;
+        const r = i % 2 === 0 ? 220 : 140;
+        burst.fillTriangle(0, 0, Math.cos(a - 0.04) * r, Math.sin(a - 0.04) * r, Math.cos(a + 0.04) * r, Math.sin(a + 0.04) * r);
+      }
+      burst.setScale(0.2).setAlpha(0.9);
+      this.tweens.add({
+        targets: burst,
+        scale: 1.4,
+        alpha: 0,
+        angle: 30,
+        duration: fx.flashMs + 300,
+        ease: 'Cubic.easeOut',
+        onComplete: () => burst.destroy(),
+      });
+
+      const backing = glow(target.x, target.y, 120, fx.success, 0.7);
+      const sword = this.add.image(target.x, target.y, TEXTURES.gear).setDepth(depth + 3).setDisplaySize(72, 72);
+      const settled = sword.scale;
+      sword.setScale(settled * 0.2);
+      this.tweens.add({ targets: sword, scale: settled, duration: 420, ease: 'Back.easeOut' });
+      this.tweens.add({ targets: backing, alpha: 0.35, duration: 500, yoyo: true, repeat: 2 });
+      this.play(AUDIO.drops.rare.key, AUDIO.drops.rare.volume);
+      this.time.delayedCall(fx.flashMs + fx.holdMs, done);
+    };
+  }
+
+  /** A clip, if it loaded; silence rather than a warning if it did not. */
+  private play(key: string, volume: number): void {
+    if (this.cache.audio.exists(key)) {
+      this.sound.play(key, { volume });
+    }
+  }
+
   private close(): void {
+    if (this.busy) {
+      return;
+    }
     const { onClose } = this.payload;
     this.scene.stop();
     onClose();

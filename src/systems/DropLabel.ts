@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 
-import { DEPTH, DROP_LABEL, TEXT, type DropTier } from '@/config';
+import { DEPTH, DROP_LABEL, LIGHT_PILLAR, TEXT, TEXTURES, type DropTier } from '@/config';
 import { outlineWidth } from '@/systems/SharpText';
 
 /**
@@ -16,11 +16,29 @@ export class DropLabel {
   /** The slab and the words on it. Public so a test can measure them. */
   public readonly plate: Phaser.GameObjects.Rectangle;
   public readonly label: Phaser.GameObjects.Text;
+  /**
+   * The column of light a 희귀 drop stands in. Public so a test can see it.
+   * Absent on a label that asked for none — a 제단 is not something to pick
+   * up, however loud its offer is.
+   */
+  public readonly pillar?: Phaser.GameObjects.Image;
   private readonly scene: Phaser.Scene;
   private pulse?: Phaser.Tweens.Tween;
+  private glow?: Phaser.Tweens.Tween;
 
-  public constructor(scene: Phaser.Scene, x: number, y: number) {
+  public constructor(scene: Phaser.Scene, x: number, y: number, options: { readonly pillar?: boolean } = {}) {
     this.scene = scene;
+
+    if (options.pillar !== false) {
+      this.pillar = scene.add
+        .image(x, y, TEXTURES.lightPillar)
+        .setOrigin(0.5, 1)
+        .setDisplaySize(LIGHT_PILLAR.width, LIGHT_PILLAR.height)
+        .setBlendMode(Phaser.BlendModes.ADD)
+        .setAlpha(LIGHT_PILLAR.alpha)
+        .setDepth(DEPTH.pickups - 1)
+        .setVisible(false);
+    }
 
     this.plate = scene.add
       .rectangle(x, y, 10, 10, DROP_LABEL.tiers.rare.plate, 0)
@@ -86,6 +104,7 @@ export class DropLabel {
     this.label.setVisible(true);
 
     this.pop(style.pulse);
+    this.light(tier === 'rare');
   }
 
   /** Centres the plate and its words just above an item of `size` at (x, y). */
@@ -93,11 +112,13 @@ export class DropLabel {
     const top = y - size / 2 - DROP_LABEL.gap - this.plate.height / 2;
     this.plate.setPosition(x, top);
     this.label.setPosition(x, top);
+    this.pillar?.setPosition(x, y + LIGHT_PILLAR.footOffset);
   }
 
   public hide(): void {
     this.pulse?.remove();
     this.pulse = undefined;
+    this.light(false);
     this.scene.tweens.killTweensOf([this.plate, this.label]);
     this.plate.setVisible(false).setScale(1);
     this.label.setVisible(false).setScale(1);
@@ -105,6 +126,8 @@ export class DropLabel {
 
   public destroy(fromScene?: boolean): void {
     this.pulse?.remove();
+    this.glow?.remove();
+    this.pillar?.destroy(fromScene);
     this.plate.destroy(fromScene);
     this.label.destroy(fromScene);
   }
@@ -134,6 +157,27 @@ export class DropLabel {
         }
       },
     });
+  }
+
+  /** Stands the pillar up, breathing, or takes it down. */
+  private light(on: boolean): void {
+    this.glow?.remove();
+    this.glow = undefined;
+    if (!this.pillar) {
+      return;
+    }
+
+    this.pillar.setVisible(on).setAlpha(LIGHT_PILLAR.alpha);
+    if (on) {
+      this.glow = this.scene.tweens.add({
+        targets: this.pillar,
+        alpha: LIGHT_PILLAR.alphaPeak,
+        duration: LIGHT_PILLAR.pulseMs / 2,
+        ease: 'Sine.easeInOut',
+        yoyo: true,
+        repeat: -1,
+      });
+    }
   }
 
   /** A slow swell, so the loudest tier catches the eye from across the field. */

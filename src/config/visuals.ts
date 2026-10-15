@@ -125,6 +125,10 @@ export const EDGE_MARKERS = {
 
 /** Texture keys generated at boot — placeholder art until real sprites land. */
 export const TEXTURES = {
+  /** A soft column of white, brightest at its foot, for the rarest drops. */
+  lightPillar: "tex-light-pillar",
+  /** A soft white dot, for light that gathers and bursts. */
+  glow: "tex-glow",
   grid: "tex-grid",
   player: "tex-player",
   enemy: "tex-enemy",
@@ -319,6 +323,47 @@ export const DROP_LABEL = {
   popMs: 180,
   /** One full breath of the 희귀 plate. */
   pulseMs: 900,
+} as const;
+
+/**
+ * A pillar of pale light standing on a 희귀 drop, the way a rare item is
+ * marked in a loot game: seen from anywhere on the screen, before the label
+ * is. Only the drops whose label is the 희귀 tier stand in one.
+ */
+export const LIGHT_PILLAR = {
+  /** Drawn size; the texture is soft at its edges and fades to its top. */
+  width: 34,
+  height: 260,
+  /** How see-through it is, at rest and at the top of its breath. */
+  alpha: 0.32,
+  alphaPeak: 0.5,
+  /** One breath, in and out. */
+  pulseMs: 1400,
+  /** How far below the item's centre its foot is. */
+  footOffset: 6,
+} as const;
+
+/**
+ * 장비 합성: the light that leaves each sword offered, gathers in one place,
+ * shines, and either bursts or flashes. Timings in milliseconds.
+ */
+export const COMBINE_FX = {
+  /** How long the light takes to travel from the swords to the meeting point. */
+  gatherMs: 650,
+  /** How long it shines there before the result — the three seconds asked for. */
+  chargeMs: 3000,
+  /** The burst on a failure, and the flash on a success. */
+  burstMs: 700,
+  flashMs: 650,
+  /** How long the result is held on screen before the inventory comes back. */
+  holdMs: 900,
+  /** The light's colours: a warm white while it shines, gold when it takes. */
+  light: 0xfff4d6,
+  success: 0xffe066,
+  failure: 0xff6a3d,
+  smoke: 0x6b6f7a,
+  /** How dark the screen goes behind it. */
+  scrim: 0.6,
 } as const;
 
 export const HUD = {

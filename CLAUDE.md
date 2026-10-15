@@ -222,6 +222,17 @@ Read `git log` for what changed and when. What is not in the log:
   the 접두어/접미어 slots. 흡혈 is pooled in `CombatSystem.leech` and paid in
   whole HP; the extra projectile is `WeaponContext.extraProjectiles` (one more
   shot per cast, or one more orb).
+- **장비 합성 is decided before it is shown.** `gear.combine(uids)` checks
+  (`combineProblem`), rolls `GEAR_COMBINE.successChance`, spends the swords
+  and adds the bare one tier up in one commit; `InventoryScene.playCombine`
+  then plays the light (`COMBINE_FX`) with `busy` set and restarts the scene
+  on the result. The 합성 button starts a pick, adds the cursor's sword, and
+  runs once `GEAR_COMBINE.count` are picked; Space toggles a cell, Esc backs
+  out. Its third button shares the row with 착용 · 버리기 so the pane is no
+  taller on a short phone.
+- **Rare drops stand in a light pillar.** `DropLabel` draws it for the 희귀
+  tier (`LIGHT_PILLAR`, `TEXTURES.lightPillar`); the 제단 opts out with
+  `{ pillar: false }` since it is walked up to, not picked up.
 - **The guide is chapters → tabs → cards** (`src/content/guide.ts`,
   `InfoScene`). Prose lives in each locale's `guide.cards[tab]` with
   `{placeholders}` that `values()` in guide.ts fills from config — a new

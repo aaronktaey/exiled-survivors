@@ -148,6 +148,21 @@ export interface Strings {
     readonly attack: string;
     /** The base's 고정 속성, beside its attack power. {text} is what it does. */
     readonly implicit: string;
+    /** 합성: the button, while picking ({n}/{count}), and once ready to run. */
+    readonly combine: string;
+    readonly combinePick: string;
+    readonly combineGo: string;
+    /** The line under the buttons while picking: {gear}, {n}, {count}. */
+    readonly combineHint: string;
+    /** ...and once enough are picked: {chance}, {target}, {count}. */
+    readonly combineReady: string;
+    /** Why a 합성 cannot start from this sword. */
+    readonly combineEquipped: string;
+    readonly combineTop: string;
+    readonly combineShort: string;
+    /** What came of it: {gear} made, or {count} of {gear} lost. */
+    readonly combineSuccess: string;
+    readonly combineFail: string;
     /** What a weapon with no affixes says. */
     readonly plain: string;
   };

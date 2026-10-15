@@ -79,6 +79,8 @@ export class BootScene extends Phaser.Scene {
     this.createTrophyTexture();
     this.createFlagTextures();
     this.createMangoTexture();
+    this.createLightPillarTexture();
+    this.createGlowTexture();
 
 
     createPixelTextTexture(this, TEXTURES.logo, ['EXILED', 'SURVIVORS'], {
@@ -105,6 +107,60 @@ export class BootScene extends Phaser.Scene {
       (RANKING.shared as { enabled: boolean }).enabled = false;
     }
     this.scene.start(skipMenu ? SCENES.game : SCENES.menu);
+  }
+
+  /**
+   * The pillar a 희귀 drop stands in: white, brightest at its foot and
+   * fading to nothing at its top, soft at both sides. Drawn once on a canvas
+   * because a graphics path has no gradients.
+   */
+  private createLightPillarTexture(): void {
+    const width = 64;
+    const height = 256;
+    const texture = this.textures.createCanvas(TEXTURES.lightPillar, width, height);
+    const ctx = texture?.getContext();
+    if (!texture || !ctx) {
+      return;
+    }
+
+    const up = ctx.createLinearGradient(0, height, 0, 0);
+    up.addColorStop(0, 'rgba(255,255,255,1)');
+    up.addColorStop(0.15, 'rgba(255,255,255,0.85)');
+    up.addColorStop(0.6, 'rgba(255,255,255,0.35)');
+    up.addColorStop(1, 'rgba(255,255,255,0)');
+    ctx.fillStyle = up;
+    ctx.fillRect(0, 0, width, height);
+
+    // Then keep only a soft band down the middle.
+    ctx.globalCompositeOperation = 'destination-in';
+    const across = ctx.createLinearGradient(0, 0, width, 0);
+    across.addColorStop(0, 'rgba(0,0,0,0)');
+    across.addColorStop(0.3, 'rgba(0,0,0,0.7)');
+    across.addColorStop(0.5, 'rgba(0,0,0,1)');
+    across.addColorStop(0.7, 'rgba(0,0,0,0.7)');
+    across.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = across;
+    ctx.fillRect(0, 0, width, height);
+    ctx.globalCompositeOperation = 'source-over';
+    texture.refresh();
+  }
+
+  /** A soft white dot: light that gathers, shines and bursts is made of it. */
+  private createGlowTexture(): void {
+    const size = 64;
+    const texture = this.textures.createCanvas(TEXTURES.glow, size, size);
+    const ctx = texture?.getContext();
+    if (!texture || !ctx) {
+      return;
+    }
+
+    const glow = ctx.createRadialGradient(size / 2, size / 2, 0, size / 2, size / 2, size / 2);
+    glow.addColorStop(0, 'rgba(255,255,255,1)');
+    glow.addColorStop(0.35, 'rgba(255,255,255,0.6)');
+    glow.addColorStop(1, 'rgba(255,255,255,0)');
+    ctx.fillStyle = glow;
+    ctx.fillRect(0, 0, size, size);
+    texture.refresh();
   }
 
   /** One tile of the arena floor, repeated by a TileSprite. */

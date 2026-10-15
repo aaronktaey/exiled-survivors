@@ -13,6 +13,7 @@ import {
   ENEMY_KINDS,
   FUGITIVE,
   GEAR,
+  GEAR_COMBINE,
   GEAR_DROP,
   GROUND_ITEM,
   INVENTORY,
@@ -188,6 +189,8 @@ function values(): Record<string, string | number> {
         .filter((spec) => spec.fromKill !== undefined)
         .map((spec) => spec.tier),
     ),
+    combineCount: GEAR_COMBINE.count,
+    combineChance: percent(GEAR_COMBINE.successChance),
     maxPrefix: GEAR_DROP.maxPrefixes,
     affixChance: percent(GEAR_DROP.affixChance),
     tierCount: affixTierCount,

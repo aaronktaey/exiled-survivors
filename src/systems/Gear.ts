@@ -2,6 +2,7 @@ import {
   AFFIXES,
   AUDIO,
   GEAR,
+  GEAR_COMBINE,
   GEAR_DROP,
   PREFIXES,
   STARTING_GEAR,
@@ -413,6 +414,44 @@ export function rollGearItem(base: GearSpec = rollGearBase()): GearItem {
 }
 
 /**
+ * The sword one tier better than `id`, or null for the best there is. With
+ * more than one sword on that tier, the same weights a 우두머리 uses pick it.
+ */
+export function combineTargetFor(id: GearId): GearSpec | null {
+  const from = GEAR[id];
+  if (!from) {
+    return null;
+  }
+
+  const above = Object.values(GEAR).filter((spec) => spec.tier === from.tier - 1);
+  if (above.length === 0) {
+    return null;
+  }
+
+  const total = above.reduce((sum, spec) => sum + spec.weight, 0);
+  let roll = Math.random() * total;
+  for (const spec of above) {
+    roll -= spec.weight;
+    if (roll <= 0) {
+      return spec;
+    }
+  }
+  return above[above.length - 1] ?? null;
+}
+
+/** What a 합성 came to: whether it took, and the sword it made if it did. */
+export interface CombineOutcome {
+  readonly success: boolean;
+  readonly item: GearItem | null;
+}
+
+/** A sword straight off its base: no 속성, a fresh uid. */
+function bareItem(base: GearSpec): GearItem {
+  nextUid += 1;
+  return { uid: `g${Date.now().toString(36)}${nextUid}`, id: base.id, prefixes: [], suffixes: [] };
+}
+
+/**
  * The equipment stash: what has been found, and what is being carried.
  *
  * It sits beside the settings rather than inside a save, because it outlives
@@ -503,6 +542,56 @@ class GearStore {
 
     this.commit({ ...this.value, items: this.value.items.filter((item) => item.uid !== uid) });
     return true;
+  }
+
+  /**
+   * Why these swords cannot be combined, or null when they can: exactly
+   * GEAR_COMBINE.count different ones of the same sword, none of them the
+   * one in hand, and a better tier above them to reach for.
+   */
+  public combineProblem(uids: readonly string[]): 'count' | 'mixed' | 'equipped' | 'top' | null {
+    const picked = [...new Set(uids)]
+      .map((uid) => this.value.items.find((item) => item.uid === uid))
+      .filter((item): item is GearItem => item !== undefined);
+    if (picked.length !== GEAR_COMBINE.count) {
+      return 'count';
+    }
+    if (picked.some((item) => item.id !== picked[0]?.id)) {
+      return 'mixed';
+    }
+    if (picked.some((item) => item.uid === this.value.equipped)) {
+      return 'equipped';
+    }
+    const id = picked[0]?.id;
+    if (!id || !Object.values(GEAR).some((spec) => spec.tier === GEAR[id].tier - 1)) {
+      return 'top';
+    }
+    return null;
+  }
+
+  /**
+   * 합성: spends the swords and, GEAR_COMBINE.successChance of the time,
+   * puts a bare sword one tier up in their place. Decided and written down
+   * in one go, before any of it is shown — so leaving the screen half way
+   * through the light cannot take a failure back.
+   */
+  public combine(uids: readonly string[]): CombineOutcome | null {
+    if (this.combineProblem(uids) !== null) {
+      return null;
+    }
+
+    const spent = new Set(uids);
+    const id = this.value.items.find((item) => spent.has(item.uid))?.id;
+    const target = id ? combineTargetFor(id) : null;
+    if (!target) {
+      return null;
+    }
+
+    const success = Math.random() < GEAR_COMBINE.successChance;
+    const made = success ? bareItem(target) : null;
+    const items = this.value.items.filter((item) => !spent.has(item.uid));
+    this.commit({ ...this.value, items: made ? [...items, made] : items });
+    return { success, item: made };
   }
 
   /** Puts a weapon on. Only something already in the stash can be carried. */

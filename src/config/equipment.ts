@@ -139,6 +139,19 @@ export const ALL_GEAR: readonly GearSpec[] = Object.values(GEAR);
 /** What every survivor starts out holding. */
 export const STARTING_GEAR: GearId = 'rustySword';
 
+/**
+ * ★ 장비 합성 — three of the same sword, offered together, for a chance at
+ * the sword one tier better. What comes out has no 속성 at all: it is the
+ * base that is being reached for, not the lines the three happened to have.
+ * The three are spent whether it takes or not.
+ */
+export const GEAR_COMBINE = {
+  /** How many of the same sword go in. */
+  count: 3,
+  /** Share of combines that make the sword one tier up. */
+  successChance: 0.2,
+} as const;
+
 export const GEAR_DROP = {
   /**
    * Each affix line has to win its own roll, and the roll repeats until one

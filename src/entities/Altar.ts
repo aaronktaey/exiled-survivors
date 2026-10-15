@@ -45,7 +45,9 @@ export class Altar extends GroundItem {
     super(scene, x, y, TEXTURES.altar, COLORS.altarFlame);
     this.setDisplaySize(ALTAR.size, ALTAR.size);
 
-    this.nameplate = new DropLabel(scene, x, y);
+    // An offer, not a prize: it is walked up to, never picked up, so it
+    // does not stand in the light a rare drop does.
+    this.nameplate = new DropLabel(scene, x, y, { pillar: false });
   }
 
   /** How loudly it reads: a 우두머리 offer loudest, a rare pack next. */

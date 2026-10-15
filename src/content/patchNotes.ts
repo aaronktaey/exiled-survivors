@@ -15,6 +15,32 @@ export interface PatchNote {
 
 export const PATCH_NOTES: readonly PatchNote[] = [
   {
+    version: '0.28',
+    date: '2026-10-15',
+    changes: {
+      ko: [
+        '장비 합성 — 인벤토리 장비 탭의 합성 버튼(키보드 C)으로 착용하지 않은 같은 검 3자루를 고르면, 20% 확률로 한 티어 위의 검을 속성 없이 얻습니다. 실패해도 넣은 검 3자루는 사라집니다. 가장 높은 티어인 오니고로시는 합성할 수 없습니다.',
+        '합성하면 고른 검마다 빛이 빠져나와 한 곳으로 모이고, 3초 동안 점점 밝게 빛나다가 실패하면 펑 하고 흩어지며, 성공하면 화면이 번쩍이고 새 검이 나타납니다.',
+        '희귀 등급의 드랍(속성 5개 이상의 검, 희귀 구슬, 고대 두개골, 하얀 망고, 신성한 조각)이 반투명한 흰 빛기둥 안에 놓여 멀리서도 보입니다.',
+      ],
+      en: [
+        'Combining — the Combine button on the Inventory’s Gear tab (C on a keyboard) takes 3 of the same sword, not the one in hand, for a 20% chance at the sword one tier up, with no affixes. The three are spent even if it fails. Onigoroshi, the top tier, cannot be combined.',
+        'When you combine, light leaves each sword and gathers in one place, shines brighter for three seconds, then bursts apart on a failure, or flashes the screen and shows the new sword on a success.',
+        'Rare drops (swords with 5 or more affixes, rare orbs, the Ancient Skull, the White Mango, Divine Shards) stand in a pale pillar of white light, visible from across the field.',
+      ],
+      ja: [
+        '装備の合成 — インベントリの装備タブの合成ボタン（キーボードは C）で、装備していない同じ剣を 3 本選ぶと、20% の確率で 1 ティア上の剣を属性なしで得られます。失敗しても入れた 3 本は消えます。最高ティアの鬼殺しは合成できません。',
+        '合成すると選んだ剣から光が抜け出して 1 か所に集まり、3 秒間だんだん明るく輝いてから、失敗ならパンと弾け、成功なら画面が閃いて新しい剣が現れます。',
+        'レア等級のドロップ（属性 5 個以上の剣、レアの球、古代の頭蓋骨、白いマンゴー、神聖な欠片）が半透明の白い光の柱の中に置かれ、遠くからでも見えます。',
+      ],
+      zh: [
+        '装备合成 — 在背包装备标签中用合成按钮（键盘 C）选择 3 把未装备的同种剑，有 20% 几率获得高一阶的无属性剑。失败时放入的 3 把也会消失。最高阶的鬼杀无法合成。',
+        '合成时光芒从所选的每把剑中飞出汇聚到一处，3 秒内越来越亮，失败时砰地炸散，成功时画面一闪并出现新剑。',
+        '稀有等级的掉落物（5 个以上属性的剑、稀有宝珠、远古头骨、白芒果、神圣碎片）会立在半透明的白色光柱中，远处也能看见。',
+      ],
+    },
+  },
+  {
     version: '0.27',
     date: '2026-10-15',
     changes: {
