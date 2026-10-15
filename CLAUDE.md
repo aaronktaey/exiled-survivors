@@ -2,12 +2,10 @@
 
 Vampire-Survivors-like, in the browser. Vite + TypeScript + Phaser 4.
 
-**Moving to Cloudflare (branch `cloudflare`, not yet merged).** Until it is
-merged, `main` still deploys the game to GitHub Pages:
-<https://aaronktaey.github.io/exiled-survivors/>. After the merge, one Worker
-(`wrangler.jsonc`, `server/`) serves the game and its ranking API on the
-user's own domain, and GitHub Pages serves only `bridge/index.html`, which
-sends players there with their records (see "Cloudflare" below).
+Live at <https://exiledsurvivors.com>: one Cloudflare Worker
+(`wrangler.jsonc`, `server/`) serves the game and its API, deployed on every
+push to `main`. The old GitHub Pages address serves only `bridge/index.html`,
+which sends players over with their records (see "Cloudflare" below).
 
 This file is the handover between sessions. Read it first; it is written for
 whoever picks the work up next, which is usually a fresh Claude Code context
@@ -88,7 +86,8 @@ node run-all.mjs test-full test-skills test-balance test-chain test-ice \
   test-hud test-expiry test-audio test-touch test-shell test-shell2 test-info \
   test-i18n test-gear test-passive test-responsive test-stats test-bones \
   test-altar test-slot test-inventory test-locale test-back test-fugitive \
-  test-ranking test-skillpick test-mango test-web test-loadout \n  test-carry test-api test-account
+  test-ranking test-skillpick test-mango test-web test-loadout \
+  test-carry test-api test-account
 ```
 
 `run-all.mjs` starts Chrome itself (`CHROME_PATH` overrides where it looks),
@@ -213,6 +212,17 @@ Read `git log` for what changed and when. What is not in the log:
   `RANKING.shared.turnstileSiteKey`. The screens only touch `top`,
   `placeFor`, `submit`, `refresh` and `source`. Flags are drawn textures
   (`tex-flag-XX`), not emoji: Windows has no flag emoji.
+  The board reads table `best` (one row per account, upserted only when a
+  run beats it; migration 0003), never the whole `entries` history — that
+  scan would spend D1's free daily reads. The server stores whole numbers
+  only: a run's time is a float, and 0.30 shipped rejecting every run while
+  the client said it was entered. 내 기록 is the client's own
+  (`systems/PersonalBest.ts`, `STORAGE.personal`), every run that ends,
+  signed in or not, synced with the rest of localStorage. The name last
+  entered is remembered in `STORAGE.rankName`.
+  To look at the live database: `npm run db -- "SELECT * FROM best"`
+  (read-only queries only, unless the user asks; the dashboard's D1 console
+  works too).
 - **Cloudflare.** One Worker with static assets: `dist/` is served without
   running the Worker (free, unlimited); only `/api/*` runs `server/index.ts`.
   `npm run dev:api` runs it locally on 8787 and Vite proxies `/api` there.
@@ -254,6 +264,15 @@ Read `git log` for what changed and when. What is not in the log:
   `src/systems/CarryOver.ts` is the first import in main.ts and writes them in
   before any store reads storage (asking first if this browser already has
   records here). test-carry covers it.
+- **Touch never holds the run.** A phone fires a pretend mouse event after a
+  tap; landing on a rare under a just-closed card used to set `inspecting`
+  and freeze the arena and the pad. `setInspecting` ignores it on touch
+  screens, and the pad is released whenever a popup opens or closes.
+- **Bots.** `public/robots.txt` keeps crawlers off `/api/`. Static assets
+  cost nothing; only `/api/*` counts against the Workers free plan (100k
+  requests a day, 429 past it, reset at 00:00 UTC). Dashboard-side defences
+  (Bot Fight Mode, WAF rules, a rate limit on `/api/*`) are the user's to
+  switch on — the deploy token cannot.
 - **Music.** `public/assets/Constance.mp3` is a 96 kbps encode (1.7 MB); the
   320 kbps original is `assets-src/music/Constance.mp3`.
 - **One drop rule.** Every ordinary drop is multiplied by the kill's

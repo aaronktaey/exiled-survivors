@@ -216,6 +216,49 @@ check('the board draws it beside the name', drawn.includes('tex-flag-JP'), drawn
 await scene('RankingScene', `s.backButton.press(); return 1;`);
 await sleep(400);
 
+// --- 8b. 내 기록: every run this player ends, on its own tab ---
+await ev(`(() => { window.personal.reset(); window.config.RANKING.promptOnDeath = false;
+  window.game.scene.getScene('MenuScene').scene.start('GameScene', { save: null }); return 1; })()`);
+await sleep(1500);
+await scene('GameScene', `s.stats.recordDamage(777.6); s.player.invulnerableUntil = 0; s.player.takeDamage(1e9); return 1;`);
+await sleep(2200);
+const kept = await ev(`(() => window.personal.runs.map((r) => ({ damage: r.damage, ms: r.survivedMs, at: r.at })))()`);
+check('a run that ends goes on 내 기록 in whole numbers, with when it ended',
+  kept.length === 1 && Number.isInteger(kept[0].damage) && kept[0].damage >= 777 && Number.isInteger(kept[0].ms) && !!Date.parse(kept[0].at),
+  JSON.stringify(kept));
+await ev(`(() => { window.game.scene.getScene('GameOverScene').toTitle(); return 1; })()`);
+await sleep(1200);
+await ev(`(() => { for (let i = 1; i <= 3; i++) window.personal.record({ damage: i * 1000, level: i + 4, survivedMs: 65000 * i }); return 1; })()`);
+await scene('MenuScene', `s.icons.press('ranking'); return 1;`);
+await sleep(800);
+const opened = await scene('RankingScene', `return { tab: s.tab, tabs: s.tabs.size };`);
+check('the board opens on 전체 랭킹, with a 내 기록 tab beside it', opened.tab === 'shared' && opened.tabs === 2,
+  JSON.stringify(opened));
+await scene('RankingScene', `s.tabs.get('personal').emit('pointerdown', s.input.activePointer); return 1;`);
+await sleep(300);
+const mineTab = await scene('RankingScene', `
+  return { tab: s.tab, rows: s.rows.map((r) => r.map((c) => c.text)), canvas: s.scale.height,
+           bottom: s.rows.length ? Math.max(...s.rows.map((r) => r[0].y)) : 0 };
+`);
+check('pressing it lists this player’s own runs, best first, with level and time',
+  mineTab.tab === 'personal' && mineTab.rows.length === 4 && mineTab.rows[0][0] === '1' &&
+    mineTab.rows[0][2] === '7' && mineTab.rows[0][3] === '3:15' && mineTab.rows[0][4] === '3,000' &&
+    /^\d+\/\d+$/.test(mineTab.rows[0][1]) && mineTab.rows.length === 4,
+  mineTab.rows.map((r) => r.join(' ')).join(' | '));
+await shot('ranking-03-personal');
+await cdp.send('Input.dispatchKeyEvent', { type: 'keyDown', key: 'ArrowLeft', code: 'ArrowLeft', windowsVirtualKeyCode: 37 });
+await cdp.send('Input.dispatchKeyEvent', { type: 'keyUp', key: 'ArrowLeft', code: 'ArrowLeft', windowsVirtualKeyCode: 37 });
+await sleep(300);
+const back = await scene('RankingScene', `return { tab: s.tab, first: s.rows[0]?.map((c) => c.text).join(' ') };`);
+check('and an arrow key goes back to 전체 랭킹', back.tab === 'shared', JSON.stringify(back));
+await scene('RankingScene', `s.backButton.press(); return 1;`);
+await sleep(400);
+await scene('MenuScene', `s.icons.press('ranking'); return 1;`);
+await sleep(600);
+check('it opens on 전체 랭킹 again next time', (await scene('RankingScene', `return s.tab;`)) === 'shared');
+await scene('RankingScene', `s.backButton.press(); return 1;`);
+await sleep(400);
+
 // --- 9. the shared board, against a stand-in for the game's Worker ---
 // The harness never touches the real board; here fetch is replaced by an
 // in-page server that answers the way server/index.ts does.
@@ -238,6 +281,8 @@ const shared = await cdp.send('Runtime.evaluate', { awaitPromise: true, returnBy
       posts.push(run);
       // The server turns this one down, the way it does a typed-in number.
       if (run.name === 'REJ') return reply({ error: 'pace' }, 400);
+      // And it stores whole numbers only — a run's time never is one.
+      if (![run.damage, run.level, run.survivedMs].every(Number.isInteger)) return reply({ error: 'numbers' }, 400);
       board.push({ ...run, at: new Date().toISOString() });
       board.sort((a, b) => b.damage - a.damage);
       return reply({ ok: true, place: 1, entries: board });
@@ -251,7 +296,7 @@ const shared = await cdp.send('Runtime.evaluate', { awaitPromise: true, returnBy
     window.ranking.submit({ name: 'OLD', emoji: '', flag: '', damage: 5, level: 1, survivedMs: 9000 });
     out.source = await window.ranking.refresh();
     out.top = window.ranking.top.map((e) => e.name + ':' + e.flag);
-    window.ranking.submit({ name: 'NEW', emoji: '', flag: 'US', damage: 150000, level: 2, survivedMs: 60000 });
+    window.ranking.submit({ name: 'NEW', emoji: '', flag: 'US', damage: 150000.7, level: 2, survivedMs: 60016.666 });
     await new Promise((r) => setTimeout(r, 300));
     out.posted = posts.map((p) => ({ name: p.name, token: 'token' in p }));
     out.afterPush = window.ranking.source;

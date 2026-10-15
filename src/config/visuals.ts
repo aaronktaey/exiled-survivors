@@ -380,6 +380,20 @@ export const COMBINE_FX = {
   scrim: 0.6,
 } as const;
 
+/** A 구슬 spent in the 인벤토리: it flies into the weapon and the weapon answers. */
+export const ORB_FX = {
+  /** How long the 구슬 takes to reach the weapon's cell. */
+  flyMs: 380,
+  /** The burst where it lands, in the 구슬's own colour. */
+  burstMs: 420,
+  /** How long the lines it changed stay lit once the screen is drawn again. */
+  highlightMs: 2200,
+  /** How strongly they are lit to begin with. */
+  highlightAlpha: 0.38,
+  /** A 폭발의 구슬 that went off. */
+  destroyed: 0xff4a2a,
+} as const;
+
 export const HUD = {
   margin: 16,
   /** How far under the clock the enemy count sits. */

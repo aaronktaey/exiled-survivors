@@ -104,19 +104,15 @@ export const zh: Strings = {
 
   bones: {
     title: '骨头',
-    lead: '仅作用于本局。最多 3 个，开始后即消耗。',
-    held: '{bone} x{count}',
-    inUse: '已用 {count}',
+    lead: '仅限本局 · 最多 {max} 个 · 开始后即消耗',
     clear: '全部取下',
     start: '以此开始',
-    slots: '已应用的骨头',
-    total: '合计',
     none: '未应用任何骨头',
     sumHp: '敌人生命 +{percent}%',
     sumDrop: '掉落率 +{percent}%',
     sumBosses: '以首领取代稀有敌人',
-    hintKeyboard: '↑ ↓ 移动   Space 应用   Esc 返回',
-    hintTouch: '点击条目即可应用',
+    hintKeyboard: '← → 选择   Space 放入   Backspace 取下   Esc 返回',
+    hintTouch: '点击骨头放入，点击格子取下',
   },
 
   pause: {
@@ -161,6 +157,14 @@ export const zh: Strings = {
     loadingNote: '正在载入共享排行榜…',
     offlineNote: '无法连接共享排行榜，显示本设备的记录。',
     loginToEnter: '登录后登记',
+    tabShared: '全部排行',
+    tabPersonal: '我的记录',
+    date: '日期',
+    level: '等级',
+    time: '时间',
+    personalEmpty: '还没有结束过的对局，先去玩一局吧！',
+    personalNote: '这是本设备上的个人记录 — 登录后会与账号一起保存。',
+    personalSyncedNote: '与账号一起保存的个人记录。',
     mine: '我的最佳：第 {place} 名 · {damage}',
     mineNone: '还没有登记的记录',
     enteredAfterLogin: '已登录 — 记录已登上排行榜',
@@ -777,6 +781,7 @@ export const zh: Strings = {
           title: '骨头',
           lines: [
             '开局前最多放入 {maxBones} 个来改变这一局。放入的骨头会被消耗。',
+            '点击骨头图标放入下方格子，点击格子即可取下。效果与合计显示在正下方。',
             '开始游戏和再来一局都会经过骨头界面。没有骨头时跳过。',
             '读取的那一局沿用最初放入的骨头。',
             '即使放入远古头骨，同时在场的首领最多 {maxBosses} 只，之后稀有敌人的位置会变成普通敌人。',
@@ -811,6 +816,7 @@ export const zh: Strings = {
           lines: [
             '只有已登录的账号可以登上排行榜，按这一局造成的总伤害排名。选择 {nameLength} 个字母的名字和图标 · 国旗，每个账号在榜上只有一个名字和一条最佳记录。',
             '显示前 {rankSize} 名，是与其他玩家共享的排行榜。登录后还会显示自己的最佳记录和名次。',
+            '我的记录标签页无论是否登录，都会保留自己前 {rankSize} 局，附带日期、等级与存活时间。用 ← → 切换标签页。',
           ],
         },
       ],

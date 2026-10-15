@@ -132,9 +132,11 @@ try {
     refusedRuns.name === 'name' && refusedRuns.flag === 'flag' && refusedRuns.pace === 'pace' && refusedRuns.short === 'time',
     JSON.stringify(refusedRuns));
 
-  const first = await read(await alice.send('/api/ranking', 'POST', run({ name: 'ALI', damage: 50000 })));
+  // A time made of frame times, with a fraction: rounded down, not refused.
+  const first = await read(await alice.send('/api/ranking', 'POST', run({ name: 'ALI', damage: 50000.4, survivedMs: 600016.67 })));
   check('a signed-in run is taken, placed, and the board comes back with it',
     first.status === 200 && first.body?.place === 1 && first.body?.entries?.[0]?.name === 'ALI' &&
+      first.body?.entries?.[0]?.survivedMs === 600016 && first.body?.entries?.[0]?.damage === 50000 &&
       !('userId' in (first.body?.entries?.[0] ?? {})),
     JSON.stringify(first.body));
   const again = await read(await alice.send('/api/ranking', 'POST', run({ name: 'ALI', damage: 90000 })));
@@ -151,6 +153,11 @@ try {
       board.body.entries[0].name === 'ACE' && board.body.entries[0].damage === 80000 &&
       board.body.entries[1].name === 'BOB',
     JSON.stringify(board.body?.entries?.map((e) => `${e.name}:${e.damage}`)));
+  const lower = await read(await bob.send('/api/ranking', 'POST', run({ name: 'BOB', damage: 30000 })));
+  const kept = await read(await fetch(`${BASE}/api/ranking`));
+  check('a run below the account’s best is kept in its history but leaves the board alone',
+    lower.status === 200 && kept.body?.entries?.find((e) => e.name === 'BOB')?.damage === 40000,
+    JSON.stringify(kept.body?.entries?.map((e) => `${e.name}:${e.damage}`)));
   const bobs = await read(await bob.call('/api/ranking/me'));
   check('and an account can ask where its best stands', bobs.body?.place === 2 && bobs.body?.best?.damage === 40000,
     JSON.stringify(bobs.body));

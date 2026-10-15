@@ -58,6 +58,10 @@ export const STORAGE = {
   bones: "exiled-survivors:bones:v1",
   /** The local ranking, until there is a shared one. */
   ranking: "exiled-survivors:ranking:v1",
+  /** 내 기록: this player's own best runs, entered on the board or not. */
+  personal: "exiled-survivors:personal:v1",
+  /** The name, emoji and flag last entered on the ranking, to start on next time. */
+  rankName: "exiled-survivors:rank-name:v1",
   /** Which account this browser's records were last synced with, and when. */
   sync: "exiled-survivors:sync:v1",
   /**

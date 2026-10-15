@@ -9,6 +9,12 @@ export interface AnalogInput {
   read(out: Phaser.Math.Vector2): number;
   /** Lets go of whatever it listens to. Called when it is swapped out. */
   destroy(): void;
+  /**
+   * Forgets the finger it was following and comes to rest. A popup or the
+   * pause screen over the run can take a finger's lift-off for itself, and
+   * a stick still waiting for that finger would ignore every touch after.
+   */
+  release?(): void;
 }
 
 /** True when the device's primary pointer is a finger rather than a mouse. */
@@ -90,9 +96,24 @@ export class VirtualJoystick implements AnalogInput {
     this.thumb.destroy();
   }
 
+  public release(): void {
+    this.activePointerId = null;
+    this.tilt = 0;
+    this.direction.set(0, 0);
+    this.thumb.setPosition(this.base.x, this.base.y);
+    this.base.setVisible(false);
+    this.thumb.setVisible(false);
+  }
+
   private onDown(pointer: Phaser.Input.Pointer): void {
     if (this.activePointerId !== null) {
-      return;
+      // Still following a finger — unless that finger lifted while something
+      // over the run had the touch, and this stick never heard it.
+      const held = this.scene.input.manager.pointers.find((p) => p.id === this.activePointerId);
+      if (held?.isDown && held.id !== pointer.id) {
+        return;
+      }
+      this.release();
     }
 
     // Wherever the finger landed is where the pad is, this time round.
@@ -113,13 +134,7 @@ export class VirtualJoystick implements AnalogInput {
     if (pointer.id !== this.activePointerId) {
       return;
     }
-
-    this.activePointerId = null;
-    this.tilt = 0;
-    this.direction.set(0, 0);
-    this.thumb.setPosition(this.base.x, this.base.y);
-    this.base.setVisible(false);
-    this.thumb.setVisible(false);
+    this.release();
   }
 
   private apply(pointer: Phaser.Input.Pointer): void {

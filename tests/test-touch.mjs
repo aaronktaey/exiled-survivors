@@ -153,6 +153,43 @@ check('tapping a card applies it',
   `as ${popup.as} -> ${picked.as}, dmg=${picked.dmg}`);
 check('play resumes after tap', picked.paused === false);
 
+// --- a level-up picked over a rare does not leave the run frozen ---
+// A phone follows every tap with a pretend mouse event at the same spot. The
+// cards sit over the middle of the field, where the survivor and its crowd
+// are, so that mouse lands on a rare — and "reading" under a mouse holds the
+// run. No real mouse ever comes to let it go: the pad showed, the survivor
+// never moved again.
+await cdp.evaluate(`(() => { const s = window.game.scene.getScene('GameScene'); s.progression.addXp(s.progression.xpToNext); return 1; })()`);
+await sleep(900);
+const spot = await cdp.evaluate(`(() => {
+  const g = window.game, s = g.scene.getScene('GameScene'), lu = g.scene.getScene('UpgradeScene');
+  const x = lu.cards[0].x, y = lu.cards[0].panel.y;
+  const view = s.cameras.main.worldView;
+  const rare = s.spawner.spawnRare();
+  rare.setPosition(view.x + x, view.y + y); rare.body.reset(view.x + x, view.y + y); rare.target = undefined;
+  return { x, y };
+})()`);
+await touch('touchStart', spot.x, spot.y);
+await touch('touchEnd', 0, 0);
+await sleep(100);
+const page = toPage(spot.x, spot.y);
+await cdp.send('Input.dispatchMouseEvent', { type: 'mouseMoved', x: page.x, y: page.y });
+await sleep(700);
+const frozen = await cdp.evaluate(`(() => { const s = window.game.scene.getScene('GameScene');
+  return { held: s.inspectHeld, paused: s.physics.world.isPaused, open: window.game.scene.isActive('UpgradeScene') }; })()`);
+await touch('touchStart', geom.baseX, geom.baseY);
+await touch('touchMove', geom.baseX + 50, geom.baseY);
+await sleep(400);
+const steered = await cdp.evaluate(`(() => { const s = window.game.scene.getScene('GameScene');
+  return { vx: Math.round(s.player.body.velocity.x), held: s.inspectHeld, paused: s.physics.world.isPaused }; })()`);
+await touch('touchEnd', 0, 0);
+console.log('after the pick:', JSON.stringify({ frozen, steered }));
+check('a tap’s pretend mouse over a rare does not freeze the run after a pick',
+  frozen.open === false && frozen.held === false && frozen.paused === false, JSON.stringify(frozen));
+check('and the pad steers the survivor again', steered.vx > 150 && steered.paused === false, JSON.stringify(steered));
+await cdp.evaluate(`(() => { window.game.scene.getScene('GameScene').spawner.clear(); return 1; })()`);
+await sleep(200);
+
 // --- game over restarts on tap ---
 await cdp.evaluate(`(() => { const s = window.game.scene.getScene('GameScene'); s.player.invulnerableUntil = 0; s.player.takeDamage(9999); return 1; })()`);
 await sleep(900);

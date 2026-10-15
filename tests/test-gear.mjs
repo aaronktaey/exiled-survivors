@@ -993,11 +993,15 @@ await scene('InventoryScene', `
   return 1;
 `);
 await sleep(900);
-const afterAdd = await scene('InventoryScene', `return { hint: s.orbHint.text };`);
+const afterAdd = await scene('InventoryScene', `return { hint: s.orbHint.text, changed: s.changedLines, title: s.heading.text };`);
+await shot('gear-11-orb-highlight');
 console.log('after an add:', JSON.stringify(afterAdd));
 check('an added 속성 is named, with the rung it came out at',
   /각성의 구슬 —/.test(afterAdd.hint) && /\d티어/.test(afterAdd.hint),
   afterAdd.hint);
+check('and the line it added is lit up on the read-out',
+  afterAdd.changed.length >= 1 && afterAdd.changed.some((line) => /\d/.test(line)),
+  JSON.stringify(afterAdd.changed));
 
 // --- 고정 속성: every sword of a base carries its own, outside the slots ---
 await ev(`(() => { localStorage.removeItem('exiled-survivors:save:v1'); return 1; })()`);

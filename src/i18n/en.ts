@@ -104,19 +104,15 @@ export const en: Strings = {
 
   bones: {
     title: 'Bones',
-    lead: 'Spent on this run alone. Up to three, and gone once it starts.',
-    held: '{bone} x{count}',
-    inUse: '{count} in',
+    lead: 'This run only · up to {max} · gone once it starts',
     clear: 'Take them all out',
     start: 'Start like this',
-    slots: 'In the slots',
-    total: 'Together',
     none: 'Nothing applied',
     sumHp: 'Enemy health +{percent}%',
     sumDrop: 'Drops +{percent}%',
     sumBosses: 'Bosses in place of rares',
-    hintKeyboard: '↑ ↓ to move   Space to apply   Esc to go back',
-    hintTouch: 'Tap one to apply it',
+    hintKeyboard: '← → choose   Space put in   Backspace take out   Esc back',
+    hintTouch: 'Tap a bone to put it in, a slot to take it out',
   },
 
   pause: {
@@ -161,6 +157,14 @@ export const en: Strings = {
     loadingNote: 'Loading the shared ranking…',
     offlineNote: 'Could not reach the shared ranking — showing this device’s records.',
     loginToEnter: 'Sign in to enter',
+    tabShared: 'Everyone',
+    tabPersonal: 'My runs',
+    date: 'Date',
+    level: 'Lv',
+    time: 'Time',
+    personalEmpty: 'No finished runs yet — go play one!',
+    personalNote: 'Your runs on this device — sign in to keep them with your account.',
+    personalSyncedNote: 'Your runs, kept with your account.',
     mine: 'Your best: #{place} · {damage}',
     mineNone: 'No runs entered yet',
     enteredAfterLogin: 'Signed in — your run is on the ranking',
@@ -783,6 +787,7 @@ export const en: Strings = {
           title: 'Bones',
           lines: [
             'Before a run, put in up to {maxBones} to change that run. Bones put in are spent.',
+            'Press a bone to drop it into a slot below; press a slot to take it back out. What it does, and what they add up to, is shown right under them.',
             'Both New Run and Run again go through the Bones screen; with none to spend it is skipped.',
             'A loaded run keeps the Bones it was started with.',
             'Even with an Ancient Skull, only {maxBosses} Bosses are out at once; past that the rare spawns are ordinary enemies.',
@@ -817,6 +822,7 @@ export const en: Strings = {
           lines: [
             'Only signed-in accounts can put runs on the ranking, ranked by the total damage of the run. Pick a {nameLength}-letter name, an icon and a flag; each account has one name and one best run on the board.',
             'It shows the top {rankSize}, and the board is shared with other players. Signed in, you also see your own best and where it stands.',
+            'The My runs tab keeps your own top {rankSize} runs, signed in or not, with the date, level and time survived. ← → switches tabs.',
           ],
         },
       ],

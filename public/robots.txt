@@ -1,0 +1,3 @@
+# The game is welcome to be indexed; its API is not a page.
+User-agent: *
+Disallow: /api/

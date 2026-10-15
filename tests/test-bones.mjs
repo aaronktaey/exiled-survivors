@@ -121,19 +121,19 @@ await ev(`(() => {
 })()`);
 await sleep(1400);
 const opened = await bs(`
-  return { rows: s.menu.items.map(i => i.id), applied: s.applied,
-           slots: s.slots.text.split(String.fromCharCode(10)),
+  const shown = s.children.list.filter((o) => o.visible && o.getBounds);
+  return { rows: s.choices.map(i => i.id), applied: s.applied,
+           slots: s.slotIcons.map((i) => i.visible), back: !!s.backButton,
            summary: s.summary.text, max: window.config.BONE_RUN.maxApplied,
-           bottom: Math.round(s.summary.y + s.summary.height), canvas: s.scale.height };
+           bottom: Math.round(Math.max(...shown.map((o) => o.getBounds().bottom))), canvas: s.scale.height };
 `);
 console.log('opened:', JSON.stringify(opened));
 check('게임 시작 stops at the 뼈다귀 screen when the drawer has any',
   opened.rows.includes('skull') && opened.rows.includes('rib') &&
-    opened.rows.includes('start') && opened.rows.includes('back'),
+    opened.rows.includes('start') && opened.back,
   opened.rows.join(' / '));
 check('and draws a slot per 뼈다귀 a run can take, empty to begin with',
-  opened.slots.length === opened.max + 1 &&
-    opened.slots.slice(1).every((l) => /^─+$/.test(l)),
+  opened.slots.length === opened.max && opened.slots.every((shown) => !shown),
   `${opened.max} slots`);
 check('with nothing applied, it says so',
   opened.applied.length === 0 && opened.summary.includes('아무것도'), opened.summary);
@@ -143,17 +143,18 @@ await shot('bones-01-open');
 
 // --- 4. three slots, and what stacks ---
 const applied = await bs(`
-  s.menu.focus('rib');
-  s.menu.items.find(i => i.id === 'rib').onSelect();
-  s.menu.items.find(i => i.id === 'rib').onSelect();
-  s.menu.items.find(i => i.id === 'skull').onSelect();
+  s.focus('rib');
+  const pick = (id) => { const c = s.choices.find(i => i.id === id); if (c.enabled()) c.onSelect(); };
+  pick('rib');
+  pick('rib');
+  pick('skull');
   // A fourth would be one too many, and a second 두개골 does nothing anyway.
-  s.menu.items.find(i => i.id === 'rib').onSelect();
-  s.menu.items.find(i => i.id === 'skull').onSelect();
-  return { applied: s.applied, slots: s.slots.text.split(String.fromCharCode(10)),
-           summary: s.summary.text,
-           ribOpen: s.menu.items.find(i => i.id === 'rib').enabled(),
-           skullOpen: s.menu.items.find(i => i.id === 'skull').enabled(),
+  pick('rib');
+  pick('skull');
+  return { applied: s.applied, slots: s.slotIcons.map((i) => i.visible ? i.texture.key : ''),
+           summary: s.summary.text, detail: s.detail.text,
+           ribOpen: s.choices.find(i => i.id === 'rib').enabled(),
+           skullOpen: s.choices.find(i => i.id === 'skull').enabled(),
            held: JSON.parse(JSON.stringify(window.bones.value)) };
 `);
 console.log('applied:', JSON.stringify(applied));
@@ -165,9 +166,11 @@ check('갈비뼈 stacks, 고대 두개골 does not',
     applied.applied.filter((b) => b === 'skull').length === 1 &&
     applied.skullOpen === false,
   applied.applied.join(' + '));
-check('the slots read out what is in them',
-  applied.slots.slice(1).every((l) => !/^─+$/.test(l)),
-  applied.slots.slice(1).join(' | '));
+check('the slots show what is in them, in the order it went in',
+  applied.slots.join(',') === 'tex-bone-rib,tex-bone-rib,tex-bone-skull',
+  applied.slots.join(' | '));
+check('and the card being pointed at says what it does',
+  applied.detail.includes('갈비뼈') && applied.detail.includes('%'), applied.detail);
 check('and the total compounds rather than adding up',
   applied.summary.includes('+300%') && applied.summary.includes('+125%') &&
     applied.summary.includes('우두머리'),
@@ -178,7 +181,16 @@ check('nothing is spent until the run starts',
 await shot('bones-02-applied');
 
 // --- 5. starting spends them, and the run plays by them ---
-await bs(`s.menu.items.find(i => i.id === 'start').onSelect(); return 1;`);
+// A slot pressed gives its 뼈다귀 back, and the ones after it move up.
+const tookOut = await bs(`
+  s.takeOut(0); const after = [...s.applied];
+  s.choices.find(i => i.id === 'rib').onSelect();
+  return { after, again: [...s.applied] };
+`);
+check('pressing a slot takes that one back out',
+  tookOut.after.join(',') === 'rib,skull' && tookOut.again.join(',') === 'rib,skull,rib',
+  JSON.stringify(tookOut));
+await bs(`s.choices.find(i => i.id === 'start').onSelect(); return 1;`);
 await sleep(2600);
 const started = await run(`
   return { bonus: s.boneBonus, held: JSON.parse(JSON.stringify(window.bones.value)) };
@@ -241,7 +253,7 @@ const saved = await ev(`(() => {
   return raw.bones;
 })()`);
 check('the save remembers what the run was started with',
-  JSON.stringify(saved) === JSON.stringify(['rib', 'rib', 'skull']),
+  JSON.stringify([...(saved ?? [])].sort()) === JSON.stringify(['rib', 'rib', 'skull']),
   (saved ?? []).join(' + '));
 
 await ev(`(() => {
@@ -276,7 +288,7 @@ await sleep(700);
 const retryScreen = await ev(`(() => ({
   bone: window.game.scene.isActive('BoneScene'),
   over: window.game.scene.isActive('GameOverScene') || window.game.scene.isPaused('GameOverScene'),
-  rows: window.game.scene.getScene('BoneScene').menu?.items.map(i => i.id),
+  rows: window.game.scene.getScene('BoneScene').choices?.map(i => i.id),
 }))()`);
 console.log('retry:', JSON.stringify({ retry, retryScreen }));
 check('다시하기 opens the 뼈다귀 screen when the drawer has any',
@@ -303,8 +315,8 @@ await ev(`(() => {
 })()`);
 await sleep(700);
 await bs(`
-  s.menu.items.find(i => i.id === 'rib').onSelect();
-  s.menu.items.find(i => i.id === 'start').onSelect();
+  s.choices.find(i => i.id === 'rib').onSelect();
+  s.choices.find(i => i.id === 'start').onSelect();
   return 1;
 `);
 await sleep(2600);

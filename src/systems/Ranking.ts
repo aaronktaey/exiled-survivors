@@ -1,4 +1,5 @@
-import { RANKING, STORAGE } from '@/config';
+import { ACCOUNT, RANKING, STORAGE } from '@/config';
+import { account, accountRequest } from '@/systems/Account';
 import { turnstileToken } from '@/systems/Turnstile';
 
 /** One place on the board. */
@@ -125,10 +126,16 @@ class RankingStore {
   private loaded = false;
   /** Where the board on screen last came from. */
   public source: RankSource = 'local';
-  /** The name last entered, so the next entry starts on it. */
+  /** The name last entered, so the next entry starts on it — kept across visits. */
   public lastName = '';
   public lastEmoji = '';
   public lastFlag = '';
+  /**
+   * The signed-in account's best on the shared board, once known: a run that
+   * does not beat it would change nothing there, so it is not offered.
+   */
+  public myBest: number | null = null;
+  private namesLoaded = false;
 
   /** The board, best first. */
   public get top(): readonly RankEntry[] {
@@ -155,8 +162,49 @@ class RankingStore {
     return above < RANKING.size ? above + 1 : 0;
   }
 
+  /**
+   * Whether ending on this much damage is worth entering: it makes the board,
+   * and — the board holding each account's best once — it beats this
+   * account's own best there.
+   */
   public qualifies(damage: number): boolean {
-    return this.placeFor(damage) > 0;
+    return this.placeFor(damage) > 0 && (this.myBest === null || damage > this.myBest);
+  }
+
+  /** The name, emoji and flag last entered, read back from storage once. */
+  public remembered(): { name: string; emoji: string; flag: string } {
+    if (!this.namesLoaded) {
+      this.namesLoaded = true;
+      try {
+        const saved = JSON.parse(localStorage.getItem(STORAGE.rankName) ?? 'null') as
+          | { name?: string; emoji?: string; flag?: string }
+          | null;
+        if (saved) {
+          this.lastName = cleanName(String(saved.name ?? ''));
+          this.lastEmoji = cleanEmoji(String(saved.emoji ?? ''));
+          this.lastFlag = cleanFlag(String(saved.flag ?? ''));
+        }
+      } catch {
+        // Nothing remembered.
+      }
+    }
+    return { name: this.lastName, emoji: this.lastEmoji, flag: this.lastFlag };
+  }
+
+  /** Remembers what was entered, so the next entry starts on it. */
+  public remember(name: string, emoji: string, flag: string): void {
+    this.namesLoaded = true;
+    this.lastName = cleanName(name);
+    this.lastEmoji = cleanEmoji(emoji);
+    this.lastFlag = cleanFlag(flag);
+    try {
+      localStorage.setItem(
+        STORAGE.rankName,
+        JSON.stringify({ name: this.lastName, emoji: this.lastEmoji, flag: this.lastFlag }),
+      );
+    } catch {
+      // Remembered for this visit only.
+    }
   }
 
   /**
@@ -173,12 +221,19 @@ class RankingStore {
     if (!entry) {
       return 0;
     }
-    this.lastName = entry.name;
-    this.lastEmoji = entry.emoji;
-    this.lastFlag = entry.flag;
+    this.remember(entry.name, entry.emoji, entry.flag);
 
     this.commit(ordered([...this.top, entry]));
-    void this.push(run);
+    // Handed in as the cleaned entry: whole numbers, the way the server
+    // takes them. A run's time is a sum of frame times, never a whole one.
+    void this.push({
+      name: entry.name,
+      emoji: entry.emoji,
+      flag: entry.flag,
+      damage: entry.damage,
+      level: entry.level,
+      survivedMs: entry.survivedMs,
+    });
     return place;
   }
 
@@ -198,7 +253,19 @@ class RankingStore {
 
     this.source = 'shared';
     this.commit(ordered(remote));
+    await this.lookUpMine();
     return this.source;
+  }
+
+  /** The signed-in account's own best on the shared board, or null. */
+  private async lookUpMine(): Promise<void> {
+    if (!ACCOUNT.enabled || !account.signedIn) {
+      this.myBest = null;
+      return;
+    }
+    const reply = await accountRequest('/api/ranking/me', { cache: 'no-store' });
+    const best = (reply.body as { best?: { damage?: number } | null } | null)?.best;
+    this.myBest = reply.ok && best ? Number(best.damage) || null : null;
   }
 
   public reset(): void {
@@ -228,6 +295,7 @@ class RankingStore {
     const entries = reply.ok ? entriesOf(reply.body) : null;
     if (entries) {
       this.source = 'shared';
+      this.myBest = Math.max(this.myBest ?? 0, run.damage);
       this.commit(ordered(entries));
       return;
     }

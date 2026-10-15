@@ -137,7 +137,8 @@ await shot('perf-01-debug-overlay');
 
 await fkey('F3', 114);
 const cleared = await run(`return { alive: s.spawner.alive };`);
-check('F3 clears the field', cleared.alive === 0, `alive=${cleared.alive}`);
+check('F3 clears the field', cleared.alive <= 1,
+  `alive=${cleared.alive} (0, or 1 from a normal spawn in the gap)`);
 
 const lvBefore = await run(`return { lv: s.progression.level, popup: window.game.scene.isActive('UpgradeScene') };`);
 await fkey('F4', 115);

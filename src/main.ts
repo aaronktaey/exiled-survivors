@@ -11,6 +11,7 @@ import { settings } from '@/systems/Settings';
 import { registerSharpText } from '@/systems/SharpText';
 import { gear, gearBonusFor, orbApplied } from '@/systems/Gear';
 import { ranking } from '@/systems/Ranking';
+import { personal } from '@/systems/PersonalBest';
 import { account } from '@/systems/Account';
 import { cloudSave } from '@/systems/CloudSave';
 import { gold } from '@/systems/Gold';
@@ -113,6 +114,7 @@ if (import.meta.env.DEV) {
     orbApplied?: typeof orbApplied;
     critMultiplierFor?: typeof critMultiplierFor;
     ranking?: typeof ranking;
+    personal?: typeof personal;
     account?: typeof account;
     cloudSave?: typeof cloudSave;
   };
@@ -128,6 +130,7 @@ if (import.meta.env.DEV) {
   dev.orbApplied = orbApplied;
   dev.critMultiplierFor = critMultiplierFor;
   dev.ranking = ranking;
+  dev.personal = personal;
   dev.account = account;
   dev.cloudSave = cloudSave;
 }

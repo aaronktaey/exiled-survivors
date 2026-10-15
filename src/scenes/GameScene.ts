@@ -51,6 +51,7 @@ import { WebField } from '@/systems/WebField';
 import { RareTooltip } from '@/systems/RareTooltip';
 import { sfx } from '@/systems/Sfx';
 import { saveGame, type SavedRun } from '@/systems/SaveGame';
+import { personal } from '@/systems/PersonalBest';
 import {
   NO_BONUS,
   gear,
@@ -529,6 +530,10 @@ export class GameScene extends Phaser.Scene {
     // it without the wait: on a phone that finger is usually steering.
     const inspect = (pointer: Phaser.Input.Pointer): void => {
       const found = this.rareTooltip.inspectAt(pointer.x, pointer.y);
+      if (pointer.wasTouch) {
+        // A finger is steering: whatever a mouse was reading, nobody is now.
+        this.setInspecting('skill', false);
+      }
       this.setInspecting('rare', found && !pointer.wasTouch);
     };
     this.input.on(Phaser.Input.Events.POINTER_MOVE, inspect);
@@ -549,7 +554,11 @@ export class GameScene extends Phaser.Scene {
    */
   private setInspecting(source: 'skill' | 'rare', on: boolean): void {
     const before = this.held;
-    this.inspecting[source] = on;
+    // A phone fires a pretend mouse event after a tap. Landing on a rare —
+    // under a level-up card, say, near the survivor — it would freeze the
+    // run with no real mouse ever coming to let it go. On a touch screen
+    // reading never holds the run.
+    this.inspecting[source] = on && !prefersTouchControls();
     if (before === this.held || this.over || this.choosing) {
       return;
     }
@@ -642,7 +651,10 @@ export class GameScene extends Phaser.Scene {
     this.scene.launch(SCENES.pause, {
       elapsedMs: this.elapsedMs,
       level: this.progression.level,
-      onResume: () => this.scene.resume(),
+      onResume: () => {
+        this.scene.resume();
+        this.analog?.release?.();
+      },
       onQuit: () => {
         this.writeSave();
         this.scene.start(SCENES.menu);
@@ -1003,6 +1015,8 @@ export class GameScene extends Phaser.Scene {
     this.choosing = true;
     // Freeze the arena so enemies do not close in while choosing.
     this.physics.pause();
+    // The finger steering now goes to the cards; the stick lets it go.
+    this.analog?.release?.();
 
     if (request.kind === 'pick') {
       this.openPick();
@@ -1065,6 +1079,7 @@ export class GameScene extends Phaser.Scene {
   /** One popup is done: open the next, or let the run go on. */
   private afterChoice(): void {
     this.choosing = false;
+    this.analog?.release?.();
 
     if (this.pendingChoices.length > 0) {
       // Let the scene manager finish stopping the popup before relaunching it.
@@ -1087,6 +1102,12 @@ export class GameScene extends Phaser.Scene {
     // moved the tree forward. Paid once, here, before the screen reads it.
     const damage = this.stats.damage;
     const earned = gold.earn(damage);
+    // Every run goes on 내 기록, entered on the shared board or not.
+    personal.record({
+      damage: Math.floor(damage),
+      level: this.progression.level,
+      survivedMs: Math.floor(this.elapsedMs),
+    });
 
     const data: GameOverData = {
       summary: {

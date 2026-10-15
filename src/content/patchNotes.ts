@@ -15,6 +15,44 @@ export interface PatchNote {
 
 export const PATCH_NOTES: readonly PatchNote[] = [
   {
+    version: '0.31',
+    date: '2026-10-15',
+    changes: {
+      ko: [
+        '랭킹 등록이 완료됐다고 나오는데 랭킹에 올라가지 않던 문제를 고쳤습니다. 그동안 등록하지 못한 기록은 다시 올려야 합니다.',
+        '랭킹 화면이 전체 랭킹과 내 기록 탭으로 나뉩니다. 전체 랭킹에는 계정마다 최고 기록 하나만 오르고, 내 기록에는 로그인과 상관없이 내가 끝낸 판 중 상위 20개가 날짜 · 레벨 · 버틴 시간과 함께 남습니다.',
+        '랭킹 등록 화면에 지난번에 쓴 이름 · 아이콘 · 국기가 미리 채워집니다.',
+        '휴대폰에서 레벨업 스킬을 고른 뒤 이동 패드가 움직이지 않던 문제를 고쳤습니다.',
+        '뼈다귀 화면을 그림 위주로 바꿨습니다. 뼈다귀 그림을 누르면 칸에 들어가고, 칸을 누르면 다시 빠지며, 효과와 합계가 바로 아래에 나옵니다.',
+        '장비창에서 구슬을 쓰면 구슬이 검으로 날아 들어가 터지고, 바뀐 속성 줄이 구슬 색으로 잠시 빛납니다. 폭발의 구슬로 검이 부서지면 화면이 흔들립니다.',
+      ],
+      en: [
+        'Fixed runs that said they were entered on the ranking but never showed up on it. Runs that were lost this way need to be entered again.',
+        'The ranking screen has two tabs, Everyone and My runs. The shared ranking holds one best run per account; My runs keeps your own top 20 runs, signed in or not, with the date, level and time survived.',
+        'The ranking entry screen fills in the name, icon and flag you used last time.',
+        'Fixed the movement pad on phones not responding after picking a level-up skill.',
+        'The Bones screen is now pictures: press a bone to drop it into a slot, press a slot to take it back out, and what they do and add up to is shown right below.',
+        'Spending an orb in the Inventory now shows it: the orb flies into the sword and bursts, and the affix lines it changed glow in the orb’s colour for a moment. A sword lost to an Explosion Orb shakes the screen.',
+      ],
+      ja: [
+        'ランキング登録が完了したと表示されるのにランキングに載らなかった問題を修正しました。これまで登録できなかった記録は、もう一度登録する必要があります。',
+        'ランキング画面が「全体ランキング」と「自分の記録」のタブに分かれました。全体ランキングにはアカウントごとに最高記録 1 つだけが載り、自分の記録にはログインの有無に関係なく上位 20 回が日付・レベル・生存時間とともに残ります。',
+        'ランキング登録画面に、前回使った名前・アイコン・国旗があらかじめ入ります。',
+        'スマートフォンでレベルアップのスキルを選んだあと、移動パッドが動かなくなる問題を修正しました。',
+        '骨の画面を絵中心に変えました。骨の絵を押すと枠に入り、枠を押すと外れ、効果と合計がすぐ下に表示されます。',
+        '装備画面で球を使うと、球が剣に飛び込んではじけ、変わった属性の行が球の色でしばらく光ります。爆発の球で剣が壊れると画面が揺れます。',
+      ],
+      zh: [
+        '修复了显示排行榜登记完成、却没有出现在排行榜上的问题。之前没能登记的记录需要重新提交。',
+        '排行榜画面分为「全部排行」和「我的记录」两个标签页。全部排行中每个账号只保留一条最佳记录；我的记录无论是否登录，都会保留自己前 20 局，附带日期、等级与存活时间。',
+        '排行榜登记画面会预先填入上次使用的名字、图标和国旗。',
+        '修复了手机上选择升级技能后移动摇杆无法操作的问题。',
+        '骨头画面改为以图标为主：点击骨头放入格子，点击格子即可取下，效果与合计显示在正下方。',
+        '在装备画面使用宝珠时，宝珠会飞进剑里炸开，被改变的属性行会以宝珠的颜色短暂发光。剑被爆炸宝珠摧毁时画面会震动。',
+      ],
+    },
+  },
+  {
     version: '0.30',
     date: '2026-10-15',
     changes: {

@@ -188,18 +188,11 @@ export interface Strings {
   /** 뼈다귀 — the screen that decides what a run is going to be. */
   readonly bones: {
     readonly title: string;
-    /** The line under the title, saying what this screen is for. */
+    /** The line under the title, saying what this screen is for. {max}: how many a run takes. */
     readonly lead: string;
-    /** A row: "{bone} x{count}". */
-    readonly held: string;
-    /** The right-hand value on a row already in a slot. */
-    readonly inUse: string;
     readonly clear: string;
     readonly start: string;
-    /** Heading over the slots. */
-    readonly slots: string;
-    /** What the lot of them comes to. */
-    readonly total: string;
+    /** Under the slots while they are empty. */
     readonly none: string;
     readonly sumHp: string;
     readonly sumDrop: string;
@@ -261,6 +254,16 @@ export interface Strings {
     readonly offlineNote: string;
     /** On the entry popup when signing in comes first. */
     readonly loginToEnter: string;
+    /** The two boards: everyone's best, and this player's own runs. */
+    readonly tabShared: string;
+    readonly tabPersonal: string;
+    /** 내 기록's columns. */
+    readonly date: string;
+    readonly level: string;
+    readonly time: string;
+    readonly personalEmpty: string;
+    readonly personalNote: string;
+    readonly personalSyncedNote: string;
     /** Under the board, signed in: {place} and {damage} of the account's best. */
     readonly mine: string;
     readonly mineNone: string;

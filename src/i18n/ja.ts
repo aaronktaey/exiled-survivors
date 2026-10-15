@@ -104,19 +104,15 @@ export const ja: Strings = {
 
   bones: {
     title: '骨',
-    lead: 'この回だけに適用されます。最大 3 つ、開始すると無くなります。',
-    held: '{bone} x{count}',
-    inUse: '適用 {count}',
+    lead: 'この回だけ · 最大 {max} つ · 開始すると無くなります',
     clear: 'すべて外す',
     start: 'この構成で開始',
-    slots: '適用した骨',
-    total: '合計',
     none: '何も適用していません',
     sumHp: '敵の体力 +{percent}%',
     sumDrop: 'ドロップ率 +{percent}%',
     sumBosses: 'レア敵の代わりにボス',
-    hintKeyboard: '↑ ↓ 移動   Space 適用   Esc 戻る',
-    hintTouch: '項目をタップして適用',
+    hintKeyboard: '← → 選ぶ   Space 入れる   Backspace 外す   Esc 戻る',
+    hintTouch: '骨をタップで入れ、枠をタップで外します',
   },
 
   pause: {
@@ -161,6 +157,14 @@ export const ja: Strings = {
     loadingNote: '共有ランキングを読み込み中…',
     offlineNote: '共有ランキングに接続できないため、この端末の記録を表示しています。',
     loginToEnter: 'ログインして登録',
+    tabShared: '全体ランキング',
+    tabPersonal: '自分の記録',
+    date: '日付',
+    level: 'レベル',
+    time: '時間',
+    personalEmpty: 'まだ終えた回がありません。一回遊んでみましょう！',
+    personalNote: 'この端末に残った自分の記録です — ログインするとアカウントと一緒に保存されます。',
+    personalSyncedNote: 'アカウントと一緒に保存される自分の記録です。',
     mine: '自己ベスト：{place} 位 · {damage}',
     mineNone: 'まだ登録した記録がありません',
     enteredAfterLogin: 'ログインしました — 記録をランキングに登録しました',
@@ -783,6 +787,7 @@ export const ja: Strings = {
           title: '骨',
           lines: [
             '開始前に最大 {maxBones} 個まで入れて、その回を変えます。入れた骨は消費されます。',
+            '骨の絵を押すと下の枠に入り、枠を押すと外れます。効果と合計はすぐ下に表示されます。',
             'ゲーム開始ももう一度も骨の画面を通ります。持っていなければ飛ばします。',
             '再開した回は最初に入れた骨をそのまま使います。',
             '古代の頭蓋骨を入れても、ボスは同時に {maxBosses} 体までで、それ以降のレア敵の枠は通常の敵になります。',
@@ -817,6 +822,7 @@ export const ja: Strings = {
           lines: [
             'ランキングに登録できるのはログインしたアカウントだけで、その回に与えた総被害で順位が決まります。名前 {nameLength} 文字とアイコン · 国旗を選び、アカウントごとに名前 1 つと最高記録 1 つだけが載ります。',
             '上位 {rankSize} 人まで表示し、ほかのプレイヤーと共有する順位表です。ログインすると自分の最高記録と順位も表示されます。',
+            '自分の記録タブには、ログインの有無に関係なく自分の上位 {rankSize} 回が日付・レベル・生存時間とともに残ります。← → でタブを切り替えます。',
           ],
         },
       ],

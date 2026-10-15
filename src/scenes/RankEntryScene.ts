@@ -68,14 +68,17 @@ export class RankEntryScene extends Phaser.Scene {
     this.done = false;
     this.cursor = 0;
     this.slots = [];
-    // Start on the account's own name on the board, or the name entered last
-    // time, so a second entry is one press.
+    // Start on what was entered last time — kept across visits, and across
+    // devices for a signed-in player — or failing that the account's name on
+    // the board, so a second entry is one press.
     const letters = RANKING.letters;
+    const kept = ranking.remembered();
     const mine = account.user?.rank;
-    const lastName = mine?.name || ranking.lastName;
+    const from = kept.name ? kept : mine?.name ? mine : { name: '', emoji: '', flag: '' };
+    const lastName = from.name;
     const last = lastName.padEnd(RANKING.nameLength, ' ');
-    const flag = (mine?.name ? mine.flag : ranking.lastFlag) || FLAG_FOR_LANGUAGE[language()] || '';
-    const emoji = mine?.name ? mine.emoji : ranking.lastEmoji;
+    const flag = from.flag || FLAG_FOR_LANGUAGE[language()] || '';
+    const emoji = from.emoji;
     this.picks = [
       ...[...last].slice(0, RANKING.nameLength).map((ch) => Math.max(0, letters.indexOf(ch))),
       Math.max(0, (RANKING.emoji as readonly string[]).indexOf(emoji)),
@@ -265,6 +268,7 @@ export class RankEntryScene extends Phaser.Scene {
   /** The account screen, over this one; the run goes with the trip to the provider. */
   private signInFirst(): void {
     const run: RankSubmission = { ...this.payload.run, name: this.name, emoji: this.emoji, flag: this.flag };
+    ranking.remember(this.name, this.emoji, this.flag);
     this.scene.pause();
     this.scene.launch(SCENES.account, {
       reason: 'ranking',

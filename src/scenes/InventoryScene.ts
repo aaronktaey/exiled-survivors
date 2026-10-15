@@ -6,6 +6,7 @@ import {
   AUDIO,
   COLORS,
   COMBINE_FX,
+  ORB_FX,
   DEPTH,
   GEAR,
   GEAR_COMBINE,
@@ -67,6 +68,14 @@ export interface InventorySceneData {
   readonly focus?: string;
   /** What the last 구슬 did, shown until the cursor moves off the weapon. */
   readonly note?: string;
+  /** The 구슬 just spent, so the screen drawn after it can show what it changed. */
+  readonly orbFx?: {
+    readonly orb: OrbId;
+    /** The weapon's read-out and name before it, to light up what is different. */
+    readonly before: string;
+    readonly title: string;
+    readonly destroyed: boolean;
+  };
 }
 
 const MARGIN = 16;
@@ -168,6 +177,8 @@ export class InventoryScene extends Phaser.Scene {
   public locked = false;
   /** Where the bottom of the details pane landed. Public for layout tests. */
   public detailBottom = 0;
+  /** The read-out's lines the last 구슬 changed, as they read now. Public for tests. */
+  public changedLines: string[] = [];
   private rowGap = 8;
 
   public constructor() {
@@ -196,6 +207,7 @@ export class InventoryScene extends Phaser.Scene {
     this.combineWhy = null;
     this.combineMarks = [];
     this.orbHint = undefined;
+    this.changedLines = [];
   }
 
   public create(): void {
@@ -345,6 +357,9 @@ export class InventoryScene extends Phaser.Scene {
     }
     this.showDetails();
     this.detailBottom = Math.max(y, this.lines.y + this.lines.height);
+    if (this.payload.orbFx) {
+      this.showOrbChange(this.payload.orbFx);
+    }
   }
 
   // --- tabs ---
@@ -711,12 +726,174 @@ export class InventoryScene extends Phaser.Scene {
 
     // The weapon reads differently now and may have changed rarity, so the
     // screen is drawn again — with the cursor left on the weapon it was spent
-    // on and a line saying what the 구슬 actually did.
-    this.scene.restart({
-      onClose: this.payload.onClose,
-      tab: 'gear',
-      focus: outcome.item ? item.uid : undefined,
-      note: InventoryScene.noteFor(spec.id, outcome),
+    // on, a line saying what the 구슬 actually did, and what it changed lit
+    // up. First the 구슬 is seen going into it.
+    const orbFx = {
+      orb: spec.id,
+      before: InventoryScene.describe(item),
+      title: gearTitle(item),
+      destroyed: !outcome.item,
+    };
+    this.busy = true;
+    this.armed = null;
+    this.playOrb(spec.id, orbFx.destroyed, () => {
+      this.busy = false;
+      this.scene.restart({
+        onClose: this.payload.onClose,
+        tab: 'gear',
+        focus: outcome.item ? item.uid : undefined,
+        note: InventoryScene.noteFor(spec.id, outcome),
+        orbFx,
+      });
+    });
+  }
+
+  /** Where the cell under the cursor is drawn, or the grid's middle if it is on no page shown. */
+  private selectedCell(): { x: number; y: number } {
+    const perPage = INVENTORY.cols * INVENTORY.rows;
+    const view = this.menu.cells[this.menu.selected - this.menu.page * perPage];
+    return view ? { x: view.plate.x, y: view.plate.y } : this.gridCentre;
+  }
+
+  private glowAt(x: number, y: number, size: number, tint: number, alpha = 1): Phaser.GameObjects.Image {
+    return this.add
+      .image(x, y, TEXTURES.glow)
+      .setDisplaySize(size, size)
+      .setTint(tint)
+      .setBlendMode(Phaser.BlendModes.ADD)
+      .setAlpha(alpha)
+      .setDepth(DEPTH.ui + 20);
+  }
+
+  /** The 구슬 leaves its button, flies into the weapon and bursts there in its own colour. */
+  private playOrb(id: OrbId, destroyed: boolean, done: () => void): void {
+    const spec = ORBS[id];
+    const from = this.orbIcons.get(id) ?? this.gridCentre;
+    const to = this.selectedCell();
+    const orb = this.add
+      .image(from.x, from.y, spec.texture)
+      .setDisplaySize(26, 26)
+      .setDepth(DEPTH.ui + 21);
+    const halo = this.glowAt(from.x, from.y, 54, spec.color, 0.9);
+    const trail = this.time.addEvent({
+      delay: 30,
+      loop: true,
+      callback: () => {
+        const mote = this.glowAt(orb.x, orb.y, 22, spec.color, 0.7);
+        this.tweens.add({
+          targets: mote,
+          alpha: 0,
+          scale: mote.scale * 0.3,
+          duration: 260,
+          onComplete: () => mote.destroy(),
+        });
+      },
+    });
+    this.tweens.add({
+      targets: [orb, halo],
+      x: to.x,
+      y: to.y,
+      duration: ORB_FX.flyMs,
+      ease: 'Cubic.easeIn',
+      onComplete: () => {
+        trail.remove();
+        orb.destroy();
+        halo.destroy();
+        const tint = destroyed ? ORB_FX.destroyed : spec.color;
+        const burst = this.glowAt(to.x, to.y, destroyed ? 90 : 60, tint, 1);
+        this.tweens.add({
+          targets: burst,
+          alpha: 0,
+          scale: burst.scale * (destroyed ? 3.2 : 2.4),
+          duration: ORB_FX.burstMs,
+          ease: 'Quad.easeOut',
+        });
+        const ring = this.add.circle(to.x, to.y, 14).setStrokeStyle(3, tint, 1).setDepth(DEPTH.ui + 21);
+        this.tweens.add({
+          targets: ring,
+          scale: destroyed ? 5 : 3.4,
+          alpha: 0,
+          duration: ORB_FX.burstMs,
+          ease: 'Quad.easeOut',
+        });
+        if (destroyed) {
+          this.cameras.main.shake(180, 0.006);
+        }
+        this.time.delayedCall(ORB_FX.burstMs * 0.6, done);
+      },
+    });
+  }
+
+  /**
+   * Drawn again after a 구슬: the weapon's cell flashes, every line of the
+   * read-out that is not what it was is lit in the 구슬's colour and fades,
+   * and the line saying what it did pops.
+   */
+  private showOrbChange(fx: NonNullable<InventorySceneData['orbFx']>): void {
+    const spec = ORBS[fx.orb];
+    const tint = fx.destroyed ? ORB_FX.destroyed : spec.color;
+
+    const hint = this.orbHint;
+    if (hint) {
+      hint.setColor(`#${tint.toString(16).padStart(6, '0')}`);
+      this.tweens.add({ targets: hint, scale: { from: 1.25, to: 1 }, duration: 320, ease: 'Back.out' });
+      this.time.delayedCall(ORB_FX.highlightMs, () => {
+        if (hint.active) {
+          hint.setColor(COLORS.gearText);
+        }
+      });
+    }
+    if (fx.destroyed) {
+      return;
+    }
+
+    const cell = this.selectedCell();
+    const flash = this.glowAt(cell.x, cell.y, 70, tint, 0.9);
+    this.tweens.add({
+      targets: flash,
+      alpha: 0,
+      scale: flash.scale * 1.8,
+      duration: 700,
+      onComplete: () => flash.destroy(),
+    });
+
+    if (this.heading.text !== fx.title) {
+      this.tweens.add({ targets: this.heading, scale: { from: 1.18, to: 1 }, duration: 360, ease: 'Back.out' });
+    }
+
+    // Which lines changed, line by line as drawn — a long one wraps.
+    const was = new Map<string, number>();
+    this.lines.getWrappedText(fx.before).forEach((line) => was.set(line, (was.get(line) ?? 0) + 1));
+    const now = this.lines.getWrappedText(this.lines.text);
+    const pitch = (this.lines.height + LINES_STYLE.lineSpacing) / Math.max(1, now.length);
+    this.changedLines = [];
+    now.forEach((line, index) => {
+      const left = was.get(line) ?? 0;
+      if (left > 0) {
+        was.set(line, left - 1);
+        return;
+      }
+      if (line.trim() === '' || /^─+$/.test(line.trim())) {
+        return;
+      }
+      this.changedLines.push(line);
+      const bar = this.add
+        .rectangle(
+          this.lines.x,
+          this.lines.y + index * pitch + (pitch - LINES_STYLE.lineSpacing) / 2,
+          this.lines.width + 16,
+          pitch,
+          tint,
+          ORB_FX.highlightAlpha,
+        )
+        .setDepth(this.lines.depth - 0.5);
+      this.tweens.add({
+        targets: bar,
+        alpha: { from: ORB_FX.highlightAlpha, to: 0 },
+        duration: ORB_FX.highlightMs,
+        ease: 'Quad.easeIn',
+        onComplete: () => bar.destroy(),
+      });
     });
   }
 

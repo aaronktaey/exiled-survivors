@@ -108,19 +108,15 @@ export const ko: Strings = {
 
   bones: {
     title: '뼈다귀',
-    lead: '이번 판에만 적용됩니다. 최대 3개까지, 시작하면 사라집니다.',
-    held: '{bone} x{count}',
-    inUse: '적용 {count}',
+    lead: '이번 판에만 · 최대 {max}개 · 시작하면 사라집니다',
     clear: '모두 빼기',
     start: '이대로 시작',
-    slots: '적용한 뼈다귀',
-    total: '합계',
     none: '아무것도 적용하지 않았습니다',
     sumHp: '적 체력 +{percent}%',
     sumDrop: '드랍률 +{percent}%',
     sumBosses: '희귀 적 대신 우두머리',
-    hintKeyboard: '↑ ↓ 이동   Space 적용   Esc 돌아가기',
-    hintTouch: '항목을 탭해서 적용',
+    hintKeyboard: '← → 고르기   Space 넣기   Backspace 빼기   Esc 돌아가기',
+    hintTouch: '뼈다귀를 눌러 넣고, 칸을 눌러 뺍니다',
   },
 
   pause: {
@@ -165,6 +161,14 @@ export const ko: Strings = {
     loadingNote: '공유 랭킹을 불러오는 중…',
     offlineNote: '공유 랭킹에 연결하지 못해 이 기기의 기록을 보여줍니다.',
     loginToEnter: '로그인하고 등록',
+    tabShared: '전체 랭킹',
+    tabPersonal: '내 기록',
+    date: '날짜',
+    level: '레벨',
+    time: '시간',
+    personalEmpty: '아직 끝낸 판이 없습니다. 한 판 하고 오세요!',
+    personalNote: '이 기기에 남은 내 기록입니다 — 로그인하면 계정과 함께 저장됩니다.',
+    personalSyncedNote: '계정과 함께 저장되는 내 기록입니다.',
     mine: '내 최고 기록: {place}위 · {damage}',
     mineNone: '아직 올린 기록이 없습니다',
     enteredAfterLogin: '로그인했습니다 — 기록을 랭킹에 올렸습니다',
@@ -669,6 +673,7 @@ export const ko: Strings = {
           title: '뼈다귀',
           lines: [
             '판을 시작하기 전에 최대 {maxBones}개까지 넣어 그 판을 바꿉니다. 넣은 뼈다귀는 소모됩니다.',
+            '뼈다귀 그림을 누르면 아래 칸에 들어가고, 칸을 누르면 다시 빠집니다. 고른 것의 효과와 합계가 바로 아래에 나옵니다.',
             '게임 시작과 다시하기 모두 뼈다귀 창을 거칩니다. 가진 것이 없으면 건너뜁니다.',
             '불러온 판은 처음 넣었던 뼈다귀를 그대로 씁니다.',
             '고대 두개골을 넣어도 우두머리는 한 번에 {maxBosses}마리까지만 있고, 그 뒤의 희귀 적 자리는 일반 적이 됩니다.',
@@ -703,6 +708,7 @@ export const ko: Strings = {
           lines: [
             '랭킹에는 로그인한 계정만 올릴 수 있고, 그 판에 준 총 피해로 순위를 매깁니다. 이름 {nameLength}글자와 아이콘 · 국기를 고르며, 계정마다 이름 하나와 최고 기록 하나만 올라갑니다.',
             '상위 {rankSize}명까지 보여 주며, 다른 플레이어와 함께 쓰는 순위표입니다. 로그인하면 내 최고 기록과 순위도 보입니다.',
+            '내 기록 탭에는 로그인과 상관없이 내가 끝낸 판 중 상위 {rankSize}개가 날짜 · 레벨 · 버틴 시간과 함께 남습니다. ← → 로 탭을 바꿉니다.',
           ],
         },
       ],

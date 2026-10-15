@@ -51,20 +51,19 @@ export interface RankRow {
   readonly at: string;
 }
 
-/** Each account's best run, best first, a tie to whoever got there first. */
-const BEST_PER_ACCOUNT = `
-  WITH best AS (
-    SELECT e.*, ROW_NUMBER() OVER (PARTITION BY e.user_id ORDER BY e.damage DESC, e.at ASC) AS n
-      FROM entries e WHERE e.user_id IS NOT NULL
-  )
+/**
+ * Each account's best run, best first, a tie to whoever got there first —
+ * read off the `best` table (one row per account), so a look costs the rows
+ * it shows rather than the whole history.
+ */
+const BOARD = `
   SELECT b.user_id AS userId, u.rank_name AS name, u.rank_emoji AS emoji, u.rank_flag AS flag,
          b.damage, b.level, b.survived_ms AS survivedMs, b.at
     FROM best b JOIN users u ON u.id = b.user_id
-   WHERE b.n = 1
    ORDER BY b.damage DESC, b.at ASC`;
 
 async function topRows(env: Env): Promise<(RankRow & { userId: string })[]> {
-  const result = await env.DB.prepare(`${BEST_PER_ACCOUNT} LIMIT ?1`)
+  const result = await env.DB.prepare(`${BOARD} LIMIT ?1`)
     .bind(RANKING.size)
     .all<RankRow & { userId: string }>();
   return result.results ?? [];
@@ -96,8 +95,7 @@ export async function mine(request: Request, env: Env): Promise<Response> {
     return json({ best: null, place: null }, 200, { 'Cache-Control': 'no-store' });
   }
   const best = await env.DB.prepare(
-    `SELECT damage, level, survived_ms AS survivedMs, at FROM entries
-      WHERE user_id = ?1 ORDER BY damage DESC, at ASC LIMIT 1`,
+    'SELECT damage, level, survived_ms AS survivedMs, at FROM best WHERE user_id = ?1',
   )
     .bind(user.id)
     .first<{ damage: number; level: number; survivedMs: number; at: string }>();
@@ -105,8 +103,7 @@ export async function mine(request: Request, env: Env): Promise<Response> {
     return json({ best: null, place: 0 }, 200, { 'Cache-Control': 'no-store' });
   }
   const above = await env.DB.prepare(
-    `WITH b AS (${BEST_PER_ACCOUNT}) SELECT COUNT(*) AS n FROM b
-      WHERE b.damage > ?1 OR (b.damage = ?1 AND b.at < ?2)`,
+    'SELECT COUNT(*) AS n FROM best WHERE damage > ?1 OR (damage = ?1 AND at < ?2)',
   )
     .bind(best.damage, best.at)
     .first<{ n: number }>();
@@ -129,9 +126,11 @@ export function problemWith(raw: unknown): string | null {
   const name = String(run.name ?? '');
   const emoji = String(run.emoji ?? '');
   const flag = String(run.flag ?? '');
-  const damage = Number(run.damage);
-  const level = Number(run.level);
-  const survivedMs = Number(run.survivedMs);
+  // Whole numbers are what is stored; a fraction is rounded down rather than
+  // refused — a run's time is a sum of frame times and is never whole.
+  const damage = Math.floor(Number(run.damage));
+  const level = Math.floor(Number(run.level));
+  const survivedMs = Math.floor(Number(run.survivedMs));
 
   if (!new RegExp(`^[A-Z]{1,${RANKING.nameLength}}$`).test(name)) {
     return 'name';
@@ -142,7 +141,7 @@ export function problemWith(raw: unknown): string | null {
   if (!(RANKING.flags as readonly string[]).includes(flag)) {
     return 'flag';
   }
-  if (![damage, level, survivedMs].every(Number.isInteger)) {
+  if (![damage, level, survivedMs].every(Number.isFinite)) {
     return 'numbers';
   }
   if (damage <= 0 || damage > RANKING.shared.maxDamage) {
@@ -222,15 +221,22 @@ export async function submit(request: Request, env: Env, ctx: ExecutionContext):
   const address = await addressOf(request, env);
   const now = Date.now();
   const dayAgo = now - 86_400_000;
-  const recent = await env.DB.prepare(
-    `SELECT
-       SUM(CASE WHEN user_id = ?1 AND at_ms > ?3 THEN 1 ELSE 0 END) AS burst,
-       SUM(CASE WHEN user_id = ?1 THEN 1 ELSE 0 END) AS mine,
-       SUM(CASE WHEN ip_hash = ?2 THEN 1 ELSE 0 END) AS here
-     FROM entries WHERE (user_id = ?1 OR ip_hash = ?2) AND at_ms > ?4`,
-  )
-    .bind(user.id, address, now - RULES.cooldownMs, dayAgo)
-    .first<{ burst: number | null; mine: number | null; here: number | null }>();
+  // Two lookups, each on its own index, rather than one OR that reads the table.
+  const [mineRow, hereRow] = await env.DB.batch<{ burst: number | null; day: number }>([
+    env.DB.prepare(
+      `SELECT SUM(CASE WHEN at_ms > ?2 THEN 1 ELSE 0 END) AS burst, COUNT(*) AS day
+         FROM entries WHERE user_id = ?1 AND at_ms > ?3`,
+    ).bind(user.id, now - RULES.cooldownMs, dayAgo),
+    env.DB.prepare('SELECT 0 AS burst, COUNT(*) AS day FROM entries WHERE ip_hash = ?1 AND at_ms > ?2').bind(
+      address,
+      dayAgo,
+    ),
+  ]);
+  const recent = {
+    burst: mineRow?.results?.[0]?.burst ?? 0,
+    mine: mineRow?.results?.[0]?.day ?? 0,
+    here: hereRow?.results?.[0]?.day ?? 0,
+  };
   if (
     (recent?.burst ?? 0) > 0 ||
     (recent?.mine ?? 0) >= RULES.perDay ||
@@ -239,9 +245,13 @@ export async function submit(request: Request, env: Env, ctx: ExecutionContext):
     return json({ error: 'slow down' }, 429, { 'Retry-After': String(Math.ceil(RULES.cooldownMs / 1000)) });
   }
 
-  // The name on the board is the account's: this run sets it.
+  // The name on the board is the account's: this run sets it. The run goes
+  // into the history, and onto the board only if it beats the account's best.
   const at = new Date(now).toISOString();
-  await env.DB.batch([
+  const damage = Math.floor(Number(run.damage));
+  const level = Math.floor(Number(run.level));
+  const survivedMs = Math.floor(Number(run.survivedMs));
+  const inserted = await env.DB.batch([
     env.DB.prepare('UPDATE users SET rank_name = ?2, rank_emoji = ?3, rank_flag = ?4 WHERE id = ?1').bind(
       user.id,
       run.name,
@@ -251,8 +261,17 @@ export async function submit(request: Request, env: Env, ctx: ExecutionContext):
     env.DB.prepare(
       `INSERT INTO entries (name, emoji, flag, damage, level, survived_ms, at, at_ms, ip_hash, user_id)
        VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)`,
-    ).bind(run.name, run.emoji, run.flag, run.damage, run.level, run.survivedMs, at, now, address, user.id),
+    ).bind(run.name, run.emoji, run.flag, damage, level, survivedMs, at, now, address, user.id),
   ]);
+  const entryId = Number(inserted[1]?.meta.last_row_id ?? 0);
+  await env.DB.prepare(
+    `INSERT INTO best (user_id, entry_id, damage, level, survived_ms, at) VALUES (?1, ?2, ?3, ?4, ?5, ?6)
+     ON CONFLICT (user_id) DO UPDATE SET entry_id = excluded.entry_id, damage = excluded.damage,
+       level = excluded.level, survived_ms = excluded.survived_ms, at = excluded.at
+     WHERE excluded.damage > best.damage`,
+  )
+    .bind(user.id, entryId, damage, level, survivedMs, at)
+    .run();
 
   // The board this run is on, straight from the database, and the edge's
   // copy here dropped so the next look sees it too.
