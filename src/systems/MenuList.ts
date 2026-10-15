@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 
 import { COLORS, DEPTH, MENU, TEXT } from '@/config';
 import { fitWidth } from '@/systems/Layout';
+import { outlineWidth } from '@/systems/SharpText';
 
 export interface MenuItem {
   readonly id: string;
@@ -14,6 +15,13 @@ export interface MenuItem {
   readonly onSelect?: () => void;
   /** Left/right on this row, for the rows that are really sliders. */
   readonly onAdjust?: (direction: -1 | 1) => void;
+  /**
+   * A row that stands for something with colours of its own — a sign-in
+   * button — wears them: a border, and a tint that deepens under the cursor.
+   */
+  readonly accent?: number;
+  /** The words on such a row, in its own colours too. */
+  readonly accentText?: string;
 }
 
 export interface MenuListOptions {
@@ -257,7 +265,14 @@ export class MenuList {
       const enabled = item.enabled?.() !== false;
 
       row.panel.setVisible(true);
-      row.panel.setFillStyle(COLORS.panelActive, active ? 0.55 : 0);
+      if (item.accent !== undefined) {
+        // Its own colours, solid; the cursor is a ring in the menu's accent.
+        row.panel.setFillStyle(item.accent, active ? 1 : 0.88);
+        row.panel.setStrokeStyle(active ? 3 : 1, active ? COLORS.accentFill : item.accent, 1);
+      } else {
+        row.panel.setFillStyle(COLORS.panelActive, active ? 0.55 : 0);
+        row.panel.setStrokeStyle();
+      }
       row.panel.setAlpha(enabled ? 1 : 0.45);
 
       // Centred normally; on a narrow screen a row with a value on its
@@ -267,7 +282,11 @@ export class MenuList {
       row.label.setX(tight ? this.listX - this.listWidth / 2 + 14 : this.listX);
       row.label.setOrigin(tight ? 0 : 0.5, 0.5);
       row.label.setText(item.label());
-      row.label.setColor(enabled ? (active ? COLORS.accent : COLORS.text) : COLORS.muted);
+      row.label.setColor(
+        !enabled ? COLORS.muted : item.accentText ?? (active ? COLORS.accent : COLORS.text),
+      );
+      // Dark words on a light button need no dark outline — it only smears them.
+      row.label.setStroke(TEXT.outline.color, item.accentText ? 0 : outlineWidth(TEXT.size.label));
       row.label.setAlpha(enabled ? 1 : 0.5);
 
       // A value row keeps its arrows clear of the read-out.

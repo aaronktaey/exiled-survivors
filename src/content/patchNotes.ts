@@ -15,6 +15,36 @@ export interface PatchNote {
 
 export const PATCH_NOTES: readonly PatchNote[] = [
   {
+    version: '0.30',
+    date: '2026-10-15',
+    changes: {
+      ko: [
+        '계정이 생겼습니다 — 시작 화면 모서리의 로그인 아이콘에서 Google 계정으로 로그인할 수 있습니다. 다른 로그인은 준비되는 대로 추가됩니다. 로그인은 선택이며, 하지 않아도 지금처럼 플레이할 수 있습니다.',
+        '로그인하면 장비·패시브·구슬·뼈다귀·저장된 판·설정이 계정에 저장되어 다른 기기에서도 이어서 할 수 있습니다. 이 기기와 계정의 기록이 서로 다르면 어느 쪽을 쓸지 묻습니다.',
+        '랭킹은 이제 로그인한 계정만 올릴 수 있고, 계정마다 이름 하나와 최고 기록 하나만 올라갑니다. 로그인하지 않았다면 기록 등록 화면에서 바로 로그인하러 갈 수 있고, 돌아오면 그 기록이 올라갑니다. 랭킹 화면에 내 최고 기록과 순위도 표시됩니다.',
+        '개인정보처리방침과 데이터 삭제 안내 페이지를 추가했습니다. 로그인에는 계정 고유번호와 표시 이름만 쓰며 이메일은 받지 않고, 계정 화면에서 언제든 계정을 삭제할 수 있습니다.',
+      ],
+      en: [
+        'Accounts are here — sign in with Google from the sign-in icon in the corner of the title screen; more ways to sign in will follow. Signing in is optional, and you can keep playing as before without it.',
+        'Signed in, your gear, passives, orbs, Bones, saved run and settings are kept on your account, so you can carry on from another device. If this device and your account hold different records, you are asked which to keep.',
+        'Only signed-in accounts can put runs on the ranking now, with one name and one best run per account. If you are not signed in, the entry screen takes you to sign in and the run goes on when you are back. The ranking screen also shows your own best and where it stands.',
+        'Added a privacy policy and a data-deletion page. Signing in uses only your account’s ID and display name — no email — and you can delete your account from the Account screen at any time.',
+      ],
+      ja: [
+        'アカウントができました — タイトル画面の隅にあるログインアイコンから Google アカウントでログインできます。ほかのログインは準備ができ次第追加します。ログインは任意で、しなくても今まで通り遊べます。',
+        'ログインすると装備・パッシブ・球・骨・セーブした回・設定がアカウントに保存され、ほかの端末でも続きから遊べます。この端末とアカウントの記録が異なる場合は、どちらを使うか確認します。',
+        'ランキングに登録できるのはログインしたアカウントだけになり、アカウントごとに名前 1 つと最高記録 1 つだけが載ります。ログインしていなければ登録画面からそのままログインでき、戻るとその記録が登録されます。ランキング画面には自分の最高記録と順位も表示されます。',
+        'プライバシーポリシーとデータ削除の案内ページを追加しました。ログインにはアカウントの固有番号と表示名だけを使い、メールアドレスは受け取りません。アカウント画面からいつでもアカウントを削除できます。',
+      ],
+      zh: [
+        '新增账号 — 可以在标题画面角落的登录图标处用 Google 账号登录，其他登录方式准备好后陆续加入。登录是可选的，不登录也可以照常游玩。',
+        '登录后，装备·被动·宝珠·骨头·存档·设置会保存到账号，可以在其他设备上继续游玩。本设备与账号的记录不同时，会询问要保留哪一份。',
+        '现在只有已登录的账号可以登上排行榜，每个账号只有一个名字和一条最佳记录。未登录时可以从登记画面直接去登录，回来后这条记录会登上榜单。排行榜画面也会显示自己的最佳记录和名次。',
+        '新增隐私政策和数据删除说明页面。登录只使用账号的唯一编号和显示名称，不收集电子邮箱，随时可以在账号画面删除账号。',
+      ],
+    },
+  },
+  {
     version: '0.29',
     date: '2026-10-15',
     changes: {

@@ -66,6 +66,8 @@ const OVERLAYS = [
   ['CreditsScene', '{}'],
   ['InventoryScene', '{}'],
   ['PassiveScene', '{}'],
+  ['AccountScene', '{}'],
+  ['ConflictScene', '{}'],
 ];
 
 for (const [w, h, shape] of [[0, 0, 'landscape'], [420, 860, 'upright']]) {

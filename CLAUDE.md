@@ -77,7 +77,7 @@ wrong shape.
 ## The test harness
 
 `tests/` drives a real Chrome over CDP against the dev server and checks the
-running game, not units. 38 suites, ~980 checks. It is the only thing that has
+running game, not units. 39 suites, ~1030 checks. It is the only thing that has
 caught most of what has gone wrong here, so run all of it before every commit.
 
 ```sh
@@ -88,7 +88,7 @@ node run-all.mjs test-full test-skills test-balance test-chain test-ice \
   test-hud test-expiry test-audio test-touch test-shell test-shell2 test-info \
   test-i18n test-gear test-passive test-responsive test-stats test-bones \
   test-altar test-slot test-inventory test-locale test-back test-fugitive \
-  test-ranking test-skillpick test-mango test-web test-loadout \n  test-carry test-api
+  test-ranking test-skillpick test-mango test-web test-loadout \n  test-carry test-api test-account
 ```
 
 `run-all.mjs` starts Chrome itself (`CHROME_PATH` overrides where it looks),
@@ -228,6 +228,26 @@ Read `git log` for what changed and when. What is not in the log:
   time to come across, make it private: the old github.io address then stops,
   Cloudflare deploys keep working (Actions run on private repos). Confirm
   with the user before changing visibility.
+- **계정 (optional sign-in).** `server/auth.ts`: OAuth 2.0 code flow for
+  Google, Kakao, Facebook and X (`server/providers.ts`), each offered only
+  once its `*_CLIENT_ID`/`*_CLIENT_SECRET` Worker secrets exist; no email is
+  asked for. Sessions are an HttpOnly cookie whose hash lives in D1;
+  `AUTH_SECRET` signs the 10-minute cookie that carries state and the PKCE
+  verifier to the provider and back. A local-only `test` provider exists for
+  the harness (`--var AUTH_TEST:1`, refused unless the host is localhost).
+  The ranking takes runs from signed-in accounts only, one name and one best
+  per account. `/api/save` holds a copy of the game's localStorage and only
+  writes over the version the browser last saw (409 otherwise).
+  Client: `systems/Account.ts` (who, `#login=` outcome), `systems/CloudSave.ts`
+  (three-way sync against the `STORAGE.sync` note: upload, take and reload,
+  or ask in `ConflictScene`), `AccountScene` behind the title's corner icon,
+  and `PendingRank` carrying a run across the trip to the provider. The
+  harness turns accounts off unless a page sets `window.__accountOn`
+  (test-account does, with an in-page stand-in for /api).
+  `wrangler dev` dresses requests as the routed domain; pass
+  `--local-upstream 127.0.0.1:<port>` (dev:api and test-api do).
+  The privacy policy and data-deletion pages are `public/privacy.html` and
+  `public/data-deletion.html`; keep them true to what is collected.
 - **이사 (moving the records).** localStorage belongs to one address, so the
   old one's `bridge/index.html` gathers every `exiled-survivors:` key but the
   ranking and lands on the new one with `#carry=<base64url>`;

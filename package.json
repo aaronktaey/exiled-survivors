@@ -6,7 +6,7 @@
   "description": "Vampire Survivors style top-down survival game (Phaser 4 + Vite + TypeScript, served by a Cloudflare Worker)",
   "scripts": {
     "dev": "vite",
-    "dev:api": "wrangler d1 migrations apply DB --local && wrangler dev --port 8787",
+    "dev:api": "wrangler d1 migrations apply DB --local && wrangler dev --port 8787 --local-upstream 127.0.0.1:8787",
     "build": "tsc --noEmit && tsc --noEmit -p server && vite build",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit && tsc --noEmit -p server",

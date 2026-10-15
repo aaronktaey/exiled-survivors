@@ -129,6 +129,8 @@ export const TEXTURES = {
   lightPillar: "tex-light-pillar",
   /** A soft white dot, for light that gathers and bursts. */
   glow: "tex-glow",
+  /** The 계정 icon on the title: a head and shoulders. */
+  account: "tex-account",
   grid: "tex-grid",
   player: "tex-player",
   enemy: "tex-enemy",
@@ -324,6 +326,18 @@ export const DROP_LABEL = {
   /** One full breath of the 희귀 plate. */
   pulseMs: 900,
 } as const;
+
+/**
+ * The sign-in buttons, each in its provider's own colours — what players
+ * look for on a sign-in page, so it is what they are given here.
+ */
+export const ACCOUNT_BUTTONS: Record<string, { readonly fill: number; readonly text: string; readonly edge: number }> = {
+  google: { fill: 0xffffff, text: '#1f1f1f', edge: 0xdadce0 },
+  kakao: { fill: 0xfee500, text: '#191919', edge: 0xfee500 },
+  facebook: { fill: 0x1877f2, text: '#ffffff', edge: 0x1877f2 },
+  twitter: { fill: 0x000000, text: '#ffffff', edge: 0x5b6170 },
+  test: { fill: 0x2b3445, text: '#f4f1e8', edge: 0x5ea8ff },
+};
 
 /**
  * A pillar of pale light standing on a 희귀 drop, the way a rare item is

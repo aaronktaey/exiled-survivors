@@ -15,3 +15,5 @@ export { RankingScene, type RankingSceneData } from '@/scenes/RankingScene';
 export { SkillPickScene, type SkillPickData } from '@/scenes/SkillPickScene';
 export { RankEntryScene, type RankEntryData } from '@/scenes/RankEntryScene';
 export { GameOverScene } from '@/scenes/GameOverScene';
+export { AccountScene, type AccountSceneData } from '@/scenes/AccountScene';
+export { ConflictScene, type ConflictSceneData } from '@/scenes/ConflictScene';

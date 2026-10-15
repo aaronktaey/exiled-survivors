@@ -38,6 +38,8 @@ export const SCENES = {
   ranking: "RankingScene",
   skillPick: "SkillPickScene",
   rankEntry: "RankEntryScene",
+  account: "AccountScene",
+  conflict: "ConflictScene",
 } as const;
 
 /** Keys the browser keeps our state under. Bump the suffix to invalidate. */
@@ -56,6 +58,13 @@ export const STORAGE = {
   bones: "exiled-survivors:bones:v1",
   /** The local ranking, until there is a shared one. */
   ranking: "exiled-survivors:ranking:v1",
+  /** Which account this browser's records were last synced with, and when. */
+  sync: "exiled-survivors:sync:v1",
+  /**
+   * A run waiting to be put on the ranking across a sign-in (sessionStorage:
+   * it only has to outlive the trip to the provider and back).
+   */
+  pendingRank: "exiled-survivors:pending-rank",
 } as const;
 
 /**
@@ -104,6 +113,26 @@ export const RANKING = {
    * test-ranking turns it back on.
    */
   promptOnDeath: true as boolean,
+} as const;
+
+/**
+ * 계정 — optional sign-in. Signed in, the player's records are copied to the
+ * server and follow them between devices, and runs can go on the ranking.
+ */
+export const ACCOUNT = {
+  enabled: true as boolean,
+  /** How often a signed-in browser checks for changes to upload. */
+  syncEveryMs: 20_000,
+  /** A request that takes longer than this is given up on. */
+  timeoutMs: 8_000,
+  /** The privacy policy and data-deletion pages, served beside the game. */
+  privacyUrl: '/privacy.html',
+  deletionUrl: '/data-deletion.html',
+  /**
+   * The keys that never travel: the board is the server's, and the sync note
+   * belongs to one browser.
+   */
+  localOnly: ["exiled-survivors:ranking:v1", "exiled-survivors:sync:v1"] as readonly string[],
 } as const;
 
 export const SAVE = {

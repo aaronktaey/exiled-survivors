@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 
 import {
+  ACCOUNT,
   COLORS,
   DEPTH,
   MENU,
@@ -21,6 +22,12 @@ import { saveGame } from '@/systems/SaveGame';
 import { centredTop, fitText } from '@/systems/Layout';
 import { flagTexture, rankLabel, ranking } from '@/systems/Ranking';
 import { prefersTouchControls } from '@/systems/VirtualJoystick';
+import { account } from '@/systems/Account';
+import { cloudSave } from '@/systems/CloudSave';
+import { takePendingRank } from '@/systems/PendingRank';
+
+/** Syncing starts once per page, the first time the title finds someone signed in. */
+let syncStarted = false;
 
 /** How many rows the title lists, for centring it before they are built. */
 const ROW_COUNT = 5;
@@ -128,7 +135,27 @@ export class MenuScene extends Phaser.Scene {
         label: () => t().ranking.icon,
         onSelect: () => this.openOverlay(SCENES.ranking),
       },
+      ...(ACCOUNT.enabled
+        ? [
+            {
+              id: 'account',
+              texture: TEXTURES.account,
+              label: () => (account.signedIn ? t().account.iconSignedIn : t().account.iconSignedOut),
+              // Two sets of records waiting for a choice.
+              badge: () => cloudSave.conflict !== null,
+              onSelect: () => this.openOverlay(SCENES.account),
+            },
+          ]
+        : []),
     ]);
+
+    const unwatchAccount = account.onChange(() => this.icons.refresh());
+    const unwatchSync = cloudSave.onChange(() => this.icons.refresh());
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      unwatchAccount();
+      unwatchSync();
+    });
+    void this.settleAccount();
 
     // The track is multi-megabyte, so it arrives a moment after the menu.
     bgm.start(this);
@@ -268,6 +295,69 @@ export class MenuScene extends Phaser.Scene {
       (applied) => this.scene.start(SCENES.game, { save: null, bones: applied, startPick: true }),
       () => this.menu.refresh(),
     );
+  }
+
+  /**
+   * Who is signed in, and what coming back from a provider brings with it:
+   * records to sync, a word on how the sign-in went, a run waiting to go on
+   * the ranking, or two sets of records to choose between.
+   */
+  private async settleAccount(): Promise<void> {
+    if (!ACCOUNT.enabled) {
+      return;
+    }
+    await account.refresh();
+    if (!this.scene.isActive() && !this.scene.isPaused()) {
+      return;
+    }
+    if (account.user && !syncStarted) {
+      syncStarted = true;
+      await cloudSave.start();
+    }
+    this.icons.refresh();
+
+    const copy = t().account;
+    const outcome = account.outcome;
+    account.outcome = null;
+    if (outcome) {
+      this.toast(outcome === 'ok' ? copy.loginOk : outcome === 'cancelled' ? copy.loginCancelled : copy.loginError);
+    }
+
+    const pending = takePendingRank();
+    if (pending && account.user) {
+      await ranking.refresh();
+      ranking.submit(pending);
+      this.toast(t().ranking.enteredAfterLogin);
+      this.openOverlay(SCENES.ranking);
+      return;
+    }
+    if (cloudSave.conflict && this.scene.isActive()) {
+      this.openOverlay(SCENES.conflict);
+    }
+  }
+
+  /** A line that rises over the hint and fades — how the title says something happened. */
+  private toast(text: string): void {
+    const { width, height } = this.scale;
+    const line = this.add
+      .text(width / 2, height - 64, text, {
+        fontFamily: 'system-ui, sans-serif',
+        fontSize: TEXT.size.body,
+        color: COLORS.gearText,
+        backgroundColor: '#141924',
+        padding: { x: 12, y: 6 },
+      })
+      .setOrigin(0.5)
+      .setDepth(DEPTH.ui + 10);
+    fitText(line, width);
+    this.tweens.add({
+      targets: line,
+      y: line.y - 16,
+      alpha: 0,
+      delay: 2400,
+      duration: 700,
+      onComplete: () => line.destroy(),
+    });
   }
 
   /** The other screens sit on top; the menu waits, deaf, underneath. */
