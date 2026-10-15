@@ -194,6 +194,12 @@ export const SEPARATION = {
 } as const;
 
 export const DEBUG = {
+  /**
+   * The dev server opens the F1 tools to anyone; the deployed game only to an
+   * account the server names (ADMIN_USERS). True here tries the deployed rule
+   * on the dev server — a test does, and puts it back.
+   */
+  gatedInDev: false,
   /** Enemies added per press of the stress-test key. */
   stressSpawnCount: 100,
   /** Frames averaged for the frame-time readout. */

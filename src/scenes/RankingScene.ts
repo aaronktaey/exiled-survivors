@@ -348,9 +348,9 @@ export class RankingScene extends Phaser.Scene {
       : this.loading
         ? copy.loadingNote
         : ranking.source === 'shared'
-          ? copy.sharedNote
+          ? ''
           : copy.offlineNote;
-    this.note.setText(this.mine ? `${text}   ·   ${this.mine}` : text);
+    this.note.setText([text, this.mine].filter(Boolean).join('   ·   '));
     fitText(this.note, this.scale.width - 16);
   }
 

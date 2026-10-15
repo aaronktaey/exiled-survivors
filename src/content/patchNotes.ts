@@ -15,6 +15,28 @@ export interface PatchNote {
 
 export const PATCH_NOTES: readonly PatchNote[] = [
   {
+    version: '0.32',
+    date: '2026-10-15',
+    changes: {
+      ko: [
+        'F1 개발자 기능은 이제 관리자 계정만 쓸 수 있습니다. 개발자 기능을 쓴 판은 랭킹과 내 기록에 남지 않습니다.',
+        '랭킹 화면 아래의 \'임시 랭킹\' 문구를 없앴습니다.',
+      ],
+      en: [
+        'The F1 developer tools are now for admin accounts only. A run they were used in goes on neither the ranking nor My runs.',
+        'The ranking screen no longer calls itself temporary.',
+      ],
+      ja: [
+        'F1 の開発者機能は管理者アカウントだけが使えるようになりました。開発者機能を使った回はランキングにも自分の記録にも残りません。',
+        'ランキング画面下の「暫定ランキング」の文言をなくしました。',
+      ],
+      zh: [
+        'F1 开发者功能现在仅限管理员账号使用。使用过开发者功能的一局不会进入排行榜和我的记录。',
+        '去掉了排行榜画面下方的“临时排行榜”字样。',
+      ],
+    },
+  },
+  {
     version: '0.31',
     date: '2026-10-15',
     changes: {

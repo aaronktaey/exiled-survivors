@@ -236,6 +236,11 @@ for (const [code, expected] of [['ja', 'ゲーム開始'], ['zh', '开始游戏'
   })()`);
   await cdp.send('Page.navigate', { url: 'http://localhost:5173/' });
   await sleep(4000);
+  // A slow load is not a failure: wait for the title to be up.
+  for (let i = 0; i < 60; i++) {
+    if (await ev(`(() => !!window.game?.scene?.isActive('MenuScene'))()`)) break;
+    await sleep(250);
+  }
   const labels = await menuLabels();
   check(`the title renders in ${code}`, labels.labels[0] === expected,
     labels.labels.join(' / '));

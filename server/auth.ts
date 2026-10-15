@@ -259,6 +259,14 @@ export async function sessionUser(request: Request, env: Env): Promise<SessionUs
 }
 
 /** Who this browser is, and the ways in. */
+/** Whether this account may open the developer tools (env.ADMIN_USERS). */
+export function isAdmin(env: Env, id: string): boolean {
+  return String(env.ADMIN_USERS ?? '')
+    .split(',')
+    .map((one) => one.trim())
+    .some((one) => one !== '' && one === id);
+}
+
 export async function me(request: Request, env: Env): Promise<Response> {
   const user = await sessionUser(request, env);
   return json(
@@ -269,6 +277,7 @@ export async function me(request: Request, env: Env): Promise<Response> {
             provider: user.provider,
             name: user.displayName,
             rank: { name: user.rankName, emoji: user.rankEmoji, flag: user.rankFlag },
+            admin: isAdmin(env, user.id),
           }
         : null,
       providers: offered(env, request),

@@ -16,6 +16,8 @@ export interface GameOverData {
   readonly summary: RunSummary;
   readonly level: number;
   readonly survivedMs: number;
+  /** The developer tools changed this run: it is not offered to the ranking. */
+  readonly devRun?: boolean;
   /** Starts another run, with the 뼈다귀 picked for it. */
   readonly onRestart: (applied: readonly BoneId[]) => void;
 }
@@ -70,7 +72,7 @@ export class GameOverScene extends Phaser.Scene {
 
     // A run that made the board gets a row for entering it, and asks once
     // on its own as the screen opens.
-    const qualifies = ranking.qualifies(this.payload.summary.damage);
+    const qualifies = !this.payload.devRun && ranking.qualifies(this.payload.summary.damage);
     const rowCount = qualifies ? 4 : 3;
 
     // Built first, measured, then everything is centred around it.

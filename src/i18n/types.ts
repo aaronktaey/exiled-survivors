@@ -248,8 +248,6 @@ export interface Strings {
     readonly registered: string;
     /** A board shared between players is coming; this one is this device's. */
     readonly localNote: string;
-    /** Under the board while it is the shared one, fetching it, or unreachable. */
-    readonly sharedNote: string;
     readonly loadingNote: string;
     readonly offlineNote: string;
     /** On the entry popup when signing in comes first. */

@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 
 import { COLORS, DEBUG, DEPTH, ENEMY_KINDS, TEXT, TIMING, type EnemyKind } from '@/config';
 import { enemyName } from '@/i18n';
+import { devToolsAllowed } from '@/systems/DevAccess';
 
 /** Counts the overlay reads each frame. */
 export interface DebugCounts {
@@ -52,6 +53,11 @@ export class DebugOverlay {
 
   private shown = false;
   private invulnerable = false;
+  /**
+   * Whether any key here changed the run. Such a run goes on neither board:
+   * a level for free or a field cleared is not a run anyone else played.
+   */
+  public used = false;
   private lastNote = '';
 
   /** Rolling frame-time window, in ms. */
@@ -78,6 +84,12 @@ export class DebugOverlay {
 
     const keyboard = scene.input.keyboard;
     if (!keyboard) {
+      return;
+    }
+
+    // Nothing at all for anyone not allowed the tools: not even the keys are
+    // taken from the browser.
+    if (!devToolsAllowed()) {
       return;
     }
 
@@ -154,6 +166,9 @@ export class DebugOverlay {
   }
 
   private toggle(): void {
+    if (!devToolsAllowed()) {
+      return;
+    }
     this.shown = !this.shown;
     this.label.setVisible(this.shown);
     this.refreshMs = 0;
@@ -232,6 +247,7 @@ export class DebugOverlay {
   }
 
   private note(message: string): void {
+    this.used = true;
     this.lastNote = `> ${message}`;
     this.refreshMs = 0;
   }

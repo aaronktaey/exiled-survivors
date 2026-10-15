@@ -153,7 +153,6 @@ export const ja: Strings = {
     register: 'ランキング登録',
     registered: 'ランキング {place} 位で登録しました',
     localNote: 'この端末の記録です。プレイヤー同士で共有するランキングは準備中です。',
-    sharedNote: '全プレイヤーで共有する暫定ランキングです。',
     loadingNote: '共有ランキングを読み込み中…',
     offlineNote: '共有ランキングに接続できないため、この端末の記録を表示しています。',
     loginToEnter: 'ログインして登録',

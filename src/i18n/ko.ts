@@ -157,7 +157,6 @@ export const ko: Strings = {
     register: '랭킹 등록',
     registered: '랭킹 {place}위로 등록했습니다',
     localNote: '이 기기의 기록입니다. 플레이어끼리 공유되는 랭킹은 준비 중입니다.',
-    sharedNote: '모든 플레이어가 함께 보는 임시 랭킹입니다.',
     loadingNote: '공유 랭킹을 불러오는 중…',
     offlineNote: '공유 랭킹에 연결하지 못해 이 기기의 기록을 보여줍니다.',
     loginToEnter: '로그인하고 등록',

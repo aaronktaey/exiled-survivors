@@ -30,6 +30,13 @@ if (!existsSync(join(ROOT, 'dist', 'index.html'))) {
 const state = mkdtempSync(join(tmpdir(), 'es-api-'));
 const env = { ...process.env, CI: '1' };
 execSync(`npx wrangler d1 migrations apply DB --local --persist-to "${state}"`, { cwd: ROOT, env, stdio: 'ignore' });
+// One account named in ADMIN_USERS, signed in to through the test provider as "boss".
+execSync(
+  `npx wrangler d1 execute DB --local --persist-to "${state}" --command "` +
+    `INSERT INTO users (id, created_at, display_name) VALUES ('admin-user', 0, 'boss'); ` +
+    `INSERT INTO identities (provider, subject, user_id) VALUES ('test', 'boss', 'admin-user')"`,
+  { cwd: ROOT, env, stdio: 'ignore' },
+);
 const worker = spawn(
   'npx',
   [
@@ -37,7 +44,7 @@ const worker = spawn(
     // dresses every request as the production domain the routes name.
     'wrangler', 'dev', '--port', String(PORT), '--ip', '127.0.0.1', '--local-upstream', `127.0.0.1:${PORT}`,
     '--persist-to', `"${state}"`,
-    '--var', 'AUTH_TEST:1', '--var', 'AUTH_SECRET:local-test-secret', '--var', `FACEBOOK_CLIENT_SECRET:${FB_SECRET}`,
+    '--var', 'AUTH_TEST:1', '--var', 'AUTH_SECRET:local-test-secret', '--var', 'ADMIN_USERS:admin-user', '--var', `FACEBOOK_CLIENT_SECRET:${FB_SECRET}`,
   ],
   { cwd: ROOT, env, shell: true, stdio: 'ignore' },
 );
@@ -102,6 +109,14 @@ try {
     landing === '/#login=ok' && who.body?.user?.name === 'Tester alice' && who.body?.user?.provider === 'test' &&
       alice.jar.has('es_session') && !alice.jar.has('es_oauth'),
     `${landing} ${JSON.stringify(who.body?.user)}`);
+
+  check('an ordinary account is not offered the developer tools', who.body?.user?.admin === false,
+    JSON.stringify(who.body?.user));
+  const boss = browser();
+  await boss.signIn('boss');
+  const bossIs = await read(await boss.call('/api/me'));
+  check('the account named in ADMIN_USERS is', bossIs.body?.user?.id === 'admin-user' && bossIs.body?.user?.admin === true,
+    JSON.stringify(bossIs.body?.user));
 
   const forged = browser();
   const out = await forged.call('/api/auth/test/start?return=/');

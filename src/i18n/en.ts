@@ -153,7 +153,6 @@ export const en: Strings = {
     register: 'Enter ranking',
     registered: 'Entered at #{place}',
     localNote: 'Records on this device. A ranking shared between players is on its way.',
-    sharedNote: 'A temporary ranking shared by every player.',
     loadingNote: 'Loading the shared ranking…',
     offlineNote: 'Could not reach the shared ranking — showing this device’s records.',
     loginToEnter: 'Sign in to enter',

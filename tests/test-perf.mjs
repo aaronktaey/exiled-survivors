@@ -22,6 +22,11 @@ const fkey = async (code, vk) => {
 
 await cdp.send('Page.reload', {});
 await sleep(4000);
+// A slow load (a cold module cache after a long run of suites) is not a failure.
+for (let i = 0; i < 60; i++) {
+  if (await cdp.evaluate(`(() => !!window.game?.scene?.isActive('GameScene'))()`)) break;
+  await sleep(250);
+}
 
 // --- 1. enemies are pooled, not destroyed ---
 const pooling = await run(`
@@ -168,6 +173,49 @@ const mortal = await run(`
   return { hpBefore, hpAfter: s.player.hp };
 `);
 check('F6 again restores damage', mortal.hpAfter < mortal.hpBefore, `hp ${mortal.hpBefore} -> ${mortal.hpAfter}`);
+
+// --- the deployed rule: F1 is an admin account's, and a run it touched is on no board ---
+const restart = async () => {
+  await run(`s.scene.restart({ save: null }); return 1;`);
+  await sleep(1500);
+};
+await cdp.evaluate(`(() => { window.config.DEBUG.gatedInDev = true; window.account.user = null; return 1; })()`);
+await restart();
+await fkey('F1', 112);
+const locked = await run(`return { shown: s.debug.visible };`);
+check('signed out (or not an admin), F1 opens nothing', locked.shown === false, JSON.stringify(locked));
+
+await cdp.evaluate(`(() => { window.account.user = { id: 'me', provider: 'google', name: 'me',
+  rank: { name: '', emoji: '', flag: '' }, admin: true }; return 1; })()`);
+await restart();
+await fkey('F1', 112);
+await fkey('F4', 115);
+const adminOpened = await run(`return { shown: s.debug.visible, used: s.debug.used };`);
+check('an account the server names as admin opens it', adminOpened.shown === true && adminOpened.used === true,
+  JSON.stringify(adminOpened));
+
+const died = async () => {
+  const before = await cdp.evaluate(`(() => window.personal.runs.length)()`);
+  await cdp.evaluate(`(() => { window.ranking.reset(); window.config.RANKING.promptOnDeath = true; return 1; })()`);
+  await run(`s.stats.recordDamage(5000); s.player.setInvulnerable(false); s.player.invulnerableUntil = 0;
+    s.player.takeDamage(1e9); return 1;`);
+  await sleep(2200);
+  const out = await cdp.evaluate(`(() => ({ asked: window.game.scene.isActive('RankEntryScene'),
+    kept: window.personal.runs.length }))()`);
+  await cdp.evaluate(`(() => { const g = window.game.scene;
+    if (g.isActive('RankEntryScene')) g.stop('RankEntryScene');
+    if (g.isActive('GameOverScene') || g.isPaused('GameOverScene')) g.stop('GameOverScene');
+    window.config.RANKING.promptOnDeath = false; return 1; })()`);
+  return { ...out, before };
+};
+const devDeath = await died();
+check('a run F4 touched is not offered to the ranking, nor kept on 내 기록',
+  devDeath.asked === false && devDeath.kept === devDeath.before, JSON.stringify(devDeath));
+await restart();
+const fairDeath = await died();
+check('while the next one, played straight, is',
+  fairDeath.asked === true && fairDeath.kept === fairDeath.before + 1, JSON.stringify(fairDeath));
+await cdp.evaluate(`(() => { window.config.DEBUG.gatedInDev = false; window.account.user = null; return 1; })()`);
 
 console.log('\n=== SUMMARY ===');
 const failed = results.filter((r) => !r.p);

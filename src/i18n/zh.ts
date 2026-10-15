@@ -153,7 +153,6 @@ export const zh: Strings = {
     register: '登记排行',
     registered: '已登记为第 {place} 名',
     localNote: '这是本设备的记录。玩家之间共享的排行榜正在准备中。',
-    sharedNote: '所有玩家共享的临时排行榜。',
     loadingNote: '正在载入共享排行榜…',
     offlineNote: '无法连接共享排行榜，显示本设备的记录。',
     loginToEnter: '登录后登记',

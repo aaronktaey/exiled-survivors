@@ -17,6 +17,8 @@ export interface AccountUser {
   readonly name: string;
   /** The name their runs carry on the board, once they have handed one in. */
   readonly rank: { readonly name: string; readonly emoji: string; readonly flag: string };
+  /** The server lets this account open the developer tools (F1). */
+  readonly admin?: boolean;
 }
 
 export type LoginOutcome = 'ok' | 'error' | 'cancelled';

@@ -167,6 +167,8 @@ export class GameScene extends Phaser.Scene {
   private elapsedMs = 0;
   private sinceSaveMs = 0;
   private resuming: SavedRun | null = null;
+  /** A resumed run the developer tools had already changed. */
+  private devUsedBefore = false;
   private startPick = false;
   /** Popups earned while one was already open. */
   private pendingChoices: ChoiceRequest[] = [];
@@ -187,6 +189,7 @@ export class GameScene extends Phaser.Scene {
 
   public init(data?: GameSceneData): void {
     this.resuming = data?.save ?? null;
+    this.devUsedBefore = data?.save?.devUsed === true;
     this.startPick = data?.startPick === true && !this.resuming && SKILL_PICK.atRunStart;
     // A resumed run keeps the 뼈다귀 it was started with; they were spent
     // once, at the start, and the save remembers them.
@@ -511,6 +514,7 @@ export class GameScene extends Phaser.Scene {
 
     saveGame.write({
       bones: this.bones,
+      devUsed: this.devRun,
       elapsedMs: this.elapsedMs,
       level: this.progression.level,
       xp: this.progression.xp,
@@ -1092,6 +1096,11 @@ export class GameScene extends Phaser.Scene {
     }
   }
 
+  /** Whether the developer tools changed this run, now or before it was saved. */
+  private get devRun(): boolean {
+    return this.devUsedBefore || this.debug.used;
+  }
+
   private onPlayerDied(): void {
     this.over = true;
     this.physics.pause();
@@ -1102,12 +1111,15 @@ export class GameScene extends Phaser.Scene {
     // moved the tree forward. Paid once, here, before the screen reads it.
     const damage = this.stats.damage;
     const earned = gold.earn(damage);
-    // Every run goes on 내 기록, entered on the shared board or not.
-    personal.record({
-      damage: Math.floor(damage),
-      level: this.progression.level,
-      survivedMs: Math.floor(this.elapsedMs),
-    });
+    // Every run goes on 내 기록, entered on the shared board or not — but
+    // not one the developer tools played a part in.
+    if (!this.devRun) {
+      personal.record({
+        damage: Math.floor(damage),
+        level: this.progression.level,
+        survivedMs: Math.floor(this.elapsedMs),
+      });
+    }
 
     const data: GameOverData = {
       summary: {
@@ -1125,6 +1137,7 @@ export class GameScene extends Phaser.Scene {
       },
       level: this.progression.level,
       survivedMs: this.elapsedMs,
+      devRun: this.devRun,
       // Explicitly fresh. A restart with no data of its own keeps whatever
       // the scene was last started with, and after 불러오기 that is the
       // loaded run — which would quietly put a death back where it resumed.

@@ -19,6 +19,8 @@ export interface SavedRun {
    * they existed, which just means a run with none.
    */
   readonly bones?: readonly BoneId[];
+  /** The developer tools changed this run, so it stays off both boards once resumed. */
+  readonly devUsed?: boolean;
 }
 
 /**

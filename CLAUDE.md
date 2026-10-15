@@ -264,6 +264,12 @@ Read `git log` for what changed and when. What is not in the log:
   `src/systems/CarryOver.ts` is the first import in main.ts and writes them in
   before any store reads storage (asking first if this browser already has
   records here). test-carry covers it.
+- **F1 is the admin's.** `systems/DevAccess.ts`: the dev server opens the
+  debug keys to anyone (the harness needs them; `DEBUG.gatedInDev` tries the
+  deployed rule), the deployed game only to an account whose id is in the
+  Worker secret `ADMIN_USERS` (comma separated; `/api/me` answers
+  `admin: true`). A run any F-key changed (`DebugOverlay.used`, kept in the
+  save as `devUsed`) goes on neither the ranking nor 내 기록.
 - **Touch never holds the run.** A phone fires a pretend mouse event after a
   tap; landing on a rare under a just-closed card used to set `inspecting`
   and freeze the arena and the pad. `setInspecting` ignores it on touch
