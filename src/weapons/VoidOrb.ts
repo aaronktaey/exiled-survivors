@@ -49,7 +49,7 @@ export class VoidOrb implements Weapon {
   public update(delta: number, context: WeaponContext): void {
     this.elapsedMs += delta;
 
-    const count = Math.max(1, Math.round(context.orbCount));
+    const count = Math.max(1, Math.round(context.orbCount + (context.extraProjectiles ?? 0)));
     const radius = Math.max(1, context.range);
     this.sync(count);
 

@@ -8,13 +8,12 @@ import {
   SCRIM,
   TEXT,
   TEXTURES,
-  type BoneId,
 } from '@/config';
 import { PATCH_NOTES } from '@/content/patchNotes';
 import { fill, t } from '@/i18n';
 import { bgm } from '@/systems/Bgm';
 import { IconBar } from '@/systems/IconBar';
-import { bones } from '@/systems/Bones';
+import { BoneScene } from '@/scenes/BoneScene';
 import { orbs } from '@/systems/Orbs';
 import { passives } from '@/systems/Passives';
 import { MenuList } from '@/systems/MenuList';
@@ -259,24 +258,16 @@ export class MenuScene extends Phaser.Scene {
    * between the button and the game, so it is skipped.
    */
   private startRun(fromSave = false): void {
-    if (fromSave || bones.total === 0) {
-      this.scene.start(SCENES.game, { save: fromSave ? saveGame.read() : null, startPick: !fromSave });
+    if (fromSave) {
+      this.scene.start(SCENES.game, { save: saveGame.read(), startPick: false });
       return;
     }
 
-    this.scene.pause();
-    this.scene.bringToTop(SCENES.bones);
-    this.scene.launch(SCENES.bones, {
-      onStart: (applied: readonly BoneId[]) => {
-        this.scene.resume();
-        this.scene.start(SCENES.game, { save: null, bones: applied, startPick: true });
-      },
-      onCancel: () => {
-        this.scene.stop(SCENES.bones);
-        this.scene.resume();
-        this.menu.refresh();
-      },
-    });
+    BoneScene.before(
+      this,
+      (applied) => this.scene.start(SCENES.game, { save: null, bones: applied, startPick: true }),
+      () => this.menu.refresh(),
+    );
   }
 
   /** The other screens sit on top; the menu waits, deaf, underneath. */

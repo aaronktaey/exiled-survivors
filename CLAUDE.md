@@ -216,6 +216,12 @@ Read `git log` for what changed and when. What is not in the log:
   weakest tier. A 우두머리 always leaves one, weighted over the whole `GEAR`
   roster. A sword with `fromKill` set (tiers 3–5 now) can also come off any
   kill at that chance × `bonus`; without it, 우두머리 only.
+- **고정 속성 are on the base, not the item.** `GEAR[id].implicit` (one
+  effect each, Korean `detail` with `{value}`/`{skill}`, renamed through
+  `names.gearImplicits`) is folded into `GearBonus` by `gearBonusFor`, outside
+  the 접두어/접미어 slots. 흡혈 is pooled in `CombatSystem.leech` and paid in
+  whole HP; the extra projectile is `WeaponContext.extraProjectiles` (one more
+  shot per cast, or one more orb).
 - **A thrown skill has no range of its own.** For a skill with a
   `projectileSpeed`, `rangeFromStats` scales its base range by speed against
   base speed — targeting and flight both — so no thrown skill offers 사거리.
@@ -229,7 +235,8 @@ Read `git log` for what changed and when. What is not in the log:
 - **Known gaps, left on purpose:**
   - A 구슬 can still be spent on the weapon a saved run is holding. Swapping
     is blocked while a run is saved; rerolling it is not.
-  - The 뼈다귀 pick screen is reached only from 게임 시작. There is no way to
-    look at the drawer without starting a run.
+  - The 뼈다귀 pick screen is reached only on the way into a fresh run (게임
+    시작, and 다시하기 after a death — both through `BoneScene.before`).
+    There is no way to look at the drawer without starting a run.
   - `tests/` has no suite for the edge markers' behaviour over time, only for
     where they are placed.

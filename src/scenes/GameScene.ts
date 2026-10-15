@@ -65,6 +65,7 @@ import {
   attackSpeedFor,
   critMultiplierFor,
   damageFor,
+  gearAttackSpeedFor,
   type RunModifiers,
 } from '@/systems/Modifiers';
 import { bones } from '@/systems/Bones';
@@ -462,6 +463,7 @@ export class GameScene extends Phaser.Scene {
         orbitSpeed: stats.orbitSpeed,
         pierceCount: stats.pierceCount,
         orbCount: stats.orbCount,
+        extraProjectiles: this.gearBonus.extraProjectiles,
         hit: this.combat.hit,
       });
     }
@@ -792,7 +794,8 @@ export class GameScene extends Phaser.Scene {
       // Read off the same folds the run fights with, so the number on the
       // HUD is the number the enemies are getting.
       const perSecond = 1000 / this.cooldownOf(id);
-      const targets = 1 + stats.chainCount + stats.pierceCount + Math.max(0, stats.orbCount - 1);
+      const { shots, orbs } = this.projectilesOf(id);
+      const targets = (1 + stats.chainCount + stats.pierceCount + Math.max(0, orbs - 1)) * shots;
       const damage = this.damageOf(id);
       return {
         id,
@@ -802,6 +805,19 @@ export class GameScene extends Phaser.Scene {
         breakdown: this.breakdownOf(id, damage, perSecond, targets),
       };
     });
+  }
+
+  /**
+   * What one cast puts in the air, with the weapon's extra projectile: shots
+   * for a skill that throws, orbs for one that orbits, one for the rest.
+   */
+  private projectilesOf(skill: SkillId): { readonly shots: number; readonly orbs: number } {
+    const stats = this.progression.statsFor(skill);
+    const extra = this.gearBonus.extraProjectiles;
+    return {
+      shots: SKILL_BASE[skill].projectileSpeed > 0 ? 1 + extra : 1,
+      orbs: stats.orbCount > 0 ? stats.orbCount + extra : 0,
+    };
   }
 
   /**
@@ -824,7 +840,11 @@ export class GameScene extends Phaser.Scene {
         passive: num(this.mods.passive.damageScale),
         gear: num(this.mods.gear.attack),
         run: num(runScale(base.damage, stats.damage)),
-      }) + (scale === 1 ? '' : fill(copy.formulaScale, { scale: num(scale) }));
+      }) +
+      (this.gearBonus.damageScale === 1
+        ? ''
+        : fill(copy.formulaGearScale, { scale: num(this.gearBonus.damageScale) })) +
+      (scale === 1 ? '' : fill(copy.formulaScale, { scale: num(scale) }));
 
     const mango = this.player?.mangoActive ? MANGO.attackSpeedScale : 1;
     const rateLine =
@@ -832,17 +852,20 @@ export class GameScene extends Phaser.Scene {
         rate: num(perSecond),
         base: num(base.attackSpeed),
         passive: num(this.mods.passive.attackSpeedScale),
-        gear: num(this.mods.gear.attackSpeedScale),
+        gear: num(gearAttackSpeedFor(skill, this.mods.gear)),
         run: num(runScale(base.attackSpeed, stats.attackSpeed)),
       }) + (mango === 1 ? '' : fill(copy.formulaMango, { mango: num(mango) }));
     const capped = this.cooldownOf(skill) <= STATS.minCooldownMs;
 
+    const { shots, orbs } = this.projectilesOf(skill);
     const extras = [
       [copy.targetChain, stats.chainCount],
       [copy.targetPierce, stats.pierceCount],
-      [copy.targetOrbs, Math.max(0, stats.orbCount - 1)],
+      [copy.targetOrbs, Math.max(0, orbs - 1)],
     ] as const;
-    const parts = ['1', ...extras.filter(([, n]) => n > 0).map(([label, n]) => fill(label, { n }))];
+    const added = ['1', ...extras.filter(([, n]) => n > 0).map(([label, n]) => fill(label, { n }))];
+    const sum = added.length > 1 && shots > 1 ? `(${added.join(' + ')})` : added.join(' + ');
+    const parts = [shots > 1 ? sum + fill(copy.targetShots, { n: shots }) : sum];
 
     return [
       damageLine,
@@ -1084,7 +1107,7 @@ export class GameScene extends Phaser.Scene {
       // Explicitly fresh. A restart with no data of its own keeps whatever
       // the scene was last started with, and after 불러오기 that is the
       // loaded run — which would quietly put a death back where it resumed.
-      onRestart: () => this.scene.restart({ save: null, startPick: true }),
+      onRestart: (applied) => this.scene.restart({ save: null, bones: applied, startPick: true }),
     };
     this.scene.bringToTop(GameOverScene.KEY);
     this.scene.launch(GameOverScene.KEY, data);

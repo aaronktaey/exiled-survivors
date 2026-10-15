@@ -120,6 +120,8 @@ export class CombatSystem {
   private readonly hooks: CombatHooks;
   private readonly stats: RunStats;
   private readonly enemies: Phaser.Physics.Arcade.Group;
+  /** 흡혈 owed but not yet a whole point of health. */
+  private leechPool = 0;
 
   public constructor(
     scene: Phaser.Scene,
@@ -332,12 +334,33 @@ export class CombatSystem {
     );
     // What the enemy actually absorbed: a hit that kills something with two
     // health left is worth two, not whatever the number on the card said.
-    this.stats.recordDamage(Math.min(dealt, enemy.hp));
+    const absorbed = Math.min(dealt, enemy.hp);
+    this.stats.recordDamage(absorbed);
+    this.leech(absorbed);
 
     if (enemy.takeDamage(dealt)) {
       this.killEnemy(enemy);
     }
   };
+
+  /**
+   * 흡혈: a share of what was dealt comes back as health. A tenth of a percent
+   * of one hit is a fraction of a point, so it is pooled and handed over in
+   * whole points — health stays a whole number on the bar.
+   */
+  private leech(absorbed: number): void {
+    const rate = this.player.lifeLeech;
+    if (rate <= 0 || absorbed <= 0) {
+      return;
+    }
+
+    this.leechPool += absorbed * rate;
+    const whole = Math.floor(this.leechPool);
+    if (whole > 0) {
+      this.leechPool -= whole;
+      this.player.heal(whole);
+    }
+  }
 
   private onProjectileHit: Phaser.Types.Physics.Arcade.ArcadePhysicsCallback = (a, b) => {
     const shot = a as unknown as Projectile;

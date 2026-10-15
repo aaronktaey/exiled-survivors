@@ -199,6 +199,34 @@ export function gearName(id: GearId): string {
   return t().names?.gear?.[id] ?? GEAR[id].name;
 }
 
+/**
+ * A base's 고정 속성 as it reads: "가한 피해의 0.1%만큼 흡혈". Empty for a
+ * base that has none. The number is read off the table, so a retune shows.
+ */
+export function gearImplicitText(id: GearId): string {
+  const implicit = GEAR[id].implicit;
+  if (!implicit) {
+    return '';
+  }
+
+  const pct = (fraction: number): string => `${Number((fraction * 100).toFixed(2))}%`;
+  const value =
+    implicit.lifeLeech !== undefined
+      ? pct(implicit.lifeLeech)
+      : implicit.extraProjectiles !== undefined
+        ? String(implicit.extraProjectiles)
+        : implicit.damageScale !== undefined
+          ? pct(implicit.damageScale - 1)
+          : implicit.attackSpeedScale !== undefined
+            ? pct(implicit.attackSpeedScale - 1)
+            : implicit.skillAttackSpeed
+              ? pct(implicit.skillAttackSpeed.scale - 1)
+              : '';
+  const skill = implicit.skillAttackSpeed ? skillName(implicit.skillAttackSpeed.skill) : '';
+  const template = t().names?.gearImplicits?.[id] ?? implicit.detail;
+  return fill(template, { value, skill });
+}
+
 /** "무쇠 검+3" — the base, and how many 속성 it rolled. */
 export function gearLabel(item: {
   readonly id: GearId;

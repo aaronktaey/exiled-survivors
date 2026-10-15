@@ -36,6 +36,11 @@ export interface WeaponContext {
   readonly orbCount: number;
   /** How fast those orbs travel, in px per second. */
   readonly orbitSpeed: number;
+  /**
+   * Shots beyond the first from a skill that throws, and orbs beyond its own
+   * from one that orbits — the weapon's (룬 각인 검). Others ignore it.
+   */
+  readonly extraProjectiles: number;
   /** Applies damage and resolves the kill (gem and skill drops). */
   readonly hit: (enemy: Enemy, amount: number) => void;
 }

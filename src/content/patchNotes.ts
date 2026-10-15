@@ -15,6 +15,36 @@ export interface PatchNote {
 
 export const PATCH_NOTES: readonly PatchNote[] = [
   {
+    version: '0.26',
+    date: '2026-10-15',
+    changes: {
+      ko: [
+        '죽은 뒤 다시하기를 골라도 게임 시작과 똑같이 뼈다귀 창이 먼저 열립니다. 뒤로 가면 결과 화면으로 돌아가고, 서랍이 비어 있으면 곧바로 다음 판이 시작됩니다.',
+        '검마다 고정 속성이 생겼습니다. 접두어·접미어 개수와 상관없이 늘 붙어 있고, 인벤토리에서 공격력 옆에 표시됩니다. 그 자리에 있던 공격속도 합계는 속성 줄과 겹쳐서 뺐습니다.',
+        '오니고로시 — 가한 피해의 0.1%만큼 흡혈. 룬 각인 검 — 스킬의 투사체 +1개(화염구·얼음창은 한 번에 한 발 더, 다음으로 가까운 적을 노림 / 공허구체는 구체 +1). 강철 검 — 피해 +10%. 무쇠 검 — 공격속도 +10%. 녹슨 검 — 타격의 공격속도 +20%.',
+        '스킬 DPS 카드에도 고정 속성이 반영됩니다 — 피해 줄에 장비 피해 배율이, 대상 수에 추가 투사체가 들어갑니다.',
+      ],
+      en: [
+        'Choosing Run again after a death now opens the Bones screen first, the same as New Run. Backing out returns to the results, and with an empty drawer the next run starts straight away.',
+        'Every sword now has an implicit of its own. It is always there, regardless of how many prefixes and suffixes it has, and the Inventory shows it beside attack power. The attack-speed total that used to sit there repeated the affix lines, so it is gone.',
+        'Onigoroshi — leeches 0.1% of damage dealt as life. Runed Sword — +1 projectile on skills (Fireball and Ice Spear throw one more per cast, at the next nearest enemy; Void Orb keeps one more orb). Steel Sword — +10% damage. Iron Sword — +10% attack speed. Rusty Sword — +20% Strike attack speed.',
+        'A skill’s DPS card counts the implicit too — the weapon’s damage multiplier on the damage line, and the extra projectile in the target count.',
+      ],
+      ja: [
+        '倒れた後に「もう一度」を選んでも、ゲーム開始と同じく骨の画面が先に開きます。戻ると結果画面に戻り、引き出しが空ならすぐに次の回が始まります。',
+        '剣にそれぞれ固定属性が付きました。接頭辞・接尾辞の数とは関係なく常に付いていて、インベントリでは攻撃力の横に表示されます。そこにあった攻撃速度の合計は属性の行と重なるため外しました。',
+        '鬼殺し — 与えた被害の 0.1% を吸血。ルーンの剣 — スキルの投射物 +1 個（火球・氷槍は 1 回に 1 発多く、次に近い敵を狙う／虚無球は球 +1）。鋼の剣 — 被害 +10%。鉄の剣 — 攻撃速度 +10%。錆びた剣 — 打撃の攻撃速度 +20%。',
+        'スキルの DPS カードにも固定属性が反映されます — 被害の行に装備の被害倍率が、対象数に追加の投射物が入ります。',
+      ],
+      zh: [
+        '死亡后选择「再来一局」时，也会像开始游戏一样先打开骨头界面。返回则回到结算画面，抽屉为空时直接开始下一局。',
+        '每把剑都有了自己的固定属性。与词缀前缀、后缀的数量无关，始终存在，并在背包中显示在攻击力旁边。原先位于该处的攻击速度合计与属性行重复，因此移除。',
+        '鬼杀 — 造成伤害的 0.1% 转为吸血。符文剑 — 技能投射物 +1 个（火球、冰枪每次多发一枚，瞄准下一个最近的敌人；虚空球多一个球体）。钢剑 — 伤害 +10%。铁剑 — 攻击速度 +10%。生锈的剑 — 打击的攻击速度 +20%。',
+        '技能 DPS 卡片也会计入固定属性 — 伤害一行加入装备伤害倍率，目标数加入额外投射物。',
+      ],
+    },
+  },
+  {
     version: '0.25',
     date: '2026-10-15',
     changes: {

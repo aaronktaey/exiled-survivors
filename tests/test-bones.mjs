@@ -255,6 +255,80 @@ check('and a resumed run plays by them without spending them again',
   resumed.bonus.enemyHpScale === 4 && resumed.bonus.raresBecomeBosses === true,
   `x${resumed.bonus.enemyHpScale} health`);
 
+// --- 6b. 다시하기 after a death stops at the 뼈다귀 screen too ---
+const overAndRetry = async () => {
+  await run(`
+    s.player.invulnerableUntil = 0;
+    s.player.takeDamage(99999);
+    return 1;
+  `);
+  await sleep(1300);
+  return ev(`(() => {
+    const s = window.game.scene.getScene('GameOverScene');
+    if (!window.game.scene.isActive('GameOverScene')) return { over: false };
+    s.menu.items.find(i => i.id === 'retry').onSelect();
+    return { over: true };
+  })()`);
+};
+await ev(`(() => { window.bones.reset(); window.bones.add('rib'); window.bones.add('rib'); return 1; })()`);
+const retry = await overAndRetry();
+await sleep(700);
+const retryScreen = await ev(`(() => ({
+  bone: window.game.scene.isActive('BoneScene'),
+  over: window.game.scene.isActive('GameOverScene') || window.game.scene.isPaused('GameOverScene'),
+  rows: window.game.scene.getScene('BoneScene').menu?.items.map(i => i.id),
+}))()`);
+console.log('retry:', JSON.stringify({ retry, retryScreen }));
+check('다시하기 opens the 뼈다귀 screen when the drawer has any',
+  retry.over === true && retryScreen.bone === true && retryScreen.rows?.includes('rib'),
+  `BoneScene active=${retryScreen.bone}, rows ${retryScreen.rows?.join(', ')}`);
+await shot('bones-03-retry');
+
+// Backing out of it goes back to the end screen, nothing spent.
+await bs(`s.backButton.press(); return 1;`);
+await sleep(600);
+const backed = await ev(`(() => ({
+  bone: window.game.scene.isActive('BoneScene'),
+  over: window.game.scene.isActive('GameOverScene'),
+  rib: window.bones.count('rib'),
+}))()`);
+check('backing out of it returns to the end screen with nothing spent',
+  backed.bone === false && backed.over === true && backed.rib === 2,
+  `BoneScene=${backed.bone}, GameOverScene=${backed.over}, 갈비뼈 ${backed.rib}`);
+
+// And picking one starts the next run on it.
+await ev(`(() => {
+  window.game.scene.getScene('GameOverScene').menu.items.find(i => i.id === 'retry').onSelect();
+  return 1;
+})()`);
+await sleep(700);
+await bs(`
+  s.menu.items.find(i => i.id === 'rib').onSelect();
+  s.menu.items.find(i => i.id === 'start').onSelect();
+  return 1;
+`);
+await sleep(2600);
+const retried = await run(`return { bonus: s.boneBonus, over: s.over, rib: window.bones.count('rib'),
+  gameOver: window.game.scene.isActive('GameOverScene') };`);
+console.log('retried:', JSON.stringify(retried));
+check('and starting from it plays the new run on what was picked',
+  retried.over === false && retried.gameOver === false && retried.rib === 1 &&
+    retried.bonus.enemyHpScale > 1,
+  `x${retried.bonus.enemyHpScale} health, ${retried.rib} 갈비뼈 left`);
+
+// With an empty drawer, 다시하기 goes straight into the next run.
+await ev(`(() => { window.bones.reset(); return 1; })()`);
+await overAndRetry();
+await sleep(2600);
+const straight = await ev(`(() => ({
+  bone: window.game.scene.isActive('BoneScene'),
+  game: window.game.scene.isActive('GameScene'),
+  over: window.game.scene.getScene('GameScene').over,
+}))()`);
+check('with an empty drawer, 다시하기 goes straight into the next run',
+  straight.bone === false && straight.game === true && straight.over === false,
+  `BoneScene=${straight.bone}, GameScene=${straight.game}, over=${straight.over}`);
+
 // --- 7. an empty drawer skips the screen entirely ---
 await ev(`(() => {
   window.bones.reset();

@@ -115,8 +115,8 @@ export interface Strings {
     readonly suffixWord: string;
     /** The weapon's own line: flat attack power it adds to every skill. */
     readonly attack: string;
-    /** ...and the attack speed beside it, when it has any. */
-    readonly attack2: string;
+    /** The base's 고정 속성, beside its attack power. {text} is what it does. */
+    readonly implicit: string;
     /** What a weapon with no affixes says. */
     readonly plain: string;
   };
@@ -268,12 +268,16 @@ export interface Strings {
     readonly formulaMango: string;
     /** Appended to the damage line when the skill's balance dial is not 1. */
     readonly formulaScale: string;
+    /** Appended to the damage line when the weapon's 고정 속성 scales damage. */
+    readonly formulaGearScale: string;
     /** A line of its own when the cooldown floor holds the rate down. */
     readonly formulaCap: string;
     readonly formulaTargets: string;
     readonly targetChain: string;
     readonly targetPierce: string;
     readonly targetOrbs: string;
+    /** "× 투사체 {n}": every shot of a cast counted, with an extra projectile. */
+    readonly targetShots: string;
     readonly formulaDps: string;
     readonly formulaNote: string;
   };
@@ -369,6 +373,8 @@ export interface Strings {
     readonly orbShorts?: Record<string, string>;
     readonly orbDetails?: Record<string, string>;
     readonly gear?: Record<string, string>;
+    /** A base's 고정 속성, with {value} and {skill}. Korean reads the table. */
+    readonly gearImplicits?: Record<string, string>;
     readonly passives?: Record<string, string>;
     readonly passiveDetails?: Record<string, string>;
   };

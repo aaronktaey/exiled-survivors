@@ -151,7 +151,7 @@ for (const [w, h, name] of [[0, 0, 'landscape'], [420, 860, 'upright'], [420, 70
   console.log(name, JSON.stringify(fit));
   check(`${name}: nothing runs off the screen`,
     fit.right <= fit.w && fit.bottom <= fit.h && fit.left >= 0 && fit.detail <= fit.h,
-    `${fit.w}x${fit.h}, content to ${fit.right}x${fit.bottom}, cells ${fit.cell}px`);
+    `${fit.w}x${fit.h}, content to ${fit.right}x${fit.bottom}, details to ${fit.detail}, cells ${fit.cell}px`);
   if (w) {
     check(`${name}: the details sit under the grid`, fit.paneTop >= fit.gridBottom,
       `grid to ${fit.gridBottom}, details from ${fit.paneTop}`);

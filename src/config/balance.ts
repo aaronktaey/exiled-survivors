@@ -857,6 +857,11 @@ export const WEAPON = {
    * so a target that backs off at the edge of range is still caught.
    */
   rangeOvershoot: 1.2,
+  /**
+   * An extra shot (룬 각인 검) goes to the next-nearest enemy in range; with
+   * nobody else there it fans out this far from the first, in radians.
+   */
+  extraShotSpread: 0.25,
 } as const;
 
 /** Shared by everything that lies on the ground. XP gems never expire. */

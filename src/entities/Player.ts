@@ -105,6 +105,11 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   }
 
   /** Chance one of this survivor's hits lands for the crit multiplier. */
+  /** Share of the damage dealt that comes back as health (the weapon's). */
+  public get lifeLeech(): number {
+    return this.gear.lifeLeech;
+  }
+
   public get critChance(): number {
     return Math.min(1, PLAYER.critChance + this.gear.critChance);
   }

@@ -14,7 +14,16 @@ import {
   xpFor,
   type EnemyKind,
 } from '@/config';
-import { enemyName, fill, skillName, skillSummary, t, tagName } from '@/i18n';
+import {
+  enemyName,
+  fill,
+  gearImplicitText,
+  gearName,
+  skillName,
+  skillSummary,
+  t,
+  tagName,
+} from '@/i18n';
 import { dpsFromStats, upgradeOptionsFor } from '@/systems/Progression';
 import { ALL_SKILLS, DROPPABLE_SKILLS } from '@/weapons/skills';
 
@@ -92,6 +101,10 @@ export function guideChapters(): readonly GuideChapter[] {
               heal: percent(POTION.healFraction),
               life: seconds(GROUND_ITEM.lifespanMs),
               warning: seconds(GROUND_ITEM.warningMs),
+              implicits: Object.values(GEAR)
+                .filter((spec) => spec.implicit !== undefined)
+                .map((spec) => `${gearName(spec.id)}: ${gearImplicitText(spec.id)}`)
+                .join(' · '),
               tiers: tierSpan(
                 Object.values(GEAR)
                   .filter((spec) => spec.fromKill !== undefined)

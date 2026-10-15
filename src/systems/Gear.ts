@@ -21,6 +21,7 @@ import {
   type GearSpec,
   type OrbSpec,
 } from '@/config';
+import type { SkillId } from '@/weapons/skills';
 
 /**
  * One weapon, as it was rolled. Two 강철 검 can both be held and be worth
@@ -53,6 +54,14 @@ export interface GearBonus {
   readonly critChance: number;
   /** Added to RARE.critMultiplier when one lands. */
   readonly critMultiplierBonus: number;
+  /** Multiplies every skill's damage, after the flat attack is added. */
+  readonly damageScale: number;
+  /** One skill's own attack-speed multiplier, on top of attackSpeedScale. */
+  readonly skillAttackSpeed: Partial<Record<SkillId, number>>;
+  /** Share of the damage dealt that comes back as health. */
+  readonly lifeLeech: number;
+  /** More shots from a skill that throws, more orbs on one that orbits. */
+  readonly extraProjectiles: number;
 }
 
 export const NO_BONUS: GearBonus = {
@@ -64,6 +73,10 @@ export const NO_BONUS: GearBonus = {
   invulnerableScale: 1,
   critChance: 0,
   critMultiplierBonus: 0,
+  damageScale: 1,
+  skillAttackSpeed: {},
+  lifeLeech: 0,
+  extraProjectiles: 0,
 };
 
 const STARTER_UID = 'starter';
@@ -118,6 +131,13 @@ export function gearBonusFor(item: GearItem | null): GearBonus {
   let critChance = 0;
   let critMultiplierBonus = 0;
 
+  // The base's own 고정 속성 first; the rolled lines compound on it.
+  const implicit = GEAR[item.id].implicit;
+  attackSpeedScale *= implicit?.attackSpeedScale ?? 1;
+  const skillAttackSpeed: Partial<Record<SkillId, number>> = implicit?.skillAttackSpeed
+    ? { [implicit.skillAttackSpeed.skill]: implicit.skillAttackSpeed.scale }
+    : {};
+
   for (const { effect } of affixesOf(item)) {
     attackScale *= effect.attackScale ?? 1;
     attackSpeedScale *= effect.attackSpeedScale ?? 1;
@@ -138,6 +158,10 @@ export function gearBonusFor(item: GearItem | null): GearBonus {
     invulnerableScale,
     critChance,
     critMultiplierBonus,
+    damageScale: implicit?.damageScale ?? 1,
+    skillAttackSpeed,
+    lifeLeech: implicit?.lifeLeech ?? 0,
+    extraProjectiles: implicit?.extraProjectiles ?? 0,
   };
 }
 

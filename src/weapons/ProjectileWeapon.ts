@@ -3,7 +3,8 @@ import Phaser from 'phaser';
 import { WEAPON } from '@/config';
 import { Projectile, type LaunchSpec } from '@/entities/Projectile';
 import { sfx } from '@/systems/Sfx';
-import { findNearest, type Weapon, type WeaponContext } from '@/weapons/Weapon';
+import type { Enemy } from '@/entities/Enemy';
+import { findNearest, findNearestEnemy, type Weapon, type WeaponContext } from '@/weapons/Weapon';
 import type { SkillDefinition } from '@/weapons/skills';
 
 /**
@@ -48,15 +49,45 @@ export abstract class ProjectileWeapon implements Weapon {
   /** What one shot of this skill is, given the player's current stats. */
   protected abstract specFor(context: WeaponContext): LaunchSpec;
 
-  private fire(context: WeaponContext, target: Phaser.GameObjects.Components.Transform): void {
-    const shot = this.projectiles.get() as Projectile | null;
-    if (!shot) {
-      return;
+  /**
+   * One cast: a shot at the target, and one more per extra projectile — at
+   * the next-nearest enemy in range, or fanned out beside the first when
+   * nobody else is there.
+   */
+  private fire(context: WeaponContext, target: Enemy): void {
+    const { x, y } = context.origin;
+    const first = Phaser.Math.Angle.Between(x, y, target.x, target.y);
+    const angles = [first];
+    const taken = new Set<Enemy>([target]);
+    const extra = Math.max(0, Math.round(context.extraProjectiles ?? 0));
+
+    for (let i = 1; i <= extra; i++) {
+      const next = findNearestEnemy(x, y, context.enemies, context.range, taken);
+      if (next) {
+        taken.add(next);
+        angles.push(Phaser.Math.Angle.Between(x, y, next.x, next.y));
+      } else {
+        // Alternate sides: +1, -1, +2, -2 steps of the spread.
+        const side = i % 2 === 1 ? 1 : -1;
+        angles.push(first + side * Math.ceil(i / 2) * WEAPON.extraShotSpread);
+      }
     }
 
-    const angle = Phaser.Math.Angle.Between(context.origin.x, context.origin.y, target.x, target.y);
-    shot.launch(context.origin.x, context.origin.y, angle, this.specFor(context));
-    // Silent for the skills that have no clip yet.
-    sfx.playSkill(this.scene, this.definition.id);
+    const spec = this.specFor(context);
+    let launched = false;
+    for (const angle of angles) {
+      const shot = this.projectiles.get() as Projectile | null;
+      if (!shot) {
+        break;
+      }
+      shot.launch(x, y, angle, spec);
+      launched = true;
+    }
+
+    // One sound a cast, however many it threw. Silent for the skills that
+    // have no clip yet.
+    if (launched) {
+      sfx.playSkill(this.scene, this.definition.id);
+    }
   }
 }

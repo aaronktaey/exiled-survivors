@@ -41,8 +41,9 @@ export function damageFor(skill: SkillId, upgraded: number, mods: RunModifiers):
 
   // 1. 패시브
   let damage = base * mods.passive.damageScale;
-  // 2. 장비 — the weapon's attack power is flat, and lands at its own layer
-  damage += mods.gear.attack;
+  // 2. 장비 — the weapon's attack power is flat, and lands at its own layer;
+  // a base whose 고정 속성 is 피해 scales the lot
+  damage = (damage + mods.gear.attack) * mods.gear.damageScale;
   // 3. 전투 내 효과
   return damage * runScale(base, upgraded);
 }
@@ -52,8 +53,13 @@ export function attackSpeedFor(skill: SkillId, upgraded: number, mods: RunModifi
   const base = SKILL_BASE[skill].attackSpeed;
 
   let rate = base * mods.passive.attackSpeedScale;
-  rate *= mods.gear.attackSpeedScale;
+  rate *= gearAttackSpeedFor(skill, mods.gear);
   return rate * runScale(base, upgraded);
+}
+
+/** The weapon's attack-speed layer for one skill: every skill's, then its own. */
+export function gearAttackSpeedFor(skill: SkillId, gear: GearBonus): number {
+  return gear.attackSpeedScale * (gear.skillAttackSpeed[skill] ?? 1);
 }
 
 /** What one critical hit is worth, after everything that raises it. */

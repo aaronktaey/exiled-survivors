@@ -60,6 +60,40 @@ export class BoneScene extends Phaser.Scene {
     super(BoneScene.KEY);
   }
 
+  /**
+   * The step before every fresh run — from 게임 시작 and from 다시하기 alike.
+   * Opens this screen over `host`, which waits paused underneath; with an
+   * empty drawer the screen would be a page of nothing between the button
+   * and the game, so it goes straight on with no 뼈다귀.
+   *
+   * `onStart` gets what was spent; `onCancel` runs once this screen is gone
+   * and `host` is running again.
+   */
+  public static before(
+    host: Phaser.Scene,
+    onStart: (applied: readonly BoneId[]) => void,
+    onCancel: () => void,
+  ): void {
+    if (bones.total === 0) {
+      onStart([]);
+      return;
+    }
+
+    host.scene.pause();
+    host.scene.bringToTop(SCENES.bones);
+    host.scene.launch(SCENES.bones, {
+      onStart: (applied: readonly BoneId[]) => {
+        host.scene.resume();
+        onStart(applied);
+      },
+      onCancel: () => {
+        host.scene.stop(SCENES.bones);
+        host.scene.resume();
+        onCancel();
+      },
+    } satisfies BoneSceneData);
+  }
+
   public init(data: BoneSceneData): void {
     this.payload = data;
     // The scene instance outlives a launch; last run's picks are not this

@@ -210,13 +210,14 @@ const folded = await run(`
   };
 `);
 console.log('folded:', JSON.stringify(folded));
-// The base, lifted by the tree, with the weapon added to the result.
+// The base, lifted by the tree, with the weapon added to the result — and
+// the weapon's 고정 속성 (강철 검: 피해) scaling the lot.
 const wantDamage = Math.round(
-  folded.base * folded.passive.damageScale + folded.gear.attack,
+  (folded.base * folded.passive.damageScale + folded.gear.attack) * folded.gear.damageScale,
 );
 check('패시브 lifts the skill, then 장비 is added to the result',
   folded.damage === wantDamage,
-  `${folded.base} x ${folded.passive.damageScale.toFixed(2)} + ${folded.gear.attack} = ${folded.damage}`);
+  `(${folded.base} x ${folded.passive.damageScale.toFixed(2)} + ${folded.gear.attack}) x ${folded.gear.damageScale} = ${folded.damage}`);
 check('and the sword is the tier, scaled by 강력',
   folded.gear.attack === folded.wantAttack,
   `+${folded.gear.attack}, wanted +${folded.wantAttack}`);
@@ -244,6 +245,7 @@ const stacked = await run(`
     after: s.damageOf('meleeStrike'),
     passive: s.mods.passive.damageScale,
     gear: s.mods.gear.attack,
+    gearScale: s.mods.gear.damageScale,
   };
 `);
 console.log('stacked:', JSON.stringify(stacked));
@@ -251,8 +253,8 @@ check('picks within the run add up on the base, rather than compounding',
   stacked.stat === stacked.base * 2,
   `${stacked.base} with five picks of +20% -> ${stacked.stat}`);
 check('and the layers multiply with each other',
-  stacked.after === Math.round((stacked.base * stacked.passive + stacked.gear) * 2),
-  `(${stacked.base} x ${stacked.passive.toFixed(2)} + ${stacked.gear}) x 2 = ${stacked.after}`);
+  stacked.after === Math.round((stacked.base * stacked.passive + stacked.gear) * stacked.gearScale * 2),
+  `(${stacked.base} x ${stacked.passive.toFixed(2)} + ${stacked.gear}) x ${stacked.gearScale} x 2 = ${stacked.after}`);
 
 // --- 6. life does not come back over time from anywhere ---
 // 재생 was taken off weapons, and the tree never had it: health comes back

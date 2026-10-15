@@ -21,6 +21,7 @@ import {
   boneDetail,
   boneName,
   fill,
+  gearImplicitText,
   gearTitle,
   orbDetail,
   orbName,
@@ -62,9 +63,6 @@ export interface InventorySceneData {
   readonly note?: string;
 }
 
-/** A percentage, as a reader would say it: "+50%", not "+50.0000001%". */
-const percent = (scale: number): number => Math.round((scale - 1) * 100);
-
 const MARGIN = 16;
 const TITLE_BLOCK = 54;
 const TAB_HEIGHT = 30;
@@ -75,7 +73,7 @@ const GUTTER = 24;
 const BUTTON_HEIGHT = 30;
 /** An 속성 slot with nothing in it. */
 const EMPTY_SLOT = '─'.repeat(18);
-/** The weapon's own line, a heading and the slots for each kind. */
+/** The base's own line (attack and 고정 속성), a heading and the slots for each kind. */
 const READ_OUT_LINES = 1 + 1 + GEAR_DROP.maxPrefixes + 1 + GEAR_DROP.maxSuffixes;
 /** The name over the read-out, and the air under it. */
 const HEADING_BLOCK = 48;
@@ -811,20 +809,21 @@ export class InventoryScene extends Phaser.Scene {
   }
 
   /**
-   * What one weapon is worth: its own attack power, then every 접두어 slot,
-   * then every 접미어 slot. Each filled slot says which rung it rolled —
-   * tier 1 is the best there is — so two weapons with the same 속성 on them
-   * can be told apart.
+   * What one weapon is worth: what the base gives — its attack power and its
+   * 고정 속성, on one line — then every 접두어 slot, then every 접미어 slot.
+   * Each filled slot says which rung it rolled — tier 1 is the best there
+   * is — so two weapons with the same 속성 on them can be told apart.
+   *
+   * One line for the base on purpose: on a short phone the pane has no room
+   * for another, and the buttons under it would run off the screen.
    */
   public static describe(item: GearItem): string {
     const copy = t().gear;
-    const bonus = gearBonusFor(item);
-    const head = fill(copy.attack, { attack: bonus.attack });
+    const head = fill(copy.attack, { attack: gearBonusFor(item).attack });
+    const implicit = gearImplicitText(item.id);
 
     return [
-      bonus.attackSpeedScale !== 1
-        ? `${head}   ${fill(copy.attack2, { percent: percent(bonus.attackSpeedScale) })}`
-        : head,
+      implicit ? `${head} · ${fill(copy.implicit, { text: implicit })}` : head,
       copy.prefix,
       ...InventoryScene.slots(item.prefixes, GEAR_DROP.maxPrefixes),
       copy.suffix,

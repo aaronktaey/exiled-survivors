@@ -11,9 +11,35 @@
  * Adding a sword means a line in GEAR and a name in the locales.
  */
 
+import type { SkillId } from '@/weapons/skills';
+
 export type GearSlot = 'weapon';
 
 export type GearId = 'onigoroshi' | 'runedSword' | 'steelSword' | 'ironSword' | 'rustySword';
+
+/**
+ * 고정 속성 — what every sword of a base does, whatever it rolled. It sits
+ * outside the 접두어 / 접미어 slots and does not count against them. Set
+ * exactly one of the effects.
+ */
+export interface GearImplicit {
+  /**
+   * How it reads, in Korean: `{value}` is the number below as the player
+   * reads it, `{skill}` the skill it is about. A locale rewrites it through
+   * `names.gearImplicits`.
+   */
+  readonly detail: string;
+  /** Share of the damage dealt that comes back as health. */
+  readonly lifeLeech?: number;
+  /** More shots from every skill that throws, and more orbs on one that orbits. */
+  readonly extraProjectiles?: number;
+  /** Multiplies every skill's damage. */
+  readonly damageScale?: number;
+  /** Multiplies every skill's attack speed. */
+  readonly attackSpeedScale?: number;
+  /** Multiplies one skill's attack speed. */
+  readonly skillAttackSpeed?: { readonly skill: SkillId; readonly scale: number };
+}
 
 export interface GearSpec {
   readonly id: GearId;
@@ -35,6 +61,8 @@ export interface GearSpec {
    * bonus like any other drop. Unset, only a 우두머리 leaves it.
    */
   readonly fromKill?: number;
+  /** 고정 속성: on every one of this base, outside the affix slots. */
+  readonly implicit?: GearImplicit;
 }
 
 export const GEAR_BASE = {
@@ -50,8 +78,22 @@ export const GEAR_BASE = {
 } as const;
 
 export const GEAR: Record<GearId, GearSpec> = {
-  onigoroshi: { id: 'onigoroshi', slot: 'weapon', tier: 1, name: '오니고로시', weight: 0.5 },
-  runedSword: { id: 'runedSword', slot: 'weapon', tier: 2, name: '룬 각인 검', weight: 1 },
+  onigoroshi: {
+    id: 'onigoroshi',
+    slot: 'weapon',
+    tier: 1,
+    name: '오니고로시',
+    weight: 0.5,
+    implicit: { detail: '가한 피해의 {value}만큼 흡혈', lifeLeech: 0.001 },
+  },
+  runedSword: {
+    id: 'runedSword',
+    slot: 'weapon',
+    tier: 2,
+    name: '룬 각인 검',
+    weight: 1,
+    implicit: { detail: '스킬의 투사체 +{value}개', extraProjectiles: 1 },
+  },
   // From tier 3 down, any kill can leave one too — rarely.
   steelSword: {
     id: 'steelSword',
@@ -60,6 +102,7 @@ export const GEAR: Record<GearId, GearSpec> = {
     name: '강철 검',
     weight: 2,
     fromKill: 0.001,
+    implicit: { detail: '피해 +{value}', damageScale: 1.1 },
   },
   ironSword: {
     id: 'ironSword',
@@ -68,6 +111,7 @@ export const GEAR: Record<GearId, GearSpec> = {
     name: '무쇠 검',
     weight: 3,
     fromKill: 0.0015,
+    implicit: { detail: '공격속도 +{value}', attackSpeedScale: 1.1 },
   },
   rustySword: {
     id: 'rustySword',
@@ -76,6 +120,10 @@ export const GEAR: Record<GearId, GearSpec> = {
     name: '녹슨 검',
     weight: 4,
     fromKill: 0.002,
+    implicit: {
+      detail: '{skill}의 공격속도 +{value}',
+      skillAttackSpeed: { skill: 'meleeStrike', scale: 1.2 },
+    },
   },
 };
 

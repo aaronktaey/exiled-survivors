@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 
-import { COLORS, DEPTH, GAME_OVER, MENU, RANKING, SCENES, SCRIM, TEXT } from '@/config';
+import { COLORS, DEPTH, GAME_OVER, MENU, RANKING, SCENES, SCRIM, TEXT, type BoneId } from '@/config';
+import { BoneScene } from '@/scenes/BoneScene';
 import { enemyName, fill, t } from '@/i18n';
 import { centredTop, fitText, fitWidth } from '@/systems/Layout';
 import { MenuList } from '@/systems/MenuList';
@@ -15,7 +16,8 @@ export interface GameOverData {
   readonly summary: RunSummary;
   readonly level: number;
   readonly survivedMs: number;
-  readonly onRestart: () => void;
+  /** Starts another run, with the 뼈다귀 picked for it. */
+  readonly onRestart: (applied: readonly BoneId[]) => void;
 }
 
 /** "12,345" — thousands marked, because the damage number gets long. */
@@ -246,9 +248,17 @@ export class GameOverScene extends Phaser.Scene {
   }
 
   private restart(): void {
+    // Another run is a fresh run: it stops at the 뼈다귀 first, the same as
+    // 게임 시작. Backing out of that comes back here.
     const { onRestart } = this.payload;
-    this.scene.stop();
-    onRestart();
+    BoneScene.before(
+      this,
+      (applied) => {
+        this.scene.stop();
+        onRestart(applied);
+      },
+      () => this.menu.refresh(),
+    );
   }
 
   private toTitle(): void {

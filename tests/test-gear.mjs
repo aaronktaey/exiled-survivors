@@ -312,7 +312,8 @@ const carried = await run(`
 `);
 console.log('carried into the run:', JSON.stringify(carried));
 check('the next run goes out with it',
-  carried.bonus.attack === carried.wantAttack && carried.melee === carried.stat + carried.wantAttack,
+  carried.bonus.attack === carried.wantAttack &&
+    carried.melee === Math.round((carried.stat + carried.wantAttack) * carried.bonus.damageScale),
   `+${carried.bonus.attack} attack, melee ${carried.melee}`);
 check('and its 신속 is on the survivor, not just on paper',
   Math.abs(carried.bonus.moveSpeedScale - carried.wantSwift) < 0.001,
@@ -492,8 +493,9 @@ const read = await scene('InventoryScene', `
 `);
 console.log('loaded weapon:', JSON.stringify(read, null, 1));
 const block = read.lines.join(' | ');
-check('the read-out is a 접두어 block and a 접미어 block, three slots each',
-  read.lines.filter((l) => l === '접두어').length === 1 &&
+check('the read-out is the base (attack and 고정 속성), then a 접두어 block and a 접미어 block, three slots each',
+  /^공격력 \+\d+ · 고정: /.test(read.lines[0]) &&
+    read.lines.filter((l) => l === '접두어').length === 1 &&
     read.lines.filter((l) => l === '접미어').length === 1 &&
     read.lines.length === 9,
   block);
@@ -996,6 +998,170 @@ console.log('after an add:', JSON.stringify(afterAdd));
 check('an added 속성 is named, with the rung it came out at',
   /각성의 구슬 —/.test(afterAdd.hint) && /\d티어/.test(afterAdd.hint),
   afterAdd.hint);
+
+// --- 고정 속성: every sword of a base carries its own, outside the slots ---
+await ev(`(() => { localStorage.removeItem('exiled-survivors:save:v1'); return 1; })()`);
+// The page may already be on #run, where navigating there again is only a
+// hash change and the run never restarts — so reload as well.
+await cdp.send('Page.navigate', { url: 'http://localhost:5173/#run' });
+await cdp.send('Page.reload', {});
+await sleep(4200);
+await run(`s.player.setInvulnerable(true); return 1;`);
+const hold = (id) => run(`
+  const item = { uid: 'probe-${id}', id: '${id}', prefixes: [], suffixes: [] };
+  const b = window.gearBonusFor(item);
+  s.gearBonus = b; s.mods = { ...s.mods, gear: b }; s.player.applyGear(b);
+  return b;
+`);
+
+const implicits = await ev(`(() => {
+  const G = window.config.GEAR;
+  const bare = (id) => window.gearBonusFor({ uid: 'i', id, prefixes: [], suffixes: [] });
+  const full = (id) => window.gearBonusFor({ uid: 'f', id,
+    prefixes: [{ id: 'mighty', tier: 1 }, { id: 'critical', tier: 1 }, { id: 'cruel', tier: 1 }],
+    suffixes: [{ id: 'giant', tier: 1 }, { id: 'giant', tier: 1 }, { id: 'giant', tier: 1 }] });
+  const out = {};
+  for (const id of Object.keys(G)) {
+    const im = G[id].implicit ?? {};
+    const ok = (b) =>
+      b.lifeLeech === (im.lifeLeech ?? 0) &&
+      b.extraProjectiles === (im.extraProjectiles ?? 0) &&
+      b.damageScale === (im.damageScale ?? 1) &&
+      (im.skillAttackSpeed ? b.skillAttackSpeed[im.skillAttackSpeed.skill] === im.skillAttackSpeed.scale
+                           : Object.keys(b.skillAttackSpeed).length === 0);
+    out[id] = { has: !!G[id].implicit, bare: ok(bare(id)), full: ok(full(id)),
+      speed: bare(id).attackSpeedScale, want: im.attackSpeedScale ?? 1 };
+  }
+  return out;
+})()`);
+console.log('implicits:', JSON.stringify(implicits));
+check('every sword on the roster has a 고정 속성',
+  Object.values(implicits).every(i => i.has), Object.keys(implicits).join(', '));
+check('and it is there whatever the 접두어 / 접미어 slots hold, full or empty',
+  Object.values(implicits).every(i => i.bare && i.full && i.speed === i.want),
+  JSON.stringify(implicits));
+
+// 강철 검: every skill's damage, after the flat attack.
+const steelBonus = await hold('steelSword');
+const steel = await run(`
+  const c = window.config, base = c.SKILL_BASE.meleeStrike.damage;
+  const st = s.progression.statsFor('meleeStrike');
+  const want = Math.round((base * s.mods.passive.damageScale + ${steelBonus.attack}) * ${steelBonus.damageScale} *
+    (st.damage / base) * (c.BALANCE.damageScale.meleeStrike ?? 1));
+  return { got: s.damageOf('meleeStrike'), want, scale: ${steelBonus.damageScale} };
+`);
+check('강철 검 scales every skill’s damage by its 고정 속성',
+  steel.got === steel.want && steel.scale > 1, `${steel.got} (want ${steel.want}, ×${steel.scale})`);
+
+// 무쇠 검 every skill's attack speed; 녹슨 검 only 타격's.
+const pace = async (id) => {
+  await hold(id);
+  return run(`
+    if (!s.owned.has('fireball')) s.onSkillCollected('fireball');
+    const c = window.config;
+    const plain = (skill) => {
+      const base = c.SKILL_BASE[skill].attackSpeed;
+      return base * s.mods.passive.attackSpeedScale * (s.progression.statsFor(skill).attackSpeed / base);
+    };
+    const want = (skill) => plain(skill) * s.gearBonus.attackSpeedScale * (s.gearBonus.skillAttackSpeed[skill] ?? 1);
+    return { melee: 1000 / s.cooldownOf('meleeStrike'), fire: 1000 / s.cooldownOf('fireball'),
+      wantMelee: want('meleeStrike'), wantFire: want('fireball'),
+      plainMelee: plain('meleeStrike'), plainFire: plain('fireball') };
+  `);
+};
+const close = (a, b) => Math.abs(a - b) < 1e-6;
+const iron = await pace('ironSword');
+const rusty = await pace('rustySword');
+console.log('pace:', JSON.stringify({ iron, rusty }));
+check('무쇠 검 raises every skill’s attack speed',
+  close(iron.melee, iron.wantMelee) && close(iron.fire, iron.wantFire) &&
+    iron.melee > iron.plainMelee && iron.fire > iron.plainFire,
+  `타격 ${iron.melee.toFixed(3)}/s, 화염구 ${iron.fire.toFixed(3)}/s`);
+check('녹슨 검 raises 타격’s attack speed and no other skill’s',
+  close(rusty.melee, rusty.wantMelee) && rusty.melee > rusty.plainMelee && close(rusty.fire, rusty.plainFire),
+  `타격 ${rusty.melee.toFixed(3)}/s (plain ${rusty.plainMelee.toFixed(3)}), 화염구 ${rusty.fire.toFixed(3)}/s`);
+
+// 룬 각인 검: one more shot a cast, one more orb in the air.
+await hold('runedSword');
+const runed = await run(`
+  s.choosing = true;
+  if (!s.owned.has('fireball')) s.onSkillCollected('fireball');
+  if (!s.owned.has('voidOrb')) s.onSkillCollected('voidOrb');
+  const p = s.player;
+  const w = s.weapons.find(x => x.definition.id === 'fireball');
+  const st = s.progression.statsFor('fireball');
+  const cast = (count) => {
+    s.spawner.clear();
+    w.projectiles.getChildren().forEach(b => b.active && b.despawn());
+    for (let i = 0; i < count; i++) {
+      const e = s.spawner.group.get(p.x + 40 + i * 10, p.y + i * 20);
+      e.spawn(p.x + 40 + i * 10, p.y + i * 20, p, 'brute');
+    }
+    w.sinceShotMs = 99999;
+    w.update(16, { origin: p, enemies: s.spawner.group, damage: 1, cooldownMs: 1,
+      range: s.progression.rangeFor('fireball'), projectileSpeed: st.projectileSpeed,
+      chainCount: 0, pierceCount: 0, orbCount: 0, orbitSpeed: 0,
+      extraProjectiles: s.gearBonus.extraProjectiles, hit: () => {} });
+    return w.projectiles.countActive(true);
+  };
+  const out = { extra: s.gearBonus.extraProjectiles, two: cast(2), one: cast(1) };
+  s.spawner.clear();
+  w.projectiles.getChildren().forEach(b => b.active && b.despawn());
+  out.card = s.loadout().find(l => l.id === 'fireball').breakdown.join(' | ');
+  s.choosing = false;
+  return out;
+`);
+await sleep(400);
+const orbsUp = await run(`
+  const w = s.weapons.find(x => x.definition.id === 'voidOrb');
+  return { live: w.active.length, own: s.progression.statsFor('voidOrb').orbCount, extra: s.gearBonus.extraProjectiles };
+`);
+console.log('runed:', JSON.stringify({ runed, orbsUp }));
+check('룬 각인 검: a throwing skill fires one more shot a cast',
+  runed.extra >= 1 && runed.two === 1 + runed.extra && runed.one === 1 + runed.extra,
+  `${runed.two} shots at two enemies, ${runed.one} at one`);
+check('and an orbiting skill keeps one more orb in the air',
+  orbsUp.live === orbsUp.own + orbsUp.extra, `${orbsUp.live} orbs (own ${orbsUp.own} + ${orbsUp.extra})`);
+check('the DPS card counts the extra shot',
+  runed.card.includes('투사체 ' + (1 + runed.extra)), runed.card);
+
+// 오니고로시: a share of what was dealt comes back as health.
+const strike = (id) => hold(id).then(() => run(`
+  s.choosing = true;
+  s.spawner.clear();
+  const was = window.config.PLAYER.critChance;
+  window.config.PLAYER.critChance = 0;
+  const p = s.player;
+  p.hp = 10;
+  s.combat.leechPool = 0;
+  const e = s.spawner.group.get(p.x + 300, p.y);
+  e.spawn(p.x + 300, p.y, p, 'brute', undefined, false, 50);
+  const hp = e.hp;
+  s.combat.hit(e, hp);
+  const out = { dealt: hp, healed: p.hp - 10, rate: p.lifeLeech };
+  window.config.PLAYER.critChance = was;
+  s.spawner.clear();
+  s.choosing = false;
+  return out;
+`));
+const leech = await strike('onigoroshi');
+const noLeech = await strike('rustySword');
+console.log('leech:', JSON.stringify({ leech, noLeech }));
+check('오니고로시 heals by its share of the damage dealt',
+  leech.rate > 0 && leech.healed === Math.floor(leech.dealt * leech.rate) && leech.healed > 0,
+  `${leech.dealt} dealt × ${leech.rate} → +${leech.healed} HP`);
+check('and a sword without it heals nothing', noLeech.healed === 0, `+${noLeech.healed} HP`);
+
+// The 인벤토리 reads it out, on its own line.
+const readout = await ev(`(() => {
+  const Inv = window.game.scene.getScene('InventoryScene').constructor;
+  const G = window.config.GEAR;
+  const text = Inv.describe({ uid: 'r', id: 'onigoroshi', prefixes: [], suffixes: [] });
+  return { text, want: Number((G.onigoroshi.implicit.lifeLeech * 100).toFixed(2)) + '%' };
+})()`);
+check('the 인벤토리 reads the 고정 속성 out with its number',
+  readout.text.split('\n')[0].endsWith(' · 고정: 가한 피해의 ' + readout.want + '만큼 흡혈'),
+  readout.text.split('\n')[0]);
 
 console.log('\n=== SUMMARY ===');
 const failed = results.filter((r) => !r.p);
