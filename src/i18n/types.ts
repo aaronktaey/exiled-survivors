@@ -259,6 +259,69 @@ export interface Strings {
     readonly sharedNote: string;
     readonly loadingNote: string;
     readonly offlineNote: string;
+    /** On the entry popup when signing in comes first. */
+    readonly loginToEnter: string;
+    /** Under the board, signed in: {place} and {damage} of the account's best. */
+    readonly mine: string;
+    readonly mineNone: string;
+    /** Said on the title after coming back signed in with a run waiting. */
+    readonly enteredAfterLogin: string;
+  };
+
+  /** 계정 — the sign-in screen, and what it says once signed in. */
+  readonly account: {
+    readonly title: string;
+    /** The title screen's corner icon, signed out and signed in. */
+    readonly iconSignedOut: string;
+    readonly iconSignedIn: string;
+    readonly leadSignedOut: string;
+    /** When the ranking sent them here. */
+    readonly leadRanking: string;
+    readonly noProviders: string;
+    readonly offline: string;
+    readonly retry: string;
+    /** {provider} and {name}. */
+    readonly signedIn: string;
+    /** "Google로 로그인", by provider. */
+    readonly providers: Record<string, string>;
+    /** "Google", by provider. */
+    readonly providerNames: Record<string, string>;
+    readonly logout: string;
+    readonly remove: string;
+    readonly removeConfirm: string;
+    readonly privacy: string;
+    readonly resolve: string;
+    readonly syncOff: string;
+    readonly syncing: string;
+    /** {time}, when it last agreed. */
+    readonly synced: string;
+    readonly syncError: string;
+    readonly syncConflict: string;
+    /** Toasts on the title. */
+    readonly loginOk: string;
+    readonly loginError: string;
+    readonly loginCancelled: string;
+    readonly loggedOut: string;
+    readonly removed: string;
+    readonly hintKeyboard: string;
+    readonly hintTouch: string;
+  };
+
+  /** Two sets of records, this browser's and the account's: which to keep. */
+  readonly conflict: {
+    readonly title: string;
+    readonly lead: string;
+    readonly device: string;
+    readonly cloud: string;
+    readonly swords: string;
+    readonly passives: string;
+    readonly orbs: string;
+    readonly bones: string;
+    readonly savedRun: string;
+    readonly noSavedRun: string;
+    readonly useDevice: string;
+    readonly useCloud: string;
+    readonly later: string;
   };
 
   /** 무작위 스킬 — three skills on cards, one to take. */

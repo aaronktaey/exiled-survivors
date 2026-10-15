@@ -1,7 +1,8 @@
 import Phaser from 'phaser';
 
-import { COLORS, DEPTH, RANKING, SCENES, SCRIM, TEXT } from '@/config';
-import { t } from '@/i18n';
+import { ACCOUNT, COLORS, DEPTH, RANKING, SCENES, SCRIM, TEXT } from '@/config';
+import { fill, t } from '@/i18n';
+import { account, accountRequest } from '@/systems/Account';
 import { addBackButton, type BackButton } from '@/systems/BackButton';
 import { fitText } from '@/systems/Layout';
 import { flagTexture, rankLabel, ranking } from '@/systems/Ranking';
@@ -43,6 +44,8 @@ export class RankingScene extends Phaser.Scene {
   /** Everything the board's rows draw, so they can be drawn again. */
   private board?: Phaser.GameObjects.Container;
   private note!: Phaser.GameObjects.Text;
+  /** The account's own best, once it is known. */
+  private mine = '';
   private loading = false;
 
   public constructor() {
@@ -52,6 +55,8 @@ export class RankingScene extends Phaser.Scene {
   public init(data: RankingSceneData): void {
     this.payload = data;
     this.rows = [];
+    // The scene outlives a launch, and someone else may be signed in now.
+    this.mine = '';
   }
 
   public create(): void {
@@ -116,6 +121,7 @@ export class RankingScene extends Phaser.Scene {
         this.drawNote();
       }
     });
+    void this.lookUpMine();
 
     this.input.keyboard?.on('keydown-ESC', this.close, this);
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
@@ -190,8 +196,25 @@ export class RankingScene extends Phaser.Scene {
         : ranking.source === 'shared'
           ? copy.sharedNote
           : copy.offlineNote;
-    this.note.setText(text);
+    this.note.setText(this.mine ? `${text}   ·   ${this.mine}` : text);
     fitText(this.note, this.scale.width - 16);
+  }
+
+  /** The signed-in account's own best, beside the note: where it stands, on the board or off it. */
+  private async lookUpMine(): Promise<void> {
+    if (!ACCOUNT.enabled || !RANKING.shared.enabled || !account.signedIn) {
+      return;
+    }
+    const reply = await accountRequest('/api/ranking/me', { cache: 'no-store' });
+    const body = reply.body as { best?: { damage?: number } | null; place?: number | null } | null;
+    if (!reply.ok || !body || !this.scene.isActive()) {
+      return;
+    }
+    const copy = t().ranking;
+    this.mine = body.best
+      ? fill(copy.mine, { place: body.place ?? 0, damage: Math.round(body.best.damage ?? 0).toLocaleString('en-US') })
+      : copy.mineNone;
+    this.drawNote();
   }
 
   private close(): void {

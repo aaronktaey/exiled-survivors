@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 
 import {
+  ACCOUNT,
   ALL_BONES,
   ALL_ORBS,
   AUDIO,
@@ -81,6 +82,7 @@ export class BootScene extends Phaser.Scene {
     this.createMangoTexture();
     this.createLightPillarTexture();
     this.createGlowTexture();
+    this.createAccountTexture();
 
 
     createPixelTextTexture(this, TEXTURES.logo, ['EXILED', 'SURVIVORS'], {
@@ -103,8 +105,19 @@ export class BootScene extends Phaser.Scene {
       // And the end of a run does not stop to ask for a name.
       (RANKING as { promptOnDeath: boolean }).promptOnDeath = false;
       // And never touches the shared board: a test run must not land on the
-      // ranking every player sees. test-ranking points it at a stand-in.
-      (RANKING.shared as { enabled: boolean }).enabled = false;
+      // ranking every player sees. test-ranking points it at a stand-in, and
+      // test-account keeps it on (window.__sharedOn) behind one of its own.
+      if (!(window as { __sharedOn?: boolean }).__sharedOn) {
+        (RANKING.shared as { enabled: boolean }).enabled = false;
+      }
+    }
+    if (import.meta.env.DEV && (skipMenu || harness)) {
+      // And no sign-in: the dev server has no /api of its own unless
+      // `wrangler dev` is running, and a suite expects the title as it was.
+      // test-account keeps it on (window.__accountOn) behind a stand-in server.
+      if (!(window as { __accountOn?: boolean }).__accountOn) {
+        (ACCOUNT as { enabled: boolean }).enabled = false;
+      }
     }
     if (import.meta.env.DEV) {
       // Turnstile only knows the real domain, and `wrangler dev` has no secret
@@ -148,6 +161,17 @@ export class BootScene extends Phaser.Scene {
     ctx.fillRect(0, 0, width, height);
     ctx.globalCompositeOperation = 'source-over';
     texture.refresh();
+  }
+
+  /** The 계정 icon: a head over a pair of shoulders, in the menu's own pale colour. */
+  private createAccountTexture(): void {
+    const size = 48;
+    const g = this.add.graphics();
+    g.fillStyle(COLORS.textFill, 1);
+    g.fillCircle(size / 2, size * 0.36, size * 0.17);
+    g.fillRoundedRect(size * 0.2, size * 0.6, size * 0.6, size * 0.3, { tl: size * 0.3, tr: size * 0.3, bl: 4, br: 4 });
+    g.generateTexture(TEXTURES.account, size, size);
+    g.destroy();
   }
 
   /** A soft white dot: light that gathers, shines and bursts is made of it. */

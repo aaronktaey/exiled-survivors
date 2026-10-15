@@ -142,7 +142,27 @@ for (const lang of ['en', 'ja', 'zh']) {
 
   await overlay('BoneScene', '{ onStart: () => {}, onCancel: () => {} }');
   await take('bones');
+
   await close('BoneScene');
+
+  // 계정, signed out and signed in, and the choice between two sets of records.
+  await overlay('AccountScene', "{ reason: 'ranking' }");
+  await take('account');
+  await close('AccountScene');
+  await ev(`(() => {
+    window.account.user = { id: 'u', provider: 'google', name: 'A', rank: { name: '', emoji: '', flag: '' } };
+    window.account.providers = ['google', 'kakao'];
+    window.cloudSave.conflict = { local: {}, server: {}, serverAt: 1 };
+    window.cloudSave.status = 'conflict';
+    return 1;
+  })()`);
+  await overlay('AccountScene');
+  await take('account signed in');
+  await close('AccountScene');
+  await overlay('ConflictScene');
+  await take('conflict');
+  await close('ConflictScene');
+  await ev(`(() => { window.account.user = null; window.account.providers = []; window.cloudSave.conflict = null; window.cloudSave.status = 'off'; return 1; })()`);
 
   // --- a run ---
   await ev(`(() => { window.game.scene.getScene('MenuScene').scene.start('GameScene', { save: null }); return 1; })()`);

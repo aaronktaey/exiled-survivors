@@ -11,6 +11,8 @@ import { settings } from '@/systems/Settings';
 import { registerSharpText } from '@/systems/SharpText';
 import { gear, gearBonusFor, orbApplied } from '@/systems/Gear';
 import { ranking } from '@/systems/Ranking';
+import { account } from '@/systems/Account';
+import { cloudSave } from '@/systems/CloudSave';
 import { gold } from '@/systems/Gold';
 import { critMultiplierFor } from '@/systems/Modifiers';
 import { bones as bonesStore } from '@/systems/Bones';
@@ -18,6 +20,8 @@ import { orbs } from '@/systems/Orbs';
 import { passives } from '@/systems/Passives';
 import { currentCanvasSize } from '@/systems/Viewport';
 import {
+  AccountScene,
+  ConflictScene,
   BootScene,
   ConfirmScene,
   CreditsScene,
@@ -85,6 +89,8 @@ const config: Phaser.Types.Core.GameConfig = {
     InventoryScene,
     PassiveScene,
     BoneScene,
+    AccountScene,
+    ConflictScene,
   ],
 };
 
@@ -107,6 +113,8 @@ if (import.meta.env.DEV) {
     orbApplied?: typeof orbApplied;
     critMultiplierFor?: typeof critMultiplierFor;
     ranking?: typeof ranking;
+    account?: typeof account;
+    cloudSave?: typeof cloudSave;
   };
   dev.game = game;
   // So a test can read a tuned number instead of carrying a copy of it.
@@ -120,4 +128,6 @@ if (import.meta.env.DEV) {
   dev.orbApplied = orbApplied;
   dev.critMultiplierFor = critMultiplierFor;
   dev.ranking = ranking;
+  dev.account = account;
+  dev.cloudSave = cloudSave;
 }

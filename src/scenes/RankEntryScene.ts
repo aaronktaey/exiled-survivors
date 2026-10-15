@@ -1,11 +1,13 @@
 import Phaser from 'phaser';
 
-import { COLORS, DEPTH, RANKING, SCENES, SCRIM, TEXT } from '@/config';
+import { ACCOUNT, COLORS, DEPTH, RANKING, SCENES, SCRIM, TEXT } from '@/config';
 import { fill, language, t } from '@/i18n';
 import { addBackButton, type BackButton } from '@/systems/BackButton';
 import { fitText } from '@/systems/Layout';
 import { flagTexture, ranking, type RankSubmission } from '@/systems/Ranking';
 import { prefersTouchControls } from '@/systems/VirtualJoystick';
+import { account } from '@/systems/Account';
+import { keepPendingRank } from '@/systems/PendingRank';
 
 export interface RankEntryData {
   /** The run being entered, without its name. */
@@ -66,17 +68,21 @@ export class RankEntryScene extends Phaser.Scene {
     this.done = false;
     this.cursor = 0;
     this.slots = [];
-    // Start on the name entered last time, so a second entry is one press.
+    // Start on the account's own name on the board, or the name entered last
+    // time, so a second entry is one press.
     const letters = RANKING.letters;
-    const last = ranking.lastName.padEnd(RANKING.nameLength, ' ');
-    const flag = ranking.lastFlag || FLAG_FOR_LANGUAGE[language()] || '';
+    const mine = account.user?.rank;
+    const lastName = mine?.name || ranking.lastName;
+    const last = lastName.padEnd(RANKING.nameLength, ' ');
+    const flag = (mine?.name ? mine.flag : ranking.lastFlag) || FLAG_FOR_LANGUAGE[language()] || '';
+    const emoji = mine?.name ? mine.emoji : ranking.lastEmoji;
     this.picks = [
       ...[...last].slice(0, RANKING.nameLength).map((ch) => Math.max(0, letters.indexOf(ch))),
-      Math.max(0, (RANKING.emoji as readonly string[]).indexOf(ranking.lastEmoji)),
+      Math.max(0, (RANKING.emoji as readonly string[]).indexOf(emoji)),
       Math.max(0, (RANKING.flags as readonly string[]).indexOf(flag)),
     ];
     // A first entry starts on "A", not on a blank.
-    if (!ranking.lastName) {
+    if (!lastName) {
       this.picks[0] = 1;
     }
   }
@@ -147,7 +153,13 @@ export class RankEntryScene extends Phaser.Scene {
     }
 
     const buttonsY = slotY + SLOT / 2 + ARROW + 30 + BUTTON_HEIGHT / 2;
-    this.button(width / 2 - BUTTON_WIDTH / 2 - 8, buttonsY, copy.confirm, COLORS.accentFill, () => this.finish(true));
+    this.button(
+      width / 2 - BUTTON_WIDTH / 2 - 8,
+      buttonsY,
+      this.needsSignIn ? copy.loginToEnter : copy.confirm,
+      COLORS.accentFill,
+      () => this.finish(true),
+    );
     this.button(width / 2 + BUTTON_WIDTH / 2 + 8, buttonsY, copy.skip, COLORS.panel, () => this.finish(false));
 
     fitText(
@@ -183,8 +195,20 @@ export class RankEntryScene extends Phaser.Scene {
   }
 
   /** 등록 or 건너뛰기. Either way the popup closes and says where it landed. */
+  /**
+   * The shared board takes runs from accounts only: signed out, entering
+   * goes by way of signing in, and the run waits for it (PendingRank).
+   */
+  public get needsSignIn(): boolean {
+    return RANKING.shared.enabled && ACCOUNT.enabled && !account.signedIn;
+  }
+
   public finish(enter: boolean): void {
     if (this.done) {
+      return;
+    }
+    if (enter && this.needsSignIn) {
+      this.signInFirst();
       return;
     }
     this.done = true;
@@ -238,16 +262,31 @@ export class RankEntryScene extends Phaser.Scene {
     this.slots.push({ box, text, image });
   }
 
+  /** The account screen, over this one; the run goes with the trip to the provider. */
+  private signInFirst(): void {
+    const run: RankSubmission = { ...this.payload.run, name: this.name, emoji: this.emoji, flag: this.flag };
+    this.scene.pause();
+    this.scene.launch(SCENES.account, {
+      reason: 'ranking',
+      onBeforeLogin: () => keepPendingRank(run),
+      onClose: () => this.scene.resume(),
+    });
+    this.scene.bringToTop(SCENES.account);
+  }
+
   private button(x: number, y: number, label: string, fillColor: number, onPress: () => void): void {
     const plate = this.add
       .rectangle(x, y, BUTTON_WIDTH, BUTTON_HEIGHT, fillColor, 1)
       .setStrokeStyle(2, COLORS.panelEdge, 1)
       .setDepth(DEPTH.ui + 1)
       .setInteractive({ useHandCursor: true });
-    this.add
-      .text(x, y, label, { fontFamily: 'system-ui, sans-serif', fontSize: TEXT.size.label, color: COLORS.text })
-      .setOrigin(0.5)
-      .setDepth(DEPTH.ui + 2);
+    fitText(
+      this.add
+        .text(x, y, label, { fontFamily: 'system-ui, sans-serif', fontSize: TEXT.size.label, color: COLORS.text })
+        .setOrigin(0.5)
+        .setDepth(DEPTH.ui + 2),
+      BUTTON_WIDTH + 24,
+    );
     plate.on(Phaser.Input.Events.GAMEOBJECT_POINTER_DOWN, onPress);
   }
 
