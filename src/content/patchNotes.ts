@@ -15,6 +15,36 @@ export interface PatchNote {
 
 export const PATCH_NOTES: readonly PatchNote[] = [
   {
+    version: '0.25',
+    date: '2026-10-15',
+    changes: {
+      ko: [
+        '무기 티어는 이제 속성 티어처럼 숫자가 낮을수록 강합니다 — 오니고로시(1티어, 공격력 50) > 룬 각인 검(2티어, 40) > 강철 검(3티어, 30) > 무쇠 검(4티어, 20) > 녹슨 검(5티어, 10).',
+        '오니고로시는 가장 강한 검이 되었고, 우두머리가 룬 각인 검보다도 드물게 떨어뜨립니다.',
+        '그에 맞춰 무기 드랍 규칙을 바로잡았습니다 — 1·2티어(오니고로시, 룬 각인 검)는 우두머리만 떨어뜨리고, 3~5티어는 일반 적도 드물게 떨어뜨립니다(강철 검 0.1%, 무쇠 검 0.15%, 녹슨 검 0.2%, 희귀 적과 우두머리 보너스 적용).',
+        '화염구의 사거리 강화가 없어졌습니다. 대신 투사체 스킬(화염구, 얼음창)의 사거리 — 적을 찾고 발사하는 거리와 날아가는 거리 — 가 투사체 속도에 비례해 늘어납니다. 투사체 속도 +15%면 사거리도 +15%입니다.',
+      ],
+      en: [
+        'Weapon tiers now work like affix tiers — the lower the number, the stronger: Onigoroshi (tier 1, 50 attack) > Runed Sword (tier 2, 40) > Steel Sword (tier 3, 30) > Iron Sword (tier 4, 20) > Rusty Sword (tier 5, 10).',
+        'Onigoroshi is now the strongest sword, and Bosses leave it even more rarely than the Runed Sword.',
+        'The weapon drop rule follows suit — tiers 1 and 2 (Onigoroshi, Runed Sword) come only from Bosses, and tiers 3 to 5 also rarely drop from any enemy (Steel Sword 0.1%, Iron Sword 0.15%, Rusty Sword 0.2%, raised by rare and Boss bonuses).',
+        'Fireball no longer has a range upgrade. Instead, a projectile skill’s range (Fireball, Ice Spear) — how far it looks for a target and fires, and how far the shot flies — grows with its projectile speed: +15% speed is +15% range.',
+      ],
+      ja: [
+        '武器のティアは属性のティアと同じく、数字が小さいほど強くなりました — 鬼殺し（ティア 1、攻撃力 50）> ルーンの剣（ティア 2、40）> 鋼の剣（ティア 3、30）> 鉄の剣（ティア 4、20）> 錆びた剣（ティア 5、10）。',
+        '鬼殺しは最も強い剣になり、ボスがルーンの剣よりもまれに落とします。',
+        'それに合わせて武器のドロップ規則を直しました — ティア 1・2（鬼殺し、ルーンの剣）はボスだけが落とし、ティア 3〜5 は通常の敵もまれに落とします（鋼の剣 0.1%、鉄の剣 0.15%、錆びた剣 0.2%、レア敵とボスの補正が適用されます）。',
+        '火球の射程強化がなくなりました。代わりに投射物スキル（火球、氷槍）の射程 — 敵を探して撃つ距離と飛ぶ距離 — が弾速に比例して伸びます。弾速 +15% なら射程も +15% です。',
+      ],
+      zh: [
+        '武器阶数现在与属性阶数一样，数字越小越强 — 鬼杀（1 阶，攻击力 50）> 符文剑（2 阶，40）> 钢剑（3 阶，30）> 铁剑（4 阶，20）> 生锈的剑（5 阶，10）。',
+        '鬼杀成为最强的剑，首领掉落它的几率比符文剑还低。',
+        '武器掉落规则随之修正 — 1、2 阶（鬼杀、符文剑）只由首领掉落，3～5 阶普通敌人也会偶尔掉落（钢剑 0.1%、铁剑 0.15%、生锈的剑 0.2%，适用稀有敌人与首领加成）。',
+        '火球不再有射程强化。取而代之，投射物技能（火球、冰枪）的射程 — 索敌与发射的距离以及飞行距离 — 随弹速等比例增加：弹速 +15% 即射程 +15%。',
+      ],
+    },
+  },
+  {
     version: '0.24',
     date: '2026-10-15',
     changes: {

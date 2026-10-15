@@ -57,12 +57,13 @@ const start = await run(`
     melee: s.damageOf('meleeStrike'),
     stat: s.progression.statsFor('meleeStrike').damage,
     loadout: s.hud.loadoutText,
-    first: window.config.attackForTier(1),
+    first: window.config.attackForTier(window.config.GEAR[window.config.STARTING_GEAR].tier),
+    lowest: window.config.GEAR_BASE.lowestAttack,
   };
 `);
 console.log('starter:', JSON.stringify(start));
-check('the starting sword carries the first tier of attack power',
-  start.bonus.attack === start.first, `+${start.bonus.attack}`);
+check('the starting sword is the weakest tier, worth the lowest attack power',
+  start.bonus.attack === start.first && start.first === start.lowest, `+${start.bonus.attack}`);
 check('and it lands on what a skill hits for',
   start.melee === start.stat + start.bonus.attack,
   `${start.stat} + ${start.bonus.attack} = ${start.melee}`);
@@ -70,7 +71,7 @@ check('a plain sword changes nothing else',
   start.bonus.maxHpScale === 1 && start.bonus.moveSpeedScale === 1 && start.bonus.critChance === 0,
   JSON.stringify(start.bonus));
 
-// --- 2. the tiers are a step of 3 apart ---
+// --- 2. the roster is a ladder: tier 1 is the best, one step of attack apart ---
 const tiers = await ev(`(() => {
   const s = window.game.scene.getScene('GameScene');
   const roll = s.rollGearDrop.bind(s);
@@ -98,15 +99,16 @@ const attacks = await ev(`(() => {
   };
 })()`);
 console.log('tier attack:', JSON.stringify(attacks.attack));
-check('each step up the roster is worth one more step of attack',
+check('a lower tier number is one more step of attack',
   JSON.stringify(attacks.attack) === JSON.stringify(attacks.want) &&
     attacks.attack.every((a, i) => i === 0 ||
-      a - attacks.attack[i - 1] === (attacks.tiers[i] - attacks.tiers[i - 1]) * attacks.step),
-  attacks.attack.join(' / '));
-check('오니고로시 is a tier-1 sword, as strong as the one a run starts with',
-  attacks.tiers[attacks.ids.indexOf('onigoroshi')] === 1 &&
-    attacks.attack[attacks.ids.indexOf('onigoroshi')] === attacks.attack[attacks.ids.indexOf('rustySword')],
-  `tier ${attacks.tiers[attacks.ids.indexOf('onigoroshi')]}`);
+      attacks.attack[i - 1] - a === (attacks.tiers[i] - attacks.tiers[i - 1]) * attacks.step),
+  attacks.ids.map((id, i) => `${id} T${attacks.tiers[i]} +${attacks.attack[i]}`).join(' / '));
+check('the ladder is 오니고로시 > 룬 각인 검 > 강철 검 > 무쇠 검 > 녹슨 검',
+  JSON.stringify(attacks.ids) ===
+    JSON.stringify(['onigoroshi', 'runedSword', 'steelSword', 'ironSword', 'rustySword']) &&
+    new Set(attacks.tiers).size === attacks.tiers.length,
+  attacks.ids.join(' > '));
 
 // --- 3. an ordinary kill leaves only the swords marked fromKill; a 우두머리 always one ---
 const drops = await run(`
@@ -130,6 +132,7 @@ const drops = await run(`
   }
   marked.forEach((g, i) => { g.fromKill = was[i]; });
   const allowed = marked.map(g => g.id);
+  const bossOnly = Object.values(G).filter(g => g.fromKill === undefined).map(g => g.id);
   const lowTiers = Object.values(G).filter(g => g.fromKill === undefined).map(g => g.tier);
   const ordinary = Object.values(ordinaryIds).reduce((a, b) => a + b, 0);
 
@@ -145,13 +148,14 @@ const drops = await run(`
   s.combat.gems.getChildren().forEach(g => g.active && g.collect());
   s.spawner.clear();
   s.choosing = false;
-  return { ordinary, ordinaryIds, allowed, lowTiers, fromBosses, N };
+  return { ordinary, ordinaryIds, allowed, bossOnly, lowTiers, fromBosses, N };
 `);
 console.log('drops:', JSON.stringify(drops));
 check('tier 1 and 2 swords are boss-only, the rest can drop off any kill',
   JSON.stringify([...new Set(drops.lowTiers)].sort()) === JSON.stringify([1, 2]) &&
-    drops.allowed.length > 0 && drops.allowed.every(id => id !== 'rustySword' && id !== 'onigoroshi' && id !== 'ironSword'),
-  `boss-only tiers ${[...new Set(drops.lowTiers)].join(', ')}; any kill: ${drops.allowed.join(', ')}`);
+    JSON.stringify([...drops.bossOnly].sort()) === JSON.stringify(['onigoroshi', 'runedSword']) &&
+    drops.allowed.length > 0,
+  `boss-only ${drops.bossOnly.join(', ')}; any kill: ${drops.allowed.join(', ')}`);
 check('ordinary kills leave only the swords marked fromKill',
   drops.ordinary > 0 && Object.keys(drops.ordinaryIds).every(id => drops.allowed.includes(id)),
   JSON.stringify(drops.ordinaryIds));

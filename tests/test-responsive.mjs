@@ -158,8 +158,8 @@ const cards = await ev(`(() => {
   };
 })()`);
 console.log('cards:', JSON.stringify(cards));
-check('four picks on a phone wrap onto more than one row',
-  cards !== null && cards.count >= 4 && cards.rows >= 2,
+check('a skill’s picks on a phone wrap onto more than one row',
+  cards !== null && cards.count >= 3 && cards.rows >= 2,
   cards ? `${cards.count} cards over ${cards.rows} rows at ${cards.width}px` : 'no popup');
 check('and each card is wide enough to read',
   cards !== null && cards.width >= 150, `${cards?.width}px on a ${cards?.screen}px screen`);

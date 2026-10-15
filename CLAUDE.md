@@ -211,9 +211,14 @@ Read `git log` for what changed and when. What is not in the log:
   certain weapon, shards, a `fromBossOnly` 구슬, a 뼈다귀 with `fromKill: 0`)
   and what is certain are not multiplied. A new drop should go through the
   same `bonus` in `CombatSystem.killEnemy`.
-- **Weapons by tier.** A 우두머리 always leaves one, weighted over the whole
-  `GEAR` roster. A sword with `fromKill` set (tier 3 and 4 now) can also
-  come off any kill at that chance × `bonus`; without it, 우두머리 only.
+- **Weapons by tier — 1 is the best**, the same way round as an 속성's
+  tier (the user corrected this once). `attackForTier` counts up from the
+  weakest tier. A 우두머리 always leaves one, weighted over the whole `GEAR`
+  roster. A sword with `fromKill` set (tiers 3–5 now) can also come off any
+  kill at that chance × `bonus`; without it, 우두머리 only.
+- **A thrown skill has no range of its own.** For a skill with a
+  `projectileSpeed`, `rangeFromStats` scales its base range by speed against
+  base speed — targeting and flight both — so no thrown skill offers 사거리.
 - **Reading holds the run.** The HUD's skills are icons (`Hud.slots`); a
   mouse over one opens a card spelling its DPS out (`GameScene.breakdownOf`,
   the same folds as `damageOf`/`cooldownOf`), and a mouse over a rare shows

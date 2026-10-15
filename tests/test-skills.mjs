@@ -237,7 +237,7 @@ check('repeat pickup is labelled 강화', repeatPopup.subtitle === '강화' && r
   `subtitle=${repeatPopup.subtitle}`);
 check('repeat pickup names 화염구', repeatPopup.title === '화염구' && repeatPopup.details[1].startsWith('화염구'),
   `title=${repeatPopup.title} / ${repeatPopup.details[1]}`);
-check('화염구 offers four picks', repeatPopup.labels.length === 4, repeatPopup.labels.join(' | '));
+check('화염구 offers three picks, 사거리 not among them', repeatPopup.labels.length === 3 && !repeatPopup.labels.some(l => /사정거리/.test(l)), repeatPopup.labels.join(' | '));
 await shot('skill-02-fireball-choice');
 const beforeRepeat = await stats();
 await sleep(350);
@@ -289,7 +289,7 @@ const levels = await run(`
                   melee: p.levelFor('meleeStrike') };
   p.apply('fireball', 'damage');
   p.apply('fireball', 'attackSpeed');
-  p.apply('fireball', 'range');
+  p.apply('fireball', 'projectileSpeed');
   p.apply('voidOrb', 'orbCount');
 
   const after = { fireball: p.levelFor('fireball'), voidOrb: p.levelFor('voidOrb'),

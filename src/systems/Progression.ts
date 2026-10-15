@@ -104,6 +104,21 @@ export function skillLevelFromStats(skill: SkillId, stats: SkillStats): number {
 }
 
 /**
+ * How far a skill reaches — to pick a target, and for a thrown skill how far
+ * the shot flies. A skill that throws something reaches further the faster it
+ * throws it: its range moves with its projectile speed, in proportion to
+ * where both started, and it has no range of its own to upgrade.
+ */
+export function rangeFromStats(skill: SkillId, stats: SkillStats): number {
+  const base = SKILL_BASE[skill];
+  if (base.projectileSpeed > 0) {
+    return base.range * (stats.projectileSpeed / base.projectileSpeed);
+  }
+
+  return stats.range;
+}
+
+/**
  * Damage per second for a stat line, counting every body a skill touches at
  * once — that is what makes two skills comparable at a glance.
  */
@@ -139,6 +154,11 @@ export class Progression extends Phaser.Events.EventEmitter {
       this.stats.set(skill, existing);
     }
     return existing;
+  }
+
+  /** How far this skill reaches right now — see rangeFromStats. */
+  public rangeFor(skill: SkillId): number {
+    return rangeFromStats(skill, this.statsFor(skill));
   }
 
   public cooldownMsFor(skill: SkillId): number {

@@ -412,7 +412,8 @@ class GearStore {
   /** Everything held, best first, so the list reads as a ladder. */
   public get items(): readonly GearItem[] {
     return [...this.value.items].sort((a, b) => {
-      const tier = (GEAR[b.id]?.tier ?? 0) - (GEAR[a.id]?.tier ?? 0);
+      // Tier 1 is the best, so the lower number goes first.
+      const tier = (GEAR[a.id]?.tier ?? Infinity) - (GEAR[b.id]?.tier ?? Infinity);
       return tier !== 0 ? tier : affixesOf(b).length - affixesOf(a).length;
     });
   }

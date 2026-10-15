@@ -231,7 +231,7 @@ export const ENEMY_KINDS: Record<EnemyKind, EnemyKindSpec> = {
     texture: TEXTURES.enemyShooter,
     size: 16,
     color: COLORS.enemyShooter,
-    maxHp: 240,
+    maxHp: 180,
     speed: 50,
     contactDamage: 12,
     shot: {
@@ -814,7 +814,7 @@ export const LIGHTNING = {
 /** The orbs 공허구체 keeps in the air around the player. */
 export const VOID_ORB = {
   /** Drawn radius of one orb. */
-  radius: 9,
+  radius: 15,
   /** Forgiveness on the contact check, so a graze still counts. */
   hitPadding: 2,
 } as const;

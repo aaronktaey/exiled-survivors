@@ -32,6 +32,13 @@ export interface GuideChapter {
 }
 
 const seconds = (ms: number): number => Math.round(ms / 1000);
+
+/** A set of tiers as the guide writes it: "3" or "3~5". */
+const tierSpan = (tiers: readonly number[]): string => {
+  const low = Math.min(...tiers);
+  const high = Math.max(...tiers);
+  return low === high ? `${low}` : `${low}~${high}`;
+};
 /** "10%", or "1.5%" when a whole number would lie about it. */
 const percent = (fraction: number): string => {
   const tenths = Math.round(fraction * 1000) / 10;
@@ -85,8 +92,8 @@ export function guideChapters(): readonly GuideChapter[] {
               heal: percent(POTION.healFraction),
               life: seconds(GROUND_ITEM.lifespanMs),
               warning: seconds(GROUND_ITEM.warningMs),
-              tier: Math.min(
-                ...Object.values(GEAR)
+              tiers: tierSpan(
+                Object.values(GEAR)
                   .filter((spec) => spec.fromKill !== undefined)
                   .map((spec) => spec.tier),
               ),

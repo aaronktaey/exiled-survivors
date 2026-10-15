@@ -171,48 +171,54 @@ check('first pickup grants the skill at base spec',
   first.owned.includes('fireball') && JSON.stringify(first.stats) === JSON.stringify(base.fire),
   `owned=${first.owned}, stats ${JSON.stringify(first.stats)}`);
 
-// --- 7. a repeat pickup opens the four-option popup ---
+// --- 7. a repeat pickup opens the upgrade popup ---
 await run(`s.onSkillCollected('fireball'); return 1;`);
 await sleep(500);
 const four = await popup();
 console.log('popup:', JSON.stringify(four));
 check('repeat pickup opens the 화염구 popup', four.open === true && four.skill === 'fireball',
   `skill=${four.skill} subtitle=${four.subtitle}`);
-check('화염구 offers damage, rate, range and projectile speed',
+check('화염구 offers damage, rate and projectile speed — no 사거리 of its own',
   JSON.stringify(four.cards?.map(c => c.id)) ===
-    JSON.stringify(['damage', 'attackSpeed', 'range', 'projectileSpeed']),
+    JSON.stringify(['damage', 'attackSpeed', 'projectileSpeed']),
   `${four.cards?.map(c => c.label).join(' | ')}`);
 const fits = four.cards?.every(c => c.x - c.w / 2 >= 0 && c.x + c.w / 2 <= four.width);
 const gaps = four.cards?.slice(1).map((c, i) => Math.round(c.x - c.w / 2 - (four.cards[i].x + four.cards[i].w / 2)));
-check('four cards fit on screen without overlapping',
+check('the cards fit on screen without overlapping',
   fits === true && gaps?.every(g => g > 0),
   `width=${four.width}, cards ${four.cards?.map(c => c.w).join('/')}px, gaps ${gaps?.join('/')}px`);
 await shot('balance-01-four-options');
 
-// --- 8. 사정거리 is the third card and raises range only ---
-const beforeRange = await run(`return { fire: s.progression.statsFor('fireball'), melee: s.progression.statsFor('meleeStrike') };`);
+// --- 8. 투사체 속도 is the third card, and the reach grows with it ---
+const rangeOf = `return { fire: s.progression.statsFor('fireball'), reach: s.progression.rangeFor('fireball'),
+  melee: s.progression.statsFor('meleeStrike') };`;
+const beforeSpeed = await run(rangeOf);
 await cdp.tap('ArrowRight', 39, 'ArrowRight');
 await sleep(200);
 const afterRightKey = await popup();
 check('an arrow moves the caret without confirming',
   afterRightKey.selected === 1 && afterRightKey.open === true,
   `selected=${afterRightKey.selected}, popup still open=${afterRightKey.open}`);
-check('사정거리 is the third card', afterRightKey.cards[2].id === 'range', afterRightKey.cards[2].label);
+check('투사체 속도 is the third card', afterRightKey.cards[2].id === 'projectileSpeed',
+  afterRightKey.cards[2].label);
 await cdp.tap('Digit3', 51, '3');
 await sleep(600);
-const afterRange = await run(`return { fire: s.progression.statsFor('fireball'), melee: s.progression.statsFor('meleeStrike') };`);
+const afterSpeed = await run(rangeOf);
 // An upgrade is a share of where the skill started, so the step is read
 // from the base rather than written down here.
-const rangeStep = await run(`
-  const Progression = Object.getPrototypeOf(s.progression).constructor;
-  return { base: new Progression().statsFor('fireball').range };
+const speedBase = await run(`
+  const b = window.config.SKILL_BASE.fireball;
+  return { speed: b.projectileSpeed, range: b.range, share: window.config.UPGRADE_PERCENT.projectileSpeed };
 `);
-const rangeGain = afterRange.fire.range - beforeRange.fire.range;
-check('사정거리 raises fireball range by a share of its base, and nothing else',
-  Math.abs(rangeGain / rangeStep.base - 0.15) < 0.001 &&
-  afterRange.fire.damage === beforeRange.fire.damage &&
-  afterRange.melee.range === beforeRange.melee.range,
-  `fireball ${beforeRange.fire.range} -> ${afterRange.fire.range}px (+${rangeGain}, ${Math.round((rangeGain / rangeStep.base) * 100)}% of ${rangeStep.base}), melee still ${afterRange.melee.range}px`);
+const speedGain = afterSpeed.fire.projectileSpeed - beforeSpeed.fire.projectileSpeed;
+check('투사체 속도 raises speed by a share of its base, and not damage',
+  Math.abs(speedGain / speedBase.speed - speedBase.share) < 0.001 &&
+  afterSpeed.fire.damage === beforeSpeed.fire.damage,
+  `${beforeSpeed.fire.projectileSpeed} -> ${afterSpeed.fire.projectileSpeed}px/s (+${speedGain})`);
+check('and the reach grows in the same proportion as the speed',
+  Math.abs(afterSpeed.reach / speedBase.range - afterSpeed.fire.projectileSpeed / speedBase.speed) < 0.001 &&
+  afterSpeed.reach > beforeSpeed.reach && afterSpeed.melee.range === beforeSpeed.melee.range,
+  `reach ${Math.round(beforeSpeed.reach)} -> ${Math.round(afterSpeed.reach)}px, melee still ${afterSpeed.melee.range}px`);
 
 // And it reaches in play: something just past the old range is now fired at.
 const longer = await run(`
@@ -231,36 +237,17 @@ const longer = await run(`
       projectileSpeed: st.projectileSpeed, chainCount: 0, pierceCount: 0, orbCount: 0, orbitSpeed: 0, hit: () => {} });
     return w.projectiles.countActive(true);
   };
-  const base = ${JSON.stringify(rangeStep.base)};
-  const between = (base + st.range) / 2;
-  const out = { atOld: shoot(between, base), atNew: shoot(between, st.range), between };
+  const base = ${JSON.stringify(beforeSpeed.reach)};
+  const reach = s.progression.rangeFor('fireball');
+  const between = (base + reach) / 2;
+  const out = { atOld: shoot(between, base), atNew: shoot(between, reach), between };
   s.spawner.clear();
   w.projectiles.getChildren().forEach((b) => b.active && b.despawn());
   s.choosing = was;
   return out;
 `);
-check('and the longer range is fired at in play, where the old one held off',
+check('and the longer reach is fired at in play, where the old one held off',
   longer.atOld === 0 && longer.atNew === 1, `an enemy at ${Math.round(longer.between)}px: ${longer.atOld} -> ${longer.atNew} shots`);
-
-// --- 9. 투사체 속도 is the fourth card and raises speed only ---
-await run(`s.onSkillCollected('fireball'); return 1;`);
-await sleep(600);
-const onSpeed = await popup();
-check('투사체 속도 is the fourth card', onSpeed.cards[3].id === 'projectileSpeed',
-  onSpeed.cards[3].label);
-const beforeSpeed = await run(`return s.progression.statsFor('fireball');`);
-await cdp.tap('Digit4', 52, '4');
-await sleep(600);
-const afterSpeed = await run(`return s.progression.statsFor('fireball');`);
-const speedBase = await run(`
-  const Progression = Object.getPrototypeOf(s.progression).constructor;
-  return { base: new Progression().statsFor('fireball').projectileSpeed };
-`);
-const speedGain = afterSpeed.projectileSpeed - beforeSpeed.projectileSpeed;
-check('투사체 속도 raises speed by a share of its base, and nothing else',
-  Math.abs(speedGain / speedBase.base - 0.15) < 0.001 &&
-  afterSpeed.range === beforeSpeed.range && afterSpeed.damage === beforeSpeed.damage,
-  `${beforeSpeed.projectileSpeed} -> ${afterSpeed.projectileSpeed}px/s (+${speedGain}), range ${afterSpeed.range}px`);
 
 // --- 10. a level-up spends on a skill in hand ---
 // Which one is random; the roll is pinned to the first skill held (타격,

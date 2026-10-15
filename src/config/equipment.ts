@@ -13,18 +13,21 @@
 
 export type GearSlot = 'weapon';
 
-export type GearId = 'rustySword' | 'onigoroshi' | 'ironSword' | 'steelSword' | 'runedSword';
+export type GearId = 'onigoroshi' | 'runedSword' | 'steelSword' | 'ironSword' | 'rustySword';
 
 export interface GearSpec {
   readonly id: GearId;
   readonly slot: GearSlot;
-  /** 1 to 4. One step is GEAR_BASE.attackPerTier of attack power. */
+  /**
+   * 1 is the best, the way an affix's tier 1 is. Each step down the ladder
+   * is GEAR_BASE.attackPerTier less attack power.
+   */
   readonly tier: number;
   /** Korean name; a locale renames it through `names.gear`. */
   readonly name: string;
   /**
-   * Relative chance of being the sword a 우두머리 leaves. Lower tiers are
-   * commoner, so the better swords stay worth waiting for.
+   * Relative chance of being the sword a 우두머리 leaves. The weaker swords
+   * are commoner, so the better ones stay worth waiting for.
    */
   readonly weight: number;
   /**
@@ -36,25 +39,20 @@ export interface GearSpec {
 
 export const GEAR_BASE = {
   /**
-   * Attack power of the first tier, and what one step up the roster adds.
+   * Attack power of the weakest tier, and what one step up the ladder adds.
    *
    * These are flat damage on every skill, and a skill starts at 150, so they
    * are deliberately small: at 30 and 30 the top sword was worth +80% damage
    * on its own and nothing else in the run could compete with it.
    */
-  tier1Attack: 10,
+  lowestAttack: 10,
   attackPerTier: 10,
 } as const;
 
-/** Attack power for a tier, so the roster stays in step with the dial. */
-export const attackForTier = (tier: number): number =>
-  GEAR_BASE.tier1Attack + (tier - 1) * GEAR_BASE.attackPerTier;
-
 export const GEAR: Record<GearId, GearSpec> = {
-  rustySword: { id: 'rustySword', slot: 'weapon', tier: 1, name: '녹슨 검', weight: 4 },
-  onigoroshi: { id: 'onigoroshi', slot: 'weapon', tier: 1, name: '오니고로시', weight: 4 },
-  ironSword: { id: 'ironSword', slot: 'weapon', tier: 2, name: '무쇠 검', weight: 3 },
-  // From tier 3 up, any kill can leave one too — rarely.
+  onigoroshi: { id: 'onigoroshi', slot: 'weapon', tier: 1, name: '오니고로시', weight: 0.5 },
+  runedSword: { id: 'runedSword', slot: 'weapon', tier: 2, name: '룬 각인 검', weight: 1 },
+  // From tier 3 down, any kill can leave one too — rarely.
   steelSword: {
     id: 'steelSword',
     slot: 'weapon',
@@ -63,15 +61,30 @@ export const GEAR: Record<GearId, GearSpec> = {
     weight: 2,
     fromKill: 0.001,
   },
-  runedSword: {
-    id: 'runedSword',
+  ironSword: {
+    id: 'ironSword',
     slot: 'weapon',
     tier: 4,
-    name: '룬 각인 검',
-    weight: 1,
-    fromKill: 0.0005,
+    name: '무쇠 검',
+    weight: 3,
+    fromKill: 0.0015,
+  },
+  rustySword: {
+    id: 'rustySword',
+    slot: 'weapon',
+    tier: 5,
+    name: '녹슨 검',
+    weight: 4,
+    fromKill: 0.002,
   },
 };
+
+/** The weakest tier on the roster — the one worth GEAR_BASE.lowestAttack. */
+export const LOWEST_GEAR_TIER = Math.max(...Object.values(GEAR).map((spec) => spec.tier));
+
+/** Attack power for a tier, so the roster stays in step with the dial. */
+export const attackForTier = (tier: number): number =>
+  GEAR_BASE.lowestAttack + (LOWEST_GEAR_TIER - tier) * GEAR_BASE.attackPerTier;
 
 export const ALL_GEAR: readonly GearSpec[] = Object.values(GEAR);
 

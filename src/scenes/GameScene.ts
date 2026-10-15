@@ -456,7 +456,7 @@ export class GameScene extends Phaser.Scene {
         enemies: this.spawner.group,
         damage: this.damageOf(id),
         cooldownMs: this.cooldownOf(id),
-        range: stats.range,
+        range: this.progression.rangeFor(id),
         projectileSpeed: stats.projectileSpeed,
         chainCount: stats.chainCount,
         orbitSpeed: stats.orbitSpeed,

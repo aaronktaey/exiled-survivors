@@ -49,7 +49,8 @@ export const SKILLS: Record<SkillId, SkillDefinition> = {
     id: 'fireball',
     name: '화염구',
     tags: ['투사체', '원거리', '주문', '화염'],
-    upgrades: ['damage', 'attackSpeed', 'range', 'projectileSpeed'],
+    // No 사거리 pick: a thrown skill reaches further by flying faster.
+    upgrades: ['damage', 'attackSpeed', 'projectileSpeed'],
     summary: '가장 가까운 적에게 불덩이를 던집니다. 처음 맞은 적에게서 터지며, 주변의 적도 함께 불에 휩싸입니다.',
   },
   chainLightning: {
