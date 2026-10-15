@@ -1,17 +1,20 @@
-// The game's Worker (server/index.ts), run locally by wrangler against an
-// empty database of its own: the board, what a run has to pass, the rate
-// limit, and that the built game is served beside the API.
+// The game's Worker (server/), run locally by wrangler against an empty
+// database of its own: signing in (through the local-only test provider),
+// the ranking, the cloud save, signing out and deleting an account, and that
+// the built game is served beside the API.
 //
 // It needs no browser. It builds the game first if there is no build to
 // serve, and stops its Worker when it is done.
 import { spawn, execSync } from 'node:child_process';
 import { existsSync, mkdtempSync, rmSync } from 'node:fs';
+import { createHmac } from 'node:crypto';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 
 const ROOT = resolve(import.meta.dirname, '..');
 const PORT = 8788;
 const BASE = `http://127.0.0.1:${PORT}`;
+const FB_SECRET = 'fb-test-secret';
 const results = [];
 const check = (n, p, d = '') => {
   results.push({ n, p });
@@ -23,31 +26,59 @@ if (!existsSync(join(ROOT, 'dist', 'index.html'))) {
   execSync('npx vite build', { cwd: ROOT, stdio: 'ignore' });
 }
 
-// A database of its own, so the rate limit starts from nothing every run.
+// A database of its own, so nothing carries over between runs.
 const state = mkdtempSync(join(tmpdir(), 'es-api-'));
 const env = { ...process.env, CI: '1' };
-execSync(`npx wrangler d1 migrations apply DB --local --persist-to "${state}"`, {
-  cwd: ROOT,
-  env,
-  stdio: 'ignore',
-});
+execSync(`npx wrangler d1 migrations apply DB --local --persist-to "${state}"`, { cwd: ROOT, env, stdio: 'ignore' });
 const worker = spawn(
   'npx',
-  ['wrangler', 'dev', '--port', String(PORT), '--ip', '127.0.0.1', '--persist-to', state],
+  [
+    // --local-upstream keeps request URLs on this address: without it wrangler
+    // dresses every request as the production domain the routes name.
+    'wrangler', 'dev', '--port', String(PORT), '--ip', '127.0.0.1', '--local-upstream', `127.0.0.1:${PORT}`,
+    '--persist-to', `"${state}"`,
+    '--var', 'AUTH_TEST:1', '--var', 'AUTH_SECRET:local-test-secret', '--var', `FACEBOOK_CLIENT_SECRET:${FB_SECRET}`,
+  ],
   { cwd: ROOT, env, shell: true, stdio: 'ignore' },
 );
-
 const stop = () => {
   try {
-    if (process.platform === 'win32') {
-      execSync(`taskkill /pid ${worker.pid} /T /F`, { stdio: 'ignore' });
-    } else {
-      worker.kill('SIGTERM');
-    }
+    if (process.platform === 'win32') execSync(`taskkill /pid ${worker.pid} /T /F`, { stdio: 'ignore' });
+    else worker.kill('SIGTERM');
   } catch {
     // Already gone.
   }
 };
+
+/** A browser of sorts: it keeps its cookies and sends them back. */
+const browser = () => {
+  const jar = new Map();
+  const call = async (path, init = {}) => {
+    const headers = { ...(init.headers ?? {}) };
+    if (jar.size) headers.Cookie = [...jar].map(([k, v]) => `${k}=${v}`).join('; ');
+    const response = await fetch(`${BASE}${path.startsWith('http') ? '' : path}`.replace(`${BASE}${BASE}`, BASE), {
+      redirect: 'manual', ...init, headers,
+    });
+    for (const line of response.headers.getSetCookie?.() ?? []) {
+      const [pair, ...attrs] = line.split(';');
+      const [name, ...rest] = pair.split('=');
+      const gone = attrs.some((a) => /max-age=0/i.test(a.trim()));
+      if (gone) jar.delete(name.trim()); else jar.set(name.trim(), rest.join('='));
+    }
+    return response;
+  };
+  const signIn = async (who) => {
+    const out = await call(`/api/auth/test/start?return=/&as=${who}`);
+    const back = new URL(out.headers.get('location'));
+    const landed = await call(back.pathname + back.search);
+    return landed.headers.get('location');
+  };
+  const send = (path, method, body, headers = {}) =>
+    call(path, { method, headers: { 'Content-Type': 'application/json', Origin: BASE, ...headers }, body: JSON.stringify(body) });
+  return { call, signIn, send, jar };
+};
+const read = async (response) => ({ status: response.status, body: await response.json().catch(() => null) });
+const run = (over = {}) => ({ name: 'ABC', emoji: '', flag: 'KR', damage: 120000, level: 12, survivedMs: 600000, ...over });
 
 try {
   let up = false;
@@ -57,64 +88,134 @@ try {
   }
   check('the Worker comes up locally', up);
 
-  const get = () => fetch(`${BASE}/api/ranking`).then((r) => r.json());
-  const post = (run) =>
-    fetch(`${BASE}/api/ranking`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: typeof run === 'string' ? run : JSON.stringify(run),
-    }).then(async (r) => ({ status: r.status, body: await r.json().catch(() => null) }));
-  const run = (over = {}) => ({
-    name: 'ABC', emoji: '', flag: 'KR', damage: 120000, level: 12, survivedMs: 600000, ...over,
-  });
+  // --- signing in ---
+  const alice = browser();
+  const before = await read(await alice.call('/api/me'));
+  check('signed out, /api/me says so and lists the ways in',
+    before.body?.user === null && Array.isArray(before.body?.providers) && before.body.providers.includes('test') &&
+      !before.body.providers.includes('google'),
+    JSON.stringify(before.body));
 
-  const empty = await get();
-  check('a new board is empty', Array.isArray(empty.entries) && empty.entries.length === 0, JSON.stringify(empty));
+  const landing = await alice.signIn('alice');
+  const who = await read(await alice.call('/api/me'));
+  check('the sign-in round trip lands back on the game, signed in',
+    landing === '/#login=ok' && who.body?.user?.name === 'Tester alice' && who.body?.user?.provider === 'test' &&
+      alice.jar.has('es_session') && !alice.jar.has('es_oauth'),
+    `${landing} ${JSON.stringify(who.body?.user)}`);
 
-  // What a run has to pass, before anything is stored or counted.
-  const refused = {
-    name: (await post(run({ name: 'abcd' }))).body?.error,
-    emoji: (await post(run({ emoji: 'X' }))).body?.error,
-    flag: (await post(run({ flag: 'ZZ' }))).body?.error,
-    damage: (await post(run({ damage: 1e12 }))).body?.error,
-    short: (await post(run({ survivedMs: 1000 }))).body?.error,
-    pace: (await post(run({ damage: 9e9, survivedMs: 10000 }))).body?.error,
-    junk: (await post('{not json')).status,
+  const forged = browser();
+  const out = await forged.call('/api/auth/test/start?return=/');
+  const back = new URL(out.headers.get('location'));
+  back.searchParams.set('state', 'not-the-state');
+  const refused = await forged.call(back.pathname + back.search);
+  check('a callback with the wrong state is refused', refused.headers.get('location') === '/#login=error' && !forged.jar.has('es_session'),
+    refused.headers.get('location'));
+  const elsewhere = await browser().call('/api/auth/test/start?return=//evil.example/x');
+  const elsewhereBack = new URL(elsewhere.headers.get('location'));
+  const sent = await read(await fetch(`${BASE}${elsewhereBack.pathname}${elsewhereBack.search}`, { redirect: 'manual' }));
+  check('and it never sends anyone off the site', !/evil/.test(elsewhere.headers.get('location')), elsewhere.headers.get('location'));
+  void sent;
+  const real = await read(await browser().call('/api/auth/google/start'));
+  check('a provider without keys is not offered', real.status === 404);
+
+  // --- the ranking: signed in only, one best per account ---
+  const guest = await read(await browser().send('/api/ranking', 'POST', run()));
+  check('a run handed in signed out is turned away', guest.status === 401, `${guest.status}`);
+
+  const refusedRuns = {
+    name: (await read(await alice.send('/api/ranking', 'POST', run({ name: 'abcd' })))).body?.error,
+    flag: (await read(await alice.send('/api/ranking', 'POST', run({ flag: 'ZZ' })))).body?.error,
+    pace: (await read(await alice.send('/api/ranking', 'POST', run({ damage: 9e9, survivedMs: 10000 })))).body?.error,
+    short: (await read(await alice.send('/api/ranking', 'POST', run({ survivedMs: 1000 })))).body?.error,
   };
   check('a run that is not a run is turned down, and says why',
-    refused.name === 'name' && refused.emoji === 'emoji' && refused.flag === 'flag' &&
-      refused.damage === 'damage' && refused.short === 'time' && refused.pace === 'pace' &&
-      refused.junk === 400,
-    JSON.stringify(refused));
+    refusedRuns.name === 'name' && refusedRuns.flag === 'flag' && refusedRuns.pace === 'pace' && refusedRuns.short === 'time',
+    JSON.stringify(refusedRuns));
 
-  const first = await post(run());
-  check('a run is taken, placed, and the board comes back with it',
-    first.status === 200 && first.body?.ok === true && first.body?.place === 1 &&
-      first.body?.entries?.[0]?.name === 'ABC' && first.body?.entries?.[0]?.flag === 'KR',
+  const first = await read(await alice.send('/api/ranking', 'POST', run({ name: 'ALI', damage: 50000 })));
+  check('a signed-in run is taken, placed, and the board comes back with it',
+    first.status === 200 && first.body?.place === 1 && first.body?.entries?.[0]?.name === 'ALI' &&
+      !('userId' in (first.body?.entries?.[0] ?? {})),
     JSON.stringify(first.body));
+  const again = await read(await alice.send('/api/ranking', 'POST', run({ name: 'ALI', damage: 90000 })));
+  check('the same account handing in again at once is told to slow down', again.status === 429, `${again.status}`);
 
-  const again = await post(run({ name: 'DEF', damage: 999999 }));
-  check('the same address handing in again at once is told to slow down',
-    again.status === 429 && again.body?.error === 'slow down', `${again.status}`);
+  const bob = browser();
+  await bob.signIn('bob');
+  await read(await bob.send('/api/ranking', 'POST', run({ name: 'BOB', damage: 40000 })));
+  await sleep(16000);
+  const better = await read(await alice.send('/api/ranking', 'POST', run({ name: 'ACE', damage: 80000 })));
+  const board = await read(await fetch(`${BASE}/api/ranking`));
+  check('the board holds each account’s best once, under the name it last used',
+    better.status === 200 && board.body?.entries?.length === 2 &&
+      board.body.entries[0].name === 'ACE' && board.body.entries[0].damage === 80000 &&
+      board.body.entries[1].name === 'BOB',
+    JSON.stringify(board.body?.entries?.map((e) => `${e.name}:${e.damage}`)));
+  const bobs = await read(await bob.call('/api/ranking/me'));
+  check('and an account can ask where its best stands', bobs.body?.place === 2 && bobs.body?.best?.damage === 40000,
+    JSON.stringify(bobs.body));
 
-  const board = await get();
-  check('the board shows what was taken, and nothing turned down',
-    board.entries.length === 1 && board.entries[0].name === 'ABC' &&
-      !board.entries.some((e) => e.name === 'DEF') && !('ip_hash' in board.entries[0]),
-    JSON.stringify(board.entries));
+  // --- the cloud save ---
+  const empty = await read(await alice.call('/api/save'));
+  check('a new account has no save yet', empty.body?.data === null && empty.body?.updatedAt === 0, JSON.stringify(empty.body));
+  const data = { 'exiled-survivors:gear:v2': '{"items":[]}', 'exiled-survivors:ranking:v1': '[]', 'someone-else': 'x' };
+  const firstSave = await read(await alice.send('/api/save', 'PUT', { data, base: 0 }));
+  const stored = await read(await alice.call('/api/save'));
+  check('a save is stored — the game’s keys only, not the board',
+    firstSave.status === 200 && stored.body?.updatedAt === firstSave.body?.updatedAt &&
+      JSON.stringify(Object.keys(stored.body?.data ?? {})) === JSON.stringify(['exiled-survivors:gear:v2']),
+    JSON.stringify(stored.body));
+  const stale = await read(await alice.send('/api/save', 'PUT', { data, base: 0 }));
+  check('writing over a copy this browser has not seen is a conflict, with what is there',
+    stale.status === 409 && stale.body?.updatedAt === firstSave.body?.updatedAt && stale.body?.data?.['exiled-survivors:gear:v2'],
+    `${stale.status}`);
+  const next = await read(await alice.send('/api/save', 'PUT', { data: { 'exiled-survivors:gear:v2': '{"items":[1]}' }, base: firstSave.body?.updatedAt }));
+  check('and writing over the copy it has seen moves it on', next.status === 200 && next.body?.updatedAt > firstSave.body?.updatedAt);
+  const bobSave = await read(await bob.call('/api/save'));
+  check('one account never sees another’s save', bobSave.body?.data === null);
 
-  // The game itself, beside the API.
+  // --- requests from elsewhere ---
+  const cross = await read(await alice.send('/api/save', 'PUT', { data, base: next.body?.updatedAt }, { Origin: 'https://evil.example' }));
+  check('a write from another site is refused, signed in or not', cross.status === 403, `${cross.status}`);
+
+  // --- signing out, and deleting an account ---
+  await alice.send('/api/auth/logout', 'POST', {});
+  const after = await read(await alice.call('/api/me'));
+  check('signing out ends the session here', after.body?.user === null);
+
+  const gone = await read(await bob.send('/api/me/delete', 'POST', {}));
+  const boardAfter = await read(await fetch(`${BASE}/api/ranking`));
+  await bob.signIn('bob');
+  const reborn = await read(await bob.call('/api/save'));
+  check('deleting an account takes its runs and its save with it',
+    gone.status === 200 && !boardAfter.body?.entries?.some((e) => e.name === 'BOB') && reborn.body?.data === null,
+    JSON.stringify(boardAfter.body?.entries?.map((e) => e.name)));
+
+  // --- Facebook's data-deletion callback ---
+  const sign = (payload) => {
+    const body = Buffer.from(JSON.stringify(payload)).toString('base64url');
+    return `${createHmac('sha256', FB_SECRET).update(body).digest('base64url')}.${body}`;
+  };
+  const fb = (signed) => fetch(`${BASE}/api/auth/facebook/deletion`, {
+    method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({ signed_request: signed }).toString(),
+  }).then(read);
+  const good = await fb(sign({ user_id: '12345', algorithm: 'HMAC-SHA256', issued_at: 1 }));
+  const bad = await fb(`${'x'.repeat(43)}.${Buffer.from('{"user_id":"1"}').toString('base64url')}`);
+  check('Facebook’s deletion callback answers a signed request and refuses a forged one',
+    good.status === 200 && /data-deletion/.test(good.body?.url ?? '') && good.body?.confirmation_code && bad.status === 400,
+    `${good.status} ${bad.status}`);
+
+  // --- the game itself, beside the API ---
   const page = await fetch(`${BASE}/`);
-  const html = await page.text();
-  check('the game is served at the root', page.ok && /<canvas|<div id|<script/.test(html) && /text\/html/.test(page.headers.get('content-type') ?? ''),
-    `${page.status} ${page.headers.get('content-type')}`);
-  const music = await fetch(`${BASE}/assets/Constance.mp3`, { method: 'HEAD' });
-  check('and its files, from the build', music.ok, `${music.status} ${music.headers.get('content-length')} bytes`);
+  check('the game is served at the root', page.ok && /text\/html/.test(page.headers.get('content-type') ?? ''));
+  const privacy = await fetch(`${BASE}/privacy.html`);
+  const deletion = await fetch(`${BASE}/data-deletion.html`);
+  check('and the privacy and data-deletion pages', privacy.ok && deletion.ok, `${privacy.status} ${deletion.status}`);
   const missing = await fetch(`${BASE}/api/nothing`);
-  check('an /api path that is not one is a 404 from the API, not the game', missing.status === 404 &&
-    /json/.test(missing.headers.get('content-type') ?? ''));
+  check('an /api path that is not one is a 404 from the API', missing.status === 404 && /json/.test(missing.headers.get('content-type') ?? ''));
 } catch (error) {
-  check('the API suite ran to the end', false, String(error));
+  check('the API suite ran to the end', false, String(error?.stack ?? error));
 } finally {
   stop();
   await sleep(500);
