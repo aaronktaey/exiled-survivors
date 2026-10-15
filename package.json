@@ -3,19 +3,23 @@
   "private": true,
   "version": "0.0.1",
   "type": "module",
-  "description": "Vampire Survivors style top-down survival game (Phaser 3 + Vite + TypeScript)",
+  "description": "Vampire Survivors style top-down survival game (Phaser 4 + Vite + TypeScript, served by a Cloudflare Worker)",
   "scripts": {
     "dev": "vite",
-    "build": "tsc --noEmit && vite build",
+    "dev:api": "wrangler d1 migrations apply DB --local && wrangler dev --port 8787",
+    "build": "tsc --noEmit && tsc --noEmit -p server && vite build",
     "preview": "vite preview",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit && tsc --noEmit -p server",
+    "deploy": "wrangler d1 migrations apply DB --remote && wrangler deploy"
   },
   "dependencies": {
     "phaser": "^4.2.1"
   },
   "devDependencies": {
+    "@cloudflare/workers-types": "^5.20261015.1",
     "@types/node": "^26.6.5",
     "typescript": "^7.0.2",
-    "vite": "^8.3.4"
+    "vite": "^8.3.4",
+    "wrangler": "^4.151.0"
   }
 }

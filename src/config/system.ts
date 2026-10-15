@@ -79,20 +79,24 @@ export const RANKING = {
    */
   flags: ['', 'KR', 'JP', 'CN', 'US', 'IN', 'TH', 'CA', 'MX', 'RU', 'TW'],
   /**
-   * The board shared between players, for now: one object on
-   * restful-api.dev — free, no account, open to the world. Anyone holding
-   * the address can read it and write it, and the service may drop it, so
-   * this is a stopgap until there is a server of our own. When it cannot be
-   * reached the board falls back to this device's records.
+   * The board shared between players: the game's own Worker (server/), on
+   * the same address as the game. When it cannot be reached the board falls
+   * back to this device's records.
    */
   shared: {
     enabled: true as boolean,
-    url: 'https://api.restful-api.dev/objects/ff808181a09d98f701a13a237e415e27',
-    name: 'exiled-survivors-ranking',
+    /** Same origin as the game, so it needs no CORS and no second domain. */
+    url: '/api/ranking',
     /** A request that takes longer than this is given up on. */
     timeoutMs: 6000,
     /** Above this a damage figure is not believed, and is not shown. */
     maxDamage: 1e10,
+    /**
+     * Turnstile's public site key: an invisible check that a person, not a
+     * script, is handing a run in. Empty means no check is asked for — the
+     * server only demands one once its secret is set.
+     */
+    turnstileSiteKey: '' as string,
   },
   /**
    * Whether the end of a run that made the board asks for a name at once.

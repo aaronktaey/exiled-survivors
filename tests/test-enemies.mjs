@@ -511,8 +511,19 @@ check('but still close enough that the bodies touch',
   kept.grunt.after < kept.grunt.touching && kept.brute.after < kept.brute.touching,
   `${kept.grunt.after}px, bodies overlap under ${kept.grunt.touching}`);
 
+// The kills above can have earned a level, and an open level-up popup holds
+// the fight — which once made this check fail now and then for no reason of
+// its own. Any popup is answered first, and no XP is taken while measuring.
+for (let i = 0; i < 6; i++) {
+  if (!(await cdp.evaluate(`window.game.scene.isActive('UpgradeScene')`))) break;
+  await sleep(400);
+  await cdp.tap('Space', 32, ' ');
+  await sleep(400);
+}
 const hurt = await run(`
   s.spawner.clear();
+  window.__addXp = s.progression.addXp;
+  s.progression.addXp = () => {};
   const p = s.player;
   p.setInvulnerable(false);
   p.invulnerableUntil = 0;
@@ -528,14 +539,18 @@ const hurt = await run(`
 await sleep(2600);
 const bled = await run(`
   const p = s.player;
-  const out = { hp: p.hp };
+  const near = s.spawner.group.getChildren().filter(e => e.active)
+    .map(e => Math.round(Math.hypot(e.x - p.x, e.y - p.y)));
+  const out = { hp: p.hp, choosing: s.choosing, paused: s.physics.world.isPaused,
+    alive: near.length, nearest: Math.min(...near) };
+  s.progression.addXp = window.__addXp;
   s.spawner.clear();
   p.hp = 30;
   return out;
 `);
 console.log('standing in a crowd:', JSON.stringify({ before: hurt.before, after: bled.hp }));
 check('standing in a crowd still costs health',
-  bled.hp < hurt.before, `${hurt.before} -> ${bled.hp}`);
+  bled.hp < hurt.before, `${hurt.before} -> ${bled.hp} ${JSON.stringify(bled)}`);
 await shot('enemies-05-player-room');
 
 // --- 12. 연발 only goes where there is a shot to put it on ---

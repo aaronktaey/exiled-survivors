@@ -216,32 +216,49 @@ check('the board draws it beside the name', drawn.includes('tex-flag-JP'), drawn
 await scene('RankingScene', `s.backButton.press(); return 1;`);
 await sleep(400);
 
-// --- 9. the shared board, against a stand-in for the real one ---
+// --- 9. the shared board, against a stand-in for the game's Worker ---
 // The harness never touches the real board; here fetch is replaced by an
-// in-page store that answers the way the real one does.
+// in-page server that answers the way server/index.ts does.
 const shared = await cdp.send('Runtime.evaluate', { awaitPromise: true, returnByValue: true, expression: `(async () => {
   const R = window.config.RANKING;
   const realFetch = window.fetch;
-  const remote = { name: R.shared.name, data: { v: 1, entries: [
-    { name: 'FAR', emoji: '', flag: 'BR', damage: 99999, level: 9, survivedMs: 1, at: '2026-01-01T00:00:00Z' },
+  const board = [
+    { name: 'FAR', emoji: '', flag: 'TW', damage: 99999, level: 9, survivedMs: 60000, at: '2026-01-01T00:00:00Z' },
     { name: 'BAD', emoji: '', flag: '', damage: 1e15, level: 1, survivedMs: 1, at: 'x' },
-  ] } };
-  const puts = [];
+  ];
+  const posts = [];
   let down = false;
+  const reply = (body, status = 200) =>
+    new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
   window.fetch = async (url, init) => {
     if (down) throw new TypeError('offline');
-    if (init?.method === 'PUT') { const b = JSON.parse(init.body); puts.push(b); remote.data = b.data; }
-    return new Response(JSON.stringify(remote), { status: 200, headers: { 'Content-Type': 'application/json' } });
+    if (String(url) !== R.shared.url) return reply({ error: 'not found' }, 404);
+    if (init?.method === 'POST') {
+      const run = JSON.parse(init.body);
+      posts.push(run);
+      // The server turns this one down, the way it does a typed-in number.
+      if (run.name === 'REJ') return reply({ error: 'pace' }, 400);
+      board.push({ ...run, at: new Date().toISOString() });
+      board.sort((a, b) => b.damage - a.damage);
+      return reply({ ok: true, place: 1, entries: board });
+    }
+    return reply({ entries: board });
   };
   R.shared.enabled = true;
   const out = {};
   try {
+    // Something only this device ever had: the server's board replaces it.
+    window.ranking.submit({ name: 'OLD', emoji: '', flag: '', damage: 5, level: 1, survivedMs: 9000 });
     out.source = await window.ranking.refresh();
     out.top = window.ranking.top.map((e) => e.name + ':' + e.flag);
-    window.ranking.submit({ name: 'NEW', emoji: '', flag: 'US', damage: 150000, level: 2, survivedMs: 1 });
-    await new Promise((r) => setTimeout(r, 200));
-    out.put = puts.length ? puts[puts.length - 1].data.entries.map((e) => e.name) : [];
+    window.ranking.submit({ name: 'NEW', emoji: '', flag: 'US', damage: 150000, level: 2, survivedMs: 60000 });
+    await new Promise((r) => setTimeout(r, 300));
+    out.posted = posts.map((p) => ({ name: p.name, token: 'token' in p }));
     out.afterPush = window.ranking.source;
+    out.withNew = window.ranking.top.map((e) => e.name);
+    window.ranking.submit({ name: 'REJ', emoji: '', flag: '', damage: 999999, level: 2, survivedMs: 60000 });
+    await new Promise((r) => setTimeout(r, 300));
+    out.afterReject = window.ranking.top.map((e) => e.name);
     down = true;
     out.offline = await window.ranking.refresh();
     out.kept = window.ranking.top.length;
@@ -253,12 +270,16 @@ const shared = await cdp.send('Runtime.evaluate', { awaitPromise: true, returnBy
 })()` });
 const sh = shared.result?.result?.value ?? {};
 console.log('shared:', JSON.stringify(sh));
-check('the shared board is folded into this one when it is read',
-  sh.source === 'shared' && sh.top?.[0] === 'FAR:', JSON.stringify(sh.top));
-check('a flag it does not offer, and a damage past belief, are not taken from it',
-  !sh.top?.some((n) => n.startsWith('BAD')), JSON.stringify(sh.top));
-check('a run entered here is written back to it, with what was already there',
-  sh.put?.[0] === 'NEW' && sh.put?.includes('FAR') && sh.afterPush === 'shared', JSON.stringify(sh.put));
+check('the server’s board replaces this device’s when it is read',
+  sh.source === 'shared' && sh.top?.[0] === 'FAR:TW' && !sh.top?.some((n) => n.startsWith('OLD')),
+  JSON.stringify(sh.top));
+check('a damage past belief is not taken from it', !sh.top?.some((n) => n.startsWith('BAD')), JSON.stringify(sh.top));
+check('a run entered here is handed in, with its check token, and the board sent back is shown',
+  sh.posted?.some((p) => p.name === 'NEW' && p.token) && sh.afterPush === 'shared' &&
+    sh.withNew?.[0] === 'NEW' && sh.withNew?.includes('FAR'),
+  JSON.stringify({ posted: sh.posted, board: sh.withNew }));
+check('a run the server turns down does not stay on the board',
+  !sh.afterReject?.includes('REJ') && sh.afterReject?.includes('NEW'), JSON.stringify(sh.afterReject));
 check('and when it cannot be reached, this device’s board stays and says so',
   sh.offline === 'offline' && sh.kept >= 2);
 

@@ -1,8 +1,13 @@
 # Exiled Survivors — working notes
 
-Vampire-Survivors-like, in the browser. Vite + TypeScript + Phaser 4, deployed
-to GitHub Pages on every push to `main`:
-<https://aaronktaey.github.io/exiled-survivors/>
+Vampire-Survivors-like, in the browser. Vite + TypeScript + Phaser 4.
+
+**Moving to Cloudflare (branch `cloudflare`, not yet merged).** Until it is
+merged, `main` still deploys the game to GitHub Pages:
+<https://aaronktaey.github.io/exiled-survivors/>. After the merge, one Worker
+(`wrangler.jsonc`, `server/`) serves the game and its ranking API on the
+user's own domain, and GitHub Pages serves only `bridge/index.html`, which
+sends players there with their records (see "Cloudflare" below).
 
 This file is the handover between sessions. Read it first; it is written for
 whoever picks the work up next, which is usually a fresh Claude Code context
@@ -72,7 +77,7 @@ wrong shape.
 ## The test harness
 
 `tests/` drives a real Chrome over CDP against the dev server and checks the
-running game, not units. 36 suites, ~935 checks. It is the only thing that has
+running game, not units. 38 suites, ~980 checks. It is the only thing that has
 caught most of what has gone wrong here, so run all of it before every commit.
 
 ```sh
@@ -83,7 +88,7 @@ node run-all.mjs test-full test-skills test-balance test-chain test-ice \
   test-hud test-expiry test-audio test-touch test-shell test-shell2 test-info \
   test-i18n test-gear test-passive test-responsive test-stats test-bones \
   test-altar test-slot test-inventory test-locale test-back test-fugitive \
-  test-ranking test-skillpick test-mango test-web test-loadout
+  test-ranking test-skillpick test-mango test-web test-loadout \n  test-carry test-api
 ```
 
 `run-all.mjs` starts Chrome itself (`CHROME_PATH` overrides where it looks),
@@ -197,14 +202,34 @@ Read `git log` for what changed and when. What is not in the log:
 - **도망자 is table-driven.** `flee`, `lifespanMs`, `guaranteedSkill` and
   `flashy` on an `ENEMY_KINDS` entry give any kind that behaviour; the
   fugitive is the only one using them. It spawns on `FUGITIVE`'s clock.
-- **랭킹 is shared through a stopgap.** Every board is kept locally
-  (`STORAGE.ranking`) and folded together with one object on restful-api.dev
-  (`RANKING.shared.url`) — free, no account, readable and writable by anyone
-  with the address, and liable to vanish. Two entries at the same moment can
-  overwrite each other. Replace the store's `pull`/`request` with a real
-  server when there is one; the screens only touch `top`, `placeFor`,
-  `submit`, `refresh` and `source`. Flags are drawn textures
+- **랭킹 is the Worker's.** `GET/POST /api/ranking` (server/index.ts, D1
+  table `entries`). The server's board replaces the device's on `refresh`; a
+  submission is shown at once, handed in with a Turnstile token, and
+  replaced by the board the server answers with. The server checks the run
+  against `RANKING` (shared with the client) and its own `RULES` (time,
+  pace, a per-address cooldown and daily cap on a salted address hash), and
+  caches the board at the edge for `RULES.cacheSeconds`. Turnstile is only
+  enforced once the `TURNSTILE_SECRET` secret is set; the site key goes in
+  `RANKING.shared.turnstileSiteKey`. The screens only touch `top`,
+  `placeFor`, `submit`, `refresh` and `source`. Flags are drawn textures
   (`tex-flag-XX`), not emoji: Windows has no flag emoji.
+- **Cloudflare.** One Worker with static assets: `dist/` is served without
+  running the Worker (free, unlimited); only `/api/*` runs `server/index.ts`.
+  `npm run dev:api` runs it locally on 8787 and Vite proxies `/api` there.
+  `.github/workflows/cloudflare.yml` builds, applies D1 migrations
+  (`server/migrations/`) and deploys on push to main, given the secrets
+  `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`. `deploy.yml` now only
+  publishes the bridge to GitHub Pages, pointed at the repository variable
+  `NEW_ORIGIN`. test-api runs the Worker itself on 8788 with a throwaway
+  database; it needs no browser.
+- **이사 (moving the records).** localStorage belongs to one address, so the
+  old one's `bridge/index.html` gathers every `exiled-survivors:` key but the
+  ranking and lands on the new one with `#carry=<base64url>`;
+  `src/systems/CarryOver.ts` is the first import in main.ts and writes them in
+  before any store reads storage (asking first if this browser already has
+  records here). test-carry covers it.
+- **Music.** `public/assets/Constance.mp3` is a 96 kbps encode (1.7 MB); the
+  320 kbps original is `assets-src/music/Constance.mp3`.
 - **One drop rule.** Every ordinary drop is multiplied by the kill's
   `Enemy.dropBonus`: 1 + `RARE.dropBonusPerAffix` per 속성 on a rare,
   1 + `BOSS.dropBonus` for a 우두머리. What only a 우두머리 leaves (its

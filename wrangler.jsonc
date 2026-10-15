@@ -1,0 +1,25 @@
+// One Worker for the whole game: the built files under ./dist, and the
+// ranking API under /api (server/index.ts). Static files are served by
+// Cloudflare without running the Worker, so they cost nothing.
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "exiled-survivors",
+  "main": "server/index.ts",
+  "compatibility_date": "2025-09-01",
+  "assets": {
+    "directory": "./dist",
+    "binding": "ASSETS",
+    // Only the API runs the Worker; everything else is a file.
+    "run_worker_first": ["/api/*"]
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "exiled-survivors",
+      // Filled in once the database is created on the account (stage 3).
+      "database_id": "00000000-0000-0000-0000-000000000000",
+      "migrations_dir": "server/migrations"
+    }
+  ],
+  "observability": { "enabled": true }
+}

@@ -1,5 +1,10 @@
 name: Deploy to GitHub Pages
 
+# The game lives on Cloudflare now (cloudflare.yml). The old GitHub Pages
+# address stays up only to send players there with their records: it serves
+# bridge/index.html, pointed at the repository variable NEW_ORIGIN
+# (e.g. https://example.com), on every path.
+
 on:
   push:
     branches: [main]
@@ -18,21 +23,26 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      NEW_ORIGIN: ${{ vars.NEW_ORIGIN }}
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-          cache: npm
-
-      - run: npm ci
-      - run: npm run build
+      - name: Point the bridge at the new address
+        run: |
+          if [ -z "$NEW_ORIGIN" ]; then
+            echo "::error::Set the repository variable NEW_ORIGIN (e.g. https://example.com) first."
+            exit 1
+          fi
+          mkdir -p _site
+          sed "s#__NEW_ORIGIN__#${NEW_ORIGIN%/}#g" bridge/index.html > _site/index.html
+          # Any old deep link lands on the bridge too.
+          cp _site/index.html _site/404.html
 
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: dist
+          path: _site
 
   deploy:
     needs: build

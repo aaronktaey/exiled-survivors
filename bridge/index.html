@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Exiled Survivors — 새 주소로 이사했습니다</title>
+    <meta name="robots" content="noindex" />
+    <style>
+      :root { color-scheme: dark; }
+      body {
+        margin: 0; min-height: 100vh; display: grid; place-items: center;
+        background: #0b0d12; color: #f4f1e8;
+        font: 16px/1.6 system-ui, sans-serif; text-align: center; padding: 16px;
+      }
+      a { color: #ffd34d; }
+      p { margin: 8px 0; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <p><strong>Exiled Survivors</strong>가 새 주소로 이사했습니다. 기록을 챙겨 이동하는 중…</p>
+      <p>The game has moved. Taking your records along…</p>
+      <p><a id="go" href="#">새 주소로 가기 · Go to the new address</a></p>
+    </main>
+    <script>
+      // The old address's last job: gather the game's records from this
+      // browser and take them to the new address in the URL's fragment,
+      // which never leaves the browser. src/systems/CarryOver.ts writes them
+      // in on the other side. Filled in when the new domain is known.
+      const NEW_ORIGIN = '__NEW_ORIGIN__';
+      const PREFIX = 'exiled-survivors:';
+      // The ranking starts over on the new server; the old local board stays.
+      const LEFT_BEHIND = ['exiled-survivors:ranking:v1'];
+
+      function encode(payload) {
+        const bytes = new TextEncoder().encode(JSON.stringify(payload));
+        let binary = '';
+        bytes.forEach((b) => (binary += String.fromCharCode(b)));
+        return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+      }
+
+      let target = NEW_ORIGIN + '/';
+      try {
+        const items = {};
+        for (let i = 0; i < localStorage.length; i++) {
+          const key = localStorage.key(i);
+          if (key && key.startsWith(PREFIX) && !LEFT_BEHIND.includes(key)) {
+            items[key] = localStorage.getItem(key);
+          }
+        }
+        if (Object.keys(items).length > 0) {
+          target += '#carry=' + encode({ v: 1, items });
+        }
+      } catch (error) {
+        // No storage to read: go anyway, empty-handed.
+      }
+      document.getElementById('go').href = target;
+      location.replace(target);
+    </script>
+  </body>
+</html>
