@@ -81,6 +81,8 @@ export interface Strings {
   };
 
   readonly menu: {
+    /** Over the title while it reloads onto a new version. */
+    readonly updating: string;
     readonly byline: string;
     readonly start: string;
     readonly load: string;

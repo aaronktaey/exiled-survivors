@@ -27,6 +27,7 @@ export const ko: Strings = {
   },
 
   menu: {
+    updating: '새 버전으로 업데이트합니다…',
     byline: 'created by whitemango',
     start: '게임 시작',
     load: '불러오기',

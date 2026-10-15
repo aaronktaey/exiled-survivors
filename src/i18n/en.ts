@@ -23,6 +23,7 @@ export const en: Strings = {
   },
 
   menu: {
+    updating: 'Updating to the new version…',
     byline: 'created by whitemango',
     start: 'New Run',
     load: 'Continue',

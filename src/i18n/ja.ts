@@ -23,6 +23,7 @@ export const ja: Strings = {
   },
 
   menu: {
+    updating: '新しいバージョンに更新します…',
     byline: 'created by whitemango',
     start: 'ゲーム開始',
     load: 'つづきから',

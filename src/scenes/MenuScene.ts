@@ -4,6 +4,7 @@ import {
   ACCOUNT,
   COLORS,
   DEPTH,
+  LIVE_UPDATE,
   MENU,
   SCENES,
   SCRIM,
@@ -25,6 +26,7 @@ import { prefersTouchControls } from '@/systems/VirtualJoystick';
 import { account } from '@/systems/Account';
 import { cloudSave } from '@/systems/CloudSave';
 import { takePendingRank } from '@/systems/PendingRank';
+import { liveUpdate } from '@/systems/LiveUpdate';
 
 /** Syncing starts once per page, the first time the title finds someone signed in. */
 let syncStarted = false;
@@ -42,9 +44,19 @@ export class MenuScene extends Phaser.Scene {
   /** First place under the logo, when there is one. Public for tests. */
   public champion?: Phaser.GameObjects.Text;
   private championFlag?: Phaser.GameObjects.Image;
+  /** Reloading onto a new version: the title takes no more input. */
+  public updating = false;
+  /** "새 버전으로 업데이트합니다…", while it is. Public for tests. */
+  public updatingText?: Phaser.GameObjects.Text;
 
   public constructor() {
     super(MenuScene.KEY);
+  }
+
+  public init(): void {
+    // The scene outlives a launch.
+    this.updating = false;
+    this.updatingText = undefined;
   }
 
   public create(): void {
@@ -157,8 +169,43 @@ export class MenuScene extends Phaser.Scene {
     });
     void this.settleAccount();
 
+    // A newer version: taken here, on the title with nothing open, never mid-run.
+    const offerUpdate = (): void => {
+      if (!this.updating && liveUpdate.safeNow(this.game)) {
+        this.applyUpdate();
+      }
+    };
+    const unwatchUpdate = liveUpdate.onPending(offerUpdate);
+    this.events.on(Phaser.Scenes.Events.RESUME, offerUpdate);
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      unwatchUpdate();
+      this.events.off(Phaser.Scenes.Events.RESUME, offerUpdate);
+    });
+    this.time.delayedCall(0, offerUpdate);
+
     // The track is multi-megabyte, so it arrives a moment after the menu.
     bgm.start(this);
+  }
+
+  /** Says so, takes no more input, and reloads onto the new version. */
+  private applyUpdate(): void {
+    this.updating = true;
+    const { width, height } = this.scale;
+    this.add
+      .rectangle(0, 0, width, height, 0x05070b, 0.75)
+      .setOrigin(0, 0)
+      .setDepth(DEPTH.ui + 50)
+      .setInteractive();
+    this.updatingText = this.add
+      .text(width / 2, height / 2, t().menu.updating, {
+        fontFamily: 'system-ui, sans-serif',
+        fontSize: TEXT.size.body,
+        color: COLORS.text,
+      })
+      .setOrigin(0.5)
+      .setDepth(DEPTH.ui + 51);
+    this.input.keyboard?.removeAllListeners();
+    this.time.delayedCall(LIVE_UPDATE.noticeMs, () => liveUpdate.apply());
   }
 
   /** The pixel logo, drifting slowly up and down. */

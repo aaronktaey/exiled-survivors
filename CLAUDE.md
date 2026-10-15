@@ -75,7 +75,7 @@ wrong shape.
 ## The test harness
 
 `tests/` drives a real Chrome over CDP against the dev server and checks the
-running game, not units. 39 suites, ~1030 checks. It is the only thing that has
+running game, not units. 40 suites, ~1050 checks. It is the only thing that has
 caught most of what has gone wrong here, so run all of it before every commit.
 
 ```sh
@@ -87,7 +87,7 @@ node run-all.mjs test-full test-skills test-balance test-chain test-ice \
   test-i18n test-gear test-passive test-responsive test-stats test-bones \
   test-altar test-slot test-inventory test-locale test-back test-fugitive \
   test-ranking test-skillpick test-mango test-web test-loadout \
-  test-carry test-api test-account
+  test-carry test-api test-account test-live
 ```
 
 `run-all.mjs` starts Chrome itself (`CHROME_PATH` overrides where it looks),
@@ -276,6 +276,13 @@ Read `git log` for what changed and when. What is not in the log:
   Worker secret `ADMIN_USERS` (comma separated; `/api/me` answers
   `admin: true`). A run any F-key changed (`DebugOverlay.used`, kept in the
   save as `devUsed`) goes on neither the ranking nor 내 기록.
+- **Live update.** Every build ships `version.json` (`{ build }`, the commit
+  on CI) and is compiled knowing its own id (`__BUILD_ID__`, vite.config.ts).
+  `systems/LiveUpdate.ts` asks every `LIVE_UPDATE.checkEveryMs` and when the
+  tab returns; a newer build is applied only on the title with nothing else
+  running (`safeNow`), by a reload — never mid-run. A reload that comes back
+  on the old build is not retried (sessionStorage). Off on the dev server
+  (`current === 'dev'`); test-live drives it through `liveUpdate.found`.
 - **Touch never holds the run.** A phone fires a pretend mouse event after a
   tap; landing on a rare under a just-closed card used to set `inspecting`
   and freeze the arena and the pad. `setInspecting` ignores it on touch

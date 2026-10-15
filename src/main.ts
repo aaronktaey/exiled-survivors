@@ -11,6 +11,7 @@ import { settings } from '@/systems/Settings';
 import { registerSharpText } from '@/systems/SharpText';
 import { gear, gearBonusFor, orbApplied } from '@/systems/Gear';
 import { ranking } from '@/systems/Ranking';
+import { liveUpdate } from '@/systems/LiveUpdate';
 import { personal } from '@/systems/PersonalBest';
 import { account } from '@/systems/Account';
 import { cloudSave } from '@/systems/CloudSave';
@@ -97,6 +98,9 @@ const config: Phaser.Types.Core.GameConfig = {
 
 const game = new Phaser.Game(config);
 
+// Asks, now and then, whether a newer version is out (never on the dev server).
+liveUpdate.start();
+
 // Console handles for poking at the running game while developing. The
 // stash is one of them because it outlives a run, so it cannot be reached
 // through a scene. `import.meta.env.DEV` is false in builds, so this drops
@@ -114,6 +118,7 @@ if (import.meta.env.DEV) {
     orbApplied?: typeof orbApplied;
     critMultiplierFor?: typeof critMultiplierFor;
     ranking?: typeof ranking;
+    liveUpdate?: typeof liveUpdate;
     personal?: typeof personal;
     account?: typeof account;
     cloudSave?: typeof cloudSave;
@@ -130,6 +135,7 @@ if (import.meta.env.DEV) {
   dev.orbApplied = orbApplied;
   dev.critMultiplierFor = critMultiplierFor;
   dev.ranking = ranking;
+  dev.liveUpdate = liveUpdate;
   dev.personal = personal;
   dev.account = account;
   dev.cloudSave = cloudSave;

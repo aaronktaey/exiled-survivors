@@ -23,6 +23,7 @@ export const zh: Strings = {
   },
 
   menu: {
+    updating: '正在更新到新版本…',
     byline: 'created by whitemango',
     start: '开始游戏',
     load: '继续游戏',

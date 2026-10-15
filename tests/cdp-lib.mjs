@@ -54,8 +54,11 @@ export async function connect(port = 9333) {
     }
   };
 
+  // The dev-only handles main.ts hangs on window once the game has booted.
+  const DEV_HANDLE = /window\.(game|config|gear|orbs|bones|passives|gold|ranking|personal|account|cloudSave|liveUpdate|gearBonusFor|orbApplied|critMultiplierFor)/;
+
   const evaluate = async (expr) => {
-    if (expr.includes('window.game')) await ready();
+    if (DEV_HANDLE.test(expr)) await ready();
     const r = await send('Runtime.evaluate', { expression: `(() => { try { return JSON.stringify(${expr}); } catch (e) { return JSON.stringify({ __err: String(e) }); } })()`, returnByValue: true });
     const v = r.result?.result?.value;
     return v ? JSON.parse(v) : { __err: 'no value', raw: JSON.stringify(r).slice(0, 200) };

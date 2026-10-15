@@ -124,6 +124,19 @@ export const RANKING = {
   promptOnDeath: true as boolean,
 } as const;
 
+/**
+ * 실시간 업데이트 — how an open page finds out a new version is out
+ * (systems/LiveUpdate.ts). It reloads only on the title screen.
+ */
+export const LIVE_UPDATE = {
+  /** How often an open page asks. A static file: it costs nothing. */
+  checkEveryMs: 5 * 60_000,
+  /** The file every build ships, naming itself. */
+  path: 'version.json',
+  /** How long the title says it is updating before it reloads. */
+  noticeMs: 1200,
+} as const;
+
 const DAY_MS = 86_400_000;
 
 /** When the shared board's current day began, in ms since the epoch. */

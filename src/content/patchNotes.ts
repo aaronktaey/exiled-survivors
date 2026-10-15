@@ -15,6 +15,24 @@ export interface PatchNote {
 
 export const PATCH_NOTES: readonly PatchNote[] = [
   {
+    version: '0.34',
+    date: '2026-10-15',
+    changes: {
+      ko: [
+        '게임을 켜 둔 채로 새 버전이 나오면, 타이틀 화면에 있을 때 자동으로 업데이트됩니다. 진행 중인 판이나 열려 있는 창은 건드리지 않고, 판이 끝나 타이틀로 돌아오면 그때 적용됩니다.',
+      ],
+      en: [
+        'If a new version comes out while the game is open, it updates itself on the title screen. A run in progress or an open screen is never interrupted — it is applied when you are back on the title.',
+      ],
+      ja: [
+        'ゲームを開いたまま新しいバージョンが出ると、タイトル画面にいるときに自動で更新されます。進行中の回や開いている画面には触れず、タイトルに戻ったときに適用されます。',
+      ],
+      zh: [
+        '游戏开着时若有新版本，会在标题画面自动更新。不会打断正在进行的一局或打开的画面，回到标题画面时才会应用。',
+      ],
+    },
+  },
+  {
     version: '0.33',
     date: '2026-10-15',
     changes: {
