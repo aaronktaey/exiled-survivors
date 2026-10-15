@@ -40,7 +40,8 @@ const orbState = () => run(`
     tex: o.texture.key,
     size: Math.round(o.displayWidth),
   }));
-  return { count: orbs.length, orbs, stats: s.progression.statsFor('voidOrb') };
+  return { count: orbs.length, orbs, stats: s.progression.statsFor('voidOrb'),
+    drawn: Math.round(window.config.VOID_ORB.radius * 2) };
 `);
 
 await cdp.send('Page.reload', {});
@@ -88,7 +89,7 @@ check(`the ${BASE_ORBS} starting orbs are spaced evenly round the circle`,
   gapsOf(placed.orbs).every((gap) => Math.abs(gap - 360 / BASE_ORBS) <= 3),
   `gaps ${gapsOf(placed.orbs).join('° / ')}°`);
 check('they are drawn from the void orb texture',
-  placed.orbs.every(o => o.tex === 'tex-void-orb' && o.size === 18),
+  placed.orbs.every(o => o.tex === 'tex-void-orb' && o.size === placed.drawn),
   `${placed.orbs[0].tex} at ${placed.orbs[0].size}px`);
 
 // --- 3. clockwise, at the configured speed ---
