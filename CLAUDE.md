@@ -222,6 +222,12 @@ Read `git log` for what changed and when. What is not in the log:
   publishes the bridge to GitHub Pages, pointed at the repository variable
   `NEW_ORIGIN`. test-api runs the Worker itself on 8788 with a throwaway
   database; it needs no browser.
+- **The repo goes private after the move (user's choice, 2026-10-15).** It is
+  public only because GitHub Pages on the Free plan needs a public repo, and
+  Pages now only serves the bridge. Around 2026-12-15, once players have had
+  time to come across, make it private: the old github.io address then stops,
+  Cloudflare deploys keep working (Actions run on private repos). Confirm
+  with the user before changing visibility.
 - **이사 (moving the records).** localStorage belongs to one address, so the
   old one's `bridge/index.html` gathers every `exiled-survivors:` key but the
   ranking and lands on the new one with `#carry=<base64url>`;

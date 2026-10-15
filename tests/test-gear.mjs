@@ -1291,7 +1291,12 @@ await sleep(500);
 // --- 희귀 drops stand in a pillar of light ---
 await cdp.send('Page.navigate', { url: 'http://localhost:5173/#run' });
 await cdp.send('Page.reload', {});
-await sleep(4200);
+// Until the run is really up: a fixed wait was too short on a busy machine.
+for (let i = 0; i < 40; i++) {
+  await sleep(500);
+  const up = await ev(`!!window.game?.scene.getScene('GameScene')?.player?.active`);
+  if (up === true) break;
+}
 const pillars = await run(`
   s.player.setInvulnerable(true);
   s.choosing = true;

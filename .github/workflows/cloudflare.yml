@@ -57,3 +57,7 @@ jobs:
 
       - if: steps.ready.outputs.go == 'true'
         run: npx wrangler deploy
+
+      # www, sent on to the bare domain.
+      - if: steps.ready.outputs.go == 'true'
+        run: npx wrangler deploy --config wrangler.www.jsonc

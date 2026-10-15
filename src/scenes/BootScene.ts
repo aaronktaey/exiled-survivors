@@ -106,6 +106,11 @@ export class BootScene extends Phaser.Scene {
       // ranking every player sees. test-ranking points it at a stand-in.
       (RANKING.shared as { enabled: boolean }).enabled = false;
     }
+    if (import.meta.env.DEV) {
+      // Turnstile only knows the real domain, and `wrangler dev` has no secret
+      // to check a token with — so on the dev server nothing is asked for.
+      (RANKING.shared as { turnstileSiteKey: string }).turnstileSiteKey = '';
+    }
     this.scene.start(skipMenu ? SCENES.game : SCENES.menu);
   }
 

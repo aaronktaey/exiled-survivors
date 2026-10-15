@@ -15,6 +15,32 @@ export interface PatchNote {
 
 export const PATCH_NOTES: readonly PatchNote[] = [
   {
+    version: '0.29',
+    date: '2026-10-15',
+    changes: {
+      ko: [
+        '게임이 새 주소 exiledsurvivors.com 으로 이사했습니다. 옛 주소로 들어오면 이 브라우저의 기록(장비·패시브·구슬·뼈다귀·저장된 판·설정)을 챙겨 새 주소로 자동으로 옮겨 갑니다. 새 주소에 이미 기록이 있으면 바꿀지 먼저 묻습니다.',
+        '랭킹이 게임 전용 서버로 옮겨 가며 새로 시작합니다. 서버가 기록을 확인해 말이 안 되는 수치나 너무 잦은 제출은 받지 않고, 보이지 않는 사람 확인을 거칩니다(필요할 때만 확인 상자가 나타납니다). 두 사람이 동시에 올려도 기록이 사라지지 않습니다.',
+        '배경음악 용량을 5.6MB에서 1.7MB로 줄여 처음 들어올 때 더 빨리 열립니다.',
+      ],
+      en: [
+        'The game has moved to exiledsurvivors.com. Coming in through the old address takes this browser’s records along (gear, passives, orbs, Bones, the saved run, settings) and moves you over automatically. If you already have records at the new address, you are asked first.',
+        'The ranking has its own server now and starts over. The server checks every run, turning down impossible numbers and too-frequent entries, behind an invisible check that you are a person (a box only appears when it is needed). Two runs entered at once no longer overwrite each other.',
+        'The music is down from 5.6 MB to 1.7 MB, so the game opens faster the first time.',
+      ],
+      ja: [
+        'ゲームは新しいアドレス exiledsurvivors.com に引っ越しました。以前のアドレスから入ると、このブラウザの記録（装備・パッシブ・球・骨・セーブした回・設定）を持って自動で新しいアドレスへ移ります。新しいアドレスにすでに記録がある場合は、置き換えるか先に確認します。',
+        'ランキングはゲーム専用のサーバーに移り、新しく始まります。サーバーが記録を確認し、ありえない数値や頻繁すぎる送信は受け付けず、見えない人間確認を通します（必要なときだけ確認ボックスが出ます）。同時に送っても記録が消えなくなりました。',
+        'BGM の容量を 5.6MB から 1.7MB に減らし、初回の起動が速くなりました。',
+      ],
+      zh: [
+        '游戏已搬到新地址 exiledsurvivors.com。从旧地址进入时，会带上本浏览器的记录（装备·被动·宝珠·骨头·存档·设置）自动前往新地址。新地址已有记录时会先询问是否替换。',
+        '排行榜搬到游戏专用服务器并重新开始。服务器会检查每条记录，拒绝不合理的数值和过于频繁的提交，并经过不可见的真人验证（只在需要时出现勾选框）。两人同时提交也不会再互相覆盖。',
+        '背景音乐由 5.6MB 缩小到 1.7MB，首次进入时打开更快。',
+      ],
+    },
+  },
+  {
     version: '0.28',
     date: '2026-10-15',
     changes: {

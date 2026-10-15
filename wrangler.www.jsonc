@@ -1,0 +1,10 @@
+// www.exiledsurvivors.com, sent on to the bare domain (server/www/index.ts).
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "exiled-survivors-www",
+  "main": "server/www/index.ts",
+  "compatibility_date": "2025-09-01",
+  "routes": [{ "pattern": "www.exiledsurvivors.com", "custom_domain": true }],
+  "workers_dev": false,
+  "preview_urls": false
+}

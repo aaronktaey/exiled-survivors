@@ -10,7 +10,7 @@
     "build": "tsc --noEmit && tsc --noEmit -p server && vite build",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit && tsc --noEmit -p server",
-    "deploy": "wrangler d1 migrations apply DB --remote && wrangler deploy"
+    "deploy": "wrangler d1 migrations apply DB --remote && wrangler deploy && wrangler deploy --config wrangler.www.jsonc"
   },
   "dependencies": {
     "phaser": "^4.2.1"

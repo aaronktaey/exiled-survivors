@@ -96,7 +96,7 @@ export const RANKING = {
      * script, is handing a run in. Empty means no check is asked for — the
      * server only demands one once its secret is set.
      */
-    turnstileSiteKey: '' as string,
+    turnstileSiteKey: '0x4AAAAAAFXSrV0Ay68wbrSe' as string,
   },
   /**
    * Whether the end of a run that made the board asks for a name at once.
