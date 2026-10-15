@@ -1,0 +1,10 @@
+# Files Vite copies into dist/ that must never be served. The raw art pack
+# is a paid asset kept locally for picking icons from (only assets/icons/
+# ships), and the jackpot / reel clips are kept for later, unused.
+.assetsignore
+assets/Free - Raven Fantasy Icons
+assets/jackpothighlight.wav
+assets/jackpotrunning.wav
+assets/slotending.mp3
+assets/slotrunning.mp3
+assets/slotrunning2.wav

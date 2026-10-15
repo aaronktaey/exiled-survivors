@@ -16,8 +16,7 @@
     {
       "binding": "DB",
       "database_name": "exiled-survivors",
-      // Filled in once the database is created on the account (stage 3).
-      "database_id": "00000000-0000-0000-0000-000000000000",
+      "database_id": "2a40220d-d593-4f4b-ac61-babdcea14fba",
       "migrations_dir": "server/migrations"
     }
   ],
