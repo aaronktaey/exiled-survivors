@@ -181,7 +181,7 @@ try {
   await bob.signIn('bob');
   await read(await bob.send('/api/ranking', 'POST', run({ name: 'BOB', damage: 40000 })));
   await sleep(16000);
-  const better = await read(await alice.send('/api/ranking', 'POST', run({ name: 'ACE', damage: 80000 })));
+  const better = await read(await alice.send('/api/ranking', 'POST', run({ name: 'ACE', damage: 80000, skill: 'fireball' })));
   const board = await read(await fetch(`${BASE}/api/ranking`));
   check('the board holds each account’s best once, under the name it last used',
     better.status === 200 && board.body?.entries?.length === 2 &&
@@ -201,6 +201,13 @@ try {
     !kept.body?.entries?.some((e) => e.name === 'OLD' || e.damage === 999999999) &&
       bossBest.body?.best === null && bossBest.body?.place === 0,
     JSON.stringify({ board: kept.body?.entries?.map((e) => e.name), boss: bossBest.body }));
+  check('a run on the board carries the skill it was played on',
+    kept.body?.entries?.find((e) => e.name === 'ACE')?.skill === 'fireball' &&
+      kept.body?.entries?.find((e) => e.name === 'BOB')?.skill === '',
+    JSON.stringify(kept.body?.entries?.map((e) => `${e.name}:${e.skill}`)));
+  check('the first place of a finished day is counted as a win for that account, once',
+    bossBest.body?.wins === 1 && kept.body?.entries?.find((e) => e.name === 'ACE')?.wins === 0,
+    JSON.stringify({ boss: bossBest.body?.wins, ace: kept.body?.entries?.find((e) => e.name === 'ACE')?.wins }));
 
   // --- the cloud save ---
   const empty = await read(await alice.call('/api/save'));

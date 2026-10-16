@@ -15,6 +15,10 @@ export interface RankEntry {
   readonly survivedMs: number;
   /** When it was set, as an ISO string. */
   readonly at: string;
+  /** The skill the run was played on (its first, main skill), or empty. */
+  readonly skill: string;
+  /** How many days the account behind it finished first on the shared board. */
+  readonly wins: number;
 }
 
 /** What a run hands in to be ranked. */
@@ -25,6 +29,8 @@ export interface RankSubmission {
   readonly damage: number;
   readonly level: number;
   readonly survivedMs: number;
+  /** The run's main skill. */
+  readonly skill?: string;
 }
 
 /** Where the board on screen came from. */
@@ -99,6 +105,8 @@ function clean(raw: unknown): RankEntry | null {
     level: Math.max(1, Math.floor(Number(e.level) || 1)),
     survivedMs: Math.max(0, Math.floor(Number(e.survivedMs) || 0)),
     at: String(e.at ?? ''),
+    skill: /^[A-Za-z]{1,32}$/.test(String(e.skill ?? '')) ? String(e.skill) : '',
+    wins: Math.max(0, Math.floor(Number(e.wins) || 0)),
   };
 }
 
@@ -248,6 +256,7 @@ class RankingStore {
       damage: entry.damage,
       level: entry.level,
       survivedMs: entry.survivedMs,
+      skill: entry.skill,
     });
     return place;
   }

@@ -299,7 +299,7 @@ const shared = await cdp.send('Runtime.evaluate', { awaitPromise: true, returnBy
   const R = window.config.RANKING;
   const realFetch = window.fetch;
   const board = [
-    { name: 'FAR', emoji: '', flag: 'TW', damage: 99999, level: 9, survivedMs: 60000, at: new Date().toISOString() },
+    { name: 'FAR', emoji: '', flag: 'TW', damage: 99999, level: 9, survivedMs: 60000, at: new Date().toISOString(), skill: 'voidOrb', wins: 3 },
     { name: 'BAD', emoji: '', flag: '', damage: 1e15, level: 1, survivedMs: 1, at: 'x' },
   ];
   const posts = [];
@@ -329,6 +329,7 @@ const shared = await cdp.send('Runtime.evaluate', { awaitPromise: true, returnBy
     window.ranking.submit({ name: 'OLD', emoji: '', flag: '', damage: 5, level: 1, survivedMs: 9000 });
     out.source = await window.ranking.refresh();
     out.top = window.ranking.top.map((e) => e.name + ':' + e.flag);
+    out.far = window.ranking.top.find((e) => e.name === 'FAR');
     window.ranking.submit({ name: 'NEW', emoji: '', flag: 'US', damage: 150000.7, level: 2, survivedMs: 60016.666 });
     await new Promise((r) => setTimeout(r, 300));
     out.posted = posts.map((p) => ({ name: p.name, token: 'token' in p }));
@@ -351,6 +352,8 @@ console.log('shared:', JSON.stringify(sh));
 check('the server’s board replaces this device’s when it is read',
   sh.source === 'shared' && sh.top?.[0] === 'FAR:TW' && !sh.top?.some((n) => n.startsWith('OLD')),
   JSON.stringify(sh.top));
+check('a row keeps the skill it was played on and the account’s wins',
+  sh.far?.skill === 'voidOrb' && sh.far?.wins === 3, JSON.stringify(sh.far));
 check('a damage past belief is not taken from it', !sh.top?.some((n) => n.startsWith('BAD')), JSON.stringify(sh.top));
 check('a run entered here is handed in, with its check token, and the board sent back is shown',
   sh.posted?.some((p) => p.name === 'NEW' && p.token) && sh.afterPush === 'shared' &&

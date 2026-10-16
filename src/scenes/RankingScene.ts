@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 
-import { ACCOUNT, COLORS, DEPTH, RANKING, SCENES, SCRIM, TEXT, nextRankingReset } from '@/config';
+import { ACCOUNT, COLORS, DEPTH, RANKING, SCENES, SCRIM, TEXT, nextRankingReset, SKILL_ICONS, TEXTURES } from '@/config';
 import { fill, t } from '@/i18n';
 import { account, accountRequest } from '@/systems/Account';
 import { addBackButton, type BackButton } from '@/systems/BackButton';
@@ -296,16 +296,32 @@ export class RankingScene extends Phaser.Scene {
         this.add
           .text(x, y, text, { fontFamily: 'system-ui, sans-serif', fontSize, color })
           .setOrigin(origin, 0.5);
-      const row = [
-        cell(columns.place, String(place), 1),
-        cell(columns.name, rankLabel(entry), 0),
-        cell(columns.damage, grouped(entry.damage), 1),
-      ];
+      // The skill the run was played on, before the name; the account's
+      // days at first place, after it.
+      const icon = Math.min(20, rowHeight - 2);
+      const skillKey = entry.skill ? SKILL_ICONS[entry.skill]?.key : undefined;
+      const nameX = columns.name + (skillKey ? icon + 4 : 0);
+      const name = cell(nameX, rankLabel(entry), 0);
+      const row = [cell(columns.place, String(place), 1), name, cell(columns.damage, grouped(entry.damage), 1)];
       this.board!.add(row);
       if (entry.flag) {
         const h = Math.min(18, rowHeight - 4);
         this.board!.add(
           this.add.image(columns.flag, y, flagTexture(entry.flag)).setOrigin(0, 0.5).setDisplaySize(h * 1.5, h),
+        );
+      }
+      if (skillKey) {
+        this.board!.add(this.add.image(columns.name, y, skillKey).setOrigin(0, 0.5).setDisplaySize(icon, icon).setName('skill'));
+      }
+      if (entry.wins > 0) {
+        const at = nameX + name.width + 8;
+        const cup = Math.min(16, rowHeight - 4);
+        this.board!.add(this.add.image(at, y, TEXTURES.trophy).setOrigin(0, 0.5).setDisplaySize(cup, cup));
+        this.board!.add(
+          this.add
+            .text(at + cup + 2, y, `×${entry.wins}`, { fontFamily: 'system-ui, sans-serif', fontSize: TEXT.size.hint, color: COLORS.gearText })
+            .setOrigin(0, 0.5)
+            .setName('wins'),
         );
       }
       this.rows.push(row);

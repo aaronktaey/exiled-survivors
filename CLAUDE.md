@@ -254,6 +254,11 @@ Read `git log` for what changed and when. What is not in the log:
   (`systems/PersonalBest.ts`, `STORAGE.personal`), every run that ends,
   signed in or not, synced with the rest of localStorage. The name last
   entered is remembered in `STORAGE.rankName`.
+  Each run on the board carries its main skill (`skill`, from
+  `GameOverData.mainSkill`), and each account its `users.daily_wins`: the
+  first look at the board on a new day credits every finished day's first
+  place once (`tallyWins`, claiming `tally.through_day` before crediting, so
+  two looks cannot count a day twice; migration 0006).
   To look at the live database: `npm run db -- "SELECT * FROM daily_best"`
   (read-only queries only, unless the user asks; the dashboard's D1 console
   works too).

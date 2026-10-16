@@ -15,6 +15,24 @@ export interface PatchNote {
 
 export const PATCH_NOTES: readonly PatchNote[] = [
   {
+    version: '0.45',
+    date: '2026-10-16',
+    changes: {
+      ko: [
+        '전체 랭킹에 그 판을 시작할 때 고른 스킬 아이콘과, 계정마다 역대 일일 랭킹 1위를 한 횟수(트로피 ×N)가 표시됩니다. 하루가 끝날 때마다 그날의 1위에게 1회가 더해집니다.',
+      ],
+      en: [
+        'The shared ranking now shows the skill each run started on, and how many days each account has finished first (a cup ×N). Each day’s first place is added when the day ends.',
+      ],
+      ja: [
+        '全体ランキングに、その回の最初に選んだスキルのアイコンと、アカウントごとの歴代デイリーランキング 1 位の回数（トロフィー ×N）が表示されます。1 日が終わるたびに、その日の 1 位に 1 回加わります。',
+      ],
+      zh: [
+        '全部排行现在会显示该局开局所选技能的图标，以及每个账号历来获得每日排行第一的次数（奖杯 ×N）。每天结束时，当天的第一名会加一次。',
+      ],
+    },
+  },
+  {
     version: '0.44',
     date: '2026-10-16',
     changes: {

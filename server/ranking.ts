@@ -52,7 +52,15 @@ export interface RankRow {
   readonly level: number;
   readonly survivedMs: number;
   readonly at: string;
+  /** The skill the run was played on — its first, main skill. */
+  readonly skill: string;
+  /** How many days this account has finished first. */
+  readonly wins: number;
 }
+
+/** A skill id as the game writes it; anything else is stored as none. */
+const SKILL_ID = /^[A-Za-z]{1,32}$/;
+const DAY_MS = 86_400_000;
 
 /**
  * Each account's best run of the day, best first, a tie to whoever got there
@@ -61,7 +69,7 @@ export interface RankRow {
  */
 const BOARD = `
   SELECT b.user_id AS userId, u.rank_name AS name, u.rank_emoji AS emoji, u.rank_flag AS flag,
-         b.damage, b.level, b.survived_ms AS survivedMs, b.at
+         b.damage, b.level, b.survived_ms AS survivedMs, b.at, b.skill, u.daily_wins AS wins
     FROM daily_best b JOIN users u ON u.id = b.user_id
    WHERE b.day = ?2
    ORDER BY b.damage DESC, b.at ASC`;
@@ -78,7 +86,43 @@ const boardKey = (request: Request, day: number): string =>
   new URL(`${BOARD_PATH}?day=${day}`, request.url).toString();
 
 const publicRows = (rows: readonly (RankRow & { userId: string })[]): RankRow[] =>
-  rows.map(({ name, emoji, flag, damage, level, survivedMs, at }) => ({ name, emoji, flag, damage, level, survivedMs, at }));
+  rows.map(({ name, emoji, flag, damage, level, survivedMs, at, skill, wins }) => ({
+    name, emoji, flag, damage, level, survivedMs, at, skill, wins,
+  }));
+
+/**
+ * Credits each finished day's first place with a win, once. Run on a look at
+ * the board after a reset; the days are claimed before anyone is credited,
+ * so two looks at once cannot count the same day twice.
+ */
+async function tallyWins(env: Env, today: number): Promise<void> {
+  const lastDone = today - DAY_MS;
+  const row = await env.DB.prepare('SELECT through_day AS through FROM tally WHERE id = 1').first<{ through: number }>();
+  const through = row?.through ?? -1;
+  if (through >= lastDone) {
+    return;
+  }
+  const claim = await env.DB.prepare('UPDATE tally SET through_day = ?1 WHERE id = 1 AND through_day = ?2')
+    .bind(lastDone, through)
+    .run();
+  if ((claim.meta?.changes ?? 0) !== 1) {
+    return;
+  }
+  const winners = await env.DB.prepare(
+    `SELECT user_id AS userId FROM (
+       SELECT user_id, ROW_NUMBER() OVER (PARTITION BY day ORDER BY damage DESC, at ASC) AS n
+         FROM daily_best WHERE day > ?1 AND day <= ?2
+     ) WHERE n = 1`,
+  )
+    .bind(through, lastDone)
+    .all<{ userId: string }>();
+  const credit = (winners.results ?? []).map((w) =>
+    env.DB.prepare('UPDATE users SET daily_wins = daily_wins + 1 WHERE id = ?1').bind(w.userId),
+  );
+  if (credit.length > 0) {
+    await env.DB.batch(credit);
+  }
+}
 
 /** The board, from the edge's copy when it has a fresh one. */
 export async function board(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
@@ -91,6 +135,8 @@ export async function board(request: Request, env: Env, ctx: ExecutionContext): 
     return hit;
   }
 
+  // A new day: yesterday's (and any before it not yet counted) first place is credited.
+  await tallyWins(env, day);
   // Never kept past the reset.
   const untilReset = Math.max(1, Math.floor((nextRankingReset(now) - now) / 1000));
   const response = json({ entries: publicRows(await topRows(env, day)) }, 200, {
@@ -112,8 +158,12 @@ export async function mine(request: Request, env: Env): Promise<Response> {
   )
     .bind(user.id, day)
     .first<{ damage: number; level: number; survivedMs: number; at: string }>();
+  const winsRow = await env.DB.prepare('SELECT daily_wins AS wins FROM users WHERE id = ?1')
+    .bind(user.id)
+    .first<{ wins: number }>();
+  const wins = winsRow?.wins ?? 0;
   if (!best) {
-    return json({ best: null, place: 0 }, 200, { 'Cache-Control': 'no-store' });
+    return json({ best: null, place: 0, wins }, 200, { 'Cache-Control': 'no-store' });
   }
   const above = await env.DB.prepare(
     'SELECT COUNT(*) AS n FROM daily_best WHERE day = ?3 AND (damage > ?1 OR (damage = ?1 AND at < ?2))',
@@ -124,6 +174,7 @@ export async function mine(request: Request, env: Env): Promise<Response> {
     {
       best: { name: user.rankName, emoji: user.rankEmoji, flag: user.rankFlag, ...best },
       place: (above?.n ?? 0) + 1,
+      wins,
     },
     200,
     { 'Cache-Control': 'no-store' },
@@ -265,6 +316,7 @@ export async function submit(request: Request, env: Env, ctx: ExecutionContext):
   const damage = Math.floor(Number(run.damage));
   const level = Math.floor(Number(run.level));
   const survivedMs = Math.floor(Number(run.survivedMs));
+  const skill = SKILL_ID.test(String(run.skill ?? '')) ? String(run.skill) : '';
   const inserted = await env.DB.batch([
     env.DB.prepare('UPDATE users SET rank_name = ?2, rank_emoji = ?3, rank_flag = ?4 WHERE id = ?1').bind(
       user.id,
@@ -273,20 +325,20 @@ export async function submit(request: Request, env: Env, ctx: ExecutionContext):
       run.flag,
     ),
     env.DB.prepare(
-      `INSERT INTO entries (name, emoji, flag, damage, level, survived_ms, at, at_ms, ip_hash, user_id)
-       VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)`,
-    ).bind(run.name, run.emoji, run.flag, damage, level, survivedMs, at, now, address, user.id),
+      `INSERT INTO entries (name, emoji, flag, damage, level, survived_ms, at, at_ms, ip_hash, user_id, skill)
+       VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11)`,
+    ).bind(run.name, run.emoji, run.flag, damage, level, survivedMs, at, now, address, user.id, skill),
   ]);
   const entryId = Number(inserted[1]?.meta.last_row_id ?? 0);
   const day = rankingDayStart(now);
   await env.DB.prepare(
-    `INSERT INTO daily_best (day, user_id, entry_id, damage, level, survived_ms, at)
-     VALUES (?7, ?1, ?2, ?3, ?4, ?5, ?6)
+    `INSERT INTO daily_best (day, user_id, entry_id, damage, level, survived_ms, at, skill)
+     VALUES (?7, ?1, ?2, ?3, ?4, ?5, ?6, ?8)
      ON CONFLICT (day, user_id) DO UPDATE SET entry_id = excluded.entry_id, damage = excluded.damage,
-       level = excluded.level, survived_ms = excluded.survived_ms, at = excluded.at
+       level = excluded.level, survived_ms = excluded.survived_ms, at = excluded.at, skill = excluded.skill
      WHERE excluded.damage > daily_best.damage`,
   )
-    .bind(user.id, entryId, damage, level, survivedMs, at, day)
+    .bind(user.id, entryId, damage, level, survivedMs, at, day, skill)
     .run();
 
   // The board this run is on, straight from the database, and the edge's

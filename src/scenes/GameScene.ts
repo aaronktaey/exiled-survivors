@@ -1314,6 +1314,7 @@ export class GameScene extends Phaser.Scene {
       level: this.progression.level,
       survivedMs: this.elapsedMs,
       devRun: this.devRun,
+      mainSkill: this.mainSkill ?? undefined,
       // Explicitly fresh. A restart with no data of its own keeps whatever
       // the scene was last started with, and after 불러오기 that is the
       // loaded run — which would quietly put a death back where it resumed.

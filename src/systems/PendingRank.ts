@@ -31,6 +31,7 @@ export function takePendingRank(): RankSubmission | null {
       damage: run.damage,
       level: Number(run.level) || 1,
       survivedMs: Number(run.survivedMs) || 0,
+      skill: String(run.skill ?? ''),
     };
   } catch {
     return null;

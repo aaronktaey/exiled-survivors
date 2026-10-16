@@ -18,6 +18,8 @@ export interface GameOverData {
   readonly survivedMs: number;
   /** The developer tools changed this run: it is not offered to the ranking. */
   readonly devRun?: boolean;
+  /** The run's main skill, shown beside it on the board. */
+  readonly mainSkill?: string;
   /** Starts another run, with the 뼈다귀 picked for it. */
   readonly onRestart: (applied: readonly BoneId[]) => void;
 }
@@ -157,7 +159,7 @@ export class GameOverScene extends Phaser.Scene {
 
     const { summary, level, survivedMs } = this.payload;
     const data: RankEntryData = {
-      run: { damage: summary.damage, level, survivedMs },
+      run: { damage: summary.damage, level, survivedMs, skill: this.payload.mainSkill ?? '' },
       onDone: (place) => {
         this.scene.resume();
         if (place > 0) {
