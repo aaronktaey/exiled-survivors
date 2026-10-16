@@ -63,7 +63,16 @@ export interface GearSpec {
   readonly fromKill?: number;
   /** 고정 속성: on every one of this base, outside the affix slots. */
   readonly implicit?: GearImplicit;
+  /**
+   * Its picture (public/, from the Raven Fantasy pack — see
+   * assets/icons/CREDITS.txt), loaded under `gearTexture(id)`. Each tier its
+   * own, so the 인벤토리 tells them apart at a glance.
+   */
+  readonly icon: string;
 }
+
+/** The texture a sword of this base is drawn with. */
+export const gearTexture = (id: GearId): string => `tex-gear-${id}`;
 
 export const GEAR_BASE = {
   /**
@@ -81,6 +90,7 @@ export const GEAR_BASE = {
 export const GEAR: Record<GearId, GearSpec> = {
   onigoroshi: {
     id: 'onigoroshi',
+    icon: 'assets/icons/gear-onigoroshi.png',
     slot: 'weapon',
     tier: 1,
     name: '오니고로시',
@@ -89,6 +99,7 @@ export const GEAR: Record<GearId, GearSpec> = {
   },
   runedSword: {
     id: 'runedSword',
+    icon: 'assets/icons/gear-runedSword.png',
     slot: 'weapon',
     tier: 2,
     name: '룬 각인 검',
@@ -98,6 +109,7 @@ export const GEAR: Record<GearId, GearSpec> = {
   // From tier 3 down, any kill can leave one too — rarely.
   steelSword: {
     id: 'steelSword',
+    icon: 'assets/icons/gear-steelSword.png',
     slot: 'weapon',
     tier: 3,
     name: '강철 검',
@@ -107,6 +119,7 @@ export const GEAR: Record<GearId, GearSpec> = {
   },
   ironSword: {
     id: 'ironSword',
+    icon: 'assets/icons/gear-ironSword.png',
     slot: 'weapon',
     tier: 4,
     name: '무쇠 검',
@@ -116,6 +129,7 @@ export const GEAR: Record<GearId, GearSpec> = {
   },
   rustySword: {
     id: 'rustySword',
+    icon: 'assets/icons/gear-rustySword.png',
     slot: 'weapon',
     tier: 5,
     name: '녹슨 검',

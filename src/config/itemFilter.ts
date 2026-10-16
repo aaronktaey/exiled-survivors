@@ -1,5 +1,5 @@
 import { ALL_BONES } from '@/config/bones';
-import { ALL_ORBS, GEAR } from '@/config/equipment';
+import { ALL_ORBS, GEAR, gearTexture } from '@/config/equipment';
 import type { DropTier } from '@/config/system';
 import { TEXTURES } from '@/config/visuals';
 
@@ -51,7 +51,7 @@ export const ITEM_FILTER: readonly FilterSection[] = [
     // Weakest first, the way the eye reads up a ladder.
     entries: Object.values(GEAR)
       .sort((a, b) => b.tier - a.tier)
-      .map((spec) => ({ key: `gear:${spec.id}`, texture: TEXTURES.gear, tier: 'normal' as DropTier })),
+      .map((spec) => ({ key: `gear:${spec.id}`, texture: gearTexture(spec.id), tier: 'normal' as DropTier })),
   },
 ];
 

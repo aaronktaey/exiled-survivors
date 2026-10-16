@@ -10,7 +10,9 @@ import {
   GEAR_DROP,
   ICONS,
   SHARD,
+  GEAR,
   SKILL_ICONS,
+  gearTexture,
   SKILL_PICK,
   RANKING,
   PLAYER,
@@ -53,6 +55,9 @@ export class BootScene extends Phaser.Scene {
       if (icon.file) {
         this.load.image(icon.key, `${base}${icon.file}`);
       }
+    }
+    for (const spec of Object.values(GEAR)) {
+      this.load.image(gearTexture(spec.id), `${base}${spec.icon}`);
     }
   }
 

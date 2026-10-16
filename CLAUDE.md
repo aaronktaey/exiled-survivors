@@ -90,11 +90,16 @@ node run-all.mjs test-full test-skills test-balance test-chain test-ice \
   test-carry test-api test-account test-live test-filter
 ```
 
-`run-all.mjs` starts Chrome itself (`CHROME_PATH` overrides where it looks),
-waits for the game to be up before each suite (the first load after a source
-edit is slow while Vite transforms it, and the suites' own sleeps are fixed),
-clears storage between suites and writes screenshots to `tests/shots/`. One
-suite on its own: `node run-all.mjs test-gear`.
+`run-all.mjs` runs the suites three at a time (`WORKERS=n` to change it):
+one muted Chrome per worker (`CHROME_PATH` overrides where it looks), each
+with its own profile and debugging port (9333, 9334, …), handed to the suite
+as `CDP_PORT` — `connect()` in cdp-lib reads it, so a suite never names a
+port of its own. The longest suites start first, by the times it keeps in
+`tests/.timings.json`. Before each suite it clears storage and loads `#run`
+by way of `about:blank` (from the title, `#run` alone is a hash change that
+loads nothing), waiting for the game rather than a fixed time. It closes the
+Chromes when it is done (`KEEP_CHROME=1` to keep them for a look). The full
+set takes about six minutes. One suite on its own: `node run-all.mjs test-gear`.
 
 ### Writing checks that hold up
 
@@ -333,6 +338,11 @@ Read `git log` for what changed and when. What is not in the log:
   runs once `GEAR_COMBINE.count` are picked; Space toggles a cell, Esc backs
   out. Its third button shares the row with 착용 · 버리기 so the pane is no
   taller on a short phone.
+- **Each sword has its own picture.** `GEAR[id].icon` (a file under
+  `public/assets/icons/`, picked from the Raven Fantasy pack, listed in its
+  CREDITS.txt) is loaded as `gearTexture(id)`; the 인벤토리 grid, the drop on
+  the ground, the 합성 result and the 필터 all draw it. `TEXTURES.gear` is
+  left for the title's 인벤토리 icon and the 필터's rarity switches.
 - **Rare drops stand in a light pillar.** `DropLabel` draws it for the 희귀
   tier (`LIGHT_PILLAR`, `TEXTURES.lightPillar`); the 제단 opts out with
   `{ pillar: false }` since it is walked up to, not picked up.

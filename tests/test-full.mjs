@@ -246,7 +246,7 @@ check('one marker per thing off the screen, and none for what is on it',
   rim.count === 5 && !rim.shown.some((m) => m.texture === 'tex-orb-transmute'),
   `${rim.count} markers: ${rim.shown.map((m) => m.texture.replace('tex-', '')).join(' ')}`);
 check('each wears the sprite of the thing it points at',
-  ['tex-enemy-boss', 'tex-shard', 'tex-orb-chaos', 'tex-gear', 'tex-skill-fireball']
+  ['tex-enemy-boss', 'tex-shard', 'tex-orb-chaos', 'tex-gear-runedSword', 'tex-skill-fireball']
     .every((key) => rim.shown.some((m) => m.texture === key)),
   rim.shown.map((m) => m.texture.replace('tex-', '')).join(' / '));
 check('and sits inside the edge it points through',

@@ -15,6 +15,28 @@ export interface PatchNote {
 
 export const PATCH_NOTES: readonly PatchNote[] = [
   {
+    version: '0.37',
+    date: '2026-10-16',
+    changes: {
+      ko: [
+        '장비마다 그림이 달라졌습니다 — 녹슨 검·무쇠 검·강철 검·룬 각인 검·오니고로시를 인벤토리와 바닥, 필터에서 그림만 보고 구별할 수 있습니다.',
+        '장비 합성 연출이 약 5초에서 2초 남짓으로, 구슬 사용 연출도 더 짧아졌습니다.',
+      ],
+      en: [
+        'Every sword has its own picture now — the Rusty, Iron, Steel and Runed Swords and Onigoroshi can be told apart at a glance in the Inventory, on the ground and in the Filter.',
+        'Combining swords now takes a little over 2 seconds instead of about 5, and spending an orb is quicker too.',
+      ],
+      ja: [
+        '装備ごとに絵が変わりました — 錆びた剣・鉄の剣・鋼の剣・ルーンの剣・鬼殺しを、インベントリ・地面・フィルターで絵だけで見分けられます。',
+        '装備合成の演出が約 5 秒から 2 秒あまりに、球を使う演出も短くなりました。',
+      ],
+      zh: [
+        '每种装备都有了自己的图标 — 在背包、地面和过滤中一眼就能分辨生锈的剑、铁剑、钢剑、符文剑和鬼杀。',
+        '装备合成的演出从约 5 秒缩短到 2 秒多，使用宝珠的演出也更短了。',
+      ],
+    },
+  },
+  {
     version: '0.36',
     date: '2026-10-16',
     changes: {

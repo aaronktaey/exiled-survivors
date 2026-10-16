@@ -38,6 +38,8 @@ public/assets/Free - Raven Fantasy Icons/
 # The test harness drives a real Chrome; neither its profile nor the
 # screenshots it takes belong in the repo.
 tests/chrome-profile/
+tests/chrome-profile-*/
+tests/.timings.json
 tests/shots/
 
 # wrangler's local state: the local D1 database and dev caches.

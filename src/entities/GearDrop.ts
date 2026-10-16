@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 
-import { COLORS, GEAR_DROP, TEXTURES } from '@/config';
+import { COLORS, GEAR_DROP, TEXTURES, gearTexture } from '@/config';
 import { GroundItem } from '@/entities/GroundItem';
 import { gearLabel } from '@/i18n';
 import { DropLabel } from '@/systems/DropLabel';
@@ -29,6 +29,8 @@ export class GearDrop extends GroundItem {
 
   public drop(x: number, y: number, item: GearItem): void {
     this.item = item;
+    // Its own base's picture, set before `begin` sizes it.
+    this.setTexture(gearTexture(item.id));
     this.begin(x, y, GEAR_DROP.size);
 
     // "무쇠 검+3" — the base and how many 속성 it rolled, which is what you

@@ -17,6 +17,7 @@ import {
   SCRIM,
   TEXT,
   TEXTURES,
+  gearTexture,
   type AffixLine,
   type OrbId,
 } from '@/config';
@@ -408,7 +409,7 @@ export class InventoryScene extends Phaser.Scene {
     if (tab === 'gear') {
       return gear.items.map((item) => ({
         id: item.uid,
-        icon: TEXTURES.gear,
+        icon: gearTexture(item.id),
         tier: dropTierFor(item),
         marked: () => gear.value.equipped === item.uid,
         label: () => gearTitle(item),
@@ -1506,11 +1507,14 @@ export class InventoryScene extends Phaser.Scene {
       });
 
       const backing = glow(target.x, target.y, 120, fx.success, 0.7);
-      const sword = this.add.image(target.x, target.y, TEXTURES.gear).setDepth(depth + 3).setDisplaySize(72, 72);
+      const sword = this.add
+        .image(target.x, target.y, outcome.item ? gearTexture(outcome.item.id) : TEXTURES.gear)
+        .setDepth(depth + 3)
+        .setDisplaySize(72, 72);
       const settled = sword.scale;
       sword.setScale(settled * 0.2);
-      this.tweens.add({ targets: sword, scale: settled, duration: 420, ease: 'Back.easeOut' });
-      this.tweens.add({ targets: backing, alpha: 0.35, duration: 500, yoyo: true, repeat: 2 });
+      this.tweens.add({ targets: sword, scale: settled, duration: fx.popMs, ease: 'Back.easeOut' });
+      this.tweens.add({ targets: backing, alpha: 0.35, duration: fx.holdMs / 2, yoyo: true });
       this.play(AUDIO.drops.rare.key, AUDIO.drops.rare.volume);
       this.time.delayedCall(fx.flashMs + fx.holdMs, done);
     };

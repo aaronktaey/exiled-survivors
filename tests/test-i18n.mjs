@@ -22,9 +22,11 @@ const choose = async (key, id) => {
     const i = s.menu.rows.findIndex((r) => r.item.id === '${id}');
     s.menu.selected = i;
     s.menu.refresh();
+    // The row's own action, the one Space runs: a key sent while the page
+    // is busy now and then never arrives, and the screen it opens is not.
+    s.menu.rows[i].item.onSelect();
     return i;
   })()`);
-  await cdp.tap('Space', 32, ' ');
   await sleep(600);
 };
 const selectRow = (key, id) => cdp.evaluate(`(() => {

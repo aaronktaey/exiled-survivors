@@ -1,6 +1,8 @@
 export const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 export async function connect(port = 9333) {
+  // run-all hands each worker's Chrome to its suites by port.
+  port = Number(process.env.CDP_PORT) || port;
   const base = `http://127.0.0.1:${port}`;
   let targets = null;
   for (let i = 0; i < 60; i++) {

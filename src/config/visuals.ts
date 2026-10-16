@@ -365,14 +365,20 @@ export const LIGHT_PILLAR = {
  */
 export const COMBINE_FX = {
   /** How long the light takes to travel from the swords to the meeting point. */
-  gatherMs: 650,
-  /** How long it shines there before the result — the three seconds asked for. */
-  chargeMs: 3000,
+  gatherMs: 300,
+  /**
+   * How long it shines there before the result. Three seconds at first; the
+   * user found the whole thing far too long (2026-10-16), so all of it is
+   * under half what it was — about two seconds from press to result.
+   */
+  chargeMs: 1100,
   /** The burst on a failure, and the flash on a success. */
-  burstMs: 700,
-  flashMs: 650,
+  burstMs: 400,
+  flashMs: 380,
+  /** How the new sword pops in on a success. */
+  popMs: 280,
   /** How long the result is held on screen before the inventory comes back. */
-  holdMs: 900,
+  holdMs: 350,
   /** The light's colours: a warm white while it shines, gold when it takes. */
   light: 0xfff4d6,
   success: 0xffe066,
@@ -385,11 +391,11 @@ export const COMBINE_FX = {
 /** A 구슬 spent in the 인벤토리: it flies into the weapon and the weapon answers. */
 export const ORB_FX = {
   /** How long the 구슬 takes to reach the weapon's cell. */
-  flyMs: 380,
+  flyMs: 220,
   /** The burst where it lands, in the 구슬's own colour. */
-  burstMs: 420,
+  burstMs: 300,
   /** How long the lines it changed stay lit once the screen is drawn again. */
-  highlightMs: 2200,
+  highlightMs: 1500,
   /** How strongly they are lit to begin with. */
   highlightAlpha: 0.38,
   /** A 폭발의 구슬 that went off. */
