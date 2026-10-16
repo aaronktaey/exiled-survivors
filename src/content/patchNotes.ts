@@ -15,6 +15,32 @@ export interface PatchNote {
 
 export const PATCH_NOTES: readonly PatchNote[] = [
   {
+    version: '0.40',
+    date: '2026-10-16',
+    changes: {
+      ko: [
+        '새 적 기행종 — 체력은 일반 적과 같지만, 이리저리 무작위로 점프하다가 이따금 질주보다 조금 느린 속도로 플레이어에게 곧장 뛰어듭니다. 45초부터 나타납니다.',
+        '강화를 모두 마친 스킬은 레벨업하거나 다시 주우면 체력 포션 하나만큼 회복됩니다. 메인 스킬을 다 강화해도 레벨업이 다른 스킬로 넘어가지 않습니다.',
+        '공허구체 각성의 끌어당기기가 약해지고, 구체가 아니라 플레이어 쪽으로 끌어당깁니다.',
+      ],
+      en: [
+        'New enemy, the Oddity — a plain enemy’s health, but it hops about at random and now and then hops straight at you, a little slower than a Runner. It appears from 45 seconds.',
+        'A skill with every upgrade taken heals you a potion’s worth on a level-up or a pickup. Once the main skill is maxed, level-ups no longer move on to another skill.',
+        'Void Orb’s awakening pulls more gently, and toward you rather than onto an orb.',
+      ],
+      ja: [
+        '新しい敵「奇行種」— 体力は雑兵と同じですが、でたらめに跳ね回り、ときどき俊足より少し遅い速さでこちらへ一気に跳んできます。45 秒から現れます。',
+        '強化をすべて終えたスキルは、レベルアップや再取得のときに回復ポーション 1 つ分回復します。メインスキルを強化しきっても、レベルアップがほかのスキルに移らなくなりました。',
+        '虚無球の覚醒の引き寄せが弱まり、球ではなくプレイヤーのほうへ引き寄せます。',
+      ],
+      zh: [
+        '新敌人「奇行种」— 生命与杂兵相同，却会毫无规律地四处跳跃，偶尔以略慢于疾走者的速度猛地朝你跳来。从 45 秒开始出现。',
+        '已全部强化的技能在升级或再次拾取时，改为恢复一瓶生命药水的生命。主技能强化完毕后，升级不再转到其他技能。',
+        '虚空球觉醒的吸引变弱，并且改为拉向玩家而不是拉向球体。',
+      ],
+    },
+  },
+  {
     version: '0.39',
     date: '2026-10-16',
     changes: {

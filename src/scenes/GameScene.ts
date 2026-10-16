@@ -56,6 +56,7 @@ import { sfx } from '@/systems/Sfx';
 import { saveGame, type SavedRun } from '@/systems/SaveGame';
 import { personal } from '@/systems/PersonalBest';
 import { tuning } from '@/systems/Tuning';
+import { HealthPotion } from '@/entities/HealthPotion';
 import {
   NO_BONUS,
   gear,
@@ -1022,13 +1023,13 @@ export class GameScene extends Phaser.Scene {
    */
   private onLevelUp(level: number): void {
     this.player.setLevel(level);
-    const open = (id: SkillId) => upgradeOptionsFor(SKILLS[id], this.progression.statsFor(id)).length > 0;
-    const others = [...this.owned].filter((id) => id !== this.mainSkill && open(id));
-    const skill =
-      this.mainSkill && open(this.mainSkill)
-        ? this.mainSkill
-        : others[Math.floor(Math.random() * others.length)];
+    const skill = this.mainSkill;
     if (!skill) {
+      return;
+    }
+    // Nothing left to take: the level is a potion instead.
+    if (upgradeOptionsFor(SKILLS[skill], this.progression.statsFor(skill)).length === 0) {
+      this.drinkForMaxedSkill();
       return;
     }
 
@@ -1069,6 +1070,8 @@ export class GameScene extends Phaser.Scene {
     // popup at all.
     const options = upgradeOptionsFor(SKILLS[request.skill], this.progression.statsFor(request.skill));
     if (options.length === 0) {
+      // A skill with every upgrade taken: what would have been one is a potion.
+      this.drinkForMaxedSkill();
       this.afterChoice();
       return;
     }
@@ -1119,6 +1122,16 @@ export class GameScene extends Phaser.Scene {
       this.awakened.add(skill);
       this.celebrateMastery(skill);
     }
+  }
+
+  /**
+   * What a level-up or a repeat pickup gives a skill that has taken every
+   * upgrade there is: a 체력 포션's worth of health, said over the survivor.
+   */
+  private drinkForMaxedSkill(): void {
+    const healed = this.player.heal(HealthPotion.healing);
+    this.damageNumbers.spawn(this.player.x, this.player.y - 18, healed, { prefix: '+', color: COLORS.healText });
+    this.announce(t().game.maxedHeal);
   }
 
   /**

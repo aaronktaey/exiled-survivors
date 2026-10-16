@@ -473,6 +473,8 @@ export interface Strings {
   readonly game: {
     /** Over the survivor when a shot is turned aside (오니고로시). */
     readonly blocked: string;
+    /** A level-up or pickup for a skill with every upgrade taken heals instead. */
+    readonly maxedHeal: string;
     readonly intro: string;
     readonly introHintKeyboard: string;
     readonly introHintTouch: string;

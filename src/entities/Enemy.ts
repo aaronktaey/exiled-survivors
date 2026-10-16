@@ -21,6 +21,7 @@ import {
   type EnemyFleeSpec,
   type EnemyShotSpec,
   type EnemyVolleySpec,
+  type EnemyHopSpec,
 } from '@/config';
 import { enemyName } from '@/i18n';
 
@@ -112,6 +113,10 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
   private chillMs = 0;
   /** Frozen solid (얼음창 각성): it neither moves nor shoots. */
   private frozenMs = 0;
+  /** A 기행종's hop: how long the current one or the rest after it has left, and where it goes. */
+  private hopLeftMs = 0;
+  private hopping = false;
+  private hopAngle = 0;
   /** Countdown to the next ring, for the kinds that throw one. */
   private volleyCooldownMs = 0;
   /** Countdown to the next shot, for the kinds that have one. */
@@ -255,6 +260,8 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
     this.flashMs = 0;
     this.chillMs = 0;
     this.frozenMs = 0;
+    this.hopLeftMs = 0;
+    this.hopping = false;
     this.contactReadyAt = 0;
     this.lifeLeftMs = spec.lifespanMs ?? Infinity;
     this.fleeTo = undefined;
@@ -383,6 +390,8 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
     this.hooks = undefined;
     this.chillMs = 0;
     this.frozenMs = 0;
+    this.hopLeftMs = 0;
+    this.hopping = false;
     this.rare = false;
     this.affixes = [];
     this.fleeTo = undefined;
@@ -499,6 +508,11 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
       return;
     }
 
+    if (this.spec.hop) {
+      this.hopAbout(dt, this.spec.hop);
+      return;
+    }
+
     const distance = Phaser.Math.Distance.Between(this.x, this.y, this.target.x, this.target.y);
 
     if (this.spec.volley) {
@@ -510,6 +524,34 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
     }
 
     this.scene.physics.moveTo(this, this.target.x, this.target.y, this.currentSpeed);
+  }
+
+  /**
+   * A 기행종: a hop, a rest, a hop — each hop a random direction, except the
+   * share of them aimed at the survivor. It is in the air only while hopping.
+   */
+  private hopAbout(dt: number, hop: EnemyHopSpec): void {
+    this.hopLeftMs -= dt;
+    if (this.hopLeftMs <= 0) {
+      this.hopping = !this.hopping;
+      this.hopLeftMs = this.hopping ? hop.hopMs : hop.restMs;
+      if (this.hopping) {
+        this.hopAngle =
+          this.target && Math.random() < hop.lungeChance
+            ? Phaser.Math.Angle.Between(this.x, this.y, this.target.x, this.target.y)
+            : Math.random() * Math.PI * 2;
+      }
+    }
+    if (this.hopping) {
+      this.scene.physics.velocityFromRotation(this.hopAngle, this.currentSpeed, (this.body as Phaser.Physics.Arcade.Body).velocity);
+    } else {
+      this.setVelocity(0, 0);
+    }
+  }
+
+  /** True mid-hop (a 기행종 in the air). Public for tests. */
+  public get isHopping(): boolean {
+    return this.hopping;
   }
 
 /**

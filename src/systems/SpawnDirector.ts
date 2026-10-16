@@ -110,7 +110,8 @@ export class SpawnDirector {
 
   /** How many of each kind are on the field right now. */
   public get aliveByKind(): Record<EnemyKind, number> {
-    const counts = { grunt: 0, brute: 0, runner: 0, shooter: 0, boss: 0, fugitive: 0 };
+    // Every kind in the table, so a new one is counted without a line here.
+    const counts = Object.fromEntries(Object.keys(ENEMY_KINDS).map((kind) => [kind, 0])) as Record<EnemyKind, number>;
     for (const child of this.group.getChildren()) {
       const enemy = child as Enemy;
       if (enemy.active) {

@@ -80,7 +80,8 @@ export type EnemyKind =
   | "runner"
   | "shooter"
   | "boss"
-  | "fugitive";
+  | "fugitive"
+  | "erratic";
 
 /** What a shooting enemy throws. */
 export interface EnemyShotSpec {
@@ -125,6 +126,22 @@ export interface EnemyKindSpec {
   readonly guaranteedSkill?: boolean;
   /** Drawn to be seen: a colour that cycles, and a body that breathes. */
   readonly flashy?: boolean;
+  /** Only a 기행종 has one: it does not walk, it hops (EnemyHopSpec). */
+  readonly hop?: EnemyHopSpec;
+}
+
+/**
+ * How something that hops about hops: a burst at its speed in one
+ * direction, a stop, another burst — every one in a random direction,
+ * except now and then one aimed straight at the survivor.
+ */
+export interface EnemyHopSpec {
+  /** How long one hop lasts. */
+  readonly hopMs: number;
+  /** How long it stands between hops. */
+  readonly restMs: number;
+  /** The share of hops aimed at the survivor rather than anywhere. */
+  readonly lungeChance: number;
 }
 
 /** How something that runs from the survivor runs. */
@@ -174,6 +191,22 @@ export const ENEMY_KINDS: Record<EnemyKind, EnemyKindSpec> = {
     maxHp: 150,
     speed: 160,
     contactDamage: 12,
+  },
+  /**
+   * 기행종. A plain enemy's health, but it does not walk at you: it hops
+   * about at random, and every so often hops straight at you — a little
+   * slower than a 질주 while it is in the air.
+   */
+  erratic: {
+    id: "erratic",
+    name: "기행종",
+    texture: TEXTURES.enemyErratic,
+    size: 16,
+    color: COLORS.enemyErratic,
+    maxHp: ENEMY.maxHp,
+    speed: 140,
+    contactDamage: ENEMY.contactDamage,
+    hop: { hopMs: 380, restMs: 260, lungeChance: 0.25 },
   },
   /**
    * 우두머리. Not in the spawn table: one arrives on the clock instead, and
@@ -756,6 +789,7 @@ export const SPAWN_TABLE: readonly {
   { kind: "runner", weight: 22, unlockMs: 25_000 },
   { kind: "shooter", weight: 16, unlockMs: 90_000 },
   { kind: "brute", weight: 12, unlockMs: 75_000 },
+  { kind: "erratic", weight: 12, unlockMs: 45_000 },
 ];
 
 export const SPAWN = {
@@ -793,8 +827,11 @@ export const SKILL_MASTERY = {
   /** 연쇄번개: may jump back to an enemy it has already struck (never the one it is on). */
   /** 얼음창: an enemy already under 냉각 is frozen solid this long when struck. */
   freezeMs: 100,
-  /** 공허구체: an enemy this close to an orb is drawn to it at this speed (px/s). */
-  voidPull: { reach: 110, speed: 45 },
+  /**
+   * 공허구체: an enemy within `reach` px beyond the orbit is drawn toward the
+   * survivor at this speed (px/s) — into the orbs' path, not onto an orb.
+   */
+  voidPull: { reach: 70, speed: 20 },
   /** 낙뢰: bolts in one cast. */
   thunderBolts: 2,
 } as const;

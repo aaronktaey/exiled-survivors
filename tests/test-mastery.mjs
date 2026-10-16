@@ -114,7 +114,9 @@ const effects = await run(`
   out.chainAwake = probe.n();
   s.spawner.clear();
 
-  // 화염구: the burst leaves fire that keeps burning.
+  // 화염구: the burst leaves fire that keeps burning. Crits off for the count.
+  const critWas = window.config.PLAYER.critChance;
+  window.config.PLAYER.critChance = 0;
   const burnt = put(300, 0);
   const hp0 = burnt.hp;
   const fake = { active: true, damage: 10, chillMs: 0, freezeMs: 0, blastRadius: 30, fireZoneDps: 40,
@@ -127,6 +129,7 @@ const effects = await run(`
   out.wantBurn = 40;
   for (let t = 0; t < 6000; t += 50) c.tickFireZones(50);
   out.zonesLater = c.fireZones.length;
+  window.config.PLAYER.critChance = critWas;
   s.spawner.clear();
 
   // 얼음창: a chilled enemy struck again is frozen; an unchilled one is not.
@@ -140,14 +143,14 @@ const effects = await run(`
   out.warmFrozen = warm.isFrozen;
   s.spawner.clear();
 
-  // 공허구체: an enemy near an orb is drawn in.
+  // 공허구체: an enemy just past the orbit is drawn toward the survivor; one far off is not.
   const orb = weapon('voidOrb');
-  orb.update(16, ctx({ orbCount: 1, range: 120 }));
-  const o = orb.active[0];
-  const near = put(o.x - p.x + 60, o.y - p.y);
-  const d0 = Math.hypot(near.x - o.x, near.y - o.y);
-  orb.pull(ctx({}), 1, 1000);
-  out.pulled = d0 - Math.hypot(near.x - o.x, near.y - o.y);
+  const pullReach = window.config.SKILL_MASTERY.voidPull.reach;
+  const near = put(120 + pullReach - 10, 0), far = put(-(120 + pullReach + 80), 0);
+  const d0 = Math.hypot(near.x - p.x, near.y - p.y), f0 = Math.hypot(far.x - p.x, far.y - p.y);
+  orb.pull(ctx({ range: 120 }), 1, 1000);
+  out.pulled = d0 - Math.hypot(near.x - p.x, near.y - p.y);
+  out.farPulled = f0 - Math.hypot(far.x - p.x, far.y - p.y);
   out.pullWant = window.config.SKILL_MASTERY.voidPull.speed;
   s.spawner.clear();
 
@@ -174,10 +177,74 @@ check('화염구: the burst leaves a fire that burns at its share a second, then
   `burnt ${effects.burnt} in 1s, want ${effects.wantBurn}`);
 check('얼음창: an enemy already chilled is frozen; one that was not, is not',
   effects.frozen === true && effects.warmFrozen === false);
-check('공허구체: an enemy near an orb is drawn toward it',
-  Math.abs(effects.pulled - effects.pullWant) < 1, `${effects.pulled.toFixed(1)}px in 1s, want ${effects.pullWant}`);
+check('공허구체: an enemy near the orbit is drawn toward the survivor, one far off is not',
+  Math.abs(effects.pulled - effects.pullWant) < 1 && Math.abs(effects.farPulled) < 1e-6,
+  `${effects.pulled.toFixed(1)}px in 1s, want ${effects.pullWant}; far ${effects.farPulled}`);
 check('낙뢰: more bolts fall at once',
   effects.boltsPlain === 1 && effects.boltsAwake === effects.boltsWant, `${effects.boltsPlain} → ${effects.boltsAwake}`);
+
+// --- 3b. a skill with every upgrade taken: a level is a potion ---
+const maxed = await run(`
+  s.choosing = true;
+  s.mainSkill = 'meleeStrike';
+  const st = s.progression.statsFor('meleeStrike');
+  let guard = 0;
+  // Take every upgrade there is.
+  while (guard++ < 500) {
+    const left = (() => { const q = []; const was = s.queueChoice; s.queueChoice = (r) => q.push(r); s.onLevelUp(2); s.queueChoice = was; return q; })();
+    if (left.length === 0) break;
+    for (const id of ['damage', 'attackSpeed', 'range']) s.progression.apply('meleeStrike', id);
+  }
+  s.player.hp = 10;
+  const queued = [];
+  const was = s.queueChoice;
+  s.queueChoice = (r) => queued.push(r);
+  s.onLevelUp(99);
+  s.queueChoice = was;
+  s.choosing = false;
+  return { hp: s.player.hp, queued: queued.length, want: Math.min(s.player.maxHp, 10 + Math.round(window.config.PLAYER.maxHp * window.config.POTION.healFraction)) };
+`);
+console.log('maxed:', JSON.stringify(maxed));
+check('a level-up for a main skill with nothing left to take heals a potion’s worth instead',
+  maxed.queued === 0 && maxed.hp === maxed.want, JSON.stringify(maxed));
+
+// --- 3c. 기행종: hops, rests, and sometimes hops at you ---
+const odd = await run(`
+  s.choosing = false;
+  s.spawner.clear();
+  const p = s.player;
+  const e = s.spawner.group.get(p.x + 250, p.y);
+  e.spawn(p.x + 250, p.y, p, 'erratic');
+  const spec = window.config.ENEMY_KINDS.erratic;
+  const runner = window.config.ENEMY_KINDS.runner;
+  const states = new Set();
+  let lunges = 0, hops = 0, wasHopping = false;
+  const real = Math.random;
+  for (let t = 0; t < 20000; t += 20) {
+    e.update(0, 20);
+    if (e.isHopping && !wasHopping) {
+      hops++;
+      const v = e.body.velocity;
+      const toward = Math.atan2(p.y - e.y, p.x - e.x);
+      const diff = Math.atan2(Math.sin(Math.atan2(v.y, v.x) - toward), Math.cos(Math.atan2(v.y, v.x) - toward));
+      if (Math.abs(diff) < 0.01) lunges++;
+    }
+    wasHopping = e.isHopping;
+    states.add(e.isHopping);
+    e.setPosition(p.x + 250, p.y);
+  }
+  Math.random = real;
+  const out = { hp: e.maxHp, gruntHp: window.config.ENEMY_KINDS.grunt.maxHp, speed: spec.speed, runner: runner.speed,
+                states: [...states], hops, lunges, share: spec.hop.lungeChance, inTable: window.config.SPAWN_TABLE.some((r) => r.kind === 'erratic') };
+  s.spawner.clear();
+  return out;
+`);
+console.log('odd:', JSON.stringify(odd));
+check('기행종: a plain enemy’s health, a little slower than a 질주, and in the spawn table',
+  odd.hp === odd.gruntHp && odd.speed < odd.runner && odd.speed > odd.runner * 0.7 && odd.inTable, JSON.stringify(odd));
+check('it hops and rests by turns, and a share of its hops are aimed at the survivor',
+  odd.states.length === 2 && odd.hops > 10 && odd.lunges > 0 && odd.lunges < odd.hops,
+  `${odd.hops} hops, ${odd.lunges} at the survivor`);
 
 // --- 4. 척추 ---
 const spine = await cdp.evaluate(`(() => {

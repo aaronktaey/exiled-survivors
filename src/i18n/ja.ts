@@ -46,7 +46,7 @@ export const ja: Strings = {
       fireball: '爆発した場所に {seconds} 秒間、炎の地帯を残します（毎秒 火球ダメージの {share}）',
       chainLightning: 'すでに当たった敵にも再び連鎖します',
       iceSpear: 'すでに冷却された敵に当たると {freeze} 秒間凍りつきます',
-      voidOrb: '周りの敵をゆっくり引き寄せます',
+      voidOrb: '周りの敵をプレイヤーのほうへゆっくり引き寄せます',
       thunderStrike: '一度に落雷が {bolts} 本ずつ落ちます',
     },
   },
@@ -338,6 +338,7 @@ export const ja: Strings = {
 
   game: {
     blocked: '防御',
+    maxedHeal: '強化をすべて終えたスキル — 体力回復',
     intro: 'Exile, do something!',
     introHintKeyboard: 'WASD・方向キーで移動 — 攻撃は自動',
     introHintTouch: 'スティックを引いて移動 — 攻撃は自動',
@@ -425,7 +426,7 @@ export const ja: Strings = {
       공허: '虚無',
       오라: 'オーラ',
     },
-    enemies: { boss: 'ボス', fugitive: '逃亡者', grunt: '雑兵', brute: '巨漢', runner: '俊足', shooter: '射手' },
+    enemies: { boss: 'ボス', fugitive: '逃亡者', grunt: '雑兵', brute: '巨漢', runner: '俊足', shooter: '射手', erratic: '奇行種' },
     gear: {
       rustySword: '錆びた剣',
       onigoroshi: '鬼殺し',
@@ -648,7 +649,7 @@ export const ja: Strings = {
         {
           title: 'レベルアップ',
           lines: [
-            'レベルが上がると、回の最初に選んだメインスキルの強化を選びます。メインスキルの強化をすべて終えてから、ほかのスキルがランダムに選ばれます。後で手に入れたスキルは、同じスキルを再び拾って強化します。',
+            'レベルが上がると、回の最初に選んだメインスキルの強化を選びます。後で手に入れたスキルは、同じスキルを再び拾って強化します。強化をすべて終えたスキルは、レベルアップや再取得のときに回復ポーション 1 つ分回復します。',
             '強化はスキルごとに積み重なります。火球を上げても打撃はそのままです。',
             '数値の強化は基本値の一定割合ずつ足されます。+20% を 3 回選ぶと基本値の +60% です。',
             '被害と攻撃速度の強化はスキルごとに {maxPicks} 回まで、連鎖回数は {chainCap} までです。上げきった強化は選択肢に出ません。',
@@ -668,7 +669,7 @@ export const ja: Strings = {
             '火球 — 爆発した場所に {fireZoneSecs} 秒間、炎の地帯を残します。毎秒 火球ダメージの {fireZoneShare}。',
             '連鎖雷 — すでに当たった敵にも再び連鎖します。',
             '氷槍 — すでに冷却された敵に当たると {freezeSecs} 秒間凍りつきます。',
-            '虚無球 — 周りの敵をゆっくり引き寄せます。',
+            '虚無球 — 周りの敵をプレイヤーのほうへゆっくり引き寄せます。',
             '落雷 — 一度に落雷が {thunderBolts} 本ずつ落ちます。',
           ],
         },
@@ -938,6 +939,7 @@ export const ja: Strings = {
         shooter: '距離を取って止まり、撃ってきます。近づくか、射程の長いスキルで倒しましょう。',
         boss: '最初は {first} 秒に、その後は {every} 秒ごとに 1 体現れます。非常に硬く、非常に痛いです。',
         fugitive: '攻撃してきません。硬くとても速く、攻撃を受けるたびに逃げ出して少し先で止まります。最初は {first} 秒、以後 {every} 秒ごとに現れ、{life} 秒で消えます。倒せばスキルが確定で落ちます。',
+        erratic: '雑兵と同じ体力ですが、でたらめに跳ね回り、ときどきこちらへ一気に跳んできます。俊足より少し遅い速さです。',
       },
       affixEnemy: 'レア敵：{detail}',
       affixWeapon: '武器：{ladder}',

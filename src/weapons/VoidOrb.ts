@@ -70,33 +70,28 @@ export class VoidOrb implements Weapon {
     this.sweep(context, count);
   }
 
-  /** 각성: every enemy near an orb is drawn slowly toward the nearest one. */
-  private pull(context: WeaponContext, count: number, delta: number): void {
+  /**
+   * 각성: every enemy within reach of the orbit is drawn slowly toward the
+   * survivor — through the orbs' path. `count` is unused: the pull is the
+   * survivor's, however many orbs ride round them.
+   */
+  private pull(context: WeaponContext, _count: number, delta: number): void {
     const { reach, speed } = SKILL_MASTERY.voidPull;
+    const { x, y } = context.origin;
+    const limit = Math.max(1, context.range) + reach;
     const step = (speed * delta) / 1000;
     for (const child of context.enemies.getChildren()) {
       const enemy = child as Enemy;
       if (!enemy.active) {
         continue;
       }
-      let nearest: Phaser.GameObjects.Image | undefined;
-      let best: number = reach;
-      for (let i = 0; i < count; i++) {
-        const orb = this.orbs[i];
-        if (!orb) {
-          continue;
-        }
-        const d = Phaser.Math.Distance.Between(orb.x, orb.y, enemy.x, enemy.y);
-        if (d < best) {
-          best = d;
-          nearest = orb;
-        }
+      const d = Phaser.Math.Distance.Between(x, y, enemy.x, enemy.y);
+      if (d > limit || d <= 1) {
+        continue;
       }
-      if (nearest && best > 1) {
-        const move = Math.min(step, best);
-        enemy.x += ((nearest.x - enemy.x) / best) * move;
-        enemy.y += ((nearest.y - enemy.y) / best) * move;
-      }
+      const move = Math.min(step, d);
+      enemy.x += ((x - enemy.x) / d) * move;
+      enemy.y += ((y - enemy.y) / d) * move;
     }
   }
 

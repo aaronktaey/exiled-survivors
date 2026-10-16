@@ -115,18 +115,21 @@ check('each kind joins exactly at its unlock time',
   unlocks.rows.map(r => `${r.kind} ${r.at}s`).join(' | '));
 
 // --- 3. the draw is weighted ---
+// Past every unlock, each kind comes up at its share of the table's weights.
 const mix = await run(`
-  s.spawner.elapsedMs = 120000;
-  const seen = { grunt: 0, brute: 0, runner: 0, shooter: 0 };
-  for (let i = 0; i < 20000; i++) seen[s.spawner.pickKind()]++;
+  const table = window.config.SPAWN_TABLE;
+  s.spawner.elapsedMs = Math.max(...table.map((r) => r.unlockMs)) + 1000;
+  const seen = {};
+  for (let i = 0; i < 20000; i++) { const k = s.spawner.pickKind(); seen[k] = (seen[k] ?? 0) + 1; }
   s.spawner.elapsedMs = 0;
-  return seen;
+  const total = table.reduce((sum, r) => sum + r.weight, 0);
+  const want = Object.fromEntries(table.map((r) => [r.kind, r.weight / total]));
+  return { seen, want };
 `);
 console.log('mix over 20k draws:', JSON.stringify(mix));
-check('the mix follows the table weights (60/22/16/12)',
-  Math.abs(mix.grunt / 20000 - 0.545) < 0.02 && Math.abs(mix.runner / 20000 - 0.2) < 0.02 &&
-  Math.abs(mix.shooter / 20000 - 0.145) < 0.02 && Math.abs(mix.brute / 20000 - 0.109) < 0.02,
-  Object.entries(mix).map(([k, n]) => `${k} ${(n / 200).toFixed(1)}%`).join('  '));
+check('the mix follows the table weights',
+  Object.entries(mix.want).every(([k, share]) => Math.abs((mix.seen[k] ?? 0) / 20000 - share) < 0.02),
+  Object.entries(mix.seen).map(([k, n]) => `${k} ${(n / 200).toFixed(1)}% (want ${(mix.want[k] * 100).toFixed(1)}%)`).join('  '));
 
 // --- 4. a 거구 really does soak four times the hits ---
 const soak = await run(`
@@ -319,8 +322,11 @@ const each = await run(`
   return { byKind: s.spawner.aliveByKind, text: s.debug.label.text };
 `);
 console.log('F7:', JSON.stringify(each.byKind));
+// A normal spawn can land in the moment between the key and the count.
 check('F7 spawns one of every kind',
-  Object.values(each.byKind).every(n => n === 1), JSON.stringify(each.byKind));
+  Object.values(each.byKind).every(n => n >= 1) &&
+    Object.values(each.byKind).reduce((a, n) => a + n, 0) <= Object.keys(each.byKind).length + 1,
+  JSON.stringify(each.byKind));
 check('the overlay breaks the field down by kind',
   /일반/.test(each.text) && /거구/.test(each.text) && /질주/.test(each.text) && /사수/.test(each.text) &&
   /enemy shots/.test(each.text),

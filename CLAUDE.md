@@ -175,9 +175,10 @@ Read `git log` for what changed and when. What is not in the log:
   a fresh run holds only what it picks off three cards (`SkillPickScene`,
   `SKILL_PICK`), and that first skill is the run's **main skill**
   (`GameScene.mainSkill`, kept in the save as `main`): every level-up
-  upgrades it, and only once it has taken every upgrade does a level go to
-  another skill at random. A skill found later is upgraded by finding it
-  again. (Level-ups once went to a random skill; the user read that as the
+  upgrades it; once it has taken every upgrade, a level-up (or a repeat
+  pickup of any maxed skill) heals a 체력 포션's worth instead
+  (`drinkForMaxedSkill`) — it never moves on to another skill. A skill found
+  later is upgraded by finding it again. (Level-ups once went to a random skill; the user read that as the
   main skill changing, and asked for this.) With the
   choice off (`#run`, the harness) a run starts on `UNSPUN_SKILL` (타격) so
   suites have something deterministic. A 무작위 스킬 on the ground opens the
@@ -222,6 +223,9 @@ Read `git log` for what changed and when. What is not in the log:
   own `ENEMY.contactCooldownMs`, so a crowd all hurt at once; only thrown
   things (`takeDamage`) open the survivor's invulnerable window. The debug /
   test switch `setInvulnerable(true)` still holds off both.
+- **기행종 is table-driven too.** `hop` on an `ENEMY_KINDS` entry
+  (`EnemyHopSpec`: hop, rest, share of hops aimed at the survivor) makes a
+  kind hop instead of walk (`Enemy.hopAbout`).
 - **도망자 is table-driven.** `flee`, `lifespanMs`, `guaranteedSkill` and
   `flashy` on an `ENEMY_KINDS` entry give any kind that behaviour; the
   fugitive is the only one using them. It spawns on `FUGITIVE`'s clock.
@@ -331,7 +335,8 @@ Read `git log` for what changed and when. What is not in the log:
   (타격 strikes `enemyShots` in the swing, 화염구 shots carry `fireZoneDps`
   into `CombatSystem.burnGround`/`tickFireZones`, 연쇄번개 may jump back,
   얼음창 shots carry `freezeMs` for an enemy already chilled (`Enemy.freeze`),
-  공허구체 pulls by moving x/y the way Separation does, 낙뢰 casts
+  공허구체 pulls enemies near its orbit toward the survivor by moving x/y
+  the way Separation does, 낙뢰 casts
   `thunderBolts` bolts). Reaching it calls `GameScene.celebrateMastery`
   once (`awakened`, rebuilt from a save without a show); the HUD slot goes
   gold and its card adds the line (`masteryText`). test-mastery covers it.

@@ -46,7 +46,7 @@ export const zh: Strings = {
       fireball: '在爆炸处留下持续 {seconds} 秒的火焰地带（每秒造成火球伤害的 {share}）',
       chainLightning: '可以再次连锁到已经击中过的敌人',
       iceSpear: '命中已被冷却的敌人时使其冻结 {freeze} 秒',
-      voidOrb: '缓慢吸引周围的敌人',
+      voidOrb: '缓慢将周围的敌人拉向玩家',
       thunderStrike: '一次落下 {bolts} 道落雷',
     },
   },
@@ -338,6 +338,7 @@ export const zh: Strings = {
 
   game: {
     blocked: '格挡',
+    maxedHeal: '技能已全部强化 — 恢复生命',
     intro: 'Exile, do something!',
     introHintKeyboard: 'WASD 或方向键移动 — 攻击自动进行',
     introHintTouch: '拖动摇杆移动 — 攻击自动进行',
@@ -425,7 +426,7 @@ export const zh: Strings = {
       공허: '虚空',
       오라: '光环',
     },
-    enemies: { boss: '首领', fugitive: '逃亡者', grunt: '杂兵', brute: '巨汉', runner: '疾走者', shooter: '射手' },
+    enemies: { boss: '首领', fugitive: '逃亡者', grunt: '杂兵', brute: '巨汉', runner: '疾走者', shooter: '射手', erratic: '奇行种' },
     gear: {
       rustySword: '生锈的剑',
       onigoroshi: '鬼杀',
@@ -648,7 +649,7 @@ export const zh: Strings = {
         {
           title: '升级',
           lines: [
-            '升级时会给出开局所选主技能的强化选项。主技能的强化全部完成后，才会随机选择其他技能。之后获得的技能需要再次拾取同一技能来强化。',
+            '升级时会给出开局所选主技能的强化选项。之后获得的技能需要再次拾取同一技能来强化。已全部强化的技能在升级或再次拾取时，改为恢复一瓶生命药水的生命。',
             '强化按技能分别累积。强化火球不会影响打击。',
             '数值强化每次增加基础值的一定比例。选三次 +20% 即为基础值的 +60%。',
             '伤害和攻击速度强化每个技能最多 {maxPicks} 次，连锁次数最多 {chainCap}。已满的强化不会再出现。',
@@ -666,7 +667,7 @@ export const zh: Strings = {
             '火球 — 在爆炸处留下持续 {fireZoneSecs} 秒的火焰地带，每秒造成火球伤害的 {fireZoneShare}。',
             '连锁闪电 — 可以再次连锁到已经击中过的敌人。',
             '冰枪 — 命中已被冷却的敌人时使其冻结 {freezeSecs} 秒。',
-            '虚空球 — 缓慢吸引周围的敌人。',
+            '虚空球 — 缓慢将周围的敌人拉向玩家。',
             '落雷 — 一次落下 {thunderBolts} 道落雷。',
           ],
         },
@@ -932,6 +933,7 @@ export const zh: Strings = {
         shooter: '会保持距离停下射击。走过去解决，或者用射程长的技能。',
         boss: '第 {first} 秒出现第一只，之后每 {every} 秒出现一只。非常坚硬也非常疼。',
         fugitive: '从不反击。坚硬且非常快，每次受击都会逃开，跑一段后停下。第一个在 {first} 秒出现，此后每 {every} 秒一个，{life} 秒后消失。击杀必定掉落技能。',
+        erratic: '生命与杂兵相同，却会毫无规律地四处跳跃，偶尔猛地朝你跳来，速度略慢于疾走者。',
       },
       affixEnemy: '稀有敌人：{detail}',
       affixWeapon: '武器：{ladder}',

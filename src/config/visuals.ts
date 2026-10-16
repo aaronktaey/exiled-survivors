@@ -23,6 +23,7 @@ export const COLORS = {
   enemyBoss: 0x7a1f3d,
   /** 도망자: drawn white so the cycling tint over it reads as pure colour. */
   enemyFugitive: 0xffffff,
+  enemyErratic: 0x9b6bff,
   /** Plain gold: the 랭킹 trophy, and the arrow that points at a 도망자. */
   gold: 0xffe066,
   bossOutline: 0xffd34d,
@@ -143,6 +144,7 @@ export const TEXTURES = {
   enemyShooter: "tex-enemy-shooter",
   enemyBoss: "tex-enemy-boss",
   enemyFugitive: "tex-enemy-fugitive",
+  enemyErratic: "tex-enemy-erratic",
   enemyShot: "tex-enemy-shot",
   projectile: "tex-projectile",
   iceShard: "tex-ice-shard",

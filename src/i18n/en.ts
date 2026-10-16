@@ -46,7 +46,7 @@ export const en: Strings = {
       fireball: 'Leaves a fire zone for {seconds}s where it bursts ({share} of Fireball damage per second)',
       chainLightning: 'Can chain back to enemies it has already struck',
       iceSpear: 'Freezes an already chilled enemy solid for {freeze}s',
-      voidOrb: 'Slowly pulls nearby enemies in',
+      voidOrb: 'Slowly pulls nearby enemies in toward you',
       thunderStrike: '{bolts} bolts fall at once',
     },
   },
@@ -338,6 +338,7 @@ export const en: Strings = {
 
   game: {
     blocked: 'Blocked',
+    maxedHeal: 'Skill fully upgraded — health restored',
     intro: 'Exile, do something!',
     introHintKeyboard: 'WASD or arrows to move — attacks are automatic',
     introHintTouch: 'Drag the stick to move — attacks are automatic',
@@ -425,7 +426,7 @@ export const en: Strings = {
       공허: 'void',
       오라: 'aura',
     },
-    enemies: { boss: 'Boss', fugitive: 'Runaway', grunt: 'Grunt', brute: 'Brute', runner: 'Runner', shooter: 'Shooter' },
+    enemies: { boss: 'Boss', fugitive: 'Runaway', grunt: 'Grunt', brute: 'Brute', runner: 'Runner', shooter: 'Shooter', erratic: 'Oddity' },
     gear: {
       rustySword: 'Rusty Sword',
       onigoroshi: 'Onigoroshi',
@@ -648,7 +649,7 @@ export const en: Strings = {
         {
           title: 'Levelling up',
           lines: [
-            'On a level up you choose an upgrade for your main skill, the one you picked at the start of the run. Only once it has every upgrade is another skill picked at random. A skill found later is upgraded by picking it up again.',
+            'On a level up you choose an upgrade for your main skill, the one you picked at the start of the run. A skill found later is upgraded by picking it up again. A skill with every upgrade taken heals you a potion’s worth instead, on a level-up or a pickup.',
             'Upgrades stay on their own skill: raising Fireball leaves Strike as it was.',
             'Number upgrades add a share of the base each time: three picks of +20% are +60% of the base.',
             'Damage and attack speed can each be taken {maxPicks} times per skill, and chains go up to {chainCap}. A maxed upgrade is no longer offered.',
@@ -668,7 +669,7 @@ export const en: Strings = {
             'Fireball — leaves a fire zone for {fireZoneSecs}s where it bursts, at {fireZoneShare} of its damage per second.',
             'Chain Lightning — can chain back to enemies it has already struck.',
             'Ice Spear — freezes an already chilled enemy solid for {freezeSecs}s.',
-            'Void Orb — slowly pulls nearby enemies in.',
+            'Void Orb — slowly pulls nearby enemies in toward you.',
             'Thunderstrike — {thunderBolts} bolts fall at once.',
           ],
         },
@@ -938,6 +939,7 @@ export const en: Strings = {
         shooter: 'Stops at a distance and fires. Walk it down, or bring something with reach.',
         boss: 'The first arrives at {first}s, then one every {every}s. Very tough and very painful.',
         fugitive: 'Never fights back. Tough and very fast; every hit sends it running off, and it stops a way on. The first turns up at {first}s, then every {every}s, and each is gone {life}s later. Catch it for a sure skill.',
+        erratic: 'A plain enemy’s health, but it hops about at random — and now and then hops straight at you, nearly as fast as a Runner.',
       },
       affixEnemy: 'On a rare: {detail}',
       affixWeapon: 'On a weapon: {ladder}',
