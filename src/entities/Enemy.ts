@@ -527,18 +527,23 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
   }
 
   /**
-   * A 기행종: a hop, a rest, a hop — each hop a random direction, except the
-   * share of them aimed at the survivor. It is in the air only while hopping.
+   * A 기행종: a hop, a rest, a hop. A survivor within one hop is hopped at;
+   * further off a hop goes anywhere, except the share aimed at them anyway.
+   * It is in the air only while hopping, for as long as the distance takes
+   * at its speed — so 냉각 shortens nothing, it only slows the hop.
    */
   private hopAbout(dt: number, hop: EnemyHopSpec): void {
     this.hopLeftMs -= dt;
     if (this.hopLeftMs <= 0) {
       this.hopping = !this.hopping;
-      this.hopLeftMs = this.hopping ? hop.hopMs : hop.restMs;
+      this.hopLeftMs = this.hopping ? (hop.distance / Math.max(1, this.currentSpeed)) * 1000 : hop.restMs;
       if (this.hopping) {
+        const target = this.target;
+        const inReach =
+          target !== undefined && Phaser.Math.Distance.Between(this.x, this.y, target.x, target.y) <= hop.distance;
         this.hopAngle =
-          this.target && Math.random() < hop.lungeChance
-            ? Phaser.Math.Angle.Between(this.x, this.y, this.target.x, this.target.y)
+          target && (inReach || Math.random() < hop.lungeChance)
+            ? Phaser.Math.Angle.Between(this.x, this.y, target.x, target.y)
             : Math.random() * Math.PI * 2;
       }
     }

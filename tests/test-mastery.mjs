@@ -208,43 +208,50 @@ console.log('maxed:', JSON.stringify(maxed));
 check('a level-up for a main skill with nothing left to take heals a potion’s worth instead',
   maxed.queued === 0 && maxed.hp === maxed.want, JSON.stringify(maxed));
 
-// --- 3c. 기행종: hops, rests, and sometimes hops at you ---
+// --- 3c. 기행종: far hops; at you when you are within one, anywhere otherwise ---
 const odd = await run(`
   s.choosing = false;
   s.spawner.clear();
   const p = s.player;
-  const e = s.spawner.group.get(p.x + 250, p.y);
-  e.spawn(p.x + 250, p.y, p, 'erratic');
   const spec = window.config.ENEMY_KINDS.erratic;
-  const runner = window.config.ENEMY_KINDS.runner;
-  const states = new Set();
-  let lunges = 0, hops = 0, wasHopping = false;
-  const real = Math.random;
-  for (let t = 0; t < 20000; t += 20) {
-    e.update(0, 20);
-    if (e.isHopping && !wasHopping) {
-      hops++;
-      const v = e.body.velocity;
-      const toward = Math.atan2(p.y - e.y, p.x - e.x);
-      const diff = Math.atan2(Math.sin(Math.atan2(v.y, v.x) - toward), Math.cos(Math.atan2(v.y, v.x) - toward));
-      if (Math.abs(diff) < 0.01) lunges++;
+  const reach = spec.hop.distance;
+  // Held at one distance from the survivor, it is watched through many hops.
+  const watch = (away) => {
+    const e = s.spawner.group.get(p.x + away, p.y);
+    e.spawn(p.x + away, p.y, p, 'erratic');
+    let hops = 0, at = 0, wasHopping = false, travelled = 0, longest = 0, from = null;
+    for (let t = 0; t < 20000; t += 20) {
+      const startX = e.x, startY = e.y;
+      e.update(0, 20);
+      if (e.isHopping && !wasHopping) {
+        hops++;
+        const v = e.body.velocity;
+        const toward = Math.atan2(p.y - e.y, p.x - e.x);
+        const d = Math.atan2(v.y, v.x) - toward;
+        if (Math.abs(Math.atan2(Math.sin(d), Math.cos(d))) < 0.01) at++;
+        from = { x: startX, y: startY };
+        travelled = 0;
+      }
+      if (e.isHopping) travelled += Math.hypot(e.body.velocity.x, e.body.velocity.y) * 0.02;
+      if (!e.isHopping && wasHopping) longest = Math.max(longest, travelled);
+      wasHopping = e.isHopping;
+      e.body.reset(p.x + away, p.y);
     }
-    wasHopping = e.isHopping;
-    states.add(e.isHopping);
-    e.setPosition(p.x + 250, p.y);
-  }
-  Math.random = real;
-  const out = { hp: e.maxHp, gruntHp: window.config.ENEMY_KINDS.grunt.maxHp, speed: spec.speed, runner: runner.speed,
-                states: [...states], hops, lunges, share: spec.hop.lungeChance, inTable: window.config.SPAWN_TABLE.some((r) => r.kind === 'erratic') };
+    e.recycle();
+    return { hops, at, longest: Math.round(longest) };
+  };
+  const out = { hp: spec.maxHp, gruntHp: window.config.ENEMY_KINDS.grunt.maxHp, reach,
+                near: watch(reach * 0.6), far: watch(reach * 2), inTable: window.config.SPAWN_TABLE.some((r) => r.kind === 'erratic') };
   s.spawner.clear();
   return out;
 `);
 console.log('odd:', JSON.stringify(odd));
-check('기행종: a plain enemy’s health, a little slower than a 질주, and in the spawn table',
-  odd.hp === odd.gruntHp && odd.speed < odd.runner && odd.speed > odd.runner * 0.7 && odd.inTable, JSON.stringify(odd));
-check('it hops and rests by turns, and a share of its hops are aimed at the survivor',
-  odd.states.length === 2 && odd.hops > 10 && odd.lunges > 0 && odd.lunges < odd.hops,
-  `${odd.hops} hops, ${odd.lunges} at the survivor`);
+check('기행종: a plain enemy’s health, in the spawn table, and each hop carries it its configured distance',
+  odd.hp === odd.gruntHp && odd.inTable && Math.abs(odd.near.longest - odd.reach) <= odd.reach * 0.1,
+  `hop ${odd.near.longest}px, want ${odd.reach}`);
+check('within one hop of the survivor every hop is at them; further off only some are',
+  odd.near.hops > 10 && odd.near.at === odd.near.hops && odd.far.hops > 10 && odd.far.at > 0 && odd.far.at < odd.far.hops,
+  `near ${odd.near.at}/${odd.near.hops}, far ${odd.far.at}/${odd.far.hops}`);
 
 // --- 4. 척추 ---
 const spine = await cdp.evaluate(`(() => {

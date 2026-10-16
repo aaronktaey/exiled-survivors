@@ -132,15 +132,16 @@ export interface EnemyKindSpec {
 
 /**
  * How something that hops about hops: a burst at its speed in one
- * direction, a stop, another burst — every one in a random direction,
- * except now and then one aimed straight at the survivor.
+ * direction, a stop, another burst. A survivor within one hop's reach is
+ * hopped at every time; past it, a hop goes anywhere — except the share
+ * aimed at the survivor all the same.
  */
 export interface EnemyHopSpec {
-  /** How long one hop lasts. */
-  readonly hopMs: number;
+  /** How far one hop carries it, in px, at the kind's speed. */
+  readonly distance: number;
   /** How long it stands between hops. */
   readonly restMs: number;
-  /** The share of hops aimed at the survivor rather than anywhere. */
+  /** Out of reach, the share of hops aimed at the survivor rather than anywhere. */
   readonly lungeChance: number;
 }
 
@@ -193,9 +194,11 @@ export const ENEMY_KINDS: Record<EnemyKind, EnemyKindSpec> = {
     contactDamage: 12,
   },
   /**
-   * 기행종. A plain enemy's health, but it does not walk at you: it hops
-   * about at random, and every so often hops straight at you — a little
-   * slower than a 질주 while it is in the air.
+   * 기행종. A plain enemy's health, but it does not walk at you: it hops —
+   * far and fast. Within one hop of the survivor it always hops at them;
+   * further off it hops about at random, now and then at them anyway.
+   * Five times as far and three times as fast as it first shipped
+   * (2026-10-16): at 53px a hop it was no threat at all.
    */
   erratic: {
     id: "erratic",
@@ -204,9 +207,9 @@ export const ENEMY_KINDS: Record<EnemyKind, EnemyKindSpec> = {
     size: 16,
     color: COLORS.enemyErratic,
     maxHp: ENEMY.maxHp,
-    speed: 140,
+    speed: 420,
     contactDamage: ENEMY.contactDamage,
-    hop: { hopMs: 380, restMs: 260, lungeChance: 0.25 },
+    hop: { distance: 266, restMs: 260, lungeChance: 0.25 },
   },
   /**
    * 우두머리. Not in the spawn table: one arrives on the clock instead, and

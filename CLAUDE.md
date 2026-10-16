@@ -224,8 +224,10 @@ Read `git log` for what changed and when. What is not in the log:
   things (`takeDamage`) open the survivor's invulnerable window. The debug /
   test switch `setInvulnerable(true)` still holds off both.
 - **기행종 is table-driven too.** `hop` on an `ENEMY_KINDS` entry
-  (`EnemyHopSpec`: hop, rest, share of hops aimed at the survivor) makes a
-  kind hop instead of walk (`Enemy.hopAbout`).
+  (`EnemyHopSpec`: distance a hop carries, rest, and — out of one hop's
+  reach — the share aimed at the survivor; within reach every hop is) makes
+  a kind hop instead of walk (`Enemy.hopAbout`). Its numbers are on the
+  밸런스 적 dials.
 - **도망자 is table-driven.** `flee`, `lifespanMs`, `guaranteedSkill` and
   `flashy` on an `ENEMY_KINDS` entry give any kind that behaviour; the
   fugitive is the only one using them. It spawns on `FUGITIVE`'s clock.

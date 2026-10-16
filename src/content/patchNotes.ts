@@ -15,6 +15,24 @@ export interface PatchNote {
 
 export const PATCH_NOTES: readonly PatchNote[] = [
   {
+    version: '0.41',
+    date: '2026-10-16',
+    changes: {
+      ko: [
+        '기행종이 훨씬 위협적이 되었습니다 — 점프 거리가 5배(266px), 속도가 3배(420)로 늘었고, 플레이어가 점프 한 번 거리 안에 들어오면 곧장 플레이어에게 뛰어듭니다.',
+      ],
+      en: [
+        'The Oddity is a real threat now — each hop goes five times as far (266px) and three times as fast (420), and once you are within one hop it leaps straight at you.',
+      ],
+      ja: [
+        '奇行種がはるかに危険になりました — 跳躍距離が 5 倍（266px）、速さが 3 倍（420）になり、1 回の跳躍距離に入るとまっすぐプレイヤーへ飛びかかります。',
+      ],
+      zh: [
+        '奇行种变得危险多了 — 跳跃距离变为 5 倍（266px）、速度变为 3 倍（420），一旦进入一次跳跃的距离就会直扑玩家。',
+      ],
+    },
+  },
+  {
     version: '0.40',
     date: '2026-10-16',
     changes: {

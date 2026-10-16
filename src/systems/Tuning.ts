@@ -21,6 +21,7 @@ import {
   BOSS,
   DIALS,
   DIFFICULTY,
+  ENEMY_KINDS,
   GEAR,
   MANGO,
   ORBS,
@@ -43,7 +44,7 @@ import { devToolsAllowed } from '@/systems/DevAccess';
 type Listener = (path: string, was: number, now: number) => void;
 
 const ROOTS: Record<string, unknown> = {
-  ALTAR, BALANCE, BONES, BOSS, DIFFICULTY, GEAR, MANGO, ORBS, PLAYER, POTION, RARE,
+  ALTAR, BALANCE, BONES, BOSS, DIFFICULTY, ENEMY_KINDS, GEAR, MANGO, ORBS, PLAYER, POTION, RARE,
   SHARD, SKILL_BASE, SKILL_DROP, SKILL_PICK, SPAWN, UPGRADE_PERCENT,
 };
 
