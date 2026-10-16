@@ -124,13 +124,16 @@ await shot('passive-02-title');
 
 // --- 4. spending a point, on the tree ---
 await openIcon('passives');
+// x, y in the tree's own space; sx, sy where that is on screen now, through its camera.
 const nodesOf = `[...s.nodes.values()].map(n => ({ id: n.id, rank: n.rank.text, name: n.name.text, x: Math.round(n.x), y: Math.round(n.y),
+  sx: Math.round(s.view.x + n.x - s.treeCam.scrollX), sy: Math.round(s.view.y + n.y - s.treeCam.scrollY),
   open: window.passives.isOpen(n.id), alpha: n.name.alpha }))`;
 const screen = await scene('PassiveScene', `
   const P = window.config.PASSIVES;
   return { nodes: ${nodesOf}, purse: s.purse.text, detail: s.detail.text,
            tree: window.config.ALL_PASSIVES.map(p => ({ id: p.id, parent: p.requires ? p.requires.id : null, needs: p.requires ? p.requires.rank : 0 })),
-           width: s.scale.width, height: s.scale.height, sideways: s.sideways };
+           width: s.scale.width, height: s.scale.height, sideways: s.sideways,
+           view: { x: s.view.x, y: s.view.y, w: s.view.width, h: s.view.height } };
 `);
 console.log('패시브:', JSON.stringify(screen));
 const node = (id, list = screen.nodes) => list.find((n) => n.id === id);
@@ -147,8 +150,9 @@ check('a line sits a level past the one it hangs from, and the roots on the firs
     return along(here) > along(node(p.parent));
   }),
   screen.nodes.map((n) => `${n.id}@${n.x},${n.y}`).join(' / '));
-check('every node is inside the window',
-  screen.nodes.every((n) => n.x > 0 && n.x < screen.width && n.y > 60 && n.y < screen.height - 100));
+const inView = (n, v = screen.view) => n.sx > v.x && n.sx < v.x + v.w && n.sy > v.y && n.sy < v.y + v.h;
+check('every node is inside the tree’s window',
+  screen.nodes.every((n) => inView(n)), screen.nodes.map((n) => `${n.id}@${n.sx},${n.sy}`).join(' / '));
 check('and reads out the point in hand', /포인트 1/.test(screen.purse), screen.purse);
 check('a branch is shut until the line it hangs from has its ranks',
   screen.tree.every((p) => node(p.id).open === (p.needs === 0)) &&
@@ -187,6 +191,56 @@ const none = await scene('PassiveScene', `
 `);
 check('with none left, no line can be bought', none.rank === 0, spent.purse);
 await shot('passive-03-spent');
+
+// --- 4b. the tree is dragged about under its window ---
+// Real mouse events at canvas points, so the drag goes through Phaser's input.
+const page = await ev(`(() => { const r = window.game.canvas.getBoundingClientRect();
+  return { left: r.left, top: r.top, k: r.width / window.game.scale.width }; })()`);
+const mouse = async (type, x, y) => cdp.send('Input.dispatchMouseEvent', {
+  type, x: page.left + x * page.k, y: page.top + y * page.k, button: 'left', buttons: type === 'mouseReleased' ? 0 : 1, clickCount: 1 });
+const drag = async (x, y, dx, dy) => {
+  await mouse('mousePressed', x, y);
+  for (let i = 1; i <= 6; i++) { await mouse('mouseMoved', x + (dx * i) / 6, y + (dy * i) / 6); await sleep(30); }
+  await mouse('mouseReleased', x + dx, y + dy);
+  await sleep(200);
+};
+const state = () => scene('PassiveScene', `return { scroll: [Math.round(s.treeCam.scrollX), Math.round(s.treeCam.scrollY)],
+  focused: s.focused, nodes: ${nodesOf}, view: { x: s.view.x, y: s.view.y, w: s.view.width, h: s.view.height } };`);
+const before = await state();
+const v = before.view;
+// From an empty corner of the window, into its middle.
+await drag(v.x + 14, v.y + 14, 30, 24);
+const draggedOnce = await state();
+console.log('drag:', JSON.stringify({ before: before.scroll, after: draggedOnce.scroll }));
+check('a drag on the tree’s window moves the tree with it',
+  draggedOnce.scroll[0] !== before.scroll[0] || draggedOnce.scroll[1] !== before.scroll[1],
+  `${before.scroll} -> ${draggedOnce.scroll}`);
+check('and picks nothing on the way', draggedOnce.focused === before.focused);
+
+// A drag that starts on a node is still a drag; a press that stays put is a tap.
+const other = draggedOnce.nodes.find((n, i) => i !== draggedOnce.focused && inView(n, v));
+await drag(other.sx, other.sy, -24, -20);
+const fromNode = await state();
+check('a drag that starts on a node does not pick it', fromNode.focused === draggedOnce.focused,
+  `${other.id}, focused ${fromNode.focused}`);
+const target = fromNode.nodes.find((n) => n.id === other.id);
+await mouse('mousePressed', target.sx, target.sy);
+await mouse('mouseReleased', target.sx, target.sy);
+await sleep(250);
+const tapped = await state();
+const wantIndex = tapped.nodes.findIndex((n) => n.id === other.id);
+check('a tap on a node picks it, wherever the tree was dragged', tapped.focused === wantIndex,
+  `${other.id} at ${target.sx},${target.sy}, focused ${tapped.focused}`);
+
+// However far it is pulled, the tree cannot be lost off its window.
+const flung = await scene('PassiveScene', `
+  s.pan(50000, 50000); const a = ${nodesOf};
+  s.pan(-100000, -100000); const b = ${nodesOf};
+  return { a, b, view: { x: s.view.x, y: s.view.y, w: s.view.width, h: s.view.height } };
+`);
+check('pulled as far as it goes either way, some of the tree is still in the window',
+  flung.a.some((n) => inView(n, flung.view)) && flung.b.some((n) => inView(n, flung.view)));
+await shot('passive-03b-dragged');
 
 await cdp.tap('Escape', 27, 'Escape');
 await sleep(800);

@@ -45,9 +45,13 @@ interface PassiveButton {
 
 const TITLE_Y = 34;
 const PURSE_Y = 66;
+/** Where the window onto the tree starts, under the purse. */
+const VIEW_TOP = PURSE_Y + 22;
 const FOOTER = 34;
 /** The detail lines and the buttons under the tree. */
 const BELOW = 54 + 44;
+/** How far a press has to travel before it is a drag rather than a tap. */
+const DRAG_FROM_PX = 6;
 
 /**
  * 패시브 — what carries over between runs, as a tree.
@@ -57,6 +61,12 @@ const BELOW = 54 + 44;
  * ring round each node fills as its ranks are bought. Tap a node to pick it
  * and again to spend, or use 투자; the gold-for-a-shard shop sits beside it.
  * The shape is read off `PASSIVES`, so a new line places itself.
+ *
+ * The tree is drawn by a camera of its own (`treeCam`) whose viewport is the
+ * window between the purse and the detail lines, so a tree bigger than the
+ * screen is dragged (or wheeled) about under it rather than squeezed —
+ * `setMask` does nothing under WebGL in Phaser 4, the same reason the guide
+ * does this. A press that travels is a drag; only one that does not picks.
  */
 export class PassiveScene extends Phaser.Scene {
   public static readonly KEY = SCENES.passives;
@@ -73,8 +83,20 @@ export class PassiveScene extends Phaser.Scene {
   /** The 투자 and shop buttons. Public for tests. */
   public spendButton!: PassiveButton;
   public shopButton!: PassiveButton;
+  /** The camera the tree is seen through; its scroll is where the tree has been dragged to. Public for tests. */
+  public treeCam!: Phaser.Cameras.Scene2D.Camera;
 
   private payload!: PassiveSceneData;
+  /** Everything the tree draws, seen by `treeCam` only. */
+  private layer!: Phaser.GameObjects.Container;
+  /** The window onto the tree, on screen. */
+  private view = new Phaser.Geom.Rectangle();
+  /** What the tree covers, its names included, in its own space. */
+  private bounds = new Phaser.Geom.Rectangle();
+  /** A press on the tree: where it started, and the scroll then. */
+  private dragFrom: { x: number; y: number; scrollX: number; scrollY: number } | null = null;
+  /** Whether the press now ending travelled far enough to be a drag. */
+  private dragged = false;
   private drawn!: Phaser.GameObjects.Graphics;
   private rootPoints!: Phaser.GameObjects.Text;
   private root = { x: 0, y: 0, r: 0 };
@@ -93,6 +115,8 @@ export class PassiveScene extends Phaser.Scene {
     this.nodes = new Map();
     this.focused = 0;
     this.picked = ALL_PASSIVES[0]!.id;
+    this.dragFrom = null;
+    this.dragged = false;
   }
 
   public create(): void {
@@ -111,8 +135,16 @@ export class PassiveScene extends Phaser.Scene {
     this.add.image(0, PURSE_Y, TEXTURES.shard).setDisplaySize(20, 20).setDepth(DEPTH.ui + 2).setName('purseShard');
     this.purse = text(width / 2, PURSE_Y, '', TEXT.size.hint, COLORS.shardText);
 
-    this.drawn = this.add.graphics().setDepth(DEPTH.ui + 1);
-    const below = this.layOut(width, PURSE_Y + 30, height - FOOTER - 8);
+    const below = height - FOOTER - 8 - BELOW;
+    this.view.setTo(8, VIEW_TOP, width - 16, below - VIEW_TOP - 4);
+    // A faint frame says where the tree can be moved about.
+    this.add
+      .graphics()
+      .setDepth(DEPTH.ui + 1)
+      .lineStyle(1, COLORS.panelEdge, 0.8)
+      .strokeRoundedRect(this.view.x, this.view.y, this.view.width, this.view.height, 10);
+    this.layer = this.add.container(0, 0).setDepth(DEPTH.ui + 1);
+    this.layOut(this.view);
     this.detail = this.add
       .text(width / 2, below + 8, '', {
         fontFamily: 'system-ui, sans-serif',
@@ -120,7 +152,6 @@ export class PassiveScene extends Phaser.Scene {
         color: COLORS.text,
         align: 'center',
         lineSpacing: 4,
-        wordWrap: { width: Math.min(width - 32, 560) },
       })
       .setOrigin(0.5, 0)
       .setDepth(DEPTH.ui + 2);
@@ -145,8 +176,109 @@ export class PassiveScene extends Phaser.Scene {
       width,
     );
 
+    // The tree's own camera: the main one leaves the tree out, this one sees nothing else.
+    this.cameras.main.ignore(this.layer);
+    this.treeCam = this.cameras.add(this.view.x, this.view.y, this.view.width, this.view.height);
+    this.treeCam.ignore(this.children.list.filter((child) => child !== this.layer));
+    this.treeCam.setScroll(...this.startScroll());
+
     this.armKeys();
+    this.armDrag();
     this.refresh();
+  }
+
+  /** Moves the tree under its window by this much, as a drag would. Public so a test can. */
+  public pan(dx: number, dy: number): void {
+    this.scrollTo(this.treeCam.scrollX - dx, this.treeCam.scrollY - dy);
+  }
+
+  /**
+   * Where the scroll may go on one axis: a tree that fits slides about
+   * inside the window, one that does not can be dragged until either edge
+   * shows — never off the window altogether.
+   */
+  private static range(low: number, high: number, size: number): [number, number] {
+    const margin = PASSIVE_TREE.dragMargin;
+    const a = low - margin;
+    const b = high + margin - size;
+    return [Math.min(a, b), Math.max(a, b)];
+  }
+
+  private scrollTo(x: number, y: number): void {
+    const [x0, x1] = PassiveScene.range(this.bounds.left, this.bounds.right, this.view.width);
+    const [y0, y1] = PassiveScene.range(this.bounds.top, this.bounds.bottom, this.view.height);
+    this.treeCam.setScroll(Phaser.Math.Clamp(x, x0, x1), Phaser.Math.Clamp(y, y0, y1));
+  }
+
+  /**
+   * Where the tree is first seen: centred when it fits; when it does not,
+   * from the root's end, with the root in the middle across.
+   */
+  private startScroll(): [number, number] {
+    const { view, bounds, root } = this;
+    const axis = (low: number, high: number, size: number, rootAt: number, along: boolean): number => {
+      const [from, to] = PassiveScene.range(low, high, size);
+      if (high - low <= size) {
+        return (low + high) / 2 - size / 2;
+      }
+      return along ? Math.min(from, to) : Phaser.Math.Clamp(rootAt - size / 2, from, to);
+    };
+    return [
+      axis(bounds.left, bounds.right, view.width, root.x, this.sideways),
+      axis(bounds.top, bounds.bottom, view.height, root.y, !this.sideways),
+    ];
+  }
+
+  /** Keeps a node the keyboard moved onto inside the window. */
+  private showNode(id: PassiveId): void {
+    const node = this.nodes.get(id);
+    if (!node) {
+      return;
+    }
+    const margin = this.radius + 30;
+    const cam = this.treeCam;
+    let { scrollX: x, scrollY: y } = cam;
+    x = Math.min(x, node.x - margin);
+    x = Math.max(x, node.x + margin - this.view.width);
+    y = Math.min(y, node.y - margin);
+    y = Math.max(y, node.y + margin - this.view.height);
+    this.scrollTo(x, y);
+  }
+
+  /** A press on the tree's window that travels drags the tree; the wheel moves it too. */
+  private armDrag(): void {
+    this.input.on(Phaser.Input.Events.POINTER_DOWN, (pointer: Phaser.Input.Pointer) => {
+      this.dragged = false;
+      this.dragFrom = this.view.contains(pointer.x, pointer.y)
+        ? { x: pointer.x, y: pointer.y, scrollX: this.treeCam.scrollX, scrollY: this.treeCam.scrollY }
+        : null;
+    });
+    this.input.on(Phaser.Input.Events.POINTER_MOVE, (pointer: Phaser.Input.Pointer) => {
+      const from = this.dragFrom;
+      if (!from || !pointer.isDown) {
+        return;
+      }
+      const dx = pointer.x - from.x;
+      const dy = pointer.y - from.y;
+      if (!this.dragged && Math.hypot(dx, dy) < DRAG_FROM_PX) {
+        return;
+      }
+      this.dragged = true;
+      this.scrollTo(from.scrollX - dx, from.scrollY - dy);
+    });
+    const release = (): void => {
+      this.dragFrom = null;
+    };
+    this.input.on(Phaser.Input.Events.POINTER_UP, release);
+    this.input.on(Phaser.Input.Events.POINTER_UP_OUTSIDE, release);
+    this.input.on(
+      Phaser.Input.Events.POINTER_WHEEL,
+      (pointer: Phaser.Input.Pointer, _over: unknown, dx: number, dy: number) => {
+        if (this.view.contains(pointer.x, pointer.y)) {
+          this.scrollTo(this.treeCam.scrollX + dx, this.treeCam.scrollY + dy);
+        }
+      },
+    );
   }
 
   /** Whether the shop can sell a shard now. Public for tests. */
@@ -179,13 +311,18 @@ export class PassiveScene extends Phaser.Scene {
   }
 
   /**
-   * Where each node sits. Upright, the root is on top and each depth a row
-   * under it; on a wide window it lies on its side, the root on the left.
-   * Leaves are spread evenly and a parent sits level with its children. The
-   * tree and what is under it are centred together; returns where the part
-   * under it starts.
+   * Where each node sits, in the tree's own space (0, 0 is the window's top
+   * left). Upright, the root is on top and each depth a row under it; on a
+   * wide window it lies on its side, the root on the left. Leaves are spread
+   * evenly and a parent sits level with its children. The spacing shrinks to
+   * fit the window, but never below PASSIVE_TREE's least gaps: past that the
+   * tree runs off the window and is dragged.
    */
-  private layOut(width: number, top: number, bottom: number): number {
+  private layOut(view: Phaser.Geom.Rectangle): void {
+    const { width } = view;
+    const top = 0;
+    this.drawn = this.add.graphics();
+    this.layer.add(this.drawn);
     const children = (parent: PassiveId | null) =>
       ALL_PASSIVES.filter((spec) => (spec.requires?.id ?? null) === parent).map((spec) => spec.id);
     const depth = new Map<PassiveId, number>();
@@ -206,15 +343,16 @@ export class PassiveScene extends Phaser.Scene {
 
     const levels = Math.max(1, ...depth.values()) + 1;
     const spread = Math.max(1, leaves);
-    const room = bottom - top - BELOW;
-    this.sideways = width > (bottom - top) * 1.4;
+    const room = view.height;
+    this.sideways = width > room * 1.4;
     // A level and a leaf: how far apart, along the tree and across it.
+    const fitGap = (wanted: number, most: number, least: number) => Math.max(least, Math.min(most, wanted));
     const levelGap = this.sideways
-      ? Math.min(PASSIVE_TREE.maxLevelGap * 1.6, (width - 64) / levels)
-      : Math.min(PASSIVE_TREE.maxLevelGap, room / levels);
+      ? fitGap((width - 64) / levels, PASSIVE_TREE.maxLevelGap * 1.6, PASSIVE_TREE.minLevelGap)
+      : fitGap(room / levels, PASSIVE_TREE.maxLevelGap, PASSIVE_TREE.minLevelGap);
     const leafGap = this.sideways
-      ? Math.min(PASSIVE_TREE.maxLevelGap, room / spread)
-      : Math.min(PASSIVE_TREE.maxLevelGap * 1.6, (width - 32) / spread);
+      ? fitGap(room / spread, PASSIVE_TREE.maxLevelGap, PASSIVE_TREE.minLeafGap)
+      : fitGap((width - 32) / spread, PASSIVE_TREE.maxLevelGap * 1.6, PASSIVE_TREE.minLeafGap);
     this.radius = Math.max(
       16,
       Math.min(PASSIVE_TREE.nodeRadius, (this.sideways ? leafGap : levelGap) * 0.3, (this.sideways ? levelGap : leafGap) * 0.32),
@@ -234,37 +372,46 @@ export class PassiveScene extends Phaser.Scene {
         fontSize: TEXT.size.hint,
         color: COLORS.muted,
       })
-      .setOrigin(0.5)
-      .setDepth(DEPTH.ui + 2);
+      .setOrigin(0.5);
     fitText(rootLabel, this.root.r * 2 - 10, 0);
     this.rootPoints = this.add
       .text(this.root.x, this.root.y + this.root.r * 0.22, '', { fontFamily: 'system-ui, sans-serif', fontSize: TEXT.size.body, color: COLORS.text })
-      .setOrigin(0.5)
-      .setDepth(DEPTH.ui + 2);
+      .setOrigin(0.5);
+    this.layer.add([rootLabel, this.rootPoints]);
 
     ALL_PASSIVES.forEach((spec) => {
       const { x, y } = at(depth.get(spec.id)!, slot.get(spec.id)!);
       const rank = this.add
         .text(x, y, '', { fontFamily: 'system-ui, sans-serif', fontSize: TEXT.size.hint, color: COLORS.text })
-        .setOrigin(0.5)
-        .setDepth(DEPTH.ui + 2);
+        .setOrigin(0.5);
       const name = this.add
         .text(x, y + this.radius + 6, passiveName(spec.id), {
           fontFamily: 'system-ui, sans-serif',
           fontSize: TEXT.size.hint,
           color: COLORS.text,
         })
-        .setOrigin(0.5, 0)
-        .setDepth(DEPTH.ui + 2);
+        .setOrigin(0.5, 0);
       fitText(name, (this.sideways ? levelGap : leafGap) - 4, 0);
-      const hit = this.add
-        .circle(x, y, this.radius + 6, 0x000000, 0.001)
-        .setDepth(DEPTH.ui + 3)
-        .setInteractive({ useHandCursor: true });
-      hit.on(Phaser.Input.Events.GAMEOBJECT_POINTER_DOWN, () => this.press(spec.id));
+      const hit = this.add.circle(x, y, this.radius + 6, 0x000000, 0.001).setInteractive({ useHandCursor: true });
+      // On the release, and only when the press did not travel: a drag that
+      // starts or ends on a node is still a drag.
+      hit.on(Phaser.Input.Events.GAMEOBJECT_POINTER_UP, () => {
+        if (!this.dragged) {
+          this.press(spec.id);
+        }
+      });
+      this.layer.add([rank, name, hit]);
       this.nodes.set(spec.id, { id: spec.id, x, y, rank, name, hit });
     });
-    return treeTop + treeH;
+
+    // What the tree covers, the names under the nodes included.
+    const spots = [{ x: this.root.x, y: this.root.y, r: this.root.r }, ...[...this.nodes.values()].map((n) => ({ x: n.x, y: n.y, r: this.radius }))];
+    const reach = (this.sideways ? levelGap : leafGap) / 2;
+    const left = Math.min(...spots.map((p) => p.x - Math.max(p.r, reach)));
+    const right = Math.max(...spots.map((p) => p.x + Math.max(p.r, reach)));
+    const upper = Math.min(...spots.map((p) => p.y - p.r - 4));
+    const lower = Math.max(...spots.map((p) => p.y + p.r + 26));
+    this.bounds.setTo(left, upper, right - left, lower - upper);
   }
 
   private button(x: number, y: number, w: number, label: string, onPress: () => void): PassiveButton {
@@ -385,7 +532,9 @@ export class PassiveScene extends Phaser.Scene {
           : '';
     const head = `${passiveName(spec.id)}  ${fill(copy.rank, { rank, max: spec.maxRank })}`;
     const what = fill(copy.perRank, { detail: passiveDetail(spec.id) });
-    this.detail.setText(status ? `${head} · ${what}\n${status}` : `${head} · ${what}`);
+    // Two lines at most, drawn smaller rather than wrapped onto the buttons.
+    this.detail.setScale(1).setText(status ? `${head} · ${what}\n${status}` : `${head} · ${what}`);
+    fitText(this.detail, this.scale.width - 24, 0);
 
     // The purse: points (when there are any), shards towards the next, gold.
     const parts = [
@@ -413,8 +562,12 @@ export class PassiveScene extends Phaser.Scene {
     if (!keyboard) {
       return;
     }
+    // Nodes where they are on screen now, wherever the tree has been dragged.
     const spots = (): { x: number; y: number }[] => [
-      ...ALL_PASSIVES.map((spec) => this.nodes.get(spec.id)!),
+      ...ALL_PASSIVES.map((spec) => {
+        const node = this.nodes.get(spec.id)!;
+        return { x: this.view.x + node.x - this.treeCam.scrollX, y: this.view.y + node.y - this.treeCam.scrollY };
+      }),
       { x: this.shopButton.plate.x, y: this.shopButton.plate.y },
     ];
     const step = (dx: number, dy: number): void => {
@@ -436,6 +589,10 @@ export class PassiveScene extends Phaser.Scene {
       });
       if (best >= 0) {
         this.point(best);
+        const spec = ALL_PASSIVES[best];
+        if (spec) {
+          this.showNode(spec.id);
+        }
       }
     };
     const onKey = (event: KeyboardEvent): void => {

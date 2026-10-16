@@ -549,6 +549,14 @@ export const PASSIVE_TREE = {
   shutAlpha: 0.4,
   /** The furthest apart two rows of the tree are drawn. */
   maxLevelGap: 120,
+  /**
+   * The closest they are drawn, along the tree and across it. A tree that
+   * would need less runs off its window instead, and is dragged about.
+   */
+  minLevelGap: 96,
+  minLeafGap: 92,
+  /** How far past the tree's edge it can be dragged, in px. */
+  dragMargin: 24,
 } as const;
 
 export const MENU = {

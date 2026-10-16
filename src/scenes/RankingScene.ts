@@ -40,6 +40,8 @@ const TAB_GAP = 12;
 const FOOTER = 52;
 /** The least room between two columns, when the window is too narrow for more. */
 const MIN_COLUMN_GAP = 10;
+/** The gap between columns, as a share of the one that would fill the table's full width. */
+const COLUMN_GAP_SHARE = 0.75;
 
 /**
  * Where the tabs, the reset line, the column heads and the first row sit.
@@ -47,8 +49,8 @@ const MIN_COLUMN_GAP = 10;
  * fit about 540 px, so it is tighter there.
  */
 const SPACING = {
-  roomy: { tabsY: 82, resetY: 116, headY: 150, firstRow: 32, rowMax: 34 },
-  tight: { tabsY: 72, resetY: 98, headY: 122, firstRow: 24, rowMax: 30 },
+  roomy: { tabsY: 82, resetY: 126, headY: 170, firstRow: 32, rowMax: 34 },
+  tight: { tabsY: 72, resetY: 108, headY: 142, firstRow: 24, rowMax: 30 },
 } as const;
 const ROOMY_FROM = 700;
 
@@ -315,7 +317,8 @@ export class RankingScene extends Phaser.Scene {
       return [placeCell, flag, name, skill, this.cups(entry, y), damage];
     });
 
-    this.layColumns([copy.place, copy.flag, copy.name, copy.skill, copy.trophies, copy.damage], rows);
+    // The cups keep their room: an account's counts grow, the others do not.
+    this.layColumns([copy.place, copy.flag, copy.name, copy.skill, copy.trophies, copy.damage], rows, 4);
   }
 
   /** The account's days at first, second and third place, as cups with a count each. */
@@ -380,9 +383,11 @@ export class RankingScene extends Phaser.Scene {
   /**
    * Places the columns: each as wide as its widest cell or head, the same
    * gap between every two, the whole centred. Every cell and head is
-   * centred in its column.
+   * centred in its column. The gap is a share (COLUMN_GAP_SHARE) of what
+   * would spread the table over its full width; a `keep` column holds the
+   * room it would have had at the full gap, so it does not shrink with them.
    */
-  private layColumns(heads: readonly string[], rows: readonly TableCell[][]): void {
+  private layColumns(heads: readonly string[], rows: readonly TableCell[][], keep?: number): void {
     const { headY, tableWidth } = this.layout;
     const headCells: TableCell[] = heads.map((label) => {
       const text = this.add
@@ -392,8 +397,12 @@ export class RankingScene extends Phaser.Scene {
       return { parts: [{ obj: text, dx: 0 }], width: text.width };
     });
     const widths = headCells.map((head, column) => Math.max(head.width, ...rows.map((row) => row[column]?.width ?? 0)));
+    const spread = Math.max(MIN_COLUMN_GAP, (tableWidth - widths.reduce((sum, w) => sum + w, 0)) / Math.max(1, heads.length - 1));
+    const gap = spread * COLUMN_GAP_SHARE;
+    if (keep !== undefined && widths[keep] !== undefined) {
+      widths[keep] += spread - gap;
+    }
     const content = widths.reduce((sum, w) => sum + w, 0);
-    const gap = Math.max(MIN_COLUMN_GAP, (tableWidth - content) / Math.max(1, heads.length - 1));
     const total = content + gap * (heads.length - 1);
     let x = (this.scale.width - total) / 2;
     // Wider than a phone even at the least gap: the whole table drawn

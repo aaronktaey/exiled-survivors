@@ -75,7 +75,7 @@ wrong shape.
 ## The test harness
 
 `tests/` drives a real Chrome over CDP against the dev server and checks the
-running game, not units. 43 suites, ~1120 checks. It is the only thing that has
+running game, not units. 43 suites, ~1125 checks. It is the only thing that has
 caught most of what has gone wrong here, so run all of it before every commit.
 
 ```sh
@@ -258,6 +258,9 @@ Read `git log` for what changed and when. What is not in the log:
   wide as its widest cell or head, one equal gap between all of them, every
   cell centred, and the whole scaled down when a phone is too narrow even
   at `MIN_COLUMN_GAP`. A new column is a head and a cell, nothing more.
+  The gap is `COLUMN_GAP_SHARE` of the one that would fill the table's
+  width; the cups column is passed as `keep` and holds the room the full
+  gap gave it (the user asked for tighter columns but not tighter cups).
   Each run on the board carries its main skill (`skill`, from
   `GameOverData.mainSkill`), and each account its `users.daily_wins`,
   `daily_seconds` and `daily_thirds` (gold, silver, bronze cups ×N): the
@@ -448,7 +451,14 @@ Read `git log` for what changed and when. What is not in the log:
   the store's, not the screen's); without it, it hangs from the root. Ranks
   bought before a line was gated are kept. `PassiveScene.layOut` places
   whatever shape the table gives — root on top, or on its side
-  (`sideways`) on a wide window — so a new line is a table entry.
+  (`sideways`) on a wide window — so a new line is a table entry. The
+  spacing shrinks to fit only down to `PASSIVE_TREE.minLevelGap` /
+  `minLeafGap`; a bigger tree runs off its window and is dragged. The tree
+  lives in its own container, drawn only by `treeCam` (a camera whose
+  viewport is the framed window — no `setMask` under WebGL), so its
+  coordinates are the window's own; a node is picked on the release of a
+  press that did not travel `DRAG_FROM_PX`, and `pan`/`scrollTo` keep some
+  of the tree in view (`dragMargin`).
 - **폭발의 구슬 only climbs.** It picks among lines below tier 1, and the
   replacement comes only from 속성 that have the rung above; a weapon with
   nothing but tier-1 lines refuses it.

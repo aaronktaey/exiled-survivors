@@ -15,6 +15,28 @@ export interface PatchNote {
 
 export const PATCH_NOTES: readonly PatchNote[] = [
   {
+    version: '0.49',
+    date: '2026-10-16',
+    changes: {
+      ko: [
+        '패시브 트리를 마우스나 손가락으로 끌어 상하좌우로 옮길 수 있습니다. 마우스 휠로도 움직입니다. 노드는 끌지 않고 눌렀을 때만 선택됩니다.',
+        '랭킹 표의 칸 사이 간격을 좁히고(트로피 칸은 그대로), 탭 · 초기화 시간 · 표 사이를 조금 더 띄웠습니다.',
+      ],
+      en: [
+        'The passive tree can be dragged in any direction with the mouse or a finger, and moved with the mouse wheel. A node is picked only by a press that does not drag.',
+        'The ranking table’s columns sit closer together (the cups column keeps its room), with a little more space between the tabs, the reset time and the table.',
+      ],
+      ja: [
+        'パッシブツリーをマウスや指でドラッグして上下左右に動かせます。マウスホイールでも動きます。ノードはドラッグせずに押したときだけ選択されます。',
+        'ランキング表の列の間隔を詰め（トロフィー列はそのまま）、タブ・リセット時刻・表の間を少し広げました。',
+      ],
+      zh: [
+        '被动技能树可以用鼠标或手指向任意方向拖动，也可以用鼠标滚轮移动。只有不拖动地按下时才会选中节点。',
+        '排行表的列间距缩小（奖杯列保持不变），标签、重置时间与表格之间的间距稍微加大。',
+      ],
+    },
+  },
+  {
     version: '0.48',
     date: '2026-10-16',
     changes: {

@@ -63,15 +63,21 @@ const kinds = await run(`
   }
   s.choosing = false;
   out.spec = Object.fromEntries(['grunt', 'brute', 'runner', 'shooter'].map((k) =>
-    [k, { hp: window.config.ENEMY_KINDS[k].maxHp, contact: window.config.ENEMY_KINDS[k].contactDamage }]));
+    [k, { hp: window.config.ENEMY_KINDS[k].maxHp, contact: window.config.ENEMY_KINDS[k].contactDamage,
+          speed: window.config.ENEMY_KINDS[k].speed }]));
+  out.variance = window.config.ENEMY.speedVariance;
   return out;
 `);
 const SPEC = kinds.spec;
+// Each body is spawned at its kind's speed give or take ENEMY.speedVariance,
+// so one spawn against another is a coin toss; the table is compared, and
+// each spawn is checked to be inside its kind's band.
+const inBand = (kind) => Math.abs(kinds[kind].speed - SPEC[kind].speed) <= SPEC[kind].speed * kinds.variance + 1;
 console.log('kinds:', JSON.stringify(kinds, null, 1));
 check('일반: the configured HP and contact', kinds.grunt.hp === FULL && kinds.grunt.contact === SPEC.grunt.contact,
   `hp=${kinds.grunt.hp} contact=${kinds.grunt.contact} speed≈${kinds.grunt.speed}`);
 check('거구: its configured HP and the slowest of the four',
-  kinds.brute.hp === SPEC.brute.hp && kinds.brute.speed < kinds.grunt.speed,
+  kinds.brute.hp === SPEC.brute.hp && SPEC.brute.speed < SPEC.grunt.speed && inBand('brute'),
   `hp=${kinds.brute.hp} speed≈${kinds.brute.speed} vs 일반 ≈${kinds.grunt.speed}`);
 check('거구 hits hardest on contact and pays the most XP',
   kinds.brute.contact === SPEC.brute.contact &&
@@ -83,7 +89,7 @@ check('거구 is visibly bigger', kinds.brute.drawn[0] === 26 && kinds.brute.bod
 check('질주: fastest and frailest',
   kinds.runner.hp === SPEC.runner.hp &&
     Object.values(SPEC).every((k) => k.hp >= SPEC.runner.hp) &&
-    kinds.runner.speed > kinds.grunt.speed * 1.5,
+    SPEC.runner.speed > SPEC.grunt.speed * 1.5 && inBand('runner'),
   `hp=${kinds.runner.hp} speed≈${kinds.runner.speed}`);
 check('사수: its own stat line and texture',
   kinds.shooter.hp === SPEC.shooter.hp && kinds.shooter.tex === 'tex-enemy-shooter' &&
