@@ -297,7 +297,7 @@ export class RankingScene extends Phaser.Scene {
           .text(x, y, text, { fontFamily: 'system-ui, sans-serif', fontSize, color })
           .setOrigin(origin, 0.5);
       // The skill the run was played on, before the name; the account's
-      // days at first place, after it.
+      // days at first, second and third place, after it.
       const icon = Math.min(20, rowHeight - 2);
       const skillKey = entry.skill ? SKILL_ICONS[entry.skill]?.key : undefined;
       const nameX = columns.name + (skillKey ? icon + 4 : 0);
@@ -313,16 +313,24 @@ export class RankingScene extends Phaser.Scene {
       if (skillKey) {
         this.board!.add(this.add.image(columns.name, y, skillKey).setOrigin(0, 0.5).setDisplaySize(icon, icon).setName('skill'));
       }
-      if (entry.wins > 0) {
-        const at = nameX + name.width + 8;
-        const cup = Math.min(16, rowHeight - 4);
-        this.board!.add(this.add.image(at, y, TEXTURES.trophy).setOrigin(0, 0.5).setDisplaySize(cup, cup));
-        this.board!.add(
-          this.add
-            .text(at + cup + 2, y, `×${entry.wins}`, { fontFamily: 'system-ui, sans-serif', fontSize: TEXT.size.hint, color: COLORS.gearText })
-            .setOrigin(0, 0.5)
-            .setName('wins'),
-        );
+      let at = nameX + name.width + 8;
+      const cup = Math.min(16, rowHeight - 4);
+      const podium: [number, string, string][] = [
+        [entry.wins, TEXTURES.trophy, 'wins'],
+        [entry.seconds, TEXTURES.trophySilver, 'seconds'],
+        [entry.thirds, TEXTURES.trophyBronze, 'thirds'],
+      ];
+      for (const [count, texture, tag] of podium) {
+        if (count <= 0) {
+          continue;
+        }
+        this.board!.add(this.add.image(at, y, texture).setOrigin(0, 0.5).setDisplaySize(cup, cup).setName(`${tag}Cup`));
+        const times = this.add
+          .text(at + cup + 2, y, `×${count}`, { fontFamily: 'system-ui, sans-serif', fontSize: TEXT.size.hint, color: COLORS.gearText })
+          .setOrigin(0, 0.5)
+          .setName(tag);
+        this.board!.add(times);
+        at += cup + 2 + times.width + 6;
       }
       this.rows.push(row);
     });

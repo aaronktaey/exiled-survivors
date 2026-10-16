@@ -67,7 +67,8 @@ await sleep(1000);
 const title = await scene('MenuScene', `
   return { champion: s.champion?.text ?? null, icon: !!s.icons.views.find((v) => v.button.id === 'ranking'),
     podium: s.podium.map((p) => p.text), right: Math.max(...s.podium.map((p) => p.x + p.displayWidth)),
-    width: s.scale.width, champY: s.champion.y, podY: s.podium[0]?.y };
+    width: s.scale.width, champY: s.champion.y, podY: s.podium[0]?.y,
+    cups: s.podiumCups.map((c, i) => ({ on: c.visible, key: c.texture.key, left: c.x < s.podium[i].x })) };
 `);
 check('first place is under the logo', /1위/.test(title.champion ?? '') && /25,000/.test(title.champion ?? ''),
   title.champion);
@@ -76,6 +77,10 @@ check('and second and third on the line under it, inside the screen',
     /3위/.test(title.podium?.[1] ?? '') && /23,000/.test(title.podium?.[1] ?? '') &&
     title.podY > title.champY && title.right <= title.width,
   JSON.stringify(title.podium));
+check('2위 wears a silver cup and 3위 a bronze one, in front of each',
+  title.cups?.[0]?.on && title.cups[0].key === 'tex-trophy-silver' && title.cups[0].left &&
+    title.cups?.[1]?.on && title.cups[1].key === 'tex-trophy-bronze' && title.cups[1].left,
+  JSON.stringify(title.cups));
 check('and the corner has a 랭킹 icon', title.icon);
 await shot('ranking-01-title');
 
@@ -299,7 +304,7 @@ const shared = await cdp.send('Runtime.evaluate', { awaitPromise: true, returnBy
   const R = window.config.RANKING;
   const realFetch = window.fetch;
   const board = [
-    { name: 'FAR', emoji: '', flag: 'TW', damage: 99999, level: 9, survivedMs: 60000, at: new Date().toISOString(), skill: 'voidOrb', wins: 3 },
+    { name: 'FAR', emoji: '', flag: 'TW', damage: 99999, level: 9, survivedMs: 60000, at: new Date().toISOString(), skill: 'voidOrb', wins: 3, seconds: 2, thirds: 1 },
     { name: 'BAD', emoji: '', flag: '', damage: 1e15, level: 1, survivedMs: 1, at: 'x' },
   ];
   const posts = [];
@@ -352,8 +357,9 @@ console.log('shared:', JSON.stringify(sh));
 check('the server’s board replaces this device’s when it is read',
   sh.source === 'shared' && sh.top?.[0] === 'FAR:TW' && !sh.top?.some((n) => n.startsWith('OLD')),
   JSON.stringify(sh.top));
-check('a row keeps the skill it was played on and the account’s wins',
-  sh.far?.skill === 'voidOrb' && sh.far?.wins === 3, JSON.stringify(sh.far));
+check('a row keeps the skill it was played on and the account’s days at first, second and third',
+  sh.far?.skill === 'voidOrb' && sh.far?.wins === 3 && sh.far?.seconds === 2 && sh.far?.thirds === 1,
+  JSON.stringify(sh.far));
 check('a damage past belief is not taken from it', !sh.top?.some((n) => n.startsWith('BAD')), JSON.stringify(sh.top));
 check('a run entered here is handed in, with its check token, and the board sent back is shown',
   sh.posted?.some((p) => p.name === 'NEW' && p.token) && sh.afterPush === 'shared' &&

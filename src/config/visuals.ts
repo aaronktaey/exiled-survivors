@@ -26,6 +26,9 @@ export const COLORS = {
   enemyErratic: 0x9b6bff,
   /** Plain gold: the 랭킹 trophy, and the arrow that points at a 도망자. */
   gold: 0xffe066,
+  /** 2위 and 3위's cups. */
+  silver: 0xd9dee8,
+  bronze: 0xd08a4e,
   bossOutline: 0xffd34d,
   /** 화염구's burst where it lands. */
   fireBlast: 0xff8a3d,
@@ -166,6 +169,9 @@ export const TEXTURES = {
   orbMango: "tex-orb-mango",
   passive: "tex-passive",
   trophy: "tex-trophy",
+  /** 2위 and 3위: the same cup in silver and bronze. */
+  trophySilver: "tex-trophy-silver",
+  trophyBronze: "tex-trophy-bronze",
   logo: "tex-logo",
 } as const;
 

@@ -19,6 +19,9 @@ export interface RankEntry {
   readonly skill: string;
   /** How many days the account behind it finished first on the shared board. */
   readonly wins: number;
+  /** And second, and third. */
+  readonly seconds: number;
+  readonly thirds: number;
 }
 
 /** What a run hands in to be ranked. */
@@ -107,6 +110,8 @@ function clean(raw: unknown): RankEntry | null {
     at: String(e.at ?? ''),
     skill: /^[A-Za-z]{1,32}$/.test(String(e.skill ?? '')) ? String(e.skill) : '',
     wins: Math.max(0, Math.floor(Number(e.wins) || 0)),
+    seconds: Math.max(0, Math.floor(Number(e.seconds) || 0)),
+    thirds: Math.max(0, Math.floor(Number(e.thirds) || 0)),
   };
 }
 
@@ -350,6 +355,8 @@ class RankingStore {
     try {
       const response = await fetch(RANKING.shared.url, {
         method,
+        // Never the browser's copy: an old board kept for hours was what a PC showed.
+        cache: 'no-store',
         headers: payload ? { 'Content-Type': 'application/json' } : undefined,
         body: payload ? JSON.stringify(payload) : undefined,
         signal: controller?.signal,

@@ -15,6 +15,28 @@ export interface PatchNote {
 
 export const PATCH_NOTES: readonly PatchNote[] = [
   {
+    version: '0.47',
+    date: '2026-10-16',
+    changes: {
+      ko: [
+        'PC에서 전체 랭킹이 몇 시간 동안 갱신되지 않던 문제를 고쳤습니다. 브라우저가 예전 랭킹을 붙들고 있었습니다.',
+        '전체 랭킹에 금 트로피와 함께 일일 랭킹 2위 횟수(은 트로피 ×N)와 3위 횟수(동 트로피 ×N)가 표시되고, 시작 화면의 2위·3위 옆에도 은·동 트로피가 붙습니다. 지난 날들의 2위·3위도 함께 세었습니다.',
+      ],
+      en: [
+        'Fixed the shared ranking not updating for hours on PC — the browser was holding on to an old board.',
+        'Next to the gold cups, the shared ranking now shows how many days each account finished second (a silver cup ×N) and third (a bronze cup ×N), and 2nd and 3rd on the title wear silver and bronze cups. Past days’ second and third places are counted too.',
+      ],
+      ja: [
+        'PC で全体ランキングが数時間更新されなかった問題を修正しました。ブラウザが古いランキングを保持していました。',
+        '全体ランキングに金トロフィーと並んで、デイリーランキング 2 位の回数（銀トロフィー ×N）と 3 位の回数（銅トロフィー ×N）が表示され、タイトル画面の 2 位・3 位にも銀・銅のトロフィーが付きます。過去の日の 2 位・3 位も数えています。',
+      ],
+      zh: [
+        '修复了 PC 上全部排行数小时不更新的问题 — 浏览器一直保留着旧的排行。',
+        '全部排行在金奖杯旁新增每日排行第二名次数（银奖杯 ×N）与第三名次数（铜奖杯 ×N），标题画面的第 2、3 名旁也会显示银、铜奖杯。过去各天的第二、三名也已计入。',
+      ],
+    },
+  },
+  {
     version: '0.46',
     date: '2026-10-16',
     changes: {

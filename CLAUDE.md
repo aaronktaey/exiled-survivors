@@ -75,7 +75,7 @@ wrong shape.
 ## The test harness
 
 `tests/` drives a real Chrome over CDP against the dev server and checks the
-running game, not units. 43 suites, ~1115 checks. It is the only thing that has
+running game, not units. 43 suites, ~1120 checks. It is the only thing that has
 caught most of what has gone wrong here, so run all of it before every commit.
 
 ```sh
@@ -255,10 +255,17 @@ Read `git log` for what changed and when. What is not in the log:
   signed in or not, synced with the rest of localStorage. The name last
   entered is remembered in `STORAGE.rankName`.
   Each run on the board carries its main skill (`skill`, from
-  `GameOverData.mainSkill`), and each account its `users.daily_wins`: the
-  first look at the board on a new day credits every finished day's first
-  place once (`tallyWins`, claiming `tally.through_day` before crediting, so
-  two looks cannot count a day twice; migration 0006).
+  `GameOverData.mainSkill`), and each account its `users.daily_wins`,
+  `daily_seconds` and `daily_thirds` (gold, silver, bronze cups ×N): the
+  first look at the board on a new day credits every finished day's top
+  three once (`tallyWins`, claiming `tally.through_day` before crediting, so
+  two looks cannot count a day twice; migrations 0006, 0007 — 0007 filled in
+  second and third for the days already counted).
+  **No cached answer is kept by the browser** (`unstored` in server/http.ts,
+  and the client fetches with `cache: 'no-store'`): a copy out of the
+  Workers cache comes back from Cloudflare re-marked `max-age=14400` (the
+  zone's browser TTL), and a PC that kept it showed a board hours old while
+  the phone was current. The edge copy still lasts `RULES.cacheSeconds`.
   To look at the live database: `npm run db -- "SELECT * FROM daily_best"`
   (read-only queries only, unless the user asks; the dashboard's D1 console
   works too).

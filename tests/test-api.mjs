@@ -37,7 +37,12 @@ execSync(
     `INSERT INTO identities (provider, subject, user_id) VALUES ('test', 'boss', 'admin-user'); ` +
     // A best from a day long gone: the board starts over every day, so it must not show.
     `INSERT INTO daily_best (day, user_id, entry_id, damage, level, survived_ms, at) ` +
-    `VALUES (0, 'admin-user', 0, 999999999, 50, 3600000, '1970-01-01T00:00:00.000Z')"`,
+    `VALUES (0, 'admin-user', 0, 999999999, 50, 3600000, '1970-01-01T00:00:00.000Z'); ` +
+    // Second and third that day, for the silver and bronze counts.
+    `INSERT INTO users (id, created_at, display_name, rank_name) VALUES ('silver-user', 0, 'silver', 'SIL'), ('bronze-user', 0, 'bronze', 'BRO'); ` +
+    `INSERT INTO identities (provider, subject, user_id) VALUES ('test', 'silver', 'silver-user'), ('test', 'bronze', 'bronze-user'); ` +
+    `INSERT INTO daily_best (day, user_id, entry_id, damage, level, survived_ms, at) VALUES ` +
+    `(0, 'silver-user', 0, 999999, 50, 3600000, '1970-01-01T00:00:00.000Z'), (0, 'bronze-user', 0, 9999, 50, 3600000, '1970-01-01T00:00:00.000Z')"`,
   { cwd: ROOT, env, stdio: 'ignore' },
 );
 const worker = spawn(
@@ -208,6 +213,20 @@ try {
   check('the first place of a finished day is counted as a win for that account, once',
     bossBest.body?.wins === 1 && kept.body?.entries?.find((e) => e.name === 'ACE')?.wins === 0,
     JSON.stringify({ boss: bossBest.body?.wins, ace: kept.body?.entries?.find((e) => e.name === 'ACE')?.wins }));
+  const silver = browser();
+  await silver.signIn('silver');
+  const bronze = browser();
+  await bronze.signIn('bronze');
+  const silverBest = await read(await silver.call('/api/ranking/me'));
+  const bronzeBest = await read(await bronze.call('/api/ranking/me'));
+  check('and its second and third place as theirs, each once',
+    silverBest.body?.seconds === 1 && silverBest.body?.wins === 0 && silverBest.body?.thirds === 0 &&
+      bronzeBest.body?.thirds === 1 && bronzeBest.body?.seconds === 0 && bossBest.body?.seconds === 0,
+    JSON.stringify({ silver: silverBest.body, bronze: bronzeBest.body }));
+  const boardHeaders = await fetch(`${BASE}/api/ranking`);
+  await boardHeaders.arrayBuffer();
+  check('the board is never kept by the browser, even when the edge has a copy',
+    boardHeaders.headers.get('cache-control') === 'no-store', boardHeaders.headers.get('cache-control'));
 
   // --- the cloud save ---
   const empty = await read(await alice.call('/api/save'));

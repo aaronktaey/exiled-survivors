@@ -508,22 +508,29 @@ export class BootScene extends Phaser.Scene {
     g.destroy();
   }
 
-  /** 랭킹's icon in the title's corner: a gold cup on a stem and a base. */
+  /** 랭킹's icon in the title's corner: a gold cup on a stem and a base — and the same in silver and bronze for 2위 and 3위. */
   private createTrophyTexture(): void {
     const size = 48;
-    const graphics = this.add.graphics();
-    graphics.fillStyle(COLORS.gold, 1);
-    // The handles, then the cup over them.
-    graphics.lineStyle(4, COLORS.gold, 1);
-    graphics.strokeCircle(size * 0.26, size * 0.32, size * 0.1);
-    graphics.strokeCircle(size * 0.74, size * 0.32, size * 0.1);
-    graphics.fillRoundedRect(size * 0.28, size * 0.14, size * 0.44, size * 0.38, size * 0.14);
-    graphics.fillRect(size * 0.45, size * 0.5, size * 0.1, size * 0.18);
-    graphics.fillRect(size * 0.3, size * 0.68, size * 0.4, size * 0.12);
-    graphics.fillStyle(0xffffff, 0.45);
-    graphics.fillRect(size * 0.36, size * 0.2, size * 0.06, size * 0.22);
-    graphics.generateTexture(TEXTURES.trophy, size, size);
-    graphics.destroy();
+    const cups: [string, number][] = [
+      [TEXTURES.trophy, COLORS.gold],
+      [TEXTURES.trophySilver, COLORS.silver],
+      [TEXTURES.trophyBronze, COLORS.bronze],
+    ];
+    for (const [key, color] of cups) {
+      const graphics = this.add.graphics();
+      graphics.fillStyle(color, 1);
+      // The handles, then the cup over them.
+      graphics.lineStyle(4, color, 1);
+      graphics.strokeCircle(size * 0.26, size * 0.32, size * 0.1);
+      graphics.strokeCircle(size * 0.74, size * 0.32, size * 0.1);
+      graphics.fillRoundedRect(size * 0.28, size * 0.14, size * 0.44, size * 0.38, size * 0.14);
+      graphics.fillRect(size * 0.45, size * 0.5, size * 0.1, size * 0.18);
+      graphics.fillRect(size * 0.3, size * 0.68, size * 0.4, size * 0.12);
+      graphics.fillStyle(0xffffff, 0.45);
+      graphics.fillRect(size * 0.36, size * 0.2, size * 0.06, size * 0.22);
+      graphics.generateTexture(key, size, size);
+      graphics.destroy();
+    }
   }
 
   /**

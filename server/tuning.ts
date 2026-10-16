@@ -11,7 +11,7 @@
 import { DIAL_PATHS, TUNING } from '../src/config/tuning';
 import { isAdmin, sessionUser } from './auth';
 import type { Env } from './env';
-import { json, readJson, sameOrigin } from './http';
+import { json, readJson, sameOrigin, unstored } from './http';
 
 const PATH = '/api/balance';
 const cacheKey = (request: Request): string => new URL(PATH, request.url).toString();
@@ -51,11 +51,11 @@ export async function getTuning(request: Request, env: Env, ctx: ExecutionContex
   const key = new Request(cacheKey(request), { method: 'GET' });
   const hit = await cache.match(key);
   if (hit) {
-    return hit;
+    return unstored(hit);
   }
   const response = json(await stored(env), 200, { 'Cache-Control': `public, max-age=${TUNING.cacheSeconds}` });
   ctx.waitUntil(cache.put(key, response.clone()));
-  return response;
+  return unstored(response);
 }
 
 export async function putTuning(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {

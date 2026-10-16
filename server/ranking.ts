@@ -16,7 +16,7 @@
 import { RANKING, nextRankingReset, rankingDayStart } from '../src/config/system';
 import { sessionUser } from './auth';
 import type { Env } from './env';
-import { hex, json, readJson, sameOrigin, sha256 } from './http';
+import { hex, json, readJson, sameOrigin, sha256, unstored } from './http';
 
 /** What a run is checked against, beyond the shape the client already enforces. */
 export const RULES = {
@@ -56,7 +56,13 @@ export interface RankRow {
   readonly skill: string;
   /** How many days this account has finished first. */
   readonly wins: number;
+  /** And second, and third. */
+  readonly seconds: number;
+  readonly thirds: number;
 }
+
+/** Which count a finished day's place adds to. */
+const PODIUM_COLUMN = ['daily_wins', 'daily_seconds', 'daily_thirds'] as const;
 
 /** A skill id as the game writes it; anything else is stored as none. */
 const SKILL_ID = /^[A-Za-z]{1,32}$/;
@@ -69,7 +75,8 @@ const DAY_MS = 86_400_000;
  */
 const BOARD = `
   SELECT b.user_id AS userId, u.rank_name AS name, u.rank_emoji AS emoji, u.rank_flag AS flag,
-         b.damage, b.level, b.survived_ms AS survivedMs, b.at, b.skill, u.daily_wins AS wins
+         b.damage, b.level, b.survived_ms AS survivedMs, b.at, b.skill, u.daily_wins AS wins,
+         u.daily_seconds AS seconds, u.daily_thirds AS thirds
     FROM daily_best b JOIN users u ON u.id = b.user_id
    WHERE b.day = ?2
    ORDER BY b.damage DESC, b.at ASC`;
@@ -86,12 +93,12 @@ const boardKey = (request: Request, day: number): string =>
   new URL(`${BOARD_PATH}?day=${day}`, request.url).toString();
 
 const publicRows = (rows: readonly (RankRow & { userId: string })[]): RankRow[] =>
-  rows.map(({ name, emoji, flag, damage, level, survivedMs, at, skill, wins }) => ({
-    name, emoji, flag, damage, level, survivedMs, at, skill, wins,
+  rows.map(({ name, emoji, flag, damage, level, survivedMs, at, skill, wins, seconds, thirds }) => ({
+    name, emoji, flag, damage, level, survivedMs, at, skill, wins, seconds, thirds,
   }));
 
 /**
- * Credits each finished day's first place with a win, once. Run on a look at
+ * Credits each finished day's first, second and third place, once. Run on a look at
  * the board after a reset; the days are claimed before anyone is credited,
  * so two looks at once cannot count the same day twice.
  */
@@ -108,17 +115,18 @@ async function tallyWins(env: Env, today: number): Promise<void> {
   if ((claim.meta?.changes ?? 0) !== 1) {
     return;
   }
-  const winners = await env.DB.prepare(
-    `SELECT user_id AS userId FROM (
+  const placed = await env.DB.prepare(
+    `SELECT user_id AS userId, n FROM (
        SELECT user_id, ROW_NUMBER() OVER (PARTITION BY day ORDER BY damage DESC, at ASC) AS n
          FROM daily_best WHERE day > ?1 AND day <= ?2
-     ) WHERE n = 1`,
+     ) WHERE n <= ${PODIUM_COLUMN.length}`,
   )
     .bind(through, lastDone)
-    .all<{ userId: string }>();
-  const credit = (winners.results ?? []).map((w) =>
-    env.DB.prepare('UPDATE users SET daily_wins = daily_wins + 1 WHERE id = ?1').bind(w.userId),
-  );
+    .all<{ userId: string; n: number }>();
+  const credit = (placed.results ?? []).map(({ userId, n }) => {
+    const column = PODIUM_COLUMN[n - 1]!;
+    return env.DB.prepare(`UPDATE users SET ${column} = ${column} + 1 WHERE id = ?1`).bind(userId);
+  });
   if (credit.length > 0) {
     await env.DB.batch(credit);
   }
@@ -132,7 +140,7 @@ export async function board(request: Request, env: Env, ctx: ExecutionContext): 
   const key = new Request(boardKey(request, day), { method: 'GET' });
   const hit = await cache.match(key);
   if (hit) {
-    return hit;
+    return unstored(hit);
   }
 
   // A new day: yesterday's (and any before it not yet counted) first place is credited.
@@ -143,7 +151,7 @@ export async function board(request: Request, env: Env, ctx: ExecutionContext): 
     'Cache-Control': `public, max-age=${Math.min(RULES.cacheSeconds, untilReset)}`,
   });
   ctx.waitUntil(cache.put(key, response.clone()));
-  return response;
+  return unstored(response);
 }
 
 /** The signed-in account's best run, and its place: 0 off the board, null signed out. */
@@ -158,12 +166,14 @@ export async function mine(request: Request, env: Env): Promise<Response> {
   )
     .bind(user.id, day)
     .first<{ damage: number; level: number; survivedMs: number; at: string }>();
-  const winsRow = await env.DB.prepare('SELECT daily_wins AS wins FROM users WHERE id = ?1')
+  const podium = await env.DB.prepare(
+    'SELECT daily_wins AS wins, daily_seconds AS seconds, daily_thirds AS thirds FROM users WHERE id = ?1',
+  )
     .bind(user.id)
-    .first<{ wins: number }>();
-  const wins = winsRow?.wins ?? 0;
+    .first<{ wins: number; seconds: number; thirds: number }>();
+  const counts = { wins: podium?.wins ?? 0, seconds: podium?.seconds ?? 0, thirds: podium?.thirds ?? 0 };
   if (!best) {
-    return json({ best: null, place: 0, wins }, 200, { 'Cache-Control': 'no-store' });
+    return json({ best: null, place: 0, ...counts }, 200, { 'Cache-Control': 'no-store' });
   }
   const above = await env.DB.prepare(
     'SELECT COUNT(*) AS n FROM daily_best WHERE day = ?3 AND (damage > ?1 OR (damage = ?1 AND at < ?2))',
@@ -174,7 +184,7 @@ export async function mine(request: Request, env: Env): Promise<Response> {
     {
       best: { name: user.rankName, emoji: user.rankEmoji, flag: user.rankFlag, ...best },
       place: (above?.n ?? 0) + 1,
-      wins,
+      ...counts,
     },
     200,
     { 'Cache-Control': 'no-store' },

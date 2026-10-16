@@ -154,7 +154,7 @@ class TuningStore {
   /** Asks the server for everyone's values. Laid over at once unless a run is on. */
   public async load(game?: Phaser.Game): Promise<void> {
     this.game = game ?? this.game;
-    const reply = await accountRequest('/api/balance', {});
+    const reply = await accountRequest('/api/balance', { cache: 'no-store' });
     const body = reply.body as { overrides?: Record<string, number>; updatedAt?: number } | null;
     if (!reply.ok || !body) {
       return;

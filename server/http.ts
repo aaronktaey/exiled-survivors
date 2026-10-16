@@ -116,3 +116,16 @@ export async function readJson(request: Request, maxBytes: number): Promise<unkn
     return null;
   }
 }
+
+
+/**
+ * The edge keeps its copy of a cached answer for a few seconds, but a browser must not:
+ * a copy from the edge's cache comes back from Cloudflare marked to be kept
+ * for hours (the zone's browser TTL), and a PC that kept the ranking showed a
+ * board hours old. What goes to the browser is never stored there.
+ */
+export function unstored(response: Response): Response {
+  const copy = new Response(response.body, response);
+  copy.headers.set('Cache-Control', 'no-store');
+  return copy;
+}

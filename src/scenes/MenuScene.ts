@@ -36,6 +36,9 @@ let syncStarted = false;
 /** How many rows the title lists, for centring it before they are built. */
 const ROW_COUNT = 5;
 
+/** How big 2위's and 3위's cups are drawn beside them on the title. */
+const PODIUM_CUP = 16;
+
 /** Title screen: the logo, and the ways out of it. */
 export class MenuScene extends Phaser.Scene {
   public static readonly KEY = SCENES.menu;
@@ -50,6 +53,8 @@ export class MenuScene extends Phaser.Scene {
   /** Second and third place, on the line under first. Public for tests. */
   public podium: Phaser.GameObjects.Text[] = [];
   private podiumFlags: Phaser.GameObjects.Image[] = [];
+  /** 2위's silver cup and 3위's bronze one. Public for tests. */
+  public podiumCups: Phaser.GameObjects.Image[] = [];
   /** First place's sparks, while there is a first place. */
   private sparks?: Phaser.Time.TimerEvent;
   /** Reloading onto a new version: the title takes no more input. */
@@ -67,6 +72,7 @@ export class MenuScene extends Phaser.Scene {
     this.updatingText = undefined;
     this.podium = [];
     this.podiumFlags = [];
+    this.podiumCups = [];
     this.sparks = undefined;
   }
 
@@ -331,6 +337,13 @@ export class MenuScene extends Phaser.Scene {
       text.on(Phaser.Input.Events.GAMEOBJECT_POINTER_DOWN, () => this.openOverlay(SCENES.ranking));
       this.podium.push(text);
       this.podiumFlags.push(this.add.image(0, y + MENU.podiumGap, '__DEFAULT').setDepth(DEPTH.ui).setVisible(false));
+      this.podiumCups.push(
+        this.add
+          .image(0, y + MENU.podiumGap, i === 0 ? TEXTURES.trophySilver : TEXTURES.trophyBronze)
+          .setDisplaySize(PODIUM_CUP, PODIUM_CUP)
+          .setDepth(DEPTH.ui)
+          .setVisible(false),
+      );
     }
 
     const draw = () => this.drawChampion(width);
@@ -373,7 +386,7 @@ export class MenuScene extends Phaser.Scene {
     this.drawPodium(width);
   }
 
-  /** Second and third, side by side under first place, each with its flag. */
+  /** Second and third, side by side under first place, each with its cup and flag. */
   private drawPodium(width: number): void {
     const top = ranking.top;
     const gap = 28;
@@ -394,8 +407,9 @@ export class MenuScene extends Phaser.Scene {
       if (entry?.flag) {
         flag.setTexture(flagTexture(entry.flag)).setDisplaySize(18, 12);
       }
+      this.podiumCups[i]!.setVisible(Boolean(entry)).setDisplaySize(PODIUM_CUP, PODIUM_CUP);
       if (entry) {
-        total += (total > 0 ? gap : 0) + (entry.flag ? 22 : 0) + text.width;
+        total += (total > 0 ? gap : 0) + PODIUM_CUP + 4 + (entry.flag ? 22 : 0) + text.width;
       }
     });
     // Too wide for a phone: drawn smaller rather than run off the edge.
@@ -406,6 +420,9 @@ export class MenuScene extends Phaser.Scene {
         return;
       }
       const flag = this.podiumFlags[i]!;
+      const cup = this.podiumCups[i]!;
+      cup.setDisplaySize(PODIUM_CUP * scale, PODIUM_CUP * scale).setX(x + (PODIUM_CUP / 2) * scale);
+      x += (PODIUM_CUP + 4) * scale;
       if (flag.visible) {
         flag.setScale(flag.scaleX * scale, flag.scaleY * scale).setX(x + 9 * scale);
         x += 22 * scale;
