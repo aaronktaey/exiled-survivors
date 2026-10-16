@@ -100,6 +100,22 @@ export interface Strings {
     readonly hintKeyboard: string;
     readonly hintTouch: string;
   };
+  /** 스킬 각성: what a skill does on top once it reaches SKILL_MASTERY.level. */
+  readonly mastery: {
+    /** The banner when it happens: {skill}. */
+    readonly title: string;
+    /** On the skill's card: "각성 — {effect}". */
+    readonly card: string;
+    /** One line a skill. {seconds} {share} {freeze} {bolts} filled from SKILL_MASTERY. */
+    readonly effects: {
+      readonly meleeStrike: string;
+      readonly fireball: string;
+      readonly chainLightning: string;
+      readonly iceSpear: string;
+      readonly voidOrb: string;
+      readonly thunderStrike: string;
+    };
+  };
   readonly menu: {
     /** Over the title while it reloads onto a new version. */
     readonly updating: string;
@@ -219,6 +235,8 @@ export interface Strings {
     readonly sumHp: string;
     readonly sumDrop: string;
     readonly sumBosses: string;
+    /** {scale}: how many times as likely a rare is. */
+    readonly sumRares: string;
     readonly hintKeyboard: string;
     readonly hintTouch: string;
   };

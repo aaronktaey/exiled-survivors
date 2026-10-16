@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 
-import { DEPTH, THUNDER } from '@/config';
+import { DEPTH, SKILL_MASTERY, THUNDER } from '@/config';
 import type { Enemy } from '@/entities/Enemy';
 import { sfx } from '@/systems/Sfx';
 import { drawBolt } from '@/weapons/bolt';
@@ -46,12 +46,24 @@ export class ThunderStrike implements Weapon {
     }
 
     this.sinceCastMs = 0;
-    this.cast(context, first);
+    this.bolt.clear();
+    this.lastStrikes = 0;
+    // 각성: more than one bolt falls at once, each on its own pick.
+    const bolts = context.mastered ? SKILL_MASTERY.thunderBolts : 1;
+    for (let i = 0; i < bolts; i++) {
+      const target = i === 0 ? first : this.pick(context);
+      if (target) {
+        this.cast(context, target);
+      }
+    }
+    this.scene.tweens.killTweensOf(this.bolt);
+    this.bolt.setAlpha(1);
+    this.scene.tweens.add({ targets: this.bolt, alpha: 0, duration: THUNDER.flashMs });
+    sfx.playSkill(this.scene, this.definition.id);
   }
 
-  /** One cast: the first strike, then a recast for as long as kills keep winning the roll. */
+  /** One bolt: the first strike, then a recast for as long as kills keep winning the roll. */
   private cast(context: WeaponContext, first: Enemy): void {
-    this.bolt.clear();
     let target: Enemy | undefined = first;
     let strikes = 0;
 
@@ -64,11 +76,7 @@ export class ThunderStrike implements Weapon {
       target = this.pick(context);
     }
 
-    this.lastStrikes = strikes;
-    this.scene.tweens.killTweensOf(this.bolt);
-    this.bolt.setAlpha(1);
-    this.scene.tweens.add({ targets: this.bolt, alpha: 0, duration: THUNDER.flashMs });
-    sfx.playSkill(this.scene, this.definition.id);
+    this.lastStrikes += strikes;
   }
 
   /** Drops one bolt on `target`. True when it killed. */

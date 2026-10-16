@@ -327,6 +327,15 @@ export class BootScene extends Phaser.Scene {
         // The teeth, as gaps in the jaw.
         graphics.fillRect(size * 0.42, size * 0.6, size * 0.04, size * 0.2);
         graphics.fillRect(size * 0.54, size * 0.6, size * 0.04, size * 0.2);
+      } else if (bone.id === 'spine') {
+        // A column of vertebrae, each with a spur either side.
+        for (let i = 0; i < 4; i++) {
+          const y = size * (0.16 + i * 0.2);
+          graphics.fillRoundedRect(size * 0.36, y, size * 0.28, size * 0.14, size * 0.05);
+          graphics.fillRect(size * 0.22, y + size * 0.04, size * 0.56, size * 0.06);
+        }
+        graphics.fillStyle(0x15181f, 0.3);
+        graphics.fillRect(size * 0.48, size * 0.16, size * 0.04, size * 0.74);
       } else {
         // A shaft with a knob at each end, laid on the diagonal.
         graphics.fillRect(size * 0.2, size * 0.44, size * 0.6, size * 0.12);

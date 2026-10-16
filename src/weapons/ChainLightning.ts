@@ -65,7 +65,10 @@ export class ChainLightning implements Weapon {
       this.struck.add(target);
       context.hit(target, context.damage);
 
-      target = findNearestEnemy(x, y, context.enemies, LIGHTNING.chainRadius, this.struck);
+      // 각성: any enemy but the one it is on may take the next jump, one it
+      // has struck already included.
+      const skip = context.mastered ? new Set<Enemy>([target]) : this.struck;
+      target = findNearestEnemy(x, y, context.enemies, LIGHTNING.chainRadius, skip);
     }
 
     this.showBolt(path);

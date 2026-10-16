@@ -430,6 +430,9 @@ export class BoneScene extends Phaser.Scene {
     if (bonus.raresBecomeBosses) {
       parts.push(copy.sumBosses);
     }
+    if (bonus.rareChanceScale !== 1) {
+      parts.push(fill(copy.sumRares, { scale: bonus.rareChanceScale }));
+    }
 
     this.summary.setText(parts.length > 0 ? parts.join('  ·  ') : copy.none);
     this.summary.setColor(parts.length > 0 ? COLORS.gearText : COLORS.muted);

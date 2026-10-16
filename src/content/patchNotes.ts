@@ -15,6 +15,32 @@ export interface PatchNote {
 
 export const PATCH_NOTES: readonly PatchNote[] = [
   {
+    version: '0.38',
+    date: '2026-10-16',
+    changes: {
+      ko: [
+        '레벨업은 이제 판을 시작할 때 고른 메인 스킬만 강화합니다. 게임 도중 다른 스킬을 주워도 메인 스킬이 바뀌지 않습니다. 메인 스킬의 강화를 모두 마친 뒤에만 다른 스킬로 넘어갑니다.',
+        '스킬 각성 — 스킬이 20레벨이 되면 화려한 연출과 함께 각성해 효과가 하나 더 붙고, 아이콘이 금테로 바뀝니다. 타격: 공격 범위 안의 적 투사체도 파괴 · 화염구: 터진 자리에 5초 동안 화염지대(초당 화염구 피해의 20%) · 연쇄번개: 이미 맞은 적에게도 다시 연쇄 · 얼음창: 이미 냉각된 적을 맞히면 0.1초 동안 얼어붙음 · 공허구체: 주변 적을 천천히 끌어당김 · 낙뢰: 한 번에 2개씩.',
+        '새 뼈다귀 척추 — 그 판의 희귀 적 등장 확률이 2배가 됩니다. 한 판에 하나만 넣을 수 있고, 모든 적에게서 0.1% 확률로 떨어집니다.',
+      ],
+      en: [
+        'Level-ups now upgrade only your main skill, the one you picked at the start of the run. Picking up another skill mid-run no longer changes it; levels go to other skills only once the main one has every upgrade.',
+        'Awakening — a skill that reaches level 20 awakens with a burst of fanfare, gains one more effect and gets a gold-edged icon. Strike: also destroys enemy projectiles within reach · Fireball: leaves a fire zone for 5s where it bursts (20% of its damage per second) · Chain Lightning: can chain back to enemies already struck · Ice Spear: freezes an already chilled enemy for 0.1s · Void Orb: slowly pulls nearby enemies in · Thunderstrike: 2 bolts at once.',
+        'New bone, the Spine — rare enemies are twice as likely that run. One per run; it drops from any enemy at 0.1%.',
+      ],
+      ja: [
+        'レベルアップは、回の最初に選んだメインスキルだけを強化するようになりました。途中でほかのスキルを拾ってもメインスキルは変わりません。メインスキルの強化をすべて終えてから、ほかのスキルに移ります。',
+        'スキル覚醒 — スキルが 20 レベルになると派手な演出とともに覚醒し、効果が 1 つ増え、アイコンが金色の枠になります。打撃: 攻撃範囲内の敵の投射物も破壊 · 火球: 爆発した場所に 5 秒間の炎の地帯（毎秒 火球ダメージの 20%） · 連鎖雷: すでに当たった敵にも再び連鎖 · 氷槍: すでに冷却された敵に当たると 0.1 秒凍りつく · 虚無球: 周りの敵をゆっくり引き寄せる · 落雷: 一度に 2 本。',
+        '新しい骨「脊椎」— その回のレア敵の出現確率が 2 倍になります。1 回に 1 つだけ入れられ、すべての敵から 0.1% の確率で落ちます。',
+      ],
+      zh: [
+        '升级现在只强化开局所选的主技能。中途拾取其他技能不会改变主技能；主技能的强化全部完成后才会转到其他技能。',
+        '技能觉醒 — 技能达到 20 级时伴随华丽演出觉醒，额外获得一个效果，图标变为金框。打击: 同时摧毁攻击范围内的敌方投射物 · 火球: 在爆炸处留下持续 5 秒的火焰地带（每秒火球伤害的 20%） · 连锁闪电: 可以再次连锁已击中过的敌人 · 冰枪: 命中已被冷却的敌人时冻结 0.1 秒 · 虚空球: 缓慢吸引周围的敌人 · 落雷: 一次 2 道。',
+        '新骨头「脊椎」— 该局稀有敌人出现几率变为 2 倍。每局只能放入一个，所有敌人都有 0.1% 几率掉落。',
+      ],
+    },
+  },
+  {
     version: '0.37',
     date: '2026-10-16',
     changes: {

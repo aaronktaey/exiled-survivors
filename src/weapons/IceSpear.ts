@@ -1,4 +1,4 @@
-import { CHILL, SHOTS } from '@/config';
+import { CHILL, SHOTS, SKILL_MASTERY } from '@/config';
 import type { LaunchSpec } from '@/entities/Projectile';
 import { ProjectileWeapon } from '@/weapons/ProjectileWeapon';
 import { SKILLS } from '@/weapons/skills';
@@ -19,6 +19,7 @@ export class IceSpear extends ProjectileWeapon {
       range: context.range,
       pierce: context.pierceCount,
       chillMs: CHILL.durationMs,
+      freezeMs: context.mastered ? SKILL_MASTERY.freezeMs : 0,
       ...SHOTS.iceSpear,
     };
   }

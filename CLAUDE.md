@@ -75,7 +75,7 @@ wrong shape.
 ## The test harness
 
 `tests/` drives a real Chrome over CDP against the dev server and checks the
-running game, not units. 41 suites, ~1060 checks. It is the only thing that has
+running game, not units. 42 suites, ~1080 checks. It is the only thing that has
 caught most of what has gone wrong here, so run all of it before every commit.
 
 ```sh
@@ -87,7 +87,7 @@ node run-all.mjs test-full test-skills test-balance test-chain test-ice \
   test-i18n test-gear test-passive test-responsive test-stats test-bones \
   test-altar test-slot test-inventory test-locale test-back test-fugitive \
   test-ranking test-skillpick test-mango test-web test-loadout \
-  test-carry test-api test-account test-live test-filter
+  test-carry test-api test-account test-live test-filter test-mastery
 ```
 
 `run-all.mjs` runs the suites three at a time (`WORKERS=n` to change it):
@@ -166,7 +166,12 @@ Read `git log` for what changed and when. What is not in the log:
   spawn path that skips it.
 - **No basic attack.** Every skill, 타격 included, is in `DROPPABLE_SKILLS`;
   a fresh run holds only what it picks off three cards (`SkillPickScene`,
-  `SKILL_PICK`), and a level-up upgrades a random skill in hand. With the
+  `SKILL_PICK`), and that first skill is the run's **main skill**
+  (`GameScene.mainSkill`, kept in the save as `main`): every level-up
+  upgrades it, and only once it has taken every upgrade does a level go to
+  another skill at random. A skill found later is upgraded by finding it
+  again. (Level-ups once went to a random skill; the user read that as the
+  main skill changing, and asked for this.) With the
   choice off (`#run`, the harness) a run starts on `UNSPUN_SKILL` (타격) so
   suites have something deterministic. A 무작위 스킬 on the ground opens the
   same three cards; taking one already held queues its upgrade next.
@@ -300,6 +305,15 @@ Read `git log` for what changed and when. What is not in the log:
   running (`safeNow`), by a reload — never mid-run. A reload that comes back
   on the old build is not retried (sessionStorage). Off on the dev server
   (`current === 'dev'`); test-live drives it through `liveUpdate.found`.
+- **스킬 각성.** `SKILL_MASTERY` (balance.ts): at `level` a skill gets one
+  more effect — `WeaponContext.mastered` is true and each weapon does its own
+  (타격 strikes `enemyShots` in the swing, 화염구 shots carry `fireZoneDps`
+  into `CombatSystem.burnGround`/`tickFireZones`, 연쇄번개 may jump back,
+  얼음창 shots carry `freezeMs` for an enemy already chilled (`Enemy.freeze`),
+  공허구체 pulls by moving x/y the way Separation does, 낙뢰 casts
+  `thunderBolts` bolts). Reaching it calls `GameScene.celebrateMastery`
+  once (`awakened`, rebuilt from a save without a show); the HUD slot goes
+  gold and its card adds the line (`masteryText`). test-mastery covers it.
 - **Touch never holds the run.** A phone fires a pretend mouse event after a
   tap; landing on a rare under a just-closed card used to set `inspecting`
   and freeze the arena and the pad. `setInspecting` ignores it on touch

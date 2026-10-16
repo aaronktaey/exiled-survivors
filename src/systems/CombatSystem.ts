@@ -20,6 +20,7 @@ import {
   type DropTier,
   type EnemyShotSpec,
   type OrbId,
+  SKILL_MASTERY,
 } from '@/config';
 import { t } from '@/i18n';
 import { itemFilter } from '@/systems/ItemFilter';
@@ -380,6 +381,10 @@ export class CombatSystem {
       return;
     }
 
+    // 얼음창 각성: one already under 냉각 is frozen solid by the next spear.
+    if (shot.freezeMs > 0 && enemy.isChilled) {
+      enemy.freeze(shot.freezeMs);
+    }
     if (shot.chillMs > 0) {
       enemy.chill(shot.chillMs);
     }
@@ -392,6 +397,9 @@ export class CombatSystem {
 
     if (shot.blastRadius > 0) {
       this.blast(x, y, shot.blastRadius, shot.damage, enemy);
+      if (shot.fireZoneDps > 0) {
+        this.burnGround(x, y, shot.blastRadius, shot.fireZoneDps);
+      }
     }
 
     if (!carriesOn) {
@@ -432,6 +440,46 @@ export class CombatSystem {
     });
 
     return caught.length;
+  }
+
+  /** 화염구 각성: the patches of ground still burning. Public for tests. */
+  public readonly fireZones: { x: number; y: number; radius: number; dps: number; leftMs: number; sinceTickMs: number; view: Phaser.GameObjects.Arc }[] = [];
+
+  /** Leaves the ground at (x, y) burning for SKILL_MASTERY.fireZone.durationMs. */
+  public burnGround(x: number, y: number, radius: number, dps: number): void {
+    const view = this.scene.add
+      .circle(x, y, radius, COLORS.fireBlast, 0.18)
+      .setStrokeStyle(2, COLORS.fireBlast, 0.5)
+      .setDepth(DEPTH.pickups - 1);
+    this.scene.tweens.add({ targets: view, alpha: 0.7, duration: 260, yoyo: true, repeat: -1 });
+    this.fireZones.push({ x, y, radius, dps, leftMs: SKILL_MASTERY.fireZone.durationMs, sinceTickMs: 0, view });
+  }
+
+  /** Burns whatever stands in a fire, once every SKILL_MASTERY.fireZone.tickMs. */
+  public tickFireZones(delta: number): void {
+    const { tickMs } = SKILL_MASTERY.fireZone;
+    for (let i = this.fireZones.length - 1; i >= 0; i--) {
+      const zone = this.fireZones[i]!;
+      zone.leftMs -= delta;
+      zone.sinceTickMs += delta;
+      if (zone.sinceTickMs >= tickMs) {
+        zone.sinceTickMs -= tickMs;
+        const amount = Math.max(1, Math.round((zone.dps * tickMs) / 1000));
+        const caught: Enemy[] = [];
+        for (const child of this.enemies.getChildren()) {
+          const enemy = child as Enemy;
+          if (enemy.active && Phaser.Math.Distance.Between(zone.x, zone.y, enemy.x, enemy.y) <= zone.radius) {
+            caught.push(enemy);
+          }
+        }
+        caught.forEach((enemy) => this.hit(enemy, amount));
+      }
+      if (zone.leftMs <= 0) {
+        this.scene.tweens.killTweensOf(zone.view);
+        zone.view.destroy();
+        this.fireZones.splice(i, 1);
+      }
+    }
   }
 
   private onEnemyTouch: Phaser.Types.Physics.Arcade.ArcadePhysicsCallback = (_player, b) => {

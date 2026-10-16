@@ -1,4 +1,4 @@
-import { FIREBALL, SHOTS } from '@/config';
+import { FIREBALL, SHOTS, SKILL_MASTERY } from '@/config';
 import type { LaunchSpec } from '@/entities/Projectile';
 import { ProjectileWeapon } from '@/weapons/ProjectileWeapon';
 import { SKILLS } from '@/weapons/skills';
@@ -21,6 +21,7 @@ export class Fireball extends ProjectileWeapon {
       pierce: 0,
       chillMs: 0,
       blastRadius: FIREBALL.blastRadius,
+      fireZoneDps: context.mastered ? context.damage * SKILL_MASTERY.fireZone.damageShare : 0,
       ...SHOTS.fireball,
     };
   }

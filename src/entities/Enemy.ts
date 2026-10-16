@@ -110,6 +110,8 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
   private flashMs = 0;
   /** Countdown on the 냉각 debuff, ticked in update. */
   private chillMs = 0;
+  /** Frozen solid (얼음창 각성): it neither moves nor shoots. */
+  private frozenMs = 0;
   /** Countdown to the next ring, for the kinds that throw one. */
   private volleyCooldownMs = 0;
   /** Countdown to the next shot, for the kinds that have one. */
@@ -252,6 +254,7 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
     this.maxHp = this.hp;
     this.flashMs = 0;
     this.chillMs = 0;
+    this.frozenMs = 0;
     this.contactReadyAt = 0;
     this.lifeLeftMs = spec.lifespanMs ?? Infinity;
     this.fleeTo = undefined;
@@ -379,6 +382,7 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
     this.target = undefined;
     this.hooks = undefined;
     this.chillMs = 0;
+    this.frozenMs = 0;
     this.rare = false;
     this.affixes = [];
     this.fleeTo = undefined;
@@ -395,6 +399,18 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
     this.healthBar?.destroy(fromScene);
     this.plate?.destroy(fromScene);
     super.destroy(fromScene);
+  }
+
+  /** True while frozen solid. */
+  public get isFrozen(): boolean {
+    return this.frozenMs > 0;
+  }
+
+  /** Frozen solid for a moment (얼음창 각성): no step, no shot. */
+  public freeze(durationMs: number): void {
+    if (this.active) {
+      this.frozenMs = Math.max(this.frozenMs, durationMs);
+    }
   }
 
   /**
@@ -469,6 +485,12 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
     }
 
     if (!this.target || !this.body) {
+      return;
+    }
+
+    if (this.frozenMs > 0) {
+      this.frozenMs -= dt;
+      this.setVelocity(0, 0);
       return;
     }
 

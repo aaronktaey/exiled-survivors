@@ -781,6 +781,24 @@ export const FIREBALL = {
   flashMs: 220,
 } as const;
 
+/**
+ * ★ 스킬 각성 — what a skill does on top of itself once it reaches `level`.
+ * Reaching it is announced with a burst of its own (GameScene.celebrateMastery).
+ */
+export const SKILL_MASTERY = {
+  level: 20,
+  /** 타격: an enemy's shot inside the swing is struck out of the air. */
+  /** 화염구: where it bursts burns, at this share of its damage a second. */
+  fireZone: { damageShare: 0.2, durationMs: 5000, tickMs: 500 },
+  /** 연쇄번개: may jump back to an enemy it has already struck (never the one it is on). */
+  /** 얼음창: an enemy already under 냉각 is frozen solid this long when struck. */
+  freezeMs: 100,
+  /** 공허구체: an enemy this close to an orb is drawn to it at this speed (px/s). */
+  voidPull: { reach: 110, speed: 45 },
+  /** 낙뢰: bolts in one cast. */
+  thunderBolts: 2,
+} as const;
+
 /** 낙뢰: a bolt out of the sky onto something near the survivor. */
 export const THUNDER = {
   /**

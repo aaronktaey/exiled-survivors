@@ -42,6 +42,18 @@ export const ko: Strings = {
     hintKeyboard: '방향키 이동   Space 켜기/끄기   Esc 돌아가기',
     hintTouch: '아이콘을 눌러 켜고 끕니다',
   },
+  mastery: {
+    title: '{skill} 각성!',
+    card: '각성 — {effect}',
+    effects: {
+      meleeStrike: '공격 범위 안의 적 투사체도 파괴합니다',
+      fireball: '터진 자리에 {seconds}초 동안 화염지대를 남깁니다 (초당 화염구 피해의 {share})',
+      chainLightning: '이미 맞은 적에게도 다시 연쇄합니다',
+      iceSpear: '이미 냉각된 적을 맞히면 {freeze}초 동안 얼어붙습니다',
+      voidOrb: '주변 적을 천천히 끌어당깁니다',
+      thunderStrike: '한 번에 낙뢰가 {bolts}개씩 떨어집니다',
+    },
+  },
   menu: {
     updating: '새 버전으로 업데이트합니다…',
     byline: 'created by whitemango',
@@ -132,6 +144,7 @@ export const ko: Strings = {
     sumHp: '적 체력 +{percent}%',
     sumDrop: '드랍률 +{percent}%',
     sumBosses: '희귀 적 대신 우두머리',
+    sumRares: '희귀 적 확률 ×{scale}',
     hintKeyboard: '← → 고르기   Space 넣기   Backspace 빼기   Esc 돌아가기',
     hintTouch: '뼈다귀를 눌러 넣고, 칸을 눌러 뺍니다',
   },
@@ -477,7 +490,7 @@ export const ko: Strings = {
         {
           title: '레벨업',
           lines: [
-            '레벨이 오르면 가진 스킬 중 하나가 무작위로 골라지고, 그 스킬의 강화 선택지가 나옵니다.',
+            '레벨이 오르면 판을 시작할 때 고른 메인 스킬의 강화 선택지가 나옵니다. 메인 스킬의 강화를 모두 마친 뒤에야 다른 스킬이 무작위로 골라집니다. 나중에 얻은 스킬은 같은 스킬을 다시 주워 강화합니다.',
             '강화는 스킬마다 따로 쌓입니다. 화염구를 올려도 타격은 그대로입니다.',
             '수치 강화는 기본값의 일정 비율씩 더해집니다. 세 번 고른 +20%는 기본값의 +60%입니다.',
             '피해와 공격속도 강화는 스킬당 {maxPicks}번까지, 연쇄 횟수는 {chainCap}까지입니다. 다 올린 강화는 선택지에 나오지 않습니다.',
@@ -487,6 +500,18 @@ export const ko: Strings = {
           title: '스킬 레벨',
           lines: [
             '스킬 아이콘 귀퉁이의 숫자가 그 스킬의 레벨입니다. 얻은 순간 1이고, 강화 하나마다 1씩 오릅니다.',
+          ],
+        },
+        {
+          title: '스킬 각성',
+          lines: [
+            '스킬이 {masteryLevel}레벨이 되면 각성해 효과가 하나 더 붙습니다. 각성하는 순간 화면에 크게 알려 주고, 아이콘이 금테로 바뀝니다.',
+            '타격 — 공격 범위 안의 적 투사체도 파괴합니다.',
+            '화염구 — 터진 자리에 {fireZoneSecs}초 동안 화염지대를 남깁니다. 초당 화염구 피해의 {fireZoneShare}.',
+            '연쇄번개 — 이미 맞은 적에게도 다시 연쇄합니다.',
+            '얼음창 — 이미 냉각된 적을 맞히면 {freezeSecs}초 동안 얼어붙습니다.',
+            '공허구체 — 주변 적을 천천히 끌어당깁니다.',
+            '낙뢰 — 한 번에 낙뢰가 {thunderBolts}개씩 떨어집니다.',
           ],
         },
       ],

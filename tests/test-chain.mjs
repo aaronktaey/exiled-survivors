@@ -225,9 +225,9 @@ check('its ground label reads 연쇄번개, in the ordinary dress',
   drop.label === '연쇄번개' && drop.style.plateAlpha === 0,
   `"${drop.label}" in ${drop.style.colour}`);
 
-// --- 12. a level-up spends on a skill in hand ---
-// Which one is random; the roll is pinned to each end in turn so both of the
-// two held here are seen to come up, each with its own picks.
+// --- 12. a level-up spends on the run's main skill ---
+// Whatever the roll: 연쇄번개 was picked up later, so the level goes to the
+// skill the run started on, with that skill's own picks.
 const levelUp = async (roll) => {
   const held = await run(`
     const r = Math.random;
@@ -244,9 +244,9 @@ const levelUp = async (roll) => {
 };
 const low = await levelUp(0);
 const high = await levelUp(0.999);
-check('a level-up offers a skill in hand, and over the roll it can be any of them',
-  low.lv.open && high.lv.open && low.held.includes(low.lv.skill) &&
-    high.held.includes(high.lv.skill) && low.lv.skill !== high.lv.skill,
+check('a level-up offers the main skill, whatever the roll — not the one picked up later',
+  low.lv.open && high.lv.open && low.held.includes('chainLightning') &&
+    low.lv.skill === 'meleeStrike' && high.lv.skill === 'meleeStrike',
   `${low.lv.skill} / ${high.lv.skill} of ${low.held.join(', ')}`);
 check('and its picks are that skill’s own',
   (low.lv.skill === 'meleeStrike' ? low.lv.cards.length === 2 : low.lv.cards.length === 3) &&

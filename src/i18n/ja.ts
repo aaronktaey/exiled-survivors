@@ -38,6 +38,18 @@ export const ja: Strings = {
     hintKeyboard: '方向キー 移動   Space 切り替え   Esc 戻る',
     hintTouch: 'アイコンをタップして切り替え',
   },
+  mastery: {
+    title: '{skill} 覚醒!',
+    card: '覚醒 — {effect}',
+    effects: {
+      meleeStrike: '攻撃範囲内の敵の投射物も破壊します',
+      fireball: '爆発した場所に {seconds} 秒間、炎の地帯を残します（毎秒 火球ダメージの {share}）',
+      chainLightning: 'すでに当たった敵にも再び連鎖します',
+      iceSpear: 'すでに冷却された敵に当たると {freeze} 秒間凍りつきます',
+      voidOrb: '周りの敵をゆっくり引き寄せます',
+      thunderStrike: '一度に落雷が {bolts} 本ずつ落ちます',
+    },
+  },
   menu: {
     updating: '新しいバージョンに更新します…',
     byline: 'created by whitemango',
@@ -128,6 +140,7 @@ export const ja: Strings = {
     sumHp: '敵の体力 +{percent}%',
     sumDrop: 'ドロップ率 +{percent}%',
     sumBosses: 'レア敵の代わりにボス',
+    sumRares: 'レア敵の確率 ×{scale}',
     hintKeyboard: '← → 選ぶ   Space 入れる   Backspace 外す   Esc 戻る',
     hintTouch: '骨をタップで入れ、枠をタップで外します',
   },
@@ -443,14 +456,17 @@ export const ja: Strings = {
     bones: {
       skull: '古代の頭蓋骨',
       rib: '肋骨',
+      spine: '脊椎',
     },
     boneShorts: {
       skull: '頭蓋骨',
       rib: '肋骨',
+      spine: '脊椎',
     },
     boneDetails: {
       skull: 'レア敵の代わりにボスが現れます',
       rib: '全ての敵の体力 +100%、ドロップ率 +50%',
+      spine: 'レア敵の出現確率 2 倍',
     },
     passives: { damage: 'ダメージ', attackSpeed: '攻撃速度', moveSpeed: '移動速度', luck: '幸運' },
     passiveDetails: {
@@ -593,7 +609,7 @@ export const ja: Strings = {
         {
           title: 'レベルアップ',
           lines: [
-            'レベルが上がると持っているスキルから 1 つがランダムに選ばれ、そのスキルの強化を選びます。',
+            'レベルが上がると、回の最初に選んだメインスキルの強化を選びます。メインスキルの強化をすべて終えてから、ほかのスキルがランダムに選ばれます。後で手に入れたスキルは、同じスキルを再び拾って強化します。',
             '強化はスキルごとに積み重なります。火球を上げても打撃はそのままです。',
             '数値の強化は基本値の一定割合ずつ足されます。+20% を 3 回選ぶと基本値の +60% です。',
             '被害と攻撃速度の強化はスキルごとに {maxPicks} 回まで、連鎖回数は {chainCap} までです。上げきった強化は選択肢に出ません。',
@@ -603,6 +619,18 @@ export const ja: Strings = {
           title: 'スキルレベル',
           lines: [
             'スキルアイコンの隅の数字がそのスキルのレベルです。手に入れた時点で 1、強化 1 回ごとに 1 ずつ上がります。',
+          ],
+        },
+        {
+          title: 'スキル覚醒',
+          lines: [
+            'スキルが {masteryLevel} レベルになると覚醒し、効果がもう 1 つ付きます。覚醒した瞬間は画面に大きく表示され、アイコンが金色の枠になります。',
+            '打撃 — 攻撃範囲内の敵の投射物も破壊します。',
+            '火球 — 爆発した場所に {fireZoneSecs} 秒間、炎の地帯を残します。毎秒 火球ダメージの {fireZoneShare}。',
+            '連鎖雷 — すでに当たった敵にも再び連鎖します。',
+            '氷槍 — すでに冷却された敵に当たると {freezeSecs} 秒間凍りつきます。',
+            '虚無球 — 周りの敵をゆっくり引き寄せます。',
+            '落雷 — 一度に落雷が {thunderBolts} 本ずつ落ちます。',
           ],
         },
       ],

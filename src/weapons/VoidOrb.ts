@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 
-import { DEPTH, ENEMY_KINDS, TEXTURES, VOID_ORB } from '@/config';
+import { DEPTH, ENEMY_KINDS, SKILL_MASTERY, TEXTURES, VOID_ORB } from '@/config';
 import type { Enemy } from '@/entities/Enemy';
 import { sfx } from '@/systems/Sfx';
 import { SKILLS } from '@/weapons/skills';
@@ -64,7 +64,40 @@ export class VoidOrb implements Weapon {
       this.orbs[i]?.setPosition(x + Math.cos(orbAngle) * radius, y + Math.sin(orbAngle) * radius);
     }
 
+    if (context.mastered) {
+      this.pull(context, count, delta);
+    }
     this.sweep(context, count);
+  }
+
+  /** 각성: every enemy near an orb is drawn slowly toward the nearest one. */
+  private pull(context: WeaponContext, count: number, delta: number): void {
+    const { reach, speed } = SKILL_MASTERY.voidPull;
+    const step = (speed * delta) / 1000;
+    for (const child of context.enemies.getChildren()) {
+      const enemy = child as Enemy;
+      if (!enemy.active) {
+        continue;
+      }
+      let nearest: Phaser.GameObjects.Image | undefined;
+      let best: number = reach;
+      for (let i = 0; i < count; i++) {
+        const orb = this.orbs[i];
+        if (!orb) {
+          continue;
+        }
+        const d = Phaser.Math.Distance.Between(orb.x, orb.y, enemy.x, enemy.y);
+        if (d < best) {
+          best = d;
+          nearest = orb;
+        }
+      }
+      if (nearest && best > 1) {
+        const move = Math.min(step, best);
+        enemy.x += ((nearest.x - enemy.x) / best) * move;
+        enemy.y += ((nearest.y - enemy.y) / best) * move;
+      }
+    }
   }
 
   /** Grows or hides orbs so exactly `count` of them are in the air. */

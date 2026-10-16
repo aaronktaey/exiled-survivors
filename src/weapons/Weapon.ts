@@ -43,6 +43,10 @@ export interface WeaponContext {
   readonly extraProjectiles: number;
   /** Applies damage and resolves the kill (gem and skill drops). */
   readonly hit: (enemy: Enemy, amount: number) => void;
+  /** The skill is at SKILL_MASTERY.level: its 각성 effect is on. */
+  readonly mastered: boolean;
+  /** The enemies' shots in the air, for a skill that can strike them down (타격). */
+  readonly enemyShots: Phaser.Physics.Arcade.Group;
 }
 
 /**

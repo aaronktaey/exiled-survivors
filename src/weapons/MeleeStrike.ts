@@ -16,6 +16,8 @@ export class MeleeStrike implements Weapon {
   private readonly scene: Phaser.Scene;
   private readonly flash: Phaser.GameObjects.Graphics;
   private sinceSwingMs = 0;
+  /** Enemy shots struck down by the 각성 swing. Public for tests. */
+  public strikes = 0;
 
   public constructor(scene: Phaser.Scene) {
     this.scene = scene;
@@ -65,6 +67,25 @@ export class MeleeStrike implements Weapon {
       }
 
       context.hit(enemy, context.damage);
+    }
+
+    // 각성: an enemy's shot inside the swing is struck out of the air.
+    if (context.mastered) {
+      for (const child of [...context.enemyShots.getChildren()]) {
+        const shot = child as Phaser.Physics.Arcade.Image & { despawn?: () => void };
+        if (!shot.active) {
+          continue;
+        }
+        if (Phaser.Math.Distance.Between(origin.x, origin.y, shot.x, shot.y) > range) {
+          continue;
+        }
+        const toShot = Math.atan2(shot.y - origin.y, shot.x - origin.x);
+        if (Math.abs(Phaser.Math.Angle.Wrap(toShot - angle)) > halfArc) {
+          continue;
+        }
+        shot.despawn?.();
+        this.strikes += 1;
+      }
     }
   }
 

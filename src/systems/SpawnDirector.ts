@@ -76,9 +76,9 @@ export class SpawnDirector {
     return enemyHpScaleAt(this.elapsedMs) * this.bones().enemyHpScale;
   }
 
-  /** The share of spawns coming up rare right now, after the same clock. */
+  /** The share of spawns coming up rare right now, after the same clock and a 척추. */
   public get rareChance(): number {
-    return rareChanceAt(this.elapsedMs);
+    return Math.min(1, rareChanceAt(this.elapsedMs) * this.bones().rareChanceScale);
   }
 
   /** Puts the clock back where a saved run left it. */

@@ -17,7 +17,7 @@ import { TEXTURES } from '@/config/visuals';
  * BootScene — the drawer, the drop, the label and the pick screen all read
  * this table.
  */
-export type BoneId = 'skull' | 'rib';
+export type BoneId = 'skull' | 'rib' | 'spine';
 
 /** What one 뼈다귀 does to the run it is spent on. */
 export interface BoneEffect {
@@ -27,6 +27,8 @@ export interface BoneEffect {
   readonly dropScale?: number;
   /** A spawn that would have come up rare walks in as a 우두머리 instead. */
   readonly raresBecomeBosses?: boolean;
+  /** Multiplies the share of spawns that come up rare. */
+  readonly rareChanceScale?: number;
 }
 
 export interface BoneSpec {
@@ -87,6 +89,22 @@ export const BONES: Record<BoneId, BoneSpec> = {
     fromBoss: 0,
     run: { enemyHpScale: 2, dropScale: 1.5 },
   },
+  spine: {
+    id: 'spine',
+    name: '척추',
+    short: '척추',
+    detail: '희귀 적 등장 확률 2배',
+    texture: TEXTURES.boneSpine,
+    color: 0xe2d6b8,
+    tier: 'magic',
+    // One is twice the rares; a second would be four times, and a third
+    // eight — a run of nothing but rares. One a run.
+    stackable: false,
+    // Off any kill, as rare as a 갈비뼈.
+    fromKill: 0.001,
+    fromBoss: 0,
+    run: { rareChanceScale: 2 },
+  },
 };
 
 export const ALL_BONES: readonly BoneSpec[] = Object.values(BONES);
@@ -127,12 +145,14 @@ export interface BoneBonus {
   readonly enemyHpScale: number;
   readonly dropScale: number;
   readonly raresBecomeBosses: boolean;
+  readonly rareChanceScale: number;
 }
 
 export const NO_BONES: BoneBonus = {
   enemyHpScale: 1,
   dropScale: 1,
   raresBecomeBosses: false,
+  rareChanceScale: 1,
 };
 
 /** Folds a run's 뼈다귀 together. Two 갈비뼈 compound rather than adding. */
@@ -140,6 +160,7 @@ export function boneBonusFor(applied: readonly BoneId[]): BoneBonus {
   let enemyHpScale = 1;
   let dropScale = 1;
   let raresBecomeBosses = false;
+  let rareChanceScale = 1;
 
   for (const id of applied) {
     const effect = BONES[id]?.run;
@@ -150,7 +171,8 @@ export function boneBonusFor(applied: readonly BoneId[]): BoneBonus {
     enemyHpScale *= effect.enemyHpScale ?? 1;
     dropScale *= effect.dropScale ?? 1;
     raresBecomeBosses = raresBecomeBosses || effect.raresBecomeBosses === true;
+    rareChanceScale *= effect.rareChanceScale ?? 1;
   }
 
-  return { enemyHpScale, dropScale, raresBecomeBosses };
+  return { enemyHpScale, dropScale, raresBecomeBosses, rareChanceScale };
 }

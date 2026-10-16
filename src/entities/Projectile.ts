@@ -16,6 +16,10 @@ export interface LaunchSpec {
   readonly chillMs: number;
   /** Bursts where it lands, hurting everything this close too. 0 for none. */
   readonly blastRadius?: number;
+  /** 화염구 각성: the burst leaves the ground burning at this much a second. */
+  readonly fireZoneDps?: number;
+  /** 얼음창 각성: an enemy already under 냉각 is frozen this long. */
+  readonly freezeMs?: number;
   readonly texture: string;
   /** Drawn size. Width runs along the flight path. */
   readonly width: number;
@@ -32,6 +36,10 @@ export class Projectile extends Phaser.Physics.Arcade.Image {
   public chillMs = 0;
   /** How far its burst reaches from the first hit. 0 for none. */
   public blastRadius = 0;
+  /** What the burst leaves burning a second. 0 for none. */
+  public fireZoneDps = 0;
+  /** How long a chilled enemy it strikes is frozen. 0 for none. */
+  public freezeMs = 0;
 
   private remainingMs = 0;
   /** Enemies left to pass through before it fizzles. */
@@ -48,6 +56,8 @@ export class Projectile extends Phaser.Physics.Arcade.Image {
     this.damage = spec.damage;
     this.chillMs = spec.chillMs;
     this.blastRadius = spec.blastRadius ?? 0;
+    this.fireZoneDps = spec.fireZoneDps ?? 0;
+    this.freezeMs = spec.freezeMs ?? 0;
     this.pierceLeft = Math.max(0, Math.round(spec.pierce));
     this.struck.clear();
 

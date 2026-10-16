@@ -38,6 +38,18 @@ export const zh: Strings = {
     hintKeyboard: '方向键 移动   Space 切换   Esc 返回',
     hintTouch: '点击图标切换',
   },
+  mastery: {
+    title: '{skill} 觉醒！',
+    card: '觉醒 — {effect}',
+    effects: {
+      meleeStrike: '同时摧毁攻击范围内的敌方投射物',
+      fireball: '在爆炸处留下持续 {seconds} 秒的火焰地带（每秒造成火球伤害的 {share}）',
+      chainLightning: '可以再次连锁到已经击中过的敌人',
+      iceSpear: '命中已被冷却的敌人时使其冻结 {freeze} 秒',
+      voidOrb: '缓慢吸引周围的敌人',
+      thunderStrike: '一次落下 {bolts} 道落雷',
+    },
+  },
   menu: {
     updating: '正在更新到新版本…',
     byline: 'created by whitemango',
@@ -128,6 +140,7 @@ export const zh: Strings = {
     sumHp: '敌人生命 +{percent}%',
     sumDrop: '掉落率 +{percent}%',
     sumBosses: '以首领取代稀有敌人',
+    sumRares: '稀有敌人几率 ×{scale}',
     hintKeyboard: '← → 选择   Space 放入   Backspace 取下   Esc 返回',
     hintTouch: '点击骨头放入，点击格子取下',
   },
@@ -443,14 +456,17 @@ export const zh: Strings = {
     bones: {
       skull: '远古头骨',
       rib: '肋骨',
+      spine: '脊椎',
     },
     boneShorts: {
       skull: '头骨',
       rib: '肋骨',
+      spine: '脊椎',
     },
     boneDetails: {
       skull: '稀有敌人改为首领出现',
       rib: '所有敌人生命 +100%，掉落率 +50%',
+      spine: '稀有敌人出现几率 ×2',
     },
     passives: { damage: '伤害', attackSpeed: '攻击速度', moveSpeed: '移动速度', luck: '幸运' },
     passiveDetails: {
@@ -593,7 +609,7 @@ export const zh: Strings = {
         {
           title: '升级',
           lines: [
-            '升级时会从持有的技能中随机选出一个，并给出该技能的强化选项。',
+            '升级时会给出开局所选主技能的强化选项。主技能的强化全部完成后，才会随机选择其他技能。之后获得的技能需要再次拾取同一技能来强化。',
             '强化按技能分别累积。强化火球不会影响打击。',
             '数值强化每次增加基础值的一定比例。选三次 +20% 即为基础值的 +60%。',
             '伤害和攻击速度强化每个技能最多 {maxPicks} 次，连锁次数最多 {chainCap}。已满的强化不会再出现。',
@@ -602,6 +618,18 @@ export const zh: Strings = {
         {
           title: '技能等级',
           lines: ['技能图标角落的数字是该技能的等级。获得时为 1，每强化一次加 1。'],
+        },
+        {
+          title: '技能觉醒',
+          lines: [
+            '技能达到 {masteryLevel} 级时觉醒，额外获得一个效果。觉醒的瞬间会在画面上醒目提示，图标变为金框。',
+            '打击 — 同时摧毁攻击范围内的敌方投射物。',
+            '火球 — 在爆炸处留下持续 {fireZoneSecs} 秒的火焰地带，每秒造成火球伤害的 {fireZoneShare}。',
+            '连锁闪电 — 可以再次连锁到已经击中过的敌人。',
+            '冰枪 — 命中已被冷却的敌人时使其冻结 {freezeSecs} 秒。',
+            '虚空球 — 缓慢吸引周围的敌人。',
+            '落雷 — 一次落下 {thunderBolts} 道落雷。',
+          ],
         },
       ],
       getSkills: [

@@ -23,10 +23,12 @@ import {
   TEXTURES,
   TIMING,
   WORLD,
+  SKILL_MASTERY,
+  AUDIO,
 } from '@/config';
 import type { Enemy } from '@/entities/Enemy';
 import { Player } from '@/entities/Player';
-import { altarOfferText, boneName, fill, gearTitle, orbName, skillName, t } from '@/i18n';
+import { altarOfferText, boneName, fill, gearTitle, masteryText, orbName, skillName, t } from '@/i18n';
 import { GameOverScene, type GameOverData } from '@/scenes/GameOverScene';
 import { SkillPickScene, type SkillPickData } from '@/scenes/SkillPickScene';
 import { UpgradeScene, type UpgradeChoiceData } from '@/scenes/UpgradeScene';
@@ -163,6 +165,16 @@ export class GameScene extends Phaser.Scene {
 
   private weapons: Weapon[] = [];
   private owned = new Set<SkillId>();
+  /**
+   * The run's main skill: the first one it held (the one picked off the
+   * three cards). Every level-up upgrades it; a skill picked up later is
+   * upgraded by picking it up again, never by a level. Public for tests.
+   */
+  public mainSkill: SkillId | null = null;
+  /** Skills whose 각성 has been celebrated this run. Public for tests. */
+  public awakened = new Set<SkillId>();
+  /** The last 각성 banner shown. Public for tests. */
+  public masteryBanner?: Phaser.GameObjects.Text;
 
   private elapsedMs = 0;
   private sinceSaveMs = 0;
@@ -207,6 +219,8 @@ export class GameScene extends Phaser.Scene {
     this.invulnerable = false;
     this.weapons = [];
     this.owned = new Set<SkillId>();
+    this.mainSkill = null;
+    this.awakened = new Set<SkillId>();
 
     this.physics.world.setBounds(0, 0, WORLD.width, WORLD.height);
     this.cameras.main.setBounds(0, 0, WORLD.width, WORLD.height);
@@ -469,8 +483,12 @@ export class GameScene extends Phaser.Scene {
         orbCount: stats.orbCount,
         extraProjectiles: this.gearBonus.extraProjectiles,
         hit: this.combat.hit,
+        mastered: this.progression.levelFor(id) >= SKILL_MASTERY.level,
+        enemyShots: this.combat.enemyShots,
       });
     }
+    // 화염구's 각성: the ground it burst on keeps burning.
+    this.combat.tickFireZones(dt);
 
     this.damageNumbers.update(dt);
     this.edgeMarkers.update();
@@ -490,9 +508,17 @@ export class GameScene extends Phaser.Scene {
     this.progression.level = run.level;
     this.progression.xp = run.xp;
 
+    // The main skill first, so it is the one held first again.
+    if (run.main && run.skills[run.main]) {
+      this.acquire(run.main);
+    }
     for (const [id, stats] of Object.entries(run.skills) as [SkillId, SkillStats][]) {
       this.acquire(id);
       Object.assign(this.progression.statsFor(id), stats);
+      // Awakened before the save: already celebrated, not again.
+      if (this.progression.levelFor(id) >= SKILL_MASTERY.level) {
+        this.awakened.add(id);
+      }
     }
 
     this.player.hp = run.hp;
@@ -513,6 +539,7 @@ export class GameScene extends Phaser.Scene {
     }
 
     saveGame.write({
+      main: this.mainSkill ?? undefined,
       bones: this.bones,
       devUsed: this.devRun,
       elapsedMs: this.elapsedMs,
@@ -679,6 +706,7 @@ export class GameScene extends Phaser.Scene {
       return;
     }
     this.owned.add(skill);
+    this.mainSkill ??= skill;
 
     const weapon = WEAPONS[skill](this);
     this.weapons.push(weapon);
@@ -978,19 +1006,20 @@ export class GameScene extends Phaser.Scene {
     };
   }
 
-  /** Level-up points are spent on the basic attack only. */
   /**
-   * A level-up upgrades one of the skills in hand, picked at random — there
-   * is no basic attack for it to go to any more. The card says which.
+   * A level-up upgrades the run's main skill — the first one it held. Only
+   * once that has taken every upgrade there is does a level go to another
+   * skill in hand, picked at random; one at every ceiling would open a popup
+   * with no cards in it. The card says which.
    */
   private onLevelUp(level: number): void {
     this.player.setLevel(level);
-    // Only a skill that still has an upgrade to take: one at every ceiling
-    // would open a popup with no cards in it.
-    const held = [...this.owned].filter(
-      (id) => upgradeOptionsFor(SKILLS[id], this.progression.statsFor(id)).length > 0,
-    );
-    const skill = held[Math.floor(Math.random() * held.length)];
+    const open = (id: SkillId) => upgradeOptionsFor(SKILLS[id], this.progression.statsFor(id)).length > 0;
+    const others = [...this.owned].filter((id) => id !== this.mainSkill && open(id));
+    const skill =
+      this.mainSkill && open(this.mainSkill)
+        ? this.mainSkill
+        : others[Math.floor(Math.random() * others.length)];
     if (!skill) {
       return;
     }
@@ -1078,6 +1107,112 @@ export class GameScene extends Phaser.Scene {
   private onUpgradePicked(skill: SkillId, upgrade: UpgradeId): void {
     this.progression.apply(skill, upgrade);
     this.afterChoice();
+    if (!this.awakened.has(skill) && this.progression.levelFor(skill) >= SKILL_MASTERY.level) {
+      this.awakened.add(skill);
+      this.celebrateMastery(skill);
+    }
+  }
+
+  /**
+   * A skill reaches SKILL_MASTERY.level: its 각성 is announced loudly — a
+   * flash of gold over the screen, the banner and what it now does, rings
+   * and sparks bursting off the survivor. It holds nothing up; the run goes
+   * on underneath.
+   */
+  public celebrateMastery(skill: SkillId): void {
+    const camera = this.cameras.main;
+    const { width, height } = camera;
+    const depth = DEPTH.ui + 30;
+    const gold = 0xffc43a;
+
+    const flash = this.add
+      .rectangle(0, 0, width, height, 0xfff1b8, 0.55)
+      .setOrigin(0, 0)
+      .setScrollFactor(0)
+      .setDepth(depth);
+    this.tweens.add({ targets: flash, alpha: 0, duration: 450, onComplete: () => flash.destroy() });
+    camera.shake(220, 0.006);
+
+    const title = this.add
+      .text(width / 2, height * 0.26, fill(t().mastery.title, { skill: skillName(skill) }), {
+        fontFamily: 'system-ui, sans-serif',
+        fontSize: TEXT.size.screen,
+        fontStyle: 'bold',
+        color: '#ffd76a',
+        stroke: '#3a2600',
+        strokeThickness: 6,
+      })
+      .setShadow(0, 0, '#ffb300', 18, false, true)
+      .setOrigin(0.5)
+      .setScrollFactor(0)
+      .setDepth(depth + 2);
+    fitText(title, width);
+    const settled = title.scale;
+    title.setScale(settled * 0.3);
+    const line = this.add
+      .text(width / 2, height * 0.26 + 40, masteryText(skill), {
+        fontFamily: 'system-ui, sans-serif',
+        fontSize: TEXT.size.body,
+        color: COLORS.text,
+        stroke: '#05070b',
+        strokeThickness: 4,
+        align: 'center',
+        wordWrap: { width: width - 40 },
+      })
+      .setOrigin(0.5, 0)
+      .setScrollFactor(0)
+      .setDepth(depth + 2)
+      .setAlpha(0);
+    this.masteryBanner = title;
+    this.tweens.add({ targets: title, scale: settled, duration: 420, ease: 'Back.easeOut' });
+    this.tweens.add({ targets: line, alpha: 1, delay: 250, duration: 300 });
+    this.tweens.add({
+      targets: [title, line],
+      alpha: 0,
+      delay: 2400,
+      duration: 600,
+      onComplete: () => {
+        title.destroy();
+        line.destroy();
+      },
+    });
+
+    // Rings and sparks off the survivor, in the world.
+    const { x, y } = this.player;
+    for (let i = 0; i < 3; i++) {
+      const ring = this.add.circle(x, y, 18).setStrokeStyle(4, gold, 1).setDepth(DEPTH.vfx + 1);
+      this.tweens.add({
+        targets: ring,
+        scale: 7 + i * 2,
+        alpha: 0,
+        delay: i * 160,
+        duration: 800,
+        ease: 'Cubic.easeOut',
+        onComplete: () => ring.destroy(),
+      });
+    }
+    for (let i = 0; i < 24; i++) {
+      const angle = (i / 24) * Math.PI * 2;
+      const spark = this.add
+        .image(x, y, TEXTURES.glow)
+        .setDisplaySize(14, 14)
+        .setTint(i % 2 ? 0xfff4d6 : gold)
+        .setBlendMode(Phaser.BlendModes.ADD)
+        .setDepth(DEPTH.vfx + 2);
+      this.tweens.add({
+        targets: spark,
+        x: x + Math.cos(angle) * 170,
+        y: y + Math.sin(angle) * 170,
+        alpha: 0,
+        duration: 900,
+        ease: 'Quad.easeOut',
+        onComplete: () => spark.destroy(),
+      });
+    }
+    // Stay quiet rather than warn if the clip failed to load.
+    if (this.cache.audio.exists(AUDIO.drops.rare.key)) {
+      this.sound.play(AUDIO.drops.rare.key, { volume: AUDIO.drops.rare.volume });
+    }
   }
 
   /** One popup is done: open the next, or let the run go on. */

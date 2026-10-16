@@ -38,6 +38,18 @@ export const en: Strings = {
     hintKeyboard: 'Arrows move   Space switch   Esc back',
     hintTouch: 'Tap an icon to switch it',
   },
+  mastery: {
+    title: '{skill} Awakened!',
+    card: 'Awakened — {effect}',
+    effects: {
+      meleeStrike: 'Also destroys enemy projectiles within its reach',
+      fireball: 'Leaves a fire zone for {seconds}s where it bursts ({share} of Fireball damage per second)',
+      chainLightning: 'Can chain back to enemies it has already struck',
+      iceSpear: 'Freezes an already chilled enemy solid for {freeze}s',
+      voidOrb: 'Slowly pulls nearby enemies in',
+      thunderStrike: '{bolts} bolts fall at once',
+    },
+  },
   menu: {
     updating: 'Updating to the new version…',
     byline: 'created by whitemango',
@@ -128,6 +140,7 @@ export const en: Strings = {
     sumHp: 'Enemy health +{percent}%',
     sumDrop: 'Drops +{percent}%',
     sumBosses: 'Bosses in place of rares',
+    sumRares: 'Rares ×{scale}',
     hintKeyboard: '← → choose   Space put in   Backspace take out   Esc back',
     hintTouch: 'Tap a bone to put it in, a slot to take it out',
   },
@@ -443,14 +456,17 @@ export const en: Strings = {
     bones: {
       skull: 'Ancient Skull',
       rib: 'Rib',
+      spine: 'Spine',
     },
     boneShorts: {
       skull: 'Skull',
       rib: 'Rib',
+      spine: 'Spine',
     },
     boneDetails: {
       skull: 'Bosses walk in where rares would have',
       rib: 'All enemies +100% health, drop rate +50%',
+      spine: 'Rare enemies twice as likely',
     },
     passives: { damage: 'Damage', attackSpeed: 'Attack speed', moveSpeed: 'Move speed', luck: 'Luck' },
     passiveDetails: {
@@ -593,7 +609,7 @@ export const en: Strings = {
         {
           title: 'Levelling up',
           lines: [
-            'On a level up one of your skills is picked at random, and you choose an upgrade for it.',
+            'On a level up you choose an upgrade for your main skill, the one you picked at the start of the run. Only once it has every upgrade is another skill picked at random. A skill found later is upgraded by picking it up again.',
             'Upgrades stay on their own skill: raising Fireball leaves Strike as it was.',
             'Number upgrades add a share of the base each time: three picks of +20% are +60% of the base.',
             'Damage and attack speed can each be taken {maxPicks} times per skill, and chains go up to {chainCap}. A maxed upgrade is no longer offered.',
@@ -603,6 +619,18 @@ export const en: Strings = {
           title: 'Skill level',
           lines: [
             'The number in a skill icon’s corner is its level: 1 when you get it, and one more for every upgrade.',
+          ],
+        },
+        {
+          title: 'Awakening',
+          lines: [
+            'A skill that reaches level {masteryLevel} awakens and gains one more effect. The moment it happens is announced across the screen, and its icon turns gold.',
+            'Strike — also destroys enemy projectiles within its reach.',
+            'Fireball — leaves a fire zone for {fireZoneSecs}s where it bursts, at {fireZoneShare} of its damage per second.',
+            'Chain Lightning — can chain back to enemies it has already struck.',
+            'Ice Spear — freezes an already chilled enemy solid for {freezeSecs}s.',
+            'Void Orb — slowly pulls nearby enemies in.',
+            'Thunderstrike — {thunderBolts} bolts fall at once.',
           ],
         },
       ],

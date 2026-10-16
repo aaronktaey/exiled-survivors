@@ -25,6 +25,7 @@ import {
   SHARD,
   SKILL_BASE,
   SKILL_DROP,
+  SKILL_MASTERY,
   SKILL_PICK,
   SPAWN,
   SPAWN_TABLE,
@@ -196,6 +197,11 @@ function values(): Record<string, string | number> {
     nameLength: RANKING.nameLength,
     rankSize: RANKING.size,
     rankResetHour: RANKING.dailyReset.hour,
+    masteryLevel: SKILL_MASTERY.level,
+    fireZoneSecs: SKILL_MASTERY.fireZone.durationMs / 1000,
+    fireZoneShare: percent(SKILL_MASTERY.fireZone.damageShare),
+    freezeSecs: SKILL_MASTERY.freezeMs / 1000,
+    thunderBolts: SKILL_MASTERY.thunderBolts,
   };
 }
 

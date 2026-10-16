@@ -1,9 +1,12 @@
 import Phaser from 'phaser';
 
-import { COLORS, DEPTH, HUD, SKILL_ICONS, TEXT, TEXTURES } from '@/config';
-import { fill, t } from '@/i18n';
+import { COLORS, DEPTH, HUD, SKILL_ICONS, SKILL_MASTERY, TEXT, TEXTURES } from '@/config';
+import { fill, masteryText, t } from '@/i18n';
 import type { Progression } from '@/systems/Progression';
 import { SKILLS, type SkillId } from '@/weapons/skills';
+
+/** The edge a skill at SKILL_MASTERY.level wears. */
+const MASTERY_GOLD = 0xffc43a;
 
 export interface LoadoutEntry {
   readonly id: SkillId;
@@ -217,6 +220,10 @@ export class Hud {
         slot.icon.setTexture(key).setDisplaySize(SLOT - 8, SLOT - 8);
       }
       slot.level.setText(String(entry.level));
+      // 각성: gold round the icon and on the number.
+      const mastered = entry.level >= SKILL_MASTERY.level;
+      slot.plate.setStrokeStyle(mastered ? 2 : 1, mastered ? MASTERY_GOLD : COLORS.panelEdge, 1);
+      slot.level.setColor(mastered ? '#ffd76a' : COLORS.text);
     });
 
     // The card follows its skill: a level taken mid-hover is read at once.
@@ -259,6 +266,7 @@ export class Hud {
     this.cardText.setText([
       `${entry.name}  ${fill(copy.level, { level: entry.level })}`,
       ...entry.breakdown,
+      ...(entry.level >= SKILL_MASTERY.level ? [fill(t().mastery.card, { effect: masteryText(entry.id) })] : []),
     ]);
 
     const pad = 8;

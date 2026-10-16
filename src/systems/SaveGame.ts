@@ -19,6 +19,8 @@ export interface SavedRun {
    * they existed, which just means a run with none.
    */
   readonly bones?: readonly BoneId[];
+  /** The run's main skill — the one its level-ups go to. The first skill when absent. */
+  readonly main?: SkillId;
   /** The developer tools changed this run, so it stays off both boards once resumed. */
   readonly devUsed?: boolean;
 }

@@ -120,7 +120,7 @@ const quiet = await ev(`(() => {
 })()`);
 check('and the spin sound is gone once it has', quiet.spin === true);
 
-// --- 3b. a level-up upgrades one of the skills in hand, at random ---
+// --- 3b. a level-up upgrades the main skill, not one picked up later ---
 const levels = await run(`
   s.choosing = false;
   s.acquire('fireball');
@@ -132,9 +132,9 @@ const levels = await run(`
   return { seen, owned: [...s.owned] };
 `);
 console.log('level-ups:', JSON.stringify(levels));
-check('a level-up offers one of the skills in hand, picked at random',
-  Object.keys(levels.seen).every((k) => levels.owned.includes(k)) &&
-    levels.owned.every((k) => (levels.seen[k] ?? 0) > 40),
+check('a level-up offers the main skill every time, not the one picked up later',
+  levels.owned.includes('fireball') && Object.keys(levels.seen).length === 1 &&
+    (levels.seen[levels.owned[0]] ?? 0) === 200,
   Object.entries(levels.seen).map(([k, n]) => `${k} ${n}`).join(' / '));
 
 // --- 4. its odds are the caller's ---

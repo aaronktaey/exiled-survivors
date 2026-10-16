@@ -15,6 +15,7 @@ import {
   type GearId,
   type OrbId,
   type PassiveId,
+  SKILL_MASTERY,
 } from '@/config';
 import { en } from '@/i18n/en';
 import { ja } from '@/i18n/ja';
@@ -115,6 +116,22 @@ export function fill(template: string, values: Record<string, string | number> =
  */
 export function skillName(id: SkillId): string {
   return t().names?.skills?.[id] ?? SKILLS[id].name;
+}
+
+/** What a skill's 각성 does, its numbers read off SKILL_MASTERY. */
+export function masteryText(id: SkillId): string {
+  const effects = t().mastery.effects as Record<string, string>;
+  const line = effects[id];
+  if (!line) {
+    return '';
+  }
+  const { fireZone, freezeMs, thunderBolts } = SKILL_MASTERY;
+  return fill(line, {
+    seconds: fireZone.durationMs / 1000,
+    share: `${Math.round(fireZone.damageShare * 100)}%`,
+    freeze: freezeMs / 1000,
+    bolts: thunderBolts,
+  });
 }
 
 export function skillSummary(id: SkillId): string {
