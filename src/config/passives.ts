@@ -9,10 +9,10 @@
  * Health regeneration is not one of them, and no longer anywhere else
  * either: life comes back from potions.
  *
- * It is deliberately flat lines rather than a tree: the shape — which
- * node unlocks which — is the next piece of work, and everything underneath
- * it (the currency, the points, the ranks, the order it is applied in) is
- * already here and will not have to move.
+ * The lines make a tree: a line with `requires` hangs from another and
+ * opens once that one holds enough ranks. Ranks already bought are never
+ * taken away by it — a line that is shut only stops taking more. The screen
+ * draws whatever shape this table gives, so a new line is a new entry.
  */
 
 export type PassiveId = 'attackSpeed' | 'damage' | 'moveSpeed' | 'luck';
@@ -25,6 +25,8 @@ export interface PassiveSpec {
   readonly detail: string;
   /** How many ranks it can hold. */
   readonly maxRank: number;
+  /** The line it hangs from, and the ranks that one needs before this opens. Without it, it hangs from the root. */
+  readonly requires?: { readonly id: PassiveId; readonly rank: number };
   /** Multiplies every skill's attacks per second, per rank. */
   readonly attackSpeedScale?: number;
   /** Multiplies every skill's damage, per rank. */
@@ -51,6 +53,7 @@ export const PASSIVES: Record<PassiveId, PassiveSpec> = {
     name: '공격속도',
     detail: '공격속도 +3%',
     maxRank: 10,
+    requires: { id: 'damage', rank: 1 },
     attackSpeedScale: 1.03,
   },
   moveSpeed: {
@@ -65,6 +68,7 @@ export const PASSIVES: Record<PassiveId, PassiveSpec> = {
     name: '행운',
     detail: '행운 +1% (아직 효과 없음)',
     maxRank: 10,
+    requires: { id: 'moveSpeed', rank: 1 },
     luck: 0.01,
   },
 };

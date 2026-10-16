@@ -481,7 +481,12 @@ function passiveCards(): GuideCard[] {
   return ALL_PASSIVES.map((passive) => ({
     title: passiveName(passive.id),
     tone: 'passive' as const,
-    facts: [fill(g.passiveRank, { detail: passiveDetail(passive.id), max: passive.maxRank })],
+    facts: [
+      fill(g.passiveRank, { detail: passiveDetail(passive.id), max: passive.maxRank }),
+      ...(passive.requires
+        ? [fill(g.passiveNeeds, { name: passiveName(passive.requires.id), rank: passive.requires.rank })]
+        : []),
+    ],
     lines: [],
   }));
 }

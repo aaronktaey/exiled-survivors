@@ -306,8 +306,11 @@ function explode(
   item: GearItem,
   upgrade: { readonly steps: number; readonly destroyChance: number },
 ): OrbOutcome | null {
+  // Only a line with somewhere to climb: a 1티어 is the top already, so a
+  // weapon that holds nothing else is not one to spend this on.
   const lines = [...item.prefixes, ...item.suffixes];
-  if (lines.length === 0) {
+  const climbable = lines.map((line, index) => ({ line, index })).filter(({ line }) => line.tier > 1);
+  if (climbable.length === 0) {
     return null;
   }
 
@@ -320,19 +323,20 @@ function explode(
     return { item: null, kind: 'destroyed' };
   }
 
-  const index = Math.floor(Math.random() * lines.length);
-  const from = lines[index]!;
+  const { line: from, index } = climbable[Math.floor(Math.random() * climbable.length)]!;
   const fromPrefix = index < item.prefixes.length;
-  const pool = fromPrefix ? PREFIXES : SUFFIXES;
+  // Tier 1 is the best there is, so a rung better is a smaller number. The
+  // replacement is drawn only from 속성 that have that rung, so it always
+  // comes out above the line it replaced.
+  const target = Math.max(1, from.tier - upgrade.steps);
+  const pool = (fromPrefix ? PREFIXES : SUFFIXES).filter((affix) =>
+    affix.gearTiers?.some((rung) => rung.tier === target),
+  );
   const picked = pool[Math.floor(Math.random() * pool.length)];
   if (!picked) {
     return null;
   }
-
-  // Tier 1 is the best there is, so a rung better is a smaller number, and
-  // something already at the top stays there.
-  const tier = Math.max(1, from.tier - upgrade.steps);
-  const line = { id: picked.id, tier: affixTier(picked.id, tier)?.tier ?? tier };
+  const line = { id: picked.id, tier: target };
 
   const prefixes = [...item.prefixes];
   const suffixes = [...item.suffixes];

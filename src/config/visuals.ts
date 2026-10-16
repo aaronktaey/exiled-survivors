@@ -522,6 +522,29 @@ export const ICON_BAR = {
 } as const;
 
 /** Where the shell screens — title, settings, credits, pause — are tuned. */
+/** 패시브's tree: how its nodes are drawn. */
+export const PASSIVE_TREE = {
+  /** A node's radius at most; it shrinks to fit a short or narrow window. */
+  nodeRadius: 32,
+  /** The root is this much bigger than a node. */
+  rootScale: 1.2,
+  /** The ring that fills as ranks are bought. */
+  ringWidth: 5,
+  ringTrack: 0x2b3445,
+  ringFill: 0xffd34d,
+  /** The edge round a node a point can go into now. */
+  buyable: 0x7ef0b0,
+  /** Branches: one that has a rank in it, one that is open, one that is shut. */
+  edgeLit: 0xffd34d,
+  edgeOpen: 0x6b7385,
+  edgeShut: 0x2b3445,
+  edgeWidth: 3,
+  /** A shut node is drawn this faint. */
+  shutAlpha: 0.4,
+  /** The furthest apart two rows of the tree are drawn. */
+  maxLevelGap: 120,
+} as const;
+
 export const MENU = {
   /** Wide enough that a row's name and its value never touch. */
   buttonWidth: 360,

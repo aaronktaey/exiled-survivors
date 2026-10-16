@@ -122,43 +122,70 @@ check('the 패시브 icon wears a dot while a point is waiting',
   title.icons.find((i) => i.id === 'passives').badge === true);
 await shot('passive-02-title');
 
-// --- 4. spending a point ---
+// --- 4. spending a point, on the tree ---
 await openIcon('passives');
+const nodesOf = `[...s.nodes.values()].map(n => ({ id: n.id, rank: n.rank.text, name: n.name.text, x: Math.round(n.x), y: Math.round(n.y),
+  open: window.passives.isOpen(n.id), alpha: n.name.alpha }))`;
 const screen = await scene('PassiveScene', `
-  return { labels: s.menu.rows.map(r => r.label.text), details: s.menu.rows.map(r => r.detail.text),
-           want: [window.config.PASSIVES.damage.detail, window.config.PASSIVES.attackSpeed.detail].join(' / '),
-           purse: s.purse.text, enabled: s.menu.rows.map(r => r.item.enabled ? r.item.enabled() : true) };
+  const P = window.config.PASSIVES;
+  return { nodes: ${nodesOf}, purse: s.purse.text, detail: s.detail.text,
+           tree: window.config.ALL_PASSIVES.map(p => ({ id: p.id, parent: p.requires ? p.requires.id : null, needs: p.requires ? p.requires.rank : 0 })),
+           width: s.scale.width, height: s.scale.height, sideways: s.sideways };
 `);
 console.log('패시브:', JSON.stringify(screen));
-// The first row is the shop; the lines follow it, and 돌아가기 ends it.
+const node = (id, list = screen.nodes) => list.find((n) => n.id === id);
 // 재생 is not among them any more: that is the sword's line to carry.
-check('패시브 lists its lines, each at rank zero',
-  screen.labels.slice(1, 3).join(' / ') === screen.want &&
-    screen.details.slice(1, 3).every((d) => d === '0 / 10') &&
-    !screen.labels.some((l) => /5초당/.test(l)),
-  screen.labels.join(' / '));
+check('패시브 draws every line as a node, each at rank zero',
+  screen.tree.every((p) => node(p.id)?.rank === '0 / 10') && !screen.nodes.some((n) => /재생/.test(n.name)),
+  screen.nodes.map((n) => `${n.name} ${n.rank}`).join(' / '));
+// Upright the tree grows down; on a wide window it lies on its side and grows right.
+const along = (n) => (screen.sideways ? n.x : n.y);
+check('a line sits a level past the one it hangs from, and the roots on the first level',
+  screen.tree.every((p) => {
+    const here = node(p.id);
+    if (!p.parent) return along(here) === Math.min(...screen.nodes.map(along));
+    return along(here) > along(node(p.parent));
+  }),
+  screen.nodes.map((n) => `${n.id}@${n.x},${n.y}`).join(' / '));
+check('every node is inside the window',
+  screen.nodes.every((n) => n.x > 0 && n.x < screen.width && n.y > 60 && n.y < screen.height - 100));
 check('and reads out the point in hand', /포인트 1/.test(screen.purse), screen.purse);
-check('every line can be bought while a point is held',
-  screen.enabled.slice(1, 3).every(Boolean));
+check('a branch is shut until the line it hangs from has its ranks',
+  screen.tree.every((p) => node(p.id).open === (p.needs === 0)) &&
+    screen.tree.filter((p) => p.needs > 0).every((p) => node(p.id).alpha < 1),
+  screen.nodes.map((n) => `${n.id} ${n.open ? 'open' : 'shut'}`).join(' / '));
 
-await ev(`(() => {
-  const s = window.game.scene.getScene('PassiveScene');
-  s.menu.selected = s.menu.rows.findIndex(r => r.item.id === 'damage');
-  s.menu.refresh(); return 1;
-})()`);
+// A shut line takes nothing, even with a point in hand.
+const shutId = screen.tree.find((p) => p.parent)?.id;
+const parentId = screen.tree.find((p) => p.id === shutId)?.parent;
+const shut = await scene('PassiveScene', `
+  s.spend('${shutId}');
+  return { points: window.passives.value.points, rank: window.passives.rankOf('${shutId}'), detail: s.detail.text };
+`);
+check('a point does not go into a shut line', shut.points === 1 && shut.rank === 0, shut.detail);
+
+// A first tap picks, the second spends.
+await scene('PassiveScene', `s.press('${parentId}'); return 1;`);
+const picked = await scene('PassiveScene', `
+  return { points: window.passives.value.points, detail: s.detail.text, focused: s.focused };
+`);
+check('a tap on a node picks it and says what it does', picked.points === 1 && picked.detail.includes(
+  await ev(`window.config.PASSIVES['${parentId}'].detail`)), picked.detail);
 await cdp.tap('Space', 32, ' ');
 await sleep(600);
-const spent = await scene('PassiveScene', `
-  return { details: s.menu.rows.map(r => r.detail.text), purse: s.purse.text,
-           enabled: s.menu.rows.map(r => r.item.enabled ? r.item.enabled() : true) };
-`);
+const spent = await scene('PassiveScene', `return { nodes: ${nodesOf}, purse: s.purse.text };`);
 const afterSpend = await stored();
 console.log('spent:', JSON.stringify({ spent, afterSpend }));
 check('spending puts a rank on that line and takes the point',
-  afterSpend.ranks.damage === 1 && afterSpend.points === 0 && spent.details[1] === '1 / 10',
-  `${spent.details[1]}, ${afterSpend.points} points left`);
-check('with none left, no line can be bought',
-  spent.enabled.slice(1, 3).every((e) => e === false), spent.purse);
+  afterSpend.ranks[parentId] === 1 && afterSpend.points === 0 && node(parentId, spent.nodes).rank === '1 / 10',
+  `${node(parentId, spent.nodes).rank}, ${afterSpend.points} points left`);
+check('and opens the branch that hangs from it',
+  node(shutId, spent.nodes).open === true && node(shutId, spent.nodes).alpha === 1);
+const none = await scene('PassiveScene', `
+  s.spend('${shutId}');
+  return { rank: window.passives.rankOf('${shutId}') };
+`);
+check('with none left, no line can be bought', none.rank === 0, spent.purse);
 await shot('passive-03-spent');
 
 await cdp.tap('Escape', 27, 'Escape');

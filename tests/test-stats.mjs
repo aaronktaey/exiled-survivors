@@ -138,13 +138,11 @@ await ev(`(() => window.game.scene.getScene('MenuScene').icons.press('passives')
 await sleep(1000);
 
 const poor = await scene('PassiveScene', `
-  const row = s.menu.rows[0];
-  return { id: row.item.id, label: row.label.text, detail: row.detail.text,
-           enabled: row.item.enabled(), gold: window.gold.value };
+  return { label: s.shopButton.label.text, enabled: s.shopOpen, gold: window.gold.value };
 `);
 console.log('shop, short of it:', JSON.stringify(poor));
-check('the shop row is the first thing on 패시브',
-  poor.id === 'buyShard' && poor.label.includes(String(ECON.shardPrice)), poor.label);
+check('the shop sits under the tree on 패시브',
+  poor.label.includes(String(ECON.shardPrice)), poor.label);
 check('and it is closed while the purse is short',
   poor.gold < ECON.shardPrice && poor.enabled === false, `${poor.gold} gold`);
 
@@ -154,7 +152,7 @@ await ev(`(() => { const e = window.config.ECONOMY;
 await ev(`(() => { window.game.scene.getScene('PassiveScene').scene.restart({ onClose: () => {} }); return 1; })()`);
 await sleep(900);
 const rich = await scene('PassiveScene', `
-  return { enabled: s.menu.rows[0].item.enabled(), gold: window.gold.value, purse: s.purse.text };
+  return { enabled: s.shopOpen, gold: window.gold.value, purse: s.purse.text };
 `);
 check('and opens once there is enough', rich.gold >= ECON.shardPrice && rich.enabled === true,
   `${rich.gold} gold`);
@@ -163,9 +161,8 @@ check('the purse is read out on the screen',
 
 await ev(`(() => {
   const s = window.game.scene.getScene('PassiveScene');
-  s.menu.selected = 0; s.menu.refresh(); return 1;
+  s.shopButton.plate.emit('pointerdown'); return 1;
 })()`);
-await cdp.tap('Space', 32, ' ');
 await sleep(600);
 const bought = await scene('PassiveScene', `
   return { gold: window.gold.value, purse: s.purse.text,
@@ -183,8 +180,7 @@ const tenth = await ev(`(() => {
   const e = window.config.ECONOMY;
   window.gold.earn(e.damagePerGold * e.shardPrice * 10);
   for (let i = 0; i < 9; i++) {
-    s.menu.selected = 0;
-    s.menu.rows[0].item.onSelect();
+    s.buy();
   }
   return { gold: window.gold.value,
            stored: JSON.parse(localStorage.getItem('exiled-survivors:passives:v1')) };

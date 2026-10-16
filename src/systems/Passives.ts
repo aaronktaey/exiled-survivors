@@ -123,11 +123,17 @@ class PassiveStore {
     return true;
   }
 
-  /** Spends a point on a line. False when there is none, or it is full. */
+  /** Whether a line's branch is open: the line it hangs from holds enough ranks. */
+  public isOpen(id: PassiveId): boolean {
+    const needs = PASSIVES[id]?.requires;
+    return !needs || this.rankOf(needs.id) >= needs.rank;
+  }
+
+  /** Spends a point on a line. False when there is none, it is full, or its branch is shut. */
   public spend(id: PassiveId): boolean {
     const spec = PASSIVES[id];
     const rank = this.rankOf(id);
-    if (!spec || this.value.points <= 0 || rank >= spec.maxRank) {
+    if (!spec || this.value.points <= 0 || rank >= spec.maxRank || !this.isOpen(id)) {
       return false;
     }
 

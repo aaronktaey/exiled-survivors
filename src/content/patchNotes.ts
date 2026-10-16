@@ -15,6 +15,36 @@ export interface PatchNote {
 
 export const PATCH_NOTES: readonly PatchNote[] = [
   {
+    version: '0.46',
+    date: '2026-10-16',
+    changes: {
+      ko: [
+        '패시브 화면이 트리로 바뀌었습니다. 포인트에서 두 갈래(피해 → 공격속도, 이동속도 → 행운)로 뻗고, 공격속도와 행운은 앞의 패시브에 1단계를 넣으면 열립니다. 이미 올린 단계는 그대로 남습니다.',
+        '폭발의 구슬은 1티어 속성에는 쓰이지 않고, 성공하면 반드시 한 티어 높은 속성이 됩니다. 1티어 속성만 있는 장비에는 바를 수 없습니다.',
+        '얼음창의 기본 사거리가 180에서 144로 줄고, 화염구의 기본 사거리가 100에서 120, 투사체 속도가 230에서 276으로 늘었습니다.',
+        '아이템 획득 알림에서 「인벤토리에서 사용」 같은 안내 문구를 뺐습니다.',
+      ],
+      en: [
+        'The Passives screen is now a tree. It branches from your points into two lines (Damage → Attack Speed, Move Speed → Luck); Attack Speed and Luck open once the passive before them has one rank. Ranks already bought stay.',
+        'An Orb of Explosion no longer works on a tier-1 modifier, and a success always lands one tier higher. It cannot be used on a weapon whose modifiers are all tier 1.',
+        'Ice Spear’s base range drops from 180 to 144; Fireball’s base range rises from 100 to 120 and its shot speed from 230 to 276.',
+        'Pickup notices no longer add where to use the item (such as "use it from the Inventory").',
+      ],
+      ja: [
+        'パッシブ画面がツリーになりました。ポイントから 2 本の枝（ダメージ → 攻撃速度、移動速度 → 幸運）に伸び、攻撃速度と幸運は手前のパッシブに 1 段階入れると開きます。上げ済みの段階はそのまま残ります。',
+        '爆発の球は 1 ティアの属性には使われず、成功すると必ず 1 ティア上の属性になります。1 ティアの属性しかない装備には使えません。',
+        '氷槍の基本射程が 180 から 144 に、火炎球の基本射程が 100 から 120、投射物速度が 230 から 276 になりました。',
+        'アイテム獲得の通知から「インベントリで使用」などの案内を外しました。',
+      ],
+      zh: [
+        '被动界面改为技能树。从点数分出两条分支（伤害 → 攻击速度，移动速度 → 幸运）；攻击速度和幸运在前一个被动投入 1 阶后开启。已投入的阶数保持不变。',
+        '爆炸之球不再作用于 1 阶词缀，成功时必定升高一阶。词缀全为 1 阶的装备无法使用。',
+        '冰枪的基础射程由 180 降为 144；火球的基础射程由 100 提高到 120，投射物速度由 230 提高到 276。',
+        '物品获得提示不再附带「在背包中使用」等说明。',
+      ],
+    },
+  },
+  {
     version: '0.45',
     date: '2026-10-16',
     changes: {

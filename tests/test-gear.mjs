@@ -266,9 +266,9 @@ check('walking over it takes it off the ground and into the stash',
   afterPickup.left === 0 && held.items.some((i) => i.uid === 'found'),
   `${afterPickup.left} left, ${held.items.length} in the stash`);
 check('and it is not put on mid-run', held.equipped === 'starter', held.equipped);
-check('a toast says where to put it on',
-  afterPickup.banner.some((line) => /강철 검/.test(line) && /메인화면/.test(line)),
-  afterPickup.banner.find((line) => /메인화면/.test(line)) ?? 'no banner');
+check('a toast names what was found, and nothing about where to use it',
+  afterPickup.banner.some((line) => /강철 검/.test(line)) && !afterPickup.banner.some((line) => /메인화면|인벤토리/.test(line)),
+  afterPickup.banner.join(' | ') || 'no toast');
 await shot('gear-01-pickup');
 
 await ev(`(() => { window.game.scene.getScene('GameScene').scene.start('MenuScene'); return 1; })()`);
@@ -742,8 +742,9 @@ const rates = await ev(`(() => {
 })()`);
 console.log('구슬 rates:', JSON.stringify(rates));
 check('they come off a kill at the rates the table says',
+  // Within 30%, or four standard deviations for a rare one with few draws.
   Object.entries(rates.want).every(([id, want]) =>
-    Math.abs(rates.seen[id] / rates.N - want) < want * 0.3),
+    Math.abs(rates.seen[id] - want * rates.N) <= Math.max(want * rates.N * 0.3, 4 * Math.sqrt(want * rates.N))),
   Object.entries(rates.seen)
     .map(([id, n]) => id + ' ' + (n / rates.N * 100).toFixed(3) + '%').join(' / '));
 
@@ -948,12 +949,22 @@ const explode = await ev(`(() => {
   return { ...out, steps: [...out.steps],
            onBare: window.orbApplied(
              { uid: 'y', id: 'steelSword', prefixes: [], suffixes: [] }, spec),
+           onTop: window.orbApplied(
+             { uid: 'z', id: 'steelSword', prefixes: [{ id: 'mighty', tier: 1 }], suffixes: [{ id: 'giant', tier: 1 }] }, spec),
+           fromTiers: [...new Set(Array.from({ length: 400 }, () => {
+             const r = window.orbApplied({ uid: 'w', id: 'steelSword', prefixes: [{ id: 'mighty', tier: 1 }],
+               suffixes: [{ id: 'giant', tier: 3 }] }, spec);
+             return r.kind === 'upgrade' ? r.from.tier + '>' + r.line.tier : r.kind;
+           }))],
            chance: spec.chance, bossOnly: spec.fromBossOnly === true };
 })()`);
 console.log('폭발:', JSON.stringify(explode));
 check('폭발의 구슬 destroys the weapon about one use in five',
   Math.abs(explode.destroyed / explode.N - 0.2) < 0.03,
   `${(explode.destroyed / explode.N * 100).toFixed(1)}% of ${explode.N}`);
+check('it leaves a 1티어 line alone, and a weapon with only those cannot take it at all',
+  explode.onTop === null && explode.fromTiers.every((t) => t === '3>2' || t === 'destroyed'),
+  JSON.stringify({ onTop: explode.onTop, seen: explode.fromTiers }));
 check('otherwise it swaps one 속성 for another a rung better',
   explode.steps.length === 1 && explode.steps[0] === 1 &&
     explode.sameLines === explode.upgraded,
@@ -1358,8 +1369,11 @@ await cdp.tap('Escape', 27, 'Escape');
 await sleep(500);
 
 // --- 희귀 drops stand in a pillar of light ---
+// By way of a blank page: a reload of the page in hand could still be on its
+// old run when the wait below first looks, and the probe then lands mid-load.
+await cdp.send('Page.navigate', { url: 'about:blank' });
+await sleep(300);
 await cdp.send('Page.navigate', { url: 'http://localhost:5173/#run' });
-await cdp.send('Page.reload', {});
 // Until the run is really up: a fixed wait was too short on a busy machine.
 for (let i = 0; i < 40; i++) {
   await sleep(500);

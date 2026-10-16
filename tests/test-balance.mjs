@@ -56,7 +56,7 @@ console.log('config:', JSON.stringify(CONFIG));
 // --- 1. base stat lines ---
 const base = await run(`
   const p = s.progression;
-  return { melee: p.statsFor('meleeStrike'), fire: p.statsFor('fireball'),
+  return { melee: p.statsFor('meleeStrike'), fire: p.statsFor('fireball'), fireBase: window.config.SKILL_BASE.fireball,
            enemyHp: (() => { const e = s.spawner.group.get(0, 0); e.spawn(0, 0, s.player);
              const hp = e.hp; e.recycle(); return hp; })() };
 `);
@@ -69,9 +69,11 @@ check('화염구 hits for more than 타격 per cast', base.fire.damage >= base.m
 // swing is far shorter than the 88px it started at.
 check('타격 reach is well under the old 88px', base.melee.range < 88,
   `range=${base.melee.range}px (was 88)`);
-check('화염구 range is 100px', base.fire.range === 100, `range=${base.fire.range}px (was 520)`);
-check('화염구 projectile speed halved to 230', base.fire.projectileSpeed === 230,
-  `speed=${base.fire.projectileSpeed}px/s (was 460)`);
+// Both are tuned in balance.ts, so read them rather than spell them out.
+check('화염구 starts on the range its table gives', base.fire.range === base.fireBase.range,
+  `range=${base.fire.range}px, table ${base.fireBase.range}px`);
+check('and on its projectile speed', base.fire.projectileSpeed === base.fireBase.projectileSpeed,
+  `speed=${base.fire.projectileSpeed}px/s, table ${base.fireBase.projectileSpeed}px/s`);
 
 // --- 2. enemy base HP ---
 const hp = await run(`
@@ -143,12 +145,13 @@ const flight = await run(`
   const speed = Math.round(Math.hypot(bolt.body.velocity.x, bolt.body.velocity.y));
   let ms = 0;
   for (let i = 0; i < 100 && bolt.active; i++) { bolt.update(0, 50); ms += 50; }
-  return { speed, lifeMs: ms, travelPx: Math.round((speed * ms) / 1000), active: bolt.active };
+  return { speed, lifeMs: ms, travelPx: Math.round((speed * ms) / 1000), active: bolt.active,
+           want: st.projectileSpeed, range: st.range };
 `);
 console.log('flight:', JSON.stringify(flight));
-check('bolt leaves at 230px/s', flight.speed === 230, `${flight.speed}px/s`);
-check('bolt fizzles just past its 100px range', flight.travelPx >= 100 && flight.travelPx <= 160,
-  `lived ${flight.lifeMs}ms = ~${flight.travelPx}px (100px range x 1.2 overshoot)`);
+check('bolt leaves at its own speed', flight.speed === flight.want, `${flight.speed}px/s, wanted ${flight.want}`);
+check('bolt fizzles just past its range', flight.travelPx >= flight.range && flight.travelPx <= flight.range * 1.6,
+  `lived ${flight.lifeMs}ms = ~${flight.travelPx}px (${flight.range}px range)`);
 
 // --- 6. first fireball pickup grants the plain skill, no upgrade popup ---
 const first = await run(`

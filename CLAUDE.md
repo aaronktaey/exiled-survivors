@@ -75,7 +75,7 @@ wrong shape.
 ## The test harness
 
 `tests/` drives a real Chrome over CDP against the dev server and checks the
-running game, not units. 43 suites, ~1095 checks. It is the only thing that has
+running game, not units. 43 suites, ~1115 checks. It is the only thing that has
 caught most of what has gone wrong here, so run all of it before every commit.
 
 ```sh
@@ -429,6 +429,16 @@ Read `git log` for what changed and when. What is not in the log:
   pauses physics until the pointer moves off. A touch shows the same without
   the hold — on a phone that finger is steering. A popup that closes while
   something is being read leaves the arena paused (`held`).
+- **패시브 is a tree drawn from its table.** A `PASSIVES` entry with
+  `requires: { id, rank }` hangs from that line and opens once it holds the
+  ranks (`passives.isOpen`, checked inside `passives.spend`, so the rule is
+  the store's, not the screen's); without it, it hangs from the root. Ranks
+  bought before a line was gated are kept. `PassiveScene.layOut` places
+  whatever shape the table gives — root on top, or on its side
+  (`sideways`) on a wide window — so a new line is a table entry.
+- **폭발의 구슬 only climbs.** It picks among lines below tier 1, and the
+  replacement comes only from 속성 that have the rung above; a weapon with
+  nothing but tier-1 lines refuses it.
 - **Known gaps, left on purpose:**
   - A 구슬 can still be spent on the weapon a saved run is holding. Swapping
     is blocked while a run is saved; rerolling it is not.

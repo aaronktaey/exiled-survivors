@@ -76,8 +76,12 @@ export interface Strings {
     readonly buyShard: string;
     /** Gold in the purse. */
     readonly goldHeld: string;
-    /** Said plainly: separate lines today, a tree later. */
-    readonly temporary: string;
+    /** Under the root of the tree, over the points in it. */
+    readonly root: string;
+    /** What one rank of a line is worth: {detail}. */
+    readonly perRank: string;
+    /** A shut line: it opens at {name} rank {rank}. */
+    readonly locked: string;
   };
 
   /** 아이템 필터: the switches for what drops, reached from the title. */
@@ -638,6 +642,7 @@ export interface Strings {
       readonly boneSingle: string;
       /** {detail} a rank, up to {max} ranks. */
       readonly passiveRank: string;
+      readonly passiveNeeds: string;
     };
   };
 }

@@ -1073,8 +1073,9 @@ export const SKILL_BASE: Record<SkillId, SkillBaseStats> = {
   fireball: {
     damage: 180,
     attackSpeed: 1,
-    range: 100,
-    projectileSpeed: 230,
+    // 100 and 230 until 2026-10-16, then a fifth further and faster.
+    range: 120,
+    projectileSpeed: 276,
     chainCount: 0,
     pierceCount: 0,
     orbCount: 0,
@@ -1096,7 +1097,8 @@ export const SKILL_BASE: Record<SkillId, SkillBaseStats> = {
   iceSpear: {
     damage: 120,
     attackSpeed: 1,
-    range: 180,
+    // 180 until 2026-10-16, then a fifth shorter.
+    range: 144,
     projectileSpeed: 320,
     chainCount: 0,
     /** Runs through two bodies before it is spent, and upgrades from there. */

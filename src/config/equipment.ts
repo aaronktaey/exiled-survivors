@@ -287,7 +287,7 @@ export const ORBS: Record<OrbId, OrbSpec> = {
     id: 'explode',
     name: '폭발의 구슬',
     short: '폭발',
-    detail: '속성 1개를 한 단계 높은 것으로 — 20% 확률로 장비 파괴',
+    detail: '1티어가 아닌 속성 1개를 한 단계 높은 것으로 — 20% 확률로 장비 파괴',
     // Off any kill now, raised like the rest — it was a 우두머리's only.
     chance: 0.001,
     tier: 'rare',
