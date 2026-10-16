@@ -15,6 +15,32 @@ export interface PatchNote {
 
 export const PATCH_NOTES: readonly PatchNote[] = [
   {
+    version: '0.48',
+    date: '2026-10-16',
+    changes: {
+      ko: [
+        '스킬 각성 레벨이 20에서 10으로 낮아졌습니다.',
+        '연쇄번개의 각성 효과가 「남은 연쇄 횟수 1회당 피해 10% 증폭」으로 바뀌었습니다. 연쇄의 첫 타가 가장 세고, 마지막 타는 증폭이 없습니다. 이미 맞은 적에게 다시 연쇄하던 효과는 없어졌습니다.',
+        '랭킹 화면을 정리했습니다. 순위 · 국가 · 이름 · 스킬 · 트로피 · 가한 피해가 같은 간격의 칸으로 나뉘고 칸마다 이름이 붙으며, 화면 요소 사이 간격이 넓어졌습니다.',
+      ],
+      en: [
+        'Skills now awaken at level 10 instead of 20.',
+        'Chain Lightning’s awakening is now "each strike deals 10% more for every jump still to come" — the first strike of an arc hits hardest and the last gets nothing extra. It no longer chains back to enemies it has already struck.',
+        'The ranking screen is tidied up: place, flag, name, skill, cups and damage dealt are evenly spaced columns, each with a heading, and everything on the screen has more room.',
+      ],
+      ja: [
+        'スキルの覚醒レベルが 20 から 10 に下がりました。',
+        '連鎖雷の覚醒効果が「残り連鎖回数 1 回につきダメージ 10% 増幅」に変わりました。連鎖の最初の一撃が最も強く、最後の一撃は増幅されません。すでに当たった敵に再び連鎖する効果はなくなりました。',
+        'ランキング画面を整理しました。順位・国・名前・スキル・トロフィー・与ダメージが等間隔の列に分かれて列ごとに見出しが付き、画面の要素の間隔が広がりました。',
+      ],
+      zh: [
+        '技能觉醒等级由 20 降为 10。',
+        '连锁闪电的觉醒效果改为「每剩余一次连锁，伤害提高 10%」— 连锁的第一击最强，最后一击没有加成。不再连锁回已经击中过的敌人。',
+        '整理了排行界面：名次、国家、名字、技能、奖杯、造成伤害分成等间距的列并各有标题，界面元素之间的间距也加大了。',
+      ],
+    },
+  },
+  {
     version: '0.47',
     date: '2026-10-16',
     changes: {

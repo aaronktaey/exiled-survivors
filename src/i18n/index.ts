@@ -125,8 +125,9 @@ export function masteryText(id: SkillId): string {
   if (!line) {
     return '';
   }
-  const { fireZone, freezeMs } = SKILL_MASTERY;
+  const { fireZone, freezeMs, chainBonusPerJump } = SKILL_MASTERY;
   return fill(line, {
+    bonus: `${Math.round(chainBonusPerJump * 100)}%`,
     seconds: fireZone.durationMs / 1000,
     share: `${Math.round(fireZone.damageShare * 100)}%`,
     freeze: freezeMs / 1000,

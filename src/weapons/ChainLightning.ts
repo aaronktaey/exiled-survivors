@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 
-import { DEPTH, LIGHTNING } from '@/config';
+import { DEPTH, LIGHTNING, SKILL_MASTERY } from '@/config';
 import type { Enemy } from '@/entities/Enemy';
 import { sfx } from '@/systems/Sfx';
 import { drawBolt } from '@/weapons/bolt';
@@ -63,12 +63,12 @@ export class ChainLightning implements Weapon {
       const { x, y } = target;
       path.push(x, y);
       this.struck.add(target);
-      context.hit(target, context.damage);
+      // 각성: the jumps still to come after this one each add a share.
+      const toCome = links - 1 - i;
+      const boost = context.mastered ? 1 + SKILL_MASTERY.chainBonusPerJump * toCome : 1;
+      context.hit(target, context.damage * boost);
 
-      // 각성: any enemy but the one it is on may take the next jump, one it
-      // has struck already included.
-      const skip = context.mastered ? new Set<Enemy>([target]) : this.struck;
-      target = findNearestEnemy(x, y, context.enemies, LIGHTNING.chainRadius, skip);
+      target = findNearestEnemy(x, y, context.enemies, LIGHTNING.chainRadius, this.struck);
     }
 
     this.showBolt(path);

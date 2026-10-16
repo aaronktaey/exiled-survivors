@@ -46,7 +46,7 @@ export const zh: Strings = {
     effects: {
       meleeStrike: '同时摧毁攻击范围内的敌方投射物',
       fireball: '在爆炸处留下持续 {seconds} 秒的火焰地带（每秒造成火球伤害的 {share}）',
-      chainLightning: '可以再次连锁到已经击中过的敌人',
+      chainLightning: '每剩余一次连锁，伤害提高 {bonus}',
       iceSpear: '命中已被冷却的敌人时使其冻结 {freeze} 秒',
       voidOrb: '缓慢将周围的敌人拉向玩家',
       thunderStrike: '击杀敌人时必定再次落下',
@@ -221,6 +221,9 @@ export const zh: Strings = {
     icon: '排行榜',
     empty: '还没有记录 — 打完一局即可登记名字。',
     place: '名次',
+    flag: '国家',
+    skill: '技能',
+    trophies: '奖杯',
     name: '名字',
     damage: '造成伤害',
     champion: '第 1 名  {name}  {damage}',

@@ -46,7 +46,7 @@ export const en: Strings = {
     effects: {
       meleeStrike: 'Also destroys enemy projectiles within its reach',
       fireball: 'Leaves a fire zone for {seconds}s where it bursts ({share} of Fireball damage per second)',
-      chainLightning: 'Can chain back to enemies it has already struck',
+      chainLightning: 'Each strike deals {bonus} more for every jump still to come',
       iceSpear: 'Freezes an already chilled enemy solid for {freeze}s',
       voidOrb: 'Slowly pulls nearby enemies in toward you',
       thunderStrike: 'A kill always calls down another bolt',
@@ -221,6 +221,9 @@ export const en: Strings = {
     icon: 'Ranking',
     empty: 'No records yet — finish a run to put your name up.',
     place: '#',
+    flag: 'Flag',
+    skill: 'Skill',
+    trophies: 'Cups',
     name: 'Name',
     damage: 'Damage dealt',
     champion: '#1  {name}  {damage}',

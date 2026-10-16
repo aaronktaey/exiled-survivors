@@ -50,7 +50,7 @@ export const ko: Strings = {
     effects: {
       meleeStrike: '공격 범위 안의 적 투사체도 파괴합니다',
       fireball: '터진 자리에 {seconds}초 동안 화염지대를 남깁니다 (초당 화염구 피해의 {share})',
-      chainLightning: '이미 맞은 적에게도 다시 연쇄합니다',
+      chainLightning: '남은 연쇄 횟수 1회당 피해가 {bonus} 증폭됩니다',
       iceSpear: '이미 냉각된 적을 맞히면 {freeze}초 동안 얼어붙습니다',
       voidOrb: '주변 적을 플레이어 쪽으로 천천히 끌어당깁니다',
       thunderStrike: '적을 처치하면 반드시 다시 떨어집니다',
@@ -225,6 +225,9 @@ export const ko: Strings = {
     icon: '랭킹',
     empty: '아직 기록이 없습니다 — 한 판 끝내면 이름을 올릴 수 있습니다.',
     place: '순위',
+    flag: '국가',
+    skill: '스킬',
+    trophies: '트로피',
     name: '이름',
     damage: '가한 피해',
     champion: '1위  {name}  {damage}',

@@ -5,7 +5,7 @@ import { fill, t } from '@/i18n';
 import { account, accountRequest } from '@/systems/Account';
 import { addBackButton, type BackButton } from '@/systems/BackButton';
 import { fitText } from '@/systems/Layout';
-import { flagTexture, rankLabel, ranking } from '@/systems/Ranking';
+import { flagTexture, rankLabel, ranking, type RankEntry } from '@/systems/Ranking';
 import { personal } from '@/systems/PersonalBest';
 
 export type RankingTab = 'shared' | 'personal';
@@ -34,14 +34,29 @@ const day = (iso: string): string => {
 const grouped = (value: number): string => Math.round(value).toLocaleString('en-US');
 
 const TITLE_Y = 34;
-/** The two tabs under the title, and the column heads under them. */
-const TABS_Y = 70;
-const TAB_W = 130;
-const TAB_H = 28;
-/** When the shared board starts over, and how long until it does. */
-const RESET_Y = 94;
-const HEAD_Y = 116;
+const TAB_W = 150;
+const TAB_H = 30;
+const TAB_GAP = 12;
 const FOOTER = 52;
+/** The least room between two columns, when the window is too narrow for more. */
+const MIN_COLUMN_GAP = 10;
+
+/**
+ * Where the tabs, the reset line, the column heads and the first row sit.
+ * A tall window gets room to breathe; lying down, twenty rows still have to
+ * fit about 540 px, so it is tighter there.
+ */
+const SPACING = {
+  roomy: { tabsY: 82, resetY: 116, headY: 150, firstRow: 32, rowMax: 34 },
+  tight: { tabsY: 72, resetY: 98, headY: 122, firstRow: 24, rowMax: 30 },
+} as const;
+const ROOMY_FROM = 700;
+
+/** One cell of the table: what it draws, each piece at its offset from the cell's left edge. */
+interface TableCell {
+  readonly parts: { readonly obj: Phaser.GameObjects.Image | Phaser.GameObjects.Text; readonly dx: number }[];
+  readonly width: number;
+}
 
 /**
  * 랭킹 — the best runs by damage dealt, 1 to RANKING.size, one line each:
@@ -72,7 +87,8 @@ export class RankingScene extends Phaser.Scene {
     tableWidth: number;
     rowHeight: number;
     fontSize: string;
-    columns: { place: number; flag: number; name: number; damage: number };
+    headY: number;
+    firstRow: number;
   };
   /** Everything the board's rows draw, so they can be drawn again. */
   private board?: Phaser.GameObjects.Container;
@@ -118,15 +134,14 @@ export class RankingScene extends Phaser.Scene {
 
     // Twenty rows have to fit a 540-tall window lying down, so the row
     // height is whatever is left, capped at something comfortable to read.
-    const tableWidth = Math.min(460, width - 32);
-    const left = (width - tableWidth) / 2;
-    const rowHeight = Math.min(30, (height - HEAD_Y - 24 - FOOTER) / RANKING.size);
+    const spacing = height >= ROOMY_FROM ? SPACING.roomy : SPACING.tight;
+    const tableWidth = Math.min(640, width - 32);
+    const rowHeight = Math.min(spacing.rowMax, (height - spacing.headY - spacing.firstRow - FOOTER) / RANKING.size);
     const fontSize = rowHeight >= 24 ? TEXT.size.body : TEXT.size.hint;
-    const columns = { place: left + 36, flag: left + 50, name: left + 84, damage: left + tableWidth };
 
-    this.buildTabs(width);
+    this.buildTabs(width, spacing.tabsY);
     this.resetLine = this.add
-      .text(width / 2, RESET_Y, '', {
+      .text(width / 2, spacing.resetY, '', {
         fontFamily: 'system-ui, sans-serif',
         fontSize: TEXT.size.hint,
         color: COLORS.gearText,
@@ -136,7 +151,7 @@ export class RankingScene extends Phaser.Scene {
     this.resetAt = nextRankingReset(Date.now());
     this.tickReset();
     this.time.addEvent({ delay: 1000, loop: true, callback: () => this.tickReset() });
-    this.layout = { tableWidth, rowHeight, fontSize, columns };
+    this.layout = { tableWidth, rowHeight, fontSize, headY: spacing.headY, firstRow: spacing.firstRow };
     this.note = this.add
       .text(width / 2, height - FOOTER / 2, '', {
         fontFamily: 'system-ui, sans-serif',
@@ -182,16 +197,16 @@ export class RankingScene extends Phaser.Scene {
   }
 
   /** 전체 랭킹 and 내 기록, side by side under the title. */
-  private buildTabs(width: number): void {
+  private buildTabs(width: number, y: number): void {
     const copy = t().ranking;
     (['shared', 'personal'] as const).forEach((tab, index) => {
-      const x = width / 2 + (index === 0 ? -1 : 1) * (TAB_W / 2 + 4);
+      const x = width / 2 + (index === 0 ? -1 : 1) * (TAB_W / 2 + TAB_GAP / 2);
       const plate = this.add
-        .rectangle(x, TABS_Y, TAB_W, TAB_H, COLORS.panel, 1)
+        .rectangle(x, y, TAB_W, TAB_H, COLORS.panel, 1)
         .setDepth(DEPTH.ui + 1)
         .setInteractive({ useHandCursor: true });
       const label = this.add
-        .text(x, TABS_Y, tab === 'shared' ? copy.tabShared : copy.tabPersonal, {
+        .text(x, y, tab === 'shared' ? copy.tabShared : copy.tabPersonal, {
           fontFamily: 'system-ui, sans-serif',
           fontSize: TEXT.size.body,
           color: COLORS.muted,
@@ -252,154 +267,170 @@ export class RankingScene extends Phaser.Scene {
 
   /** The rows, from the store as it stands. */
   private drawBoard(): void {
-    const { width } = this.scale;
-    const copy = t().ranking;
-    const { tableWidth, rowHeight, fontSize, columns } = this.layout;
-
     this.board?.destroy();
     this.board = this.add.container(0, 0).setDepth(DEPTH.ui + 1);
+    this.heads?.destroy();
+    this.heads = this.add.container(0, 0).setDepth(DEPTH.ui + 1);
     this.rows = [];
-    this.drawHeads();
 
     if (this.tab === 'personal') {
       this.drawPersonal();
-      return;
+    } else {
+      this.drawShared();
     }
-
-    const top = ranking.top;
-    if (top.length === 0) {
-      this.board.add(
-        this.add
-          .text(width / 2, HEAD_Y + 60, copy.empty, {
-            fontFamily: 'system-ui, sans-serif',
-            fontSize: TEXT.size.body,
-            color: COLORS.muted,
-            align: 'center',
-            wordWrap: { width: tableWidth },
-          })
-          .setOrigin(0.5, 0),
-      );
-    }
-
-    top.forEach((entry, index) => {
-      const place = index + 1;
-      const y = HEAD_Y + 24 + index * rowHeight + rowHeight / 2;
-      const lit = place === this.payload.highlight;
-      // First place in gold; a place just entered in the accent colour.
-      const color = lit ? COLORS.accent : place === 1 ? COLORS.gearText : COLORS.text;
-
-      if (lit) {
-        this.board!.add(this.add.rectangle(width / 2, y, tableWidth + 12, rowHeight, COLORS.panelActive, 1));
-      }
-
-      const cell = (x: number, text: string, origin: number) =>
-        this.add
-          .text(x, y, text, { fontFamily: 'system-ui, sans-serif', fontSize, color })
-          .setOrigin(origin, 0.5);
-      // The skill the run was played on, before the name; the account's
-      // days at first, second and third place, after it.
-      const icon = Math.min(20, rowHeight - 2);
-      const skillKey = entry.skill ? SKILL_ICONS[entry.skill]?.key : undefined;
-      const nameX = columns.name + (skillKey ? icon + 4 : 0);
-      const name = cell(nameX, rankLabel(entry), 0);
-      const row = [cell(columns.place, String(place), 1), name, cell(columns.damage, grouped(entry.damage), 1)];
-      this.board!.add(row);
-      if (entry.flag) {
-        const h = Math.min(18, rowHeight - 4);
-        this.board!.add(
-          this.add.image(columns.flag, y, flagTexture(entry.flag)).setOrigin(0, 0.5).setDisplaySize(h * 1.5, h),
-        );
-      }
-      if (skillKey) {
-        this.board!.add(this.add.image(columns.name, y, skillKey).setOrigin(0, 0.5).setDisplaySize(icon, icon).setName('skill'));
-      }
-      let at = nameX + name.width + 8;
-      const cup = Math.min(16, rowHeight - 4);
-      const podium: [number, string, string][] = [
-        [entry.wins, TEXTURES.trophy, 'wins'],
-        [entry.seconds, TEXTURES.trophySilver, 'seconds'],
-        [entry.thirds, TEXTURES.trophyBronze, 'thirds'],
-      ];
-      for (const [count, texture, tag] of podium) {
-        if (count <= 0) {
-          continue;
-        }
-        this.board!.add(this.add.image(at, y, texture).setOrigin(0, 0.5).setDisplaySize(cup, cup).setName(`${tag}Cup`));
-        const times = this.add
-          .text(at + cup + 2, y, `×${count}`, { fontFamily: 'system-ui, sans-serif', fontSize: TEXT.size.hint, color: COLORS.gearText })
-          .setOrigin(0, 0.5)
-          .setName(tag);
-        this.board!.add(times);
-        at += cup + 2 + times.width + 6;
-      }
-      this.rows.push(row);
-    });
   }
 
-  /** The column heads: who and how much on the shared board, when and how long on 내 기록. */
-  private drawHeads(): void {
+  /**
+   * 전체 랭킹: place, flag, name with its emoji, the skill it was played on,
+   * the account's cups (days at first, second, third), and the damage.
+   */
+  private drawShared(): void {
     const copy = t().ranking;
-    const { columns, tableWidth } = this.layout;
-    const left = columns.damage - tableWidth;
-    this.heads?.destroy();
-    this.heads = this.add.container(0, 0).setDepth(DEPTH.ui + 1);
-    const head = (x: number, text: string, origin: number): void => {
-      this.heads!.add(
-        this.add
-          .text(x, HEAD_Y, text, { fontFamily: 'system-ui, sans-serif', fontSize: TEXT.size.hint, color: COLORS.muted })
-          .setOrigin(origin, 0.5),
-      );
-    };
-    head(columns.place, copy.place, 1);
-    if (this.tab === 'personal') {
-      head(left + tableWidth * 0.3, copy.date, 0.5);
-      head(left + tableWidth * 0.5, copy.level, 0.5);
-      head(left + tableWidth * 0.68, copy.time, 0.5);
-    } else {
-      head(columns.flag, copy.name, 0);
+    const { rowHeight, fontSize, tableWidth } = this.layout;
+    const top = ranking.top;
+    if (top.length === 0) {
+      this.drawEmpty(copy.empty);
     }
-    head(columns.damage, copy.damage, 1);
+
+    const none: TableCell = { parts: [], width: 0 };
+    const rows = top.map((entry, index) => {
+      const place = index + 1;
+      const y = this.rowY(index);
+      const lit = place === this.payload.highlight;
+      if (lit) {
+        this.board!.add(this.add.rectangle(this.scale.width / 2, y, tableWidth + 12, rowHeight, COLORS.panelActive, 1));
+      }
+      // First place in gold; a place just entered in the accent colour.
+      const color = lit ? COLORS.accent : place === 1 ? COLORS.gearText : COLORS.text;
+      const placeCell = this.cellText(y, String(place), fontSize, color);
+      const name = this.cellText(y, rankLabel(entry), fontSize, color);
+      const damage = this.cellText(y, grouped(entry.damage), fontSize, color);
+      this.rows.push([placeCell, name, damage].map((cell) => cell.parts[0]!.obj as Phaser.GameObjects.Text));
+
+      const h = Math.min(18, rowHeight - 4);
+      const flag = entry.flag ? this.cellImage(y, flagTexture(entry.flag), h * 1.5, h, 'flag') : none;
+      const icon = Math.min(20, rowHeight - 2);
+      const skillKey = entry.skill ? SKILL_ICONS[entry.skill]?.key : undefined;
+      const skill = skillKey ? this.cellImage(y, skillKey, icon, icon, 'skill') : none;
+      return [placeCell, flag, name, skill, this.cups(entry, y), damage];
+    });
+
+    this.layColumns([copy.place, copy.flag, copy.name, copy.skill, copy.trophies, copy.damage], rows);
+  }
+
+  /** The account's days at first, second and third place, as cups with a count each. */
+  private cups(entry: RankEntry, y: number): TableCell {
+    const cup = Math.min(16, this.layout.rowHeight - 4);
+    const parts: TableCell['parts'] = [];
+    let width = 0;
+    const podium: [number, string, string][] = [
+      [entry.wins, TEXTURES.trophy, 'wins'],
+      [entry.seconds, TEXTURES.trophySilver, 'seconds'],
+      [entry.thirds, TEXTURES.trophyBronze, 'thirds'],
+    ];
+    for (const [count, texture, tag] of podium) {
+      if (count <= 0) {
+        continue;
+      }
+      width += width > 0 ? 6 : 0;
+      const image = this.add.image(0, y, texture).setOrigin(0, 0.5).setDisplaySize(cup, cup).setName(`${tag}Cup`);
+      const times = this.add
+        .text(0, y, `×${count}`, { fontFamily: 'system-ui, sans-serif', fontSize: TEXT.size.hint, color: COLORS.gearText })
+        .setOrigin(0, 0.5)
+        .setName(tag);
+      this.board!.add([image, times]);
+      parts.push({ obj: image, dx: width }, { obj: times, dx: width + cup + 2 });
+      width += cup + 2 + times.width;
+    }
+    return { parts, width };
+  }
+
+  /** A row's middle, counting from the first. */
+  private rowY(index: number): number {
+    const { headY, firstRow, rowHeight } = this.layout;
+    return headY + firstRow + index * rowHeight + rowHeight / 2;
+  }
+
+  private cellText(y: number, value: string, fontSize: string, color: string): TableCell {
+    const text = this.add.text(0, y, value, { fontFamily: 'system-ui, sans-serif', fontSize, color }).setOrigin(0, 0.5);
+    this.board!.add(text);
+    return { parts: [{ obj: text, dx: 0 }], width: text.width };
+  }
+
+  private cellImage(y: number, key: string, w: number, h: number, name: string): TableCell {
+    const image = this.add.image(0, y, key).setOrigin(0, 0.5).setDisplaySize(w, h).setName(name);
+    this.board!.add(image);
+    return { parts: [{ obj: image, dx: 0 }], width: w };
+  }
+
+  private drawEmpty(message: string): void {
+    this.board!.add(
+      this.add
+        .text(this.scale.width / 2, this.layout.headY + 60, message, {
+          fontFamily: 'system-ui, sans-serif',
+          fontSize: TEXT.size.body,
+          color: COLORS.muted,
+          align: 'center',
+          wordWrap: { width: this.layout.tableWidth },
+        })
+        .setOrigin(0.5, 0),
+    );
+  }
+
+  /**
+   * Places the columns: each as wide as its widest cell or head, the same
+   * gap between every two, the whole centred. Every cell and head is
+   * centred in its column.
+   */
+  private layColumns(heads: readonly string[], rows: readonly TableCell[][]): void {
+    const { headY, tableWidth } = this.layout;
+    const headCells: TableCell[] = heads.map((label) => {
+      const text = this.add
+        .text(0, headY, label, { fontFamily: 'system-ui, sans-serif', fontSize: TEXT.size.hint, color: COLORS.muted })
+        .setOrigin(0, 0.5);
+      this.heads!.add(text);
+      return { parts: [{ obj: text, dx: 0 }], width: text.width };
+    });
+    const widths = headCells.map((head, column) => Math.max(head.width, ...rows.map((row) => row[column]?.width ?? 0)));
+    const content = widths.reduce((sum, w) => sum + w, 0);
+    const gap = Math.max(MIN_COLUMN_GAP, (tableWidth - content) / Math.max(1, heads.length - 1));
+    const total = content + gap * (heads.length - 1);
+    let x = (this.scale.width - total) / 2;
+    // Wider than a phone even at the least gap: the whole table drawn
+    // smaller, about the screen's middle and the heads' line.
+    const fit = Math.min(1, (this.scale.width - 16) / total);
+    for (const layer of [this.board!, this.heads!]) {
+      layer.setScale(fit).setPosition((this.scale.width / 2) * (1 - fit), headY * (1 - fit));
+    }
+    widths.forEach((w, column) => {
+      for (const cell of [headCells[column]!, ...rows.map((row) => row[column]!)]) {
+        const start = x + (w - cell.width) / 2;
+        cell.parts.forEach(({ obj, dx }) => obj.setX(start + dx));
+      }
+      x += w + gap;
+    });
   }
 
   /** 내 기록: this player's own best runs, with when they ended and how long they lasted. */
   private drawPersonal(): void {
-    const { width } = this.scale;
     const copy = t().ranking;
-    const { tableWidth, rowHeight, fontSize, columns } = this.layout;
-    const left = columns.damage - tableWidth;
+    const { fontSize } = this.layout;
     const runs = personal.runs;
-
     if (runs.length === 0) {
-      this.board!.add(
-        this.add
-          .text(width / 2, HEAD_Y + 60, copy.personalEmpty, {
-            fontFamily: 'system-ui, sans-serif',
-            fontSize: TEXT.size.body,
-            color: COLORS.muted,
-            align: 'center',
-            wordWrap: { width: tableWidth },
-          })
-          .setOrigin(0.5, 0),
-      );
-      return;
+      this.drawEmpty(copy.personalEmpty);
     }
 
-    runs.forEach((run, index) => {
+    const rows = runs.map((run, index) => {
       const place = index + 1;
-      const y = HEAD_Y + 24 + index * rowHeight + rowHeight / 2;
+      const y = this.rowY(index);
       const color = place === 1 ? COLORS.gearText : COLORS.text;
-      const cell = (x: number, text: string, origin: number) =>
-        this.add.text(x, y, text, { fontFamily: 'system-ui, sans-serif', fontSize, color }).setOrigin(origin, 0.5);
-      const row = [
-        cell(columns.place, String(place), 1),
-        cell(left + tableWidth * 0.3, day(run.at), 0.5),
-        cell(left + tableWidth * 0.5, String(run.level), 0.5),
-        cell(left + tableWidth * 0.68, clock(run.survivedMs), 0.5),
-        cell(columns.damage, grouped(run.damage), 1),
-      ];
-      this.board!.add(row);
-      this.rows.push(row);
+      const cells = [String(place), day(run.at), String(run.level), clock(run.survivedMs), grouped(run.damage)].map(
+        (value) => this.cellText(y, value, fontSize, color),
+      );
+      this.rows.push(cells.map((cell) => cell.parts[0]!.obj as Phaser.GameObjects.Text));
+      return cells;
     });
+    this.layColumns([copy.place, copy.date, copy.level, copy.time, copy.damage], rows);
   }
 
   /** Where the board came from: shared, still coming, or this device only. */

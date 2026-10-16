@@ -46,7 +46,7 @@ export const ja: Strings = {
     effects: {
       meleeStrike: '攻撃範囲内の敵の投射物も破壊します',
       fireball: '爆発した場所に {seconds} 秒間、炎の地帯を残します（毎秒 火球ダメージの {share}）',
-      chainLightning: 'すでに当たった敵にも再び連鎖します',
+      chainLightning: '残り連鎖回数 1 回につきダメージが {bonus} 増幅されます',
       iceSpear: 'すでに冷却された敵に当たると {freeze} 秒間凍りつきます',
       voidOrb: '周りの敵をプレイヤーのほうへゆっくり引き寄せます',
       thunderStrike: '敵を倒すと必ずもう一度落ちます',
@@ -221,6 +221,9 @@ export const ja: Strings = {
     icon: 'ランキング',
     empty: 'まだ記録がありません — 1 回終えると名前を登録できます。',
     place: '順位',
+    flag: '国',
+    skill: 'スキル',
+    trophies: 'トロフィー',
     name: '名前',
     damage: '与えた被害',
     champion: '1 位  {name}  {damage}',

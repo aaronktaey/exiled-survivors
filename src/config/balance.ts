@@ -823,11 +823,16 @@ export const FIREBALL = {
  * Reaching it is announced with a burst of its own (GameScene.celebrateMastery).
  */
 export const SKILL_MASTERY = {
-  level: 20,
+  // 20 until 2026-10-16.
+  level: 10,
   /** 타격: an enemy's shot inside the swing is struck out of the air. */
   /** 화염구: where it bursts burns, at this share of its damage a second. */
   fireZone: { damageShare: 0.2, durationMs: 5000, tickMs: 500 },
-  /** 연쇄번개: may jump back to an enemy it has already struck (never the one it is on). */
+  /**
+   * 연쇄번개: each strike is amplified by this share for every jump still to
+   * come after it — the first of a seven-jump arc by 7×, the last not at all.
+   */
+  chainBonusPerJump: 0.1,
   /** 얼음창: an enemy already under 냉각 is frozen solid this long when struck. */
   freezeMs: 100,
   /**

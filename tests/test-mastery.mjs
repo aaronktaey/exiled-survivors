@@ -102,16 +102,18 @@ const effects = await run(`
   s.spawner.clear();
   c.enemyShots.getChildren().forEach((x) => x.active && x.despawn());
 
-  // 연쇄번개: two enemies, five links — back and forth when awakened.
+  // 연쇄번개: five in a row, five links — each hit amplified by the jumps still to come.
   const chain = weapon('chainLightning');
-  const a = put(80, 0), b = put(110, 0);
-  const count = () => { let n = 0; const real = c.hit; return { ctx: ctx({ hit: (e, amt) => { n++; real(e, amt); } }), n: () => n }; };
-  let probe = count();
+  const a = put(80, 0);
+  for (let i = 1; i < 5; i++) put(80 + i * 30, 0);
+  const record = () => { const amounts = []; return { ctx: ctx({ hit: (e, amt) => amounts.push(amt) }), amounts }; };
+  let probe = record();
   chain.strike({ ...probe.ctx, mastered: false }, a);
-  out.chainPlain = probe.n();
-  probe = count();
+  out.chainPlain = probe.amounts;
+  probe = record();
   chain.strike(probe.ctx, a);
-  out.chainAwake = probe.n();
+  out.chainAwake = probe.amounts;
+  out.chainBonus = window.config.SKILL_MASTERY.chainBonusPerJump;
   s.spawner.clear();
 
   // 화염구: the burst leaves fire that keeps burning. Crits off for the count.
@@ -188,8 +190,12 @@ console.log('effects:', JSON.stringify(effects));
 check('타격: an enemy shot inside the swing is destroyed — only when awakened',
   effects.shotsBefore >= 1 && effects.shotsPlain === effects.shotsBefore && effects.shotsAfter === effects.shotsBefore - 1 &&
     effects.strikes === 1, JSON.stringify(effects));
-check('연쇄번개: may chain back to an enemy it has struck',
-  effects.chainPlain === 2 && effects.chainAwake === 5, `${effects.chainPlain} → ${effects.chainAwake}`);
+// chainCount 4 is five links: the first has four jumps still to come, the last none.
+check('연쇄번개: each strike is amplified by the jumps still to come, and still never strikes one twice',
+  effects.chainPlain.length === 5 && effects.chainPlain.every((d) => d === 10) &&
+    effects.chainAwake.length === 5 &&
+    effects.chainAwake.every((d, i) => Math.abs(d - 10 * (1 + effects.chainBonus * (4 - i))) < 1e-9),
+  `${effects.chainPlain.join(',')} → ${effects.chainAwake.map((d) => d.toFixed(1)).join(',')}`);
 check('화염구: the burst leaves a fire that burns at its share a second, then goes out',
   effects.zones === 1 && Math.abs(effects.burnt - effects.wantBurn) <= 2 && effects.zonesLater === 0,
   `burnt ${effects.burnt} in 1s, want ${effects.wantBurn}`);

@@ -320,6 +320,10 @@ export interface Strings {
     readonly empty: string;
     /** Column heads. */
     readonly place: string;
+    /** The shared board's column heads past the place: flag, skill, cups. */
+    readonly flag: string;
+    readonly skill: string;
+    readonly trophies: string;
     readonly name: string;
     readonly damage: string;
     /** Under the logo: {name} and {damage} of first place. */

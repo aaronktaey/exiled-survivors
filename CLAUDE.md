@@ -254,6 +254,10 @@ Read `git log` for what changed and when. What is not in the log:
   (`systems/PersonalBest.ts`, `STORAGE.personal`), every run that ends,
   signed in or not, synced with the rest of localStorage. The name last
   entered is remembered in `STORAGE.rankName`.
+  `RankingScene.layColumns` draws both boards as a table: each column as
+  wide as its widest cell or head, one equal gap between all of them, every
+  cell centred, and the whole scaled down when a phone is too narrow even
+  at `MIN_COLUMN_GAP`. A new column is a head and a cell, nothing more.
   Each run on the board carries its main skill (`skill`, from
   `GameOverData.mainSkill`), and each account its `users.daily_wins`,
   `daily_seconds` and `daily_thirds` (gold, silver, bronze cups ×N): the
@@ -347,7 +351,9 @@ Read `git log` for what changed and when. What is not in the log:
 - **스킬 각성.** `SKILL_MASTERY` (balance.ts): at `level` a skill gets one
   more effect — `WeaponContext.mastered` is true and each weapon does its own
   (타격 strikes `enemyShots` in the swing, 화염구 shots carry `fireZoneDps`
-  into `CombatSystem.burnGround`/`tickFireZones`, 연쇄번개 may jump back,
+  into `CombatSystem.burnGround`/`tickFireZones`, 연쇄번개 amplifies each
+  strike by `chainBonusPerJump` for every jump still to come (it never
+  doubles back — that was the old awakening),
   얼음창 shots carry `freezeMs` for an enemy already chilled (`Enemy.freeze`),
   공허구체 (whose hit timers are per orb: each orb hits an enemy once a
   cooldown, every orb on its own) pulls enemies near its orbit toward the survivor by moving x/y
