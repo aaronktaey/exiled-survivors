@@ -129,8 +129,10 @@ export const ja: Strings = {
     wearing: '装備中',
     equipped: '装備中',
     equip: '装備',
-    discard: '捨てる',
-    discardConfirm: '本当に捨てますか？',
+    discard: '売る',
+    discardConfirm: '{price} ゴールドで売りますか？',
+    sellFor: '売る {price}G',
+    sold: '{gear} — {price} ゴールドで売りました',
     orbCount: '{orb} x{count}',
     orbConfirm: '{orb} を使う？',
     orbNone: '{orb} なし',
@@ -138,8 +140,8 @@ export const ja: Strings = {
     orbAdded: '{orb} — {affix} を追加',
     orbUpgraded: '{orb} — {from} → {to}',
     orbDestroyed: '{orb} — 装備が壊れました',
-    hintKeyboard: '↑ ↓ 移動   Space 装備   {keys} 球   Del 捨てる   Esc 戻る',
-    hintTouch: 'タップで装備 — 廃棄と球は下のボタン',
+    hintKeyboard: '↑ ↓ 移動   Space 装備   {keys} 球   Del 売る   Esc 戻る',
+    hintTouch: 'タップで装備 — 売却と球は下のボタン',
     lockedHint: 'セーブ中の回が装備しているため変更できません — その回を終えるか、新しく始めてください',
     prefix: '接頭辞',
     suffix: '接尾辞',
@@ -169,9 +171,9 @@ export const ja: Strings = {
     held: '所持 {count}',
     orbUse: '装備タブで武器を選んで使います。',
     boneUse: 'ゲーム開始時に適用します。その回にだけ効果があります。',
-    hintGear: '方向キー 移動   Space 装備   {keys} 球   Del 廃棄   C 合成   Tab タブ   Esc 戻る',
+    hintGear: '方向キー 移動   Space 装備   {keys} 球   Del 売る   C 合成   Tab タブ   Esc 戻る',
     hintConsumables: '方向キー 移動   Tab タブ   Esc 戻る',
-    hintTouch: 'マスを押して確認 — 装備・廃棄・球は横のボタン',
+    hintTouch: 'マスを押して確認 — 装備・売却・球は横のボタン',
   },
 
   bones: {
@@ -343,6 +345,7 @@ export const ja: Strings = {
   game: {
     blocked: '防御',
     maxedHeal: '強化をすべて終えたスキル — 体力回復',
+    bossArrived: 'ボス出現！',
     intro: 'Exile, do something!',
     introHintKeyboard: 'WASD・方向キーで移動 — 攻撃は自動',
     introHintTouch: 'スティックを引いて移動 — 攻撃は自動',
@@ -906,7 +909,8 @@ export const ja: Strings = {
           title: '装備タブ',
           lines: [
             '持っている剣が {cols}×{rows} のマスに並びます。マスを選ぶと横に攻撃力 · 固定属性 · 属性が出ます。',
-            '装備 · 廃棄 · 球の使用は横のボタンか Space で行います。装備中の剣は捨てられません。',
+            '装備 · 売却 · 球の使用は横のボタンか Space で行います。装備中の剣は売れません。',
+            '売るとゴールドが手に入ります。最も低いティアが {sellBase} ゴールド、1 ティア上がるごとに {sellBase} ゴールドずつ高く、属性 1 つにつきその {sellAffix} が加わります。',
           ],
         },
         {

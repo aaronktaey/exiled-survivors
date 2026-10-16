@@ -129,8 +129,10 @@ export const en: Strings = {
     wearing: 'Carrying',
     equipped: 'carried',
     equip: 'Carry',
-    discard: 'Discard',
-    discardConfirm: 'Throw it away?',
+    discard: 'Sell',
+    discardConfirm: 'Sell for {price} gold?',
+    sellFor: 'Sell {price}G',
+    sold: '{gear} — sold for {price} gold',
     orbCount: '{orb} x{count}',
     orbConfirm: 'Use {orb}?',
     orbNone: 'No {orb}',
@@ -138,8 +140,8 @@ export const en: Strings = {
     orbAdded: '{orb} — added {affix}',
     orbUpgraded: '{orb} — {from} → {to}',
     orbDestroyed: '{orb} — the weapon did not survive it',
-    hintKeyboard: '↑ ↓ move   Space carry   {keys} orbs   Del discard   Esc back',
-    hintTouch: 'Tap to carry — discard and orbs are the buttons below',
+    hintKeyboard: '↑ ↓ move   Space carry   {keys} orbs   Del sell   Esc back',
+    hintTouch: 'Tap to carry — sell and orbs are the buttons below',
     lockedHint: 'A saved run is holding this weapon — finish it, or start a new one',
     prefix: 'Prefix',
     suffix: 'Suffix',
@@ -169,9 +171,9 @@ export const en: Strings = {
     held: 'Held: {count}',
     orbUse: 'Spent on a weapon from the Gear tab.',
     boneUse: 'Applied when a run starts, for that run only.',
-    hintGear: 'Arrows move   Space equip   {keys} orbs   Del discard   C combine   Tab tabs   Esc back',
+    hintGear: 'Arrows move   Space equip   {keys} orbs   Del sell   C combine   Tab tabs   Esc back',
     hintConsumables: 'Arrows move   Tab tabs   Esc back',
-    hintTouch: 'Tap a cell to inspect it — equip, discard and orbs are the buttons beside it',
+    hintTouch: 'Tap a cell to inspect it — equip, sell and orbs are the buttons beside it',
   },
 
   bones: {
@@ -343,6 +345,7 @@ export const en: Strings = {
   game: {
     blocked: 'Blocked',
     maxedHeal: 'Skill fully upgraded — health restored',
+    bossArrived: 'A Boss has arrived!',
     intro: 'Exile, do something!',
     introHintKeyboard: 'WASD or arrows to move — attacks are automatic',
     introHintTouch: 'Drag the stick to move — attacks are automatic',
@@ -906,7 +909,8 @@ export const en: Strings = {
           title: 'Gear tab',
           lines: [
             'Your swords sit in a {cols}×{rows} grid. Pick a cell and its attack power, implicit and affixes are read out beside it.',
-            'Equip, discard and orbs are the buttons beside it, or Space. The sword in hand cannot be discarded.',
+            'Equip, sell and orbs are the buttons beside it, or Space. The sword in hand cannot be sold.',
+            'Selling pays gold: the lowest tier is worth {sellBase}, each tier up {sellBase} more, and each affix adds {sellAffix} of that.',
           ],
         },
         {

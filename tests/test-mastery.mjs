@@ -253,6 +253,19 @@ check('within one hop of the survivor every hop is at them; further off only som
   odd.near.hops > 10 && odd.near.at === odd.near.hops && odd.far.hops > 10 && odd.far.at > 0 && odd.far.at < odd.far.hops,
   `near ${odd.near.at}/${odd.near.hops}, far ${odd.far.at}/${odd.far.hops}`);
 
+// --- 3d. 전투 알림: toasts, at most TOAST.max, the oldest first out, gone after TOAST.lifeMs ---
+const toastRun = await run(`
+  s.toasts.clear();
+  for (let i = 1; i <= 7; i++) s.toasts.show('알림 ' + i);
+  return { lines: s.toasts.lines, max: window.config.TOAST.max, life: window.config.TOAST.lifeMs };
+`);
+await sleep(toastRun.life + 600);
+const toastLater = await run(`return { lines: s.toasts.lines };`);
+check('toasts stack up to the limit, the oldest going first',
+  toastRun.lines.length === toastRun.max && toastRun.lines[0] === '알림 3' && toastRun.lines.at(-1) === '알림 7',
+  toastRun.lines.join(' | '));
+check('and each is gone once its time is up', toastLater.lines.length === 0, toastLater.lines.join(' | '));
+
 // --- 4. 척추 ---
 const spine = await cdp.evaluate(`(() => {
   const c = window.config;

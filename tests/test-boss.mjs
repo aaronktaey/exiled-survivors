@@ -126,9 +126,10 @@ check('every 우두머리 kill leaves a skill', drops.dropped === drops.N,
 check('an ordinary kill still has to roll', drops.ordinary < 40,
   `${drops.ordinary} skills from 400 ordinary kills`);
 
-// --- 4. it announces itself with the horn and nothing else ---
+// --- 4. it announces itself with the horn, and a toast in the corner ---
 // A banner across the middle used to cover the field at the one moment it
 // costs the most: where the player is standing and where the boss walks in.
+// What it says goes in the top-right corner instead, out of the way.
 const arrival = await run(`
   s.spawner.clear();
   // Its own health bar is a label on the 우두머리, not across the screen, so
@@ -150,17 +151,19 @@ const arrival = await run(`
 
   mgr.play = orig;
   const out = { before, after, afterTwo, played: window.__played.slice(),
+                toasts: s.toasts.lines, corner: s.toasts.boxes.map((b) => ({ x: b.x, y: b.y })), width: s.cameras.main.width, height: s.cameras.main.height,
                 pinned: s.children.list.filter(o => o.scrollFactorX === 0 && o.type === 'Rectangle').length };
   s.spawner.clear();
   return out;
 `);
 console.log('arrival:', JSON.stringify(arrival));
-check('a 우두머리 puts nothing across the screen',
-  JSON.stringify(arrival.after) === JSON.stringify(arrival.before),
-  `${arrival.after.length} labels, same as before`);
-check('and two in a row still put nothing there',
-  JSON.stringify(arrival.afterTwo) === JSON.stringify(arrival.before),
-  `${arrival.afterTwo.length} labels`);
+// The toast's own text sits inside its box, not loose on the screen.
+check('a 우두머리 is announced by a toast, and nothing else is put on the screen',
+  JSON.stringify(arrival.after) === JSON.stringify(arrival.before) && arrival.toasts.filter((l) => /우두머리/.test(l)).length >= 2,
+  `${arrival.before.length} → ${arrival.after.length} labels; toasts: ${arrival.toasts.join(' | ')}`);
+check('and the toasts sit in the top-right corner, out of the middle of the field',
+  arrival.corner.length >= 1 && arrival.corner.every((c) => c.x > arrival.width * 0.6 && c.y < arrival.height * 0.4),
+  JSON.stringify(arrival.corner));
 check('it arrives on a horn instead',
   arrival.played.some((x) => x.key === 'sfx-boss-alert'),
   arrival.played.map((x) => x.key).join(' ') || 'nothing played');

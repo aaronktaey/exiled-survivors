@@ -142,6 +142,17 @@ export const GEAR: Record<GearId, GearSpec> = {
   },
 };
 
+/**
+ * ★ 장비 판매 — what a sword fetches in 골드 in place of throwing it away.
+ * The weakest tier is worth `perRank`, and each tier up one more `perRank`
+ * (1티어 오니고로시 500, 5티어 녹슨 검 100 with five tiers); every 속성 it
+ * carries adds `perAffix` of that, added rather than compounded.
+ */
+export const GEAR_SELL = {
+  perRank: 100,
+  perAffix: 0.1,
+} as const;
+
 /** The weakest tier on the roster — the one worth GEAR_BASE.lowestAttack. */
 export const LOWEST_GEAR_TIER = Math.max(...Object.values(GEAR).map((spec) => spec.tier));
 
@@ -287,3 +298,10 @@ export const ORB_DROP = {
   /** How big one is drawn on the ground. */
   size: 16,
 } as const;
+
+/** What selling this sword pays: its rank from the bottom × GEAR_SELL.perRank, + perAffix a 속성. */
+export function sellPriceFor(item: { readonly id: GearId; readonly prefixes: readonly unknown[]; readonly suffixes: readonly unknown[] }): number {
+  const rank = LOWEST_GEAR_TIER + 1 - GEAR[item.id].tier;
+  const lines = item.prefixes.length + item.suffixes.length;
+  return Math.round(rank * GEAR_SELL.perRank * (1 + GEAR_SELL.perAffix * lines));
+}

@@ -406,6 +406,24 @@ export const ORB_FX = {
   destroyed: 0xff4a2a,
 } as const;
 
+/** 전투 알림: toasts in the top-right corner (systems/Toasts.ts). */
+export const TOAST = {
+  /** How long one stays before it fades. */
+  lifeMs: 2000,
+  fadeMs: 250,
+  /** How many at once; past it the oldest goes. */
+  max: 5,
+  /** From the right edge, and from the top on a wide screen. */
+  margin: 12,
+  top: 12,
+  /** On a narrow screen the clock and loadout take the top, so the stack starts under them. */
+  narrowTop: 112,
+  maxWidth: 300,
+  narrowMaxWidth: 220,
+  padding: 10,
+  gap: 6,
+} as const;
+
 export const HUD = {
   margin: 16,
   /** How far under the clock the enemy count sits. */

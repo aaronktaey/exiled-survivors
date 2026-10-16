@@ -259,14 +259,14 @@ await run(`
 await sleep(1000);
 const afterPickup = await run(`
   return { left: s.combat.gearDrops.countActive(true),
-           banner: s.children.list.filter(o => o.type === 'Text').map(o => o.text) };
+           banner: s.toasts.lines };
 `);
 const held = await stash();
 check('walking over it takes it off the ground and into the stash',
   afterPickup.left === 0 && held.items.some((i) => i.uid === 'found'),
   `${afterPickup.left} left, ${held.items.length} in the stash`);
 check('and it is not put on mid-run', held.equipped === 'starter', held.equipped);
-check('a banner says where to put it on',
+check('a toast says where to put it on',
   afterPickup.banner.some((line) => /강철 검/.test(line) && /메인화면/.test(line)),
   afterPickup.banner.find((line) => /메인화면/.test(line)) ?? 'no banner');
 await shot('gear-01-pickup');
@@ -571,13 +571,18 @@ check('and moving the cursor takes the question back',
 const thrown = await gearScene(`
   const i = s.menu.items.findIndex(it => it.id === 'l1');
   s.menu.selected = i; s.menu.refresh(); s.showDetails();
+  const item = window.gear.items.find(it => it.uid === 'l1');
+  const price = window.config.sellPriceFor(item);
+  const want = (window.config.LOWEST_GEAR_TIER + 1 - window.config.GEAR[item.id].tier) * window.config.GEAR_SELL.perRank *
+    (1 + window.config.GEAR_SELL.perAffix * (item.prefixes.length + item.suffixes.length));
+  const goldBefore = window.gold.value;
   s.pressDiscard();
   s.pressDiscard();
-  return { stash: window.gear.items.map(i => i.uid) };
+  return { stash: window.gear.items.map(i => i.uid), price, want: Math.round(want), goldBefore, goldAfter: window.gold.value };
 `);
 await sleep(900);
 const afterThrow = await gearScene(`
-  return { items: s.menu.items.length,
+  return { note: s.orbHint?.text ?? '', items: s.menu.items.length,
            stash: window.gear.items.map(i => i.uid),
            stored: JSON.parse(localStorage.getItem('exiled-survivors:gear:v2')).items.map(i => i.uid) };
 `);
@@ -586,6 +591,10 @@ check('the second press throws it away for good',
   !afterThrow.stash.includes('l1') && !afterThrow.stored.includes('l1') &&
     afterThrow.stash.length === 9,
   `${afterThrow.stash.length} left, none of them l1`);
+check('selling pays its price into the purse: its rank × the base, + a share for each 속성',
+  thrown.price === thrown.want && thrown.goldAfter - thrown.goldBefore === thrown.price && thrown.price > 0 &&
+    afterThrow.note.includes(thrown.price.toLocaleString('en-US')),
+  `${thrown.goldBefore} → ${thrown.goldAfter} (+${thrown.price}, want ${thrown.want}); "${afterThrow.note}"`);
 check('and the grid is laid out again around what is left',
   afterThrow.items === afterThrow.stash.length,
   `${afterThrow.items} cells filled for ${afterThrow.stash.length} weapons`);

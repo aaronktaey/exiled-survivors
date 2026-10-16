@@ -15,6 +15,28 @@ export interface PatchNote {
 
 export const PATCH_NOTES: readonly PatchNote[] = [
   {
+    version: '0.42',
+    date: '2026-10-16',
+    changes: {
+      ko: [
+        '장비 버리기가 팔기로 바뀌었습니다. 녹슨 검 100 · 무쇠 검 200 · 강철 검 300 · 룬 각인 검 400 · 오니고로시 500골드이고, 속성 하나마다 그 값의 10%가 더해집니다.',
+        '전투 중 안내(아이템 획득, 우두머리 등장 등)가 화면 오른쪽 위의 알림으로 바뀌었습니다. 알림은 2초 동안 보이고, 5개가 넘으면 오래된 것부터 사라집니다.',
+      ],
+      en: [
+        'Discarding a sword is now selling it: Rusty Sword 100, Iron Sword 200, Steel Sword 300, Runed Sword 400, Onigoroshi 500 gold, plus 10% of that for each affix.',
+        'Messages during a run (pickups, a Boss arriving and so on) are now notices in the top-right corner. Each stays 2 seconds, and past 5 the oldest goes first.',
+      ],
+      ja: [
+        '装備の「捨てる」が「売る」になりました。錆びた剣 100 · 鉄の剣 200 · 鋼の剣 300 · ルーンの剣 400 · 鬼殺し 500 ゴールドで、属性 1 つにつきその 10% が加わります。',
+        '戦闘中の案内（アイテム入手、ボス出現など）が画面右上の通知になりました。通知は 2 秒間表示され、5 件を超えると古いものから消えます。',
+      ],
+      zh: [
+        '装备「丢弃」改为「出售」：生锈的剑 100 · 铁剑 200 · 钢剑 300 · 符文剑 400 · 鬼杀 500 金币，每条词缀再加其 10%。',
+        '战斗中的提示（获得物品、首领出现等）改为画面右上角的通知。每条显示 2 秒，超过 5 条时最旧的先消失。',
+      ],
+    },
+  },
+  {
     version: '0.41',
     date: '2026-10-16',
     changes: {

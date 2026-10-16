@@ -56,6 +56,8 @@ import { sfx } from '@/systems/Sfx';
 import { saveGame, type SavedRun } from '@/systems/SaveGame';
 import { personal } from '@/systems/PersonalBest';
 import { tuning } from '@/systems/Tuning';
+import { dropTierFor } from '@/systems/Gear';
+import { Toasts, type ToastTone } from '@/systems/Toasts';
 import { HealthPotion } from '@/entities/HealthPotion';
 import {
   NO_BONUS,
@@ -176,6 +178,8 @@ export class GameScene extends Phaser.Scene {
   public mainSkill: SkillId | null = null;
   /** Skills whose 각성 has been celebrated this run. Public for tests. */
   public awakened = new Set<SkillId>();
+  /** 전투 알림, top right. Public for tests. */
+  public toasts!: Toasts;
   /** The last 각성 banner shown. Public for tests. */
   public masteryBanner?: Phaser.GameObjects.Text;
 
@@ -279,6 +283,7 @@ export class GameScene extends Phaser.Scene {
       },
     );
     this.hud = new Hud(this, this.progression, (hold) => this.setInspecting('skill', hold));
+    this.toasts = new Toasts(this);
     this.debug = new DebugOverlay(this, this.debugActions());
     this.rareTooltip = new RareTooltip(this, this.spawner.group);
     // In the order they matter: a 우두머리 before a 신성한 조각, and both
@@ -789,7 +794,7 @@ export class GameScene extends Phaser.Scene {
    */
   private onGearCollected(found: GearItem): void {
     gear.add(found);
-    this.announce(fill(t().game.gearFound, { gear: gearTitle(found) }));
+    this.announce(fill(t().game.gearFound, { gear: gearTitle(found) }), dropTierFor(found) === 'rare' ? 'rare' : 'normal');
   }
 
   /**
@@ -817,7 +822,7 @@ export class GameScene extends Phaser.Scene {
    */
   private onAltarWoke(offer: AltarOfferId, x: number, y: number): void {
     this.spawner.summon(x, y, offer);
-    this.announce(fill(t().game.altarWoke, { enemies: altarOfferText(offer) }));
+    this.announce(fill(t().game.altarWoke, { enemies: altarOfferText(offer) }), 'warning');
   }
 
   /**
@@ -946,29 +951,12 @@ export class GameScene extends Phaser.Scene {
    */
   private announceBoss(): void {
     sfx.playBossAlert(this);
+    this.announce(t().game.bossArrived, 'warning');
   }
 
-  /** Brief banner, used when a skill is picked up. */
-  private announce(message: string): void {
-    const camera = this.cameras.main;
-    const label = this.add
-      .text(camera.width / 2, camera.height - 70, message, {
-        fontFamily: 'system-ui, sans-serif',
-        fontSize: TEXT.size.heading,
-        color: COLORS.text,
-      })
-      .setOrigin(0.5)
-      .setScrollFactor(0)
-      .setDepth(DEPTH.ui);
-
-    this.tweens.add({
-      targets: label,
-      alpha: 0,
-      y: label.y - 24,
-      delay: 900,
-      duration: 700,
-      onComplete: () => label.destroy(),
-    });
+  /** A line for the player — a pickup, a 우두머리 — as a toast in the top-right corner. */
+  private announce(message: string, tone: ToastTone = 'normal'): void {
+    this.toasts.show(message, tone);
   }
 
   private debugActions() {

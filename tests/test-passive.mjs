@@ -89,7 +89,8 @@ await run(`s.combat.dropShardAt(s.player.x, s.player.y); return 1;`);
 await sleep(1000);
 const ten = await stored();
 const banner = await run(`
-  return { lines: s.children.list.filter(o => o.type === 'Text').map(o => o.text) };
+  // 전투 알림 are toasts, their text inside the toast.
+  return { lines: [...s.toasts.lines, ...s.children.list.filter(o => o.type === 'Text').map(o => o.text)] };
 `);
 console.log('tenth shard:', JSON.stringify(ten));
 check('the tenth completes a 신성한 구슬, worth one point',

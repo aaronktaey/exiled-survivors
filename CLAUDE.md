@@ -380,6 +380,15 @@ Read `git log` for what changed and when. What is not in the log:
   runs once `GEAR_COMBINE.count` are picked; Space toggles a cell, Esc backs
   out. Its third button shares the row with 착용 · 버리기 so the pane is no
   taller on a short phone.
+- **Swords are sold, not thrown away.** The 인벤토리's second button (still
+  `discard`/`pressDiscard` in code) pays `sellPriceFor(item)` into
+  `gold` (`GEAR_SELL`: rank from the weakest tier × `perRank`, + `perAffix`
+  of that a 속성, added). The rank counts from the weakest, so the best sword
+  is the dearest — the user chose that over the literal tier number.
+- **전투 알림 are toasts.** `GameScene.announce` hands every in-run line to
+  `systems/Toasts.ts`: top-right (under the HUD on a narrow screen),
+  `TOAST.lifeMs` each, at most `TOAST.max`, oldest out first. A toast's text
+  is inside its container, not in `scene.children`; read `toasts.lines`.
 - **Each sword has its own picture.** `GEAR[id].icon` (a file under
   `public/assets/icons/`, picked from the Raven Fantasy pack, listed in its
   CREDITS.txt) is loaded as `gearTexture(id)`; the 인벤토리 grid, the drop on

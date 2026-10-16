@@ -194,6 +194,10 @@ export interface Strings {
     /** The button that throws one away, and what it says once it is armed. */
     readonly discard: string;
     readonly discardConfirm: string;
+    /** The 팔기 button with its price: {price}. */
+    readonly sellFor: string;
+    /** After a sale: {gear}, {price}. */
+    readonly sold: string;
     /** The 구슬 buttons: "변화 x3", and what one press asks before acting. */
     readonly orbCount: string;
     readonly orbConfirm: string;
@@ -475,6 +479,8 @@ export interface Strings {
     readonly blocked: string;
     /** A level-up or pickup for a skill with every upgrade taken heals instead. */
     readonly maxedHeal: string;
+    /** A toast as a 우두머리 walks in. */
+    readonly bossArrived: string;
     readonly intro: string;
     readonly introHintKeyboard: string;
     readonly introHintTouch: string;

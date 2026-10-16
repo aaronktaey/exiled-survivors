@@ -35,6 +35,13 @@ class GoldStore {
     return earned;
   }
 
+  /** Adds a sum earned some other way than a run (a sword sold). */
+  public gain(amount: number): void {
+    if (amount > 0) {
+      this.commit(this.value + amount);
+    }
+  }
+
   /** True when there was enough, and it has been taken. */
   public spend(amount: number): boolean {
     if (amount <= 0 || this.value < amount) {

@@ -20,6 +20,7 @@ import {
   gearTexture,
   type AffixLine,
   type OrbId,
+  sellPriceFor,
 } from '@/config';
 import {
   affixGearDetail,
@@ -47,6 +48,7 @@ import {
 } from '@/systems/Gear';
 import { ItemGrid, type GridItem } from '@/systems/ItemGrid';
 import { fitText } from '@/systems/Layout';
+import { gold } from '@/systems/Gold';
 import { orbs } from '@/systems/Orbs';
 import { saveGame } from '@/systems/SaveGame';
 import { prefersTouchControls } from '@/systems/VirtualJoystick';
@@ -993,9 +995,16 @@ export class InventoryScene extends Phaser.Scene {
       return;
     }
 
+    // 팔기: the sword goes, and its price goes into the purse.
+    const price = sellPriceFor(item);
     gear.discard(item.uid);
+    gold.gain(price);
     // A weapon shorter, so the grid is laid out again around what is left.
-    this.scene.restart({ onClose: this.payload.onClose, tab: 'gear' });
+    this.scene.restart({
+      onClose: this.payload.onClose,
+      tab: 'gear',
+      note: fill(t().gear.sold, { gear: gearTitle(item), price: price.toLocaleString('en-US') }),
+    });
   }
 
   private refreshDiscard(): void {
@@ -1004,9 +1013,12 @@ export class InventoryScene extends Phaser.Scene {
     }
 
     const copy = t().gear;
-    const live = this.canDiscard(this.selected());
+    const item = this.selected();
+    const live = this.canDiscard(item);
     const asking = this.armed === 'discard' && live;
-    this.discard.setText(asking ? copy.discardConfirm : copy.discard);
+    const price = item ? sellPriceFor(item).toLocaleString('en-US') : '';
+    this.discard.setText(asking ? fill(copy.discardConfirm, { price }) : live ? fill(copy.sellFor, { price }) : copy.discard);
+    fitText(this.discard.setScale(1), (this.discardPlate.width ?? 120) - 6, 0);
     this.discard.setColor(asking ? COLORS.accent : COLORS.muted);
     this.discard.setAlpha(live ? 1 : 0.35);
     this.discardPlate.setFillStyle(COLORS.panelActive, asking ? 0.55 : 0);

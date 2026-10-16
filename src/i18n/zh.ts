@@ -129,8 +129,10 @@ export const zh: Strings = {
     wearing: '装备中',
     equipped: '装备中',
     equip: '装备',
-    discard: '丢弃',
-    discardConfirm: '确定丢弃？',
+    discard: '出售',
+    discardConfirm: '以 {price} 金币出售？',
+    sellFor: '出售 {price}G',
+    sold: '{gear} — 以 {price} 金币出售',
     orbCount: '{orb} x{count}',
     orbConfirm: '使用{orb}？',
     orbNone: '没有{orb}',
@@ -138,8 +140,8 @@ export const zh: Strings = {
     orbAdded: '{orb} — 新增 {affix}',
     orbUpgraded: '{orb} — {from} → {to}',
     orbDestroyed: '{orb} — 装备被摧毁了',
-    hintKeyboard: '↑ ↓ 移动   Space 装备   {keys} 宝珠   Del 丢弃   Esc 返回',
-    hintTouch: '点击装备 — 丢弃与宝珠在下方按钮',
+    hintKeyboard: '↑ ↓ 移动   Space 装备   {keys} 宝珠   Del 出售   Esc 返回',
+    hintTouch: '点击装备 — 出售与宝珠在下方按钮',
     lockedHint: '存档中的一局正持有该武器 — 请先结束该局或重新开始',
     prefix: '词缀前缀',
     suffix: '词缀后缀',
@@ -169,9 +171,9 @@ export const zh: Strings = {
     held: '持有 {count}',
     orbUse: '在装备标签中选择武器后使用。',
     boneUse: '在开始游戏时生效，只对那一局有效。',
-    hintGear: '方向键 移动   Space 装备   {keys} 宝珠   Del 丢弃   C 合成   Tab 标签   Esc 返回',
+    hintGear: '方向键 移动   Space 装备   {keys} 宝珠   Del 出售   C 合成   Tab 标签   Esc 返回',
     hintConsumables: '方向键 移动   Tab 标签   Esc 返回',
-    hintTouch: '点击格子查看 — 装备、丢弃与宝珠在旁边的按钮',
+    hintTouch: '点击格子查看 — 装备、出售与宝珠在旁边的按钮',
   },
 
   bones: {
@@ -343,6 +345,7 @@ export const zh: Strings = {
   game: {
     blocked: '格挡',
     maxedHeal: '技能已全部强化 — 恢复生命',
+    bossArrived: '首领出现！',
     intro: 'Exile, do something!',
     introHintKeyboard: 'WASD 或方向键移动 — 攻击自动进行',
     introHintTouch: '拖动摇杆移动 — 攻击自动进行',
@@ -900,7 +903,8 @@ export const zh: Strings = {
           title: '装备标签',
           lines: [
             '持有的剑排列在 {cols}×{rows} 的格子中。选中格子后旁边会显示攻击力 · 固定属性 · 属性。',
-            '装备 · 丢弃 · 使用宝珠通过旁边的按钮或 Space 进行。装备中的剑不能丢弃。',
+            '装备 · 出售 · 使用宝珠通过旁边的按钮或 Space 进行。装备中的剑不能出售。',
+            '出售可获得金币：最低阶为 {sellBase} 金币，每高一阶多 {sellBase} 金币，每条词缀再加其 {sellAffix}。',
           ],
         },
         {

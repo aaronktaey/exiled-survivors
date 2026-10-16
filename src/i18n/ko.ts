@@ -133,8 +133,10 @@ export const ko: Strings = {
     wearing: '착용 중',
     equipped: '착용 중',
     equip: '착용',
-    discard: '버리기',
-    discardConfirm: '정말 버릴까요?',
+    discard: '팔기',
+    discardConfirm: '{price}골드에 팔까요?',
+    sellFor: '팔기 {price}G',
+    sold: '{gear} — {price}골드에 팔았습니다',
     orbCount: '{orb} x{count}',
     orbConfirm: '{orb} 사용?',
     orbNone: '{orb} 없음',
@@ -142,8 +144,8 @@ export const ko: Strings = {
     orbAdded: '{orb} — {affix} 추가',
     orbUpgraded: '{orb} — {from} → {to}',
     orbDestroyed: '{orb} — 장비가 파괴되었습니다',
-    hintKeyboard: '↑ ↓ 이동   Space 착용   {keys} 구슬   Del 버리기   Esc 돌아가기',
-    hintTouch: '탭해서 착용 — 버리기와 구슬은 아래 버튼',
+    hintKeyboard: '↑ ↓ 이동   Space 착용   {keys} 구슬   Del 팔기   Esc 돌아가기',
+    hintTouch: '탭해서 착용 — 팔기와 구슬은 아래 버튼',
     lockedHint: '저장된 판이 있어 교체할 수 없습니다 — 그 판을 끝내거나 새로 시작하세요',
     prefix: '접두어',
     suffix: '접미어',
@@ -173,9 +175,9 @@ export const ko: Strings = {
     held: '보유 {count}',
     orbUse: '장비 탭에서 무기를 골라 사용합니다.',
     boneUse: '게임 시작 때 적용합니다. 그 판에만 효과가 있습니다.',
-    hintGear: '방향키 이동   Space 착용   {keys} 구슬   Del 버리기   C 합성   Tab 탭   Esc 돌아가기',
+    hintGear: '방향키 이동   Space 착용   {keys} 구슬   Del 팔기   C 합성   Tab 탭   Esc 돌아가기',
     hintConsumables: '방향키 이동   Tab 탭   Esc 돌아가기',
-    hintTouch: '칸을 눌러 살펴보기 — 착용·버리기·구슬은 오른쪽 버튼',
+    hintTouch: '칸을 눌러 살펴보기 — 착용·팔기·구슬은 오른쪽 버튼',
   },
 
   bones: {
@@ -347,6 +349,7 @@ export const ko: Strings = {
   game: {
     blocked: '막음',
     maxedHeal: '강화를 모두 마친 스킬 — 체력 회복',
+    bossArrived: '우두머리 등장!',
     intro: 'Exile, do something!',
     introHintKeyboard: 'WASD · 방향키로 이동 — 공격은 자동',
     introHintTouch: '스틱을 끌어 이동 — 공격은 자동',
@@ -789,7 +792,8 @@ export const ko: Strings = {
           title: '장비 탭',
           lines: [
             '가진 검이 {cols}×{rows} 칸에 놓입니다. 칸을 고르면 옆에 공격력 · 고정 속성 · 속성이 나옵니다.',
-            '착용 · 버리기 · 구슬 사용은 옆의 버튼이나 Space로 합니다. 착용 중인 검은 버릴 수 없습니다.',
+            '착용 · 팔기 · 구슬 사용은 옆의 버튼이나 Space로 합니다. 착용 중인 검은 팔 수 없습니다.',
+            '팔면 골드를 받습니다. 가장 낮은 티어가 {sellBase}골드, 한 티어 위마다 {sellBase}골드씩 더 비싸고, 속성 하나마다 그 값의 {sellAffix}가 더해집니다.',
           ],
         },
         {
