@@ -134,6 +134,8 @@ export class InventoryScene extends Phaser.Scene {
   public wearing!: Phaser.GameObjects.Text;
   /** The name of whatever is under the cursor. Public for tests. */
   public heading!: Phaser.GameObjects.Text;
+  /** Under the name: a weapon's 망고 상태. Public for tests. */
+  public stateLine?: Phaser.GameObjects.Text;
   /** The lines of whatever is under the cursor. Public for tests. */
   public lines!: Phaser.GameObjects.Text;
   /** 착용, 버리기, and the plates behind them. Public so a test can press them. */
@@ -210,6 +212,7 @@ export class InventoryScene extends Phaser.Scene {
     this.combineWhy = null;
     this.combineMarks = [];
     this.orbHint = undefined;
+    this.stateLine = undefined;
     this.changedLines = [];
   }
 
@@ -326,6 +329,17 @@ export class InventoryScene extends Phaser.Scene {
       })
       .setOrigin(0.5, 0)
       .setDepth(DEPTH.ui + 1);
+    // 망고 상태, in the air under the name rather than one more line of the
+    // read-out, which is budgeted to the line for the screen's height.
+    this.stateLine = this.add
+      .text(paneX, y + 26, '', {
+        fontFamily: 'system-ui, sans-serif',
+        fontSize: TEXT.size.hint,
+        color: '#ffd76a',
+        align: 'center',
+      })
+      .setOrigin(0.5, 0)
+      .setDepth(DEPTH.ui + 1);
     y += headingBlock;
 
     this.lines = this.add
@@ -414,6 +428,7 @@ export class InventoryScene extends Phaser.Scene {
         icon: gearTexture(item.id),
         tier: dropTierFor(item),
         marked: () => gear.value.equipped === item.uid,
+        badge: () => (item.mango ? TEXTURES.mango : null),
         label: () => gearTitle(item),
         onSelect: () => (this.combining ? this.togglePick(item.uid) : this.wear(item.uid)),
       }));
@@ -545,6 +560,10 @@ export class InventoryScene extends Phaser.Scene {
       const item = this.selected();
       this.heading.setColor(COLORS.gearText);
       this.heading.setText(item ? gearTitle(item) : t().inventory.empty);
+      this.stateLine?.setText(item?.mango ? t().gear.mangoState : '');
+      if (this.stateLine) {
+        fitText(this.stateLine.setScale(1), this.lines.style.wordWrapWidth ?? this.scale.width / 2, 0);
+      }
       this.lines.setText(item ? InventoryScene.describe(item) : '');
       this.refreshEquip();
       this.refreshDiscard();
@@ -556,6 +575,7 @@ export class InventoryScene extends Phaser.Scene {
     const id = this.menu.selectedId;
     const copy = t().inventory;
     this.heading.setColor(COLORS.text);
+    this.stateLine?.setText('');
     if (!id) {
       this.heading.setText(copy.empty);
       this.lines.setText('');
@@ -911,6 +931,14 @@ export class InventoryScene extends Phaser.Scene {
 
     if (outcome.kind === 'destroyed') {
       return fill(copy.orbDestroyed, { orb });
+    }
+
+    if (outcome.kind === 'ward') {
+      return fill(copy.orbWarded, { orb });
+    }
+
+    if (outcome.kind === 'saved') {
+      return fill(copy.orbSaved, { orb });
     }
 
     if (outcome.kind === 'upgrade' && outcome.line && outcome.from) {

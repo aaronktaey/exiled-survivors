@@ -208,6 +208,12 @@ export interface Strings {
     readonly orbAdded: string;
     readonly orbUpgraded: string;
     readonly orbDestroyed: string;
+    /** {orb}: the weapon is now in 망고 상태. */
+    readonly orbWarded: string;
+    /** {orb}: it would have broken, and the 망고 took the blow. */
+    readonly orbSaved: string;
+    /** First line of a weapon's read-out while it is in 망고 상태. */
+    readonly mangoState: string;
     readonly hintKeyboard: string;
     readonly hintTouch: string;
     /** Shown instead, while a saved run has a weapon in hand. */

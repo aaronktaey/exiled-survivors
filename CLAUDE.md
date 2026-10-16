@@ -380,6 +380,12 @@ Read `git log` for what changed and when. What is not in the log:
   runs once `GEAR_COMBINE.count` are picked; Space toggles a cell, Esc backs
   out. Its third button shares the row with 착용 · 버리기 so the pane is no
   taller on a short phone.
+- **망고의 구슬 wards a weapon.** An `OrbSpec` with `ward` sets
+  `GearItem.mango`; the 폭발의 구슬's destroy roll on a warded weapon comes
+  back `saved` (weapon unchanged, `mango` gone) instead of `destroyed`. Only
+  구슬 are warded against — a failed 합성 still spends its swords. The
+  인벤토리 shows it on the cell (`GridItem.badge`) and in `stateLine` under
+  the name, not as a read-out line (that block is budgeted to the screen).
 - **Swords are sold, not thrown away.** The 인벤토리's second button (still
   `discard`/`pressDiscard` in code) pays `sellPriceFor(item)` into
   `gold` (`GEAR_SELL`: rank from the weakest tier × `perRank`, + `perAffix`

@@ -34,6 +34,8 @@ export interface GearItem {
   readonly id: GearId;
   readonly prefixes: readonly AffixLine[];
   readonly suffixes: readonly AffixLine[];
+  /** 망고 상태 (망고의 구슬): the next 구슬 that would destroy it does not. */
+  readonly mango?: boolean;
 }
 
 /** What the stash holds, as it is written to localStorage. */
@@ -227,7 +229,8 @@ export const MAX_AFFIX_LINES = GEAR_DROP.maxPrefixes + GEAR_DROP.maxSuffixes;
 export interface OrbOutcome {
   /** The weapon after it, or null when the 구슬 destroyed it. */
   readonly item: GearItem | null;
-  readonly kind: 'reroll' | 'add' | 'upgrade' | 'destroyed';
+  /** `ward`: put in 망고 상태. `saved`: would have been destroyed, and the 망고 took it instead. */
+  readonly kind: 'reroll' | 'add' | 'upgrade' | 'destroyed' | 'ward' | 'saved';
   /** The line that came out of it, for an add or an upgrade. */
   readonly line?: AffixLine;
   /** And the one it replaced, for an upgrade. */
@@ -243,6 +246,11 @@ export interface OrbOutcome {
  * worth hesitating over.
  */
 export function orbApplied(item: GearItem, orb: OrbSpec): OrbOutcome | null {
+  if (orb.ward) {
+    // One 망고 at a time: a second would be a 구슬 spent on nothing.
+    return item.mango ? null : { item: { ...item, mango: true }, kind: 'ward' };
+  }
+
   if (orb.reroll) {
     const span = orb.reroll.max - orb.reroll.min + 1;
     const count = orb.reroll.min + Math.floor(Math.random() * span);
@@ -304,6 +312,11 @@ function explode(
   }
 
   if (Math.random() < upgrade.destroyChance) {
+    // 망고 상태 takes the blow: the weapon is left as it was, without its 망고.
+    if (item.mango) {
+      const { mango: _spent, ...kept } = item;
+      return { item: kept, kind: 'saved' };
+    }
     return { item: null, kind: 'destroyed' };
   }
 
@@ -674,6 +687,7 @@ class GearStore {
         id: item.id,
         prefixes: GearStore.lines(item.prefixes, 'prefix'),
         suffixes: GearStore.lines(item.suffixes, 'suffix'),
+        ...(item.mango === true ? { mango: true } : {}),
       }));
 
     // Empty-handed is the one state that cannot stand, so the 녹슨 검 comes

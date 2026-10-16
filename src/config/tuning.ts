@@ -92,6 +92,7 @@ export const DIALS: readonly DialSpec[] = [
   { path: 'ORBS.chaos.chance', kind: 'chance', tab: 'drops', max: 0.05 },
   { path: 'ORBS.awaken.chance', kind: 'chance', tab: 'drops', max: 0.05 },
   { path: 'ORBS.explode.chance', kind: 'chance', tab: 'drops', max: 0.05 },
+  { path: 'ORBS.mango.chance', kind: 'chance', tab: 'drops', max: 0.01 },
   { path: 'BONES.skull.fromKill', kind: 'chance', tab: 'drops', max: 0.05 },
   { path: 'BONES.rib.fromKill', kind: 'chance', tab: 'drops', max: 0.05 },
   { path: 'BONES.spine.fromKill', kind: 'chance', tab: 'drops', max: 0.05 },

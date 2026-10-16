@@ -961,6 +961,55 @@ check('it comes off any kill now, at its own chance',
   explode.chance > 0 && explode.bossOnly === false,
   `${(explode.chance * 100).toFixed(2)}% a kill`);
 
+// --- 14b. 망고의 구슬: 망고 상태 stops one destroying 구슬, then is gone ---
+const mango = await ev(`(() => {
+  const c = window.config, ORBS = c.ORBS;
+  const sword = { uid: 'm1', id: 'steelSword', prefixes: [{ id: 'mighty', tier: 3 }], suffixes: [] };
+  const warded = window.orbApplied(sword, ORBS.mango);
+  const twice = window.orbApplied(warded.item, ORBS.mango);
+  const real = Math.random;
+  Math.random = () => 0;
+  const saved = window.orbApplied(warded.item, ORBS.explode);
+  const plain = window.orbApplied(sword, ORBS.explode);
+  Math.random = real;
+  // Written down and read back with the stash.
+  window.gear.add(warded.item);
+  const stored = JSON.parse(localStorage.getItem('exiled-survivors:gear:v2')).items.find((i) => i.uid === 'm1');
+  return {
+    chance: ORBS.mango.chance, explode: ORBS.explode.chance, tier: ORBS.mango.tier,
+    warded: { kind: warded?.kind, mango: warded?.item?.mango },
+    twice,
+    saved: { kind: saved?.kind, kept: saved?.item?.uid, mango: saved?.item?.mango ?? false,
+             lines: saved?.item ? saved.item.prefixes.length + saved.item.suffixes.length : null },
+    plain: { kind: plain?.kind, item: plain?.item },
+    stored: stored?.mango,
+  };
+})()`);
+console.log('망고:', JSON.stringify(mango));
+check('망고의 구슬 drops a tenth as often as the 폭발의 구슬',
+  Math.abs(mango.chance - mango.explode / 10) < 1e-12 && mango.tier === 'rare', `${mango.chance} vs ${mango.explode}`);
+check('it puts a weapon in 망고 상태, kept with the stash, and is not spent on one already there',
+  mango.warded.kind === 'ward' && mango.warded.mango === true && mango.twice === null && mango.stored === true,
+  JSON.stringify(mango.warded));
+check('a 폭발의 구슬 that would destroy it is stopped: the weapon stays as it was, its 망고 spent',
+  mango.saved.kind === 'saved' && mango.saved.kept === 'm1' && mango.saved.mango === false && mango.saved.lines === 1,
+  JSON.stringify(mango.saved));
+check('without one, the same roll destroys it', mango.plain.kind === 'destroyed' && mango.plain.item === null);
+await ev(`(() => { window.game.scene.getScene('InventoryScene').scene.restart({ onClose: () => {}, focus: 'm1' }); return 1; })()`);
+await sleep(900);
+const mangoShown = await scene('InventoryScene', `
+  s.menu.focus('m1'); s.showDetails();
+  const i = s.menu.items.findIndex((it) => it.id === 'm1');
+  const view = s.menu.cells[i - s.menu.page * 72];
+  return { badge: view?.badge.visible, key: view?.badge.texture.key, first: s.stateLine?.text ?? '',
+           linesTop: s.lines.y, stateBottom: s.stateLine ? s.stateLine.y + s.stateLine.displayHeight : 0 };
+`);
+check('the 인벤토리 shows it: a 망고 on the cell, and a line under its name that keeps clear of the read-out',
+  mangoShown.badge === true && mangoShown.key === 'tex-mango' && /망고 상태/.test(mangoShown.first) &&
+    mangoShown.stateBottom <= mangoShown.linesTop, JSON.stringify(mangoShown));
+await shot('gear-12-mango');
+await ev(`(() => { window.gear.discard('m1'); return 1; })()`);
+
 // --- 15. a 구슬 says what it did ---
 await ev(`(() => {
   window.gear.reset();

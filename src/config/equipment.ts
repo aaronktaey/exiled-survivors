@@ -206,7 +206,7 @@ import { TEXTURES } from '@/config/visuals';
  * Adding one means a line in ORBS, a name in the locales, and nothing else:
  * the stash, the drop, the label and the button all read this table.
  */
-export type OrbId = 'transmute' | 'chaos' | 'awaken' | 'explode';
+export type OrbId = 'transmute' | 'chaos' | 'awaken' | 'explode' | 'mango';
 
 export interface OrbSpec {
   readonly id: OrbId;
@@ -232,6 +232,11 @@ export interface OrbSpec {
   readonly reroll?: { readonly min: number; readonly max: number };
   /** Or adds this many lines to whatever is already on it. */
   readonly add?: number;
+  /**
+   * Or puts the weapon in 망고 상태: the next 구슬 that would destroy it
+   * does not, and the 망고 is spent instead. One at a time.
+   */
+  readonly ward?: boolean;
   /**
    * Or takes one 속성 already on it, rolls a different one in its place and
    * puts that one rung higher — at the risk of the weapon not surviving it.
@@ -289,6 +294,18 @@ export const ORBS: Record<OrbId, OrbSpec> = {
     color: 0xff7a3d,
     texture: TEXTURES.orbExplode,
     upgrade: { steps: 1, destroyChance: 0.2 },
+  },
+  // A tenth as common as the 폭발의 구슬 it guards against.
+  mango: {
+    id: 'mango',
+    name: '망고의 구슬',
+    short: '망고',
+    detail: '장비를 망고 상태로 — 구슬로 인한 파괴를 한 번 막고 사라집니다',
+    chance: 0.0001,
+    tier: 'rare',
+    color: 0xffe9a8,
+    texture: TEXTURES.orbMango,
+    ward: true,
   },
 };
 

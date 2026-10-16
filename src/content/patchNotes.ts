@@ -15,6 +15,28 @@ export interface PatchNote {
 
 export const PATCH_NOTES: readonly PatchNote[] = [
   {
+    version: '0.43',
+    date: '2026-10-16',
+    changes: {
+      ko: [
+        '새 구슬 망고의 구슬 — 모든 적에게서 0.01%(폭발의 구슬의 10분의 1) 확률로 떨어집니다. 장비에 바르면 망고 상태가 되어, 구슬로 인한 파괴를 한 번 막고 사라집니다. 막을 때는 장비가 그대로 남습니다.',
+        '망고 상태인 장비는 인벤토리 칸 구석에 망고가 붙고, 이름 아래에 망고 상태가 표시됩니다.',
+      ],
+      en: [
+        'New orb, the Mango Orb — drops from any enemy at 0.01%, a tenth of the Explosion Orb. It puts a weapon in Mango state, which stops one orb from destroying it and is then spent; the weapon is left as it was.',
+        'A weapon in Mango state wears a mango in the corner of its Inventory cell, and says so under its name.',
+      ],
+      ja: [
+        '新しい球「マンゴーの球」— すべての敵から 0.01%（爆発の球の 10 分の 1）の確率で落ちます。装備に使うとマンゴー状態になり、球による破壊を 1 回防いで消えます。防いだときは装備がそのまま残ります。',
+        'マンゴー状態の装備は、インベントリのマスの隅にマンゴーが付き、名前の下にマンゴー状態と表示されます。',
+      ],
+      zh: [
+        '新宝珠「芒果宝珠」— 所有敌人都有 0.01%（爆炸宝珠的十分之一）几率掉落。用在装备上会进入芒果状态，抵挡一次宝珠造成的摧毁后消失，装备保持原样。',
+        '处于芒果状态的装备会在背包格子角落显示芒果，并在名称下方标示芒果状态。',
+      ],
+    },
+  },
+  {
     version: '0.42',
     date: '2026-10-16',
     changes: {

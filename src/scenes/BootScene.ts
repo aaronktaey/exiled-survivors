@@ -655,6 +655,12 @@ export class BootScene extends Phaser.Scene {
         const arm = size * 0.07;
         graphics.fillRect(half - arm / 2, size * 0.22, arm, size * 0.56);
         graphics.fillRect(size * 0.22, half - arm / 2, size * 0.56, arm);
+      } else if (orb.id === 'mango') {
+        // A small mango with its leaf: what keeps the weapon whole.
+        graphics.fillStyle(0xffb347, 1);
+        graphics.fillEllipse(half, half + size * 0.04, size * 0.38, size * 0.44);
+        graphics.fillStyle(0x6fcf5a, 1);
+        graphics.fillEllipse(half + size * 0.1, half - size * 0.2, size * 0.2, size * 0.1);
       } else {
         // A crack across the face: it may not survive its own use.
         graphics.fillPoints(

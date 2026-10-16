@@ -163,6 +163,7 @@ export const TEXTURES = {
   orbChaos: "tex-orb-chaos",
   orbAwaken: "tex-orb-awaken",
   orbExplode: "tex-orb-explode",
+  orbMango: "tex-orb-mango",
   passive: "tex-passive",
   trophy: "tex-trophy",
   logo: "tex-logo",

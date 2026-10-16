@@ -12,6 +12,8 @@ export interface GridItem {
   readonly count?: () => number;
   /** A mark in the other corner — the weapon being carried. */
   readonly marked?: () => boolean;
+  /** A small picture in the bottom-left corner — a weapon's 망고 상태. */
+  readonly badge?: () => string | null;
   /** Read by the screen for a heading; the grid itself shows only icons. */
   readonly label: () => string;
   /** Space or Enter on it. */
@@ -33,6 +35,7 @@ interface CellView {
   readonly icon: Phaser.GameObjects.Image;
   readonly count: Phaser.GameObjects.Text;
   readonly mark: Phaser.GameObjects.Rectangle;
+  readonly badge: Phaser.GameObjects.Image;
 }
 
 /**
@@ -92,9 +95,15 @@ export class ItemGrid {
         .setDepth(depth + 2)
         .setVisible(false);
 
+      const badge = scene.add
+        .image(x - cell / 2 + cell * 0.2, y + cell / 2 - cell * 0.2, '__DEFAULT')
+        .setDisplaySize(cell * 0.36, cell * 0.36)
+        .setDepth(depth + 2)
+        .setVisible(false);
+
       plate.on(Phaser.Input.Events.GAMEOBJECT_POINTER_OVER, () => this.hover(i));
       plate.on(Phaser.Input.Events.GAMEOBJECT_POINTER_DOWN, () => this.tap(i));
-      this.cells.push({ plate, icon, count, mark });
+      this.cells.push({ plate, icon, count, mark, badge });
     }
 
     this.cursor = scene.add
@@ -183,6 +192,7 @@ export class ItemGrid {
         view.icon.setVisible(false);
         view.count.setText('');
         view.mark.setVisible(false);
+        view.badge.setVisible(false);
         return;
       }
 
@@ -197,6 +207,12 @@ export class ItemGrid {
       const count = item.count?.();
       view.count.setText(count !== undefined ? String(count) : '');
       view.mark.setVisible(item.marked?.() === true);
+      const badge = item.badge?.() ?? null;
+      view.badge.setVisible(badge !== null);
+      if (badge && view.badge.texture.key !== badge) {
+        const { cell } = this.options;
+        view.badge.setTexture(badge).setDisplaySize(cell * 0.36, cell * 0.36);
+      }
     });
 
     const slot = this.selected - first;
