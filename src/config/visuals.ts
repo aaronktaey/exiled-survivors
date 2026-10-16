@@ -193,7 +193,8 @@ export const TEXTURES = {
  * drop on the ground wears it, and so does the upgrade card.
  */
 export const SKILL_ICONS: Record<string, { readonly file?: string; readonly key: string }> = {
-  meleeStrike: { file: 'assets/icons/skill-meleeStrike.png', key: 'tex-skill-meleeStrike' },
+  // Drawn at boot: a fist, so it is not mistaken for the sword in hand (a sword until 2026-10-16).
+  meleeStrike: { key: 'tex-skill-meleeStrike-fist' },
   fireball: { file: 'assets/icons/skill-fireball.png', key: 'tex-skill-fireball' },
   chainLightning: { file: 'assets/icons/skill-chainLightning.png', key: 'tex-skill-chainLightning' },
   iceSpear: { file: 'assets/icons/skill-iceSpear.png', key: 'tex-skill-iceSpear' },

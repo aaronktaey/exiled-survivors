@@ -15,6 +15,28 @@ export interface PatchNote {
 
 export const PATCH_NOTES: readonly PatchNote[] = [
   {
+    version: '0.52',
+    date: '2026-10-16',
+    changes: {
+      ko: [
+        '타격의 아이콘이 검에서 주먹으로 바뀌어, 장착한 장비(검) 아이콘과 헷갈리지 않습니다.',
+        '우두머리 머리 위 체력 숫자가 정수로만 표시됩니다.',
+      ],
+      en: [
+        'Strike’s icon is now a fist instead of a sword, so it is not mistaken for your equipped sword.',
+        'The Boss’s health count above its head shows whole numbers only.',
+      ],
+      ja: [
+        '打撃のアイコンが剣から拳に変わり、装備中の剣のアイコンと紛らわしくなくなりました。',
+        'ボスの頭上の体力の数字が整数だけで表示されます。',
+      ],
+      zh: [
+        '打击的图标由剑改为拳头，不会再与装备中的剑图标混淆。',
+        '首领头顶的生命值数字只显示整数。',
+      ],
+    },
+  },
+  {
     version: '0.51',
     date: '2026-10-16',
     changes: {

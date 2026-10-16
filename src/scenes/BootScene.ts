@@ -85,6 +85,7 @@ export class BootScene extends Phaser.Scene {
     this.createBoneTextures();
     this.createAltarTexture();
     this.createThunderIcon();
+    this.createStrikeIcon();
     this.createTrophyTexture();
     this.createWebIcon();
     this.createFlagTextures();
@@ -698,6 +699,56 @@ export class BootScene extends Phaser.Scene {
    * 낙뢰's icon, drawn rather than loaded: a yellow bolt on a dark disc, the
    * same 32px the pack's icons are, so the drop and the card size it alike.
    */
+  /**
+   * 타격: a fist punching up and right, with impact lines off its knuckles —
+   * in the same round badge as 낙뢰's, and nothing like the sword in hand.
+   */
+  private createStrikeIcon(): void {
+    const key = SKILL_ICONS.meleeStrike?.key;
+    if (!key || this.textures.exists(key)) {
+      return;
+    }
+
+    const size = 64;
+    const skin = 0xf2c38b;
+    const edge = 0x7a4a25;
+    const g = this.add.graphics();
+    g.fillStyle(0x2a1a14, 1);
+    g.fillCircle(size / 2, size / 2, size * 0.47);
+    g.lineStyle(3, 0xff8a3d, 1);
+    g.strokeCircle(size / 2, size / 2, size * 0.44);
+
+    // The back of the hand, then four knuckles across its top, then the
+    // thumb folded over the front.
+    g.fillStyle(skin, 1);
+    g.fillRoundedRect(17, 27, 28, 20, 6);
+    g.lineStyle(2, edge, 1);
+    g.strokeRoundedRect(17, 27, 28, 20, 6);
+    for (let i = 0; i < 4; i++) {
+      const x = 16 + i * 7.5;
+      g.fillStyle(skin, 1);
+      g.fillRoundedRect(x, 18, 8, 13, 4);
+      g.lineStyle(2, edge, 1);
+      g.strokeRoundedRect(x, 18, 8, 13, 4);
+    }
+    g.fillStyle(skin, 1);
+    g.fillRoundedRect(13, 33, 22, 9, 4);
+    g.lineStyle(2, edge, 1);
+    g.strokeRoundedRect(13, 33, 22, 9, 4);
+    // The wrist.
+    g.fillStyle(0xb5543a, 1);
+    g.fillRect(21, 47, 20, 7);
+
+    // Impact, off the knuckles.
+    g.lineStyle(3, 0xffe066, 1);
+    g.lineBetween(47, 19, 52, 13);
+    g.lineBetween(49, 27, 55, 26);
+    g.lineBetween(41, 14, 42, 8);
+
+    g.generateTexture(key, size, size);
+    g.destroy();
+  }
+
   private createThunderIcon(): void {
     const key = SKILL_ICONS.thunderStrike?.key;
     if (!key || this.textures.exists(key)) {

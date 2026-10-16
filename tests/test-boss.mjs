@@ -370,6 +370,21 @@ check('and faces front again once the turn is done',
   settled.spinning === false && !/-stride-[34]$/.test(settled.key) && settled.flip === false, JSON.stringify(settled));
 await shot('boss-05-giant');
 
+// --- its health reads in whole numbers, whatever fraction a hit took off ---
+const wholeHp = await run(`
+  s.choosing = true;
+  s.spawner.clear();
+  const boss = s.spawner.spawnBoss();
+  boss.takeDamage(12.37);
+  boss.update(0, 16);
+  const text = boss.plate.text;
+  s.spawner.clear();
+  s.choosing = false;
+  return { text, hp: boss.hp };
+`);
+check('the 우두머리’s health count shows no decimal point', /\d+\/\d+$/.test(wholeHp.text) && !/\./.test(wholeHp.text),
+  wholeHp.text);
+
 console.log('\n=== SUMMARY ===');
 const failed = results.filter((r) => !r.p);
 console.log(`${results.length - failed.length}/${results.length} passed`);

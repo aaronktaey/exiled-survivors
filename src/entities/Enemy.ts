@@ -401,7 +401,8 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
     }
     this.healthBar.setVisible(true);
 
-    this.plate?.setText(`${enemyName(this.kind)}  ${Math.max(0, this.hp)}/${this.maxHp}`);
+    // Whole numbers: a hit can take off a fraction (연쇄번개 각성, a crit), the count shows none.
+    this.plate?.setText(`${enemyName(this.kind)}  ${Math.max(0, Math.ceil(this.hp))}/${Math.ceil(this.maxHp)}`);
     this.plate?.setPosition(this.x, top - HUD.nameplateGap);
     this.plate?.setVisible(true);
   }
