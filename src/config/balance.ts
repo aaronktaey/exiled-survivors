@@ -25,7 +25,8 @@ export const BALANCE = {
     fireball: 1,
     chainLightning: 0.7,
     iceSpear: 0.8,
-    voidOrb: 1.2,
+    // 1.2 until 2026-10-16.
+    voidOrb: 1,
     thunderStrike: 0.8,
   } as Record<SkillId, number>,
 };
@@ -143,7 +144,7 @@ export interface EnemyGiantSpec {
   readonly drawn: number;
   /** How long each step of the walk shows. */
   readonly stepMs: number;
-  /** The spin when it throws: how many turns, and how long they take. */
+  /** The turn round on the spot when it throws: how many, and how long they take. */
   readonly spinTurns: number;
   readonly spinMs: number;
 }
@@ -151,7 +152,19 @@ export interface EnemyGiantSpec {
 /** The walk, picture by picture: a foot out, standing, the other foot, standing. */
 export const GIANT_STRIDE = [1, 0, 2, 0] as const;
 
-/** A giant's picture `index` (0 standing, 1 and 2 a foot out); 0 is the kind's own texture. */
+/**
+ * The turn, a quarter at a time — side on, from behind, the other side (the
+ * side picture mirrored), and facing front again: it turns round on the
+ * spot rather than rolling over in the plane of the screen.
+ */
+export const GIANT_TURN: readonly { readonly frame: number; readonly mirrored: boolean }[] = [
+  { frame: 3, mirrored: false },
+  { frame: 4, mirrored: false },
+  { frame: 3, mirrored: true },
+  { frame: 0, mirrored: false },
+];
+
+/** A giant's picture `index` (0 standing, 1 and 2 a foot out, 3 side on, 4 from behind); 0 is the kind's own texture. */
 export const giantFrame = (texture: string, index: number): string =>
   index === 0 ? texture : `${texture}-stride-${index}`;
 
@@ -1226,7 +1239,14 @@ export const UPGRADE_CAP: Partial<Record<UpgradeKey, number>> = {
   chainCount: 7,
   /** 얼음창 runs through at most this many. */
   pierceCount: 5,
+  /** 공허구체 holds at most this many orbs — a weapon's extra one included. */
+  orbCount: 8,
 };
+
+/** The orbs 공허구체 actually has up: its count and a weapon's extra one, never past the cap. */
+export function orbsHeld(orbCount: number, extra = 0): number {
+  return Math.min(UPGRADE_CAP.orbCount ?? Infinity, Math.max(1, Math.round(orbCount + extra)));
+}
 
 /**
  * How many times one skill can take each of these upgrades. Past it the

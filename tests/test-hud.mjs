@@ -205,6 +205,62 @@ check('the outline is dark, and thicker on bigger type',
   `readout ${outlined.stroke}px, clock ${outlined.clock}px, in ${outlined.colour}`);
 
 
+// --- what is acting on the survivor: icons left of the skills ---
+const run = (body) => cdp.evaluate(`(() => { const s = window.game.scene.getScene('GameScene'); ${body} })()`);
+await run(`
+  s.player.setInvulnerable(true);
+  s.player.mangoLeftMs = 4000;
+  s.player.webbed = true;
+  return 1;
+`);
+await sleep(300);
+const effects = await run(`
+  const h = s.hud;
+  // The web is laid each frame from where the survivor stands; hold it on for the look.
+  s.player.webbed = true;
+  h.update(0, 0, s.loadout(), s.effectsNow());
+  const shown = h.effectSlots.filter((e) => e.plate.visible);
+  const skills = h.slots.filter((e) => e.plate.visible);
+  const kinds = s.effectsNow().map((e) => e.kind);
+  const edges = shown.map((e) => e.plate.strokeColor);
+  const lastEffect = shown[shown.length - 1];
+  const out = { kinds, count: shown.length, edges,
+    lastEffectRight: lastEffect ? Math.round(lastEffect.plate.x + lastEffect.plate.width / 2) : 0,
+    lastEffectY: lastEffect ? Math.round(lastEffect.plate.y) : 0,
+    firstSkillLeft: skills[0] ? Math.round(skills[0].plate.x - skills[0].plate.width / 2) : 0,
+    skillY: skills[0] ? Math.round(skills[0].plate.y) : 0,
+    clockLeft: Math.round(h.clockLabel.x - h.clockLabel.width / 2), width: s.scale.width,
+    buff: window.config.HUD.effectEdge.buff, debuff: window.config.HUD.effectEdge.debuff };
+  // Point at the web: its card says what it does, and the run holds while it is read.
+  const web = s.effectsNow().findIndex((e) => e.kind === 'debuff');
+  h.pointEffect(web);
+  out.card = h.cardText.text;
+  out.cardShown = h.card.visible;
+  out.inspecting = s.inspecting.skill;
+  h.pointEffect(-1);
+  out.closed = !h.card.visible && !s.inspecting.skill;
+  return out;
+`);
+console.log('effects:', JSON.stringify(effects));
+check('the survivor’s effects stand left of the skills: the weapon, then a buff and a debuff',
+  effects.kinds[0] === 'gear' && effects.kinds.includes('buff') && effects.kinds.includes('debuff') &&
+    effects.count === effects.kinds.length,
+  effects.kinds.join(' / '));
+check('a buff and a debuff wear their own colours',
+  effects.edges.includes(effects.buff) && effects.edges.includes(effects.debuff));
+check('they sit left of the skills on the row, or on a row of their own under them',
+  (effects.lastEffectY === effects.skillY && effects.lastEffectRight < effects.firstSkillLeft) ||
+    effects.lastEffectY > effects.skillY,
+  `effects end at ${effects.lastEffectRight}, skills start at ${effects.firstSkillLeft}`);
+check('and the row stops short of the clock', effects.width < 640 || effects.firstSkillLeft < effects.clockLeft,
+  `${effects.firstSkillLeft} vs clock at ${effects.clockLeft}`);
+check('pointing at one opens a card that says what it is, holding the run while it is read',
+  effects.cardShown && /거미줄/.test(effects.card) && /디버프/.test(effects.card) && effects.inspecting === true,
+  effects.card.replace(/\n/g, ' | '));
+check('and moving off closes it and lets the run go', effects.closed === true);
+await shot('hud-effects');
+await run(`s.player.mangoLeftMs = 0; s.player.webbed = false; s.player.setInvulnerable(false); return 1;`);
+
 console.log('\n=== SUMMARY ===');
 const failed = results.filter((r) => !r.p);
 console.log(`${results.length - failed.length}/${results.length} passed`);

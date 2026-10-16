@@ -1,9 +1,11 @@
 import Phaser from 'phaser';
 
 import {
+  BALANCE,
   COLORS,
   DEPTH,
   DIALS,
+  SKILL_BASE,
   SCENES,
   SCRIM,
   SKILL_ICONS,
@@ -18,13 +20,14 @@ import {
 import { boneShort, fill, gearName, orbShort, skillName, t } from '@/i18n';
 import { addBackButton, type BackButton } from '@/systems/BackButton';
 import { fitText } from '@/systems/Layout';
+import { dpsFromStats } from '@/systems/Progression';
 import { tuning } from '@/systems/Tuning';
-import type { SkillId } from '@/weapons/skills';
+import { ALL_SKILLS, type SkillId } from '@/weapons/skills';
 
 export interface TuningSceneData {
   readonly onClose: () => void;
   /** The run's skills and their DPS right now, when opened from a run. */
-  readonly dps?: () => ReadonlyArray<{ readonly name: string; readonly dps: number }>;
+  readonly dps?: () => ReadonlyArray<{ readonly id: SkillId; readonly name: string; readonly dps: number }>;
 }
 
 /** One knob on the screen. */
@@ -137,7 +140,9 @@ export class TuningScene extends Phaser.Scene {
         .setOrigin(0.5).setDepth(DEPTH.ui + 1);
       y += 22;
     }
-    if (this.payload.dps) {
+    // The 스킬 tab always reads out what its page's dials make of the skill;
+    // the other tabs, mid-run, the run's skills.
+    if (this.tab === 'skills' || this.payload.dps) {
       this.dpsLine = this.add
         .text(width / 2, y + 6, '', { fontFamily: 'system-ui, sans-serif', fontSize: TEXT.size.hint, color: COLORS.muted })
         .setOrigin(0.5)
@@ -335,11 +340,42 @@ export class TuningScene extends Phaser.Scene {
       `${drafted > 0 ? fill(copy.drafting, { count: drafted }) : copy.clean}   ·   ${fill(copy.sharedAt, { when })}`,
     );
     this.publishLabel?.setText(this.armed ? copy.publishConfirm : copy.publish).setColor(this.armed ? COLORS.accent : COLORS.text);
-    if (this.dpsLine && this.payload.dps) {
-      const lines = this.payload.dps().map((line) => `${line.name} ${Math.round(line.dps).toLocaleString('en-US')}`);
-      this.dpsLine.setText(`DPS — ${lines.join('   ')}`);
+    if (this.dpsLine) {
+      this.dpsLine.setText(this.dpsText());
       fitText(this.dpsLine.setScale(1), this.scale.width - 16);
     }
+  }
+
+  /**
+   * The DPS line. On a skill's page, that skill: in this run when it is in
+   * hand (every fold the run fights with), and otherwise at level 1 off the
+   * dials as they stand. On the common page and the other tabs, every skill
+   * in hand — or, from the title, every skill at level 1.
+   */
+  private dpsText(): string {
+    const copy = t().tuning;
+    const run = this.payload.dps?.() ?? [];
+    const grouped = (value: number) => Math.round(value).toLocaleString('en-US');
+    const one = (id: SkillId): string => {
+      const held = run.find((line) => line.id === id);
+      return held
+        ? fill(copy.dpsRun, { skill: skillName(id), dps: grouped(held.dps) })
+        : fill(copy.dpsBase, { skill: skillName(id), dps: grouped(TuningScene.baseDps(id)) });
+    };
+    if (this.tab === 'skills' && this.page !== 'common') {
+      return one(this.page as SkillId);
+    }
+    const ids = run.length > 0 ? run.map((line) => line.id) : ALL_SKILLS.map((skill) => skill.id);
+    return `DPS — ${ids.map((id) => {
+      const held = run.find((line) => line.id === id);
+      return `${skillName(id)} ${grouped(held ? held.dps : TuningScene.baseDps(id))}`;
+    }).join('   ')}`;
+  }
+
+  /** A skill at level 1 off the dials as they stand: its base line and its 피해 배율. */
+  private static baseDps(id: SkillId): number {
+    const base = SKILL_BASE[id];
+    return dpsFromStats({ ...base, damage: base.damage * (BALANCE.damageScale[id] ?? 1) });
   }
 
   private format(dial: DialSpec, value: number): string {

@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 
-import { DEPTH, ENEMY_KINDS, SKILL_MASTERY, TEXTURES, VOID_ORB } from '@/config';
+import { DEPTH, ENEMY_KINDS, SKILL_MASTERY, TEXTURES, VOID_ORB, orbsHeld } from '@/config';
 import type { Enemy } from '@/entities/Enemy';
 import { sfx } from '@/systems/Sfx';
 import { SKILLS } from '@/weapons/skills';
@@ -52,7 +52,7 @@ export class VoidOrb implements Weapon {
   public update(delta: number, context: WeaponContext): void {
     this.elapsedMs += delta;
 
-    const count = Math.max(1, Math.round(context.orbCount + (context.extraProjectiles ?? 0)));
+    const count = orbsHeld(context.orbCount, context.extraProjectiles ?? 0);
     const radius = Math.max(1, context.range);
     this.sync(count);
 

@@ -5,12 +5,13 @@ import type { Enemy } from '@/entities/Enemy';
 import { sfx } from '@/systems/Sfx';
 import { drawBolt } from '@/weapons/bolt';
 import { SKILLS } from '@/weapons/skills';
-import type { Weapon, WeaponContext } from '@/weapons/Weapon';
+import { findNearestEnemy, type Weapon, type WeaponContext } from '@/weapons/Weapon';
 
 /**
- * Drop-only skill: a bolt out of the sky onto one enemy near the survivor,
- * landing the moment it is cast. Which one is a random pick among those in
- * range, so it spreads over a crowd rather than hammering the nearest.
+ * Drop-only skill: a bolt out of the sky onto the enemy nearest the
+ * survivor within range, landing the moment it is cast (a random one in
+ * range until 2026-10-16; the user asked for the nearest). A recast after a
+ * kill goes to whoever is nearest then.
  *
  * A strike that kills rolls THUNDER.recastChance to strike again at once,
  * and each recast rolls its own — a crowd of the nearly dead can take a
@@ -84,17 +85,8 @@ export class ThunderStrike implements Weapon {
     return !target.active || target.lives !== lives;
   }
 
-  /** A random enemy within range of the survivor, or undefined if none is. */
+  /** The enemy nearest the survivor within range, or undefined if none is. */
   private pick(context: WeaponContext): Enemy | undefined {
-    const { x, y } = context.origin;
-    const inRange: Enemy[] = [];
-    for (const child of context.enemies.getChildren()) {
-      const enemy = child as Enemy;
-      if (enemy.active && Phaser.Math.Distance.Between(x, y, enemy.x, enemy.y) <= context.range) {
-        inRange.push(enemy);
-      }
-    }
-
-    return inRange[Math.floor(Math.random() * inRange.length)];
+    return findNearestEnemy(context.origin.x, context.origin.y, context.enemies, context.range);
   }
 }

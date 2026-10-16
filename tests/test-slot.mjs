@@ -222,6 +222,19 @@ const thunder = await run(`
   const outsideHurt = outside.hp < full;
   s.spawner.clear();
 
+  // It falls on the nearest one in range, every time.
+  let nearestHit = 0;
+  for (let i = 0; i < 6; i++) {
+    const far = ring(4, st.range * 0.8);
+    const near = s.spawner.group.get(p.x, p.y);
+    const a = Math.random() * Math.PI * 2;
+    near.spawn(p.x + Math.cos(a) * st.range * 0.3, p.y + Math.sin(a) * st.range * 0.3, p, 'brute');
+    w.sinceCastMs = 99999;
+    w.update(16, ctx(70));
+    if (near.hp < full && far.every((e) => e.hp === full)) nearestHit++;
+    s.spawner.clear();
+  }
+
   // Kills with a certain recast chain on; kills with it off strike once.
   const chance = window.config.THUNDER.recastChance;
   window.config.THUNDER.recastChance = 1;
@@ -240,7 +253,7 @@ const thunder = await run(`
   s.spawner.clear();
   s.choosing = false;
   return { tags: w.definition.tags, base, stat: { damage: st.damage, attackSpeed: st.attackSpeed },
-           hurt, outsideHurt, chained, single, chance };
+           hurt, outsideHurt, nearestHit, chained, single, chance };
 `);
 console.log('낙뢰:', JSON.stringify(thunder));
 check('낙뢰 is 오라 · 주문 · 번개',
@@ -250,6 +263,7 @@ check('it starts on its configured stat line',
   `${thunder.stat.damage} damage, every ${(1000 / thunder.stat.attackSpeed).toFixed(0)}ms`);
 check('one cast strikes one enemy within reach, and nothing beyond it',
   thunder.hurt === 1 && thunder.outsideHurt === false, `${thunder.hurt} struck`);
+check('and that one is the nearest in range, every time', thunder.nearestHit === 6, `${thunder.nearestHit} of 6`);
 check('a kill strikes again while the recast keeps winning',
   thunder.chained === 6, `${thunder.chained} strikes through six`);
 check('and a kill that loses the roll ends the cast',

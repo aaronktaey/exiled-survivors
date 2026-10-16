@@ -15,6 +15,44 @@ export interface PatchNote {
 
 export const PATCH_NOTES: readonly PatchNote[] = [
   {
+    version: '0.51',
+    date: '2026-10-16',
+    changes: {
+      ko: [
+        '우두머리가 회색 거인이 되었고, 투사체를 쏠 때 화면 위에서 굴러가듯 돌지 않고 제자리에서 옆으로 한 바퀴 돌아섭니다(옆모습 → 뒷모습 → 반대쪽 옆모습 → 앞모습).',
+        '전투 중 스킬 아이콘 왼쪽에 지금 받고 있는 효과(장비 · 패시브 · 뼈다귀 · 버프 · 디버프)가 아이콘으로 표시됩니다. 마우스를 올리면 내용을 볼 수 있습니다.',
+        '저장된 게임이 있어도 장비를 바꿀 수 있습니다. 저장된 게임을 불러오면 그 게임을 시작할 때 장착했던 장비의 효과가 그대로 적용됩니다.',
+        '설정에 효과음 음량이 추가되었습니다.',
+        '낙뢰가 사거리 안에서 가장 가까운 적에게 떨어집니다.',
+        '공허구체 — 구체는 최대 8개까지 늘어나고(장비로 늘어나는 구체 포함), 피해 배율이 1.2에서 1로 바뀌었습니다.',
+      ],
+      en: [
+        'Bosses are now grey giants, and when they throw their bolts they turn round on the spot (side, back, other side, front) instead of rolling over on the screen.',
+        'In combat, icons left of your skills show what is acting on you (gear, passives, Bones, buffs, debuffs). Hover over one to read it.',
+        'You can swap your gear while a run is saved. Loading the saved run applies the gear it was started with.',
+        'Settings now has an effects volume.',
+        'Thunderstrike falls on the nearest enemy in range.',
+        'Void Orb — at most 8 orbs (gear’s extra orb included), and its damage multiplier goes from 1.2 to 1.',
+      ],
+      ja: [
+        'ボスが灰色の巨人になり、投射物を放つときは画面上で転がるように回らず、その場で横向きに一回転します（横顔 → 背中 → 反対の横顔 → 正面）。',
+        '戦闘中、スキルアイコンの左に今受けている効果（装備・パッシブ・骨・バフ・デバフ）がアイコンで表示されます。マウスを重ねると内容を確認できます。',
+        'セーブした回があっても装備を替えられます。セーブした回を再開すると、その回を始めたときの装備の効果がそのまま適用されます。',
+        '設定に効果音の音量が加わりました。',
+        '落雷が射程内でいちばん近い敵に落ちます。',
+        '虚無球 — 球は最大 8 個まで（装備で増える球を含む）、ダメージ倍率が 1.2 から 1 になりました。',
+      ],
+      zh: [
+        '首领变成灰色巨人，发射投射物时不再像在屏幕上翻滚那样旋转，而是原地转身一圈（侧面 → 背面 → 另一侧 → 正面）。',
+        '战斗中，技能图标左侧会以图标显示当前受到的效果（装备・被动・骨头・增益・减益），鼠标悬停即可查看。',
+        '有存档时也能更换装备。读取存档时，会沿用该局开局时所装备武器的效果。',
+        '设置中新增音效音量。',
+        '落雷会落在射程内最近的敌人身上。',
+        '虚空球 — 最多 8 颗（含装备增加的球），伤害倍率由 1.2 改为 1。',
+      ],
+    },
+  },
+  {
     version: '0.50',
     date: '2026-10-16',
     changes: {

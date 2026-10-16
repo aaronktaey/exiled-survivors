@@ -322,10 +322,14 @@ check('냉각 slows every kind by its configured share',
 
 // --- 11. the debug overlay reports and summons the mix ---
 await fkey('F1', 112);
-await run(`s.spawner.clear(); return 1;`);
+// The skills held still for the count: a 기행종 hops straight at the
+// survivor and a swing can take it before it is counted.
+await run(`s.spawner.clear(); s.weaponsHeldForTest = s.weapons.splice(0); return 1;`);
 await fkey('F7', 118);
 const each = await run(`
-  return { byKind: s.spawner.aliveByKind, text: s.debug.label.text };
+  const out = { byKind: s.spawner.aliveByKind, text: s.debug.label.text };
+  s.weapons.push(...(s.weaponsHeldForTest ?? []));
+  return out;
 `);
 console.log('F7:', JSON.stringify(each.byKind));
 // A normal spawn can land in the moment between the key and the count.

@@ -43,6 +43,7 @@ import { XpGem } from '@/entities/XpGem';
 import type { DamageNumbers } from '@/systems/DamageNumbers';
 import type { Progression } from '@/systems/Progression';
 import type { SkillDefinition, SkillId } from '@/weapons/skills';
+import { effectVolume } from '@/systems/Sfx';
 
 export interface CombatHooks {
   /**
@@ -335,7 +336,7 @@ export class CombatSystem {
     const clip = AUDIO.drops[tier];
     // Stay quiet rather than warn if the clip failed to load.
     if (this.scene.cache.audio.exists(clip.key)) {
-      this.scene.sound.play(clip.key, { volume: clip.volume });
+      this.scene.sound.play(clip.key, { volume: effectVolume(clip.volume) });
     }
   }
 

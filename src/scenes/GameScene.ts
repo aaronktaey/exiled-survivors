@@ -1,10 +1,17 @@
 import Phaser from 'phaser';
 
 import {
+  AFFIXES,
+  ALL_PASSIVES,
   BALANCE,
+  BONES,
   COLORS,
+  GEAR,
+  WEB,
+  gearTexture,
   DEPTH,
   ENEMY_KINDS,
+  orbsHeld,
   PAUSE_BUTTON,
   NO_BONES,
   SHARD,
@@ -30,7 +37,21 @@ import {
 } from '@/config';
 import type { Enemy } from '@/entities/Enemy';
 import { Player } from '@/entities/Player';
-import { altarOfferText, boneName, fill, gearTitle, masteryText, orbName, skillName, t } from '@/i18n';
+import {
+  affixGearDetail,
+  altarOfferText,
+  boneDetail,
+  boneName,
+  fill,
+  gearImplicitText,
+  gearTitle,
+  masteryText,
+  orbName,
+  passiveDetail,
+  passiveName,
+  skillName,
+  t,
+} from '@/i18n';
 import { GameOverScene, type GameOverData } from '@/scenes/GameOverScene';
 import { SkillPickScene, type SkillPickData } from '@/scenes/SkillPickScene';
 import { UpgradeScene, type UpgradeChoiceData } from '@/scenes/UpgradeScene';
@@ -41,6 +62,7 @@ import {
   DebugOverlay,
   fitText,
   Hud,
+  type EffectEntry,
   Progression,
   RunStats,
   gold,
@@ -53,7 +75,7 @@ import {
 import { EdgeMarkers } from '@/systems/EdgeMarkers';
 import { WebField } from '@/systems/WebField';
 import { RareTooltip } from '@/systems/RareTooltip';
-import { sfx } from '@/systems/Sfx';
+import { sfx, effectVolume } from '@/systems/Sfx';
 import { saveGame, type SavedRun } from '@/systems/SaveGame';
 import { personal } from '@/systems/PersonalBest';
 import { tuning } from '@/systems/Tuning';
@@ -160,6 +182,10 @@ export class GameScene extends Phaser.Scene {
   public edgeMarkers!: EdgeMarkers;
   /** What the carried weapon is worth, read once as the run is built. */
   private gearBonus: GearBonus = NO_BONUS;
+  /** The effects that last the whole run (장비, 패시브, 뼈다귀), built on the first look. */
+  private lastingEffects?: EffectEntry[];
+  /** The weapon this run went out with, as it was then; what the save carries. Public for tests. */
+  public runGear: GearItem | null = null;
   /** 패시브 and 장비 together, in the order they are applied. */
   private mods: RunModifiers = NO_MODIFIERS;
   /** What this run has done, read out on the screen that ends it. */
@@ -239,8 +265,10 @@ export class GameScene extends Phaser.Scene {
     this.createFloor();
 
     // Both are picked on the title screen, so they are fixed for the run:
-    // 패시브 first, then 장비, then whatever the run itself adds.
-    this.gearBonus = gearBonusFor(gear.equipped);
+    // 패시브 first, then 장비, then whatever the run itself adds. A resumed
+    // run takes the weapon it went out with, not whatever is in hand now.
+    this.runGear = GameScene.gearFor(this.resuming);
+    this.gearBonus = gearBonusFor(this.runGear);
     this.mods = { passive: passives.bonus, gear: this.gearBonus };
 
     this.player = new Player(this, WORLD.width / 2, WORLD.height / 2);
@@ -508,7 +536,7 @@ export class GameScene extends Phaser.Scene {
 
     this.damageNumbers.update(dt);
     this.edgeMarkers.update();
-    this.hud.update(dt, this.spawner.alive, this.loadout());
+    this.hud.update(dt, this.spawner.alive, this.loadout(), this.effectsNow());
     // The panel is glued to its enemy, which is still walking around.
     this.rareTooltip.refresh();
 
@@ -543,6 +571,82 @@ export class GameScene extends Phaser.Scene {
     this.spawner.seed(run.spawnerMs);
   }
 
+  /**
+   * The weapon a run fights with: a resumed run's own (checked, since it
+   * comes from storage), or else — a new run, or a save from before saves
+   * carried one — the one in hand now, copied so later changes to it in the
+   * 인벤토리 do not reach this run.
+   */
+  private static gearFor(save: SavedRun | null): GearItem | null {
+    const saved = save?.gear;
+    if (saved === undefined) {
+      const inHand = gear.equipped;
+      return inHand ? { ...inHand, prefixes: [...inHand.prefixes], suffixes: [...inHand.suffixes] } : null;
+    }
+    if (saved === null || typeof saved.id !== 'string' || !Array.isArray(saved.prefixes) || !Array.isArray(saved.suffixes)) {
+      return null;
+    }
+    return saved;
+  }
+
+  /**
+   * What is acting on the survivor, for the icons left of the skills: the
+   * weapon the run went out with, the 패시브 bought, the 뼈다귀 spent, then
+   * whatever is on them right now (하얀 망고, 거미줄). The first three are
+   * fixed for the run and built once.
+   */
+  private effectsNow(): EffectEntry[] {
+    if (!this.lastingEffects) {
+      this.lastingEffects = this.buildLastingEffects();
+    }
+    const out = [...this.lastingEffects];
+    const copy = t().hud;
+    if (this.player.mangoLeftMs > 0) {
+      out.push({
+        id: 'mango', kind: 'buff', icon: TEXTURES.mango, title: t().filter.items.mango,
+        lines: [fill(copy.effectMango, { scale: MANGO.attackSpeedScale, seconds: Math.ceil(this.player.mangoLeftMs / 1000) })],
+      });
+    }
+    if (this.player.webbed) {
+      out.push({
+        id: 'web', kind: 'debuff', icon: TEXTURES.webIcon, title: copy.effectWeb,
+        lines: [fill(copy.effectWebLine, { slow: Math.round(WEB.slow * 100) })],
+      });
+    }
+    return out;
+  }
+
+  private buildLastingEffects(): EffectEntry[] {
+    const copy = t().hud;
+    const out: EffectEntry[] = [];
+    const item = this.runGear;
+    if (item && GEAR[item.id]) {
+      const lines = [
+        gearImplicitText(item.id),
+        ...[...item.prefixes, ...item.suffixes]
+          .filter((line) => AFFIXES[line.id] !== undefined)
+          .map((line) => affixGearDetail(line.id, line.tier)),
+      ].filter(Boolean);
+      out.push({ id: 'gear', kind: 'gear', icon: gearTexture(item.id), title: gearTitle(item), lines });
+    }
+    const bought = ALL_PASSIVES.filter((spec) => passives.rankOf(spec.id) > 0);
+    if (bought.length > 0) {
+      out.push({
+        id: 'passive', kind: 'passive', icon: TEXTURES.passive, title: copy.effectPassive,
+        lines: bought.map((spec) =>
+          fill(copy.effectPassiveLine, { name: passiveName(spec.id), rank: passives.rankOf(spec.id), detail: passiveDetail(spec.id) }),
+        ),
+      });
+    }
+    for (const id of this.bones) {
+      const bone = BONES[id];
+      if (bone) {
+        out.push({ id: `bone:${id}`, kind: 'bone', icon: bone.texture, title: boneName(id), lines: [boneDetail(id)] });
+      }
+    }
+    return out;
+  }
+
   /** The single autosave slot, written on a timer and when pausing. */
   private writeSave(): void {
     if (this.over) {
@@ -555,6 +659,7 @@ export class GameScene extends Phaser.Scene {
     }
 
     saveGame.write({
+      gear: this.runGear,
       main: this.mainSkill ?? undefined,
       bones: this.bones,
       devUsed: this.devRun,
@@ -698,7 +803,7 @@ export class GameScene extends Phaser.Scene {
     this.scene.launch(SCENES.pause, {
       elapsedMs: this.elapsedMs,
       level: this.progression.level,
-      dps: () => this.loadout().map((line) => ({ name: line.name, dps: line.dps })),
+      dps: () => this.loadout().map((line) => ({ id: line.id, name: line.name, dps: line.dps })),
       onResume: () => {
         this.scene.resume();
         this.analog?.release?.();
@@ -877,7 +982,7 @@ export class GameScene extends Phaser.Scene {
     const extra = this.gearBonus.extraProjectiles;
     return {
       shots: SKILL_BASE[skill].projectileSpeed > 0 ? 1 + extra : 1,
-      orbs: stats.orbCount > 0 ? stats.orbCount + extra : 0,
+      orbs: stats.orbCount > 0 ? orbsHeld(stats.orbCount, extra) : 0,
     };
   }
 
@@ -1223,7 +1328,7 @@ export class GameScene extends Phaser.Scene {
     }
     // Stay quiet rather than warn if the clip failed to load.
     if (this.cache.audio.exists(AUDIO.drops.rare.key)) {
-      this.sound.play(AUDIO.drops.rare.key, { volume: AUDIO.drops.rare.volume });
+      this.sound.play(AUDIO.drops.rare.key, { volume: effectVolume(AUDIO.drops.rare.volume) });
     }
   }
 

@@ -50,9 +50,9 @@ import { ItemGrid, type GridItem } from '@/systems/ItemGrid';
 import { fitText } from '@/systems/Layout';
 import { gold } from '@/systems/Gold';
 import { orbs } from '@/systems/Orbs';
-import { saveGame } from '@/systems/SaveGame';
 import { prefersTouchControls } from '@/systems/VirtualJoystick';
 import { addBackButton, type BackButton } from '@/systems/BackButton';
+import { effectVolume } from '@/systems/Sfx';
 
 export type InventoryTab = 'gear' | 'consumables';
 
@@ -180,12 +180,6 @@ export class InventoryScene extends Phaser.Scene {
    * 각성의 구슬 is a thousand ordinary ones.
    */
   public armed: 'discard' | OrbId | null = null;
-  /**
-   * True while a run is sitting in the save slot. That run went out with
-   * one weapon and will be resumed with whatever is in hand, so swapping
-   * now would quietly hand it a different sword than it was played with.
-   */
-  public locked = false;
   /** Where the bottom of the details pane landed. Public for layout tests. */
   public detailBottom = 0;
   /** The read-out's lines the last 구슬 changed, as they read now. Public for tests. */
@@ -199,7 +193,6 @@ export class InventoryScene extends Phaser.Scene {
   public init(data: InventorySceneData): void {
     this.payload = data;
     this.tab = data.tab ?? 'gear';
-    this.locked = saveGame.read() !== null;
     // The scene instance outlives a launch, and an armed button left over
     // from last time would throw the first weapon away on one press.
     this.armed = null;
@@ -542,9 +535,6 @@ export class InventoryScene extends Phaser.Scene {
 
   private footerHint(): string {
     const copy = t().inventory;
-    if (this.tab === 'gear' && this.locked) {
-      return t().gear.lockedHint;
-    }
     if (prefersTouchControls()) {
       return copy.hintTouch;
     }
@@ -1070,7 +1060,7 @@ export class InventoryScene extends Phaser.Scene {
 
     const item = this.selected();
     const wearing = item !== undefined && gear.value.equipped === item.uid;
-    const live = item !== undefined && !wearing && !this.locked;
+    const live = item !== undefined && !wearing;
     this.equip.setText(wearing ? t().gear.equipped : t().gear.equip);
     this.equip.setColor(wearing ? COLORS.gearText : COLORS.muted);
     this.equip.setAlpha(live || wearing ? 1 : 0.35);
@@ -1123,12 +1113,12 @@ export class InventoryScene extends Phaser.Scene {
   }
 
   /**
-   * Puts a weapon on. Refused while a run is saved: that run is resumed with
-   * whatever is in hand, and swapping now would hand it a sword it never
-   * went out with.
+   * Puts a weapon on. Allowed while a run is saved too: that run carries the
+   * weapon it went out with in the save (SavedRun.gear), so this changes only
+   * the runs started from here on.
    */
   private wear(uid: string): void {
-    if (this.locked || this.combining || this.busy) {
+    if (this.combining || this.busy) {
       return;
     }
 
@@ -1576,7 +1566,7 @@ export class InventoryScene extends Phaser.Scene {
   /** A clip, if it loaded; silence rather than a warning if it did not. */
   private play(key: string, volume: number): void {
     if (this.cache.audio.exists(key)) {
-      this.sound.play(key, { volume });
+      this.sound.play(key, { volume: effectVolume(volume) });
     }
   }
 

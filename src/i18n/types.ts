@@ -146,6 +146,10 @@ export interface Strings {
     readonly publishConfirm: string;
     readonly published: string;
     readonly publishFailed: string;
+    /** The DPS line on a skill's page: {skill} in hand this run, {dps}. */
+    readonly dpsRun: string;
+    /** The same for a skill not in hand (or from the title): at level 1 off the dials. */
+    readonly dpsBase: string;
     /** {count} dials turned on this game only. */
     readonly drafting: string;
     readonly clean: string;
@@ -177,6 +181,8 @@ export interface Strings {
     readonly modeFloating: string;
     readonly modeTilt: string;
     readonly bgm: string;
+    /** 효과음 음량: every sound but the music. */
+    readonly sfx: string;
     readonly reset: string;
     readonly hint: string;
     readonly hintFloating: string;
@@ -220,8 +226,6 @@ export interface Strings {
     readonly mangoState: string;
     readonly hintKeyboard: string;
     readonly hintTouch: string;
-    /** Shown instead, while a saved run has a weapon in hand. */
-    readonly lockedHint: string;
     /** "접두어" / "접미어", heading the slots of each kind. */
     readonly prefix: string;
     readonly suffix: string;
@@ -486,6 +490,22 @@ export interface Strings {
     readonly targetShots: string;
     readonly formulaDps: string;
     readonly formulaNote: string;
+    /** What each kind of effect is called, after its name on the card. */
+    readonly effectKinds: {
+      readonly gear: string;
+      readonly passive: string;
+      readonly bone: string;
+      readonly buff: string;
+      readonly debuff: string;
+    };
+    /** The passive icon's heading, and a line per line bought: {name} {rank} {detail}. */
+    readonly effectPassive: string;
+    readonly effectPassiveLine: string;
+    /** 하얀 망고 while it lasts: {scale} {seconds}. */
+    readonly effectMango: string;
+    /** 거미줄's slow: its name, and {slow} percent. */
+    readonly effectWeb: string;
+    readonly effectWebLine: string;
   };
 
   readonly game: {

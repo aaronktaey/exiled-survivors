@@ -20,7 +20,8 @@ export const COLORS = {
   enemyRunner: 0xf2b134,
   enemyShooter: 0x5fc27e,
   /** 우두머리: a dark slab with a gold ring around it. */
-  enemyBoss: 0x7a1f3d,
+  /** 우두머리: a grey giant (crimson until 2026-10-16), its crown and ring in gold. */
+  enemyBoss: 0x7d838f,
   /** 도망자: drawn white so the cycling tint over it reads as pure colour. */
   enemyFugitive: 0xffffff,
   enemyErratic: 0x9b6bff,
@@ -169,6 +170,8 @@ export const TEXTURES = {
   orbMango: "tex-orb-mango",
   passive: "tex-passive",
   trophy: "tex-trophy",
+  /** 거미줄's slow, as an icon among the survivor's effects. */
+  webIcon: "tex-web-icon",
   /** 2위 and 3위: the same cup in silver and bronze. */
   trophySilver: "tex-trophy-silver",
   trophyBronze: "tex-trophy-bronze",
@@ -447,6 +450,17 @@ export const HUD = {
   skillGap: 6,
   /** Left edge of the run readout, clear of the pause button in the corner. */
   leftInset: 56,
+  /**
+   * What is acting on the survivor (장비, 패시브, 뼈다귀, 버프, 디버프), as
+   * icons left of the skills: their size, the gap between two, and the gap
+   * before the first skill. Without the room beside the skills they take a
+   * row under them instead.
+   */
+  effectSlot: 28,
+  effectGap: 4,
+  effectsToSkills: 12,
+  /** An effect's edge: a buff and a debuff say which they are by colour. */
+  effectEdge: { buff: 0x7ef0b0, debuff: 0xe0564a } as const,
   /** XP bar spans the full width along the very bottom edge. */
   xpBarHeight: 10,
   /** The level and health line that sits above that bar. */

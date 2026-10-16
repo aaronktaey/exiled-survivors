@@ -884,52 +884,76 @@ check('and the hint names the keys there actually are',
   keyed.hint.includes(`1~${keyed.kinds}`), keyed.hint);
 
 // --- 13. a saved run keeps the weapon it went out with ---
-// The run in the save slot is resumed with whatever is in hand, so swapping
-// now would quietly hand it a sword it never went out with.
+// The weapon in hand can be swapped while a run is saved; the save carries
+// the one that run went out with, and a resumed run fights with that.
 await ev(`(() => {
   window.gear.reset();
-  window.gear.add({ uid: 'spare', id: 'runedSword',
-    prefixes: [{ id: 'mighty', tier: 2 }], suffixes: [] });
+  window.gear.add({ uid: 'spare', id: 'runedSword', prefixes: [{ id: 'mighty', tier: 2 }], suffixes: [] });
+  window.gear.add({ uid: 'wornOut', id: 'ironSword', prefixes: [{ id: 'mighty', tier: 5 }], suffixes: [] });
+  window.gear.equip('wornOut');
   localStorage.setItem('exiled-survivors:save:v1', JSON.stringify({
     version: 1, savedAt: Date.now(), elapsedMs: 120000, level: 4, xp: 2, hp: 12,
     skills: { meleeStrike: { damage: 15, cooldownMs: 1000, range: 90 } },
     spawnerMs: 120000,
+    gear: { uid: 'wornOut', id: 'ironSword', prefixes: [{ id: 'mighty', tier: 5 }], suffixes: [] },
   }));
   window.game.scene.getScene('GameScene').scene.start('MenuScene');
   return 1;
 })()`);
 await sleep(1800);
 await openIcon('gear');
-const lockedScreen = await scene('InventoryScene', `
+const swapped = await scene('InventoryScene', `
   const before = window.gear.value.equipped;
   s.menu.focus('spare');
   s.menu.items.find(i => i.id === 'spare').onSelect();
-  return { locked: s.locked, before, after: window.gear.value.equipped,
-           hint: s.children.list.filter(o => o.type === 'Text')
-             .map(o => o.text).find(t => /교체할 수 없|Esc/.test(t)) ?? '' };
+  return { before, after: window.gear.value.equipped };
 `);
-console.log('locked:', JSON.stringify(lockedScreen));
-check('with a run in the save slot, the weapon cannot be swapped',
-  lockedScreen.locked === true && lockedScreen.after === lockedScreen.before,
-  `still carrying ${lockedScreen.after}`);
-check('and the screen says why rather than just refusing',
-  /교체할 수 없/.test(lockedScreen.hint), lockedScreen.hint);
-await shot('gear-11-locked');
+console.log('swapped:', JSON.stringify(swapped));
+check('with a run in the save slot, the weapon can still be swapped',
+  swapped.before === 'wornOut' && swapped.after === 'spare', `${swapped.before} -> ${swapped.after}`);
+await shot('gear-11-swapped');
+
+// Load the saved run: it fights with the sword it went out with, not the new one.
+const resumed = await ev(`(() => {
+  const save = JSON.parse(localStorage.getItem('exiled-survivors:save:v1'));
+  window.game.scene.getScene('InventoryScene').scene.stop();
+  window.game.scene.getScene('MenuScene').scene.start('GameScene', { save });
+  return 1;
+})()`);
+void resumed;
+await sleep(1500);
+const loaded = await scene('GameScene', `
+  return { runGear: s.runGear?.uid ?? null, attack: s.mods.gear.attack,
+           wantOld: window.gearBonusFor(window.gear.items.find((i) => i.uid === 'wornOut')).attack,
+           wantNew: window.gearBonusFor(window.gear.items.find((i) => i.uid === 'spare')).attack,
+           saved: JSON.parse(localStorage.getItem('exiled-survivors:save:v1') ?? 'null')?.gear?.uid ?? null };
+`);
+// And the save it writes keeps carrying that sword.
+await scene('GameScene', `s.writeSave(); return 1;`);
+const rewritten = await ev(`JSON.parse(localStorage.getItem('exiled-survivors:save:v1') ?? 'null')?.gear?.uid ?? null`);
+console.log('resumed:', JSON.stringify({ loaded, rewritten }));
+check('the resumed run has the effect of the weapon it went out with, not the one now in hand',
+  loaded.runGear === 'wornOut' && loaded.attack === loaded.wantOld && loaded.wantOld !== loaded.wantNew,
+  `+${loaded.attack} (went out with +${loaded.wantOld}, in hand +${loaded.wantNew})`);
+check('and keeps carrying it in the saves it writes', rewritten === 'wornOut', `${rewritten}`);
+
+// A save from before saves carried a weapon takes the one in hand.
+await ev(`(() => {
+  const save = JSON.parse(localStorage.getItem('exiled-survivors:save:v1'));
+  delete save.gear;
+  window.game.scene.getScene('GameScene').scene.start('GameScene', { save });
+  return 1;
+})()`);
+await sleep(1500);
+const older = await scene('GameScene', `return { runGear: s.runGear?.uid ?? null };`);
+check('a save written before that takes the weapon in hand', older.runGear === 'spare', `${older.runGear}`);
 
 await ev(`(() => {
   localStorage.removeItem('exiled-survivors:save:v1');
-  window.game.scene.getScene('InventoryScene').scene.restart({ onClose: () => {} });
+  window.game.scene.getScene('GameScene').scene.start('MenuScene');
   return 1;
 })()`);
-await sleep(900);
-const unlocked = await scene('InventoryScene', `
-  s.menu.focus('spare');
-  s.menu.items.find(i => i.id === 'spare').onSelect();
-  return { locked: s.locked, equipped: window.gear.value.equipped };
-`);
-check('with no run saved, it swaps as before',
-  unlocked.locked === false && unlocked.equipped === 'spare',
-  `carrying ${unlocked.equipped}`);
+await sleep(1500);
 
 // --- 14. 폭발의 구슬 ---
 const explode = await ev(`(() => {

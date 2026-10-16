@@ -5,6 +5,7 @@ import {
   SKILL_BASE,
   STATS,
   UPGRADE_CAP,
+  orbsHeld,
   UPGRADE_MAX_PICKS,
   upgradeShown,
   upgradeStep,
@@ -124,7 +125,8 @@ export function rangeFromStats(skill: SkillId, stats: SkillStats): number {
  */
 export function dpsFromStats(stats: SkillStats): number {
   const perSecond = 1000 / Math.max(STATS.minCooldownMs, 1000 / stats.attackSpeed);
-  const targets = 1 + stats.chainCount + stats.pierceCount + Math.max(0, stats.orbCount - 1);
+  const orbs = stats.orbCount > 0 ? orbsHeld(stats.orbCount) : 0;
+  const targets = 1 + stats.chainCount + stats.pierceCount + Math.max(0, orbs - 1);
 
   return stats.damage * perSecond * targets;
 }

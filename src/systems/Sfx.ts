@@ -1,7 +1,11 @@
 import Phaser from 'phaser';
 
 import { AUDIO } from '@/config';
+import { settings } from '@/systems/Settings';
 import type { SkillId } from '@/weapons/skills';
+
+/** An effect's own volume under the player's 효과음 음량. Every sound but the music goes through it. */
+export const effectVolume = (volume: number): number => volume * settings.value.sfxVolume;
 
 /** Cache key for one variant of one skill's sound. */
 const keyFor = (skill: SkillId, index: number): string => `sfx-${skill}-${index}`;
@@ -56,7 +60,7 @@ export const sfx = {
       return;
     }
 
-    scene.sound.play(key, { volume: clip.volume });
+    scene.sound.play(key, { volume: effectVolume(clip.volume) });
   },
 
   /** The horn that announces a 우두머리. */
@@ -65,7 +69,7 @@ export const sfx = {
       return;
     }
 
-    scene.sound.play(AUDIO.bossAlert.key, { volume: AUDIO.bossAlert.volume });
+    scene.sound.play(AUDIO.bossAlert.key, { volume: effectVolume(AUDIO.bossAlert.volume) });
   },
 
   /**
@@ -78,8 +82,8 @@ export const sfx = {
       return null;
     }
 
-    const spin = scene.sound.add(clip.key, { volume: clip.volume });
-    spin.addMarker({ name: 'run', ...clip.run, config: { loop: true, volume: clip.volume } });
+    const spin = scene.sound.add(clip.key, { volume: effectVolume(clip.volume) });
+    spin.addMarker({ name: 'run', ...clip.run, config: { loop: true, volume: effectVolume(clip.volume) } });
     spin.play('run');
     return spin;
   },
@@ -91,7 +95,7 @@ export const sfx = {
       return;
     }
 
-    scene.sound.play(clip.key, { name: part, ...clip[part], config: { volume: clip.volume } });
+    scene.sound.play(clip.key, { name: part, ...clip[part], config: { volume: effectVolume(clip.volume) } });
   },
 
   /** A random variant, avoiding an immediate repeat when there is a choice. */

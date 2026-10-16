@@ -7,6 +7,8 @@ import { MenuList } from '@/systems/MenuList';
 import { RareTooltip } from '@/systems/RareTooltip';
 import { devToolsAllowed } from '@/systems/DevAccess';
 import { addBackButton, type BackButton } from '@/systems/BackButton';
+import type { SkillId } from '@/weapons/skills';
+
 
 export interface PauseSceneData {
   readonly elapsedMs: number;
@@ -15,7 +17,7 @@ export interface PauseSceneData {
   /** Writes the run out and goes back to the title. */
   readonly onQuit: () => void;
   /** The run's skills and their DPS, for the 밸런스 panel. */
-  readonly dps?: () => ReadonlyArray<{ readonly name: string; readonly dps: number }>;
+  readonly dps?: () => ReadonlyArray<{ readonly id: SkillId; readonly name: string; readonly dps: number }>;
 }
 
 /** 일시정지: the run is frozen underneath until this closes. */

@@ -89,6 +89,8 @@ export const en: Strings = {
     publishConfirm: 'Really apply?',
     published: 'Applies to every player from their next run',
     publishFailed: 'Could not apply — check you are signed in as an admin',
+    dpsRun: '{skill} DPS {dps} (this run)',
+    dpsBase: '{skill} DPS {dps} (at level 1)',
     drafting: '{count} trying on this game only',
     clean: 'Nothing being tried',
     sharedAt: 'Everyone: {when}',
@@ -117,6 +119,7 @@ export const en: Strings = {
     modeFloating: 'Pad under finger',
     modeTilt: 'Tilt',
     bgm: 'Music volume',
+    sfx: 'Effects volume',
     reset: 'Reset to defaults',
     hint: '↑ ↓ to move   ◀ ▶ to adjust   Space to choose   Esc to go back',
     hintFloating: 'The pad appears wherever you touch the screen   ·   Esc to go back',
@@ -147,7 +150,6 @@ export const en: Strings = {
     mangoState: '🥭 Mango state — stops one orb from destroying it',
     hintKeyboard: '↑ ↓ move   Space carry   {keys} orbs   Del sell   Esc back',
     hintTouch: 'Tap to carry — sell and orbs are the buttons below',
-    lockedHint: 'A saved run is holding this weapon — finish it, or start a new one',
     prefix: 'Prefix',
     suffix: 'Suffix',
     tier: 'T{tier}',
@@ -348,6 +350,12 @@ export const en: Strings = {
     targetShots: ' × projectiles {n}',
     formulaDps: 'DPS {dps} = {damage} × {rate} × {targets}',
     formulaNote: 'Critical hits are not counted',
+    effectKinds: { gear: 'Gear', passive: 'Passive', bone: 'Bone', buff: 'Buff', debuff: 'Debuff' },
+    effectPassive: 'Passives',
+    effectPassiveLine: '{name} rank {rank} · {detail} a rank',
+    effectMango: 'Attack and move speed ×{scale} · no damage taken — {seconds}s left',
+    effectWeb: 'Web',
+    effectWebLine: 'Move speed -{slow}%',
   },
 
   game: {
@@ -643,7 +651,7 @@ export const en: Strings = {
         {
           title: 'While a run is saved',
           lines: [
-            'The weapon in hand cannot be swapped, so the run you load is played with the sword it went out with.',
+            'You can still swap the weapon in hand: the run you load keeps the effect of the sword it went out with.',
             'The language cannot be changed mid-run.',
           ],
         },

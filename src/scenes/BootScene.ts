@@ -86,6 +86,7 @@ export class BootScene extends Phaser.Scene {
     this.createAltarTexture();
     this.createThunderIcon();
     this.createTrophyTexture();
+    this.createWebIcon();
     this.createFlagTextures();
     this.createMangoTexture();
     this.createLightPillarTexture();
@@ -512,72 +513,133 @@ export class BootScene extends Phaser.Scene {
   }
 
   /**
-   * A fat giant seen from the front — legs, arms out at its sides, a round
-   * belly under a small crowned head — in its three pictures: standing, and
-   * each foot out in turn, the arms swinging against the legs and the body
-   * dipping a pixel on the step.
+   * A fat giant — legs, arms out at its sides, a round belly under a small
+   * crowned head — in the pictures `giantFrame` names: from the front
+   * standing (0) and with each foot out (1, 2; the arms swinging against the
+   * legs, the body dipping a pixel on the step), side on facing right (3),
+   * and from behind (4). The last two are the turn it takes as it throws.
    */
   private createGiantTextures(texture: string, size: number, skin: number): void {
     const k = size / 72;
-    const dark = Phaser.Display.Color.ValueToColor(skin).darken(35).color;
-    const belly = Phaser.Display.Color.ValueToColor(skin).lighten(12).color;
-    for (const frame of [0, 1, 2]) {
+    const tone = (by: number) =>
+      by < 0
+        ? Phaser.Display.Color.ValueToColor(skin).darken(-by).color
+        : Phaser.Display.Color.ValueToColor(skin).lighten(by).color;
+    const dark = tone(-35);
+    const feet = tone(-55);
+    const belly = tone(12);
+    const gold = COLORS.bossOutline;
+    for (const frame of [0, 1, 2, 3, 4]) {
       const g = this.add.graphics();
+      const side = frame === 3;
+      const back = frame === 4;
       // Which foot is out: -1 the left, 1 the right, 0 neither.
       const out = frame === 1 ? -1 : frame === 2 ? 1 : 0;
       const dip = out === 0 ? 0 : 1;
-      const leg = (x: number, reach: number) => {
+      const leg = (x: number, reach: number, toe = 0) => {
         g.fillStyle(dark, 1);
         g.fillRoundedRect((x - 6) * k, 46 * k, 12 * k, (15 + reach) * k, 4 * k);
-        g.fillStyle(0x2a0a14, 1);
-        g.fillEllipse(x * k, (61 + reach) * k, 16 * k, 8 * k);
+        g.fillStyle(feet, 1);
+        g.fillEllipse((x + toe) * k, (61 + reach) * k, 16 * k, 8 * k);
       };
-      leg(26, out === -1 ? 4 : out === 1 ? -3 : 0);
-      leg(46, out === 1 ? 4 : out === -1 ? -3 : 0);
-
       const arm = (x: number, swing: number) => {
         g.fillStyle(skin, 1);
         g.fillEllipse(x * k, (35 + dip + swing) * k, 14 * k, 24 * k);
         g.fillStyle(dark, 1);
         g.fillCircle(x * k, (46 + dip + swing) * k, 5 * k);
       };
-      // Arms swing against the legs: the left one forward with the right foot.
-      arm(9, out * -3);
-      arm(63, out * 3);
+      const crown = (x: number, w: number) => {
+        g.fillStyle(gold, 1);
+        g.fillRect((x - w / 2) * k, (3 + dip) * k, w * k, 3 * k);
+        const points = w > 10 ? [-w / 2 + 2, 0, w / 2 - 2] : [-w / 2 + 2, w / 2 - 2];
+        for (const dx of points) {
+          g.fillTriangle((x + dx - 2) * k, (3 + dip) * k, (x + dx) * k, (-2 + dip) * k + 1, (x + dx + 2) * k, (3 + dip) * k);
+        }
+      };
 
-      g.fillStyle(skin, 1);
-      g.fillEllipse(36 * k, (34 + dip) * k, 54 * k, 40 * k);
-      g.fillStyle(belly, 1);
-      g.fillEllipse(36 * k, (38 + dip) * k, 34 * k, 24 * k);
-      g.lineStyle(2 * k, dark, 1);
-      g.strokeEllipse(36 * k, (34 + dip) * k, 54 * k, 40 * k);
-      // A belt under the belly, buckled in gold.
-      g.fillStyle(dark, 1);
-      g.fillRect(17 * k, (44 + dip) * k, 38 * k, 4 * k);
-      g.fillStyle(COLORS.bossOutline, 1);
-      g.fillRect(33 * k, (43 + dip) * k, 6 * k, 6 * k);
-
-      // The head, small on that body, with gold eyes and two tusks.
-      g.fillStyle(skin, 1);
-      g.fillCircle(36 * k, (14 + dip) * k, 11 * k);
-      g.lineStyle(2 * k, dark, 1);
-      g.strokeCircle(36 * k, (14 + dip) * k, 11 * k);
-      g.fillStyle(COLORS.bossOutline, 1);
-      g.fillCircle(32 * k, (13 + dip) * k, 2 * k);
-      g.fillCircle(40 * k, (13 + dip) * k, 2 * k);
-      g.fillStyle(0xf4f1e8, 1);
-      g.fillTriangle(31 * k, (18 + dip) * k, 33 * k, (18 + dip) * k, 32 * k, (22 + dip) * k);
-      g.fillTriangle(39 * k, (18 + dip) * k, 41 * k, (18 + dip) * k, 40 * k, (22 + dip) * k);
-      // A crown: what makes it the 우두머리 and not just big.
-      g.fillStyle(COLORS.bossOutline, 1);
-      g.fillRect(29 * k, (3 + dip) * k, 14 * k, 3 * k);
-      g.fillTriangle(29 * k, (3 + dip) * k, 31 * k, (-2 + dip) * k + 1, 33 * k, (3 + dip) * k);
-      g.fillTriangle(34 * k, (3 + dip) * k, 36 * k, (-3 + dip) * k + 2, 38 * k, (3 + dip) * k);
-      g.fillTriangle(39 * k, (3 + dip) * k, 41 * k, (-2 + dip) * k + 1, 43 * k, (3 + dip) * k);
+      if (side) {
+        // Side on: the far leg a shade behind the near one, toes forward,
+        // one arm hanging in front, the belly pushed out ahead of it.
+        leg(32, 0, 3);
+        leg(40, 0, 3);
+        g.fillStyle(skin, 1);
+        g.fillEllipse(34 * k, 34 * k, 42 * k, 40 * k);
+        g.fillStyle(belly, 1);
+        g.fillEllipse(45 * k, 38 * k, 20 * k, 26 * k);
+        g.lineStyle(2 * k, dark, 1);
+        g.strokeEllipse(34 * k, 34 * k, 42 * k, 40 * k);
+        g.fillStyle(dark, 1);
+        g.fillRect(19 * k, 44 * k, 32 * k, 4 * k);
+        arm(32, 0);
+        // Outlined, or the arm in front of the body is lost against it.
+        g.lineStyle(2 * k, dark, 1);
+        g.strokeEllipse(32 * k, 35 * k, 14 * k, 24 * k);
+        g.fillStyle(skin, 1);
+        g.fillCircle(40 * k, 14 * k, 10 * k);
+        g.lineStyle(2 * k, dark, 1);
+        g.strokeCircle(40 * k, 14 * k, 10 * k);
+        g.fillStyle(gold, 1);
+        g.fillCircle(45 * k, 13 * k, 2 * k);
+        g.fillStyle(0xf4f1e8, 1);
+        g.fillTriangle(45 * k, 18 * k, 47 * k, 18 * k, 46 * k, 22 * k);
+        crown(40, 10);
+      } else {
+        leg(26, out === -1 ? 4 : out === 1 ? -3 : 0);
+        leg(46, out === 1 ? 4 : out === -1 ? -3 : 0);
+        // Arms swing against the legs: the left one forward with the right foot.
+        arm(9, out * -3);
+        arm(63, out * 3);
+        g.fillStyle(skin, 1);
+        g.fillEllipse(36 * k, (34 + dip) * k, 54 * k, 40 * k);
+        if (!back) {
+          g.fillStyle(belly, 1);
+          g.fillEllipse(36 * k, (38 + dip) * k, 34 * k, 24 * k);
+        }
+        g.lineStyle(2 * k, dark, 1);
+        g.strokeEllipse(36 * k, (34 + dip) * k, 54 * k, 40 * k);
+        // A belt under the belly, buckled in gold at the front.
+        g.fillStyle(dark, 1);
+        g.fillRect(17 * k, (44 + dip) * k, 38 * k, 4 * k);
+        if (!back) {
+          g.fillStyle(gold, 1);
+          g.fillRect(33 * k, (43 + dip) * k, 6 * k, 6 * k);
+        }
+        // The head, small on that body; from the front, gold eyes and two tusks.
+        g.fillStyle(back ? dark : skin, 1);
+        g.fillCircle(36 * k, (14 + dip) * k, 11 * k);
+        g.lineStyle(2 * k, dark, 1);
+        g.strokeCircle(36 * k, (14 + dip) * k, 11 * k);
+        if (!back) {
+          g.fillStyle(gold, 1);
+          g.fillCircle(32 * k, (13 + dip) * k, 2 * k);
+          g.fillCircle(40 * k, (13 + dip) * k, 2 * k);
+          g.fillStyle(0xf4f1e8, 1);
+          g.fillTriangle(31 * k, (18 + dip) * k, 33 * k, (18 + dip) * k, 32 * k, (22 + dip) * k);
+          g.fillTriangle(39 * k, (18 + dip) * k, 41 * k, (18 + dip) * k, 40 * k, (22 + dip) * k);
+        }
+        // A crown: what makes it the 우두머리 and not just big.
+        crown(36, 14);
+      }
 
       g.generateTexture(giantFrame(texture, frame), size, size);
       g.destroy();
     }
+  }
+
+  /** 거미줄, as an icon among the survivor's effects: spokes and two rings. */
+  private createWebIcon(): void {
+    const size = 32;
+    const c = size / 2;
+    const g = this.add.graphics();
+    g.lineStyle(2, 0xd8dde6, 1);
+    for (let i = 0; i < 8; i++) {
+      const a = (i / 8) * Math.PI * 2;
+      g.lineBetween(c, c, c + Math.cos(a) * 15, c + Math.sin(a) * 15);
+    }
+    g.strokeCircle(c, c, 6);
+    g.strokeCircle(c, c, 11);
+    g.generateTexture(TEXTURES.webIcon, size, size);
+    g.destroy();
   }
 
   /** 랭킹's icon in the title's corner: a gold cup on a stem and a base — and the same in silver and bronze for 2위 and 3위. */

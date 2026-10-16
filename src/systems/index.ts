@@ -15,7 +15,7 @@ export {
   type UpgradeId,
   type UpgradeOption,
 } from '@/systems/Progression';
-export { Hud, type LoadoutEntry } from '@/systems/Hud';
+export { Hud, type EffectEntry, type LoadoutEntry } from '@/systems/Hud';
 export { VirtualJoystick, prefersTouchControls, type AnalogInput } from '@/systems/VirtualJoystick';
 export { TiltInput, tiltAvailable, requestTiltPermission } from '@/systems/TiltInput';
 export { MenuList, type MenuItem, type MenuListOptions } from '@/systems/MenuList';

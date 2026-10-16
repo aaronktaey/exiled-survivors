@@ -89,6 +89,8 @@ export const zh: Strings = {
     publishConfirm: '确定应用?',
     published: '从所有玩家的下一局开始生效',
     publishFailed: '无法应用 — 请确认已用管理员账号登录',
+    dpsRun: '{skill} DPS {dps}（本局）',
+    dpsBase: '{skill} DPS {dps}（1 级基准）',
     drafting: '仅本局实验中 {count} 项',
     clean: '没有实验中的数值',
     sharedAt: '全体数值: {when}',
@@ -117,6 +119,7 @@ export const zh: Strings = {
     modeFloating: '触点生成摇杆',
     modeTilt: '重力感应',
     bgm: '背景音量',
+    sfx: '音效音量',
     reset: '恢复默认',
     hint: '↑ ↓ 移动   ◀ ▶ 调整   Space 选择   Esc 返回',
     hintFloating: '摇杆会出现在你触摸屏幕的位置   ·   Esc 返回',
@@ -147,7 +150,6 @@ export const zh: Strings = {
     mangoState: '🥭 芒果状态 — 抵挡一次宝珠造成的摧毁',
     hintKeyboard: '↑ ↓ 移动   Space 装备   {keys} 宝珠   Del 出售   Esc 返回',
     hintTouch: '点击装备 — 出售与宝珠在下方按钮',
-    lockedHint: '存档中的一局正持有该武器 — 请先结束该局或重新开始',
     prefix: '词缀前缀',
     suffix: '词缀后缀',
     tier: 'T{tier}',
@@ -348,6 +350,12 @@ export const zh: Strings = {
     targetShots: ' × 投射物 {n}',
     formulaDps: 'DPS {dps} = {damage} × {rate} × {targets}',
     formulaNote: '不含暴击',
+    effectKinds: { gear: '装备', passive: '被动', bone: '骨头', buff: '增益', debuff: '减益' },
+    effectPassive: '被动',
+    effectPassiveLine: '{name} {rank} 阶 · 每阶 {detail}',
+    effectMango: '攻击速度・移动速度 ×{scale} · 不受伤害 — 剩余 {seconds} 秒',
+    effectWeb: '蛛网',
+    effectWebLine: '移动速度 -{slow}%',
   },
 
   game: {
@@ -643,7 +651,7 @@ export const zh: Strings = {
         {
           title: '存在存档期间',
           lines: [
-            '无法更换装备中的武器，以免读取的那一局与带出去的武器不一致。',
+            '可以更换装备中的武器，读取的那一局仍沿用开局时所带武器的效果。',
             '游戏进行中无法更改语言。',
           ],
         },

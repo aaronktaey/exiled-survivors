@@ -1,6 +1,7 @@
 import { STORAGE, type BoneId } from '@/config';
 import type { SkillStats } from '@/systems/Progression';
 import type { SkillId } from '@/weapons/skills';
+import type { GearItem } from '@/systems/Gear';
 
 /** A run, as it is written to localStorage. */
 export interface SavedRun {
@@ -23,6 +24,13 @@ export interface SavedRun {
   readonly main?: SkillId;
   /** The developer tools changed this run, so it stays off both boards once resumed. */
   readonly devUsed?: boolean;
+  /**
+   * The weapon the run went out with, as it was then (null: none). A run
+   * resumes with this, whatever the 인벤토리 holds by then — so the weapon
+   * in hand can be swapped, or changed by a 구슬, while a run is saved.
+   * Absent on a save written before this, which takes the one in hand.
+   */
+  readonly gear?: GearItem | null;
 }
 
 /**

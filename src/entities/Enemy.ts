@@ -23,6 +23,7 @@ import {
   type EnemyVolleySpec,
   type EnemyHopSpec,
   GIANT_STRIDE,
+  GIANT_TURN,
   giantFrame,
   type EnemyGiantSpec,
 } from '@/config';
@@ -563,6 +564,10 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
 
   /** A giant's walk: the next picture each `stepMs` while it moves, standing when it does not. */
   private stride(delta: number, giant: EnemyGiantSpec): void {
+    // Mid-turn, the turn decides the picture.
+    if (this.spin) {
+      return;
+    }
     const body = this.body as Phaser.Physics.Arcade.Body | null;
     const moving = !!body && body.velocity.lengthSq() > 4;
     if (!moving) {
@@ -594,17 +599,29 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
     }
   }
 
-  /** A whole turn (or `spinTurns` of them) on the spot, as a giant throws its ring. */
+  /**
+   * A whole turn round on the spot (or `spinTurns` of them) as a giant
+   * throws its ring: the pictures in GIANT_TURN, a quarter turn each. The
+   * sprite is never squashed or rotated, so its body for hits stays as it is.
+   */
   private spinAround(giant: EnemyGiantSpec): void {
     this.stopSpin();
+    const turn = { done: 0 };
     this.spin = this.scene.tweens.add({
-      targets: this,
-      angle: 360 * giant.spinTurns,
+      targets: turn,
+      done: giant.spinTurns,
       duration: giant.spinMs,
-      ease: 'Cubic.easeOut',
+      ease: 'Sine.easeInOut',
+      onUpdate: () => {
+        const quarter = Math.floor((turn.done % 1) * GIANT_TURN.length);
+        const pose = GIANT_TURN[Math.min(quarter, GIANT_TURN.length - 1)]!;
+        this.showFrame(giantFrame(this.spec.texture, pose.frame));
+        this.setFlipX(pose.mirrored);
+      },
       onComplete: () => {
         this.spin = undefined;
-        this.setAngle(0);
+        this.setFlipX(false);
+        this.showFrame(this.spec.texture);
       },
     });
   }
@@ -612,7 +629,7 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
   private stopSpin(): void {
     this.spin?.stop();
     this.spin = undefined;
-    this.setAngle(0);
+    this.setFlipX(false);
   }
 
   /**

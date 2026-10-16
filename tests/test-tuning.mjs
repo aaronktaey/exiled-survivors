@@ -106,6 +106,20 @@ const turned = await scene('TuningScene', `
   return { dps: s.dpsLine?.text ?? '', drafted: Object.keys(window.tuning.draft) };
 `);
 await shot('tuning-02-midrun');
+// The line under the skill row reads out the page's skill: in this run when
+// it is in hand, at level 1 when it is not.
+const pageLine = async (page) => {
+  await scene('TuningScene', `s.reopen({ tab: 'skills', page: '${page}' }); return 1;`);
+  await sleep(400);
+  return scene('TuningScene', `return s.dpsLine?.text ?? '';`);
+};
+const meleeLine = await pageLine('meleeStrike');
+const fireLine = await pageLine('fireball');
+const runDps = await scene('GameScene', `return Math.round(s.loadout().find((l) => l.id === 'meleeStrike').dps).toLocaleString('en-US');`);
+console.log('dps lines:', JSON.stringify({ meleeLine, fireLine, runDps }));
+check('the DPS line is the chosen skill’s: one in hand, as this run has it',
+  /타격/.test(meleeLine) && /이번 판/.test(meleeLine) && meleeLine.includes(runDps), meleeLine);
+check('and one not in hand, at level 1', /화염구/.test(fireLine) && /1레벨/.test(fireLine) && !/타격/.test(fireLine), fireLine);
 await scene('TuningScene', `s.backButton.press(); return 1;`);
 await sleep(300);
 const after = await scene('GameScene', `

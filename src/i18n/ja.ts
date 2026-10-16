@@ -89,6 +89,8 @@ export const ja: Strings = {
     publishConfirm: '本当に適用?',
     published: '全プレイヤーの次の回から適用されます',
     publishFailed: '適用できませんでした — 管理者アカウントでログインしているか確認してください',
+    dpsRun: '{skill} DPS {dps}（この回）',
+    dpsBase: '{skill} DPS {dps}（レベル 1 基準）',
     drafting: 'このゲームだけで実験中 {count} 個',
     clean: '実験中の値なし',
     sharedAt: '全体の値: {when}',
@@ -117,6 +119,7 @@ export const ja: Strings = {
     modeFloating: '触れた位置に出す',
     modeTilt: '傾け操作',
     bgm: 'BGM音量',
+    sfx: '効果音音量',
     reset: '初期設定に戻す',
     hint: '↑ ↓ で移動   ◀ ▶ で調整   Space で決定   Esc で戻る',
     hintFloating: '画面のどこでも、触れた位置にパッドが出ます   ·   Esc で戻る',
@@ -147,7 +150,6 @@ export const ja: Strings = {
     mangoState: '🥭 マンゴー状態 — 球による破壊を 1 回防ぎます',
     hintKeyboard: '↑ ↓ 移動   Space 装備   {keys} 球   Del 売る   Esc 戻る',
     hintTouch: 'タップで装備 — 売却と球は下のボタン',
-    lockedHint: 'セーブ中の回が装備しているため変更できません — その回を終えるか、新しく始めてください',
     prefix: '接頭辞',
     suffix: '接尾辞',
     tier: 'T{tier}',
@@ -348,6 +350,12 @@ export const ja: Strings = {
     targetShots: ' × 投射物 {n}',
     formulaDps: 'DPS {dps} = {damage} × {rate} × {targets}',
     formulaNote: 'クリティカルは含まない値です',
+    effectKinds: { gear: '装備', passive: 'パッシブ', bone: '骨', buff: 'バフ', debuff: 'デバフ' },
+    effectPassive: 'パッシブ',
+    effectPassiveLine: '{name} {rank} 段階 · 1 段階ごとに {detail}',
+    effectMango: '攻撃速度・移動速度 ×{scale} · ダメージを受けない — 残り {seconds} 秒',
+    effectWeb: 'クモの巣',
+    effectWebLine: '移動速度 -{slow}%',
   },
 
   game: {
@@ -643,7 +651,7 @@ export const ja: Strings = {
         {
           title: 'セーブが残っている間',
           lines: [
-            '装備中の武器は替えられません。再開した回が持ち出した武器と変わらないようにするためです。',
+            '装備中の武器は替えても構いません。再開した回は、持ち出した武器の効果のまま続きます。',
             'プレイ中は言語を変えられません。',
           ],
         },

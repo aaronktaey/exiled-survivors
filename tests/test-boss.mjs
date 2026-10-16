@@ -335,23 +335,39 @@ const motion = await run(`
   return { seen: [...seen], drawn, want: G.drawn, base: window.config.ENEMY_KINDS.boss.texture,
            spinning: !!boss.spin, spinMs: G.spinMs };
 `);
-await sleep(motion.spinMs + 300);
+// Mid-turn it shows its side or its back, never tipped over.
+const turning = [];
+for (let i = 0; i < 6; i++) {
+  await sleep(motion.spinMs / 8);
+  turning.push(await run(`const b = s.spawner.group.getChildren().find((e) => e.active && e.kind === 'boss');
+    return b ? { key: b.texture.key, flip: b.flipX, angle: b.angle, scaleX: b.scaleX } : null;`));
+}
+await sleep(motion.spinMs);
 const settled = await run(`
   const boss = s.spawner.group.getChildren().find((e) => e.active && e.kind === 'boss');
-  const out = { angle: boss ? boss.angle : null, spinning: boss ? !!boss.spin : null };
+  const out = { angle: boss ? boss.angle : null, spinning: boss ? !!boss.spin : null,
+                key: boss ? boss.texture.key : null, flip: boss ? boss.flipX : null };
   s.spawner.clear();
   s.player.setInvulnerable(false);
   s.choosing = false;
   return out;
 `);
-console.log('motion:', JSON.stringify({ motion, settled }));
+console.log('motion:', JSON.stringify({ motion, turning, settled }));
 check('the 우두머리 is drawn as a giant, wider than its body for hits',
   motion.drawn === motion.want && motion.seen.includes(motion.base), `${motion.drawn}px`);
 check('and steps through its walking pictures as it walks',
   motion.seen.length === 3, motion.seen.join(' / '));
-check('it turns on the spot as it throws its ring', motion.spinning === true);
-check('and stands upright again once the turn is done',
-  settled.spinning === false && Math.abs(settled.angle) < 0.01, JSON.stringify(settled));
+check('it turns round on the spot as it throws its ring: side on, from behind, the other side',
+  motion.spinning === true &&
+    turning.some((p) => p?.key.endsWith('-stride-3') && !p.flip) &&
+    turning.some((p) => p?.key.endsWith('-stride-4')) &&
+    turning.some((p) => p?.key.endsWith('-stride-3') && p.flip),
+  turning.map((p) => p && `${p.key.replace('tex-enemy-boss', '') || 'front'}${p.flip ? '(mirrored)' : ''}`).join(' / '));
+check('without tipping over or being squashed (its body for hits stays as it is)',
+  turning.every((p) => p && p.angle === 0 && p.scaleX === 1));
+// Then it walks on: standing or a foot out, but facing front and not mirrored.
+check('and faces front again once the turn is done',
+  settled.spinning === false && !/-stride-[34]$/.test(settled.key) && settled.flip === false, JSON.stringify(settled));
 await shot('boss-05-giant');
 
 console.log('\n=== SUMMARY ===');

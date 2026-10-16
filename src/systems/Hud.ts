@@ -19,6 +19,25 @@ export interface LoadoutEntry {
   readonly breakdown: readonly string[];
 }
 
+/** What kind of thing is acting on the survivor. */
+export type EffectKind = 'gear' | 'passive' | 'bone' | 'buff' | 'debuff';
+
+/** One thing acting on the survivor: an icon left of the skills, and its card. */
+export interface EffectEntry {
+  readonly id: string;
+  readonly kind: EffectKind;
+  readonly icon: string;
+  /** The card: a heading, then a line each. */
+  readonly title: string;
+  readonly lines: readonly string[];
+}
+
+/** One effect's icon. */
+interface EffectSlot {
+  readonly plate: Phaser.GameObjects.Rectangle;
+  readonly icon: Phaser.GameObjects.Image;
+}
+
 /** One skill in the bar. */
 interface SkillSlot {
   readonly plate: Phaser.GameObjects.Rectangle;
@@ -30,6 +49,9 @@ const SLOT = HUD.skillSlot;
 const SLOT_GAP = HUD.skillGap;
 /** The most skills the bar ever has to hold: all of them. */
 const MAX_SLOTS = Object.keys(SKILLS).length;
+const EFFECT = HUD.effectSlot;
+/** The most effects shown at once; more than this is not a run anyone has had. */
+const MAX_EFFECTS = 10;
 
 /** Whole numbers where they are whole, one decimal where they are not. */
 const round = (value: number): string =>
@@ -54,6 +76,18 @@ export class Hud {
   private readonly xpBar: Phaser.GameObjects.Graphics;
   /** The skills in hand. Public so a test can point at one. */
   public readonly slots: SkillSlot[] = [];
+  /** What is acting on the survivor, left of the skills. Public so a test can point at one. */
+  public readonly effectSlots: EffectSlot[] = [];
+  /** Which effect the card is open on, or -1. Public for tests. */
+  public pointedEffect = -1;
+  private effects: ReadonlyArray<EffectEntry> = [];
+  /** Where the row starts, and the line it sits on. */
+  private readonly rowLeft: number;
+  private readonly rowTop: number;
+  /** How far right the bar may run before it would meet the clock. */
+  private readonly rowRoom: number;
+  /** The layout last drawn, so it is only moved when it changes. */
+  private laidOut = '';
   /** The hover card, and what it says. Public for tests. */
   public readonly card: Phaser.GameObjects.Rectangle;
   public readonly cardText: Phaser.GameObjects.Text;
@@ -88,6 +122,10 @@ export class Hud {
     const narrow = this.viewWidth < HUD.narrowWidth;
     const left = narrow ? HUD.margin : HUD.leftInset;
     const top = narrow ? HUD.narrowTop : HUD.margin;
+    this.rowLeft = left;
+    this.rowTop = top;
+    // Beside the clock, the row stops short of it; under it, at the edge.
+    this.rowRoom = narrow ? this.viewWidth - HUD.margin : this.viewWidth / 2 - 48;
 
     for (let i = 0; i < MAX_SLOTS; i++) {
       const x = left + SLOT / 2 + i * (SLOT + SLOT_GAP);
@@ -127,6 +165,32 @@ export class Hud {
         }
       });
       this.slots.push({ plate, icon, level });
+    }
+
+    for (let i = 0; i < MAX_EFFECTS; i++) {
+      const plate = scene.add
+        .rectangle(0, top + SLOT / 2, EFFECT, EFFECT, COLORS.panel, 0.75)
+        .setStrokeStyle(1, COLORS.panelEdge, 1)
+        .setScrollFactor(0)
+        .setDepth(DEPTH.ui)
+        .setInteractive({ useHandCursor: true })
+        .setVisible(false);
+      const icon = scene.add
+        .image(0, top + SLOT / 2, TEXTURES.skillOrb)
+        .setDisplaySize(EFFECT - 6, EFFECT - 6)
+        .setScrollFactor(0)
+        .setDepth(DEPTH.ui + 1)
+        .setVisible(false);
+      plate.on(Phaser.Input.Events.GAMEOBJECT_POINTER_OVER, (pointer: Phaser.Input.Pointer) =>
+        this.pointEffect(i, pointer.wasTouch),
+      );
+      plate.on(Phaser.Input.Events.GAMEOBJECT_POINTER_OUT, () => this.pointEffect(-1));
+      plate.on(Phaser.Input.Events.GAMEOBJECT_POINTER_UP, (pointer: Phaser.Input.Pointer) => {
+        if (pointer.wasTouch) {
+          this.pointEffect(-1);
+        }
+      });
+      this.effectSlots.push({ plate, icon });
     }
 
     this.card = scene.add
@@ -195,9 +259,36 @@ export class Hud {
     this.elapsedMs = elapsedMs;
   }
 
-  public update(delta: number, enemies: number, loadout: ReadonlyArray<LoadoutEntry>): void {
+  public update(
+    delta: number,
+    enemies: number,
+    loadout: ReadonlyArray<LoadoutEntry>,
+    effects: ReadonlyArray<EffectEntry> = [],
+  ): void {
     this.elapsedMs += delta;
     this.loadout = loadout;
+    this.effects = effects;
+    this.layOut(loadout.length, effects.length);
+    this.effectSlots.forEach((slot, i) => {
+      const entry = effects[i];
+      slot.plate.setVisible(entry !== undefined);
+      slot.icon.setVisible(entry !== undefined);
+      if (!entry) {
+        return;
+      }
+      if (slot.icon.texture.key !== entry.icon) {
+        slot.icon.setTexture(entry.icon).setDisplaySize(EFFECT - 6, EFFECT - 6);
+      }
+      const edge = entry.kind === 'buff' || entry.kind === 'debuff' ? HUD.effectEdge[entry.kind] : COLORS.panelEdge;
+      slot.plate.setStrokeStyle(entry.kind === 'buff' || entry.kind === 'debuff' ? 2 : 1, edge, 1);
+    });
+    if (this.pointedEffect >= 0) {
+      if (this.pointedEffect < effects.length) {
+        this.drawEffectCard(this.pointedEffect);
+      } else {
+        this.pointEffect(-1);
+      }
+    }
 
     const total = Math.floor(this.elapsedMs / 1000);
     const mm = String(Math.floor(total / 60)).padStart(2, '0');
@@ -235,24 +326,104 @@ export class Hud {
   }
 
   /**
+   * Where the effects and the skills sit: the effects first, then the skills
+   * after a gap, on one row while that clears the clock; otherwise the skills
+   * keep the row and the effects take one under it.
+   */
+  private layOut(skills: number, effects: number): void {
+    const effectsW = effects > 0 ? effects * EFFECT + (effects - 1) * HUD.effectGap : 0;
+    const skillsW = skills > 0 ? skills * SLOT + (skills - 1) * SLOT_GAP : 0;
+    const beside = effects === 0 || this.rowLeft + effectsW + HUD.effectsToSkills + skillsW <= this.rowRoom;
+    const key = `${skills}/${effects}/${beside}`;
+    if (key === this.laidOut) {
+      return;
+    }
+    this.laidOut = key;
+
+    const skillsLeft = beside && effects > 0 ? this.rowLeft + effectsW + HUD.effectsToSkills : this.rowLeft;
+    const rowY = this.rowTop + SLOT / 2;
+    this.slots.forEach((slot, i) => {
+      const x = skillsLeft + SLOT / 2 + i * (SLOT + SLOT_GAP);
+      slot.plate.setX(x);
+      slot.icon.setX(x);
+      slot.level.setX(x + SLOT / 2 - 2);
+    });
+    const effectY = beside ? rowY : this.rowTop + SLOT + 6 + EFFECT / 2;
+    this.effectSlots.forEach((slot, i) => {
+      const x = this.rowLeft + EFFECT / 2 + i * (EFFECT + HUD.effectGap);
+      slot.plate.setPosition(x, effectY);
+      slot.icon.setPosition(x, effectY);
+    });
+  }
+
+  /**
+   * Opens the card on one of the survivor's effects, or closes it with -1 —
+   * the same card, and the same hold, as a skill's. Public so a test can.
+   */
+  public pointEffect(index: number, touch = false): void {
+    const open = index >= 0 && index < this.effects.length;
+    this.pointedEffect = open ? index : -1;
+    if (open) {
+      this.pointed = -1;
+      this.card.setVisible(true);
+      this.cardText.setVisible(true);
+      this.drawEffectCard(index);
+    } else if (this.pointed < 0) {
+      this.card.setVisible(false);
+      this.cardText.setVisible(false);
+    }
+    this.hold(open && !touch);
+  }
+
+  private drawEffectCard(index: number): void {
+    const entry = this.effects[index];
+    const slot = this.effectSlots[index];
+    if (!entry || !slot) {
+      return;
+    }
+    const kind = t().hud.effectKinds[entry.kind];
+    this.cardText.setText([`${entry.title}  ·  ${kind}`, ...entry.lines]);
+    this.placeCard(slot.plate.x - EFFECT / 2, slot.plate.y + EFFECT / 2 + 6);
+  }
+
+  /** The card under what it is about, pulled back on screen. */
+  private placeCard(left: number, top: number): void {
+    const pad = 8;
+    const width = Math.ceil(this.cardText.width) + pad * 2;
+    const height = Math.ceil(this.cardText.height) + pad * 2;
+    const x = Phaser.Math.Clamp(left, 4, Math.max(4, this.viewWidth - width - 4));
+    this.card.setPosition(x, top).setSize(width, height);
+    this.cardText.setPosition(x + pad, top + pad);
+  }
+
+  private hold(hold: boolean): void {
+    if (hold !== this.holding) {
+      this.holding = hold;
+      this.onInspect(hold);
+    }
+  }
+
+  /**
    * Opens the card on one skill, or closes it with -1. Public so a test can
    * point without a mouse.
    */
   public point(index: number, touch = false): void {
     const open = index >= 0 && index < this.loadout.length;
     this.pointed = open ? index : -1;
+    if (open) {
+      this.pointedEffect = -1;
+    }
 
-    this.card.setVisible(open);
-    this.cardText.setVisible(open);
+    // Closing the skill's card leaves an effect's open card alone.
+    if (open || this.pointedEffect < 0) {
+      this.card.setVisible(open);
+      this.cardText.setVisible(open);
+    }
     if (open) {
       this.drawCard(index);
     }
 
-    const hold = open && !touch;
-    if (hold !== this.holding) {
-      this.holding = hold;
-      this.onInspect(hold);
-    }
+    this.hold(open && !touch);
   }
 
   private drawCard(index: number): void {
@@ -269,14 +440,8 @@ export class Hud {
       ...(entry.level >= SKILL_MASTERY.level ? [fill(t().mastery.card, { effect: masteryText(entry.id) })] : []),
     ]);
 
-    const pad = 8;
-    const width = Math.ceil(this.cardText.width) + pad * 2;
-    const height = Math.ceil(this.cardText.height) + pad * 2;
-    // Under the bar, starting at the skill, and pulled back on screen.
-    const x = Phaser.Math.Clamp(slot.plate.x - SLOT / 2, 4, Math.max(4, this.viewWidth - width - 4));
-    const y = slot.plate.y + SLOT / 2 + 6;
-    this.card.setPosition(x, y).setSize(width, height);
-    this.cardText.setPosition(x + pad, y + pad);
+    // Under the bar, starting at the skill.
+    this.placeCard(slot.plate.x - SLOT / 2, slot.plate.y + SLOT / 2 + 6);
   }
 
   private drawXpBar(): void {

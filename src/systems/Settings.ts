@@ -17,6 +17,8 @@ export interface GameSettings {
   /** 'floating' puts a pad under the finger, 'tilt' uses the sensor instead. */
   movementMode: MovementMode;
   bgmVolume: number;
+  /** Multiplies every sound effect's own volume. */
+  sfxVolume: number;
   language: Language;
 }
 
@@ -24,6 +26,7 @@ const DEFAULTS: GameSettings = {
   joystickScale: 1,
   movementMode: 'floating',
   bgmVolume: 0.35,
+  sfxVolume: 1,
   // Nothing stored yet means a first visit: follow the browser.
   language: detectLanguage(),
 };
@@ -92,11 +95,11 @@ class SettingsStore {
   }
 
   /** Steps a numeric setting by its configured increment. */
-  public step(key: 'joystickScale' | 'bgmVolume', direction: -1 | 1): GameSettings {
+  public step(key: 'joystickScale' | 'bgmVolume' | 'sfxVolume', direction: -1 | 1): GameSettings {
     const range = SETTINGS_RANGE[key];
     const next = this.value[key] + range.step * direction;
     // Round to the step, or floating point turns 0.7 into 0.7000000000000001.
-    const snapped = Math.round(next / range.step) * range.step;
+    const snapped = Number((Math.round(next / range.step) * range.step).toFixed(4));
     return this.update({ [key]: clamp(snapped, range.min, range.max) });
   }
 
@@ -131,11 +134,13 @@ class SettingsStore {
   private sanitise(raw: GameSettings): GameSettings {
     const scale = SETTINGS_RANGE.joystickScale;
     const volume = SETTINGS_RANGE.bgmVolume;
+    const effects = SETTINGS_RANGE.sfxVolume;
     return {
       joystickScale: clamp(Number(raw.joystickScale) || 1, scale.min, scale.max),
       movementMode: MOVEMENT_MODES.includes(raw.movementMode) ? raw.movementMode : 'floating',
       language: LANGUAGES.includes(raw.language) ? raw.language : DEFAULTS.language,
       bgmVolume: clamp(Number(raw.bgmVolume ?? DEFAULTS.bgmVolume), volume.min, volume.max),
+      sfxVolume: clamp(Number(raw.sfxVolume ?? DEFAULTS.sfxVolume), effects.min, effects.max),
     };
   }
 }

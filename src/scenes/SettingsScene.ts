@@ -9,6 +9,7 @@ import { MOVEMENT_MODES, settings, type MovementMode } from '@/systems/Settings'
 import { requestTiltPermission, tiltAvailable } from '@/systems/TiltInput';
 import { prefersTouchControls } from '@/systems/VirtualJoystick';
 import { addBackButton, type BackButton } from '@/systems/BackButton';
+import { sfx } from '@/systems/Sfx';
 
 export interface SettingsSceneData {
   /**
@@ -119,6 +120,13 @@ export class SettingsScene extends Phaser.Scene {
           onAdjust: (direction) => this.stepVolume(direction),
         },
         {
+          id: 'sfx',
+          label: () => t().settings.sfx,
+          detail: () => `${Math.round(settings.value.sfxVolume * 100)}%`,
+          onSelect: () => this.stepEffects(1),
+          onAdjust: (direction) => this.stepEffects(direction),
+        },
+        {
           id: 'reset',
           label: () => t().settings.reset,
           onSelect: () => {
@@ -194,6 +202,13 @@ export class SettingsScene extends Phaser.Scene {
         this.menu.refresh();
       },
     });
+  }
+
+  /** 효과음 음량, with a sample at the new level so it is heard rather than guessed. */
+  private stepEffects(direction: -1 | 1): void {
+    settings.step('sfxVolume', direction);
+    sfx.playSkill(this, 'meleeStrike');
+    this.menu.refresh();
   }
 
   private stepVolume(direction: -1 | 1): void {

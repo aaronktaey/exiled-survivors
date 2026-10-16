@@ -335,6 +335,20 @@ check('it keeps orbiting and killing in a real run',
   `kills=${live.kills} orbs=${live.orbs} weapons=${live.weapons}`);
 await shot('void-03-live');
 
+// --- the orbs stop at UPGRADE_CAP.orbCount, a weapon's extra one included ---
+const capped = await run(`
+  s.acquire('voidOrb');
+  const st = s.progression.statsFor('voidOrb');
+  for (let i = 0; i < 30; i++) s.progression.apply('voidOrb', 'orbCount');
+  const w = s.weapons.find((x) => x.definition.id === 'voidOrb');
+  w.update(16, { origin: s.player, enemies: s.spawner.group, damage: 1, cooldownMs: 1000, range: st.range,
+    projectileSpeed: 0, chainCount: 0, pierceCount: 0, orbCount: st.orbCount, orbitSpeed: st.orbitSpeed,
+    extraProjectiles: 1, hit: () => false, mastered: false });
+  return { stat: st.orbCount, shown: w.active.length, cap: window.config.UPGRADE_CAP.orbCount };
+`);
+check('공허구체 holds no more orbs than its cap, a weapon’s extra one included',
+  capped.cap === 8 && capped.stat === capped.cap && capped.shown === capped.cap, JSON.stringify(capped));
+
 console.log('\n=== SUMMARY ===');
 const failed = results.filter((r) => !r.p);
 console.log(`${results.length - failed.length}/${results.length} passed`);

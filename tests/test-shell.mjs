@@ -209,6 +209,30 @@ await selectRow('SettingsScene', 'bgm');
 for (let i = 0; i < 2; i++) { await cdp.tap('ArrowLeft', 37, 'ArrowLeft'); await sleep(150); }
 const volume = await stored('exiled-survivors:settings:v1');
 check('배경음 음량 steps down', volume.bgmVolume < 0.35, `volume=${volume.bgmVolume.toFixed(2)}`);
+
+// Effects volume: its own row, and every effect plays under it.
+await selectRow('SettingsScene', 'sfx');
+for (let i = 0; i < 5; i++) { await cdp.tap('ArrowLeft', 37, 'ArrowLeft'); await sleep(150); }
+const effects = await stored('exiled-survivors:settings:v1');
+const heard = await scene('SettingsScene', `
+  const played = [];
+  const real = s.sound.play.bind(s.sound);
+  s.sound.play = (key, config) => { played.push({ key, volume: config?.volume }); return real(key, config); };
+  s.menu.rows.find(r => r.item.id === 'sfx').item.onAdjust(1);
+  s.sound.play = real;
+  const clip = window.config.AUDIO.skills.meleeStrike;
+  return { played, clip: clip ? clip.volume : null,
+           level: JSON.parse(localStorage.getItem('exiled-survivors:settings:v1')).sfxVolume,
+           bgmAfter: JSON.parse(localStorage.getItem('exiled-survivors:settings:v1')).bgmVolume };
+`);
+console.log('effects:', JSON.stringify({ effects, heard }));
+check('효과음 음량 is a row of its own that steps down, and leaves the music alone',
+  Math.abs(effects.sfxVolume - 0.5) < 1e-9 && heard.bgmAfter === volume.bgmVolume,
+  `effects=${effects.sfxVolume} music=${heard.bgmAfter}`);
+check('and a step plays a sample at the new level, the clip’s own volume scaled by it',
+  heard.played.length > 0 && heard.clip !== null &&
+    Math.abs(heard.played[0].volume - heard.clip * heard.level) < 1e-9,
+  JSON.stringify(heard.played));
 await shot('shell-04-settings');
 
 // --- 5. the background music is the requested track ---

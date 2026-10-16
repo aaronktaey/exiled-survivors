@@ -75,7 +75,7 @@ wrong shape.
 ## The test harness
 
 `tests/` drives a real Chrome over CDP against the dev server and checks the
-running game, not units. 43 suites, ~1130 checks. It is the only thing that has
+running game, not units. 43 suites, ~1145 checks. It is the only thing that has
 caught most of what has gone wrong here, so run all of it before every commit.
 
 ```sh
@@ -231,10 +231,13 @@ Read `git log` for what changed and when. What is not in the log:
 - **우두머리 is a giant, by table.** `giant` on an `ENEMY_KINDS` entry
   (`EnemyGiantSpec`: drawn size, step time, spin) draws the kind as a fat
   giant in three pictures (`BootScene.createGiantTextures`, keys from
-  `giantFrame`) stepped through by `GIANT_STRIDE` while it moves, spun a
-  turn by a tween each time it throws its ring (`spinAround`), and stood in
-  a gold `footRing` ellipse instead of the square `outline` a rare wears.
-  Its body for hits is still `size`.
+  `giantFrame`: 0–2 front, 3 side on, 4 from behind) stepped through by
+  `GIANT_STRIDE` while it moves, turned round on the spot each time it
+  throws its ring (`spinAround` plays `GIANT_TURN`: side, back, the side
+  mirrored, front — the user wanted it turning sideways, not rolling in the
+  screen's plane), and stood in a gold `footRing` ellipse instead of the
+  square `outline` a rare wears. Its body for hits is still `size`; never
+  squash the sprite for an effect, Arcade scales the body with it.
 - **도망자 is table-driven.** `flee`, `lifespanMs`, `guaranteedSkill` and
   `flashy` on an `ENEMY_KINDS` entry give any kind that behaviour; the
   fugitive is the only one using them. It spawns on `FUGITIVE`'s clock.
@@ -371,6 +374,21 @@ Read `git log` for what changed and when. What is not in the log:
   `thunderRecastChance` — a kill always strikes again, up to `THUNDER.maxRecasts`). Reaching it calls `GameScene.celebrateMastery`
   once (`awakened`, rebuilt from a save without a show); the HUD slot goes
   gold and its card adds the line (`masteryText`). test-mastery covers it.
+- **A saved run carries its own weapon.** `SavedRun.gear` is a copy of the
+  item the run went out with (`GameScene.runGear`, written by every save);
+  a resumed run fights with that, so the 인벤토리 never locks — swapping,
+  구슬, 합성 and selling change only runs started afterwards. A save from
+  before this has no `gear` and takes the one in hand.
+- **What acts on the survivor is on the HUD.** `GameScene.effectsNow()`
+  hands `Hud.update` an `EffectEntry` list — 장비 (`runGear`), 패시브, each
+  뼈다귀 (built once a run), then 하얀 망고 and 거미줄 while they last — drawn
+  as icons left of the skills (`HUD.effectSlot`, buff/debuff edges in
+  `HUD.effectEdge`), or on a row under them when that would run into the
+  clock. Pointing at one opens the skills' card and the same hold
+  (`Hud.pointEffect`). A new buff or debuff is one more push there.
+- **효과음 음량.** `settings.sfxVolume` scales every effect through
+  `effectVolume()` in Sfx.ts — skills, drops, the horn, the slot, the
+  인벤토리's. A new sound that bypasses it ignores the player's setting.
 - **Touch never holds the run.** A phone fires a pretend mouse event after a
   tap; landing on a rare under a just-closed card used to set `inspecting`
   and freeze the arena and the pad. `setInspecting` ignores it on touch
@@ -470,8 +488,6 @@ Read `git log` for what changed and when. What is not in the log:
   replacement comes only from 속성 that have the rung above; a weapon with
   nothing but tier-1 lines refuses it.
 - **Known gaps, left on purpose:**
-  - A 구슬 can still be spent on the weapon a saved run is holding. Swapping
-    is blocked while a run is saved; rerolling it is not.
   - The 뼈다귀 pick screen is reached only on the way into a fresh run (게임
     시작, and 다시하기 after a death — both through `BoneScene.before`).
     There is no way to look at the drawer without starting a run.

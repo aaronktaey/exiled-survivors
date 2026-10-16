@@ -38,7 +38,7 @@ const bar = await run(`
   s.player.setInvulnerable(true);
   s.acquire('fireball');
   s.acquire('voidOrb');
-  s.hud.update(0, s.spawner.alive, s.loadout());
+  s.hud.update(0, s.spawner.alive, s.loadout(), s.effectsNow());
   const shown = s.hud.slots.filter((slot) => slot.plate.visible);
   return {
     held: s.weapons.map((w) => w.definition.id),
@@ -110,7 +110,7 @@ const relevel = await run(`
   s.hud.point(0);
   const before = s.hud.cardText.text;
   s.progression.apply(s.loadout()[0].id, 'damage');
-  s.hud.update(0, s.spawner.alive, s.loadout());
+  s.hud.update(0, s.spawner.alive, s.loadout(), s.effectsNow());
   const now = s.hud.cardText.text;
   s.hud.point(-1);
   return { changed: before !== now, held: s.inspectHeld };

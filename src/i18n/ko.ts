@@ -93,6 +93,8 @@ export const ko: Strings = {
     publishConfirm: '정말 적용?',
     published: '모든 플레이어의 다음 판부터 적용됩니다',
     publishFailed: '적용하지 못했습니다 — 관리자 계정으로 로그인했는지 확인하세요',
+    dpsRun: '{skill} DPS {dps} (이번 판)',
+    dpsBase: '{skill} DPS {dps} (1레벨 기준)',
     drafting: '이 게임에서만 실험 중 {count}개',
     clean: '실험 중인 값 없음',
     sharedAt: '전체 값: {when}',
@@ -121,6 +123,7 @@ export const ko: Strings = {
     modeFloating: '터치 위치에 생성',
     modeTilt: '기울이기',
     bgm: '배경음 음량',
+    sfx: '효과음 음량',
     reset: '기본값으로',
     hint: '↑ ↓ 이동   ◀ ▶ 값 조절   Space 선택   Esc 돌아가기',
     hintFloating: '화면 아무 곳이나 누른 자리에 패드가 생깁니다   ·   Esc 돌아가기',
@@ -151,7 +154,6 @@ export const ko: Strings = {
     mangoState: '🥭 망고 상태 — 구슬로 인한 파괴를 한 번 막아 줍니다',
     hintKeyboard: '↑ ↓ 이동   Space 착용   {keys} 구슬   Del 팔기   Esc 돌아가기',
     hintTouch: '탭해서 착용 — 팔기와 구슬은 아래 버튼',
-    lockedHint: '저장된 판이 있어 교체할 수 없습니다 — 그 판을 끝내거나 새로 시작하세요',
     prefix: '접두어',
     suffix: '접미어',
     tier: '{tier}티어',
@@ -352,6 +354,12 @@ export const ko: Strings = {
     targetShots: ' × 투사체 {n}',
     formulaDps: 'DPS {dps} = {damage} × {rate} × {targets}',
     formulaNote: '치명타는 들어가지 않은 값입니다',
+    effectKinds: { gear: '장비', passive: '패시브', bone: '뼈다귀', buff: '버프', debuff: '디버프' },
+    effectPassive: '패시브',
+    effectPassiveLine: '{name} {rank}단계 · 단계당 {detail}',
+    effectMango: '공격속도 · 이동속도 ×{scale} · 피해 무시 — {seconds}초 남음',
+    effectWeb: '거미줄',
+    effectWebLine: '이동속도 -{slow}%',
   },
 
   game: {
@@ -521,7 +529,7 @@ export const ko: Strings = {
         {
           title: '저장된 판이 있는 동안',
           lines: [
-            '장착한 무기를 바꿀 수 없습니다. 불러온 판이 들고 나간 무기와 달라지지 않게 하기 위해서입니다.',
+            '장착한 무기는 바꿔도 됩니다. 불러온 판은 시작할 때 들고 나간 무기의 효과 그대로 이어집니다.',
             '판 도중에는 언어를 바꿀 수 없습니다.',
           ],
         },
