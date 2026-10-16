@@ -75,7 +75,7 @@ wrong shape.
 ## The test harness
 
 `tests/` drives a real Chrome over CDP against the dev server and checks the
-running game, not units. 43 suites, ~1125 checks. It is the only thing that has
+running game, not units. 43 suites, ~1130 checks. It is the only thing that has
 caught most of what has gone wrong here, so run all of it before every commit.
 
 ```sh
@@ -228,6 +228,13 @@ Read `git log` for what changed and when. What is not in the log:
   reach — the share aimed at the survivor; within reach every hop is) makes
   a kind hop instead of walk (`Enemy.hopAbout`). Its numbers are on the
   밸런스 적 dials.
+- **우두머리 is a giant, by table.** `giant` on an `ENEMY_KINDS` entry
+  (`EnemyGiantSpec`: drawn size, step time, spin) draws the kind as a fat
+  giant in three pictures (`BootScene.createGiantTextures`, keys from
+  `giantFrame`) stepped through by `GIANT_STRIDE` while it moves, spun a
+  turn by a tween each time it throws its ring (`spinAround`), and stood in
+  a gold `footRing` ellipse instead of the square `outline` a rare wears.
+  Its body for hits is still `size`.
 - **도망자 is table-driven.** `flee`, `lifespanMs`, `guaranteedSkill` and
   `flashy` on an `ENEMY_KINDS` entry give any kind that behaviour; the
   fugitive is the only one using them. It spawns on `FUGITIVE`'s clock.

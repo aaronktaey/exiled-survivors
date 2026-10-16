@@ -128,7 +128,32 @@ export interface EnemyKindSpec {
   readonly flashy?: boolean;
   /** Only a 기행종 has one: it does not walk, it hops (EnemyHopSpec). */
   readonly hop?: EnemyHopSpec;
+  /** Drawn as a fat giant that strides and spins rather than as a square (EnemyGiantSpec). */
+  readonly giant?: EnemyGiantSpec;
 }
+
+/**
+ * A kind drawn as a fat giant: three pictures (standing, left foot out,
+ * right foot out) stepped through while it walks, and a whole turn on the
+ * spot each time it throws its ring. Only how it looks — its body for hits
+ * is still `size`.
+ */
+export interface EnemyGiantSpec {
+  /** How big the picture is drawn, in px (wider than its body for hits). */
+  readonly drawn: number;
+  /** How long each step of the walk shows. */
+  readonly stepMs: number;
+  /** The spin when it throws: how many turns, and how long they take. */
+  readonly spinTurns: number;
+  readonly spinMs: number;
+}
+
+/** The walk, picture by picture: a foot out, standing, the other foot, standing. */
+export const GIANT_STRIDE = [1, 0, 2, 0] as const;
+
+/** A giant's picture `index` (0 standing, 1 and 2 a foot out); 0 is the kind's own texture. */
+export const giantFrame = (texture: string, index: number): string =>
+  index === 0 ? texture : `${texture}-stride-${index}`;
 
 /**
  * How something that hops about hops: a burst at its speed in one
@@ -224,6 +249,7 @@ export const ENEMY_KINDS: Record<EnemyKind, EnemyKindSpec> = {
     maxHp: 5000,
     speed: 40,
     contactDamage: 60,
+    giant: { drawn: 72, stepMs: 170, spinTurns: 1, spinMs: 520 },
     /**
      * Every so often it throws a ring of bolts outward, which is what makes
      * standing still beside a 우두머리 a losing idea. It aims at nothing:

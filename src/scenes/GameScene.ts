@@ -4,6 +4,7 @@ import {
   BALANCE,
   COLORS,
   DEPTH,
+  ENEMY_KINDS,
   PAUSE_BUTTON,
   NO_BONES,
   SHARD,
@@ -292,6 +293,8 @@ export class GameScene extends Phaser.Scene {
       {
         group: this.spawner.group,
         filter: (object) => (object as Enemy).isBoss === true,
+        // Its standing picture: the one it shows mid-stride would flicker on the rim.
+        texture: ENEMY_KINDS.boss.texture,
         // The gold ring it wears on the field, so the rim says the same
         // thing about it that the field does.
         arrowColor: COLORS.bossOutline,

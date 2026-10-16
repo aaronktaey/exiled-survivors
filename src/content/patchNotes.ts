@@ -15,6 +15,28 @@ export interface PatchNote {
 
 export const PATCH_NOTES: readonly PatchNote[] = [
   {
+    version: '0.50',
+    date: '2026-10-16',
+    changes: {
+      ko: [
+        '우두머리가 왕관을 쓴 뚱뚱한 거인이 되었습니다. 걸을 때 다리와 팔이 번갈아 움직이고, 투사체를 사방으로 쏠 때 제자리에서 한 바퀴 돕니다. 금색 테두리는 발밑의 금색 고리로 바뀌었습니다.',
+        '전투 중 피해량 숫자에 소수점이 표시되지 않습니다.',
+      ],
+      en: [
+        'Bosses are now fat, crowned giants. Their legs and arms swing as they walk, and they spin on the spot when they throw their ring of bolts. The gold frame is now a gold ring at their feet.',
+        'Damage numbers in combat no longer show decimals.',
+      ],
+      ja: [
+        'ボスが王冠をかぶった太った巨人になりました。歩くと脚と腕が交互に動き、投射物を全方向に放つときはその場で一回転します。金色の枠は足元の金色の輪に変わりました。',
+        '戦闘中のダメージ表示に小数点が出なくなりました。',
+      ],
+      zh: [
+        '首领变成了头戴王冠的胖巨人。行走时腿和手臂交替摆动，向四周发射投射物时会原地转一圈。金色边框改为脚下的金色光环。',
+        '战斗中的伤害数字不再显示小数。',
+      ],
+    },
+  },
+  {
     version: '0.49',
     date: '2026-10-16',
     changes: {

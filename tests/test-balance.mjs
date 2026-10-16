@@ -426,6 +426,22 @@ check('and 잔혹 raises what a crit is worth',
   crit.cruelMultiplier > crit.multiplier,
   `x${crit.multiplier} -> x${crit.cruelMultiplier}`);
 
+// A hit for a fraction (연쇄번개 각성, a crit's multiplier) shows a whole number.
+const whole = await run(`
+  s.choosing = true;
+  const read = (amount) => {
+    s.damageNumbers.reset();
+    s.damageNumbers.spawn(100, 100, amount);
+    return s.damageNumbers.pool.find(f => f.remainingMs > 0).text.text;
+  };
+  const out = { a: read(12.7), b: read(12.2), tiny: read(0.3) };
+  s.damageNumbers.reset();
+  s.choosing = false;
+  return out;
+`);
+check('a damage number never shows a decimal point',
+  whole.a === '13' && whole.b === '12' && whole.tiny === '1', JSON.stringify(whole));
+
 // A crit is the one number worth looking at, so it is drawn to be looked at.
 const shownCrit = await run(`
   s.choosing = true;

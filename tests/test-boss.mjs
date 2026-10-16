@@ -72,8 +72,9 @@ const stats = await run(`
   const out = {
     kind: boss.kind, isBoss: boss.isBoss, hp: boss.hp, contact: boss.contactDamage, xp: boss.xpValue,
     size: Math.round(boss.displayWidth), gruntHp: grunt.hp,
-    ring: !!boss.outline && boss.outline.visible,
-    ringColour: boss.outline ? boss.outline.strokeColor.toString(16) : null,
+    // A giant stands in a ring under its feet, not in the square a rare wears.
+    ring: !!boss.footRing && boss.footRing.visible && !(boss.outline && boss.outline.visible),
+    ringColour: boss.footRing ? boss.footRing.strokeColor.toString(16) : null,
     tex: boss.texture.key,
     rare: boss.rare,
   };
@@ -314,6 +315,44 @@ const after = await run(`
 check('and it goes with the 우두머리 that wore it',
   after.active === false && after.plate === false && after.bar === false,
   'bar and line both gone');
+
+// --- 6. a fat giant: it strides while it walks, and spins as it throws ---
+const motion = await run(`
+  s.choosing = true;
+  s.spawner.clear();
+  s.player.setInvulnerable(true);
+  const p = s.player;
+  const boss = s.spawner.group.get(p.x + 260, p.y);
+  boss.spawn(p.x + 260, p.y, p, 'boss', { fireShot: () => {} });
+  const G = window.config.ENEMY_KINDS.boss.giant;
+  const seen = new Set([boss.texture.key]);
+  // Frame-sized steps: Enemy.update clamps a longer one.
+  for (let t = 0; t < G.stepMs * 6; t += 16) { boss.update(0, 16); seen.add(boss.texture.key); }
+  const drawn = Math.round(boss.displayWidth);
+  // Its ring, now: it turns as it throws.
+  boss.volleyCooldownMs = 0;
+  boss.update(0, 16);
+  return { seen: [...seen], drawn, want: G.drawn, base: window.config.ENEMY_KINDS.boss.texture,
+           spinning: !!boss.spin, spinMs: G.spinMs };
+`);
+await sleep(motion.spinMs + 300);
+const settled = await run(`
+  const boss = s.spawner.group.getChildren().find((e) => e.active && e.kind === 'boss');
+  const out = { angle: boss ? boss.angle : null, spinning: boss ? !!boss.spin : null };
+  s.spawner.clear();
+  s.player.setInvulnerable(false);
+  s.choosing = false;
+  return out;
+`);
+console.log('motion:', JSON.stringify({ motion, settled }));
+check('the 우두머리 is drawn as a giant, wider than its body for hits',
+  motion.drawn === motion.want && motion.seen.includes(motion.base), `${motion.drawn}px`);
+check('and steps through its walking pictures as it walks',
+  motion.seen.length === 3, motion.seen.join(' / '));
+check('it turns on the spot as it throws its ring', motion.spinning === true);
+check('and stands upright again once the turn is done',
+  settled.spinning === false && Math.abs(settled.angle) < 0.01, JSON.stringify(settled));
+await shot('boss-05-giant');
 
 console.log('\n=== SUMMARY ===');
 const failed = results.filter((r) => !r.p);

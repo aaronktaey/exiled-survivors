@@ -22,6 +22,9 @@ import {
   type EnemyShotSpec,
   type EnemyVolleySpec,
   type EnemyHopSpec,
+  GIANT_STRIDE,
+  giantFrame,
+  type EnemyGiantSpec,
 } from '@/config';
 import { enemyName } from '@/i18n';
 
@@ -123,6 +126,13 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
   private shotCooldownMs = 0;
   /** The yellow ring, made on the first rare this sprite is used for. */
   private outline?: Phaser.GameObjects.Rectangle;
+  /** A giant's gold ring under its feet, in place of the square one. Public for tests. */
+  public footRing?: Phaser.GameObjects.Ellipse;
+  /** A giant's walk: where it is in GIANT_STRIDE, and how long that step has shown. */
+  private strideAt = 0;
+  private strideMs = 0;
+  /** The turn a giant takes when it throws, while it lasts. */
+  private spin?: Phaser.Tweens.Tween;
   /** 우두머리's health bar and the line above it, made on its first one. */
   private healthBar?: Phaser.GameObjects.Graphics;
   private plate?: Phaser.GameObjects.Text;
@@ -267,6 +277,9 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
     this.fleeTo = undefined;
     this.setScale(1);
     this.clearTint();
+    this.stopSpin();
+    this.strideAt = 0;
+    this.strideMs = 0;
 
     // A little spread so a pack does not move as one rigid blob.
     // Only the roll is baked in here; the affix multiplier is applied when
@@ -314,6 +327,21 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
 
   /** The ring that marks a rare, made once and reused by the pool. */
   private drawOutline(): void {
+    const giant = this.spec.giant;
+    this.footRing?.setVisible(false);
+    if (giant) {
+      // A square round a giant reads as a box; it stands in a ring instead.
+      this.outline?.setVisible(false);
+      if (!this.footRing) {
+        this.footRing = this.scene.add.ellipse(this.x, this.y, 1, 1).setFillStyle(undefined, 0).setDepth(DEPTH.enemies - 1);
+      }
+      this.footRing
+        .setSize(giant.drawn * 0.95, giant.drawn * 0.36)
+        .setStrokeStyle(RARE.outlineWidth, this.outlineColor, 1)
+        .setVisible(true);
+      this.placeFootRing();
+      return;
+    }
     if (!this.rare && !this.isBoss) {
       this.outline?.setVisible(false);
       return;
@@ -396,7 +424,9 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
     this.affixes = [];
     this.fleeTo = undefined;
     this.setScale(1);
+    this.stopSpin();
     this.outline?.setVisible(false).setScale(1);
+    this.footRing?.setVisible(false);
     this.healthBar?.setVisible(false);
     this.plate?.setVisible(false);
     this.clearTint();
@@ -405,6 +435,7 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
 
   public override destroy(fromScene?: boolean): void {
     this.outline?.destroy(fromScene);
+    this.footRing?.destroy(fromScene);
     this.healthBar?.destroy(fromScene);
     this.plate?.destroy(fromScene);
     super.destroy(fromScene);
@@ -476,6 +507,7 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
     }
 
     this.outline?.setPosition(this.x, this.y);
+    this.placeFootRing();
     if (this.isBoss) {
       this.drawHealthBar();
     }
@@ -524,6 +556,63 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
     }
 
     this.scene.physics.moveTo(this, this.target.x, this.target.y, this.currentSpeed);
+    if (this.spec.giant) {
+      this.stride(dt, this.spec.giant);
+    }
+  }
+
+  /** A giant's walk: the next picture each `stepMs` while it moves, standing when it does not. */
+  private stride(delta: number, giant: EnemyGiantSpec): void {
+    const body = this.body as Phaser.Physics.Arcade.Body | null;
+    const moving = !!body && body.velocity.lengthSq() > 4;
+    if (!moving) {
+      this.strideAt = 0;
+      this.strideMs = 0;
+      this.showFrame(this.spec.texture);
+      return;
+    }
+    this.strideMs += delta;
+    if (this.strideMs >= giant.stepMs) {
+      this.strideMs -= giant.stepMs;
+      this.strideAt = (this.strideAt + 1) % GIANT_STRIDE.length;
+    }
+    this.showFrame(giantFrame(this.spec.texture, GIANT_STRIDE[this.strideAt]!));
+  }
+
+  /** Every frame asks; only a change of picture swaps it. */
+  private showFrame(key: string): void {
+    if (this.texture.key !== key) {
+      this.setTexture(key);
+    }
+  }
+
+  /** The ring under a giant's feet, where its feet are. */
+  private placeFootRing(): void {
+    const giant = this.spec.giant;
+    if (this.footRing?.visible && giant) {
+      this.footRing.setPosition(this.x, this.y + giant.drawn * 0.4);
+    }
+  }
+
+  /** A whole turn (or `spinTurns` of them) on the spot, as a giant throws its ring. */
+  private spinAround(giant: EnemyGiantSpec): void {
+    this.stopSpin();
+    this.spin = this.scene.tweens.add({
+      targets: this,
+      angle: 360 * giant.spinTurns,
+      duration: giant.spinMs,
+      ease: 'Cubic.easeOut',
+      onComplete: () => {
+        this.spin = undefined;
+        this.setAngle(0);
+      },
+    });
+  }
+
+  private stopSpin(): void {
+    this.spin?.stop();
+    this.spin = undefined;
+    this.setAngle(0);
   }
 
   /**
@@ -581,6 +670,9 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
         ...volley,
         damage: this.rollDamage(volley.damage),
       });
+    }
+    if (this.spec.giant) {
+      this.spinAround(this.spec.giant);
     }
   }
 

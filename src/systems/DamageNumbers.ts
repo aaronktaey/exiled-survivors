@@ -65,7 +65,9 @@ export class DamageNumbers {
     },
   ): void {
     const floater = this.take();
-    const shown = style?.text ?? (Number.isInteger(amount) ? String(amount) : amount.toFixed(1));
+    // Whole numbers only: the damage itself keeps its fraction, the floater
+    // does not. Anything that landed at all shows at least 1.
+    const shown = style?.text ?? String(amount > 0 ? Math.max(1, Math.round(amount)) : Math.round(amount));
     const crit = style?.crit === true;
 
     floater.remainingMs = crit ? DAMAGE_NUMBERS.critLifespanMs : DAMAGE_NUMBERS.lifespanMs;

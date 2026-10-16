@@ -7,6 +7,7 @@ import {
   AUDIO,
   COLORS,
   ENEMY_KINDS,
+  giantFrame,
   GEAR_DROP,
   ICONS,
   SHARD,
@@ -67,6 +68,8 @@ export class BootScene extends Phaser.Scene {
     for (const kind of Object.values(ENEMY_KINDS)) {
       if (kind.flashy) {
         this.createFlashyTexture(kind.texture, kind.size);
+      } else if (kind.giant) {
+        this.createGiantTextures(kind.texture, kind.giant.drawn, kind.color);
       } else {
         this.createSquareTexture(kind.texture, kind.size, kind.color);
       }
@@ -506,6 +509,75 @@ export class BootScene extends Phaser.Scene {
     g.lineBetween(size * 0.5, size * 0.28, size * 0.48, size * 0.18);
     g.generateTexture(TEXTURES.mango, size, size);
     g.destroy();
+  }
+
+  /**
+   * A fat giant seen from the front — legs, arms out at its sides, a round
+   * belly under a small crowned head — in its three pictures: standing, and
+   * each foot out in turn, the arms swinging against the legs and the body
+   * dipping a pixel on the step.
+   */
+  private createGiantTextures(texture: string, size: number, skin: number): void {
+    const k = size / 72;
+    const dark = Phaser.Display.Color.ValueToColor(skin).darken(35).color;
+    const belly = Phaser.Display.Color.ValueToColor(skin).lighten(12).color;
+    for (const frame of [0, 1, 2]) {
+      const g = this.add.graphics();
+      // Which foot is out: -1 the left, 1 the right, 0 neither.
+      const out = frame === 1 ? -1 : frame === 2 ? 1 : 0;
+      const dip = out === 0 ? 0 : 1;
+      const leg = (x: number, reach: number) => {
+        g.fillStyle(dark, 1);
+        g.fillRoundedRect((x - 6) * k, 46 * k, 12 * k, (15 + reach) * k, 4 * k);
+        g.fillStyle(0x2a0a14, 1);
+        g.fillEllipse(x * k, (61 + reach) * k, 16 * k, 8 * k);
+      };
+      leg(26, out === -1 ? 4 : out === 1 ? -3 : 0);
+      leg(46, out === 1 ? 4 : out === -1 ? -3 : 0);
+
+      const arm = (x: number, swing: number) => {
+        g.fillStyle(skin, 1);
+        g.fillEllipse(x * k, (35 + dip + swing) * k, 14 * k, 24 * k);
+        g.fillStyle(dark, 1);
+        g.fillCircle(x * k, (46 + dip + swing) * k, 5 * k);
+      };
+      // Arms swing against the legs: the left one forward with the right foot.
+      arm(9, out * -3);
+      arm(63, out * 3);
+
+      g.fillStyle(skin, 1);
+      g.fillEllipse(36 * k, (34 + dip) * k, 54 * k, 40 * k);
+      g.fillStyle(belly, 1);
+      g.fillEllipse(36 * k, (38 + dip) * k, 34 * k, 24 * k);
+      g.lineStyle(2 * k, dark, 1);
+      g.strokeEllipse(36 * k, (34 + dip) * k, 54 * k, 40 * k);
+      // A belt under the belly, buckled in gold.
+      g.fillStyle(dark, 1);
+      g.fillRect(17 * k, (44 + dip) * k, 38 * k, 4 * k);
+      g.fillStyle(COLORS.bossOutline, 1);
+      g.fillRect(33 * k, (43 + dip) * k, 6 * k, 6 * k);
+
+      // The head, small on that body, with gold eyes and two tusks.
+      g.fillStyle(skin, 1);
+      g.fillCircle(36 * k, (14 + dip) * k, 11 * k);
+      g.lineStyle(2 * k, dark, 1);
+      g.strokeCircle(36 * k, (14 + dip) * k, 11 * k);
+      g.fillStyle(COLORS.bossOutline, 1);
+      g.fillCircle(32 * k, (13 + dip) * k, 2 * k);
+      g.fillCircle(40 * k, (13 + dip) * k, 2 * k);
+      g.fillStyle(0xf4f1e8, 1);
+      g.fillTriangle(31 * k, (18 + dip) * k, 33 * k, (18 + dip) * k, 32 * k, (22 + dip) * k);
+      g.fillTriangle(39 * k, (18 + dip) * k, 41 * k, (18 + dip) * k, 40 * k, (22 + dip) * k);
+      // A crown: what makes it the 우두머리 and not just big.
+      g.fillStyle(COLORS.bossOutline, 1);
+      g.fillRect(29 * k, (3 + dip) * k, 14 * k, 3 * k);
+      g.fillTriangle(29 * k, (3 + dip) * k, 31 * k, (-2 + dip) * k + 1, 33 * k, (3 + dip) * k);
+      g.fillTriangle(34 * k, (3 + dip) * k, 36 * k, (-3 + dip) * k + 2, 38 * k, (3 + dip) * k);
+      g.fillTriangle(39 * k, (3 + dip) * k, 41 * k, (-2 + dip) * k + 1, 43 * k, (3 + dip) * k);
+
+      g.generateTexture(giantFrame(texture, frame), size, size);
+      g.destroy();
+    }
   }
 
   /** 랭킹's icon in the title's corner: a gold cup on a stem and a base — and the same in silver and bronze for 2위 and 3위. */
