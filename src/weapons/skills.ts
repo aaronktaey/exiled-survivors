@@ -64,7 +64,7 @@ export const SKILLS: Record<SkillId, SkillDefinition> = {
     id: 'iceSpear',
     name: '얼음창',
     tags: ['주문', '냉기', '투사체'],
-    upgrades: ['damage', 'attackSpeed', 'pierceCount'],
+    upgrades: ['damage', 'attackSpeed', 'projectileSpeed', 'pierceCount'],
     summary: '적을 관통하며, 맞은 적에게 냉각(이동속도 -30%)을 겁니다.',
   },
   voidOrb: {
@@ -78,7 +78,7 @@ export const SKILLS: Record<SkillId, SkillDefinition> = {
     id: 'thunderStrike',
     name: '낙뢰',
     tags: ['오라', '주문', '번개'],
-    upgrades: ['damage', 'attackSpeed', 'range'],
+    upgrades: ['damage', 'attackSpeed'],
     summary: '주위의 적 하나에게 하늘에서 벼락을 내립니다. 그 적이 죽으면 절반의 확률로 곧바로 한 번 더 떨어집니다.',
   },
 };

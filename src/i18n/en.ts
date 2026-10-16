@@ -47,7 +47,7 @@ export const en: Strings = {
       chainLightning: 'Can chain back to enemies it has already struck',
       iceSpear: 'Freezes an already chilled enemy solid for {freeze}s',
       voidOrb: 'Slowly pulls nearby enemies in toward you',
-      thunderStrike: '{bolts} bolts fall at once',
+      thunderStrike: 'A kill always calls down another bolt',
     },
   },
   tuning: {
@@ -683,7 +683,7 @@ export const en: Strings = {
             'Chain Lightning — can chain back to enemies it has already struck.',
             'Ice Spear — freezes an already chilled enemy solid for {freezeSecs}s.',
             'Void Orb — slowly pulls nearby enemies in toward you.',
-            'Thunderstrike — {thunderBolts} bolts fall at once.',
+            'Thunderstrike — a kill calls down another bolt {thunderRecast} of the time.',
           ],
         },
       ],

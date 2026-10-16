@@ -47,7 +47,7 @@ export const ja: Strings = {
       chainLightning: 'すでに当たった敵にも再び連鎖します',
       iceSpear: 'すでに冷却された敵に当たると {freeze} 秒間凍りつきます',
       voidOrb: '周りの敵をプレイヤーのほうへゆっくり引き寄せます',
-      thunderStrike: '一度に落雷が {bolts} 本ずつ落ちます',
+      thunderStrike: '敵を倒すと必ずもう一度落ちます',
     },
   },
   tuning: {
@@ -683,7 +683,7 @@ export const ja: Strings = {
             '連鎖雷 — すでに当たった敵にも再び連鎖します。',
             '氷槍 — すでに冷却された敵に当たると {freezeSecs} 秒間凍りつきます。',
             '虚無球 — 周りの敵をプレイヤーのほうへゆっくり引き寄せます。',
-            '落雷 — 一度に落雷が {thunderBolts} 本ずつ落ちます。',
+            '落雷 — 敵を倒すと {thunderRecast} の確率でもう一度落ちます。',
           ],
         },
       ],

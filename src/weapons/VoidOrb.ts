@@ -30,8 +30,11 @@ export class VoidOrb implements Weapon {
 
   private readonly scene: Phaser.Scene;
   private readonly orbs: Phaser.GameObjects.Image[] = [];
-  /** Per-enemy re-hit timers, so a swept enemy is not hit every frame. */
-  private readonly hits = new Map<Enemy, HitRecord>();
+  /**
+   * Re-hit timers by enemy, one per orb: an orb does not hit the same enemy
+   * again inside the cooldown, but every orb that sweeps through it does.
+   */
+  private readonly hits = new Map<Enemy, Map<number, HitRecord>>();
 
   /** Where the first orb is on the circle, in radians. */
   private angle = 0;
@@ -109,7 +112,7 @@ export class VoidOrb implements Weapon {
     this.orbs.forEach((orb, index) => orb.setVisible(index < count));
   }
 
-  /** Damages everything an orb is touching, at most once per cooldown. */
+  /** Damages everything an orb is touching: each orb at most once per cooldown on each enemy. */
   private sweep(context: WeaponContext, count: number): void {
     // Copy first: a kill recycles the enemy and mutates the group's list.
     for (const child of [...context.enemies.getChildren()]) {
@@ -118,28 +121,25 @@ export class VoidOrb implements Weapon {
         continue;
       }
 
-      const record = this.hits.get(enemy);
-      const onCooldown = record !== undefined && record.life === enemy.lives && this.elapsedMs < record.readyAt;
-      if (onCooldown) {
-        continue;
-      }
-
       const reach = VOID_ORB.radius + VOID_ORB.hitPadding + (ENEMY_KINDS[enemy.kind].size / 2);
-      for (let i = 0; i < count; i++) {
+      let records = this.hits.get(enemy);
+      for (let i = 0; i < count && enemy.active; i++) {
         const orb = this.orbs[i];
-        if (!orb) {
+        if (!orb || Phaser.Math.Distance.Between(orb.x, orb.y, enemy.x, enemy.y) > reach) {
           continue;
         }
-
-        if (Phaser.Math.Distance.Between(orb.x, orb.y, enemy.x, enemy.y) > reach) {
+        const record = records?.get(i);
+        if (record !== undefined && record.life === enemy.lives && this.elapsedMs < record.readyAt) {
           continue;
         }
-
-        this.hits.set(enemy, { life: enemy.lives, readyAt: this.elapsedMs + context.cooldownMs });
+        if (!records) {
+          records = new Map();
+          this.hits.set(enemy, records);
+        }
+        records.set(i, { life: enemy.lives, readyAt: this.elapsedMs + context.cooldownMs });
         context.hit(enemy, context.damage);
         // Held well apart by its own gap, or an orbit would drone.
         sfx.playSkill(this.scene, this.definition.id);
-        break;
       }
     }
   }

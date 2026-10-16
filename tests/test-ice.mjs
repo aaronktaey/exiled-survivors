@@ -236,7 +236,7 @@ check('화염구 still stops at the first enemy rather than passing through',
   `hp: ${fireHit.hp.join(' / ')} after a ${fireHit.damage}-damage hit`);
 check('화염구 leaves no 냉각', fireHit.chilled[0] === false, `chilled=${fireHit.chilled[0]}`);
 
-// --- 8. the upgrade screen offers exactly the three asked-for picks ---
+// --- 8. the upgrade screen offers exactly the asked-for picks ---
 await run(`s.onSkillCollected('iceSpear'); return 1;`);
 await sleep(600);
 const choice = await popup();
@@ -244,9 +244,9 @@ console.log('popup:', JSON.stringify(choice));
 check('repeat pickup opens the 얼음창 choice',
   choice.open === true && choice.skill === 'iceSpear' && choice.title === '얼음창',
   `title=${choice.title} subtitle=${choice.subtitle}`);
-check('it offers 피해량, 공격속도, 관통 횟수',
+check('it offers 피해량, 공격속도, 투사체 속도, 관통 횟수',
   JSON.stringify(choice.cards?.map(c => c.id)) ===
-    JSON.stringify(['damage', 'attackSpeed', 'pierceCount']),
+    JSON.stringify(['damage', 'attackSpeed', 'projectileSpeed', 'pierceCount']),
   `${choice.cards?.map(c => c.label).join(' | ')}`);
 await shot('ice-01-choice');
 
@@ -258,8 +258,8 @@ const onPierce = await popup();
 check('an arrow moves the caret without confirming',
   onPierce.selected === 1 && onPierce.open === true,
   `selected=${onPierce.selected}, popup still open=${onPierce.open}`);
-check('관통 횟수 is the third card', onPierce.cards[2].id === 'pierceCount', onPierce.cards[2].label);
-await cdp.tap('Digit3', 51, '3');
+check('관통 횟수 is the fourth card', onPierce.cards[3].id === 'pierceCount', onPierce.cards[3].label);
+await cdp.tap('Digit4', 52, '4');
 await sleep(600);
 const after = await run(`return { ice: s.progression.statsFor('iceSpear'), fire: s.progression.statsFor('fireball') };`);
 check('관통 횟수 +1 touches nothing else',

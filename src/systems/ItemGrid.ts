@@ -145,6 +145,13 @@ export class ItemGrid {
     }
   }
 
+  /** Puts the cursor on the cell at this place in the list, or the last one if the list is shorter now. */
+  public focusAt(index: number): void {
+    if (this.items.length > 0) {
+      this.moveTo(Phaser.Math.Clamp(index, 0, this.items.length - 1));
+    }
+  }
+
   /** Steps the cursor through the items in reading order. */
   public step(by: number): void {
     if (this.items.length === 0) {

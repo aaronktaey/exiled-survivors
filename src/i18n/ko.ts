@@ -51,7 +51,7 @@ export const ko: Strings = {
       chainLightning: '이미 맞은 적에게도 다시 연쇄합니다',
       iceSpear: '이미 냉각된 적을 맞히면 {freeze}초 동안 얼어붙습니다',
       voidOrb: '주변 적을 플레이어 쪽으로 천천히 끌어당깁니다',
-      thunderStrike: '한 번에 낙뢰가 {bolts}개씩 떨어집니다',
+      thunderStrike: '적을 처치하면 반드시 다시 떨어집니다',
     },
   },
   tuning: {
@@ -561,7 +561,7 @@ export const ko: Strings = {
             '연쇄번개 — 이미 맞은 적에게도 다시 연쇄합니다.',
             '얼음창 — 이미 냉각된 적을 맞히면 {freezeSecs}초 동안 얼어붙습니다.',
             '공허구체 — 주변 적을 플레이어 쪽으로 천천히 끌어당깁니다.',
-            '낙뢰 — 한 번에 낙뢰가 {thunderBolts}개씩 떨어집니다.',
+            '낙뢰 — 적을 처치하면 {thunderRecast} 확률로 다시 떨어집니다.',
           ],
         },
       ],

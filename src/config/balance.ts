@@ -835,8 +835,8 @@ export const SKILL_MASTERY = {
    * survivor at this speed (px/s) — into the orbs' path, not onto an orb.
    */
   voidPull: { reach: 70, speed: 20 },
-  /** 낙뢰: bolts in one cast. */
-  thunderBolts: 2,
+  /** 낙뢰: a strike that kills strikes again this often (THUNDER.recastChance when not awakened). */
+  thunderRecastChance: 1,
 } as const;
 
 /** 낙뢰: a bolt out of the sky onto something near the survivor. */
@@ -1191,6 +1191,8 @@ export function upgradeShown(skill: SkillId, upgrade: UpgradeKey): number {
 /** Ceilings on the upgrades that add structure rather than numbers. */
 export const UPGRADE_CAP: Partial<Record<UpgradeKey, number>> = {
   chainCount: 7,
+  /** 얼음창 runs through at most this many. */
+  pierceCount: 5,
 };
 
 /**

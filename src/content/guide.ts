@@ -204,7 +204,7 @@ function values(): Record<string, string | number> {
     fireZoneSecs: SKILL_MASTERY.fireZone.durationMs / 1000,
     fireZoneShare: percent(SKILL_MASTERY.fireZone.damageShare),
     freezeSecs: SKILL_MASTERY.freezeMs / 1000,
-    thunderBolts: SKILL_MASTERY.thunderBolts,
+    thunderRecast: percent(SKILL_MASTERY.thunderRecastChance),
   };
 }
 

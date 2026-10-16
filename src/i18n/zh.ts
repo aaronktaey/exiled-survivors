@@ -47,7 +47,7 @@ export const zh: Strings = {
       chainLightning: '可以再次连锁到已经击中过的敌人',
       iceSpear: '命中已被冷却的敌人时使其冻结 {freeze} 秒',
       voidOrb: '缓慢将周围的敌人拉向玩家',
-      thunderStrike: '一次落下 {bolts} 道落雷',
+      thunderStrike: '击杀敌人时必定再次落下',
     },
   },
   tuning: {
@@ -681,7 +681,7 @@ export const zh: Strings = {
             '连锁闪电 — 可以再次连锁到已经击中过的敌人。',
             '冰枪 — 命中已被冷却的敌人时使其冻结 {freezeSecs} 秒。',
             '虚空球 — 缓慢将周围的敌人拉向玩家。',
-            '落雷 — 一次落下 {thunderBolts} 道落雷。',
+            '落雷 — 击杀敌人时有 {thunderRecast} 几率再次落下。',
           ],
         },
       ],

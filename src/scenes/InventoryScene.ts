@@ -69,6 +69,12 @@ export interface InventorySceneData {
    * the cursor would jump to the first cell on every single reroll.
    */
   readonly focus?: string;
+  /**
+   * Or the place in the list the cursor was at, when what was under it is
+   * gone (sold, or spent on a 합성 that failed): it stays there rather than
+   * jumping back to the first cell.
+   */
+  readonly focusIndex?: number;
   /** What the last 구슬 did, shown until the cursor moves off the weapon. */
   readonly note?: string;
   /** The 구슬 just spent, so the screen drawn after it can show what it changed. */
@@ -371,6 +377,8 @@ export class InventoryScene extends Phaser.Scene {
     // cell. Last, because it repaints the buttons built just above.
     if (this.payload.focus) {
       this.menu.focus(this.payload.focus);
+    } else if (this.payload.focusIndex !== undefined) {
+      this.menu.focusAt(this.payload.focusIndex);
     }
     this.showDetails();
     this.detailBottom = Math.max(y, this.lines.y + this.lines.height);
@@ -1025,12 +1033,14 @@ export class InventoryScene extends Phaser.Scene {
 
     // 팔기: the sword goes, and its price goes into the purse.
     const price = sellPriceFor(item);
+    const at = this.menu.selected;
     gear.discard(item.uid);
     gold.gain(price);
     // A weapon shorter, so the grid is laid out again around what is left.
     this.scene.restart({
       onClose: this.payload.onClose,
       tab: 'gear',
+      focusIndex: at,
       note: fill(t().gear.sold, { gear: gearTitle(item), price: price.toLocaleString('en-US') }),
     });
   }
@@ -1338,12 +1348,15 @@ export class InventoryScene extends Phaser.Scene {
       ? fill(copy.combineSuccess, { gear: gearName(outcome.item.id) })
       : fill(copy.combineFail, { gear: gearName(first.id), count: GEAR_COMBINE.count });
 
+    // On a success, onto the new sword; on a failure, where the cursor was.
+    const at = this.menu.selected;
     this.playCombine(sources, this.gridCentre, outcome, () => {
       this.busy = false;
       this.scene.restart({
         onClose: this.payload.onClose,
         tab: 'gear',
         focus: outcome.item?.uid,
+        focusIndex: at,
         note,
       });
     });

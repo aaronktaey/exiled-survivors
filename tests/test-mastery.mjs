@@ -154,14 +154,32 @@ const effects = await run(`
   out.pullWant = window.config.SKILL_MASTERY.voidPull.speed;
   s.spawner.clear();
 
-  // 낙뢰: two bolts a cast.
+  // 낙뢰: awakened, a kill always strikes again. The roll is pinned high, where
+  // an ordinary recast never comes and an awakened one (100%) always does.
   const thunder = weapon('thunderStrike');
-  put(80, 0); put(-80, 0);
-  thunder.update(16, ctx({ mastered: false }));
+  const crowd = () => { s.spawner.clear(); for (let i = 0; i < 3; i++) put(60 + i * 30, 0, 1); };
+  const real = Math.random;
+  const pinned = (fn) => { Math.random = () => 0.999; try { fn(); } finally { Math.random = real; } };
+  crowd();
+  pinned(() => thunder.update(16, ctx({ mastered: false })));
   out.boltsPlain = thunder.lastStrikes;
-  thunder.update(16, ctx({}));
+  crowd();
+  pinned(() => thunder.update(16, ctx({})));
   out.boltsAwake = thunder.lastStrikes;
-  out.boltsWant = window.config.SKILL_MASTERY.thunderBolts;
+  out.boltsWant = 3;
+  s.spawner.clear();
+
+  // 공허구체: two orbs on the same enemy hit it twice; the same orb again, not at once.
+  const voidOrb = s.weapons.find((w) => w.definition.id === 'voidOrb');
+  voidOrb.update(16, ctx({ orbCount: 2, range: 120, mastered: false }));
+  const struck = put(0, 200);
+  let hits = 0;
+  const counting = ctx({ hit: (e, a) => { hits++; }, orbCount: 2, cooldownMs: 1000 });
+  voidOrb.active.forEach((o) => o.setPosition(struck.x, struck.y));
+  voidOrb.sweep(counting, 2);
+  out.twoOrbs = hits;
+  voidOrb.sweep(counting, 2);
+  out.again = hits - out.twoOrbs;
   s.spawner.clear();
   s.choosing = false;
   return out;
@@ -180,8 +198,10 @@ check('얼음창: an enemy already chilled is frozen; one that was not, is not',
 check('공허구체: an enemy near the orbit is drawn toward the survivor, one far off is not',
   Math.abs(effects.pulled - effects.pullWant) < 1 && Math.abs(effects.farPulled) < 1e-6,
   `${effects.pulled.toFixed(1)}px in 1s, want ${effects.pullWant}; far ${effects.farPulled}`);
-check('낙뢰: more bolts fall at once',
-  effects.boltsPlain === 1 && effects.boltsAwake === effects.boltsWant, `${effects.boltsPlain} → ${effects.boltsAwake}`);
+check('낙뢰: awakened, every kill strikes again',
+  effects.boltsPlain === 1 && effects.boltsAwake === effects.boltsWant, `${effects.boltsPlain} → ${effects.boltsAwake} strikes on 3 weak enemies`);
+check('공허구체: each orb hits an enemy it sweeps; the same orb not again inside its cooldown',
+  effects.twoOrbs === 2 && effects.again === 0, `two orbs: ${effects.twoOrbs} hits, at once again: ${effects.again}`);
 
 // --- 3b. a skill with every upgrade taken: a level is a potion ---
 const maxed = await run(`
@@ -265,6 +285,32 @@ check('toasts stack up to the limit, the oldest going first',
   toastRun.lines.length === toastRun.max && toastRun.lines[0] === '알림 3' && toastRun.lines.at(-1) === '알림 7',
   toastRun.lines.join(' | '));
 check('and each is gone once its time is up', toastLater.lines.length === 0, toastLater.lines.join(' | '));
+
+// --- 3e. the upgrade lists: 얼음창 offers shot speed, 낙뢰 no range, 관통 stops at five ---
+// What a popup offers is read off its own payload (private in TypeScript only).
+const cardsFor = async (id) => {
+  await run(`s.choosing = false; s.pendingChoices.length = 0; s.acquire('${id}'); s.onSkillCollected('${id}'); return 1;`);
+  await sleep(500);
+  const ids = await cdp.evaluate(`(() => {
+    const up = window.game.scene.getScene('UpgradeScene');
+    const out = window.game.scene.isActive('UpgradeScene') ? up.payload.options.map((o) => o.id) : null;
+    if (out) { up.payload.onPick(out[0]); up.scene.stop(); }
+    return out;
+  })()`);
+  await sleep(300);
+  return ids;
+};
+const iceCards = await cardsFor('iceSpear');
+const thunderCards = await cardsFor('thunderStrike');
+const pierce = await run(`
+  const st = s.progression.statsFor('iceSpear');
+  for (let i = 0; i < 20; i++) s.progression.apply('iceSpear', 'pierceCount');
+  return { pierce: st.pierceCount, cap: window.config.UPGRADE_CAP.pierceCount };
+`);
+check('얼음창 offers 투사체 속도, and 낙뢰 no longer offers 사거리',
+  iceCards?.includes('projectileSpeed') && thunderCards && !thunderCards.includes('range'),
+  `얼음창 ${iceCards?.join(',')} / 낙뢰 ${thunderCards?.join(',')}`);
+check('얼음창 runs through at most five', pierce.cap === 5 && pierce.pierce === 5, JSON.stringify(pierce));
 
 // --- 4. 척추 ---
 const spine = await cdp.evaluate(`(() => {

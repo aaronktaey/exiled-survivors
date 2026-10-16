@@ -576,13 +576,14 @@ const thrown = await gearScene(`
   const want = (window.config.LOWEST_GEAR_TIER + 1 - window.config.GEAR[item.id].tier) * window.config.GEAR_SELL.perRank *
     (1 + window.config.GEAR_SELL.perAffix * (item.prefixes.length + item.suffixes.length));
   const goldBefore = window.gold.value;
+  const at = s.menu.selected;
   s.pressDiscard();
   s.pressDiscard();
-  return { stash: window.gear.items.map(i => i.uid), price, want: Math.round(want), goldBefore, goldAfter: window.gold.value };
+  return { stash: window.gear.items.map(i => i.uid), price, want: Math.round(want), goldBefore, goldAfter: window.gold.value, at };
 `);
 await sleep(900);
 const afterThrow = await gearScene(`
-  return { note: s.orbHint?.text ?? '', items: s.menu.items.length,
+  return { note: s.orbHint?.text ?? '', items: s.menu.items.length, selected: s.menu.selected,
            stash: window.gear.items.map(i => i.uid),
            stored: JSON.parse(localStorage.getItem('exiled-survivors:gear:v2')).items.map(i => i.uid) };
 `);
@@ -591,6 +592,8 @@ check('the second press throws it away for good',
   !afterThrow.stash.includes('l1') && !afterThrow.stored.includes('l1') &&
     afterThrow.stash.length === 9,
   `${afterThrow.stash.length} left, none of them l1`);
+check('after a sale the cursor stays at the same place in the list',
+  afterThrow.selected === Math.min(thrown.at, afterThrow.items - 1), `${thrown.at} → ${afterThrow.selected}`);
 check('selling pays its price into the purse: its rank × the base, + a share for each 속성',
   thrown.price === thrown.want && thrown.goldAfter - thrown.goldBefore === thrown.price && thrown.price > 0 &&
     afterThrow.note.includes(thrown.price.toLocaleString('en-US')),
@@ -1291,8 +1294,9 @@ const combineScreen = async (roll) => {
     return 1; })()`);
   await sleep(700);
   const picking = await scene('InventoryScene', `
-    s.menu.focus('c0'); s.pressCombine(); s.togglePick('c1'); s.togglePick('c2');
-    return { picked: [...s.combining], button: s.combineButton.text, hint: s.orbHint.text };
+    // Started from the last of the three, so the cursor is not on the first cell to begin with.
+    s.menu.focus('c2'); s.pressCombine(); s.togglePick('c0'); s.togglePick('c1');
+    return { picked: [...s.combining], button: s.combineButton.text, hint: s.orbHint.text, at: s.menu.selected };
   `);
   const started = await scene('InventoryScene', `
     const roll = Math.random; Math.random = () => ${roll};
@@ -1306,7 +1310,7 @@ const combineScreen = async (roll) => {
   const mid = await scene('InventoryScene', `return { busy: s.busy, open: window.game.scene.isActive('InventoryScene') };`);
   await sleep(fx.chargeMs + Math.max(fx.flashMs, fx.burstMs) + fx.holdMs);
   const after = await scene('InventoryScene', `return { busy: s.busy, note: s.orbHint?.text ?? '',
-    heading: s.heading.text, items: window.gear.items.map(i => i.id) };`);
+    heading: s.heading.text, items: window.gear.items.map(i => i.id), selected: s.menu.selected, cells: s.menu.items.length };`);
   return { picking, started, mid, after };
 };
 // From a fresh title, whatever screen the checks above left open.
@@ -1325,6 +1329,9 @@ check('the light plays out over the screen, which takes no keys meanwhile',
 check('a failure comes back with the three gone and says so',
   lost.after.busy === false && /합성 실패/.test(lost.after.note) && !lost.after.items.includes('ironSword'),
   `${lost.after.note} — ${lost.after.items.join(', ')}`);
+check('and the cursor stays where it was, not back on the first cell',
+  lost.after.selected === Math.min(lost.picking.at, lost.after.cells - 1) && lost.picking.at > 0,
+  `${lost.picking.at} → ${lost.after.selected}`);
 await shot('gear-combine-fail');
 
 const won = await combineScreen(0);

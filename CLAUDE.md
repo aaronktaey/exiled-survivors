@@ -337,9 +337,10 @@ Read `git log` for what changed and when. What is not in the log:
   (타격 strikes `enemyShots` in the swing, 화염구 shots carry `fireZoneDps`
   into `CombatSystem.burnGround`/`tickFireZones`, 연쇄번개 may jump back,
   얼음창 shots carry `freezeMs` for an enemy already chilled (`Enemy.freeze`),
-  공허구체 pulls enemies near its orbit toward the survivor by moving x/y
+  공허구체 (whose hit timers are per orb: each orb hits an enemy once a
+  cooldown, every orb on its own) pulls enemies near its orbit toward the survivor by moving x/y
   the way Separation does, 낙뢰 casts
-  `thunderBolts` bolts). Reaching it calls `GameScene.celebrateMastery`
+  `thunderRecastChance` — a kill always strikes again, up to `THUNDER.maxRecasts`). Reaching it calls `GameScene.celebrateMastery`
   once (`awakened`, rebuilt from a save without a show); the HUD slot goes
   gold and its card adds the line (`masteryText`). test-mastery covers it.
 - **Touch never holds the run.** A phone fires a pretend mouse event after a

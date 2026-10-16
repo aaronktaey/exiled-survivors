@@ -15,6 +15,36 @@ export interface PatchNote {
 
 export const PATCH_NOTES: readonly PatchNote[] = [
   {
+    version: '0.44',
+    date: '2026-10-16',
+    changes: {
+      ko: [
+        '장비 합성에 성공하면 인벤토리 커서가 결과물로 옮겨 가고, 합성에 실패하거나 장비를 판 뒤에는 첫 칸으로 돌아가지 않고 원래 자리에 머뭅니다.',
+        '공허구체 — 한 구체가 같은 적을 연달아 때리지는 않지만, 구체마다 따로 피해를 줍니다.',
+        '얼음창에 투사체 속도 강화가 생기고, 관통은 최대 5까지 올라갑니다. 낙뢰의 사거리 강화는 없어졌습니다.',
+        '낙뢰의 각성 효과가 「적을 처치하면 반드시 다시 떨어짐」으로 바뀌었습니다.',
+      ],
+      en: [
+        'After a successful combine the Inventory cursor moves onto the new sword; after a failed combine or a sale it stays where it was instead of jumping to the first cell.',
+        'Void Orb — one orb still does not hit the same enemy twice in a row, but every orb deals its own damage.',
+        'Ice Spear gains a shot-speed upgrade, and its pierce now goes up to 5. Thunderstrike no longer offers range.',
+        'Thunderstrike’s awakening is now "a kill always calls down another bolt".',
+      ],
+      ja: [
+        '装備合成に成功するとインベントリのカーソルが完成品に移り、合成に失敗したときや売ったあとは最初のマスに戻らず元の位置に残ります。',
+        '虚無球 — 1 つの球が同じ敵を続けて打つことはありませんが、球ごとにそれぞれダメージを与えます。',
+        '氷槍に投射物速度の強化が加わり、貫通は最大 5 までになりました。落雷の射程強化はなくなりました。',
+        '落雷の覚醒効果が「敵を倒すと必ずもう一度落ちる」に変わりました。',
+      ],
+      zh: [
+        '装备合成成功后背包光标会移到成品上；合成失败或出售后，光标留在原位，不再跳回第一格。',
+        '虚空球 — 同一颗球不会连续击中同一敌人，但每颗球都会各自造成伤害。',
+        '冰枪新增投射物速度强化，贯穿最多 5。落雷不再提供射程强化。',
+        '落雷的觉醒效果改为“击杀敌人时必定再次落下”。',
+      ],
+    },
+  },
+  {
     version: '0.43',
     date: '2026-10-16',
     changes: {

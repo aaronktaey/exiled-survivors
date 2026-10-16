@@ -48,14 +48,7 @@ export class ThunderStrike implements Weapon {
     this.sinceCastMs = 0;
     this.bolt.clear();
     this.lastStrikes = 0;
-    // 각성: more than one bolt falls at once, each on its own pick.
-    const bolts = context.mastered ? SKILL_MASTERY.thunderBolts : 1;
-    for (let i = 0; i < bolts; i++) {
-      const target = i === 0 ? first : this.pick(context);
-      if (target) {
-        this.cast(context, target);
-      }
-    }
+    this.cast(context, first);
     this.scene.tweens.killTweensOf(this.bolt);
     this.bolt.setAlpha(1);
     this.scene.tweens.add({ targets: this.bolt, alpha: 0, duration: THUNDER.flashMs });
@@ -70,7 +63,9 @@ export class ThunderStrike implements Weapon {
     while (target && strikes <= THUNDER.maxRecasts) {
       const killed = this.strike(context, target);
       strikes += 1;
-      if (!killed || Math.random() >= THUNDER.recastChance) {
+      // 각성: a kill always strikes again.
+      const recast = context.mastered ? SKILL_MASTERY.thunderRecastChance : THUNDER.recastChance;
+      if (!killed || Math.random() >= recast) {
         break;
       }
       target = this.pick(context);
