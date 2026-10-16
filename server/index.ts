@@ -7,12 +7,14 @@
  *   /api/ranking, /api/ranking/me   ranking.ts
  *   /api/auth/*, /api/me            auth.ts
  *   /api/save                       save.ts
+ *   /api/balance                    tuning.ts
  */
 import { callback, deleteMe, facebookDeletion, logout, me, start } from './auth';
 import type { Env } from './env';
 import { json } from './http';
 import { board, forgetBoard, mine, submit } from './ranking';
 import { getSave, putSave } from './save';
+import { getTuning, putTuning } from './tuning';
 
 export type { Env } from './env';
 export { RULES, problemWith } from './ranking';
@@ -62,6 +64,12 @@ export default {
     if (pathname === '/api/save') {
       if (method === 'GET') return getSave(request, env);
       if (method === 'PUT') return putSave(request, env);
+      return json({ error: 'method' }, 405, { Allow: 'GET, PUT' });
+    }
+
+    if (pathname === '/api/balance') {
+      if (method === 'GET') return getTuning(request, env, ctx);
+      if (method === 'PUT') return putTuning(request, env, ctx);
       return json({ error: 'method' }, 405, { Allow: 'GET, PUT' });
     }
 

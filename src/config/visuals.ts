@@ -134,6 +134,7 @@ export const TEXTURES = {
   /** The 계정 icon on the title: a head and shoulders. */
   account: "tex-account",
   filter: "tex-filter",
+  tuning: "tex-tuning",
   grid: "tex-grid",
   player: "tex-player",
   enemy: "tex-enemy",

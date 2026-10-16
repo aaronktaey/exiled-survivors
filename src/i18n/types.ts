@@ -116,6 +116,40 @@ export interface Strings {
       readonly thunderStrike: string;
     };
   };
+  /** 밸런스: the admin's dial panel. */
+  readonly tuning: {
+    readonly title: string;
+    /** Under the title icon and on the pause menu. */
+    readonly icon: string;
+    readonly tabs: { readonly skills: string; readonly enemies: string; readonly drops: string };
+    /** The page that holds the dials for every skill at once. */
+    readonly common: string;
+    readonly fields: {
+      readonly damage: string;
+      readonly attackSpeed: string;
+      readonly range: string;
+      readonly projectileSpeed: string;
+      readonly chainCount: string;
+      readonly pierceCount: string;
+      readonly orbCount: string;
+      readonly orbitSpeed: string;
+      readonly damageScale: string;
+    };
+    /** By dial path, for the dials that are not a skill's stat or a 구슬 · 뼈다귀 · 검. */
+    readonly labels: Readonly<Record<string, string>>;
+    readonly cancel: string;
+    readonly publish: string;
+    readonly publishConfirm: string;
+    readonly published: string;
+    readonly publishFailed: string;
+    /** {count} dials turned on this game only. */
+    readonly drafting: string;
+    readonly clean: string;
+    /** {when} everyone's values were last set. */
+    readonly sharedAt: string;
+    readonly never: string;
+    readonly hint: string;
+  };
   readonly menu: {
     /** Over the title while it reloads onto a new version. */
     readonly updating: string;

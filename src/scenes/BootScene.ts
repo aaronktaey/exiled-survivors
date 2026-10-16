@@ -89,6 +89,7 @@ export class BootScene extends Phaser.Scene {
     this.createGlowTexture();
     this.createAccountTexture();
     this.createFilterTexture();
+    this.createTuningTexture();
 
 
     createPixelTextTexture(this, TEXTURES.logo, ['EXILED', 'SURVIVORS'], {
@@ -177,6 +178,23 @@ export class BootScene extends Phaser.Scene {
     g.fillCircle(size / 2, size * 0.36, size * 0.17);
     g.fillRoundedRect(size * 0.2, size * 0.6, size * 0.6, size * 0.3, { tl: size * 0.3, tr: size * 0.3, bl: 4, br: 4 });
     g.generateTexture(TEXTURES.account, size, size);
+    g.destroy();
+  }
+
+  /** The 밸런스 icon: a dial, its pointer turned up and to the right. */
+  private createTuningTexture(): void {
+    const size = 48;
+    const half = size / 2;
+    const g = this.add.graphics();
+    g.lineStyle(4, COLORS.textFill, 1);
+    g.beginPath();
+    g.arc(half, half, size * 0.36, Math.PI * 0.75, Math.PI * 2.25, false);
+    g.strokePath();
+    g.fillStyle(COLORS.textFill, 1);
+    g.fillCircle(half, half, size * 0.1);
+    g.lineStyle(4, COLORS.textFill, 1);
+    g.lineBetween(half, half, half + size * 0.22, half - size * 0.2);
+    g.generateTexture(TEXTURES.tuning, size, size);
     g.destroy();
   }
 

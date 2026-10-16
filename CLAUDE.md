@@ -75,7 +75,7 @@ wrong shape.
 ## The test harness
 
 `tests/` drives a real Chrome over CDP against the dev server and checks the
-running game, not units. 42 suites, ~1080 checks. It is the only thing that has
+running game, not units. 43 suites, ~1095 checks. It is the only thing that has
 caught most of what has gone wrong here, so run all of it before every commit.
 
 ```sh
@@ -87,7 +87,8 @@ node run-all.mjs test-full test-skills test-balance test-chain test-ice \
   test-i18n test-gear test-passive test-responsive test-stats test-bones \
   test-altar test-slot test-inventory test-locale test-back test-fugitive \
   test-ranking test-skillpick test-mango test-web test-loadout \
-  test-carry test-api test-account test-live test-filter test-mastery
+  test-carry test-api test-account test-live test-filter test-mastery \
+  test-tuning
 ```
 
 `run-all.mjs` runs the suites three at a time (`WORKERS=n` to change it):
@@ -154,6 +155,12 @@ Commit messages are Korean, and say *why* rather than restating the diff.
 
 Read `git log` for what changed and when. What is not in the log:
 
+- **balance.ts is the default, not always the live number.** The admin's
+  밸런스 panel (below) can lay values over it for everyone, stored on the
+  server. Before quoting a tuned number in a patch note or a report, look at
+  `npm run db -- "SELECT overrides FROM tuning"` as well as the config; a
+  dial path listed there wins. When the user asks to fold the live values
+  back into balance.ts, copy them over and clear the row.
 - **The user's numbers are theirs.** Tier values, drop rates, enemy health,
   potion strength — propose, do not quietly re-tune. When a request implies a
   number that would make something unplayable, implement it with a documented
@@ -292,6 +299,20 @@ Read `git log` for what changed and when. What is not in the log:
   Worker secret `ADMIN_USERS` (comma separated; `/api/me` answers
   `admin: true`). A run any F-key changed (`DebugOverlay.used`, kept in the
   save as `devUsed`) goes on neither the ranking nor 내 기록.
+- **밸런스 다이얼.** `config/tuning.ts` lists every dial by path into the
+  config tables (pure data — the Worker imports it to accept only those
+  paths). `systems/Tuning.ts` lays three layers over the tables in place:
+  balance.ts as built (captured at import), everyone's values from
+  `GET /api/balance` (taken only on the title, `settle`, never mid-run), and
+  the admin's draft (`TUNING.draftKey`, in `ACCOUNT.localOnly`, applied at
+  once). `PUT /api/balance` is admin-only (`ADMIN_USERS`) and checks paths and
+  ranges (server/tuning.ts, D1 table `tuning`, migration 0005).
+  `TuningScene` is the panel: the title's 밸런스 icon and a pause row, both
+  only when `devToolsAllowed()`. Most numbers are read where used, so a turn
+  needs nothing more; a skill's stats were copied on pickup, so
+  `GameScene.retune` scales them (keeping picks and level). A run that saw a
+  draft is `tunedRun`, off both boards. test-tuning drives it with an
+  in-page stand-in for /api/balance; test-api covers the endpoint.
 - **아이템 필터.** `config/itemFilter.ts` builds a switch per kind of drop
   from the tables (구슬, 뼈다귀, swords by base and by rarity, plus potion,
   skill, 무작위 스킬, 망고, 조각); `systems/ItemFilter.ts` keeps the ones

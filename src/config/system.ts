@@ -41,6 +41,7 @@ export const SCENES = {
   account: "AccountScene",
   conflict: "ConflictScene",
   filter: "FilterScene",
+  tuning: "TuningScene",
 } as const;
 
 /** Keys the browser keeps our state under. Bump the suffix to invalidate. */
@@ -171,7 +172,12 @@ export const ACCOUNT = {
    * The keys that never travel: the board is the server's, and the sync note
    * belongs to one browser.
    */
-  localOnly: ["exiled-survivors:ranking:v1", "exiled-survivors:sync:v1"] as readonly string[],
+  // The admin's 밸런스 draft is this browser's experiment, not a record.
+  localOnly: [
+    "exiled-survivors:ranking:v1",
+    "exiled-survivors:sync:v1",
+    "exiled-survivors:tuning-draft:v1",
+  ] as readonly string[],
 } as const;
 
 export const SAVE = {

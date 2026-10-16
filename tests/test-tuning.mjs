@@ -1,0 +1,163 @@
+import { connect, sleep } from './cdp-lib.mjs';
+import { writeFileSync } from 'node:fs';
+
+// 밸런스: the admin's dials. A turn changes this game at once — a skill in
+// hand keeps its picks — and keeps the run off the boards; 전체 적용 makes it
+// everyone's, which a player who is not the admin takes on the title.
+
+const cdp = await connect(9333);
+const SP = process.argv[2] ?? '.';
+const results = [];
+const check = (n, p, d = '') => {
+  results.push({ n, p });
+  console.log(`${p ? 'PASS' : 'FAIL'}  ${n}${d ? '  — ' + d : ''}`);
+};
+const shot = async (n) => {
+  const r = await cdp.send('Page.captureScreenshot', { format: 'png' });
+  writeFileSync(`${SP}/${n}.png`, Buffer.from(r.result.data, 'base64'));
+};
+const ev = (expr) => cdp.evaluate(expr);
+const scene = (key, body) => cdp.evaluate(`(() => { const s = window.game.scene.getScene('${key}'); ${body} })()`);
+
+// A stand-in for the Worker's /api/balance, so nothing here reaches a server.
+const standIn = `(() => {
+  if (window.__balanceStandIn) return 1;
+  window.__balanceStandIn = { overrides: {}, updatedAt: 0, puts: [] };
+  const real = window.fetch;
+  window.fetch = async (url, init) => {
+    if (String(url).startsWith('/api/balance')) {
+      const b = window.__balanceStandIn;
+      if (init?.method === 'PUT') {
+        const body = JSON.parse(init.body);
+        b.puts.push(body.overrides);
+        b.overrides = body.overrides; b.updatedAt = Date.now();
+      }
+      return new Response(JSON.stringify({ ok: true, overrides: b.overrides, updatedAt: b.updatedAt }), { status: 200, headers: { 'Content-Type': 'application/json' } });
+    }
+    return real(url, init);
+  };
+  return 1;
+})()`;
+
+await cdp.send('Page.navigate', { url: 'about:blank' });
+await cdp.send('Page.navigate', { url: 'http://localhost:5173/' });
+await sleep(2500);
+await ev(standIn);
+
+// --- 1. the panel, from the title ---
+await scene('MenuScene', `s.icons.press('tuning'); return 1;`);
+await sleep(700);
+const panel = await scene('TuningScene', `return { active: s.scene.isActive(), knobs: s.knobs.map((k) => k.dial.path), back: !!s.backButton };`);
+check('the title’s 밸런스 icon opens the dials, a page a skill',
+  panel.active && panel.back && panel.knobs.includes('SKILL_BASE.meleeStrike.damage') && panel.knobs.includes('BALANCE.damageScale.meleeStrike'),
+  panel.knobs.join(' '));
+await shot('tuning-01-panel');
+// The busiest page, 드랍, on a phone and lying down: every knob inside, above the buttons.
+for (const [w, h, shape] of [[0, 0, 'landscape'], [420, 860, 'upright']]) {
+  if (w) {
+    // The canvas takes the window's shape when the page loads, so load it again.
+    await cdp.send('Emulation.setDeviceMetricsOverride', { width: w, height: h, deviceScaleFactor: 1, mobile: false });
+    await cdp.send('Page.navigate', { url: 'about:blank' });
+    await cdp.send('Page.navigate', { url: 'http://localhost:5173/' });
+    await sleep(2500);
+    await scene('MenuScene', `s.icons.press('tuning'); return 1;`);
+    await sleep(600);
+  }
+  await scene('TuningScene', `s.scene.restart({ ...s.payload, tab: 'drops' }); return 1;`);
+  await sleep(600);
+  const fit = await scene('TuningScene', `
+    const bottom = Math.max(...s.knobs.map((k) => k.label.y + k.label.displayHeight / 2));
+    return { count: s.knobs.length, bottom: Math.round(bottom), status: Math.round(s.status.y - s.status.displayHeight / 2),
+             right: Math.max(...s.knobs.map((k) => k.x)), width: s.scale.width };
+  `);
+  check(`${shape}: every 드랍 dial fits above the buttons`,
+    fit.count >= 15 && fit.bottom < fit.status && fit.right < fit.width, JSON.stringify(fit));
+  await shot(`tuning-03-drops-${shape}`);
+}
+await cdp.send('Emulation.clearDeviceMetricsOverride', {});
+await cdp.send('Page.navigate', { url: 'about:blank' });
+await cdp.send('Page.navigate', { url: 'http://localhost:5173/' });
+await sleep(2500);
+await ev(standIn);
+await sleep(300);
+
+// --- 2. turned mid-run: this game at once, picks kept ---
+await ev(`(() => { window.game.scene.getScene('MenuScene').scene.start('GameScene', { save: null }); return 1; })()`);
+await sleep(1500);
+const before = await scene('GameScene', `
+  s.player.setInvulnerable(true);
+  s.progression.apply('meleeStrike', 'damage');
+  s.progression.apply('meleeStrike', 'damage');
+  return { dmg: s.damageOf('meleeStrike'), stat: s.progression.statsFor('meleeStrike').damage,
+           level: s.progression.levelFor('meleeStrike'),
+           base: window.config.SKILL_BASE.meleeStrike.damage, tuned: s.tunedRun };
+`);
+await scene('GameScene', `s.pauseRun(); return 1;`);
+await sleep(500);
+const paused = await ev(`(() => {
+  const p = window.game.scene.getScene('PauseScene');
+  const row = p.menu.rows.find((r) => r.item.id === 'tuning');
+  if (row) row.item.onSelect();
+  return !!row;
+})()`);
+await sleep(600);
+const turned = await scene('TuningScene', `
+  s.turn('SKILL_BASE.meleeStrike.damage', ${before.base} * 2);
+  return { dps: s.dpsLine?.text ?? '', drafted: Object.keys(window.tuning.draft) };
+`);
+await shot('tuning-02-midrun');
+await scene('TuningScene', `s.backButton.press(); return 1;`);
+await sleep(300);
+const after = await scene('GameScene', `
+  return { dmg: s.damageOf('meleeStrike'), stat: s.progression.statsFor('meleeStrike').damage,
+           level: s.progression.levelFor('meleeStrike'), tuned: s.tunedRun,
+           base: window.config.SKILL_BASE.meleeStrike.damage };
+`);
+console.log('turned:', JSON.stringify({ before, turned, after }));
+check('the pause menu has the dials too, with the run’s DPS over them', paused && /DPS/.test(turned.dps), turned.dps);
+check('turning a skill’s base doubles what that skill in hand does, and keeps its level',
+  after.base === before.base * 2 && Math.abs(after.stat / before.stat - 2) < 1e-9 && after.dmg > before.dmg * 1.9 &&
+    after.level === before.level,
+  `stat ${before.stat} → ${after.stat}, damage ${before.dmg} → ${after.dmg}, level ${before.level} → ${after.level}`);
+check('and the run it was turned in stays off the boards', before.tuned === false && after.tuned === true);
+
+// --- 3. made everyone's ---
+const published = await ev(`(async () => 1)()`);
+void published;
+const pub = await cdp.send('Runtime.evaluate', { awaitPromise: true, returnByValue: true, expression: `(async () => {
+  const ok = await window.tuning.publish();
+  return { ok, draft: Object.keys(window.tuning.draft).length, shared: window.tuning.shared, put: window.__balanceStandIn.puts.at(-1) };
+})()` });
+const p = pub.result?.result?.value ?? {};
+check('전체 적용 hands the draft to the server and it becomes everyone’s value',
+  p.ok === true && p.draft === 0 && p.shared?.['SKILL_BASE.meleeStrike.damage'] === before.base * 2 &&
+    p.put?.['SKILL_BASE.meleeStrike.damage'] === before.base * 2, JSON.stringify(p));
+
+// --- 4. a player who is not the admin: everyone's values, not a draft ---
+await cdp.send('Page.navigate', { url: 'about:blank' });
+await cdp.send('Page.navigate', { url: 'http://localhost:5173/' });
+await sleep(2500);
+await ev(`(() => { window.config.DEBUG.gatedInDev = true; return 1; })()`);
+await ev(standIn);
+await ev(`(() => { window.__balanceStandIn.overrides = { 'POTION.chance': 0.25 }; window.__balanceStandIn.updatedAt = 1; return 1; })()`);
+const player = await cdp.send('Runtime.evaluate', { awaitPromise: true, returnByValue: true, expression: `(async () => {
+  window.tuning.draft = { 'POTION.chance': 0.9 };
+  await window.tuning.load(window.game);
+  window.tuning.settle();
+  // The title as it would be drawn for this player.
+  window.game.scene.getScene('MenuScene').scene.restart();
+  await new Promise((r) => setTimeout(r, 800));
+  const icons = window.game.scene.getScene('MenuScene').icons.views.map((v) => v.button.id);
+  return { potion: window.config.POTION.chance, icons };
+})()` });
+const pl = player.result?.result?.value ?? {};
+check('a player who is not the admin plays on everyone’s values, never a draft, and has no 밸런스 icon',
+  pl.potion === 0.25 && !pl.icons?.includes('tuning'), JSON.stringify(pl));
+await ev(`(() => { window.config.DEBUG.gatedInDev = false; window.tuning.draft = {}; localStorage.removeItem('exiled-survivors:tuning-draft:v1'); return 1; })()`);
+
+console.log('\n=== SUMMARY ===');
+const failed = results.filter((r) => !r.p);
+console.log(`${results.length - failed.length}/${results.length} passed`);
+if (failed.length) console.log('failed:', failed.map((f) => f.n).join(' | '));
+console.log(failed.length ? 'RESULT: FAIL' : 'RESULT: PASS');
+cdp.close();

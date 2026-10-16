@@ -18,3 +18,4 @@ export { GameOverScene } from '@/scenes/GameOverScene';
 export { AccountScene, type AccountSceneData } from '@/scenes/AccountScene';
 export { ConflictScene, type ConflictSceneData } from '@/scenes/ConflictScene';
 export { FilterScene, type FilterSceneData } from '@/scenes/FilterScene';
+export { TuningScene, type TuningSceneData } from '@/scenes/TuningScene';

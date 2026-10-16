@@ -121,6 +121,23 @@ try {
   check('the account named in ADMIN_USERS is', bossIs.body?.user?.id === 'admin-user' && bossIs.body?.user?.admin === true,
     JSON.stringify(bossIs.body?.user));
 
+  // --- 밸런스: everyone's values, set by the admin only, on the listed paths only ---
+  const tuned0 = await read(await fetch(`${BASE}/api/balance`));
+  check('everyone’s balance values start empty', tuned0.status === 200 && JSON.stringify(tuned0.body?.overrides) === '{}',
+    JSON.stringify(tuned0.body));
+  const tunedNotAdmin = await read(await alice.send('/api/balance', 'PUT', { overrides: { 'POTION.chance': 0.05 } }));
+  check('an ordinary account cannot set them', tunedNotAdmin.status === 403, JSON.stringify(tunedNotAdmin.body));
+  const tunedStray = await read(await boss.send('/api/balance', 'PUT', { overrides: { 'PLAYER.maxHp': 1e9 } }));
+  const tunedHuge = await read(await boss.send('/api/balance', 'PUT', { overrides: { 'POTION.chance': 1e9 } }));
+  check('nor can the admin set a path no dial has, or a value past belief', tunedStray.status === 400 && tunedHuge.status === 400,
+    `${tunedStray.status} ${JSON.stringify(tunedStray.body)} / ${tunedHuge.status}`);
+  const tunedSet = await read(await boss.send('/api/balance', 'PUT', { overrides: { 'POTION.chance': 0.05, 'SKILL_BASE.fireball.damage': 240 } }));
+  const tuned1 = await read(await fetch(`${BASE}/api/balance`));
+  check('the admin sets them, and the next look sees them at once',
+    tunedSet.status === 200 && tuned1.body?.overrides?.['POTION.chance'] === 0.05 &&
+      tuned1.body?.overrides?.['SKILL_BASE.fireball.damage'] === 240 && tuned1.body?.updatedAt > 0,
+    JSON.stringify(tuned1.body));
+
   const forged = browser();
   const out = await forged.call('/api/auth/test/start?return=/');
   const back = new URL(out.headers.get('location'));

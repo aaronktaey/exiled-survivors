@@ -21,11 +21,13 @@ import { bones as bonesStore } from '@/systems/Bones';
 import { orbs } from '@/systems/Orbs';
 import { passives } from '@/systems/Passives';
 import { itemFilter } from '@/systems/ItemFilter';
+import { tuning } from '@/systems/Tuning';
 import { currentCanvasSize } from '@/systems/Viewport';
 import {
   AccountScene,
   ConflictScene,
   FilterScene,
+  TuningScene,
   BootScene,
   ConfirmScene,
   CreditsScene,
@@ -96,6 +98,7 @@ const config: Phaser.Types.Core.GameConfig = {
     AccountScene,
     ConflictScene,
     FilterScene,
+    TuningScene,
   ],
 };
 
@@ -103,6 +106,10 @@ const game = new Phaser.Game(config);
 
 // Asks, now and then, whether a newer version is out (never on the dev server).
 liveUpdate.start();
+// Everyone's 밸런스 values, laid over balance.ts before the first run; and the
+// admin's own draft over those once the account says it is the admin's.
+void tuning.load(game);
+account.onChange(() => tuning.settle());
 
 // Console handles for poking at the running game while developing. The
 // stash is one of them because it outlives a run, so it cannot be reached
@@ -124,6 +131,7 @@ if (import.meta.env.DEV) {
     liveUpdate?: typeof liveUpdate;
     personal?: typeof personal;
     itemFilter?: typeof itemFilter;
+    tuning?: typeof tuning;
     account?: typeof account;
     cloudSave?: typeof cloudSave;
   };
@@ -142,6 +150,7 @@ if (import.meta.env.DEV) {
   dev.liveUpdate = liveUpdate;
   dev.personal = personal;
   dev.itemFilter = itemFilter;
+  dev.tuning = tuning;
   dev.account = account;
   dev.cloudSave = cloudSave;
 }

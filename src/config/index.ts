@@ -19,3 +19,4 @@ export * from '@/config/passives';
 export * from '@/config/visuals';
 export * from '@/config/system';
 export * from '@/config/itemFilter';
+export * from '@/config/tuning';

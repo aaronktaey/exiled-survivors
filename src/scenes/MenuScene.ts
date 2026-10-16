@@ -27,6 +27,8 @@ import { account } from '@/systems/Account';
 import { cloudSave } from '@/systems/CloudSave';
 import { takePendingRank } from '@/systems/PendingRank';
 import { liveUpdate } from '@/systems/LiveUpdate';
+import { devToolsAllowed } from '@/systems/DevAccess';
+import { tuning } from '@/systems/Tuning';
 
 /** Syncing starts once per page, the first time the title finds someone signed in. */
 let syncStarted = false;
@@ -162,6 +164,17 @@ export class MenuScene extends Phaser.Scene {
         label: () => t().filter.icon,
         onSelect: () => this.openOverlay(SCENES.filter),
       },
+      // 밸런스: the admin's dials, and no one else's.
+      ...(devToolsAllowed()
+        ? [
+            {
+              id: 'tuning',
+              texture: TEXTURES.tuning,
+              label: () => t().tuning.icon,
+              onSelect: () => this.openOverlay(SCENES.tuning),
+            },
+          ]
+        : []),
       ...(ACCOUNT.enabled
         ? [
             {
@@ -176,7 +189,19 @@ export class MenuScene extends Phaser.Scene {
         : []),
     ]);
 
-    const unwatchAccount = account.onChange(() => this.icons.refresh());
+    // The title is drawn before the account is known; when it turns out to be
+    // the admin's (or stops being), the 밸런스 icon comes or goes.
+    const admin = devToolsAllowed();
+    const unwatchAccount = account.onChange(() => {
+      if (devToolsAllowed() !== admin && this.scene.isActive()) {
+        this.scene.restart();
+        return;
+      }
+      this.icons.refresh();
+    });
+    // Everyone's newest 밸런스 values are taken here, between runs.
+    tuning.settle();
+    void tuning.load(this.game);
     const unwatchSync = cloudSave.onChange(() => this.icons.refresh());
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       unwatchAccount();

@@ -15,6 +15,24 @@ export interface PatchNote {
 
 export const PATCH_NOTES: readonly PatchNote[] = [
   {
+    version: '0.39',
+    date: '2026-10-16',
+    changes: {
+      ko: [
+        '밸런스 수치를 업데이트 없이 서버에서 조정할 수 있게 되었습니다. 조정된 값은 진행 중인 판에는 영향을 주지 않고, 다음 판부터 적용됩니다.',
+      ],
+      en: [
+        'Balance numbers can now be adjusted on the server without an update. A change never touches a run in progress; it applies from your next run.',
+      ],
+      ja: [
+        'バランスの数値をアップデートなしでサーバーから調整できるようになりました。調整は進行中の回には影響せず、次の回から適用されます。',
+      ],
+      zh: [
+        '现在无需更新即可在服务器上调整平衡数值。调整不会影响正在进行的一局，从下一局开始生效。',
+      ],
+    },
+  },
+  {
     version: '0.38',
     date: '2026-10-16',
     changes: {

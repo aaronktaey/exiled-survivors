@@ -25,6 +25,7 @@ import {
   WORLD,
   SKILL_MASTERY,
   AUDIO,
+  UPGRADE_PERCENT,
 } from '@/config';
 import type { Enemy } from '@/entities/Enemy';
 import { Player } from '@/entities/Player';
@@ -54,6 +55,7 @@ import { RareTooltip } from '@/systems/RareTooltip';
 import { sfx } from '@/systems/Sfx';
 import { saveGame, type SavedRun } from '@/systems/SaveGame';
 import { personal } from '@/systems/PersonalBest';
+import { tuning } from '@/systems/Tuning';
 import {
   NO_BONUS,
   gear,
@@ -181,6 +183,8 @@ export class GameScene extends Phaser.Scene {
   private resuming: SavedRun | null = null;
   /** A resumed run the developer tools had already changed. */
   private devUsedBefore = false;
+  /** The admin's 밸런스 draft was on during this run. */
+  private tunedRun = false;
   private startPick = false;
   /** Popups earned while one was already open. */
   private pendingChoices: ChoiceRequest[] = [];
@@ -202,6 +206,7 @@ export class GameScene extends Phaser.Scene {
   public init(data?: GameSceneData): void {
     this.resuming = data?.save ?? null;
     this.devUsedBefore = data?.save?.devUsed === true;
+    this.tunedRun = tuning.drafting;
     this.startPick = data?.startPick === true && !this.resuming && SKILL_PICK.atRunStart;
     // A resumed run keeps the 뼈다귀 it was started with; they were spent
     // once, at the start, and the save remembers them.
@@ -318,6 +323,8 @@ export class GameScene extends Phaser.Scene {
 
     this.player.setLevel(this.progression.level);
     this.progression.on(Progression.LEVEL_UP, this.onLevelUp, this);
+    const unwatchTuning = tuning.onChange((path, was, now) => this.retune(path, was, now));
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, unwatchTuning);
     this.player.once(Player.DIED, this.onPlayerDied, this);
 
     if (this.startPick) {
@@ -682,6 +689,7 @@ export class GameScene extends Phaser.Scene {
     this.scene.launch(SCENES.pause, {
       elapsedMs: this.elapsedMs,
       level: this.progression.level,
+      dps: () => this.loadout().map((line) => ({ name: line.name, dps: line.dps })),
       onResume: () => {
         this.scene.resume();
         this.analog?.release?.();
@@ -1233,7 +1241,39 @@ export class GameScene extends Phaser.Scene {
 
   /** Whether the developer tools changed this run, now or before it was saved. */
   private get devRun(): boolean {
-    return this.devUsedBefore || this.debug.used;
+    return this.devUsedBefore || this.debug.used || this.tunedRun;
+  }
+
+  /**
+   * A 밸런스 dial turned while the run is on. Everything but a skill's own
+   * stats is read where it is used and needs nothing here; a skill's stats
+   * were copied when it was picked up, so they are moved by what moved —
+   * scaled, for a stat that upgrades by a share of its base (which keeps the
+   * picks it has taken, and so its level), and shifted for one that counts.
+   */
+  private retune(path: string, was: number, now: number): void {
+    if (tuning.drafting) {
+      this.tunedRun = true;
+    }
+    const base = /^SKILL_BASE\.(\w+)\.(\w+)$/.exec(path);
+    if (base) {
+      const [, skill, field] = base as unknown as [string, SkillId, keyof SkillStats];
+      if (!this.owned.has(skill)) {
+        return;
+      }
+      const stats = this.progression.statsFor(skill) as Record<string, number>;
+      stats[field] = field in UPGRADE_PERCENT && was > 0 ? (stats[field]! * now) / was : stats[field]! + (now - was);
+      return;
+    }
+    const share = /^UPGRADE_PERCENT\.(\w+)$/.exec(path);
+    if (share && was > 0) {
+      const field = share[1] as keyof SkillStats;
+      for (const skill of this.owned) {
+        const stats = this.progression.statsFor(skill) as Record<string, number>;
+        const start = SKILL_BASE[skill][field as keyof typeof SKILL_BASE.meleeStrike];
+        stats[field] = start + (stats[field]! - start) * (now / was);
+      }
+    }
   }
 
   private onPlayerDied(): void {

@@ -5,6 +5,7 @@ import { fill, t } from '@/i18n';
 import type { GameScene } from '@/scenes/GameScene';
 import { MenuList } from '@/systems/MenuList';
 import { RareTooltip } from '@/systems/RareTooltip';
+import { devToolsAllowed } from '@/systems/DevAccess';
 import { addBackButton, type BackButton } from '@/systems/BackButton';
 
 export interface PauseSceneData {
@@ -13,6 +14,8 @@ export interface PauseSceneData {
   readonly onResume: () => void;
   /** Writes the run out and goes back to the title. */
   readonly onQuit: () => void;
+  /** The run's skills and their DPS, for the 밸런스 panel. */
+  readonly dps?: () => ReadonlyArray<{ readonly name: string; readonly dps: number }>;
 }
 
 /** 일시정지: the run is frozen underneath until this closes. */
@@ -75,6 +78,15 @@ export class PauseScene extends Phaser.Scene {
           label: () => t().menu.settings,
           onSelect: () => this.openOverlay(SCENES.settings, { allowLanguage: false }),
         },
+        ...(devToolsAllowed()
+          ? [
+              {
+                id: 'tuning',
+                label: () => t().tuning.title,
+                onSelect: () => this.openOverlay(SCENES.tuning, { dps: this.payload.dps }),
+              },
+            ]
+          : []),
         { id: 'quit', label: () => t().pause.quit, onSelect: () => this.quit() },
       ],
     });
