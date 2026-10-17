@@ -235,6 +235,8 @@ export interface OrbOutcome {
   readonly line?: AffixLine;
   /** And the one it replaced, for an upgrade. */
   readonly from?: AffixLine;
+  /** The weapon's 망고 상태 went with it: a 폭발의 구슬 spends it whatever it rolls. */
+  readonly wardSpent?: boolean;
 }
 
 /**
@@ -314,11 +316,12 @@ function explode(
     return null;
   }
 
+  // 망고 상태 lasts one 폭발의 구슬, whatever it rolls: it is spent here either way.
+  const { mango: warded, ...unwarded } = item;
   if (Math.random() < upgrade.destroyChance) {
-    // 망고 상태 takes the blow: the weapon is left as it was, without its 망고.
-    if (item.mango) {
-      const { mango: _spent, ...kept } = item;
-      return { item: kept, kind: 'saved' };
+    // The 망고 takes the blow: the weapon is left as it was, without its 망고.
+    if (warded) {
+      return { item: unwarded, kind: 'saved' };
     }
     return { item: null, kind: 'destroyed' };
   }
@@ -346,7 +349,13 @@ function explode(
     suffixes[index - item.prefixes.length] = line;
   }
 
-  return { item: { ...item, prefixes, suffixes }, kind: 'upgrade', line, from };
+  return {
+    item: { ...unwarded, prefixes, suffixes },
+    kind: 'upgrade',
+    line,
+    from,
+    ...(warded ? { wardSpent: true } : {}),
+  };
 }
 
 /**

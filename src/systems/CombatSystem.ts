@@ -21,6 +21,7 @@ import {
   type EnemyShotSpec,
   type OrbId,
   SKILL_MASTERY,
+  MAGNET,
 } from '@/config';
 import { t } from '@/i18n';
 import { itemFilter } from '@/systems/ItemFilter';
@@ -32,6 +33,8 @@ import { BoneDrop } from '@/entities/BoneDrop';
 import { OrbDrop } from '@/entities/OrbDrop';
 import { RandomSkillDrop } from '@/entities/RandomSkillDrop';
 import { MangoDrop } from '@/entities/MangoDrop';
+import { MagnetDrop } from '@/entities/MagnetDrop';
+import type { GroundItem } from '@/entities/GroundItem';
 import { ShardDrop } from '@/entities/ShardDrop';
 import { dropTierFor, rollOrbDrop, type GearItem } from '@/systems/Gear';
 import type { RunStats } from '@/systems/RunStats';
@@ -75,6 +78,8 @@ export interface CombatHooks {
   readonly onWeb: (x: number, y: number, stacks: number) => void;
   /** Called when the player walks over a 하얀 망고. */
   readonly onMangoCollected: () => void;
+  /** A 자석 was picked up, and everything on the map is on its way. */
+  readonly onMagnetCollected: () => void;
   /** Called when the player walks over a 무작위 스킬: offer the cards. */
   readonly onRandomSkillCollected: () => void;
   /** Called when the survivor walks up to a 제단: call up what it offered. */
@@ -114,6 +119,8 @@ export class CombatSystem {
   public readonly randomSkillDrops: Phaser.Physics.Arcade.Group;
   /** 하얀 망고 lying on the ground. */
   public readonly mangoDrops: Phaser.Physics.Arcade.Group;
+  /** 자석 lying on the ground. */
+  public readonly magnetDrops: Phaser.Physics.Arcade.Group;
   /** The 제단 a 우두머리 left. Never picked up; they wake instead. */
   public readonly altars: Phaser.Physics.Arcade.Group;
 
@@ -167,6 +174,7 @@ export class CombatSystem {
     this.boneDrops = scene.physics.add.group({ classType: BoneDrop, runChildUpdate: true });
     this.randomSkillDrops = scene.physics.add.group({ classType: RandomSkillDrop, runChildUpdate: true });
     this.mangoDrops = scene.physics.add.group({ classType: MangoDrop, runChildUpdate: true });
+    this.magnetDrops = scene.physics.add.group({ classType: MagnetDrop, runChildUpdate: true });
     // No overlap: an altar is woken by distance, in its own update.
     this.altars = scene.physics.add.group({ classType: Altar, runChildUpdate: true });
 
@@ -181,6 +189,7 @@ export class CombatSystem {
     scene.physics.add.overlap(player, this.boneDrops, this.onBoneTouch, undefined, this);
     scene.physics.add.overlap(player, this.randomSkillDrops, this.onRandomSkillTouch, undefined, this);
     scene.physics.add.overlap(player, this.mangoDrops, this.onMangoTouch, undefined, this);
+    scene.physics.add.overlap(player, this.magnetDrops, this.onMagnetTouch, undefined, this);
   }
 
   /** Wires a newly acquired projectile weapon into enemy collisions. */
@@ -264,6 +273,50 @@ export class CombatSystem {
 
     drop.drop(x, y);
     this.playDropSound('rare');
+  }
+
+  /** Places a 자석 directly — used by the kill roll and by tests. */
+  public dropMagnetAt(x: number, y: number): void {
+    if (!itemFilter.shows('magnet')) {
+      return;
+    }
+    [x, y] = inWorld(x, y);
+    const drop = this.magnetDrops.get() as MagnetDrop | null;
+    if (!drop) {
+      return;
+    }
+
+    drop.drop(x, y);
+    this.playDropSound('rare');
+  }
+
+  /**
+   * A 자석: every XP gem and every item lying anywhere on the map flies to
+   * the survivor, all arriving within MAGNET.pullMs, and is picked up there
+   * the way walking over it would — so a potion at full health is left
+   * where it lands, as ever. The 제단 stays put: it is walked up to, not
+   * picked up. Public so a test can.
+   */
+  public pullEverything(): void {
+    const endsAt = this.scene.time.now + MAGNET.pullMs;
+    for (const child of this.gems.getChildren()) {
+      const gem = child as XpGem;
+      if (gem.active) {
+        gem.pullTo(endsAt);
+      }
+    }
+    const lying = [
+      this.skillDrops, this.potions, this.gearDrops, this.shardDrops, this.orbDrops,
+      this.boneDrops, this.randomSkillDrops, this.mangoDrops, this.magnetDrops,
+    ];
+    for (const group of lying) {
+      for (const child of group.getChildren()) {
+        const item = child as GroundItem;
+        if (item.active) {
+          item.pullTo(this.player, endsAt);
+        }
+      }
+    }
   }
 
   /** Places a 무작위 스킬 directly — used by the kill roll and by tests. */
@@ -606,6 +659,17 @@ export class CombatSystem {
     this.hooks.onMangoCollected();
   };
 
+  private onMagnetTouch: Phaser.Types.Physics.Arcade.ArcadePhysicsCallback = (_player, object) => {
+    const drop = object as MagnetDrop;
+    if (!drop.active) {
+      return;
+    }
+
+    drop.collect();
+    this.pullEverything();
+    this.hooks.onMagnetCollected();
+  };
+
   private onRandomSkillTouch: Phaser.Types.Physics.Arcade.ArcadePhysicsCallback = (_player, object) => {
     const drop = object as RandomSkillDrop;
     if (!drop.active) {
@@ -664,6 +728,11 @@ export class CombatSystem {
     // 하얀 망고: the same off every kill — nothing raises it.
     if (Math.random() < MANGO.chance) {
       this.dropMangoAt(x - 18, y - 18);
+    }
+
+    // 자석: as rare as the 망고, and as flat.
+    if (Math.random() < MAGNET.chance) {
+      this.dropMagnetAt(x + 18, y + 18);
     }
 
     // Rolled on its own, so a kill can leave both a skill and a potion.

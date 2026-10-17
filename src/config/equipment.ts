@@ -233,8 +233,8 @@ export interface OrbSpec {
   /** Or adds this many lines to whatever is already on it. */
   readonly add?: number;
   /**
-   * Or puts the weapon in 망고 상태: the next 구슬 that would destroy it
-   * does not, and the 망고 is spent instead. One at a time.
+   * Or puts the weapon in 망고 상태, which lasts one 폭발의 구슬: that one
+   * cannot destroy it, and spends the 망고 whatever it rolls. One at a time.
    */
   readonly ward?: boolean;
   /**
@@ -300,7 +300,7 @@ export const ORBS: Record<OrbId, OrbSpec> = {
     id: 'mango',
     name: '망고의 구슬',
     short: '망고',
-    detail: '장비를 망고 상태로 — 구슬로 인한 파괴를 한 번 막고 사라집니다',
+    detail: '장비를 망고 상태로 — 다음 폭발의 구슬 한 번은 장비를 파괴하지 못하고, 그 구슬에 망고 상태가 사라집니다',
     chance: 0.0001,
     tier: 'rare',
     color: 0xffe9a8,

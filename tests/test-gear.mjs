@@ -999,7 +999,7 @@ check('it comes off any kill now, at its own chance',
   explode.chance > 0 && explode.bossOnly === false,
   `${(explode.chance * 100).toFixed(2)}% a kill`);
 
-// --- 14b. 망고의 구슬: 망고 상태 stops one destroying 구슬, then is gone ---
+// --- 14b. 망고의 구슬: 망고 상태 lasts one 폭발의 구슬, which cannot destroy it ---
 const mango = await ev(`(() => {
   const c = window.config, ORBS = c.ORBS;
   const sword = { uid: 'm1', id: 'steelSword', prefixes: [{ id: 'mighty', tier: 3 }], suffixes: [] };
@@ -1009,6 +1009,9 @@ const mango = await ev(`(() => {
   Math.random = () => 0;
   const saved = window.orbApplied(warded.item, ORBS.explode);
   const plain = window.orbApplied(sword, ORBS.explode);
+  // A roll that does not destroy spends it all the same.
+  Math.random = () => 0.99;
+  const climbed = window.orbApplied(warded.item, ORBS.explode);
   Math.random = real;
   // Written down and read back with the stash.
   window.gear.add(warded.item);
@@ -1020,6 +1023,7 @@ const mango = await ev(`(() => {
     saved: { kind: saved?.kind, kept: saved?.item?.uid, mango: saved?.item?.mango ?? false,
              lines: saved?.item ? saved.item.prefixes.length + saved.item.suffixes.length : null },
     plain: { kind: plain?.kind, item: plain?.item },
+    climbed: { kind: climbed?.kind, mango: climbed?.item?.mango ?? false, spent: climbed?.wardSpent === true },
     stored: stored?.mango,
   };
 })()`);
@@ -1033,6 +1037,9 @@ check('a 폭발의 구슬 that would destroy it is stopped: the weapon stays as 
   mango.saved.kind === 'saved' && mango.saved.kept === 'm1' && mango.saved.mango === false && mango.saved.lines === 1,
   JSON.stringify(mango.saved));
 check('without one, the same roll destroys it', mango.plain.kind === 'destroyed' && mango.plain.item === null);
+check('and a 폭발의 구슬 that climbs spends the 망고 too: it lasts one use, whatever the roll',
+  mango.climbed.kind === 'upgrade' && mango.climbed.mango === false && mango.climbed.spent === true,
+  JSON.stringify(mango.climbed));
 await ev(`(() => { window.game.scene.getScene('InventoryScene').scene.restart({ onClose: () => {}, focus: 'm1' }); return 1; })()`);
 await sleep(900);
 const mangoShown = await scene('InventoryScene', `

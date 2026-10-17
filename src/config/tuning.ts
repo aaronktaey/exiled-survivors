@@ -88,6 +88,7 @@ export const DIALS: readonly DialSpec[] = [
   { path: 'SKILL_PICK.dropChance', kind: 'chance', tab: 'drops', max: 0.2 },
   { path: 'POTION.chance', kind: 'chance', tab: 'drops', max: 0.3 },
   { path: 'MANGO.chance', kind: 'chance', tab: 'drops', max: 0.05 },
+  { path: 'MAGNET.chance', kind: 'chance', tab: 'drops', max: 0.05 },
   { path: 'ORBS.transmute.chance', kind: 'chance', tab: 'drops', max: 0.05 },
   { path: 'ORBS.chaos.chance', kind: 'chance', tab: 'drops', max: 0.05 },
   { path: 'ORBS.awaken.chance', kind: 'chance', tab: 'drops', max: 0.05 },

@@ -15,6 +15,28 @@ export interface PatchNote {
 
 export const PATCH_NOTES: readonly PatchNote[] = [
   {
+    version: '0.53',
+    date: '2026-10-17',
+    changes: {
+      ko: [
+        '새 드랍 아이템 자석 — 어떤 적을 잡아도 하얀 망고와 같은 0.1% 확률로 떨어집니다. 주우면 그 순간 맵에 있는 모든 아이템과 경험치가 날아와 주워집니다(체력이 가득하면 포션은 남겨둡니다). 아이템 필터에서 끌 수 있습니다.',
+        '망고 상태는 폭발의 구슬을 한 번 쓰면 결과와 상관없이 사라집니다. 그 한 번은 장비를 파괴하지 못합니다.',
+      ],
+      en: [
+        'New drop: the Magnet — 0.1% off any kill, the same as the White Mango. Picking it up brings every item and XP gem on the map flying to you and collects them (a potion stays put while your health is full). It can be switched off in the item filter.',
+        'Mango state is now spent by one Explosion Orb whatever it rolls, and that one cannot destroy the weapon.',
+      ],
+      ja: [
+        '新しいドロップアイテム「磁石」 — どの敵からも白いマンゴーと同じ 0.1% の確率で落ちます。拾うとマップ上のすべてのアイテムと経験値が飛んできて拾われます（体力が満タンならポーションは残ります）。アイテムフィルターでオフにできます。',
+        'マンゴー状態は爆発の球を 1 回使うと結果に関係なく消えます。その 1 回では装備は壊れません。',
+      ],
+      zh: [
+        '新掉落物「磁铁」 — 击杀任何敌人都有与白芒果相同的 0.1% 几率掉落。拾取后，地图上的所有物品与经验都会飞来并被拾取（生命值满时药水会留在原地）。可在物品过滤中关闭。',
+        '芒果状态在使用一次爆炸宝珠后无论结果如何都会消失，而那一次不会摧毁装备。',
+      ],
+    },
+  },
+  {
     version: '0.52',
     date: '2026-10-16',
     changes: {

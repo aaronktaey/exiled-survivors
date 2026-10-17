@@ -307,6 +307,7 @@ export class GameScene extends Phaser.Scene {
         onWeb: (x, y, stacks) => this.webs.spawn(x, y, stacks),
         onMangoCollected: () =>
           this.announce(fill(t().game.mangoEaten, { seconds: Math.round(MANGO.durationMs / 1000) })),
+        onMagnetCollected: () => this.announce(t().game.magnetPulled),
         dropScale: () => this.boneBonus.dropScale,
         critMultiplier: () => critMultiplierFor(this.mods),
       },
@@ -338,6 +339,7 @@ export class GameScene extends Phaser.Scene {
       { group: this.combat.orbDrops },
       { group: this.combat.gearDrops },
       { group: this.combat.mangoDrops },
+      { group: this.combat.magnetDrops },
       { group: this.combat.randomSkillDrops },
       { group: this.combat.skillDrops },
       { group: this.combat.potions },

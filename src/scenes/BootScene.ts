@@ -90,6 +90,7 @@ export class BootScene extends Phaser.Scene {
     this.createWebIcon();
     this.createFlagTextures();
     this.createMangoTexture();
+    this.createMagnetTexture();
     this.createLightPillarTexture();
     this.createGlowTexture();
     this.createAccountTexture();
@@ -494,6 +495,35 @@ export class BootScene extends Phaser.Scene {
    * 하얀 망고: a pale, almost white mango leaning on its side, with a green
    * leaf at the stem and a soft blush, so it reads as fruit and not a gem.
    */
+  /** 자석: a red horseshoe magnet with silver tips, and two sparks at its mouth. */
+  private createMagnetTexture(): void {
+    const size = 48;
+    const g = this.add.graphics();
+    // The horseshoe: a thick red arc, open at the top.
+    g.lineStyle(11, 0xd93a3a, 1);
+    g.beginPath();
+    g.arc(24, 22, 13, 0, Math.PI, false);
+    g.strokePath();
+    g.fillStyle(0xd93a3a, 1);
+    g.fillRect(5.5, 10, 11, 12);
+    g.fillRect(31.5, 10, 11, 12);
+    // Silver tips.
+    g.fillStyle(0xe6e9ef, 1);
+    g.fillRect(5.5, 4, 11, 8);
+    g.fillRect(31.5, 4, 11, 8);
+    // A shine down one side.
+    g.lineStyle(2, 0xff9a8a, 0.9);
+    g.beginPath();
+    g.arc(24, 22, 16, Math.PI * 0.55, Math.PI * 0.95, false);
+    g.strokePath();
+    // Sparks at the mouth.
+    g.lineStyle(2, 0xffe066, 1);
+    g.lineBetween(20, 6, 22, 1);
+    g.lineBetween(28, 6, 26, 1);
+    g.generateTexture(TEXTURES.magnet, size, size);
+    g.destroy();
+  }
+
   private createMangoTexture(): void {
     const size = 32;
     const g = this.add.graphics();

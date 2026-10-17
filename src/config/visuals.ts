@@ -163,6 +163,7 @@ export const TEXTURES = {
   boneSpine: "tex-bone-spine",
   altar: "tex-altar",
   mango: "tex-mango",
+  magnet: "tex-magnet",
   orbTransmute: "tex-orb-transmute",
   orbChaos: "tex-orb-chaos",
   orbAwaken: "tex-orb-awaken",

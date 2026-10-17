@@ -108,12 +108,12 @@ const rule = await run(`
   // kill can draw from is filled once first, with the real roll — the
   // pinned kills below then only reuse what is there.
   const P = s.player, cmb = s.combat;
-  cmb.dropPotionAt(P.x, P.y); cmb.dropMangoAt(P.x, P.y); cmb.dropShardAt(P.x, P.y);
+  cmb.dropPotionAt(P.x, P.y); cmb.dropMangoAt(P.x, P.y); cmb.dropMagnetAt(P.x, P.y); cmb.dropShardAt(P.x, P.y);
   cmb.dropOrbAt(P.x, P.y, 'chaos'); cmb.dropBoneAt(P.x, P.y, 'rib'); cmb.dropRandomSkillAt(P.x, P.y);
   cmb.dropAltarAt(P.x, P.y + 300, 'bosses');
   cmb.dropSkillAt(P.x, P.y, { id: 'fireball' });
   cmb.dropGearAt(P.x, P.y, { uid: 'warm', id: 'rustySword', prefixes: [], suffixes: [] });
-  [cmb.potions, cmb.mangoDrops, cmb.shardDrops, cmb.orbDrops, cmb.boneDrops, cmb.randomSkillDrops,
+  [cmb.potions, cmb.mangoDrops, cmb.magnetDrops, cmb.shardDrops, cmb.orbDrops, cmb.boneDrops, cmb.randomSkillDrops,
    cmb.altars, cmb.skillDrops, cmb.gearDrops].forEach((g) => g.getChildren().forEach((d) => d.active && d.collect()));
   const c = window.config;
   const was = { potion: c.POTION.chance, mango: c.MANGO.chance };
@@ -214,6 +214,115 @@ check('damage stops at its ceiling of picks', Math.abs(capped.damage - capped.wa
 check('and so does attack speed', Math.abs(capped.attackSpeed - capped.wantSpeed) < 1e-6,
   `${capped.attackSpeed.toFixed(2)} (cap ${capped.max.attackSpeed})`);
 check('a skill with nothing left to take is not offered on a level-up', capped.asked === 0);
+
+// --- 6. 자석: picked up, everything on the map flies in and is picked up ---
+const magnetRate = await run(`
+  s.choosing = true;
+  s.spawner.clear();
+  const c = window.config;
+  const roll = Math.random;
+  // The same pinned rolls as the drop rule above, at a chance of 20%, so
+  // every pool a kill can draw from is already filled.
+  const was = c.MAGNET.chance;
+  c.MAGNET.chance = 0.2;
+  const out = { chance: was, mango: c.MANGO.chance };
+  const kill = (affixes, r) => {
+    s.combat.magnetDrops.getChildren().forEach((d) => d.active && d.collect());
+    let e;
+    if (affixes > 0) { e = s.spawner.spawnRare('grunt'); while (e.affixes.length !== affixes) { e.recycle(); e = s.spawner.spawnRare('grunt'); } }
+    else { e = s.spawner.group.get(s.player.x + 300, s.player.y); e.spawn(s.player.x + 300, s.player.y, s.player, 'grunt'); }
+    Math.random = () => r;
+    try { s.combat.hit(e, 1e12); } finally { Math.random = roll; }
+    return s.combat.magnetDrops.countActive(true);
+  };
+  try {
+    out.under = kill(0, 0.2 - 0.001);
+    out.over = kill(0, 0.2 + 0.001);
+    // A rare's 속성 raise every ordinary drop, but not this one.
+    out.rare = kill(2, 0.2 + 0.001);
+  } finally {
+    c.MAGNET.chance = was;
+  }
+  s.combat.magnetDrops.getChildren().forEach((d) => d.active && d.collect());
+  [s.combat.gems, s.combat.skillDrops, s.combat.potions, s.combat.gearDrops, s.combat.shardDrops, s.combat.orbDrops,
+   s.combat.boneDrops, s.combat.randomSkillDrops, s.combat.mangoDrops, s.combat.altars]
+    .forEach((g) => g.getChildren().forEach((d) => d.active && d.collect()));
+  s.choosing = false;
+  return out;
+`);
+console.log('magnet rate:', JSON.stringify(magnetRate));
+check('자석 drops off a kill at its chance, the same as the 하얀 망고',
+  magnetRate.chance === magnetRate.mango && magnetRate.under === 1 && magnetRate.over === 0,
+  `${magnetRate.chance} (망고 ${magnetRate.mango})`);
+check('and a rare does not raise it', magnetRate.rare === 0);
+
+// Scatter things all over the map, far out of reach, then pick a 자석 up.
+const scattered = await run(`
+  s.spawner.clear();
+  const p = s.player, c = s.combat;
+  p.setInvulnerable(true);
+  p.hp = Math.max(1, p.maxHp - 40);
+  const far = [[-900, -700], [1100, 600], [-1200, 800], [900, -900]];
+  const at = (i) => ({ x: p.x + far[i % far.length][0], y: p.y + far[i % far.length][1] });
+  // Worth 1 each: a level-up on the way would heal, and a full survivor rightly leaves the potion.
+  for (let i = 0; i < 6; i++) { const g = c.gems.get(); const q = at(i); g.drop(q.x, q.y, 1, p); }
+  let q = at(0); c.dropOrbAt(q.x, q.y, 'chaos');
+  q = at(1); c.dropShardAt(q.x, q.y);
+  q = at(2); c.dropPotionAt(q.x, q.y);
+  q = at(3); c.dropGearAt(q.x, q.y, { uid: 'pulled', id: 'rustySword', prefixes: [], suffixes: [] });
+  q = at(1); c.dropAltarAt(q.x, q.y + 120, 'bosses');
+  c.dropMagnetAt(p.x + 60, p.y);
+  return {
+    gems: c.gems.countActive(true), orbs: window.orbs.count('chaos'), shards: window.passives.value.shards,
+    gear: window.gear.items.some((i) => i.uid === 'pulled'), hp: p.hp, xp: s.progression.xp, level: s.progression.level,
+    label: c.magnetDrops.getChildren().find((d) => d.active)?.nameplate.text ?? null,
+  };
+`);
+await run(`
+  const m = s.combat.magnetDrops.getChildren().find((d) => d.active);
+  s.combat.onMagnetTouch(s.player, m);
+  return 1;
+`);
+const flying = await run(`
+  const c = s.combat;
+  return { gemsPulled: c.gems.getChildren().filter((g) => g.active && g.pulled).length,
+           itemsPulled: [c.orbDrops, c.shardDrops, c.potions, c.gearDrops].every((g) => g.getChildren().filter((d) => d.active).every((d) => d.pulled)),
+           altarPulled: c.altars.getChildren().some((a) => a.active && a.pulled),
+           toast: s.toasts.lines.some((l) => /자석/.test(l)) };
+`);
+await sleep((await cdp.evaluate(`window.config.MAGNET.pullMs`)) + 900);
+const landed = await run(`
+  const p = s.player, c = s.combat;
+  const out = {
+    gems: c.gems.countActive(true), orbs: window.orbs.count('chaos'), shards: window.passives.value.shards,
+    gear: window.gear.items.some((i) => i.uid === 'pulled'), hp: p.hp, xp: s.progression.xp, level: s.progression.level,
+    altar: c.altars.countActive(true), potions: c.potions.countActive(true),
+  };
+  c.altars.getChildren().forEach((a) => a.active && a.collect());
+  p.setInvulnerable(false);
+  return out;
+`);
+console.log('magnet:', JSON.stringify({ scattered, flying, landed }));
+check('자석 lies on the ground under its name', scattered.label === '자석', `${scattered.label}`);
+check('picked up, every gem and item on the map is pulled in — but not the 제단, and it says so',
+  flying.gemsPulled === scattered.gems && flying.itemsPulled && !flying.altarPulled && flying.toast,
+  JSON.stringify(flying));
+check('and within the pull they are all picked up: the XP, the 구슬, the 조각, the sword and the potion',
+  landed.gems === 0 && (landed.xp > scattered.xp || landed.level > scattered.level) &&
+    landed.orbs === scattered.orbs + 1 && landed.shards === scattered.shards + 1 && landed.gear === true &&
+    landed.hp > scattered.hp && landed.potions === 0,
+  JSON.stringify(landed));
+check('the 제단 stays where it was', landed.altar === 1);
+
+// Switched off in the 필터, it never lands.
+const filtered = await run(`
+  window.itemFilter.toggle('magnet');
+  s.combat.dropMagnetAt(s.player.x + 60, s.player.y);
+  const n = s.combat.magnetDrops.countActive(true);
+  window.itemFilter.toggle('magnet');
+  return n;
+`);
+check('switched off in the 필터, it does not land', filtered === 0, `${filtered}`);
 
 console.log('\n=== SUMMARY ===');
 const failed = results.filter((r) => !r.p);

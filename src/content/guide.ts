@@ -39,6 +39,7 @@ import {
   type AltarOfferId,
   type EnemyKind,
   type GuideTone,
+  MAGNET,
 } from '@/config';
 import {
   affixDetail,
@@ -175,6 +176,8 @@ function values(): Record<string, string | number> {
     mangoChance: percent(MANGO.chance),
     mangoSecs: seconds(MANGO.durationMs),
     mangoBoost: raise(MANGO.attackSpeedScale),
+    magnetChance: percent(MAGNET.chance),
+    magnetSecs: seconds(MAGNET.pullMs),
     altarChance: percent(ALTAR.fromKill),
     altarOffers: (Object.keys(ALTAR_OFFERS) as AltarOfferId[])
       .map((id) => altarOfferText(id))

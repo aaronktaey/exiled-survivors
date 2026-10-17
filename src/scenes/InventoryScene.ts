@@ -940,11 +940,12 @@ export class InventoryScene extends Phaser.Scene {
     }
 
     if (outcome.kind === 'upgrade' && outcome.line && outcome.from) {
-      return fill(copy.orbUpgraded, {
+      const upgraded = fill(copy.orbUpgraded, {
         orb,
         from: `${affixName(outcome.from.id)} ${fill(copy.tier, { tier: outcome.from.tier })}`,
         to: `${affixName(outcome.line.id)} ${fill(copy.tier, { tier: outcome.line.tier })}`,
       });
+      return outcome.wardSpent ? `${upgraded}${copy.mangoSpent}` : upgraded;
     }
 
     if (outcome.kind === 'add' && outcome.line) {

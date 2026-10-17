@@ -75,7 +75,7 @@ wrong shape.
 ## The test harness
 
 `tests/` drives a real Chrome over CDP against the dev server and checks the
-running game, not units. 43 suites, ~1145 checks. It is the only thing that has
+running game, not units. 43 suites, ~1150 checks. It is the only thing that has
 caught most of what has gone wrong here, so run all of it before every commit.
 
 ```sh
@@ -389,6 +389,14 @@ Read `git log` for what changed and when. What is not in the log:
 - **효과음 음량.** `settings.sfxVolume` scales every effect through
   `effectVolume()` in Sfx.ts — skills, drops, the horn, the slot, the
   인벤토리's. A new sound that bypasses it ignores the player's setting.
+- **자석 pulls by the scene clock.** Picking one up calls
+  `CombatSystem.pullEverything`: every gem (`XpGem.pullTo`) and every
+  ground item (`GroundItem.pullTo` — not the 제단) flies at the survivor via
+  `flyTo`, fast enough to arrive within `MAGNET.pullMs`, and is collected by
+  the ordinary overlap — so a potion at full health is still left. The pull
+  is done in each item's own update: XpGem zeroes its velocity out of
+  pickup range every frame, so setting a velocity from outside never sticks.
+  A new kind of drop group goes in the `lying` list there.
 - **Touch never holds the run.** A phone fires a pretend mouse event after a
   tap; landing on a rare under a just-closed card used to set `inspecting`
   and freeze the arena and the pad. `setInspecting` ignores it on touch
@@ -402,8 +410,9 @@ Read `git log` for what changed and when. What is not in the log:
   320 kbps original is `assets-src/music/Constance.mp3`.
 - **One drop rule.** Every ordinary drop is multiplied by the kill's
   `Enemy.dropBonus`: 1 + `RARE.dropBonusPerAffix` per 속성 on a rare,
-  1 + `BOSS.dropBonus` for a 우두머리. The 하얀 망고 is the one exception
-  the user asked for: a flat `MANGO.chance` off every kill. What only a 우두머리 leaves (its
+  1 + `BOSS.dropBonus` for a 우두머리. The 하얀 망고 and the 자석 are the
+  exceptions the user asked for: a flat `MANGO.chance` / `MAGNET.chance` off
+  every kill. What only a 우두머리 leaves (its
   certain weapon, shards, a `fromBossOnly` 구슬, a 뼈다귀 with `fromKill: 0`)
   and what is certain are not multiplied. A new drop should go through the
   same `bonus` in `CombatSystem.killEnemy`.
@@ -428,8 +437,10 @@ Read `git log` for what changed and when. What is not in the log:
   out. Its third button shares the row with 착용 · 버리기 so the pane is no
   taller on a short phone.
 - **망고의 구슬 wards a weapon.** An `OrbSpec` with `ward` sets
-  `GearItem.mango`; the 폭발의 구슬's destroy roll on a warded weapon comes
-  back `saved` (weapon unchanged, `mango` gone) instead of `destroyed`. Only
+  `GearItem.mango`; it lasts one 폭발의 구슬 whatever it rolls: a destroy
+  roll comes back `saved` (weapon unchanged, `mango` gone) instead of
+  `destroyed`, and a climb comes back `upgrade` with `wardSpent` (the note
+  says the 망고 went). Only
   구슬 are warded against — a failed 합성 still spends its swords. The
   인벤토리 shows it on the cell (`GridItem.badge`) and in `stateLine` under
   the name, not as a read-out line (that block is budgeted to the screen).

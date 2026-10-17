@@ -1051,6 +1051,22 @@ export const MANGO = {
   size: 22,
 } as const;
 
+/**
+ * 자석 — picked up, it pulls every item and XP gem on the map to the
+ * survivor and collects them. Off every kill at the same flat chance as the
+ * 하얀 망고 (the user's ask), and like it raised by nothing.
+ */
+export const MAGNET = {
+  /** Share of kills that leave one, whatever was killed. */
+  chance: 0.001,
+  /** How long the pull takes: everything on the map arrives within this. */
+  pullMs: 600,
+  /** The least speed anything is pulled at, so a near one does not crawl. */
+  minSpeed: 600,
+  /** How big it is drawn on the ground. */
+  size: 22,
+} as const;
+
 /** Health potions, rolled separately from the skill drop. */
 export const POTION = {
   /** Chance that killing an enemy drops one. */
