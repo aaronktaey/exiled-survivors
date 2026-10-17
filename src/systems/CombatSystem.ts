@@ -620,7 +620,7 @@ export class CombatSystem {
     }
 
     potion.collect();
-    const healed = this.player.heal(HealthPotion.healing);
+    const healed = this.player.heal(HealthPotion.healingFor(this.player.maxHp));
     this.damageNumbers.spawn(this.player.x, this.player.y - 18, healed, {
       prefix: '+',
       color: COLORS.healText,

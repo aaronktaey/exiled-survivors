@@ -1233,7 +1233,7 @@ export class GameScene extends Phaser.Scene {
    * naming the skill.
    */
   private drinkForMaxedSkill(skill: SkillId): void {
-    const healed = this.player.heal(HealthPotion.healing);
+    const healed = this.player.heal(HealthPotion.healingFor(this.player.maxHp));
     const { x, y } = this.player;
     // Over the survivor's own name and health, not on them.
     this.damageNumbers.spawn(x, y - 70, 0, { text: t().game.potionEffect, color: COLORS.healText, crit: true });

@@ -103,10 +103,9 @@ await shot('potion-01-dropped');
 await sleep(700);
 const picked = await run(`
   return { hp: s.player.hp, left: s.combat.potions.countActive(true),
-           // A potion is a share of the bar every survivor starts with, not
-           // of whatever 거대 has stretched this one's to.
+           // A potion is a share of this survivor's own bar, 거대 and all.
            want: Math.max(1, Math.round(
-             window.config.PLAYER.maxHp * window.config.POTION.healFraction)) };
+             s.player.maxHp * window.config.POTION.healFraction)) };
 `);
 console.log('pickup:', JSON.stringify(picked));
 const HEAL = picked.hp - healing.before;
@@ -114,7 +113,7 @@ check('walking over it heals, and takes the potion off the ground',
   HEAL > 0 && picked.left === 0, `hp ${healing.before} -> ${picked.hp} of ${MAX}`);
 // What a potion is worth is tuned in balance.ts, so read it rather than
 // carrying a copy of the fraction here.
-check('it heals the share of the base bar it is tuned to',
+check('it heals the share of the survivor’s own bar it is tuned to',
   HEAL === picked.want, `+${HEAL} of a ${MAX} bar, wanted +${picked.want}`);
 
 // --- 3. the heal says so on screen ---
@@ -232,6 +231,30 @@ console.log('live:', JSON.stringify(healed));
 check('potions dropped by real kills heal the player',
   healed.healed > 0 && healed.hp > 8, `+${healed.healed} hp, now ${healed.hp}/${MAX}`);
 await shot('potion-03-live');
+
+// --- a potion is a share of the survivor's own bar: 거대 makes it heal more ---
+const scaled = await run(`
+  s.choosing = true;
+  const p = s.player;
+  const plain = p.maxHp;
+  const hearty = window.gearBonusFor({ uid: 'h', id: 'rustySword', prefixes: [], suffixes: [{ id: 'giant', tier: 1 }, { id: 'giant', tier: 1 }] });
+  p.applyGear(hearty);
+  const big = p.maxHp;
+  p.hp = 1;
+  s.combat.potions.getChildren().forEach((d) => d.active && d.collect());
+  s.combat.dropPotionAt(p.x, p.y);
+  const potion = s.combat.potions.getChildren().find((d) => d.active);
+  s.combat.onPotionTouch(p, potion);
+  const healed = p.hp - 1;
+  p.applyGear(s.mods.gear);
+  p.hp = p.maxHp;
+  s.choosing = false;
+  return { plain, big, healed, want: Math.max(1, Math.round(big * window.config.POTION.healFraction)) };
+`);
+console.log('scaled potion:', JSON.stringify(scaled));
+check('with 거대 stretching the bar, a potion heals that share of the stretched bar',
+  scaled.big > scaled.plain && scaled.healed === scaled.want,
+  `+${scaled.healed} of a ${scaled.big} bar (was ${scaled.plain}), wanted +${scaled.want}`);
 
 console.log('\n=== SUMMARY ===');
 const failed = results.filter((r) => !r.p);

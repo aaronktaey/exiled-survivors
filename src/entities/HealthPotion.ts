@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 
-import { COLORS, PLAYER, POTION, TEXTURES } from '@/config';
+import { COLORS, POTION, TEXTURES } from '@/config';
 import { GroundItem } from '@/entities/GroundItem';
 
 /**
@@ -13,9 +13,12 @@ export class HealthPotion extends GroundItem {
     this.setDisplaySize(POTION.size, POTION.size);
   }
 
-  /** What one potion restores, in hit points. */
-  public static get healing(): number {
-    return Math.max(1, Math.round(PLAYER.maxHp * POTION.healFraction));
+  /**
+   * What one potion restores, in hit points: a share of the survivor's own
+   * bar as it stands — 거대 and all — not of the bar every survivor starts with.
+   */
+  public static healingFor(maxHp: number): number {
+    return Math.max(1, Math.round(maxHp * POTION.healFraction));
   }
 
   public drop(x: number, y: number): void {

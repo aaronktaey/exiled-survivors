@@ -228,7 +228,7 @@ const maxed = await run(`
   s.onLevelUp(99);
   s.queueChoice = was;
   s.choosing = false;
-  return { hp: s.player.hp, queued: queued.length, want: Math.min(s.player.maxHp, 10 + Math.round(window.config.PLAYER.maxHp * window.config.POTION.healFraction)) };
+  return { hp: s.player.hp, queued: queued.length, want: Math.min(s.player.maxHp, 10 + Math.max(1, Math.round(s.player.maxHp * window.config.POTION.healFraction))) };
 `);
 console.log('maxed:', JSON.stringify(maxed));
 check('a level-up for a main skill with nothing left to take heals a potion’s worth instead',

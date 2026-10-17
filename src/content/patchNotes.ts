@@ -15,6 +15,28 @@ export interface PatchNote {
 
 export const PATCH_NOTES: readonly PatchNote[] = [
   {
+    version: '0.59',
+    date: '2026-10-18',
+    changes: {
+      ko: [
+        '떨어지는 장비에 속성이 붙을 확률이 한 줄마다 60%가 되었습니다. 열에 여섯은 속성을 하나 이상 달고 나옵니다.',
+        '체력 포션(강화를 모두 마친 스킬의 포션 효과 포함)은 장비로 늘어난 최대 체력까지 포함한 최종 최대 체력에 비례해 회복합니다.',
+      ],
+      en: [
+        'Each modifier on a dropped weapon is now a 60% roll: six drops in ten carry at least one.',
+        'Health potions (and the potion a fully upgraded skill turns into) now heal a share of your final max health, gear included.',
+      ],
+      ja: [
+        '落ちる装備に属性が付く確率は 1 行ごとに 60% になりました。10 個のうち 6 個は属性を 1 つ以上持ちます。',
+        '体力ポーション（強化しきったスキルのポーション効果を含む）は、装備で増えた分も含めた最終的な最大体力に比例して回復します。',
+      ],
+      zh: [
+        '掉落装备每条词缀出现的几率改为 60%：十件里有六件至少带一条词缀。',
+        '生命药水（含技能全部强化后的药水效果）改为按包含装备加成在内的最终最大生命值比例回复。',
+      ],
+    },
+  },
+  {
     version: '0.58',
     date: '2026-10-17',
     changes: {

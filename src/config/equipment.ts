@@ -181,10 +181,11 @@ export const GEAR_COMBINE = {
 export const GEAR_DROP = {
   /**
    * Each affix line has to win its own roll, and the roll repeats until one
-   * fails (or the weapon is full at six). At 0.7 (0.2 until 2026-10-17) most
-   * drops carry a line or two, and about one in nine comes out full.
+   * fails (or the weapon is full at six). At 0.6 (0.2 until 2026-10-17, 0.7
+   * for a day) six in ten drops carry at least one line. Above 0.5 a full
+   * six is commoner than five, the rolls past five all landing on it.
    */
-  affixChance: 0.7,
+  affixChance: 0.6,
   /** Path of Exile's ceiling for a rare: three of each. */
   maxPrefixes: 3,
   maxSuffixes: 3,
