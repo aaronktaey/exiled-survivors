@@ -553,7 +553,10 @@ export interface Strings {
     /** Over the survivor when a shot is turned aside (오니고로시). */
     readonly blocked: string;
     /** A level-up or pickup for a skill with every upgrade taken heals instead. */
+    /** A level-up a fully upgraded {skill} turned into a potion: {heal} health back. */
     readonly maxedHeal: string;
+    /** Over the survivor when that happens. */
+    readonly potionEffect: string;
     /** A toast as a 우두머리 walks in. */
     readonly bossArrived: string;
     readonly intro: string;

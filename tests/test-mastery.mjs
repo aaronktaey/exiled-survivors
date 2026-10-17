@@ -355,6 +355,42 @@ check('and how many times it has been taken of how many it can be',
     chain && chain.taken === 1 && chain.max === cardValues.want.chainMax && chain.picks.includes(`1/${cardValues.want.chainMax}`),
   `${dmg?.picks} · ${chain?.picks}`);
 
+// --- 3g. every upgrade has a ceiling, and a skill past all of them heals, saying so ---
+const ceilings = await cdp.evaluate(`(() => {
+  const c = window.config;
+  return ['range', 'projectileSpeed', 'orbitSpeed', 'damage', 'attackSpeed'].map((id) => [id, c.UPGRADE_MAX_PICKS[id] ?? null]);
+})()`);
+check('투사체 속도, 회전 속도 and 사정거리 stop at a number of picks too',
+  ceilings.every(([, max]) => typeof max === 'number' && max > 0), JSON.stringify(ceilings));
+
+const potion = await run(`
+  s.choosing = false; s.pendingChoices.length = 0;
+  const p = s.player;
+  p.setInvulnerable(true);
+  const id = s.mainSkill;
+  // Take every upgrade the main skill has, to its ceiling.
+  for (let i = 0; i < 200; i++) {
+    const opts = window.game.scene.getScene('GameScene').progression;
+    for (const up of ['damage', 'attackSpeed', 'range', 'projectileSpeed', 'orbitSpeed', 'chainCount', 'pierceCount', 'orbCount']) opts.apply(id, up);
+  }
+  p.hp = Math.max(1, p.maxHp - 50);
+  const hp = p.hp;
+  s.damageNumbers.reset();
+  s.onLevelUp(s.progression.level + 1);
+  const floaters = s.damageNumbers.pool.filter((f) => f.remainingMs > 0).map((f) => f.text.text);
+  return { id, healed: p.hp - hp, upgradeOpen: window.game.scene.isActive('UpgradeScene'),
+           toast: s.toasts.lines.find((l) => /포션/.test(l)) ?? '', floaters,
+           name: s.hud.loadout?.find?.((e) => e.id === id)?.name ?? null };
+`);
+console.log('maxed potion:', JSON.stringify(potion));
+check('a level-up on a skill with every upgrade taken heals instead of opening the cards',
+  potion.healed > 0 && potion.upgradeOpen === false, `+${potion.healed}`);
+check('and says so plainly: 포션 효과! over the survivor, and a toast naming the skill',
+  potion.floaters.includes('포션 효과!') && /강화 완료/.test(potion.toast) && /포션/.test(potion.toast) &&
+    potion.floaters.some((f) => /^\+\d+/.test(f)),
+  `${potion.toast} · ${potion.floaters.join(' ')}`);
+await run(`s.player.setInvulnerable(false); return 1;`);
+
 // --- 4. 척추 ---
 const spine = await cdp.evaluate(`(() => {
   const c = window.config;

@@ -177,7 +177,10 @@ Read `git log` for what changed and when. What is not in the log:
   (`GameScene.mainSkill`, kept in the save as `main`): every level-up
   upgrades it; once it has taken every upgrade, a level-up (or a repeat
   pickup of any maxed skill) heals a 체력 포션's worth instead
-  (`drinkForMaxedSkill`) — it never moves on to another skill. A skill found
+  (`drinkForMaxedSkill`, said plainly: 포션 효과! and the health over the
+  survivor, a green burst, a `heal` toast naming the skill) — it never moves
+  on to another skill. Every upgrade has a ceiling now (`UPGRADE_MAX_PICKS`
+  or `UPGRADE_CAP`), so every skill does get there. A skill found
   later is upgraded by finding it again. (Level-ups once went to a random skill; the user read that as the
   main skill changing, and asked for this.) With the
   choice off (`#run`, the harness) a run starts on `UNSPUN_SKILL` (타격) so

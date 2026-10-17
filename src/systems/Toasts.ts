@@ -2,13 +2,14 @@ import Phaser from 'phaser';
 
 import { COLORS, DEPTH, HUD, TEXT, TOAST } from '@/config';
 
-/** How a toast is dressed: an ordinary line, something rare, or a warning. */
-export type ToastTone = 'normal' | 'rare' | 'warning';
+/** How a toast is dressed: an ordinary line, something rare, a warning, or health back. */
+export type ToastTone = 'normal' | 'rare' | 'warning' | 'heal';
 
 const EDGE: Record<ToastTone, number> = {
   normal: 0x2b3445,
   rare: 0xffc43a,
   warning: 0xe0564a,
+  heal: 0x7ef0b0,
 };
 
 interface Toast {
@@ -52,7 +53,7 @@ export class Toasts {
       .text(0, 0, message, {
         fontFamily: 'system-ui, sans-serif',
         fontSize: TEXT.size.small,
-        color: tone === 'rare' ? '#ffd76a' : COLORS.text,
+        color: tone === 'rare' ? '#ffd76a' : tone === 'heal' ? COLORS.healText : COLORS.text,
         wordWrap: { width: maxWidth - TOAST.padding * 2 },
       })
       .setOrigin(1, 0);

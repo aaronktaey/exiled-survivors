@@ -1114,10 +1114,9 @@ export class GameScene extends Phaser.Scene {
   }
 
   /**
-   * A level-up upgrades the run's main skill — the first one it held. Only
-   * once that has taken every upgrade there is does a level go to another
-   * skill in hand, picked at random; one at every ceiling would open a popup
-   * with no cards in it. The card says which.
+   * A level-up upgrades the run's main skill — the first one it held. Once
+   * that has taken every upgrade there is, the level is a 체력 포션 instead
+   * (drinkForMaxedSkill), said plainly so it does not look lost.
    */
   private onLevelUp(level: number): void {
     this.player.setLevel(level);
@@ -1127,7 +1126,7 @@ export class GameScene extends Phaser.Scene {
     }
     // Nothing left to take: the level is a potion instead.
     if (upgradeOptionsFor(SKILLS[skill], this.progression.statsFor(skill)).length === 0) {
-      this.drinkForMaxedSkill();
+      this.drinkForMaxedSkill(skill);
       return;
     }
 
@@ -1169,7 +1168,7 @@ export class GameScene extends Phaser.Scene {
     const options = upgradeOptionsFor(SKILLS[request.skill], this.progression.statsFor(request.skill));
     if (options.length === 0) {
       // A skill with every upgrade taken: what would have been one is a potion.
-      this.drinkForMaxedSkill();
+      this.drinkForMaxedSkill(request.skill);
       this.afterChoice();
       return;
     }
@@ -1226,11 +1225,36 @@ export class GameScene extends Phaser.Scene {
    * What a level-up or a repeat pickup gives a skill that has taken every
    * upgrade there is: a 체력 포션's worth of health, said over the survivor.
    */
-  private drinkForMaxedSkill(): void {
+  /**
+   * A skill with every upgrade taken: the level-up (or the repeat pickup)
+   * that would have gone into it is a 체력 포션 instead. Said three ways, so
+   * it is not mistaken for a level-up that went nowhere: 포션 효과! over the
+   * survivor with the health it gave, a green burst round them, and a toast
+   * naming the skill.
+   */
+  private drinkForMaxedSkill(skill: SkillId): void {
     const healed = this.player.heal(HealthPotion.healing);
-    this.damageNumbers.spawn(this.player.x, this.player.y - 18, healed, { prefix: '+', color: COLORS.healText });
-    this.announce(t().game.maxedHeal);
+    const { x, y } = this.player;
+    // Over the survivor's own name and health, not on them.
+    this.damageNumbers.spawn(x, y - 70, 0, { text: t().game.potionEffect, color: COLORS.healText, crit: true });
+    this.damageNumbers.spawn(x, y - 46, healed, { prefix: '+', color: COLORS.healText });
+    const burst = this.add
+      .image(x, y, TEXTURES.glow)
+      .setDisplaySize(70, 70)
+      .setTint(0x7ef0b0)
+      .setBlendMode(Phaser.BlendModes.ADD)
+      .setDepth(DEPTH.player + 1);
+    this.tweens.add({
+      targets: burst,
+      alpha: 0,
+      scale: burst.scale * 2.4,
+      duration: 600,
+      ease: 'Quad.easeOut',
+      onComplete: () => burst.destroy(),
+    });
+    this.announce(fill(t().game.maxedHeal, { skill: skillName(skill), heal: Math.round(healed) }), 'heal');
   }
+
 
   /**
    * A skill reaches SKILL_MASTERY.level: its 각성 is announced loudly — a

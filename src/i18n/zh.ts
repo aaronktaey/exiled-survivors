@@ -393,7 +393,8 @@ export const zh: Strings = {
 
   game: {
     blocked: '格挡',
-    maxedHeal: '技能已全部强化 — 恢复生命',
+    maxedHeal: '{skill} 已全部强化 — 升级改为生命药水效果，生命 +{heal}',
+    potionEffect: '药水效果！',
     bossArrived: '首领出现！',
     intro: 'Exile, do something!',
     introHintKeyboard: 'WASD 或方向键移动 — 攻击自动进行',

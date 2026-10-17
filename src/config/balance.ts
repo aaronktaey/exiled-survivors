@@ -1279,6 +1279,10 @@ export function orbsHeld(orbCount: number, extra = 0): number {
 export const UPGRADE_MAX_PICKS: Partial<Record<UpgradeKey, number>> = {
   damage: 20,
   attackSpeed: 20,
+  // These three had no ceiling at all until 2026-10-17.
+  range: 20,
+  projectileSpeed: 20,
+  orbitSpeed: 20,
 };
 
 /**

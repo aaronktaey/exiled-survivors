@@ -15,6 +15,28 @@ export interface PatchNote {
 
 export const PATCH_NOTES: readonly PatchNote[] = [
   {
+    version: '0.57',
+    date: '2026-10-17',
+    changes: {
+      ko: [
+        '제한이 없던 강화 선택지(투사체 속도 · 회전 속도 · 사정거리)도 스킬마다 최대 20회까지만 고를 수 있습니다.',
+        '강화를 모두 마친 스킬의 레벨업이 체력 포션 효과로 바뀔 때, 플레이어 위에 「포션 효과!」와 회복량이 뜨고 초록 빛이 퍼지며, 어떤 스킬 때문인지 알림으로 알려 줍니다.',
+      ],
+      en: [
+        'The upgrades that had no ceiling (shot speed, orbit speed, range) now stop at 20 picks per skill too.',
+        'When a fully upgraded skill’s level-up turns into a health potion, “Potion!” and the health it gave rise over you in a green burst, and a toast names the skill.',
+      ],
+      ja: [
+        '上限のなかった強化（投射物速度 · 回転速度 · 射程）も、スキルごとに最大 20 回までになりました。',
+        '強化しきったスキルのレベルアップが体力ポーションの効果に変わるとき、プレイヤーの上に「ポーション効果！」と回復量が出て緑の光が広がり、どのスキルによるものか通知で知らせます。',
+      ],
+      zh: [
+        '原本没有上限的强化（投射物速度 · 旋转速度 · 射程）也改为每个技能最多 20 次。',
+        '技能全部强化后，升级改为生命药水效果时，玩家头上会出现「药水效果！」和回复量并扩散绿光，同时以通知说明是哪个技能。',
+      ],
+    },
+  },
+  {
     version: '0.56',
     date: '2026-10-17',
     changes: {

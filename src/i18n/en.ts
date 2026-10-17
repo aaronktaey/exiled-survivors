@@ -393,7 +393,8 @@ export const en: Strings = {
 
   game: {
     blocked: 'Blocked',
-    maxedHeal: 'Skill fully upgraded — health restored',
+    maxedHeal: '{skill} is fully upgraded — the level-up works as a health potion: +{heal} HP',
+    potionEffect: 'Potion!',
     bossArrived: 'A Boss has arrived!',
     intro: 'Exile, do something!',
     introHintKeyboard: 'WASD or arrows to move — attacks are automatic',

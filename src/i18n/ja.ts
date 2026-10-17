@@ -393,7 +393,8 @@ export const ja: Strings = {
 
   game: {
     blocked: '防御',
-    maxedHeal: '強化をすべて終えたスキル — 体力回復',
+    maxedHeal: '{skill} は強化しきりました — レベルアップが体力ポーションの効果になり体力 +{heal}',
+    potionEffect: 'ポーション効果！',
     bossArrived: 'ボス出現！',
     intro: 'Exile, do something!',
     introHintKeyboard: 'WASD・方向キーで移動 — 攻撃は自動',

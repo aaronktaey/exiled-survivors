@@ -397,7 +397,8 @@ export const ko: Strings = {
 
   game: {
     blocked: '막음',
-    maxedHeal: '강화를 모두 마친 스킬 — 체력 회복',
+    maxedHeal: '{skill} 강화 완료 — 레벨업이 체력 포션 효과로 바뀌어 체력 +{heal}',
+    potionEffect: '포션 효과!',
     bossArrived: '우두머리 등장!',
     intro: 'Exile, do something!',
     introHintKeyboard: 'WASD · 방향키로 이동 — 공격은 자동',
