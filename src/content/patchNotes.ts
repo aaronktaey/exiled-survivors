@@ -15,6 +15,32 @@ export interface PatchNote {
 
 export const PATCH_NOTES: readonly PatchNote[] = [
   {
+    version: '0.61',
+    date: '2026-10-18',
+    changes: {
+      ko: [
+        '치명타 피해가 1.3배에서 2배로 올랐습니다.',
+        '장비의 피해 속성을 다시 맞췄습니다 — 강력·광포 +21/16/11/7/5%, 치명(기본 치명타 확률)·잔혹(치명타 피해) +90/72/54/36/24%(1티어부터).',
+        '치명과 잔혹은 서로 곱해지므로 한 줄씩은 강력·광포보다 약하지만, 함께 갖추면 같은 티어의 강력·광포 조합과 비슷한 피해를 냅니다(1티어 3줄 기준 약 +72%). 지난 버전의 치명·잔혹 조합은 이보다 훨씬 강했습니다.',
+      ],
+      en: [
+        'Critical hits now deal ×2 damage instead of ×1.3.',
+        'Weapon damage lines are retuned — Mighty and Frenzied +21/16/11/7/5%, Deadly (base critical chance) and Cruel (critical damage) +90/72/54/36/24% (from tier 1).',
+        'Deadly and Cruel multiply each other, so one line of either is weaker than Mighty or Frenzied, but together they do about what Mighty and Frenzied do at the same tier (about +72% for three tier-1 lines). Last version’s Deadly and Cruel pairing was far stronger than that.',
+      ],
+      ja: [
+        'クリティカルダメージが 1.3 倍から 2 倍になりました。',
+        '装備のダメージ属性を調整しました — 剛力・狂乱 +21/16/11/7/5%、致命（基本クリティカル率）・残酷（クリティカルダメージ）+90/72/54/36/24%（1 ティアから）。',
+        '致命と残酷は互いに掛け合わさるため、1 行ずつでは剛力・狂乱より弱いですが、そろえると同じティアの剛力・狂乱の組み合わせと同程度のダメージになります（1 ティア 3 行で約 +72%）。前バージョンの致命・残酷の組み合わせはこれよりはるかに強力でした。',
+      ],
+      zh: [
+        '暴击伤害由 1.3 倍提高到 2 倍。',
+        '重新调整装备的伤害词缀：强力、狂乱 +21/16/11/7/5%，致命（基础暴击几率）、残酷（暴击伤害）+90/72/54/36/24%（从 1 阶起）。',
+        '致命与残酷会相乘，单独一条不如强力、狂乱，但凑齐后与同阶的强力、狂乱组合伤害相近（1 阶 3 条约 +72%）。上个版本的致命与残酷组合远比这强。',
+      ],
+    },
+  },
+  {
     version: '0.60',
     date: '2026-10-18',
     changes: {

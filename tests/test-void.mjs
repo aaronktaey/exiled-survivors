@@ -181,8 +181,12 @@ const parked = await run(`
     cooldownMs: s.progression.cooldownMsFor('voidOrb'), range: st.range,
     projectileSpeed: 0, orbitSpeed: 0, chainCount: 0, pierceCount: 0, orbCount: st.orbCount, hit: s.combat.hit };
   w.angle = 0;   // orb 0 starts on the enemy
+  // Hits are counted by health lost, so no crit may double one.
+  const crit = window.config.PLAYER.critChance;
+  window.config.PLAYER.critChance = 0;
   const before = e.hp;
   for (let i = 0; i < 125; i++) w.update(16, ctx);
+  window.config.PLAYER.critChance = crit;
   const out = { hits: (before - e.hp) / st.damage, cooldownMs: Math.round(ctx.cooldownMs) };
   s.spawner.clear();
   s.choosing = false;

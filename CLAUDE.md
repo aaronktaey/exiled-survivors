@@ -107,7 +107,7 @@ set takes about six minutes. One suite on its own: `node run-all.mjs test-gear`.
 - **Never hard-code a tuned number.** Read it off `window.config` in the page.
   Half the regressions in this harness have been the user changing a value in
   `balance.ts` and a test asserting the old one.
-- **Crits are common** (`PLAYER.critChance` 0.2 since 2026-10-18), so anything that counts swings or asserts
+- **Crits are common** (`PLAYER.critChance` 0.2 for ×2 since 2026-10-18), so anything that counts swings or asserts
   an exact figure must either turn the base chance off for the measurement
   (`window.config.PLAYER.critChance = 0`, put back after) or assert "was hit"
   rather than "was hit for exactly N".
@@ -451,12 +451,14 @@ Read `git log` for what changed and when. What is not in the log:
   two +50% are +100%. 치명 is `critChanceIncrease`: the summed share raises
   `PLAYER.critChance` by that much of itself (`Player.critChance`), never
   points on top. (A rare enemy's 속성 still multiply — that is the enemy.)
-- **강력 · 광포 · 치명 · 잔혹 are one ladder** (user's ask, 2026-10-18): a
-  rung of any adds about the same expected damage, +15/12/9/6/4% from tier
-  1. 강력 is a `damageScale` share now (every skill's damage, added to the
-  base's 피해 고정 속성), not the sword's attack; 치명 and 잔혹 are derived
-  from `PLAYER.critChance`/`critMultiplier` — the formula is above `AFFIXES`,
-  and test-balance's parity check holds the four together.
+- **강력 · 광포 · 치명 · 잔혹 are balanced as three lines together** (the
+  user's ask, 2026-10-18, 0.60–0.61): 치명 and 잔혹 multiply each other, so
+  matching them line by line made a 치명 + 잔혹 weapon twice as strong as
+  any other. Now a lone 치명/잔혹 is a little under a lone 강력, and the best
+  three either way come to the same (+72% at tier 1). 강력 is a
+  `damageScale` share (every skill's damage, added to the base's 피해 고정
+  속성), not the sword's attack. The formula is above `AFFIXES`;
+  test-balance's parity checks hold the four together.
 - **The records conflict is asked twice.** `ConflictScene` has no keep
   buttons: a side's card is pressed (`ask`), a popup says what is lost, and
   only its button (`confirm`) resolves; 취소 / Esc backs out.

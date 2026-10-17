@@ -49,8 +49,8 @@ export const PLAYER = {
   // 0.03 until 2026-10-18. The weapon's 치명 and 잔혹 rungs are worked out
   // from this and critMultiplier (see AFFIXES): move either and they move.
   critChance: 0.2,
-  /** What one of those is worth, before 잔혹 raises it. */
-  critMultiplier: 1.3,
+  /** What one of those is worth, before 잔혹 raises it. 1.3 until 2026-10-18. */
+  critMultiplier: 2,
   /** XP gems within this range drift toward the player. */
   pickupRadius: 110,
   pickupSpeed: 420,
@@ -484,15 +484,21 @@ function tiers(
  * next time the stash is read.
  */
 //
-// 강력, 광포, 치명 and 잔혹 are one ladder: a rung of any of them adds about
-// the same damage per second on average, against a weapon with none of them
-// — +15/12/9/6/4% from tier 1 down. With c = PLAYER.critChance and
-// m = PLAYER.critMultiplier − 1, the average hit is 1 + c × m, so
-//   강력 +x% and 광포 +x% add x% (광포 until a skill's cooldown floor);
-//   치명 +s% adds c × s × m / (1 + c × m)  → s = 17.7 × the gain at 0.2 / 1.3;
-//   잔혹 +b% adds c × b / (1 + c × m)      → b = 5.3 × the gain.
-// A crit is worth only 30% more, so 치명 has to raise the chance a long way
-// to be worth a 강력; two of them stop at certain. Retune the four together.
+// 강력, 광포, 치명 and 잔혹 are balanced as a weapon's three 접두어 together,
+// not line by line: 치명 and 잔혹 multiply each other (chance × worth), so a
+// pair of them is worth far more than either alone. With c =
+// PLAYER.critChance and m = PLAYER.critMultiplier − 1 the average hit is
+// 1 + c × m; 치명 +s% makes it 1 + c(1 + s)(m + b) with 잔혹 +b%.
+//   - 치명 and 잔혹 alone: each rung adds +15/12/9/6/4% (s = b = 6 × that,
+//     at 0.2 and ×2, where m = 1 makes the two the same).
+//   - 강력 and 광포 are set so their best three (two of one, one of the
+//     other) come to what 치명 ×2 + 잔혹 does at the same rung: +72% at
+//     tier 1. A single 강력 is then worth more than a single 치명 (21 to 15),
+//     and a 치명 build pays only once it has both halves.
+// Retune the four together (test-balance checks the three-line parity).
+// Until 2026-10-18 it was 강력 [75..25] of the weapon's attack only,
+// 광포 [30..10], 치명 [50..10], 잔혹 [100..20], crits 3% for ×1.3 —
+// three 광포 beat everything else by far.
 export const AFFIXES: Record<AffixId, AffixSpec> = {
   // --- 접두어: what it does to whatever it is pointed at ---
   mighty: {
@@ -502,11 +508,10 @@ export const AFFIXES: Record<AffixId, AffixSpec> = {
     detail: "피해 +50%",
     enemy: { damageScale: 1.5 },
     gearTiers: tiers(
-      // Every skill's damage, not the weapon's attack alone: [75, 60, 50,
-      // 35, 25] of the attack until 2026-10-18 — +9% at best on a 1티어 sword.
+      // Every skill's damage, not the weapon's attack alone.
       (v) => `피해 +${v}%`,
       (v) => ({ damageScale: 1 + v / 100 }),
-      [15, 12, 9, 6, 4],
+      [21, 16, 11, 7, 5],
     ),
   },
   critical: {
@@ -518,10 +523,9 @@ export const AFFIXES: Record<AffixId, AffixSpec> = {
     gearTiers: tiers(
       // A share of the base chance (PLAYER.critChance), not points on top of
       // it: two of +50% double it. What a rung is worth is set by the base.
-      // [50, 40, 30, 20, 10] until 2026-10-18 — under +3% damage at best.
       (v) => `기본 치명타 확률 +${v}%`,
       (v) => ({ critChance: v / 100 }),
-      [265, 210, 160, 105, 70],
+      [90, 72, 54, 36, 24],
     ),
   },
   cruel: {
@@ -530,10 +534,9 @@ export const AFFIXES: Record<AffixId, AffixSpec> = {
     name: "잔혹",
     detail: "치명타 피해 +50%",
     gearTiers: tiers(
-      // [100, 80, 60, 40, 20] until 2026-10-18.
       (v) => `치명타 피해 +${v}%`,
       (v) => ({ critMultiplierBonus: v / 100 }),
-      [80, 64, 48, 32, 21],
+      [90, 72, 54, 36, 24],
     ),
   },
   frenzied: {
@@ -542,10 +545,9 @@ export const AFFIXES: Record<AffixId, AffixSpec> = {
     name: "광포",
     detail: "공격속도 +15%",
     gearTiers: tiers(
-      // [30, 25, 20, 15, 10] until 2026-10-18 — worth three 강력.
       (v) => `공격속도 +${v}%`,
       (v) => ({ attackSpeedScale: 1 + v / 100 }),
-      [15, 12, 9, 6, 4],
+      [21, 16, 11, 7, 5],
     ),
   },
   volleying: {
