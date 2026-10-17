@@ -772,7 +772,9 @@ export type AltarOfferId =
   | "rareShooters"
   | "rareBrutes"
   | "rareGrunts"
-  | "runnerSwarm";
+  | "runnerSwarm"
+  | "erraticSwarm"
+  | "fugitives";
 
 export const ALTAR_OFFERS: Record<AltarOfferId, AltarOfferSpec> = {
   bosses: { kind: "boss", count: 3, rare: false, weight: 1 },
@@ -780,6 +782,10 @@ export const ALTAR_OFFERS: Record<AltarOfferId, AltarOfferSpec> = {
   rareBrutes: { kind: "brute", count: 6, rare: true, weight: 2 },
   rareGrunts: { kind: "grunt", count: 15, rare: true, weight: 3 },
   runnerSwarm: { kind: "runner", count: 40, rare: false, weight: 3 },
+  // Added 2026-10-17 on the user's ask; the counts and weights are a first guess.
+  erraticSwarm: { kind: "erratic", count: 20, rare: false, weight: 2 },
+  // Each one always leaves a skill, as a 도망자 does — a prize worth the chase.
+  fugitives: { kind: "fugitive", count: 3, rare: false, weight: 1 },
 };
 
 export const ALTAR = {

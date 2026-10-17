@@ -355,6 +355,9 @@ export const en: Strings = {
     enhanced: 'upgrade',
     hintKeyboard: '← → to move   Space to take it   (or 1-4)',
     hintTouch: 'Tap the one you want',
+    values: 'Now {now} → {next} after',
+    picks: 'Upgrades {taken}/{max}',
+    picksOpen: 'Upgrades {taken} · no limit',
   },
 
   hud: {

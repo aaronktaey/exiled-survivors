@@ -75,7 +75,7 @@ wrong shape.
 ## The test harness
 
 `tests/` drives a real Chrome over CDP against the dev server and checks the
-running game, not units. 43 suites, ~1160 checks. It is the only thing that has
+running game, not units. 43 suites, ~1165 checks. It is the only thing that has
 caught most of what has gone wrong here, so run all of it before every commit.
 
 ```sh
@@ -397,6 +397,13 @@ Read `git log` for what changed and when. What is not in the log:
   is done in each item's own update: XpGem zeroes its velocity out of
   pickup range every frame, so setting a velocity from outside never sticks.
   A new kind of drop group goes in the `lying` list there.
+- **Upgrade cards carry their numbers.** `upgradeOptionsFor(skill, stats)`
+  adds `now`/`next` (the skill's own stat, before its folds — capped at
+  `UPGRADE_CAP`) and `taken`/`maxPicks` (`maxPicksFor`: the pick limit or
+  the picks from base to cap, whichever is smaller; null when nothing stops
+  it) to each option; `UpgradeScene` prints them under the detail. It stacks
+  icon, title, cards and hint as one centred block, so two rows of cards on
+  a phone push the rest up instead of over it.
 - **Touch never holds the run.** A phone fires a pretend mouse event after a
   tap; landing on a rare under a just-closed card used to set `inspecting`
   and freeze the arena and the pad. `setInspecting` ignores it on touch

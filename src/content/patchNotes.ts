@@ -15,6 +15,32 @@ export interface PatchNote {
 
 export const PATCH_NOTES: readonly PatchNote[] = [
   {
+    version: '0.55',
+    date: '2026-10-17',
+    changes: {
+      ko: [
+        '스킬 강화 선택지에 강화되는 능력치의 현재 값과 강화 후 값, 그 능력치를 지금까지 강화한 횟수와 최대 강화 횟수가 표시됩니다(최대가 없는 능력치는 「최대 제한 없음」).',
+        '강화 선택지가 두 줄로 나뉘는 좁은 화면에서도 제목과 안내문을 가리지 않습니다.',
+        '새 제단 — 기행종 20마리를 부르는 제단과, 도망자 3마리를 부르는 제단이 추가되었습니다.',
+      ],
+      en: [
+        'Skill upgrade cards now show the stat’s current value and its value after the pick, and how many times it has been upgraded out of its maximum (or “no limit”).',
+        'On a narrow screen, where the cards wrap onto two rows, they no longer cover the title and the hint.',
+        'New altars: one calls up 20 Oddities, another 3 Runaways.',
+      ],
+      ja: [
+        'スキル強化の選択肢に、強化される能力の現在値と強化後の値、その能力をこれまで強化した回数と最大強化回数が表示されます（上限のない能力は「上限なし」）。',
+        '選択肢が 2 段になる狭い画面でも、タイトルと案内を覆わなくなりました。',
+        '新しい祭壇 — 奇行種 20 体を呼ぶ祭壇と、逃亡者 3 体を呼ぶ祭壇が加わりました。',
+      ],
+      zh: [
+        '技能强化选项现在会显示被强化属性的当前值和强化后的值，以及该属性已强化次数与最大强化次数（没有上限的属性显示「无上限」）。',
+        '在选项分成两行的窄屏上，也不再遮住标题与提示。',
+        '新祭坛 — 召唤 20 只奇行种的祭坛，以及召唤 3 名逃亡者的祭坛。',
+      ],
+    },
+  },
+  {
     version: '0.54',
     date: '2026-10-17',
     changes: {

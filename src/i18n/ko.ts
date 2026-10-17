@@ -359,6 +359,9 @@ export const ko: Strings = {
     enhanced: '강화',
     hintKeyboard: '← → 이동   Space 선택   (1-4 로 바로 선택)',
     hintTouch: '원하는 쪽을 터치하세요',
+    values: '현재 {now} → 강화 후 {next}',
+    picks: '강화 {taken}/{max}회',
+    picksOpen: '강화 {taken}회 · 최대 제한 없음',
   },
 
   hud: {

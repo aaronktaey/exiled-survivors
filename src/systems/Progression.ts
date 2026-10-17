@@ -28,6 +28,34 @@ export interface UpgradeOption {
   readonly id: UpgradeId;
   readonly label: string;
   readonly detail: string;
+  /**
+   * Where the stat stands and where this pick takes it, and how many picks
+   * it has had of how many it can (null: no ceiling). Only when the options
+   * were asked for with the skill's stats — the guide lists them without.
+   */
+  readonly now?: number;
+  readonly next?: number;
+  readonly taken?: number;
+  readonly maxPicks?: number | null;
+}
+
+/**
+ * How many times this upgrade can be taken on this skill at all: the pick
+ * limit, or the picks it takes from the base to the stat's ceiling — the
+ * smaller when both apply. Null when nothing stops it.
+ */
+export function maxPicksFor(skill: SkillId, upgrade: UpgradeId): number | null {
+  const limits: number[] = [];
+  const picks = UPGRADE_MAX_PICKS[upgrade];
+  if (picks !== undefined) {
+    limits.push(picks);
+  }
+  const cap = UPGRADE_CAP[upgrade];
+  const step = upgradeStep(skill, upgrade);
+  if (cap !== undefined && step > 0) {
+    limits.push(Math.max(0, Math.ceil((cap - SKILL_BASE[skill][upgrade]) / step)));
+  }
+  return limits.length > 0 ? Math.min(...limits) : null;
 }
 
 /** Every stat is tracked per skill, so an upgrade only hits its own. */
@@ -71,7 +99,21 @@ export function upgradeOptionsFor(
         (picks === undefined || picksTaken(skill.id, stats, id) < picks)
       );
     })
-    .map((id) => ({ id, ...optionText(id, skill.id) }));
+    .map((id) => {
+      const text = { id, ...optionText(id, skill.id) };
+      if (stats === undefined) {
+        return text;
+      }
+      const cap = UPGRADE_CAP[id];
+      const raised = stats[id] + upgradeStep(skill.id, id);
+      return {
+        ...text,
+        now: stats[id],
+        next: cap === undefined ? raised : Math.min(cap, raised),
+        taken: picksTaken(skill.id, stats, id),
+        maxPicks: maxPicksFor(skill.id, id),
+      };
+    });
 }
 
 /**

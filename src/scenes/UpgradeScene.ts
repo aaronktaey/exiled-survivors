@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 
 import { COLORS, DEPTH, SCRIM, SKILL_ICON_SIZE, SKILL_ICONS, TEXT } from '@/config';
-import { t } from '@/i18n';
+import { fill, t } from '@/i18n';
 import type { UpgradeId, UpgradeOption } from '@/systems/Progression';
 import { fitText } from '@/systems/Layout';
 import { prefersTouchControls } from '@/systems/VirtualJoystick';
@@ -30,7 +30,7 @@ const NUMBER_CODES = ['Digit1', 'Digit2', 'Digit3', 'Digit4'];
 const CARD_MAX_WIDTH = 260;
 /** Below this a card cannot hold its own label, so the row wraps instead. */
 const CARD_MIN_WIDTH = 150;
-const CARD_HEIGHT = 170;
+const CARD_HEIGHT = 200;
 const CARD_GAP = 24;
 /** Keeps the row clear of the screen edges at four cards. */
 const SIDE_MARGIN = 28;
@@ -41,6 +41,9 @@ interface CardView {
   readonly option: UpgradeOption;
   readonly panel: Phaser.GameObjects.Rectangle;
   readonly label: Phaser.GameObjects.Text;
+  /** "현재 15 → 강화 후 18" and "강화 2/20회". Public through the card for tests. */
+  readonly values?: Phaser.GameObjects.Text;
+  readonly picks?: Phaser.GameObjects.Text;
   readonly x: number;
   readonly y: number;
 }
@@ -82,38 +85,8 @@ export class UpgradeScene extends Phaser.Scene {
   public create(): void {
     const { width, height } = this.scale;
     const centerX = width / 2;
-    const cardY = height / 2 + 10;
 
     this.add.rectangle(0, 0, width, height, 0x05070b, SCRIM.upgrade).setOrigin(0, 0).setDepth(DEPTH.ui);
-
-    const icon = SKILL_ICONS[this.payload.skill];
-    if (icon && this.textures.exists(icon.key)) {
-      this.add
-        .image(centerX, height / 2 - 196, icon.key)
-        .setDisplaySize(SKILL_ICON_SIZE.card, SKILL_ICON_SIZE.card)
-        .setDepth(DEPTH.ui);
-    }
-
-    fitText(
-      this.add
-        .text(centerX, height / 2 - 150, this.payload.title, {
-          fontFamily: 'system-ui, sans-serif',
-          fontSize: TEXT.size.banner,
-          color: COLORS.text,
-        })
-        .setOrigin(0.5)
-        .setDepth(DEPTH.ui),
-      width,
-    );
-
-    this.add
-      .text(centerX, height / 2 - 108, this.payload.subtitle, {
-        fontFamily: 'system-ui, sans-serif',
-        fontSize: TEXT.size.label,
-        color: COLORS.accent,
-      })
-      .setOrigin(0.5)
-      .setDepth(DEPTH.ui);
 
     // A projectile skill offers four picks, a melee one two, so the row is
     // sized from the count rather than from a fixed card width — and on a
@@ -131,9 +104,48 @@ export class UpgradeScene extends Phaser.Scene {
     );
     const span = cardWidth + CARD_GAP;
     const rowSpan = CARD_HEIGHT + CARD_GAP;
-    // Each row is centred on its own, so a short last row sits in the middle.
-    const firstRowY = cardY - ((rowCount - 1) * rowSpan) / 2;
 
+    // Everything stacked top to bottom — icon, name, what kind of pick, the
+    // caret, the cards, the keys — and the whole block centred, so two rows
+    // of cards on a phone push the rest up rather than over it.
+    const ICON = SKILL_ICON_SIZE.card;
+    const block = ICON + 8 + 44 + 34 + 26 + rowCount * CARD_HEIGHT + (rowCount - 1) * CARD_GAP + 22 + 20;
+    let y = Math.max(12, (height - block) / 2);
+
+    const icon = SKILL_ICONS[this.payload.skill];
+    if (icon && this.textures.exists(icon.key)) {
+      this.add
+        .image(centerX, y + ICON / 2, icon.key)
+        .setDisplaySize(ICON, ICON)
+        .setDepth(DEPTH.ui);
+    }
+    y += ICON + 8;
+
+    fitText(
+      this.add
+        .text(centerX, y + 22, this.payload.title, {
+          fontFamily: 'system-ui, sans-serif',
+          fontSize: TEXT.size.banner,
+          color: COLORS.text,
+        })
+        .setOrigin(0.5)
+        .setDepth(DEPTH.ui),
+      width,
+    );
+    y += 44;
+
+    this.add
+      .text(centerX, y + 14, this.payload.subtitle, {
+        fontFamily: 'system-ui, sans-serif',
+        fontSize: TEXT.size.label,
+        color: COLORS.accent,
+      })
+      .setOrigin(0.5)
+      .setDepth(DEPTH.ui);
+    y += 34 + 26;
+
+    // Each row is centred on its own, so a short last row sits in the middle.
+    const firstRowY = y + CARD_HEIGHT / 2;
     this.cards = options.map((option, index) => {
       const row = Math.floor(index / perRow);
       const inRow = index - row * perRow;
@@ -141,25 +153,29 @@ export class UpgradeScene extends Phaser.Scene {
       const x = centerX + (inRow - (rowSize - 1) / 2) * span;
       return this.buildCard(x, firstRowY + row * rowSpan, cardWidth, option);
     });
+    y += rowCount * CARD_HEIGHT + (rowCount - 1) * CARD_GAP + 22;
 
     // Caret that slides to whichever card is under the pointer.
     this.pointer = this.add
       .triangle(this.cards[0]!.x, firstRowY - CARD_HEIGHT / 2 - 18, 0, 0, 18, 0, 9, 12, COLORS.accentFill)
       .setDepth(DEPTH.ui);
 
-    this.add
-      .text(
-        centerX,
-        height / 2 + 150,
-        prefersTouchControls() ? t().upgrade.hintTouch : t().upgrade.hintKeyboard,
-        {
-          fontFamily: 'system-ui, sans-serif',
-          fontSize: TEXT.size.small,
-          color: COLORS.muted,
-        },
-      )
-      .setOrigin(0.5)
-      .setDepth(DEPTH.ui);
+    fitText(
+      this.add
+        .text(
+          centerX,
+          y + 8,
+          prefersTouchControls() ? t().upgrade.hintTouch : t().upgrade.hintKeyboard,
+          {
+            fontFamily: 'system-ui, sans-serif',
+            fontSize: TEXT.size.small,
+            color: COLORS.muted,
+          },
+        )
+        .setOrigin(0.5)
+        .setDepth(DEPTH.ui),
+      width,
+    );
 
     this.refresh(false);
 
@@ -174,27 +190,61 @@ export class UpgradeScene extends Phaser.Scene {
     const panel = this.add.rectangle(x, y, cardWidth, CARD_HEIGHT, COLORS.panel, 1).setDepth(DEPTH.ui);
     panel.setStrokeStyle(2, COLORS.panelEdge, 1);
 
+    // One line, drawn smaller rather than wrapped onto what is under it.
     const label = this.add
-      .text(x, y - 36, option.label, {
+      .text(x, y - 62, option.label, {
         fontFamily: 'system-ui, sans-serif',
         fontSize: cardWidth >= WIDE_CARD ? TEXT.size.panel : TEXT.size.label,
         color: COLORS.text,
         align: 'center',
-        wordWrap: { width: cardWidth - 20 },
       })
       .setOrigin(0.5)
       .setDepth(DEPTH.ui);
+    fitText(label, cardWidth - 12, 0);
 
     this.add
-      .text(x, y + 22, option.detail, {
+      .text(x, y - 8, option.detail, {
         fontFamily: 'system-ui, sans-serif',
         fontSize: TEXT.size.hint,
         color: COLORS.muted,
         align: 'center',
-        wordWrap: { width: cardWidth - 32 },
+        wordWrap: { width: cardWidth - 24 },
       })
       .setOrigin(0.5)
       .setDepth(DEPTH.ui);
+
+    // Where the stat is and where this pick takes it, and how far it can go.
+    const copy = t().upgrade;
+    const values = option.now !== undefined && option.next !== undefined
+      ? this.add
+          .text(x, y + 46, fill(copy.values, { now: UpgradeScene.stat(option.id, option.now), next: UpgradeScene.stat(option.id, option.next) }), {
+            fontFamily: 'system-ui, sans-serif',
+            fontSize: TEXT.size.hint,
+            color: COLORS.gearText,
+            align: 'center',
+          })
+          .setOrigin(0.5)
+          .setDepth(DEPTH.ui)
+      : undefined;
+    if (values) {
+      fitText(values, cardWidth - 12, 0);
+    }
+    const picks = option.taken !== undefined
+      ? this.add
+          .text(
+            x,
+            y + 72,
+            option.maxPicks === null || option.maxPicks === undefined
+              ? fill(copy.picksOpen, { taken: option.taken })
+              : fill(copy.picks, { taken: option.taken, max: option.maxPicks }),
+            { fontFamily: 'system-ui, sans-serif', fontSize: TEXT.size.hint, color: COLORS.muted, align: 'center' },
+          )
+          .setOrigin(0.5)
+          .setDepth(DEPTH.ui)
+      : undefined;
+    if (picks) {
+      fitText(picks, cardWidth - 12, 0);
+    }
 
     // Touch (and mouse) players pick by tapping the card directly; hovering
     // moves the caret, so the space bar takes whatever is under the cursor.
@@ -202,7 +252,15 @@ export class UpgradeScene extends Phaser.Scene {
     panel.on(Phaser.Input.Events.GAMEOBJECT_POINTER_DOWN, () => this.onCardTapped(option.id));
     panel.on(Phaser.Input.Events.GAMEOBJECT_POINTER_OVER, () => this.onCardHovered(option.id));
 
-    return { option, panel, label, x, y };
+    return { option, panel, label, values, picks, x, y };
+  }
+
+  /** A stat as the card shows it: attacks a second to two places, the rest whole where they are whole. */
+  private static stat(id: UpgradeId, value: number): string {
+    if (id === 'attackSpeed') {
+      return value.toFixed(2);
+    }
+    return Number.isInteger(value) ? String(value) : value.toFixed(1);
   }
 
   private onCardTapped(upgrade: UpgradeId): void {

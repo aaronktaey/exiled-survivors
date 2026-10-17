@@ -300,6 +300,38 @@ await sleep(300);
 await shot('altar-02-woken');
 await run(`s.spawner.clear(); s.combat.altars.getChildren().forEach(a => a.active && a.collect()); s.choosing = false; return 1;`);
 
+// --- 10. 기행종 and 도망자 altars ---
+const newOffers = await run(`
+  ${FREEZE}
+  s.spawner.clear();
+  const O = window.config.ALTAR_OFFERS;
+  const out = {};
+  for (const id of ['erraticSwarm', 'fugitives']) {
+    s.spawner.clear();
+    s.combat.altars.getChildren().forEach((a) => a.active && a.collect());
+    s.combat.dropAltarAt(s.player.x + 160, s.player.y, id);
+    const altar = s.combat.altars.getChildren().find((a) => a.active);
+    const label = altar.nameplate.text;
+    const came = s.spawner.summon(altar.x, altar.y, id);
+    const alive = s.spawner.group.getChildren().filter((e) => e.active);
+    out[id] = { label, came, want: O[id].count, kinds: [...new Set(alive.map((e) => e.kind))],
+                skills: alive.every((e) => e.alwaysDropsSkill === true) };
+  }
+  s.spawner.clear();
+  s.combat.altars.getChildren().forEach((a) => a.active && a.collect());
+  return out;
+`);
+console.log('new altars:', JSON.stringify(newOffers));
+check('a 기행종 altar offers its swarm by name and calls it all up',
+  /기행종/.test(newOffers.erraticSwarm.label) && newOffers.erraticSwarm.came === newOffers.erraticSwarm.want &&
+    JSON.stringify(newOffers.erraticSwarm.kinds) === JSON.stringify(['erratic']),
+  JSON.stringify(newOffers.erraticSwarm));
+check('a 도망자 altar calls up 도망자, each sure to leave a skill',
+  /도망자/.test(newOffers.fugitives.label) && newOffers.fugitives.came === newOffers.fugitives.want &&
+    JSON.stringify(newOffers.fugitives.kinds) === JSON.stringify(['fugitive']) && newOffers.fugitives.skills,
+  JSON.stringify(newOffers.fugitives));
+await run(`s.choosing = false; return 1;`);
+
 console.log('\n=== SUMMARY ===');
 const failed = results.filter((r) => !r.p);
 console.log(`${results.length - failed.length}/${results.length} passed`);

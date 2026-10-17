@@ -318,6 +318,43 @@ check('얼음창 offers 투사체 속도, and 낙뢰 no longer offers 사거리'
   `얼음창 ${iceCards?.join(',')} / 낙뢰 ${thunderCards?.join(',')}`);
 check('얼음창 runs through at most five', pierce.cap === 5 && pierce.pierce === 5, JSON.stringify(pierce));
 
+// --- 3f. each card says where its stat is, where the pick takes it, and how far it can go ---
+await run(`
+  s.choosing = false; s.pendingChoices.length = 0;
+  s.acquire('chainLightning');
+  s.progression.apply('chainLightning', 'damage');
+  s.progression.apply('chainLightning', 'chainCount');
+  s.onSkillCollected('chainLightning');
+  return 1;
+`);
+await sleep(600);
+const cardValues = await cdp.evaluate(`(() => {
+  const up = window.game.scene.getScene('UpgradeScene');
+  const c = window.config;
+  const gs = window.game.scene.getScene('GameScene');
+  const st = gs.progression.statsFor('chainLightning');
+  const base = c.SKILL_BASE.chainLightning;
+  const cards = up.cards.map((card) => ({ id: card.option.id, now: card.option.now, next: card.option.next,
+    taken: card.option.taken, max: card.option.maxPicks, values: card.values?.text ?? '', picks: card.picks?.text ?? '' }));
+  const out = { cards, stats: { damage: st.damage, chainCount: st.chainCount },
+    want: { damageNext: st.damage + base.damage * c.UPGRADE_PERCENT.damage, damageMax: c.UPGRADE_MAX_PICKS.damage,
+            chainMax: Math.ceil((c.UPGRADE_CAP.chainCount - base.chainCount) / c.UPGRADE_STEP.chainCount) } };
+  up.payload.onPick(cards[0].id); up.scene.stop();
+  return out;
+})()`);
+await sleep(300);
+console.log('card values:', JSON.stringify(cardValues));
+const dmg = cardValues.cards.find((c) => c.id === 'damage');
+const chain = cardValues.cards.find((c) => c.id === 'chainCount');
+check('a card shows its stat now and after the pick',
+  dmg && Math.abs(dmg.now - cardValues.stats.damage) < 1e-9 && Math.abs(dmg.next - cardValues.want.damageNext) < 1e-9 &&
+    /현재/.test(dmg.values) && /강화 후/.test(dmg.values),
+  dmg?.values);
+check('and how many times it has been taken of how many it can be',
+  dmg && dmg.taken === 1 && dmg.max === cardValues.want.damageMax && dmg.picks.includes(`1/${cardValues.want.damageMax}`) &&
+    chain && chain.taken === 1 && chain.max === cardValues.want.chainMax && chain.picks.includes(`1/${cardValues.want.chainMax}`),
+  `${dmg?.picks} · ${chain?.picks}`);
+
 // --- 4. 척추 ---
 const spine = await cdp.evaluate(`(() => {
   const c = window.config;

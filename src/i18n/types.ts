@@ -489,6 +489,11 @@ export interface Strings {
     readonly enhanced: string;
     readonly hintKeyboard: string;
     readonly hintTouch: string;
+    /** On a card: the stat {now} and {next} after the pick. */
+    readonly values: string;
+    /** And the picks it has had: {taken} of {max}, or {taken} with no ceiling. */
+    readonly picks: string;
+    readonly picksOpen: string;
   };
 
   readonly hud: {

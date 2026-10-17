@@ -355,6 +355,9 @@ export const zh: Strings = {
     enhanced: '强化',
     hintKeyboard: '← → 移动   Space 选择   （1-4 直接选）',
     hintTouch: '点按想要的一项',
+    values: '当前 {now} → 强化后 {next}',
+    picks: '强化 {taken}/{max} 次',
+    picksOpen: '强化 {taken} 次 · 无上限',
   },
 
   hud: {

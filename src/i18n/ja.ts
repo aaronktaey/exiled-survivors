@@ -355,6 +355,9 @@ export const ja: Strings = {
     enhanced: '強化',
     hintKeyboard: '← → で移動   Space で決定   （1-4 で直接選択）',
     hintTouch: '選びたい方をタップ',
+    values: '現在 {now} → 強化後 {next}',
+    picks: '強化 {taken}/{max} 回',
+    picksOpen: '強化 {taken} 回 · 上限なし',
   },
 
   hud: {
