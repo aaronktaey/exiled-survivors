@@ -15,6 +15,24 @@ export interface PatchNote {
 
 export const PATCH_NOTES: readonly PatchNote[] = [
   {
+    version: '0.58',
+    date: '2026-10-17',
+    changes: {
+      ko: [
+        '떨어지는 장비에 속성이 붙을 확률이 한 줄마다 20%에서 70%로 올랐습니다. 이제 열에 일곱은 속성을 하나 이상 달고 나오고, 아홉에 하나꼴로 속성 6개가 모두 찬 장비가 나옵니다.',
+      ],
+      en: [
+        'The chance of each modifier on a dropped weapon goes from 20% to 70% a line: seven drops in ten now carry at least one, and about one in nine comes out with all six.',
+      ],
+      ja: [
+        '落ちる装備に属性が付く確率が 1 行ごとに 20% から 70% に上がりました。10 個のうち 7 個は属性を 1 つ以上持ち、およそ 9 個に 1 個は属性 6 つがすべて付いた装備です。',
+      ],
+      zh: [
+        '掉落装备每条词缀出现的几率由 20% 提高到 70%：如今十件里有七件至少带一条词缀，约九件里就有一件六条词缀全满。',
+      ],
+    },
+  },
+  {
     version: '0.57',
     date: '2026-10-17',
     changes: {

@@ -162,7 +162,7 @@ check('ordinary kills leave only the swords marked fromKill',
 check('and every 우두머리 leaves one', drops.fromBosses === drops.N,
   `${drops.fromBosses} of ${drops.N}`);
 
-// --- 4. the affix roll: a fifth per line, prefixes and suffixes capped at 3 ---
+// --- 4. the affix roll: GEAR_DROP.affixChance a line, prefixes and suffixes capped at 3 ---
 const spread = await run(`
   const roll = s.rollGearDrop.bind(s);
   const lines = {};
@@ -177,15 +177,17 @@ const spread = await run(`
     kinds.prefix += item.prefixes.length;
     kinds.suffix += item.suffixes.length;
   }
-  return { N, lines, maxPrefix, maxSuffix, kinds };
+  return { N, lines, maxPrefix, maxSuffix, kinds, chance: window.config.GEAR_DROP.affixChance };
 `);
 const plainShare = (spread.lines[0] ?? 0) / spread.N;
 const oneShare = (spread.lines[1] ?? 0) / spread.N;
 console.log('affix spread:', JSON.stringify(spread));
-check('four drops in five come out plain',
-  Math.abs(plainShare - 0.8) < 0.02, `${(plainShare * 100).toFixed(1)}% plain`);
-check('one in five carries a line, and the roll repeats from there',
-  Math.abs(oneShare - 0.16) < 0.02 && (spread.lines[2] ?? 0) > 0,
+// Each line is its own roll at the table's chance, so none is 1 − c, one is c(1 − c).
+const c = spread.chance;
+check('a drop comes out plain at 1 − the line chance',
+  Math.abs(plainShare - (1 - c)) < 0.02, `${(plainShare * 100).toFixed(1)}% plain (want ${((1 - c) * 100).toFixed(1)}%)`);
+check('one line at c × (1 − c), and the roll repeats from there',
+  Math.abs(oneShare - c * (1 - c)) < 0.02 && (spread.lines[2] ?? 0) > 0,
   `${(oneShare * 100).toFixed(1)}% with one, ${spread.lines[2]} with two, ${spread.lines[3] ?? 0} with three`);
 check('neither side ever goes past three',
   spread.maxPrefix <= 3 && spread.maxSuffix <= 3,
