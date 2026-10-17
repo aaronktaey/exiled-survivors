@@ -6,6 +6,29 @@ export const ja: Strings = {
 
   common: { back: '戻る', close: '閉じる', on: 'オン', off: 'オフ' },
 
+  orbUse: {
+    title: '球を使う',
+    gearHeading: '選んだ装備',
+    held: '所持 {count} 個',
+    use: '使う',
+    close: '閉じる',
+    ok: 'OK',
+    none: 'この球を持っていません',
+    useless: 'この装備には使えません',
+    destroyedTitle: '装備が壊れました',
+    hintKeyboard: '← → 球を選ぶ   Space 使う   Esc 閉じる',
+    hintTouch: '上で球を選んで「使う」を押してください',
+    rules: {
+      reroll: '今ある属性をすべて消し、{min}〜{max} 個を新しく振り直します（接頭・接尾それぞれ最大 {cap} 個）',
+      add: '空いた枠に属性を {count} 個加えます — 属性が {max} 個なら使えません',
+      climb: '1 ティアでない属性を 1 つ選び、{steps} 段階上の別の属性に変えます',
+      swap: '属性がすべて 1 ティアなら、1 つを装備にない別の 1 ティア属性に変えます',
+      destroy: '{chance} の確率で装備が壊れます — マンゴー状態なら壊れる代わりにマンゴー状態だけ消えます',
+      noLines: '属性のない装備には使えません',
+      ward: '次の爆発の球 1 回では装備が壊れず、その球で結果に関係なく消えます — すでにマンゴー状態なら使えません',
+    },
+  },
+
   passives: {
     title: 'パッシブ',
     points: 'ポイント {points}',
@@ -140,7 +163,6 @@ export const ja: Strings = {
     sellFor: '売る {price}G',
     sold: '{gear} — {price} ゴールドで売りました',
     orbCount: '{orb} x{count}',
-    orbConfirm: '{orb} を使う？',
     orbNone: '{orb} なし',
     orbRerolled: '{orb} — 属性を {count} 個に振り直しました',
     orbAdded: '{orb} — {affix} を追加',
@@ -520,7 +542,7 @@ export const ja: Strings = {
       transmute: '属性を 1〜2 個に振り直します',
       chaos: '属性を 2〜4 個に振り直します',
       awaken: '属性を 1 個追加します（最大 6）',
-      explode: '1 ティアでない属性 1 個を一段階上の別の属性に — 20% の確率で装備が壊れます',
+      explode: '1 ティアでない属性 1 個を一段階上の別の属性に、すべて 1 ティアなら属性 1 個を別の 1 ティア属性に — 20% の確率で装備が壊れます',
       mango: '装備をマンゴー状態に — 次の爆発の球 1 回では壊れず、その球でマンゴー状態は消えます',
     },
     bones: {
@@ -939,6 +961,7 @@ export const ja: Strings = {
           lines: [
             '持っている剣が {cols}×{rows} のマスに並びます。マスを選ぶと横に攻撃力 · 固定属性 · 属性が出ます。',
             '装備 · 売却 · 球の使用は横のボタンか Space で行います。装備中の剣は売れません。',
+            '球のボタンを押すと「球を使う」画面が開きます。球のすべての効果と選んだ装備を見ながら続けて使え、装備が壊れればその場で知らせます。',
             '売るとゴールドが手に入ります。最も低いティアが {sellBase} ゴールド、1 ティア上がるごとに {sellBase} ゴールドずつ高く、属性 1 つにつきその {sellAffix} が加わります。',
           ],
         },

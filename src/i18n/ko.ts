@@ -10,6 +10,29 @@ export const ko: Strings = {
 
   common: { back: '돌아가기', close: '닫기', on: '켜짐', off: '꺼짐' },
 
+  orbUse: {
+    title: '구슬 사용',
+    gearHeading: '선택한 장비',
+    held: '보유 {count}개',
+    use: '사용',
+    close: '닫기',
+    ok: '확인',
+    none: '이 구슬이 없습니다',
+    useless: '이 장비에는 쓸 수 없습니다',
+    destroyedTitle: '장비가 파괴되었습니다',
+    hintKeyboard: '← → 구슬 선택   Space 사용   Esc 닫기',
+    hintTouch: '위에서 구슬을 고르고 사용을 누르세요',
+    rules: {
+      reroll: '지금 있는 속성을 모두 지우고, {min}~{max}개를 새로 굴립니다 (접두어·접미어 각각 최대 {cap}개)',
+      add: '빈 자리에 속성 {count}개를 더합니다 — 속성이 {max}개면 쓸 수 없습니다',
+      climb: '1티어가 아닌 속성 하나를 골라, {steps}단계 높은 다른 속성으로 바꿉니다',
+      swap: '속성이 모두 1티어면, 하나를 장비에 없는 다른 1티어 속성으로 바꿉니다',
+      destroy: '{chance} 확률로 장비가 파괴됩니다 — 망고 상태면 파괴 대신 망고 상태만 사라집니다',
+      noLines: '속성이 없는 장비에는 쓸 수 없습니다',
+      ward: '다음 폭발의 구슬 1회는 장비를 파괴하지 못하고, 그 구슬에 결과와 상관없이 사라집니다 — 이미 망고 상태면 쓸 수 없습니다',
+    },
+  },
+
   passives: {
     title: '패시브',
     points: '포인트 {points}',
@@ -144,7 +167,6 @@ export const ko: Strings = {
     sellFor: '팔기 {price}G',
     sold: '{gear} — {price}골드에 팔았습니다',
     orbCount: '{orb} x{count}',
-    orbConfirm: '{orb} 사용?',
     orbNone: '{orb} 없음',
     orbRerolled: '{orb} — 속성을 {count}개로 다시 굴렸습니다',
     orbAdded: '{orb} — {affix} 추가',
@@ -819,6 +841,7 @@ export const ko: Strings = {
           lines: [
             '가진 검이 {cols}×{rows} 칸에 놓입니다. 칸을 고르면 옆에 공격력 · 고정 속성 · 속성이 나옵니다.',
             '착용 · 팔기 · 구슬 사용은 옆의 버튼이나 Space로 합니다. 착용 중인 검은 팔 수 없습니다.',
+            '구슬 버튼을 누르면 구슬 사용 창이 열립니다. 구슬의 모든 효과와 선택한 장비를 함께 보며 연달아 쓸 수 있고, 장비가 파괴되면 그 자리에서 알려 줍니다.',
             '팔면 골드를 받습니다. 가장 낮은 티어가 {sellBase}골드, 한 티어 위마다 {sellBase}골드씩 더 비싸고, 속성 하나마다 그 값의 {sellAffix}가 더해집니다.',
           ],
         },

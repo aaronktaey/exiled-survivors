@@ -804,39 +804,55 @@ check('and none of the row runs off the bottom',
   orbScreen.bottom <= orbScreen.canvas,
   `${orbScreen.bottom} of ${orbScreen.canvas}`);
 
-const asked = await scene('InventoryScene', `
-  s.pressOrb('transmute');
-  return { armed: s.armed, text: s.orbButtons.get('transmute').text, hint: s.orbHint.text,
-           held: window.orbs.count('transmute') };
-`);
-console.log('asked:', JSON.stringify(asked));
-check('one press asks rather than spending it',
-  asked.armed === 'transmute' && asked.held === 3 && asked.text.includes('사용'),
-  `"${asked.text}", ${asked.held} still held`);
-check('and says what it would do',
-  asked.hint.includes('변화의 구슬') && asked.hint.includes('1~2'), asked.hint);
-await shot('gear-09-orb-asks');
+// One press opens 구슬 사용 over the 인벤토리 rather than spending anything.
+const popupNow = `(() => {
+  const p = window.game.scene.getScene('OrbScene');
+  const texts = p.layer ? p.layer.list.filter((o) => o.type === 'Text').map((o) => o.text) : [];
+  return { open: window.game.scene.isActive('OrbScene'), paused: window.game.scene.isPaused('InventoryScene'),
+           orb: p.orb, usable: p.usable, note: p.note, destroyed: p.destroyed, texts };
+})()`;
+await scene('InventoryScene', `s.menu.focus('orbTarget'); s.pressOrb('transmute'); return 1;`);
+await sleep(700);
+const opened = await ev(popupNow);
+console.log('popup:', JSON.stringify({ ...opened, texts: opened.texts.slice(0, 6) }));
+check('one press opens 구슬 사용 over the 인벤토리 instead of spending it',
+  opened.open && opened.paused && opened.orb === 'transmute' && (await ev(`window.orbs.count('transmute')`)) === 3,
+  `${opened.orb}, open ${opened.open}`);
+check('and it spells out what the 구슬 does, every rule, beside the weapon it would go on',
+  opened.texts.some((t) => /변화의 구슬/.test(t)) && opened.texts.some((t) => t.includes('1~2')) &&
+    opened.texts.some((t) => /다시 굴|새로 굴/.test(t)) && opened.texts.some((t) => /강철 검/.test(t)),
+  opened.texts.filter((t) => /구슬|굴|검/.test(t)).slice(0, 4).join(' | '));
+await shot('gear-09-orb-popup');
 
-await scene('InventoryScene', `s.pressOrb('transmute'); return 1;`);
-await sleep(900);
-const afterOrb = await scene('InventoryScene', `
-  const item = window.gear.items.find(i => i.uid === 'orbTarget');
-  return { held: window.orbs.count('transmute'), armed: s.armed,
-           lines: item.prefixes.length + item.suffixes.length,
-           selected: s.menu.selectedId,
-           stored: JSON.parse(localStorage.getItem('exiled-survivors:gear:v2'))
-             .items.find(i => i.uid === 'orbTarget') };
-`);
-console.log('spent:', JSON.stringify(afterOrb));
-check('the second press spends it and rerolls the weapon',
-  afterOrb.held === 2 && afterOrb.lines >= 1 && afterOrb.lines <= 2,
-  `${afterOrb.held} left, the weapon now carries ${afterOrb.lines}`);
-check('the reroll is written down, not just drawn',
-  afterOrb.stored.prefixes.length + afterOrb.stored.suffixes.length === afterOrb.lines,
-  `${afterOrb.stored.prefixes.length} 접두어 / ${afterOrb.stored.suffixes.length} 접미어 stored`);
-check('and the cursor stays on the weapon it was spent on',
-  afterOrb.selected === 'orbTarget', afterOrb.selected);
+const spentOnce = await ev(`(() => {
+  const p = window.game.scene.getScene('OrbScene');
+  p.use();
+  const item = window.gear.items.find((i) => i.uid === 'orbTarget');
+  return { held: window.orbs.count('transmute'), lines: item.prefixes.length + item.suffixes.length,
+           stored: JSON.parse(localStorage.getItem('exiled-survivors:gear:v2')).items.find((i) => i.uid === 'orbTarget') };
+})()`);
+await sleep(300);
+const afterUse = await ev(popupNow);
+console.log('spent:', JSON.stringify({ spentOnce, note: afterUse.note }));
+check('사용 spends one and rerolls the weapon, written down',
+  spentOnce.held === 2 && spentOnce.lines >= 1 && spentOnce.lines <= 2 &&
+    spentOnce.stored.prefixes.length + spentOnce.stored.suffixes.length === spentOnce.lines,
+  `${spentOnce.held} left, the weapon now carries ${spentOnce.lines}`);
+check('and the popup stays open, saying what it did',
+  afterUse.open && /변화의 구슬/.test(afterUse.note) && afterUse.texts.some((t) => t === afterUse.note), afterUse.note);
 await shot('gear-10-orb-used');
+
+// The row along the top switches 구슬 without leaving.
+const switched = await ev(`(() => { const p = window.game.scene.getScene('OrbScene'); p.pick('chaos'); return { orb: p.orb, usable: p.usable }; })()`);
+check('the row along the top picks another 구슬 without leaving', switched.orb === 'chaos' && switched.usable === true,
+  JSON.stringify(switched));
+
+// Closing goes back to the 인벤토리, on the weapon, with the line saying what was done.
+await ev(`(() => { window.game.scene.getScene('OrbScene').close(); return 1; })()`);
+await sleep(900);
+const back = await scene('InventoryScene', `return { selected: s.menu.selectedId, hint: s.orbHint.text, open: window.game.scene.isActive('OrbScene') };`);
+check('closing it goes back to the 인벤토리 on the same weapon, with what the 구슬 did',
+  !back.open && back.selected === 'orbTarget' && back.hint === afterUse.note, `${back.selected}: ${back.hint}`);
 
 // A 구슬 that would do nothing cannot be spent at all.
 await ev(`(() => {
@@ -847,41 +863,63 @@ await ev(`(() => {
   return 1;
 })()`);
 await sleep(1000);
-const refused = await scene('InventoryScene', `
+const deadButton = await scene('InventoryScene', `return s.orbButtons.get('awaken').alpha;`);
+await scene('InventoryScene', `s.pressOrb('awaken'); return 1;`);
+await sleep(600);
+const refused = await ev(`(() => {
+  const p = window.game.scene.getScene('OrbScene');
   const before = window.orbs.count('awaken');
-  s.pressOrb('awaken');
-  s.pressOrb('awaken');
-  const item = window.gear.items.find(i => i.uid === 'orbTarget');
-  return { before, after: window.orbs.count('awaken'), armed: s.armed,
-           alpha: s.orbButtons.get('awaken').alpha,
-           lines: item.prefixes.length + item.suffixes.length };
-`);
+  p.use();
+  const item = window.gear.items.find((i) => i.uid === 'orbTarget');
+  const out = { before, after: window.orbs.count('awaken'), usable: p.usable,
+                lines: item.prefixes.length + item.suffixes.length,
+                why: p.layer.list.filter((o) => o.type === 'Text').map((o) => o.text).find((t) => /쓸 수 없/.test(t)) ?? '' };
+  p.close();
+  return out;
+})()`);
+await sleep(900);
 console.log('on a full weapon:', JSON.stringify(refused));
-check('각성의 구슬 is not spent on a weapon with nowhere to put a line',
-  refused.before === 2 && refused.after === 2 && refused.armed === null &&
-    refused.alpha < 1 && refused.lines === 6,
-  `${refused.after} still held, the weapon at ${refused.lines} lines`);
+check('각성의 구슬 is not spent on a weapon with nowhere to put a line, and the popup says why',
+  refused.before === 2 && refused.after === 2 && refused.usable === false && deadButton < 1 &&
+    refused.lines === 6 && refused.why !== '',
+  `${refused.after} still held, the weapon at ${refused.lines} lines: ${refused.why}`);
 
 // One key per 구슬, in the order they are drawn, however many there are.
 await ev(`(() => { window.orbs.add('explode', 2); return 1; })()`);
 const keyed = await scene('InventoryScene', `
   const hint = s.children.list.filter(o => o.type === 'Text')
     .map(o => o.text).find(t => /구슬/.test(t) && /Esc/.test(t)) ?? '';
-  s.armed = null;
   s.menu.focus('orbTarget');
   s.onKey({ code: 'Digit4', repeat: false });
-  const armed = s.armed;
-  s.armed = null;
-  s.refreshOrbs();
-  return { hint, armed, kinds: Object.keys(window.config.ORBS).length,
-           lines: window.gear.items.find(i => i.uid === 'orbTarget') ?
-             window.gear.items.find(i => i.uid === 'orbTarget').prefixes.length : 0 };
+  return { hint, kinds: Object.keys(window.config.ORBS).length };
 `);
-console.log('orb keys:', JSON.stringify(keyed));
-check('the last 구슬 has a key of its own, not just a button',
-  keyed.armed === 'explode', `Digit4 armed ${keyed.armed}`);
+await sleep(600);
+const keyedPopup = await ev(popupNow);
+check('the fourth 구슬 has a key of its own, opening the popup on it',
+  keyedPopup.open && keyedPopup.orb === 'explode', `Digit4 opened ${keyedPopup.orb}`);
 check('and the hint names the keys there actually are',
   keyed.hint.includes(`1~${keyed.kinds}`), keyed.hint);
+
+// A 구슬 that destroys the weapon turns the popup into the news, and 확인 goes back.
+const blownUp = await ev(`(() => {
+  const p = window.game.scene.getScene('OrbScene');
+  const real = Math.random;
+  Math.random = () => 0;
+  try { p.use(); } finally { Math.random = real; }
+  return { destroyed: p.destroyed, note: p.note, gone: !window.gear.items.some((i) => i.uid === 'orbTarget') };
+})()`);
+await sleep(400);
+const news = await ev(popupNow);
+console.log('destroyed:', JSON.stringify({ blownUp, texts: news.texts }));
+check('a 폭발의 구슬 that destroys the weapon says so in the popup, with 확인 to go back',
+  blownUp.destroyed && blownUp.gone && news.open && news.texts.some((t) => /장비가 파괴되었습니다/.test(t)) &&
+    news.texts.some((t) => t === '확인'),
+  news.texts.join(' | '));
+await shot('gear-11-orb-destroyed');
+await ev(`(() => { window.game.scene.getScene('OrbScene').close(); return 1; })()`);
+await sleep(900);
+const afterNews = await scene('InventoryScene', `return { open: window.game.scene.isActive('OrbScene'), hint: s.orbHint ? s.orbHint.text : '' };`);
+check('and 확인 lands back in the 인벤토리', afterNews.open === false);
 
 // --- 13. a saved run keeps the weapon it went out with ---
 // The weapon in hand can be swapped while a run is saved; the save carries
@@ -973,22 +1011,39 @@ const explode = await ev(`(() => {
   return { ...out, steps: [...out.steps],
            onBare: window.orbApplied(
              { uid: 'y', id: 'steelSword', prefixes: [], suffixes: [] }, spec),
-           onTop: window.orbApplied(
-             { uid: 'z', id: 'steelSword', prefixes: [{ id: 'mighty', tier: 1 }], suffixes: [{ id: 'giant', tier: 1 }] }, spec),
+           // Every line a 1티어: one is traded for a different 1티어 instead.
+           onTop: (() => {
+             const held = ['mighty', 'giant'];
+             const seen = { swap: 0, destroyed: 0, other: 0, ok: true, N: 1000 };
+             for (let i = 0; i < seen.N; i++) {
+               const r = window.orbApplied({ uid: 'z', id: 'steelSword', prefixes: [{ id: 'mighty', tier: 1 }], suffixes: [{ id: 'giant', tier: 1 }] }, spec);
+               if (!r) { seen.other++; continue; }
+               if (r.kind === 'destroyed') { seen.destroyed++; continue; }
+               if (r.kind !== 'swap') { seen.other++; continue; }
+               seen.swap++;
+               const lines = [...r.item.prefixes, ...r.item.suffixes];
+               if (lines.length !== 2 || lines.some((l) => l.tier !== 1) || held.includes(r.line.id) ||
+                   r.line.tier !== 1 || r.from.tier !== 1 || !held.includes(r.from.id)) seen.ok = false;
+             }
+             return seen;
+           })(),
            fromTiers: [...new Set(Array.from({ length: 400 }, () => {
              const r = window.orbApplied({ uid: 'w', id: 'steelSword', prefixes: [{ id: 'mighty', tier: 1 }],
                suffixes: [{ id: 'giant', tier: 3 }] }, spec);
              return r.kind === 'upgrade' ? r.from.tier + '>' + r.line.tier : r.kind;
            }))],
-           chance: spec.chance, bossOnly: spec.fromBossOnly === true };
+           chance: spec.chance, bossOnly: spec.fromBossOnly === true, risk: spec.upgrade.destroyChance };
 })()`);
 console.log('폭발:', JSON.stringify(explode));
 check('폭발의 구슬 destroys the weapon about one use in five',
-  Math.abs(explode.destroyed / explode.N - 0.2) < 0.03,
+  Math.abs(explode.destroyed / explode.N - explode.risk) < 0.03,
   `${(explode.destroyed / explode.N * 100).toFixed(1)}% of ${explode.N}`);
-check('it leaves a 1티어 line alone, and a weapon with only those cannot take it at all',
-  explode.onTop === null && explode.fromTiers.every((t) => t === '3>2' || t === 'destroyed'),
-  JSON.stringify({ onTop: explode.onTop, seen: explode.fromTiers }));
+check('it leaves a 1티어 line alone while there is a line to climb',
+  explode.fromTiers.every((t) => t === '3>2' || t === 'destroyed'), JSON.stringify(explode.fromTiers));
+check('on a weapon all of 1티어 it trades one line for a different 1티어 one, at the same risk',
+  explode.onTop.other === 0 && explode.onTop.ok && explode.onTop.swap > 0 &&
+    Math.abs(explode.onTop.destroyed / explode.onTop.N - explode.risk) < 0.05,
+  JSON.stringify(explode.onTop));
 check('otherwise it swaps one 속성 for another a rung better',
   explode.steps.length === 1 && explode.steps[0] === 1 &&
     explode.sameLines === explode.upgraded,
@@ -1067,44 +1122,34 @@ await ev(`(() => {
   return 1;
 })()`);
 await sleep(1000);
-const asksFirst = await scene('InventoryScene', `
-  s.menu.focus('noted');
-  s.pressOrb('transmute');
-  return { hint: s.orbHint.text };
-`);
-check('arming a 구슬 says what it is about to do',
-  asksFirst.hint.includes('변화의 구슬') && asksFirst.hint.includes('1~2'),
-  asksFirst.hint);
-
-await scene('InventoryScene', `s.pressOrb('transmute'); return 1;`);
-await sleep(900);
-const afterReroll = await scene('InventoryScene', `
-  const item = window.gear.items.find(i => i.uid === 'noted');
-  return { hint: s.orbHint.text,
-           lines: item ? item.prefixes.length + item.suffixes.length : null };
-`);
+await scene('InventoryScene', `s.menu.focus('noted'); s.pressOrb('transmute'); return 1;`);
+await sleep(600);
+const afterReroll = await ev(`(() => {
+  const p = window.game.scene.getScene('OrbScene');
+  p.use();
+  const item = window.gear.items.find((i) => i.uid === 'noted');
+  return { note: p.note, lines: item ? item.prefixes.length + item.suffixes.length : null };
+})()`);
 console.log('after a reroll:', JSON.stringify(afterReroll));
-check('and spending it says what it actually did',
-  afterReroll.hint.includes('변화의 구슬') &&
-    afterReroll.hint.includes(String(afterReroll.lines)),
-  afterReroll.hint);
+check('spending one says what it actually did',
+  afterReroll.note.includes('변화의 구슬') && afterReroll.note.includes(String(afterReroll.lines)),
+  afterReroll.note);
 
-await scene('InventoryScene', `
-  s.menu.focus('noted');
-  s.pressOrb('awaken');
-  s.pressOrb('awaken');
-  return 1;
-`);
-await sleep(900);
-const afterAdd = await scene('InventoryScene', `return { hint: s.orbHint.text, changed: s.changedLines, title: s.heading.text };`);
+const afterAdd = await ev(`(() => {
+  const p = window.game.scene.getScene('OrbScene');
+  p.pick('awaken');
+  p.use();
+  return { note: p.note, changed: p.changed };
+})()`);
+await sleep(400);
 await shot('gear-11-orb-highlight');
 console.log('after an add:', JSON.stringify(afterAdd));
 check('an added 속성 is named, with the rung it came out at',
-  /각성의 구슬 —/.test(afterAdd.hint) && /\d티어/.test(afterAdd.hint),
-  afterAdd.hint);
-check('and the line it added is lit up on the read-out',
-  afterAdd.changed.length >= 1 && afterAdd.changed.some((line) => /\d/.test(line)),
-  JSON.stringify(afterAdd.changed));
+  /각성의 구슬 —/.test(afterAdd.note) && /\d티어/.test(afterAdd.note), afterAdd.note);
+check('and the line it added is lit up in the popup',
+  afterAdd.changed.length >= 1 && afterAdd.changed.some((line) => /\d/.test(line)), JSON.stringify(afterAdd.changed));
+await ev(`(() => { window.game.scene.getScene('OrbScene').close(); return 1; })()`);
+await sleep(900);
 
 // --- 고정 속성: every sword of a base carries its own, outside the slots ---
 await ev(`(() => { localStorage.removeItem('exiled-survivors:save:v1'); return 1; })()`);

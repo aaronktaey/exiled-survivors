@@ -239,7 +239,8 @@ export interface OrbSpec {
   readonly ward?: boolean;
   /**
    * Or takes one 속성 already on it, rolls a different one in its place and
-   * puts that one rung higher — at the risk of the weapon not surviving it.
+   * puts that one rung higher — or, when every line is a 1티어, a different
+   * 1티어 — at the risk of the weapon not surviving it.
    */
   readonly upgrade?: {
     /** How many rungs better the replacement comes out. */
@@ -287,7 +288,7 @@ export const ORBS: Record<OrbId, OrbSpec> = {
     id: 'explode',
     name: '폭발의 구슬',
     short: '폭발',
-    detail: '1티어가 아닌 속성 1개를 한 단계 높은 것으로 — 20% 확률로 장비 파괴',
+    detail: '1티어가 아닌 속성 1개를 한 단계 높은 것으로, 모두 1티어면 속성 1개를 다른 1티어 속성으로 — 20% 확률로 장비 파괴',
     // Off any kill now, raised like the rest — it was a 우두머리's only.
     chance: 0.001,
     tier: 'rare',

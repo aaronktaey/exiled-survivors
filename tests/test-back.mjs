@@ -99,6 +99,20 @@ for (const [w, h, shape] of [[0, 0, 'landscape'], [420, 860, 'upright']]) {
       (await active(key)) === false && (await active('MenuScene')) === true);
   }
 
+  // 구슬 사용, over the 인벤토리: its way out goes back to the 인벤토리.
+  await ev(`(() => { localStorage.setItem('exiled-survivors:orbs:v1', JSON.stringify({ transmute: 1 })); return 1; })()`);
+  await ev(`(() => { window.game.scene.getScene('MenuScene').openOverlay('InventoryScene', {}); return 1; })()`);
+  await sleep(700);
+  await ev(`(() => { window.game.scene.getScene('InventoryScene').pressOrb('transmute'); return 1; })()`);
+  await sleep(700);
+  fits(`${shape} OrbScene`, await probe('OrbScene'));
+  await press('OrbScene');
+  await sleep(900);
+  check(`${shape} OrbScene: pressing it goes back to the 인벤토리`,
+    (await active('OrbScene')) === false && (await active('InventoryScene')) === true);
+  await press('InventoryScene');
+  await sleep(500);
+
   // The 뼈다귀 screen, on the way into a run.
   await ev(`(() => { window.game.scene.getScene('MenuScene').startRun(false); return 1; })()`);
   await sleep(800);

@@ -229,8 +229,12 @@ export const MAX_AFFIX_LINES = GEAR_DROP.maxPrefixes + GEAR_DROP.maxSuffixes;
 export interface OrbOutcome {
   /** The weapon after it, or null when the 구슬 destroyed it. */
   readonly item: GearItem | null;
-  /** `ward`: put in 망고 상태. `saved`: would have been destroyed, and the 망고 took it instead. */
-  readonly kind: 'reroll' | 'add' | 'upgrade' | 'destroyed' | 'ward' | 'saved';
+  /**
+   * `ward`: put in 망고 상태. `saved`: would have been destroyed, and the 망고
+   * took it instead. `swap`: a 폭발의 구슬 on a weapon all of tier 1 — one
+   * line traded for a different tier-1 one.
+   */
+  readonly kind: 'reroll' | 'add' | 'upgrade' | 'swap' | 'destroyed' | 'ward' | 'saved';
   /** The line that came out of it, for an add or an upgrade. */
   readonly line?: AffixLine;
   /** And the one it replaced, for an upgrade. */
@@ -304,16 +308,62 @@ export function orbApplied(item: GearItem, orb: OrbSpec): OrbOutcome | null {
  * it — which is the whole reason it is worth hesitating over, and why the
  * screen asks before spending one.
  */
+/**
+ * A 폭발의 구슬 on a weapon whose every line is a 1티어: one line, picked at
+ * random, becomes a different 속성 of its kind at 1티어 — one the weapon
+ * does not already carry. The destroy roll and the 망고 work as they do for
+ * a climb. Null when no other 속성 has a 1티어 rung to trade for.
+ */
+function swapTopLine(item: GearItem, destroyChance: number): OrbOutcome | null {
+  const lines = [...item.prefixes, ...item.suffixes];
+  const held = new Set(lines.map((line) => line.id));
+  const index = Math.floor(Math.random() * lines.length);
+  const from = lines[index]!;
+  const fromPrefix = index < item.prefixes.length;
+  const pool = (fromPrefix ? PREFIXES : SUFFIXES).filter(
+    (affix) => !held.has(affix.id) && affix.gearTiers?.some((rung) => rung.tier === 1),
+  );
+  if (pool.length === 0) {
+    return null;
+  }
+
+  const { mango: warded, ...unwarded } = item;
+  if (Math.random() < destroyChance) {
+    return warded ? { item: unwarded, kind: 'saved' } : { item: null, kind: 'destroyed' };
+  }
+
+  const picked = pool[Math.floor(Math.random() * pool.length)]!;
+  const line = { id: picked.id, tier: 1 };
+  const prefixes = [...item.prefixes];
+  const suffixes = [...item.suffixes];
+  if (fromPrefix) {
+    prefixes[index] = line;
+  } else {
+    suffixes[index - item.prefixes.length] = line;
+  }
+  return {
+    item: { ...unwarded, prefixes, suffixes },
+    kind: 'swap',
+    line,
+    from,
+    ...(warded ? { wardSpent: true } : {}),
+  };
+}
+
 function explode(
   item: GearItem,
   upgrade: { readonly steps: number; readonly destroyChance: number },
 ): OrbOutcome | null {
-  // Only a line with somewhere to climb: a 1티어 is the top already, so a
-  // weapon that holds nothing else is not one to spend this on.
+  // A line with somewhere to climb. When every line is a 1티어 already, one
+  // of them is traded for a different 1티어 instead; a weapon with no line
+  // at all has nothing for it to work on.
   const lines = [...item.prefixes, ...item.suffixes];
+  if (lines.length === 0) {
+    return null;
+  }
   const climbable = lines.map((line, index) => ({ line, index })).filter(({ line }) => line.tier > 1);
   if (climbable.length === 0) {
-    return null;
+    return swapTopLine(item, upgrade.destroyChance);
   }
 
   // 망고 상태 lasts one 폭발의 구슬, whatever it rolls: it is spent here either way.

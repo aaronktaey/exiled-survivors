@@ -6,6 +6,29 @@ export const zh: Strings = {
 
   common: { back: '返回', close: '关闭', on: '开', off: '关' },
 
+  orbUse: {
+    title: '使用宝珠',
+    gearHeading: '所选装备',
+    held: '持有 {count} 个',
+    use: '使用',
+    close: '关闭',
+    ok: '确定',
+    none: '没有这种宝珠',
+    useless: '对这件装备无效',
+    destroyedTitle: '装备已被摧毁',
+    hintKeyboard: '← → 选择宝珠   Space 使用   Esc 关闭',
+    hintTouch: '在上方选择宝珠，再点「使用」',
+    rules: {
+      reroll: '清除现有的全部词缀，重新随机 {min}~{max} 条（前缀、后缀各最多 {cap} 条）',
+      add: '在空位加 {count} 条词缀 — 词缀已有 {max} 条时无法使用',
+      climb: '选一条非 1 阶的词缀，换成高 {steps} 阶的另一条词缀',
+      swap: '若词缀全为 1 阶，则把其中一条换成装备上没有的另一条 1 阶词缀',
+      destroy: '{chance} 概率摧毁装备 — 处于芒果状态时只会失去芒果状态',
+      noLines: '无法用于没有词缀的装备',
+      ward: '下一次爆炸宝珠无法摧毁装备，且无论结果如何芒果状态都会消失 — 已处于芒果状态时无法使用',
+    },
+  },
+
   passives: {
     title: '被动',
     points: '点数 {points}',
@@ -140,7 +163,6 @@ export const zh: Strings = {
     sellFor: '出售 {price}G',
     sold: '{gear} — 以 {price} 金币出售',
     orbCount: '{orb} x{count}',
-    orbConfirm: '使用{orb}？',
     orbNone: '没有{orb}',
     orbRerolled: '{orb} — 已重掷为 {count} 个属性',
     orbAdded: '{orb} — 新增 {affix}',
@@ -520,7 +542,7 @@ export const zh: Strings = {
       transmute: '将词缀重新随机为 1~2 条',
       chaos: '将词缀重新随机为 2~4 条',
       awaken: '追加 1 条词缀（最多 6 条）',
-      explode: '把一条非 1 阶的词缀换成高一阶的另一条 — 20% 概率摧毁装备',
+      explode: '把一条非 1 阶的词缀换成高一阶的另一条；若全为 1 阶，则换成另一条 1 阶词缀 — 20% 概率摧毁装备',
       mango: '让装备进入芒果状态 — 下一次爆炸宝珠无法摧毁该装备，且无论结果如何芒果状态都会消失',
     },
     bones: {
@@ -933,6 +955,7 @@ export const zh: Strings = {
           lines: [
             '持有的剑排列在 {cols}×{rows} 的格子中。选中格子后旁边会显示攻击力 · 固定属性 · 属性。',
             '装备 · 出售 · 使用宝珠通过旁边的按钮或 Space 进行。装备中的剑不能出售。',
+            '点宝珠按钮会打开「使用宝珠」窗口：一边看宝珠的全部效果和所选装备，一边连续使用；装备被摧毁时会当场提示。',
             '出售可获得金币：最低阶为 {sellBase} 金币，每高一阶多 {sellBase} 金币，每条词缀再加其 {sellAffix}。',
           ],
         },

@@ -6,6 +6,29 @@ export const en: Strings = {
 
   common: { back: 'Back', close: 'Close', on: 'On', off: 'Off' },
 
+  orbUse: {
+    title: 'Use an Orb',
+    gearHeading: 'Selected weapon',
+    held: '{count} held',
+    use: 'Use',
+    close: 'Close',
+    ok: 'OK',
+    none: 'You have none of this orb',
+    useless: 'It does nothing to this weapon',
+    destroyedTitle: 'The weapon was destroyed',
+    hintKeyboard: '← → pick an orb   Space use   Esc close',
+    hintTouch: 'Pick an orb above, then press Use',
+    rules: {
+      reroll: 'Wipes every modifier and rolls {min}–{max} new ones (at most {cap} prefixes and {cap} suffixes)',
+      add: 'Adds {count} modifier in an empty slot — not usable at {max} modifiers',
+      climb: 'Picks one modifier below tier 1 and turns it into a different one {steps} tier higher',
+      swap: 'If every modifier is tier 1, swaps one for a different tier-1 modifier the weapon does not have',
+      destroy: '{chance} chance to destroy the weapon — in Mango state only the Mango is lost instead',
+      noLines: 'Not usable on a weapon with no modifiers',
+      ward: 'The next Explosion Orb cannot destroy the weapon, and spends the Mango whatever it rolls — not usable in Mango state already',
+    },
+  },
+
   passives: {
     title: 'Passives',
     points: '{points} points',
@@ -140,7 +163,6 @@ export const en: Strings = {
     sellFor: 'Sell {price}G',
     sold: '{gear} — sold for {price} gold',
     orbCount: '{orb} x{count}',
-    orbConfirm: 'Use {orb}?',
     orbNone: 'No {orb}',
     orbRerolled: '{orb} — rerolled to {count} modifiers',
     orbAdded: '{orb} — added {affix}',
@@ -520,7 +542,7 @@ export const en: Strings = {
       transmute: 'Rerolls the weapon to 1–2 modifiers',
       chaos: 'Rerolls the weapon to 2–4 modifiers',
       awaken: 'Adds one modifier (up to 6)',
-      explode: 'Turns one modifier below tier 1 into another a tier higher — 20% chance to destroy the weapon',
+      explode: 'Turns one modifier below tier 1 into another a tier higher; if all are tier 1, swaps one for a different tier-1 modifier — 20% chance to destroy the weapon',
       mango: 'Puts a weapon in Mango state — the next Explosion Orb cannot destroy it, and spends the Mango whatever it rolls',
     },
     bones: {
@@ -939,6 +961,7 @@ export const en: Strings = {
           lines: [
             'Your swords sit in a {cols}×{rows} grid. Pick a cell and its attack power, implicit and affixes are read out beside it.',
             'Equip, sell and orbs are the buttons beside it, or Space. The sword in hand cannot be sold.',
+            'An orb button opens Use an Orb: every rule of the orb beside the selected sword, used as many times in a row as you like, and a notice right there if the sword is destroyed.',
             'Selling pays gold: the lowest tier is worth {sellBase}, each tier up {sellBase} more, and each affix adds {sellAffix} of that.',
           ],
         },

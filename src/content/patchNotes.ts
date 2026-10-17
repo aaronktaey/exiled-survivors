@@ -15,6 +15,32 @@ export interface PatchNote {
 
 export const PATCH_NOTES: readonly PatchNote[] = [
   {
+    version: '0.54',
+    date: '2026-10-17',
+    changes: {
+      ko: [
+        '인벤토리에서 구슬 버튼을 누르면 구슬 사용 창이 열립니다. 구슬의 모든 효과와 선택한 장비를 함께 보여 주고, 위쪽 줄에서 다른 구슬로 바꿀 수 있습니다.',
+        '구슬 사용 창에서 사용할 때마다 결과를 알려 주고 바뀐 속성을 구슬 색으로 표시하며, 창이 닫히지 않아 계속 쓸 수 있습니다. 장비가 파괴되면 파괴 알림이 뜹니다.',
+        '폭발의 구슬을 속성이 모두 1티어인 장비에 쓰면, 속성 하나가 장비에 없는 다른 1티어 속성으로 바뀝니다. 파괴 확률은 그대로이고 망고 상태도 똑같이 막아 줍니다.',
+      ],
+      en: [
+        'An orb button in the Inventory now opens Use an Orb: every rule of the orb beside the selected weapon, with the row along the top to switch orbs.',
+        'Each use there says what happened and lights the changed modifiers in the orb’s colour, and the window stays open for the next. A destroyed weapon gets a notice of its own.',
+        'An Explosion Orb on a weapon whose modifiers are all tier 1 now swaps one for a different tier-1 modifier the weapon does not have. The destroy chance is the same, and Mango state guards it the same way.',
+      ],
+      ja: [
+        'インベントリで球のボタンを押すと「球を使う」画面が開きます。球のすべての効果と選んだ装備を一緒に表示し、上の列でほかの球に切り替えられます。',
+        '使うたびに結果を知らせ、変わった属性を球の色で示します。画面は閉じないので続けて使えます。装備が壊れたときは破壊の通知が出ます。',
+        '属性がすべて 1 ティアの装備に爆発の球を使うと、属性 1 つが装備にない別の 1 ティア属性に変わります。破壊確率は同じで、マンゴー状態も同じように守ります。',
+      ],
+      zh: [
+        '在背包中点宝珠按钮会打开「使用宝珠」窗口，一并显示宝珠的全部效果和所选装备，并可在上方一排切换其他宝珠。',
+        '每次使用都会显示结果，并以宝珠颜色标出变化的词缀；窗口不会关闭，可以继续使用。装备被摧毁时会弹出摧毁提示。',
+        '对词缀全为 1 阶的装备使用爆炸宝珠时，会把其中一条换成装备上没有的另一条 1 阶词缀。摧毁几率不变，芒果状态也同样能挡下。',
+      ],
+    },
+  },
+  {
     version: '0.53',
     date: '2026-10-17',
     changes: {

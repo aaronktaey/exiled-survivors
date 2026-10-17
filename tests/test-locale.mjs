@@ -125,8 +125,24 @@ for (const lang of ['en', 'ja', 'zh']) {
   await overlay('InventoryScene');
   await ev(`(() => { const s = window.game.scene.getScene('InventoryScene'); s.menu.focus('full'); return 1; })()`);
   await take('inventory 장비');
+  // 구슬 사용: every 구슬's rules, a result, and the news of a weapon destroyed.
   await ev(`(() => { const s = window.game.scene.getScene('InventoryScene'); s.pressOrb('transmute'); return 1; })()`);
-  await take('inventory 구슬 armed');
+  await sleep(700);
+  for (const id of ['transmute', 'chaos', 'awaken', 'explode', 'mango']) {
+    await ev(`(() => { window.game.scene.getScene('OrbScene').pick('${id}'); return 1; })()`);
+    await sleep(150);
+    await take(`orb popup ${id}`);
+  }
+  await ev(`(() => { const p = window.game.scene.getScene('OrbScene'); p.pick('transmute'); p.use(); return 1; })()`);
+  await sleep(300);
+  await take('orb popup used');
+  await ev(`(() => { const p = window.game.scene.getScene('OrbScene'); p.pick('explode');
+    const real = Math.random; Math.random = () => 0; try { p.use(); } finally { Math.random = real; } return 1; })()`);
+  await sleep(400);
+  await take('orb popup destroyed');
+  if (lang === 'en') await shot('locale-02-orb-destroyed-en');
+  await ev(`(() => { window.game.scene.getScene('OrbScene').close(); return 1; })()`);
+  await sleep(900);
   await ev(`(() => { window.game.scene.getScene('InventoryScene').openTab('consumables'); return 1; })()`);
   await sleep(600);
   for (const id of ['orb:transmute', 'orb:explode', 'bone:rib', 'bone:skull']) {

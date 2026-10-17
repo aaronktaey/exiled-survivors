@@ -32,6 +32,7 @@ export const SCENES = {
   confirm: "ConfirmScene",
   gameOver: "GameOverScene",
   inventory: "InventoryScene",
+  orb: "OrbScene",
   bones: "BoneScene",
   passives: "PassiveScene",
   slot: "SlotScene",

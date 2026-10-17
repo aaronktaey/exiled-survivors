@@ -75,7 +75,7 @@ wrong shape.
 ## The test harness
 
 `tests/` drives a real Chrome over CDP against the dev server and checks the
-running game, not units. 43 suites, ~1150 checks. It is the only thing that has
+running game, not units. 43 suites, ~1160 checks. It is the only thing that has
 caught most of what has gone wrong here, so run all of it before every commit.
 
 ```sh
@@ -495,9 +495,21 @@ Read `git log` for what changed and when. What is not in the log:
   coordinates are the window's own; a node is picked on the release of a
   press that did not travel `DRAG_FROM_PX`, and `pan`/`scrollTo` keep some
   of the tree in view (`dragMargin`).
-- **폭발의 구슬 only climbs.** It picks among lines below tier 1, and the
-  replacement comes only from 속성 that have the rung above; a weapon with
-  nothing but tier-1 lines refuses it.
+- **폭발의 구슬 climbs, or swaps at the top.** It picks among lines below
+  tier 1, and the replacement comes only from 속성 that have the rung above.
+  On a weapon whose every line is tier 1 it trades one for a different
+  tier-1 속성 the weapon does not carry (`swapTopLine`, outcome `swap`); the
+  destroy roll and the 망고 work the same. Only a weapon with no lines
+  refuses it.
+- **구슬 are spent in a popup.** A 구슬 button (or its digit key) opens
+  `OrbScene` over the paused 인벤토리, on the weapon under the cursor: a tab
+  per 구슬, the picked one's `orbDetail` plus `OrbScene.rules` (every rule,
+  numbers from the table), the weapon's read-out (`InventoryScene.describe`).
+  `use()` decides and writes at once and draws on the next tick — a test
+  that pins `Math.random` for the roll would otherwise trip Phaser's Text.
+  The popup stays after a use, lighting the changed lines (`changed`); a
+  destroyed weapon turns it into the notice and 확인. Closing hands the
+  인벤토리 the weapon's uid (or null) and the note, and it restarts on them.
 - **Known gaps, left on purpose:**
   - The 뼈다귀 pick screen is reached only on the way into a fresh run (게임
     시작, and 다시하기 after a death — both through `BoneScene.before`).

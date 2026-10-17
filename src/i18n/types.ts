@@ -56,6 +56,33 @@ export interface Strings {
   };
 
   /** 패시브: the tree, its currency, and the icon it is reached by. */
+  /** 구슬 사용: the popup a 구슬 button opens over the 인벤토리. */
+  readonly orbUse: {
+    readonly title: string;
+    readonly gearHeading: string;
+    /** {count} of the picked 구슬 held. */
+    readonly held: string;
+    readonly use: string;
+    readonly close: string;
+    readonly ok: string;
+    /** Why 사용 is greyed: none held, or it would do nothing to this weapon. */
+    readonly none: string;
+    readonly useless: string;
+    readonly destroyedTitle: string;
+    readonly hintKeyboard: string;
+    readonly hintTouch: string;
+    /** Every rule of each kind of 구슬, its numbers filled from the table. */
+    readonly rules: {
+      readonly reroll: string;
+      readonly add: string;
+      readonly climb: string;
+      readonly swap: string;
+      readonly destroy: string;
+      readonly noLines: string;
+      readonly ward: string;
+    };
+  };
+
   readonly passives: {
     readonly title: string;
     /** Points in hand, waiting to be spent. */
@@ -210,7 +237,6 @@ export interface Strings {
     readonly sold: string;
     /** The 구슬 buttons: "변화 x3", and what one press asks before acting. */
     readonly orbCount: string;
-    readonly orbConfirm: string;
     /** Shown when the stash holds none of a 구슬 at all. */
     readonly orbNone: string;
     /** What a 구슬 just did, said out loud afterwards. */
