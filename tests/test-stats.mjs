@@ -204,6 +204,64 @@ check('a second run counts from zero again',
   second.damage === 0 && second.kills === 0,
   `${second.damage} damage, ${second.kills} kills`);
 
+// --- 7. 가한 피해 is what enemies actually lost, from every skill, and survives a save ---
+await cdp.send('Page.navigate', { url: 'about:blank' });
+await sleep(300);
+await cdp.send('Page.navigate', { url: 'http://localhost:5173/#run' });
+for (let i = 0; i < 40; i++) {
+  await sleep(500);
+  if ((await ev(`!!window.game?.scene.getScene('GameScene')?.player?.active`)) === true) break;
+}
+// Every point any enemy loses is counted beside the run's own tally: a
+// skill that hurt enemies some other way than CombatSystem.hit would show
+// as a gap. Overkill is not damage — the most a hit takes is what was left.
+await ev(`(() => {
+  const s = window.game.scene.getScene('GameScene');
+  const Enemy = Object.getPrototypeOf(s.spawner.group.getFirstDead(true) ?? s.spawner.group.getChildren()[0]).constructor;
+  window.__lost = 0;
+  const real = Enemy.prototype.takeDamage;
+  Enemy.prototype.takeDamage = function (amount) {
+    if (this.active && this.hp > 0) window.__lost += Math.min(amount, this.hp);
+    return real.call(this, amount);
+  };
+  s.player.setInvulnerable(true);
+  for (const id of ['fireball', 'chainLightning', 'iceSpear', 'voidOrb', 'thunderStrike']) s.acquire(id);
+  // Awakened too, so 화염구's burning ground and the rest are in it.
+  for (const id of ['meleeStrike', 'fireball', 'chainLightning', 'iceSpear', 'voidOrb', 'thunderStrike']) {
+    for (let i = 0; i < 30; i++) s.progression.apply(id, 'damage');
+  }
+  s.stats.reset();
+  return 1;
+})()`);
+await sleep(9000);
+const tally = await ev(`(() => {
+  const s = window.game.scene.getScene('GameScene');
+  return { counted: s.stats.damageExact, lost: window.__lost, kills: s.stats.killCount };
+})()`);
+console.log('damage tally:', JSON.stringify(tally));
+check('가한 피해 is exactly what enemies lost, from every skill at once, overkill left out',
+  tally.lost > 0 && Math.abs(tally.counted - tally.lost) < 1e-6 * Math.max(1, tally.lost),
+  `counted ${Math.round(tally.counted)} vs lost ${Math.round(tally.lost)}, ${tally.kills} kills`);
+
+const saved = await ev(`(() => {
+  const s = window.game.scene.getScene('GameScene');
+  s.writeSave();
+  const save = JSON.parse(localStorage.getItem('exiled-survivors:save:v1'));
+  window.__resumeWant = { damage: s.stats.damage, kills: s.stats.killCount };
+  s.scene.restart({ save });
+  return window.__resumeWant;
+})()`);
+await sleep(2500);
+const resumed = await ev(`(() => {
+  const s = window.game.scene.getScene('GameScene');
+  return { damage: s.stats.damage, kills: s.stats.killCount };
+})()`);
+console.log('resumed:', JSON.stringify({ saved, resumed }));
+check('a saved run picks its 가한 피해 and kills back up when it is resumed',
+  saved.damage > 0 && resumed.damage >= saved.damage && resumed.kills >= saved.kills,
+  `saved ${saved.damage} / ${saved.kills} kills, resumed at ${resumed.damage} / ${resumed.kills}`);
+await ev(`(() => { localStorage.removeItem('exiled-survivors:save:v1'); return 1; })()`);
+
 console.log('\n=== SUMMARY ===');
 const failed = results.filter((r) => !r.p);
 console.log(`${results.length - failed.length}/${results.length} passed`);

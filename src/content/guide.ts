@@ -178,6 +178,7 @@ function values(): Record<string, string | number> {
     mangoBoost: raise(MANGO.attackSpeedScale),
     magnetChance: percent(MAGNET.chance),
     altarChance: percent(ALTAR.fromKill),
+    altarBoss: percent(ALTAR.fromBoss),
     altarOffers: (Object.keys(ALTAR_OFFERS) as AltarOfferId[])
       .map((id) => altarOfferText(id))
       .join(', '),

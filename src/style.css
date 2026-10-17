@@ -23,11 +23,31 @@ body {
   -webkit-tap-highlight-color: transparent;
 }
 
-/* The game sits between the two reserved columns and takes what is left. */
+/*
+ * The game sits between the two reserved columns and takes what is left.
+ * 100vh on a phone is the height with the browser's bars tucked away, so
+ * the bottom of the game sat behind them; 100dvh is what is shown, and
+ * fitStage() (Viewport.ts) sets the height it measures on top of that for
+ * a browser that has neither right.
+ */
 #stage {
   display: flex;
   width: 100vw;
   height: 100vh;
+  height: 100dvh;
+}
+
+/*
+ * A touch screen: nothing of the game right at the glass. The notch, the
+ * home bar and the edge-swipe gestures all live there, and a button under
+ * them could not be pressed. The inset is at least the safe area.
+ */
+.touch #stage {
+  padding:
+    max(14px, env(safe-area-inset-top))
+    max(14px, env(safe-area-inset-right))
+    max(18px, env(safe-area-inset-bottom))
+    max(14px, env(safe-area-inset-left));
 }
 
 #game-root {

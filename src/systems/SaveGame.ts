@@ -2,6 +2,7 @@ import { STORAGE, type BoneId } from '@/config';
 import type { SkillStats } from '@/systems/Progression';
 import type { SkillId } from '@/weapons/skills';
 import type { GearItem } from '@/systems/Gear';
+import type { EnemyKind } from '@/config';
 
 /** A run, as it is written to localStorage. */
 export interface SavedRun {
@@ -31,6 +32,12 @@ export interface SavedRun {
    * Absent on a save written before this, which takes the one in hand.
    */
   readonly gear?: GearItem | null;
+  /**
+   * What the run had dealt and killed by then, so they still count at its
+   * end. Absent on a save from before 2026-10-18, which starts them at zero.
+   */
+  readonly damage?: number;
+  readonly kills?: Partial<Record<EnemyKind, number>>;
 }
 
 /**

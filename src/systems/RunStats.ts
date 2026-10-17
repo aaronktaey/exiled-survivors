@@ -35,6 +35,31 @@ export class RunStats {
     this.kills.clear();
   }
 
+  /**
+   * Carries on from a saved run's count, so the damage and kills before it
+   * was saved still count at the end (they were lost on every resume until
+   * 2026-10-18 — and the board, 내 기록 and the gold went by the rest only).
+   */
+  public seed(damage: number, kills: Partial<Record<EnemyKind, number>> = {}): void {
+    this.damageDealt = Math.max(0, Number(damage) || 0);
+    this.kills.clear();
+    for (const [kind, count] of Object.entries(kills) as [EnemyKind, number][]) {
+      if (ENEMY_KINDS[kind] && Number(count) > 0) {
+        this.kills.set(kind, Math.floor(Number(count)));
+      }
+    }
+  }
+
+  /** The kills as the save keeps them. */
+  public get killsByKind(): Partial<Record<EnemyKind, number>> {
+    return Object.fromEntries(this.kills);
+  }
+
+  /** The damage before rounding, as the save keeps it. */
+  public get damageExact(): number {
+    return this.damageDealt;
+  }
+
   /** Every point of damage the survivor dealt, crits included. */
   public recordDamage(amount: number): void {
     if (amount > 0) {

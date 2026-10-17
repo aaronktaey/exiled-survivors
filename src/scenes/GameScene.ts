@@ -571,6 +571,8 @@ export class GameScene extends Phaser.Scene {
     this.elapsedMs = run.elapsedMs;
     this.hud.seed(run.elapsedMs);
     this.spawner.seed(run.spawnerMs);
+    // What it had dealt and killed before the save still counts at the end.
+    this.stats.seed(run.damage ?? 0, run.kills ?? {});
   }
 
   /**
@@ -671,6 +673,8 @@ export class GameScene extends Phaser.Scene {
       hp: this.player.hp,
       skills,
       spawnerMs: this.spawner.clockMs,
+      damage: this.stats.damageExact,
+      kills: this.stats.killsByKind,
     });
   }
 

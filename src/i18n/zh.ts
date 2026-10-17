@@ -796,7 +796,7 @@ export const zh: Strings = {
         {
           title: '首领留下的东西',
           lines: [
-            '必定掉落一个技能和一把剑，并必定留下一座祭坛。',
+            '必定掉落一个技能和一把剑，并有 {altarBoss} 几率留下祭坛。',
             '有 {shardChance} 几率掉落神圣碎片，神圣碎片只由首领掉落。',
             '其余所有掉落的几率提高 {bossBonus}。',
           ],
@@ -899,7 +899,7 @@ export const zh: Strings = {
         {
           title: '祭坛',
           lines: [
-            '首领必定留下，其他敌人有 {altarChance} 几率留下。',
+            '首领有 {altarBoss} 几率留下，其他敌人有 {altarChance} 几率。放入远古头骨也不会改变祭坛召唤的敌人。',
             '会召唤上面写着的敌人。只有靠近才会苏醒，也可以直接走过。需要先离开一次再靠近才会苏醒。',
             '可能出现的：{altarOffers}。',
           ],

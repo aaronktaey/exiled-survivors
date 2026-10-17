@@ -22,7 +22,7 @@ import { orbs } from '@/systems/Orbs';
 import { passives } from '@/systems/Passives';
 import { itemFilter } from '@/systems/ItemFilter';
 import { tuning } from '@/systems/Tuning';
-import { currentCanvasSize } from '@/systems/Viewport';
+import { currentCanvasSize, fitStage } from '@/systems/Viewport';
 import {
   AccountScene,
   ConflictScene,
@@ -53,8 +53,10 @@ settings.prime();
 // And every label it builds renders at more than one pixel per pixel.
 registerSharpText();
 
-// The canvas is the shape of the window it opens in, so a phone is not
+// The page first — on a phone, the height actually shown and an inset from
+// the glass — then the canvas, the shape of what is left, so a phone is not
 // handed a letterboxed strip of a desktop layout.
+fitStage();
 const { width, height } = currentCanvasSize();
 
 const config: Phaser.Types.Core.GameConfig = {
@@ -105,6 +107,10 @@ const config: Phaser.Types.Core.GameConfig = {
 };
 
 const game = new Phaser.Game(config);
+// The scale manager follows window resizes on its own; a phone's bars coming
+// and going only move the visual viewport, so it is told then too (after
+// fitStage, registered first, has set the stage's new height).
+window.visualViewport?.addEventListener('resize', () => game.scale.refresh());
 
 // Asks, now and then, whether a newer version is out (never on the dev server).
 liveUpdate.start();

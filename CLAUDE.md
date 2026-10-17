@@ -169,8 +169,10 @@ Read `git log` for what changed and when. What is not in the log:
 - **One rule for the 고대 두개골.** Every spawn that rolls rare goes through
   `SpawnDirector.place`: under the skull it is a 우두머리 while fewer than
   `BONE_RUN.maxBosses` are up, and an ordinary enemy after — never a rare.
-  The 제단's rare packs go through the same function. Do not add a second
-  spawn path that skips it.
+  The one exception is the 제단 (since 2026-10-18): its packs come exactly as
+  offered, rare and all — it used to turn them into 우두머리 up to the
+  ceiling and leave the rest plain. Do not add another spawn path that skips
+  `place`.
 - **No basic attack.** Every skill, 타격 included, is in `DROPPABLE_SKILLS`;
   a fresh run holds only what it picks off three cards (`SkillPickScene`,
   `SKILL_PICK`), and that first skill is the run's **main skill**
@@ -201,7 +203,8 @@ Read `git log` for what changed and when. What is not in the log:
   `addBackButton` (top-left, arrow only below 600 wide) with the same exit
   Esc takes; `test-back` checks each one sits clear and goes where it
   should. A new screen should do the same.
-- **제단 chain on purpose.** Every 우두머리 leaves a 제단 (`ALTAR.fromBoss`),
+- **제단 chain on purpose.** A 우두머리 leaves a 제단 at `ALTAR.fromBoss` (a
+  tenth since 2026-10-18 — at every one, a 고대 두개골 run drowned in them),
   ordinary kills leave one at `ALTAR.fromKill`, and a 제단 can call up 우두머리, which leave 제단. It is opt-in — nothing
   happens until the survivor walks up — so it is not capped. An altar arms only
   after the survivor has been outside its radius once.
@@ -406,6 +409,15 @@ Read `git log` for what changed and when. What is not in the log:
   it) to each option; `UpgradeScene` prints them under the detail. It stacks
   icon, title, cards and hint as one centred block, so two rows of cards on
   a phone push the rest up instead of over it.
+- **Phones keep off the glass.** `fitStage` (Viewport.ts, first thing in
+  main.ts) marks a touch screen `html.touch` and sets `#stage` to the height
+  actually shown (`visualViewport`): `100vh` on a phone is the height with
+  the browser's bars hidden, and the bottom of the game sat behind them.
+  `.touch #stage` pads every side by at least the safe area, so no button is
+  at the edge; the canvas is measured from `#game-root` inside that.
+- **A saved run carries its tally.** `SavedRun.damage`/`kills` seed
+  `RunStats` on resume (`seed`); before 2026-10-18 a resume started both at
+  zero and the end screen, the board and the gold counted only the rest.
 - **Touch never holds the run.** A phone fires a pretend mouse event after a
   tap; landing on a rare under a just-closed card used to set `inspecting`
   and freeze the arena and the pad. `setInspecting` ignores it on touch

@@ -57,3 +57,30 @@ export function currentCanvasSize(): CanvasSize {
     Math.round(box?.height || window.innerHeight),
   );
 }
+
+/**
+ * Sizes the page for the screen it is on, before the canvas is measured: on
+ * a touch screen the stage is inset from every edge (the .touch rule in
+ * style.css), and its height is the height actually shown — measured, since
+ * a phone's browser bars come and go and not every browser's 100dvh knows.
+ * Kept up as the bars move or the phone turns; `onChange` refits the canvas.
+ */
+export function fitStage(onChange?: () => void): void {
+  if (typeof window === 'undefined') {
+    return;
+  }
+  const touch = window.matchMedia?.('(pointer: coarse)').matches ?? false;
+  document.documentElement.classList.toggle('touch', touch);
+  const stage = document.getElementById('stage');
+  const apply = (): void => {
+    const shown = window.visualViewport?.height ?? window.innerHeight;
+    if (stage) {
+      stage.style.height = `${Math.round(shown)}px`;
+    }
+    onChange?.();
+  };
+  apply();
+  window.addEventListener('resize', apply);
+  window.addEventListener('orientationchange', apply);
+  window.visualViewport?.addEventListener('resize', apply);
+}

@@ -38,6 +38,22 @@ const env = await cdp.evaluate(`({
   hasStick: !!window.game.scene.getScene('GameScene').player.analog,
 })`);
 check('touch device detected', env.coarse === true, `coarse=${env.coarse}`);
+
+// Nothing of the game right at the glass: the stage is the height shown and
+// the canvas sits inset from every edge, so no button is under a gesture strip.
+const inset = await cdp.evaluate(`(() => {
+  const r = window.game.canvas.getBoundingClientRect();
+  const stage = document.getElementById('stage').getBoundingClientRect();
+  return { touch: document.documentElement.classList.contains('touch'),
+           left: Math.round(r.left), top: Math.round(r.top),
+           right: Math.round(window.innerWidth - r.right), bottom: Math.round(window.innerHeight - r.bottom),
+           stageH: Math.round(stage.height), shown: Math.round(window.visualViewport ? window.visualViewport.height : window.innerHeight) };
+})()`);
+console.log('inset:', JSON.stringify(inset));
+check('on a phone the stage is the height actually shown, and the game keeps off every edge',
+  inset.touch && inset.stageH === inset.shown &&
+    Math.min(inset.left, inset.top, inset.right, inset.bottom) >= 12,
+  JSON.stringify(inset));
 check('joystick attached on touch', env.hasStick === true, `attached=${env.hasStick}`);
 
 const geom = await cdp.evaluate(`(() => {

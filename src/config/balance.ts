@@ -499,10 +499,15 @@ export const AFFIXES: Record<AffixId, AffixSpec> = {
     detail: "치명타 확률 20%",
     enemy: { critChance: 0.2 },
     gearTiers: tiers(
-      // A share of the base chance, not points on top of it: two of +50% double it.
+      // A share of the base chance, not points on top of it. Each rung is set
+      // so a crit's worth on average (PLAYER.critChance × this × (critMultiplier
+      // − 1)) is about what 강력 of the same rung adds on a 1티어 sword on a
+      // 180-damage skill: 75% of 25 attack is +9.1% damage, and 3% × 10 × 0.3
+      // is +9%. Retune together if either the base crit or 강력 moves.
+      // [50, 40, 30, 20, 10] until 2026-10-18 — worth a twentieth of 강력.
       (v) => `기본 치명타 확률 +${v}%`,
       (v) => ({ critChance: v / 100 }),
-      [50, 40, 30, 20, 10],
+      [1000, 800, 700, 500, 350],
     ),
   },
   cruel: {
@@ -791,7 +796,8 @@ export const ALTAR_OFFERS: Record<AltarOfferId, AltarOfferSpec> = {
 
 export const ALTAR = {
   /** Share of 우두머리 kills that leave one. 1 is every one of them. */
-  fromBoss: 1,
+  // Every one of them until 2026-10-18; a 고대 두개골 run, all 우두머리, drowned in them.
+  fromBoss: 0.1,
   /**
    * Share of every other kill that leaves one, rares included. A 갈비뼈
    * raises it the way it raises every other drop.

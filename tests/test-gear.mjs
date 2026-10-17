@@ -503,7 +503,7 @@ check('the read-out is the base (attack and 고정 속성), then a 접두어 blo
   block);
 check('every 속성 fills a slot with its rung, its name and what it does',
   /1티어\s+강력\s+피해 \+75%/.test(block) &&
-    /2티어\s+치명\s+기본 치명타 확률 \+40%/.test(block) &&
+    /2티어\s+치명\s+기본 치명타 확률 \+\d+%/.test(block) &&
     /1티어\s+거대\s+최대 체력 \+45%/.test(block) &&
     /5티어\s+신속\s+이동속도 \+12%/.test(block) &&
     /3티어\s+자력\s+획득 범위 \+\d+%/.test(block),

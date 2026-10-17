@@ -72,7 +72,7 @@ check('it lands out of reach of the kill, so collecting the loot cannot wake it'
   table.altar.dropOffset > table.altar.activateRadius,
   `${table.altar.dropOffset}px away, wakes inside ${table.altar.activateRadius}px`);
 
-// --- 3. a 우두머리 always leaves one; nothing else does ---
+// --- 3. a 우두머리 leaves one at ALTAR.fromBoss, anything else at ALTAR.fromKill ---
 const fromKills = await run(`
   ${FREEZE}
   const was = window.config.ALTAR.fromBoss;
@@ -88,7 +88,23 @@ const fromKills = await run(`
     s.spawner.clear();
     return { made, dist: last ? Math.hypot(last.x - at.x, last.y - at.y) : null };
   };
+  // Where it lands: at a certain chance, so every one is there to measure.
+  window.config.ALTAR.fromBoss = 1;
   const bosses = [kill('boss'), kill('boss'), kill('boss'), kill('boss'), kill('boss')];
+  window.config.ALTAR.fromBoss = was;
+  // How often, at the chance it is tuned to.
+  const N = 600;
+  let bossAltars = 0;
+  for (let i = 0; i < N; i++) {
+    s.combat.altars.getChildren().forEach((a) => a.active && a.collect());
+    const b = s.spawner.spawnBoss();
+    s.combat.hit(b, 1e12);
+    bossAltars += s.combat.altars.countActive(true);
+  }
+  [s.combat.gearDrops, s.combat.skillDrops, s.combat.shardDrops, s.combat.orbDrops, s.combat.gems, s.combat.potions,
+   s.combat.boneDrops, s.combat.randomSkillDrops, s.combat.mangoDrops, s.combat.magnetDrops]
+    .forEach((g) => g.getChildren().forEach((d) => d.active && d.collect()));
+  s.spawner.clear();
   // Ordinary kills leave one only now and then: off, then certain, so each
   // side of that is a fixed answer rather than a roll.
   const chance = window.config.ALTAR.fromKill;
@@ -97,15 +113,15 @@ const fromKills = await run(`
   window.config.ALTAR.fromKill = 1;
   const certain = ['grunt', 'shooter'].map(kill);
   window.config.ALTAR.fromKill = chance;
-  const out = { was, bosses, others, certain, chance };
+  const out = { was, bosses, others, certain, chance, bossRate: bossAltars / N, N };
   s.combat.altars.getChildren().forEach(a => a.active && a.collect());
   s.choosing = false;
   return out;
 `);
 console.log('altars from kills:', JSON.stringify(fromKills));
-check('every 우두머리 kill leaves a 제단',
-  fromKills.was < 1 || fromKills.bosses.every(b => b.made === 1),
-  fromKills.bosses.map(b => b.made).join(' '));
+check('a 우두머리 kill leaves a 제단 at its own chance',
+  Math.abs(fromKills.bossRate - fromKills.was) < Math.max(0.03, 4 * Math.sqrt((fromKills.was * (1 - fromKills.was)) / fromKills.N)),
+  `${(fromKills.bossRate * 100).toFixed(1)}% of ${fromKills.N} (want ${(fromKills.was * 100).toFixed(1)}%)`);
 check('set back by its offset from where the 우두머리 fell',
   fromKills.bosses.every(b => Math.abs(b.dist - table.altar.dropOffset) < 1),
   `${fromKills.bosses[0].dist?.toFixed(1)}px`);
@@ -241,7 +257,7 @@ check('it blinks its warning over the last stretch, like the rest',
 check('and then it is gone, its offer with it, having called nothing up',
   expiry.gone && expiry.plate === false && expiry.alive === 0);
 
-// --- 7. under a 고대 두개골, a rare pack is 우두머리 up to the ceiling ---
+// --- 7. under a 고대 두개골, a rare pack still comes as it says ---
 const skulled = await run(`
   ${FREEZE}
   const was = s.boneBonus;
@@ -263,9 +279,9 @@ const skulled = await run(`
   return out;
 `);
 console.log('rare pack under a skull:', JSON.stringify(skulled));
-check('a rare pack under a 고대 두개골 is 우두머리 up to the ceiling, plain after',
-  skulled.rares === 0 && skulled.bosses === Math.min(skulled.cap, skulled.want) &&
-    skulled.bosses + skulled.plain === skulled.want,
+// The skull turns the field's rares into 우두머리, not what a 제단 promised.
+check('a rare pack from a 제단 under a 고대 두개골 is every one of it rare, and no 우두머리',
+  skulled.bosses === 0 && skulled.plain === 0 && skulled.rares === skulled.want,
   `${skulled.bosses} 우두머리 + ${skulled.plain} plain, ${skulled.rares} rare`);
 
 // --- 8. the rim points at one off screen ---

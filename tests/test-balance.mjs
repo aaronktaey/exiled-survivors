@@ -446,6 +446,24 @@ check('and 잔혹 raises what a crit is worth',
   crit.cruelMultiplier > crit.multiplier,
   `x${crit.multiplier} -> x${crit.cruelMultiplier}`);
 
+// 치명 is worth about what 강력 of the same rung is: on a 1티어 sword and a
+// 180-damage skill, the average a crit adds against the damage 강력 adds.
+const parity = await run(`
+  const c = window.config, A = c.AFFIXES, P = c.PLAYER;
+  const attack = c.attackForTier(1);
+  return [1, 2, 3, 4, 5].map((tier) => {
+    const crit = A.critical.gearTiers.find((t) => t.tier === tier).gear.critChance;
+    const mighty = A.mighty.gearTiers.find((t) => t.tier === tier).gear.attackScale - 1;
+    const fromCrit = Math.min(1, P.critChance * (1 + crit)) * (P.critMultiplier - 1) - P.critChance * (P.critMultiplier - 1);
+    const fromMighty = (attack * mighty) / (180 + attack);
+    return { tier, fromCrit: +(fromCrit * 100).toFixed(2), fromMighty: +(fromMighty * 100).toFixed(2) };
+  });
+`);
+console.log('crit parity:', JSON.stringify(parity));
+check('each rung of 치명 adds about what 강력 of the same rung adds, on average',
+  parity.every((p) => Math.abs(p.fromCrit - p.fromMighty) <= Math.max(1, p.fromMighty * 0.25)),
+  parity.map((p) => `${p.tier}티어 +${p.fromCrit}% vs +${p.fromMighty}%`).join(' · '));
+
 // A hit for a fraction (연쇄번개 각성, a crit's multiplier) shows a whole number.
 const whole = await run(`
   s.choosing = true;

@@ -169,6 +169,9 @@ const edges = await run(`
   s.choosing = true;
   const W = window.config.WORLD.width, H = window.config.WORLD.height;
   const out = [];
+  // Where it lands, not whether: a certain one for each kill.
+  const was = window.config.ALTAR.fromBoss;
+  window.config.ALTAR.fromBoss = 1;
   for (const [x, y] of [[W / 2, 10], [W / 2, H - 10], [10, H / 2], [W - 10, 30], [5, 5]]) {
     s.combat.altars.getChildren().forEach((a) => a.active && a.collect());
     const b = s.spawner.group.get(x, y); b.spawn(x, y, s.player, 'boss');
@@ -178,6 +181,7 @@ const edges = await run(`
     out.push({ kill: [x, y], at: a ? [Math.round(a.x), Math.round(a.y)] : null,
                apart: a ? Math.round(Math.hypot(a.x - x, a.y - y)) : 0 });
   }
+  window.config.ALTAR.fromBoss = was;
   s.combat.altars.getChildren().forEach((a) => a.active && a.collect());
   s.spawner.clear();
   s.choosing = false;

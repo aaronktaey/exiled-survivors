@@ -330,8 +330,9 @@ export class SpawnDirector {
   /**
    * What a 제단 calls up when it wakes: its whole crowd at once, standing
    * evenly round a ring about it. Outside the usual cap — the survivor asked
-   * for these — and through the same rule as any other spawn, so under a
-   * 고대 두개골 a rare pack is 우두머리 up to the ceiling and plain after.
+   * for these — and exactly what it said: a 고대 두개골 does not turn a rare
+   * pack into 우두머리 (it used to, up to the ceiling, and left the rest of the
+   * pack plain).
    *
    * Returns how many came.
    */
@@ -342,7 +343,7 @@ export class SpawnDirector {
     }
 
     let spawned = 0;
-    let horn = offer.kind === 'boss';
+    const horn = offer.kind === 'boss';
     // The ring starts at a random turn, so two altars do not line up.
     const turn = Phaser.Math.FloatBetween(0, Math.PI * 2);
     for (let i = 0; i < offer.count; i++) {
@@ -354,11 +355,7 @@ export class SpawnDirector {
         break;
       }
 
-      if (offer.kind === 'boss') {
-        enemy.spawn(ex, ey, this.target, 'boss', this.hooks, false, this.hpScale);
-      } else if (this.place(enemy, ex, ey, offer.kind, offer.rare)) {
-        horn = true;
-      }
+      enemy.spawn(ex, ey, this.target, offer.kind, this.hooks, offer.kind !== 'boss' && offer.rare, this.hpScale);
       spawned += 1;
     }
 

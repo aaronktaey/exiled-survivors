@@ -800,7 +800,7 @@ export const en: Strings = {
         {
           title: 'What a Boss leaves',
           lines: [
-            'A skill and a sword every time, and an altar every time.',
+            'A skill and a sword every time, and an altar {altarBoss} of the time.',
             'A Divine Shard {shardChance} of the time — only Bosses drop them.',
             'Every other drop is {bossBonus} more likely.',
           ],
@@ -903,7 +903,7 @@ export const en: Strings = {
         {
           title: 'Altar',
           lines: [
-            'Every Boss leaves one, and other enemies {altarChance} of the time.',
+            'A Boss leaves one {altarBoss} of the time, other enemies {altarChance}. An Ancient Skull does not change what an altar calls up.',
             'It calls up the enemies written over it. It only wakes when you walk up to it, and you may walk past — you have to have been away from it once before it can wake.',
             'What it can call: {altarOffers}.',
           ],
