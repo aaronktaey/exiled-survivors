@@ -8,7 +8,7 @@ import { DropLabel } from '@/systems/DropLabel';
 /**
  * 자석 on the ground. As rare as the 하얀 망고, so it wears the same loud
  * label. Expiry and the warning blink come from GroundItem; what it does
- * when picked up is CombatSystem.pullEverything.
+ * when picked up is CombatSystem.collectEverything.
  */
 export class MagnetDrop extends GroundItem {
   /** The name above it. Public so a test can read what it says. */

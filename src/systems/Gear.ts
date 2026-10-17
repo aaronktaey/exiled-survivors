@@ -54,7 +54,11 @@ export interface GearBonus {
   readonly moveSpeedScale: number;
   readonly pickupScale: number;
   readonly invulnerableScale: number;
-  readonly critChance: number;
+  /**
+   * The weapon's 치명 lines, summed: they raise the base chance by that
+   * share of itself (two of +50% double it), rather than adding to it.
+   */
+  readonly critChanceIncrease: number;
   /** Added to RARE.critMultiplier when one lands. */
   readonly critMultiplierBonus: number;
   /** Multiplies every skill's damage, after the flat attack is added. */
@@ -74,7 +78,7 @@ export const NO_BONUS: GearBonus = {
   moveSpeedScale: 1,
   pickupScale: 1,
   invulnerableScale: 1,
-  critChance: 0,
+  critChanceIncrease: 0,
   critMultiplierBonus: 0,
   damageScale: 1,
   skillAttackSpeed: {},
@@ -125,41 +129,43 @@ export function gearBonusFor(item: GearItem | null): GearBonus {
     return NO_BONUS;
   }
 
-  let attackScale = 1;
-  let attackSpeedScale = 1;
-  let maxHpScale = 1;
-  let moveSpeedScale = 1;
-  let pickupScale = 1;
-  let invulnerableScale = 1;
-  let critChance = 0;
+  // Within one weapon its lines add up: two 거대 of +50% are +100% of the
+  // survivor's health, not ×1.5 twice. The base's own 고정 속성 is one more
+  // line in the same sum.
+  let attack = 0;
+  let attackSpeed = 0;
+  let maxHp = 0;
+  let moveSpeed = 0;
+  let pickup = 0;
+  let invulnerable = 0;
+  let critChanceIncrease = 0;
   let critMultiplierBonus = 0;
 
-  // The base's own 고정 속성 first; the rolled lines compound on it.
   const implicit = GEAR[item.id].implicit;
-  attackSpeedScale *= implicit?.attackSpeedScale ?? 1;
+  attackSpeed += (implicit?.attackSpeedScale ?? 1) - 1;
   const skillAttackSpeed: Partial<Record<SkillId, number>> = implicit?.skillAttackSpeed
     ? { [implicit.skillAttackSpeed.skill]: implicit.skillAttackSpeed.scale }
     : {};
 
   for (const { effect } of affixesOf(item)) {
-    attackScale *= effect.attackScale ?? 1;
-    attackSpeedScale *= effect.attackSpeedScale ?? 1;
-    maxHpScale *= effect.maxHpScale ?? 1;
-    moveSpeedScale *= effect.moveSpeedScale ?? 1;
-    pickupScale *= effect.pickupScale ?? 1;
-    invulnerableScale *= effect.invulnerableScale ?? 1;
-    critChance = Math.min(1, critChance + (effect.critChance ?? 0));
+    attack += (effect.attackScale ?? 1) - 1;
+    attackSpeed += (effect.attackSpeedScale ?? 1) - 1;
+    maxHp += (effect.maxHpScale ?? 1) - 1;
+    moveSpeed += (effect.moveSpeedScale ?? 1) - 1;
+    pickup += (effect.pickupScale ?? 1) - 1;
+    invulnerable += (effect.invulnerableScale ?? 1) - 1;
+    critChanceIncrease += effect.critChance ?? 0;
     critMultiplierBonus += effect.critMultiplierBonus ?? 0;
   }
 
   return {
-    attack: Math.round(attackForTier(GEAR[item.id].tier) * attackScale),
-    attackSpeedScale,
-    maxHpScale,
-    moveSpeedScale,
-    pickupScale,
-    invulnerableScale,
-    critChance,
+    attack: Math.round(attackForTier(GEAR[item.id].tier) * (1 + attack)),
+    attackSpeedScale: 1 + attackSpeed,
+    maxHpScale: 1 + maxHp,
+    moveSpeedScale: 1 + moveSpeed,
+    pickupScale: 1 + pickup,
+    invulnerableScale: Math.max(0, 1 + invulnerable),
+    critChanceIncrease,
     critMultiplierBonus,
     damageScale: implicit?.damageScale ?? 1,
     skillAttackSpeed,

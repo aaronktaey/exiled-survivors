@@ -362,6 +362,15 @@ export const ACCOUNT_BUTTONS: Record<string, { readonly fill: number; readonly t
  * marked in a loot game: seen from anywhere on the screen, before the label
  * is. Only the drops whose label is the 희귀 tier stand in one.
  */
+/** 하얀 망고's clock: a ring round the survivor that runs down as it does. */
+export const MANGO_RING = {
+  /** Its radius, from the survivor's middle. */
+  radius: 22,
+  width: 4,
+  /** The whole ring, faint, under what is left of it. */
+  trackAlpha: 0.25,
+} as const;
+
 export const LIGHT_PILLAR = {
   /** Drawn size; the texture is soft at its edges and fades to its top. */
   width: 34,

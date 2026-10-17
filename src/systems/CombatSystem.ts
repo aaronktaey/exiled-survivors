@@ -34,7 +34,6 @@ import { OrbDrop } from '@/entities/OrbDrop';
 import { RandomSkillDrop } from '@/entities/RandomSkillDrop';
 import { MangoDrop } from '@/entities/MangoDrop';
 import { MagnetDrop } from '@/entities/MagnetDrop';
-import type { GroundItem } from '@/entities/GroundItem';
 import { ShardDrop } from '@/entities/ShardDrop';
 import { dropTierFor, rollOrbDrop, type GearItem } from '@/systems/Gear';
 import type { RunStats } from '@/systems/RunStats';
@@ -291,32 +290,56 @@ export class CombatSystem {
   }
 
   /**
-   * A 자석: every XP gem and every item lying anywhere on the map flies to
-   * the survivor, all arriving within MAGNET.pullMs, and is picked up there
-   * the way walking over it would — so a potion at full health is left
-   * where it lands, as ever. The 제단 stays put: it is walked up to, not
-   * picked up. Public so a test can.
+   * A 자석: every XP gem and every item on the map is picked up at once, the
+   * way walking over it would — so nothing can hold it up halfway, a
+   * level-up included. What a survivor might be keeping for later is left
+   * where it lies: the 하얀 망고, another 자석, a 포션 and the 제단. What it
+   * took is then seen flying in, which is only a picture. Public so a test can.
    */
-  public pullEverything(): void {
-    const endsAt = this.scene.time.now + MAGNET.pullMs;
-    for (const child of this.gems.getChildren()) {
-      const gem = child as XpGem;
-      if (gem.active) {
-        gem.pullTo(endsAt);
-      }
-    }
-    const lying = [
-      this.skillDrops, this.potions, this.gearDrops, this.shardDrops, this.orbDrops,
-      this.boneDrops, this.randomSkillDrops, this.mangoDrops, this.magnetDrops,
-    ];
-    for (const group of lying) {
-      for (const child of group.getChildren()) {
-        const item = child as GroundItem;
-        if (item.active) {
-          item.pullTo(this.player, endsAt);
+  public collectEverything(): void {
+    const player = this.player;
+    let ghosts = 0;
+    const take = (
+      group: Phaser.Physics.Arcade.Group,
+      touch: Phaser.Types.Physics.Arcade.ArcadePhysicsCallback,
+    ): void => {
+      for (const child of [...group.getChildren()]) {
+        const item = child as Phaser.Physics.Arcade.Image;
+        if (!item.active) {
+          continue;
         }
+        if (ghosts < MAGNET.ghosts) {
+          ghosts += 1;
+          this.flyIn(item);
+        }
+        touch.call(this, player as never, item as never);
       }
-    }
+    };
+    take(this.gems, this.onGemTouch);
+    take(this.skillDrops, this.onSkillTouch);
+    take(this.gearDrops, this.onGearTouch);
+    take(this.shardDrops, this.onShardTouch);
+    take(this.orbDrops, this.onOrbTouch);
+    take(this.boneDrops, this.onBoneTouch);
+    take(this.randomSkillDrops, this.onRandomSkillTouch);
+  }
+
+  /** A copy of something just taken, flying from where it lay into the survivor. */
+  private flyIn(item: Phaser.Physics.Arcade.Image): void {
+    const ghost = this.scene.add
+      .image(item.x, item.y, item.texture.key)
+      .setDisplaySize(item.displayWidth, item.displayHeight)
+      .setDepth(DEPTH.pickups + 1);
+    this.scene.tweens.add({
+      targets: ghost,
+      x: this.player.x,
+      y: this.player.y,
+      scale: ghost.scale * 0.5,
+      alpha: 0.4,
+      duration: MAGNET.flyMs,
+      ease: 'Quad.easeIn',
+      onComplete: () => ghost.destroy(),
+    });
   }
 
   /** Places a 무작위 스킬 directly — used by the kill roll and by tests. */
@@ -666,7 +689,7 @@ export class CombatSystem {
     }
 
     drop.collect();
-    this.pullEverything();
+    this.collectEverything();
     this.hooks.onMagnetCollected();
   };
 

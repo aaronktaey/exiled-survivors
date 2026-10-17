@@ -49,6 +49,9 @@ const eaten = await run(`
   s.combat.onMangoTouch(p, d);
   const during = { speed: p.moveSpeed, cd: s.cooldownOf('meleeStrike'), active: p.mangoActive,
                    left: p.mangoLeftMs, gone: !d.active };
+  // Its clock, as a ring round the survivor: drawn once it starts to run.
+  p.tickBuffs(1);
+  during.ring = p.mangoRing.commandBuffer.length;
   // Nothing gets through: not a body, not a bolt.
   const e = s.spawner.group.get(p.x, p.y); e.spawn(p.x, p.y, p, 'brute');
   s.combat.onEnemyTouch(p, e);
@@ -69,6 +72,7 @@ check('move speed is multiplied by the configured amount',
 check('and every skill fires that much faster',
   Math.abs(eaten.during.cd - eaten.before.cd / ground.cfg.attackSpeedScale) < 1,
   `${Math.round(eaten.before.cd)}ms -> ${Math.round(eaten.during.cd)}ms`);
+check('a ring round the survivor shows how long it has left', eaten.during.ring > 0, `${eaten.during.ring} draw commands`);
 check('the survivor runs through the rainbow while it lasts', new Set(eaten.tints).size >= 3,
   eaten.tints.map((c) => c.toString(16)).join(' '));
 await run(`s.choosing = false; return 1;`);
@@ -88,15 +92,15 @@ check('it does not run down while the run is waiting on a choice', held.left ===
 const ended = await run(`
   const p = s.player;
   for (let t = 0; t < window.config.MANGO.durationMs + 100; t += 50) p.tickBuffs(50);
-  const out = { active: p.mangoActive, tint: p.isTinted, speed: p.moveSpeed,
+  const out = { active: p.mangoActive, tint: p.isTinted, speed: p.moveSpeed, ring: p.mangoRing.commandBuffer.length,
                 base: window.config.PLAYER.speed * s.mods.passive.moveSpeedScale * s.mods.gear.moveSpeedScale };
   p.invulnerableUntil = 0;
   const hp = p.hp; p.takeDamage(5); out.hurt = hp - p.hp; p.hp = p.maxHp;
   s.choosing = false;
   return out;
 `);
-check('when it runs out, speed and colour are back and hits land again',
-  !ended.active && !ended.tint && Math.abs(ended.speed - ended.base) < 1e-6 && ended.hurt === 5,
+check('when it runs out, speed and colour are back, the ring gone, and hits land again',
+  !ended.active && !ended.tint && Math.abs(ended.speed - ended.base) < 1e-6 && ended.hurt === 5 && ended.ring === 0,
   JSON.stringify(ended));
 
 // --- 3. one drop rule: +10% a 속성, +200% for a 우두머리 (not the 망고) ---
@@ -257,62 +261,67 @@ check('자석 drops off a kill at its chance, the same as the 하얀 망고',
 check('and a rare does not raise it', magnetRate.rare === 0);
 
 // Scatter things all over the map, far out of reach, then pick a 자석 up.
-const scattered = await run(`
+// Enough XP among them for a level-up: that popup must not hold anything up.
+const magnet = await run(`
   s.spawner.clear();
   const p = s.player, c = s.combat;
   p.setInvulnerable(true);
   p.hp = Math.max(1, p.maxHp - 40);
   const far = [[-900, -700], [1100, 600], [-1200, 800], [900, -900]];
   const at = (i) => ({ x: p.x + far[i % far.length][0], y: p.y + far[i % far.length][1] });
-  // Worth 1 each: a level-up on the way would heal, and a full survivor rightly leaves the potion.
-  for (let i = 0; i < 6; i++) { const g = c.gems.get(); const q = at(i); g.drop(q.x, q.y, 1, p); }
+  const need = s.progression.xpToNext;
+  for (let i = 0; i < 6; i++) { const g = c.gems.get(); const q = at(i); g.drop(q.x, q.y, Math.ceil(need / 3), p); }
   let q = at(0); c.dropOrbAt(q.x, q.y, 'chaos');
   q = at(1); c.dropShardAt(q.x, q.y);
-  q = at(2); c.dropPotionAt(q.x, q.y);
-  q = at(3); c.dropGearAt(q.x, q.y, { uid: 'pulled', id: 'rustySword', prefixes: [], suffixes: [] });
+  q = at(2); c.dropGearAt(q.x, q.y, { uid: 'pulled', id: 'rustySword', prefixes: [], suffixes: [] });
+  // What a survivor might be keeping for later: it stays put.
+  q = at(3); c.dropPotionAt(q.x, q.y);
+  q = at(0); c.dropMangoAt(q.x + 60, q.y);
+  q = at(2); c.dropMagnetAt(q.x + 60, q.y);
   q = at(1); c.dropAltarAt(q.x, q.y + 120, 'bosses');
   c.dropMagnetAt(p.x + 60, p.y);
-  return {
+  const before = {
     gems: c.gems.countActive(true), orbs: window.orbs.count('chaos'), shards: window.passives.value.shards,
-    gear: window.gear.items.some((i) => i.uid === 'pulled'), hp: p.hp, xp: s.progression.xp, level: s.progression.level,
-    label: c.magnetDrops.getChildren().find((d) => d.active)?.nameplate.text ?? null,
+    gear: window.gear.items.some((i) => i.uid === 'pulled'), level: s.progression.level,
+    label: c.magnetDrops.getChildren().find((d) => d.active && Math.abs(d.x - p.x - 60) < 2)?.nameplate.text ?? null,
   };
+  const picked = c.magnetDrops.getChildren().find((d) => d.active && Math.abs(d.x - p.x - 60) < 2);
+  c.onMagnetTouch(p, picked);
+  // The very same moment: everything is already taken.
+  const after = {
+    gems: c.gems.countActive(true), orbs: window.orbs.count('chaos'), shards: window.passives.value.shards,
+    gear: window.gear.items.some((i) => i.uid === 'pulled'), level: s.progression.level,
+    potions: c.potions.countActive(true), mangos: c.mangoDrops.countActive(true),
+    magnets: c.magnetDrops.countActive(true), altars: c.altars.countActive(true),
+    toast: s.toasts.lines.some((l) => /자석/.test(l)),
+  };
+  return { before, after };
 `);
-await run(`
-  const m = s.combat.magnetDrops.getChildren().find((d) => d.active);
-  s.combat.onMagnetTouch(s.player, m);
-  return 1;
-`);
-const flying = await run(`
+await sleep(1200);
+const later = await run(`
   const c = s.combat;
-  return { gemsPulled: c.gems.getChildren().filter((g) => g.active && g.pulled).length,
-           itemsPulled: [c.orbDrops, c.shardDrops, c.potions, c.gearDrops].every((g) => g.getChildren().filter((d) => d.active).every((d) => d.pulled)),
-           altarPulled: c.altars.getChildren().some((a) => a.active && a.pulled),
-           toast: s.toasts.lines.some((l) => /자석/.test(l)) };
-`);
-await sleep((await cdp.evaluate(`window.config.MAGNET.pullMs`)) + 900);
-const landed = await run(`
-  const p = s.player, c = s.combat;
-  const out = {
-    gems: c.gems.countActive(true), orbs: window.orbs.count('chaos'), shards: window.passives.value.shards,
-    gear: window.gear.items.some((i) => i.uid === 'pulled'), hp: p.hp, xp: s.progression.xp, level: s.progression.level,
-    altar: c.altars.countActive(true), potions: c.potions.countActive(true),
-  };
-  c.altars.getChildren().forEach((a) => a.active && a.collect());
-  p.setInvulnerable(false);
+  const out = { potions: c.potions.countActive(true), mangos: c.mangoDrops.countActive(true),
+                magnets: c.magnetDrops.countActive(true), altars: c.altars.countActive(true),
+                upgradeOpen: window.game.scene.isActive('UpgradeScene') };
+  // Tidy: close any popup the level-ups opened, and clear the ground.
+  const up = window.game.scene.getScene('UpgradeScene');
+  if (window.game.scene.isActive('UpgradeScene')) { up.payload.onPick(up.payload.options[0].id); up.scene.stop(); }
+  s.pendingChoices.length = 0;
+  [c.potions, c.mangoDrops, c.magnetDrops, c.altars].forEach((g) => g.getChildren().forEach((d) => d.active && d.collect()));
+  s.player.setInvulnerable(false);
   return out;
 `);
-console.log('magnet:', JSON.stringify({ scattered, flying, landed }));
-check('자석 lies on the ground under its name', scattered.label === '자석', `${scattered.label}`);
-check('picked up, every gem and item on the map is pulled in — but not the 제단, and it says so',
-  flying.gemsPulled === scattered.gems && flying.itemsPulled && !flying.altarPulled && flying.toast,
-  JSON.stringify(flying));
-check('and within the pull they are all picked up: the XP, the 구슬, the 조각, the sword and the potion',
-  landed.gems === 0 && (landed.xp > scattered.xp || landed.level > scattered.level) &&
-    landed.orbs === scattered.orbs + 1 && landed.shards === scattered.shards + 1 && landed.gear === true &&
-    landed.hp > scattered.hp && landed.potions === 0,
-  JSON.stringify(landed));
-check('the 제단 stays where it was', landed.altar === 1);
+console.log('magnet:', JSON.stringify({ magnet, later }));
+check('자석 lies on the ground under its name', magnet.before.label === '자석', `${magnet.before.label}`);
+check('picked up, every gem and item on the map is taken at that instant — the XP, the 구슬, the 조각, the sword',
+  magnet.after.gems === 0 && magnet.after.level > magnet.before.level &&
+    magnet.after.orbs === magnet.before.orbs + 1 && magnet.after.shards === magnet.before.shards + 1 &&
+    magnet.after.gear === true && magnet.after.toast,
+  JSON.stringify(magnet.after));
+check('but what might be kept for later stays: the 포션, the 하얀 망고, the other 자석 and the 제단',
+  magnet.after.potions === 1 && magnet.after.mangos === 1 && magnet.after.magnets === 1 && magnet.after.altars === 1 &&
+    later.potions === 1 && later.mangos === 1 && later.magnets === 1 && later.altars === 1,
+  JSON.stringify(later));
 
 // Switched off in the 필터, it never lands.
 const filtered = await run(`

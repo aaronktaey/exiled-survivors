@@ -1,7 +1,6 @@
 import Phaser from 'phaser';
 
 import { DEPTH, ICONS, PLAYER, TEXTURES, XP } from '@/config';
-import { flyTo } from '@/entities/GroundItem';
 
 /**
  * Dropped where an enemy died. Sits still until the player is close, then
@@ -16,10 +15,6 @@ export class XpGem extends Phaser.Physics.Arcade.Image {
   /** Set by whatever dropped it; this is only the floor. */
   public value: number = XP.minimum;
   private target?: GemTarget;
-  /** A 자석's pull, while it lasts: when it should arrive (scene clock). */
-  private pullEndsAt = 0;
-  /** Whether a 자석 is pulling it in. Public for tests. */
-  public pulled = false;
 
   public constructor(scene: Phaser.Scene, x: number, y: number) {
     super(scene, x, y, TEXTURES.gem);
@@ -35,26 +30,14 @@ export class XpGem extends Phaser.Physics.Arcade.Image {
     this.setDisplaySize(ICONS.gem.size, ICONS.gem.size);
     this.body?.setSize(ICONS.gem.size, ICONS.gem.size, true);
     this.setVelocity(0, 0);
-    this.pulled = false;
   }
 
   public collect(): void {
-    this.pulled = false;
     this.disableBody(true, true);
-  }
-
-  /** A 자석: fly to the survivor however far away it lies, by `endsAt`. */
-  public pullTo(endsAt: number): void {
-    this.pulled = true;
-    this.pullEndsAt = endsAt;
   }
 
   public override update(): void {
     if (!this.target || !this.body) {
-      return;
-    }
-    if (this.pulled) {
-      this.pulled = flyTo(this, this.target, this.pullEndsAt);
       return;
     }
 

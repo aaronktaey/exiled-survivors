@@ -329,6 +329,12 @@ export const ko: Strings = {
     useDevice: '이 기기의 기록 쓰기',
     useCloud: '계정의 기록 쓰기',
     later: '나중에 고르기',
+    pick: '쓸 기록을 눌러 고르세요',
+    askDevice: '이 기기의 기록을 쓸까요?',
+    askCloud: '계정의 기록을 쓸까요?',
+    askDeviceBody: '계정에 있던 기록은 사라지고, 이 기기의 기록이 계정에 저장됩니다.',
+    askCloudBody: '이 기기에 있던 기록은 사라지고, 계정의 기록을 불러옵니다. 페이지를 다시 불러옵니다.',
+    cancel: '취소',
   },
 
   skillPick: {
@@ -400,7 +406,7 @@ export const ko: Strings = {
     orbFound: '{orb} 획득',
     mango: '하얀 망고',
     magnet: '자석',
-    magnetPulled: '자석! 맵의 모든 아이템과 경험치를 끌어당깁니다',
+    magnetPulled: '자석! 맵의 모든 아이템과 경험치를 주웠습니다',
     mangoEaten: '하얀 망고! {seconds}초간 무적 · 공격속도와 이동속도 +100%',
     boneFound: '{bone} 획득',
     shardFound: '신성한 조각 {held}/{need}',
@@ -641,6 +647,7 @@ export const ko: Strings = {
           title: '치명타',
           lines: [
             '모든 공격은 {critChance} 확률로 치명타가 되어 {critMulti}배 피해를 줍니다.',
+            '장비의 치명 속성은 기본 치명타 확률을 그 비율만큼 올립니다 — 50%짜리가 둘이면 기본 확률의 2배입니다. 한 장비 안의 같은 종류 속성은 서로 더해집니다(체력 +50% 둘이면 +100%).',
             '무기의 {critAffix} 속성이 확률을, {cruelAffix} 속성이 배율을 올립니다.',
           ],
         },
@@ -762,7 +769,7 @@ export const ko: Strings = {
         {
           title: '자석',
           lines: [
-            '어떤 적을 잡아도 {magnetChance} 확률이며, 하얀 망고처럼 무엇으로도 오르지 않습니다. 주우면 그 순간 맵에 떨어져 있는 모든 아이템과 경험치가 {magnetSecs}초 안에 날아와 주워집니다. 체력이 가득하면 포션은 남겨둡니다.',
+            '어떤 적을 잡아도 {magnetChance} 확률이며, 하얀 망고처럼 무엇으로도 오르지 않습니다. 주우면 그 순간 맵에 떨어져 있는 모든 아이템과 경험치를 줍습니다. 아껴 둘 수 있는 하얀 망고 · 자석 · 포션 · 제단은 그대로 남습니다.',
           ],
         },
         {

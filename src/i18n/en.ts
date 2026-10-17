@@ -325,6 +325,12 @@ export const en: Strings = {
     useDevice: 'Keep this device’s records',
     useCloud: 'Keep the account’s records',
     later: 'Decide later',
+    pick: 'Press the records you want to keep',
+    askDevice: 'Keep this device’s records?',
+    askCloud: 'Keep the account’s records?',
+    askDeviceBody: 'The records on your account are lost, and this device’s are saved to it.',
+    askCloudBody: 'The records on this device are lost, and the account’s are loaded. The page reloads.',
+    cancel: 'Cancel',
   },
 
   skillPick: {
@@ -396,7 +402,7 @@ export const en: Strings = {
     orbFound: 'Found {orb}',
     mango: 'White Mango',
     magnet: 'Magnet',
-    magnetPulled: 'Magnet! Every item and XP gem on the map flies to you',
+    magnetPulled: 'Magnet! Every item and XP gem on the map is yours',
     mangoEaten: 'White Mango! Untouchable for {seconds}s · attack and move speed +100%',
     boneFound: 'Found {bone}',
     shardFound: 'Divine Shard {held}/{need}',
@@ -519,7 +525,7 @@ export const en: Strings = {
     },
     affixGearDetails: {
       mighty: 'Damage +{value}%',
-      critical: 'Critical chance +{value}%',
+      critical: 'Base critical chance +{value}%',
       cruel: 'Critical damage +{value}%',
       frenzied: 'Attack speed +{value}%',
       giant: 'Maximum life +{value}%',
@@ -761,6 +767,7 @@ export const en: Strings = {
           title: 'Critical hits',
           lines: [
             'Any hit has a {critChance} chance to be critical and deal {critMulti}× damage.',
+            'A weapon’s Deadly lines raise the base critical chance by that share of itself — two of 50% double it. Lines of one kind on one weapon add up (two of +50% health are +100%).',
             '{critAffix} on the weapon raises the chance, {cruelAffix} the multiplier.',
           ],
         },
@@ -882,7 +889,7 @@ export const en: Strings = {
         {
           title: 'Magnet',
           lines: [
-            '{magnetChance} of the time off any kill, raised by nothing, like the White Mango. Picking it up brings every item and XP gem on the map flying to you within {magnetSecs}s and collects them. A potion stays put while your health is full.',
+            '{magnetChance} of the time off any kill, raised by nothing, like the White Mango. Picking it up collects every item and XP gem on the map at once. What you might save for later — White Mangos, Magnets, potions and altars — stays where it lies.',
           ],
         },
         {

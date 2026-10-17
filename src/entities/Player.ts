@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 
-import { COLORS, DEPTH, ENEMY, HUD, MANGO, PLAYER, TEXTURES, WEB } from '@/config';
+import { COLORS, DEPTH, ENEMY, HUD, MANGO, MANGO_RING, PLAYER, TEXTURES, WEB } from '@/config';
 import { fill, t } from '@/i18n';
 import { NO_BONUS, type GearBonus } from '@/systems/Gear';
 import type { AnalogInput } from '@/systems/VirtualJoystick';
@@ -31,6 +31,8 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   private passiveSpeed = 1;
   /** Left of a 하얀 망고, in ms. Public for tests. */
   public mangoLeftMs = 0;
+  /** The ring that shows how much of it is left. Public for tests. */
+  public readonly mangoRing: Phaser.GameObjects.Graphics;
   /** True while standing in a 거미줄. Set by the run each frame. */
   public webbed = false;
   private maxHpValue: number = PLAYER.maxHp;
@@ -47,6 +49,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     this.setCollideWorldBounds(true);
 
     this.healthBar = scene.add.graphics().setDepth(DEPTH.healthBar);
+    this.mangoRing = scene.add.graphics().setDepth(DEPTH.player + 1);
     this.nameplate = scene.add
       .text(x, y, '', {
         fontFamily: 'system-ui, sans-serif',
@@ -111,7 +114,8 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   }
 
   public get critChance(): number {
-    return Math.min(1, PLAYER.critChance + this.gear.critChance);
+    // The weapon's 치명 raises the base by a share of itself, its lines summed.
+    return Math.min(1, PLAYER.critChance * (1 + this.gear.critChanceIncrease));
   }
 
   /** How far a gem has to be before it starts drifting over. */
@@ -176,12 +180,33 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     this.mangoLeftMs = Math.max(0, this.mangoLeftMs - delta);
     if (this.mangoLeftMs > 0) {
       const hue = (this.scene.time.now / 400) % 1;
-      this.setTint(Phaser.Display.Color.HSVToRGB(hue, 0.65, 1).color).setTintMode(Phaser.TintModes.FILL);
+      const colour = Phaser.Display.Color.HSVToRGB(hue, 0.65, 1).color;
+      this.setTint(colour).setTintMode(Phaser.TintModes.FILL);
       this.setScale(1 + 0.1 * Math.sin(this.scene.time.now / 90));
+      this.drawMangoRing(colour);
     } else {
       this.clearTint();
       this.setScale(1);
+      this.mangoRing.clear();
     }
+  }
+
+  /**
+   * How much of the 하얀 망고 is left, as a ring round the survivor: the
+   * whole of it faint, and over that the part still to run, from the top
+   * clockwise, in the rainbow the survivor is wearing.
+   */
+  private drawMangoRing(colour: number): void {
+    const { radius, width, trackAlpha } = MANGO_RING;
+    const left = Phaser.Math.Clamp(this.mangoLeftMs / MANGO.durationMs, 0, 1);
+    const start = -Math.PI / 2;
+    this.mangoRing.clear();
+    this.mangoRing.lineStyle(width, 0xffffff, trackAlpha);
+    this.mangoRing.strokeCircle(this.x, this.y, radius);
+    this.mangoRing.lineStyle(width, colour, 1);
+    this.mangoRing.beginPath();
+    this.mangoRing.arc(this.x, this.y, radius, start, start + Math.PI * 2 * left, false);
+    this.mangoRing.strokePath();
   }
 
   /** Debug switch: holds i-frames open indefinitely. */
@@ -294,6 +319,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   public override destroy(fromScene?: boolean): void {
     this.nameplate.destroy(fromScene);
     this.healthBar.destroy(fromScene);
+    this.mangoRing.destroy(fromScene);
     super.destroy(fromScene);
   }
 

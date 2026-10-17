@@ -177,6 +177,9 @@ for (const lang of ['en', 'ja', 'zh']) {
   await close('AccountScene');
   await overlay('ConflictScene');
   await take('conflict');
+  await ev(`(() => { window.game.scene.getScene('ConflictScene').ask('server'); return 1; })()`);
+  await sleep(200);
+  await take('conflict ask');
   await close('ConflictScene');
   await ev(`(() => { window.account.user = null; window.account.providers = []; window.cloudSave.conflict = null; window.cloudSave.status = 'off'; return 1; })()`);
 

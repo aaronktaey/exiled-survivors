@@ -325,6 +325,12 @@ export const zh: Strings = {
     useDevice: '使用本设备的记录',
     useCloud: '使用账号的记录',
     later: '稍后选择',
+    pick: '点选要保留的记录',
+    askDevice: '使用本设备的记录吗？',
+    askCloud: '使用账号的记录吗？',
+    askDeviceBody: '账号中的记录将会丢失，并以本设备的记录保存到账号。',
+    askCloudBody: '本设备上的记录将会丢失，并读取账号的记录。页面会重新加载。',
+    cancel: '取消',
   },
 
   skillPick: {
@@ -396,7 +402,7 @@ export const zh: Strings = {
     orbFound: '获得{orb}',
     mango: '白芒果',
     magnet: '磁铁',
-    magnetPulled: '磁铁！地图上的所有物品与经验都飞向你',
+    magnetPulled: '磁铁！已拾取地图上的所有物品与经验',
     mangoEaten: '白芒果！{seconds} 秒无敌 · 攻击速度与移动速度 +100%',
     boneFound: '获得{bone}',
     shardFound: '神圣碎片 {held}/{need}',
@@ -519,7 +525,7 @@ export const zh: Strings = {
     },
     affixGearDetails: {
       mighty: '伤害 +{value}%',
-      critical: '暴击几率 +{value}%',
+      critical: '基础暴击几率 +{value}%',
       cruel: '暴击伤害 +{value}%',
       frenzied: '攻击速度 +{value}%',
       giant: '最大生命 +{value}%',
@@ -759,6 +765,7 @@ export const zh: Strings = {
           title: '暴击',
           lines: [
             '所有攻击有 {critChance} 几率暴击，造成 {critMulti} 倍伤害。',
+            '装备的致命词缀会按其比例提高基础暴击几率 — 两条 50% 即为基础几率的 2 倍。同一件装备上同类词缀相加（两条生命 +50% 即 +100%）。',
             '武器的{critAffix}属性提高几率，{cruelAffix}属性提高倍率。',
           ],
         },
@@ -878,7 +885,7 @@ export const zh: Strings = {
         {
           title: '磁铁',
           lines: [
-            '击杀任何敌人都是 {magnetChance} 几率，和白芒果一样不会被任何东西提高。拾取后，地图上所有物品与经验会在 {magnetSecs} 秒内飞来并被拾取。生命值满时药水会留在原地。',
+            '击杀任何敌人都是 {magnetChance} 几率，和白芒果一样不会被任何东西提高。拾取的瞬间会拾起地图上所有物品与经验。可以留着以后用的白芒果 · 磁铁 · 药水 · 祭坛会留在原地。',
           ],
         },
         {

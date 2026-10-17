@@ -404,11 +404,25 @@ const crit = await run(`
   const cruel = { uid: 'cruel', id: 'rustySword',
                   prefixes: [{ id: 'cruel', tier: 1 }], suffixes: [] };
   const mods = (item) => ({ passive: window.passives.bonus, gear: window.gearBonusFor(item) });
+  // Two 치명 on one weapon: the base chance raised by both shares of itself.
+  const A = window.config.AFFIXES;
+  const rung = (id, tier) => A[id].gearTiers.find((t) => t.tier === tier).gear;
+  const twice = { uid: 'twice', id: 'rustySword', prefixes: [{ id: 'critical', tier: 1 }, { id: 'critical', tier: 2 }], suffixes: [] };
+  const was = s.player.critChance;
+  s.player.applyGear(window.gearBonusFor(twice));
+  const doubled = s.player.critChance;
+  s.player.applyGear(s.mods.gear);
+  // And two 거대 on one weapon add up rather than compounding.
+  const hearty = { uid: 'hearty', id: 'rustySword', prefixes: [], suffixes: [{ id: 'giant', tier: 1 }, { id: 'giant', tier: 2 }] };
   return {
     base: P.critChance,
     baseMultiplier: P.critMultiplier,
-    player: s.player.critChance,
-    withAffix: window.gearBonusFor(sharp).critChance,
+    player: was,
+    withAffix: window.gearBonusFor(sharp).critChanceIncrease,
+    twice: { increase: window.gearBonusFor(twice).critChanceIncrease, chance: doubled,
+             want: rung('critical', 1).critChance + rung('critical', 2).critChance },
+    hearty: { scale: window.gearBonusFor(hearty).maxHpScale,
+              want: 1 + (rung('giant', 1).maxHpScale - 1) + (rung('giant', 2).maxHpScale - 1) },
     multiplier: window.critMultiplierFor(mods(bare)),
     cruelMultiplier: window.critMultiplierFor(mods(cruel)),
   };
@@ -420,8 +434,14 @@ check('every survivor crits sometimes without a weapon saying so',
 check('and one of those is worth more than a plain hit, by the configured amount',
   crit.baseMultiplier > 1 && Math.abs(crit.multiplier - crit.baseMultiplier) < 1e-9,
   `x${crit.multiplier}`);
-check('치명 on a weapon adds to that rather than being the only source',
-  crit.withAffix > 0, `+${(crit.withAffix * 100).toFixed(0)}% from a 1티어 치명`);
+check('치명 on a weapon raises that rather than being the only source',
+  crit.withAffix > 0, `+${(crit.withAffix * 100).toFixed(0)}% of the base from a 1티어 치명`);
+check('two 치명 on one weapon raise the base chance by both their shares of it, added',
+  Math.abs(crit.twice.increase - crit.twice.want) < 1e-9 &&
+    Math.abs(crit.twice.chance - Math.min(1, crit.base * (1 + crit.twice.want))) < 1e-9,
+  `${(crit.base * 100).toFixed(1)}% × (1 + ${crit.twice.want}) = ${(crit.twice.chance * 100).toFixed(2)}%`);
+check('and two 거대 on one weapon add up: +50% twice is +100%, not ×1.5 twice',
+  Math.abs(crit.hearty.scale - crit.hearty.want) < 1e-9, `×${crit.hearty.scale} (want ×${crit.hearty.want})`);
 check('and 잔혹 raises what a crit is worth',
   crit.cruelMultiplier > crit.multiplier,
   `x${crit.multiplier} -> x${crit.cruelMultiplier}`);

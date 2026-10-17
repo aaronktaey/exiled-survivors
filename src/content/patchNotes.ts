@@ -15,6 +15,40 @@ export interface PatchNote {
 
 export const PATCH_NOTES: readonly PatchNote[] = [
   {
+    version: '0.56',
+    date: '2026-10-17',
+    changes: {
+      ko: [
+        '자석 — 줍는 순간 맵에 있는 모든 아이템과 경험치를 바로 획득합니다(끌어오던 도중 레벨업으로 멈추던 문제 해결). 아껴 둘 수 있는 하얀 망고 · 자석 · 포션 · 제단은 그대로 남습니다.',
+        '한 장비 안의 같은 종류 속성은 곱하지 않고 더합니다. 최대 체력 +50%가 둘이면 +100%입니다.',
+        '장비의 치명 속성은 기본 치명타 확률을 그 비율만큼 올립니다. 50%짜리가 둘이면 기본 치명타 확률의 2배입니다(예전에는 확률에 그대로 더해졌습니다).',
+        '기기와 계정의 기록이 다를 때, 아래쪽 「이 기기의 기록 쓰기」 · 「계정의 기록 쓰기」 버튼 대신 기록 카드를 누르면 무엇이 사라지는지 알려 주는 확인 창이 한 번 더 뜹니다.',
+        '하얀 망고를 먹으면 남은 시간이 플레이어를 둘러싼 고리로 표시됩니다.',
+      ],
+      en: [
+        'Magnet — picking it up now collects every item and XP gem on the map at once (a level-up used to stall the pull). What you might save for later — White Mangos, Magnets, potions and altars — stays where it lies.',
+        'Modifiers of one kind on one weapon now add up instead of multiplying: two of +50% health are +100%.',
+        'A weapon’s Deadly lines now raise the base critical chance by that share of itself: two of 50% double it (they used to add straight onto the chance).',
+        'When this device and your account hold different records, the Keep buttons at the bottom are gone: press a record card, and a confirm popup says what will be lost.',
+        'While a White Mango lasts, a ring round you shows how much of it is left.',
+      ],
+      ja: [
+        '磁石 — 拾った瞬間にマップ上のすべてのアイテムと経験値を手に入れます（引き寄せ中のレベルアップで止まる問題を修正）。取っておける白いマンゴー · 磁石 · ポーション · 祭壇はそのまま残ります。',
+        '1 つの装備の同じ種類の属性は、掛け合わせずに足し合わせます。最大体力 +50% が 2 つなら +100% です。',
+        '装備の致命属性は基本クリティカル率をその割合だけ上げます。50% が 2 つなら基本クリティカル率の 2 倍です（以前は確率にそのまま加算されていました）。',
+        '端末とアカウントの記録が異なるとき、下の「この端末の記録を使う」・「アカウントの記録を使う」ボタンの代わりに、記録のカードを押すと何が失われるかを示す確認画面がもう一度出ます。',
+        '白いマンゴーを食べると、残り時間がプレイヤーを囲む輪で表示されます。',
+      ],
+      zh: [
+        '磁铁 — 拾取的瞬间就获得地图上所有物品与经验（修复了吸取途中因升级而停住的问题）。可以留着以后用的白芒果 · 磁铁 · 药水 · 祭坛会留在原地。',
+        '同一件装备上同类词缀改为相加而非相乘：两条最大生命 +50% 即 +100%。',
+        '装备的致命词缀改为按其比例提高基础暴击几率：两条 50% 即为基础暴击几率的 2 倍（以前是直接加到几率上）。',
+        '本设备与账号的记录不同时，下方的「使用本设备的记录」·「使用账号的记录」按钮改为点选记录卡片，并再弹出一次确认窗口说明会丢失什么。',
+        '吃下白芒果后，剩余时间会以环绕玩家的圆环显示。',
+      ],
+    },
+  },
+  {
     version: '0.55',
     date: '2026-10-17',
     changes: {

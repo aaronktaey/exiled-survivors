@@ -325,6 +325,12 @@ export const ja: Strings = {
     useDevice: 'この端末の記録を使う',
     useCloud: 'アカウントの記録を使う',
     later: 'あとで選ぶ',
+    pick: '使う記録を押して選んでください',
+    askDevice: 'この端末の記録を使いますか？',
+    askCloud: 'アカウントの記録を使いますか？',
+    askDeviceBody: 'アカウントにあった記録は失われ、この端末の記録がアカウントに保存されます。',
+    askCloudBody: 'この端末にあった記録は失われ、アカウントの記録を読み込みます。ページを再読み込みします。',
+    cancel: 'キャンセル',
   },
 
   skillPick: {
@@ -396,7 +402,7 @@ export const ja: Strings = {
     orbFound: '{orb} 入手',
     mango: '白いマンゴー',
     magnet: '磁石',
-    magnetPulled: '磁石！マップ上のすべてのアイテムと経験値を引き寄せます',
+    magnetPulled: '磁石！マップ上のすべてのアイテムと経験値を拾いました',
     mangoEaten: '白いマンゴー！{seconds} 秒間無敵 · 攻撃速度と移動速度 +100%',
     boneFound: '{bone} 入手',
     shardFound: '神聖な欠片 {held}/{need}',
@@ -519,7 +525,7 @@ export const ja: Strings = {
     },
     affixGearDetails: {
       mighty: '被害 +{value}%',
-      critical: 'クリティカル率 +{value}%',
+      critical: '基本クリティカル率 +{value}%',
       cruel: 'クリティカル被害 +{value}%',
       frenzied: '攻撃速度 +{value}%',
       giant: '最大体力 +{value}%',
@@ -761,6 +767,7 @@ export const ja: Strings = {
           title: 'クリティカル',
           lines: [
             'すべての攻撃は {critChance} の確率でクリティカルになり、{critMulti} 倍の被害を与えます。',
+            '装備の致命属性は基本クリティカル率をその割合だけ上げます — 50% が 2 つなら基本確率の 2 倍です。1 つの装備の同じ種類の属性は足し合わされます（体力 +50% が 2 つなら +100%）。',
             '武器の{critAffix}属性が確率を、{cruelAffix}属性が倍率を上げます。',
           ],
         },
@@ -882,7 +889,7 @@ export const ja: Strings = {
         {
           title: '磁石',
           lines: [
-            'どの敵からも {magnetChance} の確率で、白いマンゴーと同じく何によっても上がりません。拾うと、マップに落ちているすべてのアイテムと経験値が {magnetSecs} 秒以内に飛んできて拾われます。体力が満タンならポーションは残ります。',
+            'どの敵からも {magnetChance} の確率で、白いマンゴーと同じく何によっても上がりません。拾った瞬間、マップに落ちているすべてのアイテムと経験値を拾います。取っておける白いマンゴー · 磁石 · ポーション · 祭壇はそのまま残ります。',
           ],
         },
         {

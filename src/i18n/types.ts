@@ -451,6 +451,14 @@ export interface Strings {
     readonly useDevice: string;
     readonly useCloud: string;
     readonly later: string;
+    /** Under the lead: a card is pressed to keep it. */
+    readonly pick: string;
+    /** The popup that asks once more: its question and what is lost, for each side. */
+    readonly askDevice: string;
+    readonly askCloud: string;
+    readonly askDeviceBody: string;
+    readonly askCloudBody: string;
+    readonly cancel: string;
   };
 
   /** 무작위 스킬 — three skills on cards, one to take. */

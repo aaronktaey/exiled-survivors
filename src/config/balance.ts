@@ -499,7 +499,8 @@ export const AFFIXES: Record<AffixId, AffixSpec> = {
     detail: "치명타 확률 20%",
     enemy: { critChance: 0.2 },
     gearTiers: tiers(
-      (v) => `치명타 확률 +${v}%`,
+      // A share of the base chance, not points on top of it: two of +50% double it.
+      (v) => `기본 치명타 확률 +${v}%`,
       (v) => ({ critChance: v / 100 }),
       [50, 40, 30, 20, 10],
     ),
@@ -1058,17 +1059,18 @@ export const MANGO = {
 } as const;
 
 /**
- * 자석 — picked up, it pulls every item and XP gem on the map to the
- * survivor and collects them. Off every kill at the same flat chance as the
- * 하얀 망고 (the user's ask), and like it raised by nothing.
+ * 자석 — picked up, it collects every XP gem and item on the map at that
+ * instant, except what the survivor might be saving for later (하얀 망고,
+ * 자석, 포션, 제단). Off every kill at the same flat chance as the 하얀 망고
+ * (the user's ask), and like it raised by nothing.
  */
 export const MAGNET = {
   /** Share of kills that leave one, whatever was killed. */
   chance: 0.001,
-  /** How long the pull takes: everything on the map arrives within this. */
-  pullMs: 600,
-  /** The least speed anything is pulled at, so a near one does not crawl. */
-  minSpeed: 600,
+  /** How long what it took is seen flying in. Only a picture: it is already taken. */
+  flyMs: 350,
+  /** At most this many of those pictures at once; past it the rest are taken unseen. */
+  ghosts: 80,
   /** How big it is drawn on the ground. */
   size: 22,
 } as const;

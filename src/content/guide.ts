@@ -177,7 +177,6 @@ function values(): Record<string, string | number> {
     mangoSecs: seconds(MANGO.durationMs),
     mangoBoost: raise(MANGO.attackSpeedScale),
     magnetChance: percent(MAGNET.chance),
-    magnetSecs: seconds(MAGNET.pullMs),
     altarChance: percent(ALTAR.fromKill),
     altarOffers: (Object.keys(ALTAR_OFFERS) as AltarOfferId[])
       .map((id) => altarOfferText(id))

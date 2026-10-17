@@ -75,7 +75,7 @@ wrong shape.
 ## The test harness
 
 `tests/` drives a real Chrome over CDP against the dev server and checks the
-running game, not units. 43 suites, ~1165 checks. It is the only thing that has
+running game, not units. 43 suites, ~1170 checks. It is the only thing that has
 caught most of what has gone wrong here, so run all of it before every commit.
 
 ```sh
@@ -389,14 +389,13 @@ Read `git log` for what changed and when. What is not in the log:
 - **효과음 음량.** `settings.sfxVolume` scales every effect through
   `effectVolume()` in Sfx.ts — skills, drops, the horn, the slot, the
   인벤토리's. A new sound that bypasses it ignores the player's setting.
-- **자석 pulls by the scene clock.** Picking one up calls
-  `CombatSystem.pullEverything`: every gem (`XpGem.pullTo`) and every
-  ground item (`GroundItem.pullTo` — not the 제단) flies at the survivor via
-  `flyTo`, fast enough to arrive within `MAGNET.pullMs`, and is collected by
-  the ordinary overlap — so a potion at full health is still left. The pull
-  is done in each item's own update: XpGem zeroes its velocity out of
-  pickup range every frame, so setting a velocity from outside never sticks.
-  A new kind of drop group goes in the `lying` list there.
+- **자석 takes everything at once.** Picking one up calls
+  `CombatSystem.collectEverything`, which runs each gem and item through its
+  own touch handler there and then — a pull over time was stalled by a
+  level-up's popup (0.53–0.55). Left on the ground on purpose, as things a
+  survivor may save: 하얀 망고, 자석, 포션, 제단. The flight you see is a
+  picture (`flyIn`, `MAGNET.flyMs`), not the items. A new drop group goes in
+  the `take` list there, or in the left-alone list in the comment.
 - **Upgrade cards carry their numbers.** `upgradeOptionsFor(skill, stats)`
   adds `now`/`next` (the skill's own stat, before its folds — capped at
   `UPGRADE_CAP`) and `taken`/`maxPicks` (`maxPicksFor`: the pick limit or
@@ -428,6 +427,14 @@ Read `git log` for what changed and when. What is not in the log:
   weakest tier. A 우두머리 always leaves one, weighted over the whole `GEAR`
   roster. A sword with `fromKill` set (tiers 3–5 now) can also come off any
   kill at that chance × `bonus`; without it, 우두머리 only.
+- **A weapon's lines add, they do not compound.** `gearBonusFor` sums each
+  line's share (scale − 1) with the 고정 속성's and returns 1 + the sum, so
+  two +50% are +100%. 치명 is `critChanceIncrease`: the summed share raises
+  `PLAYER.critChance` by that much of itself (`Player.critChance`), never
+  points on top. (A rare enemy's 속성 still multiply — that is the enemy.)
+- **The records conflict is asked twice.** `ConflictScene` has no keep
+  buttons: a side's card is pressed (`ask`), a popup says what is lost, and
+  only its button (`confirm`) resolves; 취소 / Esc backs out.
 - **고정 속성 are on the base, not the item.** `GEAR[id].implicit` (one
   effect each, Korean `detail` with `{value}`/`{skill}`, renamed through
   `names.gearImplicits`) is folded into `GearBonus` by `gearBonusFor`, outside

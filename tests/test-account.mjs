@@ -127,13 +127,27 @@ try {
   await fake(`s.save = { data: { 'exiled-survivors:gear:v2': ${JSON.stringify(JSON.stringify({ items: [sword('remoteOnly')], equipped: 'remoteOnly' }))} }, updatedAt: s.save.updatedAt + 1000 }`);
   await arrive();
   await sleep(1500);
-  const asked = await scene('ConflictScene', `return { active: s.scene.isActive(), cards: s.headings.map((h, i) => h.text + ':' + s.cards[i].text.split(String.fromCharCode(10))[0]), rows: s.menu.items.map(i => i.id) };`);
-  check('when both changed, the title opens the choice, both sides read out',
+  const texts = `s.children.list.filter((o) => o.type === 'Text').map((o) => o.text)`;
+  const asked = await scene('ConflictScene', `return { active: s.scene.isActive(), cards: s.headings.map((h, i) => h.text + ':' + s.cards[i].text.split(String.fromCharCode(10))[0]), texts: ${texts} };`);
+  check('when both changed, the title opens the choice, both sides read out, no keep buttons under them',
     asked.active === true && asked.cards.length === 2 && /이 기기/.test(asked.cards[0]) && /계정/.test(asked.cards[1]) &&
-      JSON.stringify(asked.rows) === JSON.stringify(['device', 'cloud', 'later']),
-    JSON.stringify(asked));
+      !asked.texts.some((t) => /기록 쓰기/.test(t)) && asked.texts.some((t) => /나중에/.test(t)),
+    JSON.stringify(asked.cards));
   await shot('account-02-conflict');
-  await scene('ConflictScene', `s.menu.items.find(i => i.id === 'device').onSelect(); return 1;`);
+  // Pressing a card asks once more, saying what is lost; 취소 keeps nothing.
+  const popup = await scene('ConflictScene', `s.ask('local');
+    return { asking: s.asking, texts: s.popup.list.filter((o) => o.type === 'Text').map((o) => o.text) };`);
+  check('pressing a side opens a popup that asks once more and says what is lost',
+    popup.asking === 'local' && popup.texts.some((t) => /이 기기의 기록을 쓸까요/.test(t)) &&
+      popup.texts.some((t) => /사라지/.test(t)) && popup.texts.some((t) => t === '취소'),
+    popup.texts.join(' | '));
+  await shot('account-03-conflict-ask');
+  const backedOff = await scene('ConflictScene', `s.cancel(); return { asking: s.asking, popup: !!s.popup, active: s.scene.isActive() };`);
+  const untouched = await fake(`0`);
+  check('and 취소 closes it, keeping nothing',
+    backedOff.asking === null && !backedOff.popup && backedOff.active &&
+      !(untouched.save.data?.['exiled-survivors:gear:v2'] ?? '').includes('localOnly'));
+  await scene('ConflictScene', `s.ask('local'); void s.confirm(); return 1;`);
   await sleep(800);
   const kept = await fake(`0`);
   check('keeping this device’s writes it over the account’s copy',
