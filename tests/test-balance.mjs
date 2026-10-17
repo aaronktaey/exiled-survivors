@@ -446,23 +446,26 @@ check('and 잔혹 raises what a crit is worth',
   crit.cruelMultiplier > crit.multiplier,
   `x${crit.multiplier} -> x${crit.cruelMultiplier}`);
 
-// 치명 is worth about what 강력 of the same rung is: on a 1티어 sword and a
-// 180-damage skill, the average a crit adds against the damage 강력 adds.
+// 강력, 광포, 치명 and 잔혹 of the same rung are worth about the same: each
+// one's gain in average damage per second against a weapon with none of
+// them, the base crit included (the formula above AFFIXES).
 const parity = await run(`
   const c = window.config, A = c.AFFIXES, P = c.PLAYER;
-  const attack = c.attackForTier(1);
-  return [1, 2, 3, 4, 5].map((tier) => {
-    const crit = A.critical.gearTiers.find((t) => t.tier === tier).gear.critChance;
-    const mighty = A.mighty.gearTiers.find((t) => t.tier === tier).gear.attackScale - 1;
-    const fromCrit = Math.min(1, P.critChance * (1 + crit)) * (P.critMultiplier - 1) - P.critChance * (P.critMultiplier - 1);
-    const fromMighty = (attack * mighty) / (180 + attack);
-    return { tier, fromCrit: +(fromCrit * 100).toFixed(2), fromMighty: +(fromMighty * 100).toFixed(2) };
-  });
+  const p = P.critChance, m = P.critMultiplier - 1, plain = 1 + p * m;
+  const at = (id, tier) => A[id].gearTiers.find((t) => t.tier === tier).gear;
+  const pct = (x) => +(x * 100).toFixed(2);
+  return [1, 2, 3, 4, 5].map((tier) => ({
+    tier,
+    mighty: pct(at('mighty', tier).damageScale - 1),
+    frenzied: pct(at('frenzied', tier).attackSpeedScale - 1),
+    critical: pct(((Math.min(1, p * (1 + at('critical', tier).critChance)) - p) * m) / plain),
+    cruel: pct((p * at('cruel', tier).critMultiplierBonus) / plain),
+  }));
 `);
-console.log('crit parity:', JSON.stringify(parity));
-check('each rung of 치명 adds about what 강력 of the same rung adds, on average',
-  parity.every((p) => Math.abs(p.fromCrit - p.fromMighty) <= Math.max(1, p.fromMighty * 0.25)),
-  parity.map((p) => `${p.tier}티어 +${p.fromCrit}% vs +${p.fromMighty}%`).join(' · '));
+console.log('affix parity:', JSON.stringify(parity));
+check('강력 · 광포 · 치명 · 잔혹 of the same rung add about the same damage, on average',
+  parity.every((r) => [r.frenzied, r.critical, r.cruel].every((v) => Math.abs(v - r.mighty) <= Math.max(0.5, r.mighty * 0.1))),
+  parity.map((r) => `${r.tier}티어 ${r.mighty}/${r.frenzied}/${r.critical}/${r.cruel}%`).join(' · '));
 
 // A hit for a fraction (연쇄번개 각성, a crit's multiplier) shows a whole number.
 const whole = await run(`

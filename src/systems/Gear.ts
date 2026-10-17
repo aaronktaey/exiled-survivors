@@ -61,7 +61,10 @@ export interface GearBonus {
   readonly critChanceIncrease: number;
   /** Added to RARE.critMultiplier when one lands. */
   readonly critMultiplierBonus: number;
-  /** Multiplies every skill's damage, after the flat attack is added. */
+  /**
+   * Multiplies every skill's damage, after the flat attack is added: the
+   * base's 피해 고정 속성 and every 강력, added together.
+   */
   readonly damageScale: number;
   /** One skill's own attack-speed multiplier, on top of attackSpeedScale. */
   readonly skillAttackSpeed: Partial<Record<SkillId, number>>;
@@ -120,9 +123,8 @@ export function affixesOf(item: GearItem): readonly RolledAffix[] {
 }
 
 /**
- * What an item is worth. The scales multiply, so two 강력 compound, and crit
- * chance adds up and stops at certain — the same arithmetic a rare enemy's
- * affixes go through.
+ * What an item is worth. Its lines add up (two 강력 of +15% are +30%), and
+ * the crit chance they raise stops at certain.
  */
 export function gearBonusFor(item: GearItem | null): GearBonus {
   if (!item || !GEAR[item.id]) {
@@ -132,7 +134,6 @@ export function gearBonusFor(item: GearItem | null): GearBonus {
   // Within one weapon its lines add up: two 거대 of +50% are +100% of the
   // survivor's health, not ×1.5 twice. The base's own 고정 속성 is one more
   // line in the same sum.
-  let attack = 0;
   let attackSpeed = 0;
   let maxHp = 0;
   let moveSpeed = 0;
@@ -143,12 +144,13 @@ export function gearBonusFor(item: GearItem | null): GearBonus {
 
   const implicit = GEAR[item.id].implicit;
   attackSpeed += (implicit?.attackSpeedScale ?? 1) - 1;
+  let damage = (implicit?.damageScale ?? 1) - 1;
   const skillAttackSpeed: Partial<Record<SkillId, number>> = implicit?.skillAttackSpeed
     ? { [implicit.skillAttackSpeed.skill]: implicit.skillAttackSpeed.scale }
     : {};
 
   for (const { effect } of affixesOf(item)) {
-    attack += (effect.attackScale ?? 1) - 1;
+    damage += (effect.damageScale ?? 1) - 1;
     attackSpeed += (effect.attackSpeedScale ?? 1) - 1;
     maxHp += (effect.maxHpScale ?? 1) - 1;
     moveSpeed += (effect.moveSpeedScale ?? 1) - 1;
@@ -159,7 +161,7 @@ export function gearBonusFor(item: GearItem | null): GearBonus {
   }
 
   return {
-    attack: Math.round(attackForTier(GEAR[item.id].tier) * (1 + attack)),
+    attack: attackForTier(GEAR[item.id].tier),
     attackSpeedScale: 1 + attackSpeed,
     maxHpScale: 1 + maxHp,
     moveSpeedScale: 1 + moveSpeed,
@@ -167,7 +169,7 @@ export function gearBonusFor(item: GearItem | null): GearBonus {
     invulnerableScale: Math.max(0, 1 + invulnerable),
     critChanceIncrease,
     critMultiplierBonus,
-    damageScale: implicit?.damageScale ?? 1,
+    damageScale: 1 + damage,
     skillAttackSpeed,
     projectileBlock: implicit?.projectileBlock ?? 0,
     extraProjectiles: implicit?.extraProjectiles ?? 0,

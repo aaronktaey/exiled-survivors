@@ -50,7 +50,7 @@ export const zh: Strings = {
   filter: {
     title: '物品过滤',
     icon: '过滤',
-    lead: '关闭的物品不会在游戏中掉落 · 装备需等级和种类都开启才会显示',
+    lead: '关闭的物品在地上不显示，但走过去照样拾取 · 装备需等级和种类都开启才会显示',
     sections: { supplies: '消耗品', orbs: '宝珠', bones: '骨头', rarity: '装备等级', bases: '装备种类' },
     items: { potion: '生命药水', skill: '技能', randomSkill: '随机技能', mango: '白芒果', magnet: '磁铁', shard: '神圣碎片' },
     itemsShort: { potion: '药水', skill: '技能', randomSkill: '随机', mango: '芒果', magnet: '磁铁', shard: '碎片' },
@@ -892,8 +892,8 @@ export const zh: Strings = {
         {
           title: '物品过滤',
           lines: [
-            '在标题画面的过滤中可以逐项开关物品。关闭的物品不会在游戏中掉落。',
-            '装备需等级（普通·魔法·稀有）和种类都开启才会掉落。设置会随账号一起保存。',
+            '在标题画面的过滤中可以逐项开关物品。关闭的物品仍会掉落，但在地上既看不见也听不到，走过去或用磁铁照样拾取。',
+            '装备需等级（普通·魔法·稀有）和种类都开启才会显示。设置会随账号一起保存。',
           ],
         },
         {

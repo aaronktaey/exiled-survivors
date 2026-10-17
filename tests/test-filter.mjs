@@ -2,8 +2,9 @@ import { connect, sleep } from './cdp-lib.mjs';
 import { writeFileSync } from 'node:fs';
 
 // 아이템 필터: a switch per kind of drop, from the title's corner. A drop
-// switched off never lands; a weapon lands only when both its base and its
-// rarity are on; the switches are kept across a reload.
+// switched off still lands but is hidden, and is still taken by walking
+// over it; a weapon shows only when both its base and its rarity are on;
+// the switches are kept across a reload.
 
 const cdp = await connect(9333);
 const SP = process.argv[2] ?? '.';
@@ -63,14 +64,15 @@ const keyed = await ev(`(() => ({ awaken: window.itemFilter.shows('orb:awaken') 
 check('→ and Space switch the next one', keyed.awaken === false, JSON.stringify(keyed));
 await scene('FilterScene', `s.press('orb:awaken'); return 1;`);
 
-// --- 2. in a run, what is off never lands ---
+// --- 2. in a run, what is off lands hidden, and is still picked up ---
 await scene('FilterScene', `s.press('potion'); s.press('rarity:normal'); s.backButton.press(); return 1;`);
 await sleep(400);
 await ev(`(() => { window.game.scene.getScene('MenuScene').scene.start('GameScene', { save: null }); return 1; })()`);
 await sleep(1500);
 const landed = await scene('GameScene', `
   const p = s.player, c = s.combat;
-  const count = (g) => g.getChildren().filter((d) => d.active).length;
+  // Counted by what can be seen: a hidden drop is active but not visible.
+  const count = (g) => g.getChildren().filter((d) => d.active && d.visible).length;
   const before = { orbs: count(c.orbDrops), potions: count(c.potions), gear: count(c.gearDrops) };
   c.dropOrbAt(p.x + 200, p.y, 'chaos');
   const afterChaos = count(c.orbDrops);
@@ -93,9 +95,40 @@ const landed = await scene('GameScene', `
   return { before, afterChaos, afterTransmute, afterPotion, afterPlain, afterRare, afterBase };
 `);
 console.log('landed:', JSON.stringify(landed));
-check('a 구슬 switched off does not land; one left on does',
+check('a 구슬 switched off does not show; one left on does',
   landed.afterChaos === landed.before?.orbs && landed.afterTransmute === landed.before?.orbs + 1, JSON.stringify(landed));
 check('nor does a potion switched off', landed.afterPotion === landed.before?.potions);
+
+// What is hidden is still there: nothing of it drawn or pointed at, and
+// walking over it takes it.
+const hidden = await scene('GameScene', `
+  const p = s.player, c = s.combat;
+  c.gearDrops.getChildren().forEach((d) => d.active && d.collect());
+  c.orbDrops.getChildren().forEach((d) => d.active && d.collect());
+  const orbsBefore = window.orbs.count('chaos');
+  c.dropOrbAt(p.x + 600, p.y, 'chaos');
+  const orb = c.orbDrops.getChildren().find((d) => d.active && d.orb === 'chaos');
+  const plain = { uid: 'h1', id: 'rustySword', prefixes: [], suffixes: [] };
+  c.dropGearAt(p.x + 600, p.y, plain);
+  const sword = c.gearDrops.getChildren().find((d) => d.active && d.item.uid === 'h1');
+  s.edgeMarkers.update();
+  const seen = {
+    orb: !!orb && orb.active && !orb.visible && orb.concealed && !orb.nameplate.label.visible &&
+      !(orb.nameplate.pillar?.visible ?? false),
+    sword: !!sword && sword.active && !sword.visible && sword.concealed && !sword.nameplate.label.visible,
+    markers: s.edgeMarkers.shown,
+  };
+  // Walking over them: the same touch the overlap hands the survivor.
+  c.onOrbTouch(p, orb);
+  c.onGearTouch(p, sword);
+  return { ...seen, orbsGained: window.orbs.count('chaos') - orbsBefore,
+           swordKept: window.gear.items.some((i) => i.uid === 'h1'), orbLeft: orb.active, swordLeft: sword.active };
+`);
+console.log('hidden:', JSON.stringify(hidden));
+check('a hidden drop still lies there, with no sprite, name, pillar or edge marker',
+  hidden.orb && hidden.sword && hidden.markers === 0, JSON.stringify(hidden));
+check('and walking over it picks it up all the same',
+  hidden.orbsGained === 1 && hidden.swordKept && !hidden.orbLeft && !hidden.swordLeft, JSON.stringify(hidden));
 check('a weapon shows only when both its rarity and its kind are on',
   landed.afterPlain === landed.before?.gear && landed.afterRare === landed.before?.gear + 1 &&
     landed.afterBase === landed.afterRare,

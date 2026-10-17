@@ -107,7 +107,7 @@ set takes about six minutes. One suite on its own: `node run-all.mjs test-gear`.
 - **Never hard-code a tuned number.** Read it off `window.config` in the page.
   Half the regressions in this harness have been the user changing a value in
   `balance.ts` and a test asserting the old one.
-- **Crits are now 5% on every hit**, so anything that counts swings or asserts
+- **Crits are common** (`PLAYER.critChance` 0.2 since 2026-10-18), so anything that counts swings or asserts
   an exact figure must either turn the base chance off for the measurement
   (`window.config.PLAYER.critChance = 0`, put back after) or assert "was hit"
   rather than "was hit for exactly N".
@@ -357,9 +357,13 @@ Read `git log` for what changed and when. What is not in the log:
 - **아이템 필터.** `config/itemFilter.ts` builds a switch per kind of drop
   from the tables (구슬, 뼈다귀, swords by base and by rarity, plus potion,
   skill, 무작위 스킬, 망고, 조각); `systems/ItemFilter.ts` keeps the ones
-  switched off (`STORAGE.itemFilter`, synced with the rest). Every
-  `CombatSystem.drop*At` asks it first, so a switched-off drop never lands —
-  a new drop function must too. `FilterScene` is the title's 필터 icon.
+  switched off (`STORAGE.itemFilter`, synced with the rest). A switched-off
+  drop still lands and is still taken by touch or 자석 — it is only hidden
+  (`GroundItem.conceal`: no sprite, name, pillar, halo, sound, edge marker
+  or 자석 ghost). Every `CombatSystem.drop*At` ends in `land(item, shown,
+  tier)`, and a new drop function must too. (Until 2026-10-18 a switched-off
+  drop never landed; the user wanted it hidden, not lost.) `FilterScene` is
+  the title's 필터 icon.
 - **Live update.** Every build ships `version.json` (`{ build }`, the commit
   on CI) and is compiled knowing its own id (`__BUILD_ID__`, vite.config.ts).
   `systems/LiveUpdate.ts` asks every `LIVE_UPDATE.checkEveryMs` and when the
@@ -447,6 +451,12 @@ Read `git log` for what changed and when. What is not in the log:
   two +50% are +100%. 치명 is `critChanceIncrease`: the summed share raises
   `PLAYER.critChance` by that much of itself (`Player.critChance`), never
   points on top. (A rare enemy's 속성 still multiply — that is the enemy.)
+- **강력 · 광포 · 치명 · 잔혹 are one ladder** (user's ask, 2026-10-18): a
+  rung of any adds about the same expected damage, +15/12/9/6/4% from tier
+  1. 강력 is a `damageScale` share now (every skill's damage, added to the
+  base's 피해 고정 속성), not the sword's attack; 치명 and 잔혹 are derived
+  from `PLAYER.critChance`/`critMultiplier` — the formula is above `AFFIXES`,
+  and test-balance's parity check holds the four together.
 - **The records conflict is asked twice.** `ConflictScene` has no keep
   buttons: a side's card is pressed (`ask`), a popup says what is lost, and
   only its button (`confirm`) resolves; 취소 / Esc backs out.

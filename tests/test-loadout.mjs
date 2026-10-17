@@ -121,6 +121,9 @@ check('and closing it from code lets go of the run too', relevel.held === false)
 // --- 4. a rare under the mouse holds the run too ---
 const rare = await run(`${onPage}
   const e = s.spawner.spawnRare('grunt');
+  // Out of the way of the survivor's own swings, which now crit often
+  // enough to drop it before the mouse gets there.
+  e.hp = e.maxHp = 1e9;
   e.setPosition(s.player.x + 160, s.player.y);
   e.body.reset(e.x, e.y);
   const cam = s.cameras.main;

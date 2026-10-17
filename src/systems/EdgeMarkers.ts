@@ -76,8 +76,10 @@ export class EdgeMarkers {
           x: number;
           y: number;
           texture?: { key: string };
+          concealed?: boolean;
         };
-        if (!object.active || source.filter?.(child) === false) {
+        // Hidden by the 아이템 필터: pointing at it would undo the hiding.
+        if (!object.active || object.concealed === true || source.filter?.(child) === false) {
           continue;
         }
 

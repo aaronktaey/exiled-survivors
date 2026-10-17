@@ -38,6 +38,7 @@ import { ShardDrop } from '@/entities/ShardDrop';
 import { dropTierFor, rollOrbDrop, type GearItem } from '@/systems/Gear';
 import type { RunStats } from '@/systems/RunStats';
 import { HealthPotion } from '@/entities/HealthPotion';
+import type { GroundItem } from '@/entities/GroundItem';
 import { Player } from '@/entities/Player';
 import { Projectile } from '@/entities/Projectile';
 import { SkillDrop } from '@/entities/SkillDrop';
@@ -204,19 +205,18 @@ export class CombatSystem {
 
   /** Places a potion directly — used by the kill roll and by debug keys. */
   public dropPotionAt(x: number, y: number): void {
-    if (!itemFilter.shows('potion')) {
-      return;
-    }
     [x, y] = inWorld(x, y);
     const potion = this.potions.get() as HealthPotion | null;
-    potion?.drop(x, y);
+    if (!potion) {
+      return;
+    }
+
+    potion.drop(x, y);
+    this.land(potion, itemFilter.shows('potion'), null);
   }
 
   /** Places a 신성한 조각 directly — used by the kill and by debug keys. */
   public dropShardAt(x: number, y: number): void {
-    if (!itemFilter.shows('shard')) {
-      return;
-    }
     [x, y] = inWorld(x, y);
     const shard = this.shardDrops.get() as ShardDrop | null;
     if (!shard) {
@@ -226,14 +226,11 @@ export class CombatSystem {
     shard.drop(x, y);
     // Its nameplate is the 희귀 one, so its sound is too: one ladder, or the
     // ear and the eye disagree about the same object on the floor.
-    this.playDropSound('rare');
+    this.land(shard, itemFilter.shows('shard'), 'rare');
   }
 
   /** Places a 구슬 directly — used by the kill roll and by debug keys. */
   public dropOrbAt(x: number, y: number, id: OrbId): void {
-    if (!itemFilter.shows(`orb:${id}`)) {
-      return;
-    }
     [x, y] = inWorld(x, y);
     const drop = this.orbDrops.get() as OrbDrop | null;
     if (!drop) {
@@ -241,14 +238,11 @@ export class CombatSystem {
     }
 
     drop.drop(x, y, id);
-    this.playDropSound(ORBS[id]?.tier ?? 'normal');
+    this.land(drop, itemFilter.shows(`orb:${id}`), ORBS[id]?.tier ?? 'normal');
   }
 
   /** Places a 뼈다귀 directly — used by the kill roll and by debug keys. */
   public dropBoneAt(x: number, y: number, id: BoneId): void {
-    if (!itemFilter.shows(`bone:${id}`)) {
-      return;
-    }
     [x, y] = inWorld(x, y);
     const drop = this.boneDrops.get() as BoneDrop | null;
     if (!drop) {
@@ -256,14 +250,11 @@ export class CombatSystem {
     }
 
     drop.drop(x, y, id);
-    this.playDropSound(BONES[id]?.tier ?? 'normal');
+    this.land(drop, itemFilter.shows(`bone:${id}`), BONES[id]?.tier ?? 'normal');
   }
 
   /** Places a 하얀 망고 directly — used by the kill roll and by tests. */
   public dropMangoAt(x: number, y: number): void {
-    if (!itemFilter.shows('mango')) {
-      return;
-    }
     [x, y] = inWorld(x, y);
     const drop = this.mangoDrops.get() as MangoDrop | null;
     if (!drop) {
@@ -271,14 +262,11 @@ export class CombatSystem {
     }
 
     drop.drop(x, y);
-    this.playDropSound('rare');
+    this.land(drop, itemFilter.shows('mango'), 'rare');
   }
 
   /** Places a 자석 directly — used by the kill roll and by tests. */
   public dropMagnetAt(x: number, y: number): void {
-    if (!itemFilter.shows('magnet')) {
-      return;
-    }
     [x, y] = inWorld(x, y);
     const drop = this.magnetDrops.get() as MagnetDrop | null;
     if (!drop) {
@@ -286,7 +274,7 @@ export class CombatSystem {
     }
 
     drop.drop(x, y);
-    this.playDropSound('rare');
+    this.land(drop, itemFilter.shows('magnet'), 'rare');
   }
 
   /**
@@ -308,7 +296,8 @@ export class CombatSystem {
         if (!item.active) {
           continue;
         }
-        if (ghosts < MAGNET.ghosts) {
+        // One hidden by the 아이템 필터 is taken without being shown flying in.
+        if (ghosts < MAGNET.ghosts && item.visible) {
           ghosts += 1;
           this.flyIn(item);
         }
@@ -344,9 +333,6 @@ export class CombatSystem {
 
   /** Places a 무작위 스킬 directly — used by the kill roll and by tests. */
   public dropRandomSkillAt(x: number, y: number): void {
-    if (!itemFilter.shows('randomSkill')) {
-      return;
-    }
     [x, y] = inWorld(x, y);
     const drop = this.randomSkillDrops.get() as RandomSkillDrop | null;
     if (!drop) {
@@ -354,7 +340,7 @@ export class CombatSystem {
     }
 
     drop.drop(x, y);
-    this.playDropSound('magic');
+    this.land(drop, itemFilter.shows('randomSkill'), 'magic');
   }
 
   /** Places a 제단 directly — used by the 우두머리 kill and by tests. */
@@ -374,10 +360,6 @@ export class CombatSystem {
 
   /** Places a weapon directly — used by the 우두머리 kill and debug keys. */
   public dropGearAt(x: number, y: number, item: GearItem): void {
-    // 아이템 필터: a switched-off drop never lands.
-    if (!itemFilter.showsGear(item)) {
-      return;
-    }
     [x, y] = inWorld(x, y);
     const drop = this.gearDrops.get() as GearDrop | null;
     if (!drop) {
@@ -385,14 +367,11 @@ export class CombatSystem {
     }
 
     drop.drop(x, y, item);
-    this.playDropSound(dropTierFor(item));
+    this.land(drop, itemFilter.showsGear(item), dropTierFor(item));
   }
 
   /** Places a drop directly — used by the spawner's roll and by debug keys. */
   public dropSkillAt(x: number, y: number, skill: SkillDefinition): void {
-    if (!itemFilter.shows('skill')) {
-      return;
-    }
     [x, y] = inWorld(x, y);
     const drop = this.skillDrops.get() as SkillDrop | null;
     if (!drop) {
@@ -400,7 +379,22 @@ export class CombatSystem {
     }
 
     drop.drop(x, y, skill);
-    this.playDropSound();
+    this.land(drop, itemFilter.shows('skill'));
+  }
+
+  /**
+   * A fresh drop's sound — or, if the 아이템 필터 has it switched off, its
+   * hiding: it still lies there to be walked over or taken by a 자석, it is
+   * only not seen or heard (until 2026-10-18 it never landed at all).
+   */
+  private land(item: GroundItem, shown: boolean, tier: DropTier | null = 'normal'): void {
+    if (!shown) {
+      item.conceal();
+      return;
+    }
+    if (tier) {
+      this.playDropSound(tier);
+    }
   }
 
   /**

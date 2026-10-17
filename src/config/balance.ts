@@ -46,7 +46,9 @@ export const PLAYER = {
    * 치명 속성 adds to this rather than being the only way to have any, so a
    * crit read-out is worth watching from the first run.
    */
-  critChance: 0.03,
+  // 0.03 until 2026-10-18. The weapon's 치명 and 잔혹 rungs are worked out
+  // from this and critMultiplier (see AFFIXES): move either and they move.
+  critChance: 0.2,
   /** What one of those is worth, before 잔혹 raises it. */
   critMultiplier: 1.3,
   /** XP gems within this range drift toward the player. */
@@ -376,8 +378,11 @@ export interface EnemyAffixEffect {
 
 /** What the same 속성 does for whoever is holding the weapon it is on. */
 export interface GearAffixEffect {
-  /** Multiplies the weapon's attack power. */
-  readonly attackScale?: number;
+  /**
+   * Multiplies every skill's damage, the weapon's attack included — added
+   * to the base's own 피해 고정 속성 and any other such line.
+   */
+  readonly damageScale?: number;
   /** Multiplies every skill's attacks per second. */
   readonly attackSpeedScale?: number;
   /** Multiplies the survivor's maximum health. */
@@ -478,6 +483,16 @@ function tiers(
  * only from potions. A weapon saved with either line loses that line the
  * next time the stash is read.
  */
+//
+// 강력, 광포, 치명 and 잔혹 are one ladder: a rung of any of them adds about
+// the same damage per second on average, against a weapon with none of them
+// — +15/12/9/6/4% from tier 1 down. With c = PLAYER.critChance and
+// m = PLAYER.critMultiplier − 1, the average hit is 1 + c × m, so
+//   강력 +x% and 광포 +x% add x% (광포 until a skill's cooldown floor);
+//   치명 +s% adds c × s × m / (1 + c × m)  → s = 17.7 × the gain at 0.2 / 1.3;
+//   잔혹 +b% adds c × b / (1 + c × m)      → b = 5.3 × the gain.
+// A crit is worth only 30% more, so 치명 has to raise the chance a long way
+// to be worth a 강력; two of them stop at certain. Retune the four together.
 export const AFFIXES: Record<AffixId, AffixSpec> = {
   // --- 접두어: what it does to whatever it is pointed at ---
   mighty: {
@@ -487,9 +502,11 @@ export const AFFIXES: Record<AffixId, AffixSpec> = {
     detail: "피해 +50%",
     enemy: { damageScale: 1.5 },
     gearTiers: tiers(
+      // Every skill's damage, not the weapon's attack alone: [75, 60, 50,
+      // 35, 25] of the attack until 2026-10-18 — +9% at best on a 1티어 sword.
       (v) => `피해 +${v}%`,
-      (v) => ({ attackScale: 1 + v / 100 }),
-      [75, 60, 50, 35, 25],
+      (v) => ({ damageScale: 1 + v / 100 }),
+      [15, 12, 9, 6, 4],
     ),
   },
   critical: {
@@ -499,15 +516,12 @@ export const AFFIXES: Record<AffixId, AffixSpec> = {
     detail: "치명타 확률 20%",
     enemy: { critChance: 0.2 },
     gearTiers: tiers(
-      // A share of the base chance, not points on top of it. Each rung is set
-      // so a crit's worth on average (PLAYER.critChance × this × (critMultiplier
-      // − 1)) is about what 강력 of the same rung adds on a 1티어 sword on a
-      // 180-damage skill: 75% of 25 attack is +9.1% damage, and 3% × 10 × 0.3
-      // is +9%. Retune together if either the base crit or 강력 moves.
-      // [50, 40, 30, 20, 10] until 2026-10-18 — worth a twentieth of 강력.
+      // A share of the base chance (PLAYER.critChance), not points on top of
+      // it: two of +50% double it. What a rung is worth is set by the base.
+      // [50, 40, 30, 20, 10] until 2026-10-18 — under +3% damage at best.
       (v) => `기본 치명타 확률 +${v}%`,
       (v) => ({ critChance: v / 100 }),
-      [1000, 800, 700, 500, 350],
+      [265, 210, 160, 105, 70],
     ),
   },
   cruel: {
@@ -516,9 +530,10 @@ export const AFFIXES: Record<AffixId, AffixSpec> = {
     name: "잔혹",
     detail: "치명타 피해 +50%",
     gearTiers: tiers(
+      // [100, 80, 60, 40, 20] until 2026-10-18.
       (v) => `치명타 피해 +${v}%`,
       (v) => ({ critMultiplierBonus: v / 100 }),
-      [100, 80, 60, 40, 20],
+      [80, 64, 48, 32, 21],
     ),
   },
   frenzied: {
@@ -527,9 +542,10 @@ export const AFFIXES: Record<AffixId, AffixSpec> = {
     name: "광포",
     detail: "공격속도 +15%",
     gearTiers: tiers(
+      // [30, 25, 20, 15, 10] until 2026-10-18 — worth three 강력.
       (v) => `공격속도 +${v}%`,
       (v) => ({ attackSpeedScale: 1 + v / 100 }),
-      [30, 25, 20, 15, 10],
+      [15, 12, 9, 6, 4],
     ),
   },
   volleying: {

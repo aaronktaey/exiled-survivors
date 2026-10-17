@@ -307,16 +307,18 @@ const carried = await run(`
   const rung = window.config.AFFIXES.swift.gearTiers.find(t => t.tier === 3);
   const mighty = window.config.AFFIXES.mighty.gearTiers.find(t => t.tier === 3);
   return { bonus: s.gearBonus, max: s.player.maxHp, hp: s.player.hp,
-           wantAttack: Math.round(window.config.attackForTier(window.config.GEAR.steelSword.tier) *
-             mighty.gear.attackScale),
+           wantAttack: window.config.attackForTier(window.config.GEAR.steelSword.tier),
+           // 강력 is a share of every skill's damage, added to the base's own.
+           wantScale: (window.config.GEAR.steelSword.implicit?.damageScale ?? 1) + mighty.gear.damageScale - 1,
            wantSwift: rung.gear.moveSpeedScale,
            melee: s.damageOf('meleeStrike'), stat: s.progression.statsFor('meleeStrike').damage };
 `);
 console.log('carried into the run:', JSON.stringify(carried));
 check('the next run goes out with it',
   carried.bonus.attack === carried.wantAttack &&
+    Math.abs(carried.bonus.damageScale - carried.wantScale) < 1e-9 &&
     carried.melee === Math.round((carried.stat + carried.wantAttack) * carried.bonus.damageScale),
-  `+${carried.bonus.attack} attack, melee ${carried.melee}`);
+  `+${carried.bonus.attack} attack ×${carried.bonus.damageScale}, melee ${carried.melee}`);
 check('and its 신속 is on the survivor, not just on paper',
   Math.abs(carried.bonus.moveSpeedScale - carried.wantSwift) < 0.001,
   `move x${carried.bonus.moveSpeedScale}, wanted x${carried.wantSwift}`);
@@ -502,7 +504,7 @@ check('the read-out is the base (attack and 고정 속성), then a 접두어 blo
     read.lines.length === 9,
   block);
 check('every 속성 fills a slot with its rung, its name and what it does',
-  /1티어\s+강력\s+피해 \+75%/.test(block) &&
+  /1티어\s+강력\s+피해 \+\d+%/.test(block) &&
     /2티어\s+치명\s+기본 치명타 확률 \+\d+%/.test(block) &&
     /1티어\s+거대\s+최대 체력 \+45%/.test(block) &&
     /5티어\s+신속\s+이동속도 \+12%/.test(block) &&
@@ -1177,13 +1179,15 @@ const implicits = await ev(`(() => {
   const out = {};
   for (const id of Object.keys(G)) {
     const im = G[id].implicit ?? {};
-    const ok = (b) =>
+    // 강력 adds its share to the base's own damage scale; nothing else does.
+    const mighty = (lines) => lines * (window.config.AFFIXES.mighty.gearTiers[0].gear.damageScale - 1);
+    const ok = (b, lines = 0) =>
       b.projectileBlock === (im.projectileBlock ?? 0) &&
       b.extraProjectiles === (im.extraProjectiles ?? 0) &&
-      b.damageScale === (im.damageScale ?? 1) &&
+      Math.abs(b.damageScale - ((im.damageScale ?? 1) + mighty(lines))) < 1e-9 &&
       (im.skillAttackSpeed ? b.skillAttackSpeed[im.skillAttackSpeed.skill] === im.skillAttackSpeed.scale
                            : Object.keys(b.skillAttackSpeed).length === 0);
-    out[id] = { has: !!G[id].implicit, bare: ok(bare(id)), full: ok(full(id)),
+    out[id] = { has: !!G[id].implicit, bare: ok(bare(id)), full: ok(full(id), 1),
       speed: bare(id).attackSpeedScale, want: im.attackSpeedScale ?? 1 };
   }
   return out;

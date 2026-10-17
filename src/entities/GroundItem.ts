@@ -15,6 +15,13 @@ export abstract class GroundItem extends Phaser.Physics.Arcade.Image {
   /** The warning halo. Public so tests and debug code can read it. */
   public readonly glow: Phaser.GameObjects.Arc;
 
+  /**
+   * 아이템 필터: switched off, it still lands and is still taken by walking
+   * over it or by a 자석, but nothing of it is drawn — no sprite, name,
+   * pillar or warning halo — and no edge marker points at it.
+   */
+  public concealed = false;
+
   protected remainingMs = 0;
   /** Blink cycles elapsed; the fractional part drives the on/off state. */
   protected blinkPhase = 0;
@@ -44,6 +51,14 @@ export abstract class GroundItem extends Phaser.Physics.Arcade.Image {
     this.hide();
   }
 
+  /** Lies here unseen until it is taken or runs out (see `concealed`). */
+  public conceal(): void {
+    this.concealed = true;
+    this.setVisible(false);
+    this.glow.setVisible(false);
+    this.onHide();
+  }
+
   public override update(_time: number, delta: number): void {
     if (!this.active) {
       return;
@@ -69,6 +84,7 @@ export abstract class GroundItem extends Phaser.Physics.Arcade.Image {
   protected begin(x: number, y: number, size: number): void {
     this.remainingMs = GROUND_ITEM.lifespanMs;
     this.blinkPhase = 0;
+    this.concealed = false;
 
     this.enableBody(true, x, y, true, true);
     this.setDisplaySize(size, size);
@@ -110,6 +126,9 @@ export abstract class GroundItem extends Phaser.Physics.Arcade.Image {
    * period as it goes so the flashing visibly speeds up.
    */
   private updateBlink(delta: number): void {
+    if (this.concealed) {
+      return;
+    }
     if (this.remainingMs > GROUND_ITEM.warningMs) {
       if (this.glow.visible) {
         this.glow.setVisible(false);

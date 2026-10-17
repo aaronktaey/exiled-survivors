@@ -278,12 +278,12 @@ const folded = await run(`
     stat: s.progression.statsFor('meleeStrike').damage,
     cooldown: Math.round(s.cooldownOf('meleeStrike')),
     maxHp: s.player.maxHp,
-    // The sword is its tier's attack scaled by 강력. The save also carries
-    // 예리 and 재생, which are gone: they must fall off rather than count.
-    wantAttack: Math.round(
-      window.config.attackForTier(window.config.GEAR.steelSword.tier) *
-        window.config.AFFIXES.mighty.gearTiers.find(t => t.tier === 3).gear.attackScale,
-    ),
+    // The sword is its tier's attack, and 강력 is added to its damage scale.
+    // The save also carries 예리 and 재생, which are gone: they must fall off
+    // rather than count.
+    wantAttack: window.config.attackForTier(window.config.GEAR.steelSword.tier),
+    wantScale: (window.config.GEAR.steelSword.implicit?.damageScale ?? 1) +
+      window.config.AFFIXES.mighty.gearTiers.find(t => t.tier === 3).gear.damageScale - 1,
     base: window.config.SKILL_BASE.meleeStrike.damage,
     lines: [...window.gear.equipped.prefixes, ...window.gear.equipped.suffixes].map(l => l.id),
     wantMaxHp: Math.round(
@@ -301,9 +301,9 @@ const wantDamage = Math.round(
 check('패시브 lifts the skill, then 장비 is added to the result',
   folded.damage === wantDamage,
   `(${folded.base} x ${folded.passive.damageScale.toFixed(2)} + ${folded.gear.attack}) x ${folded.gear.damageScale} = ${folded.damage}`);
-check('and the sword is the tier, scaled by 강력',
-  folded.gear.attack === folded.wantAttack,
-  `+${folded.gear.attack}, wanted +${folded.wantAttack}`);
+check('and the sword is its tier’s attack, with 강력 added to the damage scale',
+  folded.gear.attack === folded.wantAttack && Math.abs(folded.gear.damageScale - folded.wantScale) < 1e-9,
+  `+${folded.gear.attack} ×${folded.gear.damageScale}, wanted +${folded.wantAttack} ×${folded.wantScale}`);
 check('a saved 예리 and 재생 fall off the weapon instead of counting',
   JSON.stringify(folded.lines) === JSON.stringify(['mighty', 'giant']),
   folded.lines.join(' / '));

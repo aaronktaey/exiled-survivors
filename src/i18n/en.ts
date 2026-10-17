@@ -50,7 +50,7 @@ export const en: Strings = {
   filter: {
     title: 'Item Filter',
     icon: 'Filter',
-    lead: 'Anything switched off never drops in a run · a weapon shows only when both its rarity and its kind are on',
+    lead: 'Anything switched off is hidden on the ground but still picked up by walking over it · a weapon shows only when both its rarity and its kind are on',
     sections: { supplies: 'Supplies', orbs: 'Orbs', bones: 'Bones', rarity: 'Rarity', bases: 'Weapons' },
     items: { potion: 'Potion', skill: 'Skill', randomSkill: 'Random Skill', mango: 'White Mango', magnet: 'Magnet', shard: 'Divine Shard' },
     itemsShort: { potion: 'Potion', skill: 'Skill', randomSkill: 'Random', mango: 'Mango', magnet: 'Magnet', shard: 'Shard' },
@@ -896,8 +896,8 @@ export const en: Strings = {
         {
           title: 'Item Filter',
           lines: [
-            'Filter on the title screen switches each kind of drop on or off. Anything switched off never drops in a run.',
-            'A weapon drops only when both its rarity (Normal, Magic, Rare) and its kind are on. The filter is kept with your account.',
+            'Filter on the title screen switches each kind of drop on or off. Anything switched off still drops, but it is neither seen nor heard on the ground; walking over it or a Magnet still picks it up.',
+            'A weapon shows only when both its rarity (Normal, Magic, Rare) and its kind are on. The filter is kept with your account.',
           ],
         },
         {

@@ -327,15 +327,19 @@ check('but what might be kept for later stays: the 포션, the 하얀 망고, th
     later.potions === 1 && later.mangos === 1 && later.magnets === 1 && later.altars === 1,
   JSON.stringify(later));
 
-// Switched off in the 필터, it never lands.
+// Switched off in the 필터, it lands hidden.
 const filtered = await run(`
   window.itemFilter.toggle('magnet');
-  s.combat.dropMagnetAt(s.player.x + 60, s.player.y);
-  const n = s.combat.magnetDrops.countActive(true);
+  s.combat.magnetDrops.getChildren().forEach((d) => d.active && d.collect());
+  s.combat.dropMagnetAt(s.player.x + 600, s.player.y);
+  const d = s.combat.magnetDrops.getChildren().find((m) => m.active);
   window.itemFilter.toggle('magnet');
-  return n;
+  const out = { active: !!d, visible: d?.visible, label: d?.nameplate.label.visible };
+  d?.collect();
+  return out;
 `);
-check('switched off in the 필터, it does not land', filtered === 0, `${filtered}`);
+check('switched off in the 필터, it lands but is not seen',
+  filtered.active && filtered.visible === false && filtered.label === false, JSON.stringify(filtered));
 
 console.log('\n=== SUMMARY ===');
 const failed = results.filter((r) => !r.p);
