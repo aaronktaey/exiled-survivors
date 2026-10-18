@@ -37,6 +37,24 @@ const yesterday = Date.now() - 86_400_000;
 const peers = [[90000, 560000], [100000, 580000], [110000, 620000], [120000, 640000]]
   .map(([damage, ms], i) => `('PEE', '', 'KR', ${damage}, 12, ${ms}, '${new Date(yesterday + i).toISOString()}', ${yesterday + i}, 'h', 'peer-user')`)
   .join(', ');
+// Yesterday on the board's clock (05:00 KST), for 어제의 랭킹: four runs, three shown.
+const DAY = 86_400_000;
+const SHIFT = (9 - 5) * 3_600_000;
+const today = Math.floor((Date.now() + SHIFT) / DAY) * DAY - SHIFT;
+const yday = today - DAY;
+const podiumSeed =
+  `INSERT INTO users (id, created_at, display_name, rank_name, rank_flag) VALUES ` +
+  `('y1', 0, 'y1', 'YON', 'KR'), ('y2', 0, 'y2', 'YTW', ''), ('y3', 0, 'y3', 'YTH', ''), ('y4', 0, 'y4', 'YFO', ''); ` +
+  `INSERT INTO daily_best (day, user_id, entry_id, damage, level, survived_ms, at, skill) VALUES ` +
+  `(${yday}, 'y2', 0, 200, 9, 500000, '${new Date(yday + 2).toISOString()}', ''), ` +
+  `(${yday}, 'y1', 0, 300, 10, 600000, '${new Date(yday + 1).toISOString()}', 'fireball'), ` +
+  `(${yday}, 'y4', 0, 50, 5, 100000, '${new Date(yday + 4).toISOString()}', ''), ` +
+  `(${yday}, 'y3', 0, 100, 8, 400000, '${new Date(yday + 3).toISOString()}', ''); ` +
+  // A save written into the database by hand with a value that is not text.
+  `INSERT INTO users (id, created_at, display_name) VALUES ('obj-user', 0, 'objy'); ` +
+  `INSERT INTO identities (provider, subject, user_id) VALUES ('test', 'objy', 'obj-user'); ` +
+  `INSERT INTO saves (user_id, data, updated_at) VALUES ('obj-user', ` +
+  `json_object('exiled-survivors:orbs:v1', json_object('mango', 3), 'exiled-survivors:gold:v1', '5'), 5); `;
 // One account named in ADMIN_USERS, signed in to through the test provider as "boss".
 execSync(
   `npx wrangler d1 execute DB --local --persist-to "${state}" --command "` +
@@ -50,7 +68,8 @@ execSync(
     `INSERT INTO identities (provider, subject, user_id) VALUES ('test', 'silver', 'silver-user'), ('test', 'bronze', 'bronze-user'); ` +
     `INSERT INTO daily_best (day, user_id, entry_id, damage, level, survived_ms, at) VALUES ` +
     `(0, 'silver-user', 0, 999999, 50, 3600000, '1970-01-01T00:00:00.000Z'), (0, 'bronze-user', 0, 9999, 50, 3600000, '1970-01-01T00:00:00.000Z'); ` +
-    `INSERT INTO entries (name, emoji, flag, damage, level, survived_ms, at, at_ms, ip_hash, user_id) VALUES ${peers}"`,
+    `INSERT INTO entries (name, emoji, flag, damage, level, survived_ms, at, at_ms, ip_hash, user_id) VALUES ${peers}; ` +
+    podiumSeed + '"',
   { cwd: ROOT, env, stdio: 'ignore' },
 );
 const worker = spawn(
@@ -274,6 +293,31 @@ try {
   check('an account whose best is taken off falls back to its next best that day',
     fallen.body?.entries?.find((e) => e.name === 'BOB')?.damage === 30000,
     JSON.stringify(fallen.body?.entries?.map((e) => `${e.name}:${e.damage}`)));
+
+  // --- 어제의 랭킹 ---
+  const podium = await read(await fetch(`${BASE}/api/ranking/podium`));
+  check('어제의 랭킹 is the day before’s first, second and third, best first, with no account ids',
+    podium.status === 200 && podium.body?.day === yday &&
+      JSON.stringify(podium.body?.entries?.map((e) => e.name)) === '["YON","YTW","YTH"]' &&
+      podium.body.entries[0].skill === 'fireball' && podium.body.entries[0].flag === 'KR' &&
+      !('userId' in podium.body.entries[0]),
+    JSON.stringify(podium.body));
+  const notSeen = await read(await alice.call('/api/me'));
+  const seenOut = await read(await browser().send('/api/ranking/podium/seen', 'POST', {}));
+  const seen = await read(await alice.send('/api/ranking/podium/seen', 'POST', {}));
+  const nowSeen = await read(await alice.call('/api/me'));
+  check('an account says it has seen it today, and /api/me says so on any device; signed out there is no one to mark',
+    notSeen.body?.user?.podiumSeen === 0 && seenOut.status === 401 && seen.status === 200 &&
+      nowSeen.body?.user?.podiumSeen === today && seen.body?.day === today,
+    JSON.stringify({ before: notSeen.body?.user?.podiumSeen, after: nowSeen.body?.user?.podiumSeen, today }));
+
+  // --- a save with a value that is not text comes back as text ---
+  const objy = browser();
+  await objy.signIn('objy');
+  const handWritten = await read(await objy.call('/api/save'));
+  check('a stored value that is not text (written by hand) comes back as its text, never as an object',
+    handWritten.body?.data?.['exiled-survivors:orbs:v1'] === '{"mango":3}' && handWritten.body?.data?.['exiled-survivors:gold:v1'] === '5',
+    JSON.stringify(handWritten.body?.data));
 
   const boardHeaders = await fetch(`${BASE}/api/ranking`);
   await boardHeaders.arrayBuffer();

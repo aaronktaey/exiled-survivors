@@ -32,6 +32,24 @@ export function cleanSave(raw: unknown): Record<string, string> | null {
   return out;
 }
 
+/**
+ * The stored copy as the game reads it: every value a string, the way
+ * localStorage holds it. A value that is anything else (written into the
+ * database by hand as JSON) is turned back into its text rather than handed
+ * to the game, which would store it as "[object Object]" and lose it.
+ */
+function asStored(text: string): Record<string, string> | null {
+  const raw = JSON.parse(text) as unknown;
+  if (!raw || typeof raw !== 'object') {
+    return null;
+  }
+  const out: Record<string, string> = {};
+  for (const [key, value] of Object.entries(raw as Record<string, unknown>)) {
+    out[key] = typeof value === 'string' ? value : JSON.stringify(value);
+  }
+  return out;
+}
+
 export async function getSave(request: Request, env: Env): Promise<Response> {
   const user = await sessionUser(request, env);
   if (!user) {
@@ -41,7 +59,7 @@ export async function getSave(request: Request, env: Env): Promise<Response> {
     .bind(user.id)
     .first<{ data: string; updatedAt: number }>();
   return json(
-    { data: row ? (JSON.parse(row.data) as unknown) : null, updatedAt: row?.updatedAt ?? 0 },
+    { data: row ? asStored(row.data) : null, updatedAt: row?.updatedAt ?? 0 },
     200,
     { 'Cache-Control': 'no-store' },
   );
@@ -82,7 +100,7 @@ export async function putSave(request: Request, env: Env): Promise<Response> {
       .bind(user.id)
       .first<{ data: string; updatedAt: number }>();
     return json(
-      { error: 'conflict', data: current ? (JSON.parse(current.data) as unknown) : null, updatedAt: current?.updatedAt ?? 0 },
+      { error: 'conflict', data: current ? asStored(current.data) : null, updatedAt: current?.updatedAt ?? 0 },
       409,
     );
   }

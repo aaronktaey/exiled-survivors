@@ -6,6 +6,8 @@ import {
   DEPTH,
   LIVE_UPDATE,
   MENU,
+  RANKING,
+  rankingDayStart,
   SCENES,
   SCRIM,
   TEXT,
@@ -29,6 +31,7 @@ import { takePendingRank } from '@/systems/PendingRank';
 import { liveUpdate } from '@/systems/LiveUpdate';
 import { devToolsAllowed } from '@/systems/DevAccess';
 import { tuning } from '@/systems/Tuning';
+import { podium } from '@/systems/Podium';
 
 /** Syncing starts once per page, the first time the title finds someone signed in. */
 let syncStarted = false;
@@ -213,7 +216,8 @@ export class MenuScene extends Phaser.Scene {
       unwatchAccount();
       unwatchSync();
     });
-    void this.settleAccount();
+    // Who is signed in first: an account that saw 어제의 랭킹 elsewhere is not shown it again.
+    void this.settleAccount().then(() => this.showPodium());
 
     // A newer version: taken here, on the title with nothing open, never mid-run.
     const offerUpdate = (): void => {
@@ -557,6 +561,33 @@ export class MenuScene extends Phaser.Scene {
     if (cloudSave.conflict && this.scene.isActive()) {
       this.openOverlay(SCENES.conflict);
     }
+  }
+
+  /**
+   * 어제의 랭킹: the day before's first three, on the first visit to the title
+   * after the board starts over — once a day, here or on the signed-in
+   * account anywhere. Public so a test can ask again.
+   */
+  public async showPodium(): Promise<void> {
+    if (!RANKING.shared.enabled || podium.asked || podium.seenToday()) {
+      return;
+    }
+    // Yesterday's board, if it is one the popup covers at all.
+    if (rankingDayStart(Date.now()) - 86_400_000 < RANKING.shared.podiumSince) {
+      return;
+    }
+    podium.asked = true;
+    const result = await podium.fetch();
+    if (!result || result.entries.length === 0) {
+      return;
+    }
+    // Something else got there first (records to choose between, a run just
+    // entered): it waits for the next visit rather than stacking on top.
+    if (!this.scene.isActive() || cloudSave.conflict) {
+      podium.asked = false;
+      return;
+    }
+    this.openOverlay(SCENES.podium, { day: result.day, entries: result.entries, onSeen: () => podium.markSeen() });
   }
 
   /** A line that rises over the hint and fades — how the title says something happened. */

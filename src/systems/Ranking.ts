@@ -120,7 +120,7 @@ function ordered(entries: readonly RankEntry[]): RankEntry[] {
 }
 
 /** Reads an entry from anywhere — storage, the network — trusting none of it. */
-function clean(raw: unknown): RankEntry | null {
+export function cleanRankEntry(raw: unknown): RankEntry | null {
   if (!raw || typeof raw !== 'object') {
     return null;
   }
@@ -150,7 +150,7 @@ function entriesOf(body: unknown): RankEntry[] | null {
   if (!Array.isArray(entries)) {
     return null;
   }
-  return entries.map(clean).filter((entry): entry is RankEntry => entry !== null);
+  return entries.map(cleanRankEntry).filter((entry): entry is RankEntry => entry !== null);
 }
 
 type Listener = (entries: readonly RankEntry[]) => void;
@@ -274,7 +274,7 @@ class RankingStore {
       return 0;
     }
 
-    const entry = clean({ ...run, at: new Date().toISOString() });
+    const entry = cleanRankEntry({ ...run, at: new Date().toISOString() });
     if (!entry) {
       return 0;
     }
@@ -422,7 +422,7 @@ class RankingStore {
       const parsed = raw ? (JSON.parse(raw) as unknown) : [];
       this.current = ordered(
         (Array.isArray(parsed) ? parsed : [])
-          .map(clean)
+          .map(cleanRankEntry)
           .filter((entry): entry is RankEntry => entry !== null),
       );
     } catch {

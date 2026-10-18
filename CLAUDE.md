@@ -308,6 +308,23 @@ Read `git log` for what changed and when. What is not in the log:
   does not know is shown as the id. The user asked for this on 2026-10-18
   after JSM's 993M run on 0.59 — the server still trusts the numbers it is
   sent; this only lets the admin see and undo.
+- **어제의 랭킹 (0.64).** `MenuScene.showPodium` (after `settleAccount`)
+  opens `PodiumScene` with the day before's first three from
+  `GET /api/ranking/podium` (daily_best order, edge-cached until the reset,
+  dropped by `/remove`), once per board day: seen is kept on the device
+  (`STORAGE.podiumSeen`, in `ACCOUNT.localOnly` — synced, every device
+  writing it each morning would set the records at odds) and on the account
+  (`users.podium_seen`, migration 0009, set by `POST /api/ranking/podium/seen`,
+  read back as `podiumSeen` from /api/me). It waits if the title is covered
+  (a conflict, a run being entered). `RANKING.shared.podiumSince` is the
+  first day it covers: 10/17's cups were changed by hand, so that board's
+  order no longer said who placed where.
+- **A save value is always text.** `/api/save` hands every stored value back
+  as a string (`asStored`), and `CloudSave.take` writes non-strings as JSON:
+  a value written into D1 by hand as JSON (`json_set` with a `json_set`
+  inside makes an object, not text) would otherwise land in localStorage as
+  "[object Object]" and the store behind it would start empty. When editing
+  a save by hand, store the inner value as text (`'' || json_set(...)`).
 - **Cloudflare.** One Worker with static assets: `dist/` is served without
   running the Worker (free, unlimited); only `/api/*` runs `server/index.ts`.
   `npm run dev:api` runs it locally on 8787 and Vite proxies `/api` there.

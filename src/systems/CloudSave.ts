@@ -265,7 +265,9 @@ class CloudSaveStore {
       mine.forEach((key) => localStorage.removeItem(key));
       for (const [key, value] of Object.entries(server)) {
         if (key.startsWith(PREFIX) && !ACCOUNT.localOnly.includes(key)) {
-          localStorage.setItem(key, value);
+          // Always text, the way it was kept: anything else would be stored
+          // as "[object Object]" and the store behind it would start empty.
+          localStorage.setItem(key, typeof value === 'string' ? value : JSON.stringify(value));
         }
       }
       this.agree(user.id, serverAt, snapshot());

@@ -312,6 +312,13 @@ export const ko: Strings = {
     },
   },
 
+  podium: {
+    title: '어제의 랭킹',
+    day: '{date} 결과',
+    stats: 'Lv {level} · 생존 {time}',
+    ok: '확인',
+  },
+
   account: {
     title: '계정',
     iconSignedOut: '로그인',

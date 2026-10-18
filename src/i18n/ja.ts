@@ -308,6 +308,13 @@ export const ja: Strings = {
     },
   },
 
+  podium: {
+    title: '昨日のランキング',
+    day: '{date} の結果',
+    stats: 'Lv {level} · 生存 {time}',
+    ok: 'OK',
+  },
+
   account: {
     title: 'アカウント',
     iconSignedOut: 'ログイン',

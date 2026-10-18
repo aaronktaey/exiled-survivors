@@ -308,6 +308,13 @@ export const zh: Strings = {
     },
   },
 
+  podium: {
+    title: '昨日排行榜',
+    day: '{date} 结果',
+    stats: 'Lv {level} · 生存 {time}',
+    ok: '确定',
+  },
+
   account: {
     title: '账号',
     iconSignedOut: '登录',

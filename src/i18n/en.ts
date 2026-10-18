@@ -308,6 +308,13 @@ export const en: Strings = {
     },
   },
 
+  podium: {
+    title: "Yesterday's Ranking",
+    day: 'Results for {date}',
+    stats: 'Lv {level} · survived {time}',
+    ok: 'OK',
+  },
+
   account: {
     title: 'Account',
     iconSignedOut: 'Sign in',

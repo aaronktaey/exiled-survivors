@@ -42,6 +42,8 @@ export interface SessionUser {
   readonly rankName: string;
   readonly rankEmoji: string;
   readonly rankFlag: string;
+  /** The board's day it last saw 어제의 랭킹 on (0: never). */
+  readonly podiumSeen: number;
 }
 
 const isLocal = (request: Request): boolean =>
@@ -249,7 +251,7 @@ export async function sessionUser(request: Request, env: Env): Promise<SessionUs
   }
   const row = await env.DB.prepare(
     `SELECT u.id, s.provider, u.display_name AS displayName, u.rank_name AS rankName,
-            u.rank_emoji AS rankEmoji, u.rank_flag AS rankFlag
+            u.rank_emoji AS rankEmoji, u.rank_flag AS rankFlag, u.podium_seen AS podiumSeen
        FROM sessions s JOIN users u ON u.id = s.user_id
       WHERE s.id_hash = ?1 AND s.expires_at > ?2`,
   )
@@ -278,6 +280,7 @@ export async function me(request: Request, env: Env): Promise<Response> {
             name: user.displayName,
             rank: { name: user.rankName, emoji: user.rankEmoji, flag: user.rankFlag },
             admin: isAdmin(env, user.id),
+            podiumSeen: user.podiumSeen ?? 0,
           }
         : null,
       providers: offered(env, request),

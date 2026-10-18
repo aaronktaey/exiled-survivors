@@ -69,6 +69,7 @@ const OVERLAYS = [
   ['AccountScene', '{}'],
   ['ConflictScene', '{}'],
   ['FilterScene', '{}'],
+  ['PodiumScene', `{ day: Date.now() - 86400000, entries: [       { name: 'ONE', emoji: '', flag: 'KR', damage: 3000000, level: 20, survivedMs: 820000, at: '', skill: 'fireball', wins: 2, seconds: 0, thirds: 0 },       { name: 'TWO', emoji: '', flag: 'US', damage: 2000000, level: 19, survivedMs: 760000, at: '', skill: 'chainLightning', wins: 0, seconds: 1, thirds: 0 },       { name: 'THR', emoji: '', flag: '', damage: 1000000, level: 18, survivedMs: 700000, at: '', skill: '', wins: 0, seconds: 0, thirds: 1 } ] }`],
 ];
 
 for (const [w, h, shape] of [[0, 0, 'landscape'], [420, 860, 'upright']]) {

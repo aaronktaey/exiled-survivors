@@ -175,6 +175,9 @@ for (const lang of ['en', 'ja', 'zh']) {
   await overlay('AccountScene');
   await take('account signed in');
   await close('AccountScene');
+  await overlay('PodiumScene', `{ day: Date.now() - 86400000, entries: [       { name: 'ONE', emoji: '', flag: 'KR', damage: 3000000, level: 20, survivedMs: 820000, at: '', skill: 'fireball', wins: 2, seconds: 0, thirds: 0 },       { name: 'TWO', emoji: '', flag: 'US', damage: 2000000, level: 19, survivedMs: 760000, at: '', skill: 'chainLightning', wins: 0, seconds: 1, thirds: 0 },       { name: 'THR', emoji: '', flag: '', damage: 1000000, level: 18, survivedMs: 700000, at: '', skill: '', wins: 0, seconds: 0, thirds: 1 } ] }`);
+  await take('podium');
+  await close('PodiumScene');
   await overlay('ConflictScene');
   await take('conflict');
   await ev(`(() => { window.game.scene.getScene('ConflictScene').ask('server'); return 1; })()`);

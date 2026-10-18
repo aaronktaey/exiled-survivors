@@ -531,6 +531,94 @@ await sleep(300);
 await ev(UNDO);
 await ev(`(() => { localStorage.setItem('exiled-survivors:settings:v1', JSON.stringify({ language: 'ko' })); return 1; })()`);
 
+// --- 11. 어제의 랭킹: the day before's first three, over the title, once a day ---
+await cdp.send('Page.reload', {});
+await sleep(4500);
+const PODIUM_STAND_IN = `(() => {
+  const R = window.config.RANKING;
+  const DAY = 86400000, shift = (R.dailyReset.utcOffsetHours - R.dailyReset.hour) * 3600000;
+  const today = Math.floor((Date.now() + shift) / DAY) * DAY - shift;
+  const asked = { podium: 0, seen: 0 };
+  const entry = (name, damage, flag, skill) =>
+    ({ name, emoji: '', flag, damage, level: 20, survivedMs: 800000, at: new Date(today - 1000).toISOString(), skill, wins: 1, seconds: 0, thirds: 0 });
+  const reply = (body, status = 200) =>
+    new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
+  window.__realFetch ??= window.fetch;
+  window.fetch = async (url, init) => {
+    const path = String(url);
+    if (path === R.shared.podiumUrl) {
+      asked.podium += 1;
+      return reply({ day: today - DAY, entries: [entry('ONE', 3000000, 'KR', 'fireball'), entry('TWO', 2000000, 'US', 'iceSpear'), entry('THR', 1000000, '', '')] });
+    }
+    if (path === R.shared.podiumUrl + '/seen') { asked.seen += 1; return reply({ ok: true }); }
+    if (path === R.shared.url) return reply({ entries: [] });
+    return reply({ error: 'not found' }, 404);
+  };
+  window.__podium = { asked, today, since: R.shared.podiumSince };
+  localStorage.removeItem('exiled-survivors:podium-seen:v1');
+  window.podium.asked = false;
+  R.shared.enabled = true;
+  // Before the first day it covers, nothing is shown — nor asked for.
+  R.shared.podiumSince = today;
+  return 1;
+})()`;
+const BEFORE_SINCE = `(async () => {
+  await window.game.scene.getScene('MenuScene').showPodium();
+  await new Promise((r) => setTimeout(r, 300));
+  const out = { open: window.game.scene.isActive('PodiumScene'), asked: window.__podium.asked.podium };
+  window.config.RANKING.shared.podiumSince = 0;
+  window.podium.asked = false;
+  return out;
+})()`;
+await ev(PODIUM_STAND_IN);
+const early = (await cdp.send('Runtime.evaluate', { awaitPromise: true, returnByValue: true, expression: BEFORE_SINCE })).result?.result?.value ?? {};
+check('a day from before the popup’s first one is never shown, nor asked for',
+  early.open === false && early.asked === 0, JSON.stringify(early));
+const first = await cdp.send('Runtime.evaluate', { awaitPromise: true, returnByValue: true, expression: `(async () => {
+  await window.game.scene.getScene('MenuScene').showPodium();
+  await new Promise((r) => setTimeout(r, 600));
+  const s = window.game.scene.getScene('PodiumScene');
+  return { open: window.game.scene.isActive('PodiumScene'), names: s.names.map((n) => n.text),
+           menuPaused: window.game.scene.isPaused('MenuScene'), asked: { ...window.__podium.asked } };
+})()` });
+const fp = first.result?.result?.value ?? {};
+console.log('podium:', JSON.stringify(fp));
+check('the first visit to the title after the reset shows the day before’s first, second and third, in order',
+  fp.open && JSON.stringify(fp.names) === '["ONE","TWO","THR"]' && fp.menuPaused && fp.asked?.podium === 1,
+  JSON.stringify(fp));
+await shot('ranking-07-podium');
+const closed = await scene('PodiumScene', `s.okPlate.emit('pointerdown'); return 1;`);
+void closed;
+await sleep(400);
+const after = await ev(`(() => ({ open: window.game.scene.isActive('PodiumScene'), menu: window.game.scene.isActive('MenuScene'),
+  stored: localStorage.getItem('exiled-survivors:podium-seen:v1'), today: window.__podium.today }))()`);
+check('확인 closes it, back on the title, and it is marked seen for today',
+  !after.open && after.menu && after.stored === String(after.today), JSON.stringify(after));
+const again = await cdp.send('Runtime.evaluate', { awaitPromise: true, returnByValue: true, expression: `(async () => {
+  window.podium.asked = false;
+  await window.game.scene.getScene('MenuScene').showPodium();
+  await new Promise((r) => setTimeout(r, 400));
+  return { open: window.game.scene.isActive('PodiumScene'), asked: { ...window.__podium.asked } };
+})()` });
+const ag = again.result?.result?.value ?? {};
+check('seen once, it is not shown again that day — nor even asked for',
+  ag.open === false && ag.asked?.podium === 1, JSON.stringify(ag));
+const elsewhere = await cdp.send('Runtime.evaluate', { awaitPromise: true, returnByValue: true, expression: `(async () => {
+  localStorage.removeItem('exiled-survivors:podium-seen:v1');
+  window.podium.asked = false;
+  window.account.user = { id: 'u', provider: 'test', name: 'u', rank: { name: '', emoji: '', flag: '' }, podiumSeen: window.__podium.today };
+  await window.game.scene.getScene('MenuScene').showPodium();
+  await new Promise((r) => setTimeout(r, 400));
+  const out = { open: window.game.scene.isActive('PodiumScene'), asked: { ...window.__podium.asked } };
+  window.account.user = null;
+  return out;
+})()` });
+const el = elsewhere.result?.result?.value ?? {};
+check('nor to an account that has seen it on another device today',
+  el.open === false && el.asked?.podium === 1, JSON.stringify(el));
+await ev(`(() => { window.fetch = window.__realFetch; window.config.RANKING.shared.enabled = false;
+  window.config.RANKING.shared.podiumSince = window.__podium.since; return 1; })()`);
+
 console.log('\n=== SUMMARY ===');
 const failed = results.filter((r) => !r.p);
 console.log(`${results.length - failed.length}/${results.length} passed`);

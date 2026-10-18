@@ -430,6 +430,16 @@ export interface Strings {
     };
   };
 
+  /** 어제의 랭킹 — the day before's first three, shown once a day over the title. */
+  readonly podium: {
+    readonly title: string;
+    /** {date}: the day the three are from. */
+    readonly day: string;
+    /** {level} and {time} under each place. */
+    readonly stats: string;
+    readonly ok: string;
+  };
+
   /** 계정 — the sign-in screen, and what it says once signed in. */
   readonly account: {
     readonly title: string;

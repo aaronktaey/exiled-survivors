@@ -15,6 +15,24 @@ export interface PatchNote {
 
 export const PATCH_NOTES: readonly PatchNote[] = [
   {
+    version: '0.64',
+    date: '2026-10-18',
+    changes: {
+      ko: [
+        '매일 오전 5시 랭킹이 초기화된 뒤 처음 게임에 들어오면 전날 1·2·3위가 표시됩니다. 한 번 확인하면 그날은 다시 나오지 않으며, 로그인한 계정은 다른 기기에서도 다시 나오지 않습니다.',
+      ],
+      en: [
+        'The first time you come in after the ranking resets each day at 05:00 (KST), the day before’s first, second and third are shown. Once seen it does not come back that day — and, signed in, not on your other devices either.',
+      ],
+      ja: [
+        '毎日午前 5 時にランキングがリセットされた後、最初にゲームに入ると前日の 1・2・3 位が表示されます。一度確認するとその日は再表示されず、ログインしたアカウントでは他の端末でも表示されません。',
+      ],
+      zh: [
+        '每天早上 5 点排行榜重置后首次进入游戏时，会显示前一天的第 1、2、3 名。查看过一次后当天不再显示；登录的账号在其他设备上也不会再显示。',
+      ],
+    },
+  },
+  {
     version: '0.63',
     date: '2026-10-18',
     changes: {

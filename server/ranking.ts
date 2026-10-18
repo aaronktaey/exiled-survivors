@@ -12,6 +12,8 @@
  *   GET  /api/ranking/review   the admin's: today's board with each run's
  *                              detail, and which look out of line
  *   POST /api/ranking/remove   the admin's: { entryId } off the board
+ *   GET  /api/ranking/podium   어제의 랭킹: the day before's first three
+ *   POST /api/ranking/podium/seen   the signed-in account has seen it today
  *
  * Only accounts hand runs in, and an account has one name on the board —
  * set by the run it hands in — so a name cannot be worn by a crowd. The
@@ -529,10 +531,55 @@ export async function removeEntry(request: Request, env: Env): Promise<Response>
         ORDER BY damage DESC, at ASC LIMIT 1`,
     ).bind(day, entry.userId, day + DAY_MS),
   ]);
-  // The edge's copy of that day goes, so the next look is the board without it.
+  // The edge's copy of that day goes, so the next look is the board without
+  // it — and of the next day's 어제의 랭킹, which is that day's first three.
   await caches.default.delete(boardKey(request, day));
+  await caches.default.delete(podiumKey(request, day));
   const rows = await topRows(env, rankingDayStart(Date.now()));
   return json({ ok: true, entries: publicRows(rows) }, 200, { 'Cache-Control': 'no-store' });
+}
+
+/** The edge's copy of a finished day's first three, keyed by that day. */
+const podiumKey = (request: Request, day: number): string =>
+  new URL(`${BOARD_PATH}/podium?day=${day}`, request.url).toString();
+
+/**
+ * 어제의 랭킹: the first, second and third of the day before today's board,
+ * the order the cups were given in. The same for everyone, so the edge keeps
+ * it until the next reset (or until the admin takes one of them off).
+ */
+export async function podium(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
+  const now = Date.now();
+  const day = rankingDayStart(now) - DAY_MS;
+  const cache = caches.default;
+  const key = new Request(podiumKey(request, day), { method: 'GET' });
+  const hit = await cache.match(key);
+  if (hit) {
+    return unstored(hit);
+  }
+  const result = await env.DB.prepare(`${BOARD} LIMIT ?1`)
+    .bind(3, day)
+    .all<RankRow & { userId: string }>();
+  const untilReset = Math.max(1, Math.floor((nextRankingReset(now) - now) / 1000));
+  const response = json({ day, entries: publicRows(result.results ?? []) }, 200, {
+    'Cache-Control': `public, max-age=${Math.min(3600, untilReset)}`,
+  });
+  ctx.waitUntil(cache.put(key, response.clone()));
+  return unstored(response);
+}
+
+/** The signed-in account has seen today's 어제의 랭킹: it is not shown to it again today, on any device. */
+export async function podiumSeen(request: Request, env: Env): Promise<Response> {
+  if (!sameOrigin(request)) {
+    return json({ error: 'origin' }, 403);
+  }
+  const user = await sessionUser(request, env);
+  if (!user) {
+    return json({ error: 'signed out' }, 401);
+  }
+  const day = rankingDayStart(Date.now());
+  await env.DB.prepare('UPDATE users SET podium_seen = ?2 WHERE id = ?1').bind(user.id, day).run();
+  return json({ ok: true, day }, 200, { 'Cache-Control': 'no-store' });
 }
 
 /** After an account is deleted, the board should not wait out its cache to forget it. */

@@ -50,7 +50,7 @@ export async function connect(port = 9333) {
   // So anything that asks one of the dev handles something first waits —
   // up to half a minute — for the handles it names to exist and the game to
   // have a scene running.
-  const HANDLES = /window\.(game|config|gear|orbs|bones|passives|gold|ranking|personal|account|cloudSave|liveUpdate|itemFilter|tuning|gearBonusFor|orbApplied|critMultiplierFor)\b/g;
+  const HANDLES = /window\.(game|config|gear|orbs|bones|passives|gold|ranking|personal|account|cloudSave|podium|liveUpdate|itemFilter|tuning|gearBonusFor|orbApplied|critMultiplierFor)\b/g;
   const ready = async (names) => {
     const want = [...new Set(names)].map((n) => `window.${n}`).join(' && ');
     const expression = `!!(${want} && window.game && window.game.scene && window.game.scene.getScenes(true).length > 0)`;

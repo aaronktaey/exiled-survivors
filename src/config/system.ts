@@ -43,6 +43,7 @@ export const SCENES = {
   conflict: "ConflictScene",
   filter: "FilterScene",
   tuning: "TuningScene",
+  podium: "PodiumScene",
 } as const;
 
 /** Keys the browser keeps our state under. Bump the suffix to invalidate. */
@@ -69,6 +70,8 @@ export const STORAGE = {
   itemFilter: "exiled-survivors:item-filter:v1",
   /** Which account this browser's records were last synced with, and when. */
   sync: "exiled-survivors:sync:v1",
+  /** The board's day 어제의 랭킹 was last seen on, on this device. */
+  podiumSeen: "exiled-survivors:podium-seen:v1",
   /**
    * A run waiting to be put on the ranking across a sign-in (sessionStorage:
    * it only has to outlive the trip to the provider and back).
@@ -105,6 +108,14 @@ export const RANKING = {
     enabled: true as boolean,
     /** Same origin as the game, so it needs no CORS and no second domain. */
     url: '/api/ranking',
+    /** 어제의 랭킹: the day before's first three (and `/seen` to say it was shown). */
+    podiumUrl: '/api/ranking/podium',
+    /**
+     * The first board day 어제의 랭킹 shows (rankingDayStart, 10/18 KST): the
+     * days before it were decided by hand afterwards (JSM's 10/17 cups) and
+     * the board's order there no longer says who placed where.
+     */
+    podiumSince: 1792267200000,
     /** A request that takes longer than this is given up on. */
     timeoutMs: 6000,
     /** Above this a damage figure is not believed, and is not shown. */
@@ -187,6 +198,9 @@ export const ACCOUNT = {
     "exiled-survivors:ranking:v1",
     "exiled-survivors:sync:v1",
     "exiled-survivors:tuning-draft:v1",
+    // Written by every device each morning: synced, it would set them at odds.
+    // The account keeps its own (users.podium_seen).
+    "exiled-survivors:podium-seen:v1",
   ] as readonly string[],
 } as const;
 

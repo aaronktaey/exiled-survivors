@@ -22,6 +22,7 @@ import { orbs } from '@/systems/Orbs';
 import { passives } from '@/systems/Passives';
 import { itemFilter } from '@/systems/ItemFilter';
 import { tuning } from '@/systems/Tuning';
+import { podium } from '@/systems/Podium';
 import { currentCanvasSize, fitStage } from '@/systems/Viewport';
 import {
   AccountScene,
@@ -46,6 +47,7 @@ import {
   RankingScene,
   RankEntryScene,
   SkillPickScene,
+  PodiumScene,
 } from '@/scenes';
 
 // Language first: every scene reads its text as it is built.
@@ -103,6 +105,7 @@ const config: Phaser.Types.Core.GameConfig = {
     ConflictScene,
     FilterScene,
     TuningScene,
+    PodiumScene,
   ],
 };
 
@@ -142,6 +145,7 @@ if (import.meta.env.DEV) {
     tuning?: typeof tuning;
     account?: typeof account;
     cloudSave?: typeof cloudSave;
+    podium?: typeof podium;
   };
   dev.game = game;
   // So a test can read a tuned number instead of carrying a copy of it.
@@ -161,4 +165,5 @@ if (import.meta.env.DEV) {
   dev.tuning = tuning;
   dev.account = account;
   dev.cloudSave = cloudSave;
+  dev.podium = podium;
 }

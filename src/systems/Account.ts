@@ -19,6 +19,8 @@ export interface AccountUser {
   readonly rank: { readonly name: string; readonly emoji: string; readonly flag: string };
   /** The server lets this account open the developer tools (F1). */
   readonly admin?: boolean;
+  /** The board's day it last saw 어제의 랭킹 on, on any device (0: never). */
+  readonly podiumSeen?: number;
 }
 
 export type LoginOutcome = 'ok' | 'error' | 'cancelled';
