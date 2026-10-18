@@ -276,7 +276,11 @@ const plate = await run(`
 
   const full = { text: boss.plate.text, plate: boss.plate.visible, bar: boss.healthBar.visible,
                  above: boss.plate.y < boss.y, hp: boss.hp, max: boss.maxHp };
+  // No crit: one would double the hit and finish it off.
+  const crit = window.config.PLAYER.critChance;
+  window.config.PLAYER.critChance = 0;
   s.combat.hit(boss, Math.floor(boss.maxHp * 0.6));
+  window.config.PLAYER.critChance = crit;
   boss.update(0, 16);
   const hurt = { text: boss.plate.text, hp: boss.hp, max: boss.maxHp };
 
@@ -384,6 +388,55 @@ const wholeHp = await run(`
 `);
 check('the 우두머리’s health count shows no decimal point', /\d+\/\d+$/.test(wholeHp.text) && !/\./.test(wholeHp.text),
   wholeHp.text);
+
+// --- 타격 reaches what is drawn: a 우두머리's picture is far wider than its
+// body, and a swing that visibly cut into it used to miss until its middle
+// was in reach. Now any of it inside the arc is hit, and nothing beyond. ---
+const reach = await run(`
+  s.choosing = true;
+  s.spawner.clear();
+  const p = s.player;
+  const w = s.weapons.find((x) => x.definition.id === 'meleeStrike');
+  const range = s.progression.rangeFor('meleeStrike');
+  const ctx = { origin: p, enemies: s.spawner.group, damage: 10, cooldownMs: 0, range,
+    projectileSpeed: 0, orbitSpeed: 0, chainCount: 0, pierceCount: 0, orbCount: 0,
+    hit: s.combat.hit, enemyShots: s.combat.enemyShots, mastered: false };
+  const crit = window.config.PLAYER.critChance;
+  window.config.PLAYER.critChance = 0;
+  // One enemy of a kind at a distance straight to the right; is it hit by one swing?
+  const swingAt = (kind, centre) => {
+    s.spawner.clear();
+    const e = kind === 'boss' ? s.spawner.spawnBoss() : s.spawner.group.get(0, 0);
+    if (kind !== 'boss') e.spawn(0, 0, p, kind);
+    e.setPosition(p.x + centre, p.y);
+    e.body.reset(e.x, e.y);
+    e.body.stop();
+    e.target = undefined;
+    e.hp = e.maxHp = 1e9;
+    const before = e.hp;
+    w.sinceSwingMs = 1e9;
+    w.update(16, ctx);
+    return before - e.hp > 0;
+  };
+  const boss = window.config.ENEMY_KINDS.boss, grunt = window.config.ENEMY_KINDS.grunt;
+  const bossR = (boss.giant?.drawn ?? boss.size) / 2, gruntR = grunt.size / 2;
+  const out = {
+    range, bossR, gruntR,
+    bossEdgeIn: swingAt('boss', range + bossR * 0.8),
+    bossOut: swingAt('boss', range + bossR + 8),
+    gruntEdgeIn: swingAt('grunt', range + gruntR - 2),
+    gruntOut: swingAt('grunt', range + gruntR + 6),
+  };
+  window.config.PLAYER.critChance = crit;
+  s.spawner.clear();
+  s.choosing = false;
+  return out;
+`);
+console.log('melee reach:', JSON.stringify(reach));
+check('타격 hits a 우두머리 as soon as the swing reaches its picture, not only its middle',
+  reach.bossEdgeIn === true && reach.bossR > 0, JSON.stringify(reach));
+check('and nothing past the edge of what is drawn, 우두머리 or not',
+  reach.bossOut === false && reach.gruntOut === false && reach.gruntEdgeIn === true, JSON.stringify(reach));
 
 console.log('\n=== SUMMARY ===');
 const failed = results.filter((r) => !r.p);

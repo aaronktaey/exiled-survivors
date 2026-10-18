@@ -226,6 +226,8 @@ export interface Strings {
     readonly title: string;
     /** The weapon in hand, above the list. */
     readonly wearing: string;
+    /** Beside 착용 중 while a saved run went out with another weapon: {name}. */
+    readonly savedRunGear: string;
     readonly equipped: string;
     readonly equip: string;
     /** The button that throws one away, and what it says once it is armed. */

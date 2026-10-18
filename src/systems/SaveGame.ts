@@ -1,4 +1,5 @@
 import { STORAGE, type BoneId } from '@/config';
+import { gearTitle } from '@/i18n';
 import type { SkillStats } from '@/systems/Progression';
 import type { SkillId } from '@/weapons/skills';
 import type { GearItem } from '@/systems/Gear';
@@ -79,11 +80,15 @@ export const saveGame = {
     }
   },
 
-  /** "Lv 7 · 04:12" for the 불러오기 row. */
+  /**
+   * "Lv 7 · 04:12 · 강철 검" for the 불러오기 row and the ask before a new run:
+   * the weapon is the one the run goes on with, whatever is in hand now.
+   */
   describe(run: SavedRun): string {
     const total = Math.floor(run.elapsedMs / 1000);
     const mm = String(Math.floor(total / 60)).padStart(2, '0');
     const ss = String(total % 60).padStart(2, '0');
-    return `Lv ${run.level} · ${mm}:${ss}`;
+    const weapon = run.gear && typeof run.gear.id === 'string' ? ` · ${gearTitle(run.gear)}` : '';
+    return `Lv ${run.level} · ${mm}:${ss}${weapon}`;
   },
 };

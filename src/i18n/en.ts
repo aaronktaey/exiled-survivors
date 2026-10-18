@@ -156,6 +156,7 @@ export const en: Strings = {
   gear: {
     title: 'Equipment',
     wearing: 'Carrying',
+    savedRunGear: 'The saved run goes on with its own weapon: {name}',
     equipped: 'carried',
     equip: 'Carry',
     discard: 'Sell',

@@ -4,7 +4,23 @@ import { COLORS, DEPTH, MELEE } from '@/config';
 import type { Enemy } from '@/entities/Enemy';
 import { sfx } from '@/systems/Sfx';
 import { SKILLS } from '@/weapons/skills';
-import { findNearest, type Weapon, type WeaponContext } from '@/weapons/Weapon';
+import type { Weapon, WeaponContext } from '@/weapons/Weapon';
+
+/**
+ * How far the swing has to reach to touch an enemy as it is drawn, and how
+ * much wider than the arc its middle may sit while some of it is still
+ * inside. Reach is measured to the edge of what is seen, not to the middle:
+ * a 우두머리 is drawn far wider than its body, and a swing that visibly cut
+ * into it used to miss until its middle was in reach.
+ */
+function reachTo(enemy: Enemy, x: number, y: number): { readonly gap: number; readonly slack: number } {
+  const radius = enemy.shownRadius;
+  const distance = Phaser.Math.Distance.Between(x, y, enemy.x, enemy.y);
+  return {
+    gap: distance - radius,
+    slack: distance > radius ? Math.asin(radius / distance) : Math.PI,
+  };
+}
 
 /**
  * The starting attack: swings at the nearest enemy in reach, hitting
@@ -30,7 +46,7 @@ export class MeleeStrike implements Weapon {
       return;
     }
 
-    const target = findNearest(context.origin, context.enemies, context.range);
+    const target = this.nearestInReach(context);
     if (!target) {
       // Hold the charge so the first enemy to step into reach is hit at once.
       this.sinceSwingMs = context.cooldownMs;
@@ -39,6 +55,24 @@ export class MeleeStrike implements Weapon {
 
     this.sinceSwingMs = 0;
     this.swing(context, target);
+  }
+
+  /** The enemy whose drawn edge is nearest, if any edge is within reach. */
+  private nearestInReach(context: WeaponContext): Enemy | undefined {
+    let best: Enemy | undefined;
+    let bestGap = context.range;
+    for (const child of context.enemies.getChildren()) {
+      const enemy = child as Enemy;
+      if (!enemy.active) {
+        continue;
+      }
+      const { gap } = reachTo(enemy, context.origin.x, context.origin.y);
+      if (gap <= bestGap) {
+        bestGap = gap;
+        best = enemy;
+      }
+    }
+    return best;
   }
 
   private swing(context: WeaponContext, target: Phaser.GameObjects.Components.Transform): void {
@@ -56,13 +90,15 @@ export class MeleeStrike implements Weapon {
         continue;
       }
 
-      const distance = Phaser.Math.Distance.Between(origin.x, origin.y, enemy.x, enemy.y);
-      if (distance > range) {
+      // Any of it inside the arc counts: its edge within reach, and its
+      // middle no further outside the arc than its own width allows.
+      const { gap, slack } = reachTo(enemy, origin.x, origin.y);
+      if (gap > range) {
         continue;
       }
 
       const toEnemy = Math.atan2(enemy.y - origin.y, enemy.x - origin.x);
-      if (Math.abs(Phaser.Math.Angle.Wrap(toEnemy - angle)) > halfArc) {
+      if (Math.abs(Phaser.Math.Angle.Wrap(toEnemy - angle)) > halfArc + slack) {
         continue;
       }
 

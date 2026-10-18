@@ -52,6 +52,7 @@ import { orbs } from '@/systems/Orbs';
 import { prefersTouchControls } from '@/systems/VirtualJoystick';
 import { addBackButton, type BackButton } from '@/systems/BackButton';
 import { effectVolume } from '@/systems/Sfx';
+import { saveGame } from '@/systems/SaveGame';
 
 export type InventoryTab = 'gear' | 'consumables';
 
@@ -77,6 +78,11 @@ export interface InventorySceneData {
   /** What the last 구슬 did, shown until the cursor moves off the weapon. */
   readonly note?: string;
 }
+
+/** The same weapon: the same base with the same lines, wherever the copy came from. */
+const sameGear = (a: GearItem | null, b: GearItem | null): boolean =>
+  !!a && !!b && a.id === b.id &&
+  JSON.stringify([a.prefixes, a.suffixes]) === JSON.stringify([b.prefixes, b.suffixes]);
 
 const MARGIN = 16;
 const TITLE_BLOCK = 54;
@@ -583,7 +589,16 @@ export class InventoryScene extends Phaser.Scene {
   }
 
   private refreshWearing(): void {
-    this.wearing.setText(`${t().gear.wearing}  ${gearTitle(gear.equipped)}`);
+    const copy = t().gear;
+    const parts = [`${copy.wearing}  ${gearTitle(gear.equipped)}`];
+    // A saved run keeps the weapon it went out with (SavedRun.gear): when
+    // that is not the one in hand, say so, or a swap looks as if it did nothing.
+    const savedGear = saveGame.read()?.gear;
+    if (savedGear && !sameGear(savedGear, gear.equipped)) {
+      parts.push(fill(copy.savedRunGear, { name: gearTitle(savedGear) }));
+    }
+    this.wearing.setText(parts.join('   ·   ')).setScale(1);
+    fitText(this.wearing, this.scale.width, 8);
   }
 
   // --- 장비: put on, throw away, spend a 구슬 ---

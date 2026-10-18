@@ -156,6 +156,7 @@ export const ja: Strings = {
   gear: {
     title: '装備',
     wearing: '装備中',
+    savedRunGear: '続きからは保存時の武器: {name}',
     equipped: '装備中',
     equip: '装備',
     discard: '売る',

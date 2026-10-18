@@ -204,6 +204,15 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
     return this.spec.size;
   }
 
+  /**
+   * How far from its middle it is drawn: half its side, or half the giant's
+   * picture — wider than the body physics uses. A swing that touches what is
+   * seen is a swing that lands (MeleeStrike).
+   */
+  public get shownRadius(): number {
+    return (this.spec.giant?.drawn ?? this.spec.size) / 2;
+  }
+
   /** XP its gem is worth, from its own stat line and its affixes. */
   public get xpValue(): number {
     return xpFor(this.spec, this.hpScale, this.damageScale);

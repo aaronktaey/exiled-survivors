@@ -156,6 +156,7 @@ export const zh: Strings = {
   gear: {
     title: '装备',
     wearing: '装备中',
+    savedRunGear: '继续存档时使用保存时的武器: {name}',
     equipped: '装备中',
     equip: '装备',
     discard: '出售',

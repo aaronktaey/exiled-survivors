@@ -200,8 +200,13 @@ check('game over offers 다시하기 · 메인화면 · 옵션',
   endRows.labels.join(' / '));
 
 await cdp.tap('Space', 32, ' ');
-await sleep(1200);
-const restarted = await read();
+// Waited for rather than slept on: under a loaded machine the new run can
+// take longer than a fixed second to come up.
+let restarted = await read();
+for (let i = 0; i < 20 && !(restarted.over === false && restarted.level === 1); i++) {
+  await sleep(300);
+  restarted = await read();
+}
 check('다시하기 starts another run',
   restarted.gameOver === false && restarted.over === false && restarted.level === 1 && restarted.hp === MAX,
   `lv=${restarted.level} hp=${restarted.hp} dmg=${restarted.damage}`);

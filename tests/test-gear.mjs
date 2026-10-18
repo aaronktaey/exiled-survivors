@@ -946,13 +946,17 @@ await sleep(1800);
 await openIcon('gear');
 const swapped = await scene('InventoryScene', `
   const before = window.gear.value.equipped;
+  const lineBefore = s.wearing.text;
   s.menu.focus('spare');
   s.menu.items.find(i => i.id === 'spare').onSelect();
-  return { before, after: window.gear.value.equipped };
+  return { before, after: window.gear.value.equipped, lineBefore, lineAfter: s.wearing.text };
 `);
 console.log('swapped:', JSON.stringify(swapped));
 check('with a run in the save slot, the weapon can still be swapped',
   swapped.before === 'wornOut' && swapped.after === 'spare', `${swapped.before} -> ${swapped.after}`);
+check('and once the one in hand is not the saved run’s, the line under the title says the saved run goes on with its own',
+  !/이어하기는 저장 당시 무기/.test(swapped.lineBefore) && /이어하기는 저장 당시 무기/.test(swapped.lineAfter),
+  `${swapped.lineBefore} -> ${swapped.lineAfter}`);
 await shot('gear-11-swapped');
 
 // Load the saved run: it fights with the sword it went out with, not the new one.

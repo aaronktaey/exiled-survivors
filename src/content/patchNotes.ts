@@ -15,6 +15,28 @@ export interface PatchNote {
 
 export const PATCH_NOTES: readonly PatchNote[] = [
   {
+    version: '0.63',
+    date: '2026-10-18',
+    changes: {
+      ko: [
+        '타격이 보이는 대로 맞습니다. 휘두른 범위가 적의 모습에 닿으면 맞으며, 몸집이 큰 우두머리를 중심까지 다가가야만 맞히던 문제가 사라졌습니다.',
+        '저장된 판은 저장할 때의 무기로 이어집니다. 무기를 바꾸면 인벤토리 위쪽에 이어하기에 쓰일 무기가 함께 표시되고, 불러오기 정보에도 그 무기가 나옵니다. 바꾼 무기는 새 게임부터 쓰입니다.',
+      ],
+      en: [
+        'Strike lands the way it looks: a swing that touches an enemy as drawn hits it, so a big Boss no longer has to be reached at its very middle.',
+        'A saved run goes on with the weapon it was saved with. After a swap the inventory says which weapon Continue will use, and the saved run’s line names it too; the new weapon is used from the next new run.',
+      ],
+      ja: [
+        '打撃が見た目どおりに当たります。振った範囲が敵の姿に触れれば当たり、大きなボスに中心まで近づかないと当たらなかった問題がなくなりました。',
+        'セーブした回は保存時の武器で続きます。武器を替えるとインベントリの上部に続きで使われる武器が表示され、ロードの情報にもその武器が出ます。替えた武器は次の新しいゲームから使われます。',
+      ],
+      zh: [
+        '打击按看到的范围命中：挥击碰到敌人的外形即可命中，不再需要贴近体型庞大的首领中心才能打中。',
+        '存档的对局会用保存时的武器继续。更换武器后，物品栏上方会标明继续时使用的武器，读取存档的信息里也会显示；新武器从下一局新游戏开始使用。',
+      ],
+    },
+  },
+  {
     version: '0.62',
     date: '2026-10-18',
     changes: {

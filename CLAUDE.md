@@ -404,7 +404,11 @@ Read `git log` for what changed and when. What is not in the log:
   item the run went out with (`GameScene.runGear`, written by every save);
   a resumed run fights with that, so the 인벤토리 never locks — swapping,
   구슬, 합성 and selling change only runs started afterwards. A save from
-  before this has no `gear` and takes the one in hand.
+  before this has no `gear` and takes the one in hand. It is said on screen
+  (0.63): `saveGame.describe` names the weapon, and the 인벤토리's 착용 중
+  line adds `savedRunGear` while the saved run's weapon is not the one in
+  hand — the user once reported the design itself as a swap that did not
+  take.
 - **What acts on the survivor is on the HUD.** `GameScene.effectsNow()`
   hands `Hud.update` an `EffectEntry` list — 장비 (`runGear`), 패시브, each
   뼈다귀 (built once a run), then 하얀 망고 and 거미줄 while they last — drawn
@@ -528,6 +532,12 @@ Read `git log` for what changed and when. What is not in the log:
   drawn by a camera of its own (`pageCam`) whose viewport is the reading
   window — `setMask` is a no-op under WebGL in Phaser 4, and that is what
   the old guide had been relying on.
+- **타격 reaches what is drawn.** `MeleeStrike` measures reach to the edge
+  of `Enemy.shownRadius` (half the giant's picture, or half its side) and
+  widens the arc by how wide the enemy is, both for picking the target and
+  for what the swing hits — a 우두머리 is drawn at `giant.drawn`, far wider
+  than its body, and swings that visibly cut into it used to miss.
+  Projectiles still meet the physics body.
 - **A thrown skill has no range of its own.** For a skill with a
   `projectileSpeed`, `rangeFromStats` scales its base range by speed against
   base speed — targeting and flight both — so no thrown skill offers 사거리.

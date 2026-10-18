@@ -160,6 +160,7 @@ export const ko: Strings = {
   gear: {
     title: '장비',
     wearing: '착용 중',
+    savedRunGear: '이어하기는 저장 당시 무기: {name}',
     equipped: '착용 중',
     equip: '착용',
     discard: '팔기',
