@@ -395,6 +395,37 @@ export interface Strings {
     readonly mineNone: string;
     /** Said on the title after coming back signed in with a run waiting. */
     readonly enteredAfterLogin: string;
+    /**
+     * 랭킹 검토, the admin's only: which runs look out of line, each run's
+     * 판 내역, and taking one off the board (asked twice).
+     */
+    readonly review: {
+      readonly note: string;
+      readonly title: string;
+      readonly summary: string;
+      readonly outlier: string;
+      readonly normal: string;
+      readonly unknown: string;
+      readonly noDetail: string;
+      readonly version: string;
+      readonly resumed: string;
+      readonly kills: string;
+      readonly bosses: string;
+      readonly bones: string;
+      readonly gear: string;
+      readonly skills: string;
+      readonly passives: string;
+      readonly none: string;
+      readonly tier: string;
+      readonly remove: string;
+      readonly close: string;
+      readonly confirmTitle: string;
+      readonly confirmBody: string;
+      readonly confirm: string;
+      readonly cancel: string;
+      readonly removed: string;
+      readonly failed: string;
+    };
   };
 
   /** 계정 — the sign-in screen, and what it says once signed in. */

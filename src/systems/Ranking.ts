@@ -24,6 +24,33 @@ export interface RankEntry {
   readonly thirds: number;
 }
 
+/**
+ * 판 내역: what a run says about itself when it is handed in — kept by the
+ * server for the admin's review, never shown on the board. The server keeps
+ * only these fields, in these shapes (server/ranking.ts cleanDetail).
+ */
+export interface RunDetail {
+  /** The build it was played on (version.json's `build`), 'dev' locally. */
+  readonly build: string;
+  /** The patch note version it was played on. */
+  readonly version: string;
+  /** Kills by enemy kind; `boss` is the 우두머리. */
+  readonly kills: Readonly<Record<string, number>>;
+  /** The 뼈다귀 the run was started with. */
+  readonly bones: readonly string[];
+  /** The weapon it went out with. */
+  readonly gear: {
+    readonly id: string;
+    readonly prefixes: readonly { readonly id: string; readonly tier: number }[];
+    readonly suffixes: readonly { readonly id: string; readonly tier: number }[];
+  } | null;
+  readonly skills: readonly { readonly id: string; readonly level: number }[];
+  /** 패시브 ranks. */
+  readonly passives: Readonly<Record<string, number>>;
+  /** It was picked up again from a save. */
+  readonly resumed: boolean;
+}
+
 /** What a run hands in to be ranked. */
 export interface RankSubmission {
   readonly name: string;
@@ -34,6 +61,8 @@ export interface RankSubmission {
   readonly survivedMs: number;
   /** The run's main skill. */
   readonly skill?: string;
+  /** What the run says about itself, for the admin's review. */
+  readonly detail?: RunDetail;
 }
 
 /** Where the board on screen came from. */
@@ -262,6 +291,7 @@ class RankingStore {
       level: entry.level,
       survivedMs: entry.survivedMs,
       skill: entry.skill,
+      detail: run.detail,
     });
     return place;
   }

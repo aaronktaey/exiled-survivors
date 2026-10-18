@@ -5,7 +5,7 @@
  * signed in. Session storage, because it only has to outlive that one trip.
  */
 import { STORAGE } from '@/config';
-import type { RankSubmission } from '@/systems/Ranking';
+import type { RankSubmission, RunDetail } from '@/systems/Ranking';
 
 export function keepPendingRank(run: RankSubmission): void {
   try {
@@ -32,6 +32,8 @@ export function takePendingRank(): RankSubmission | null {
       level: Number(run.level) || 1,
       survivedMs: Number(run.survivedMs) || 0,
       skill: String(run.skill ?? ''),
+      // The server keeps only what it recognises of this.
+      detail: run.detail && typeof run.detail === 'object' ? (run.detail as RunDetail) : undefined,
     };
   } catch {
     return null;

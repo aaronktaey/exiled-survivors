@@ -1,11 +1,14 @@
 import Phaser from 'phaser';
 
 import { ACCOUNT, COLORS, DEPTH, RANKING, SCENES, SCRIM, TEXT, nextRankingReset, SKILL_ICONS, TEXTURES } from '@/config';
-import { fill, t } from '@/i18n';
+import { affixName, boneName, enemyName, fill, gearName, passiveName, skillName, t } from '@/i18n';
+import type { AffixId, BoneId, EnemyKind, GearId, PassiveId } from '@/config';
+import type { SkillId } from '@/weapons/skills';
 import { account, accountRequest } from '@/systems/Account';
 import { addBackButton, type BackButton } from '@/systems/BackButton';
+import { devToolsAllowed } from '@/systems/DevAccess';
 import { fitText } from '@/systems/Layout';
-import { flagTexture, rankLabel, ranking, type RankEntry } from '@/systems/Ranking';
+import { flagTexture, rankLabel, ranking, type RankEntry, type RunDetail } from '@/systems/Ranking';
 import { personal } from '@/systems/PersonalBest';
 
 export type RankingTab = 'shared' | 'personal';
@@ -32,6 +35,37 @@ const day = (iso: string): string => {
 
 /** "12,345" — thousands marked, because the damage number gets long. */
 const grouped = (value: number): string => Math.round(value).toLocaleString('en-US');
+
+/** One run on today's board as the admin's review sees it (server/ranking.ts ReviewRow). */
+export interface ReviewRow {
+  readonly entryId: number;
+  readonly name: string;
+  readonly damage: number;
+  readonly level: number;
+  readonly survivedMs: number;
+  readonly at: string;
+  readonly peers: number;
+  readonly reference: number | null;
+  readonly ratio: number | null;
+  readonly outlier: boolean;
+  readonly detail: RunDetail | null;
+}
+
+/** A board row and its review are the same run when they ended at the same moment for the same damage. */
+const reviewKey = (row: { readonly at: string; readonly damage: number }): string => `${row.at}|${row.damage}`;
+
+/** A name from a table, or the id itself when this build does not know it (a newer one handed it in). */
+const named = <T extends string>(id: string, name: (id: T) => string): string => {
+  try {
+    const out = name(id as T);
+    return out && out !== 'undefined' ? out : id;
+  } catch {
+    return id;
+  }
+};
+
+const POPUP_BUTTON_W = 150;
+const POPUP_BUTTON_H = 40;
 
 const TITLE_Y = 34;
 const TAB_W = 150;
@@ -98,6 +132,22 @@ export class RankingScene extends Phaser.Scene {
   /** The account's own best, once it is known. */
   private mine = '';
   private loading = false;
+  /**
+   * 랭킹 검토 — the admin's only (devToolsAllowed): every run on today's
+   * board with its 판 내역 and whether it looks out of line, by reviewKey.
+   * Public so a test can read it.
+   */
+  public review = new Map<string, ReviewRow>();
+  /** The run being read in the popup, and the popup. Public for tests. */
+  public reading: ReviewRow | null = null;
+  public popup?: Phaser.GameObjects.Container;
+  /** The second ask before a run comes off the board. Public for tests. */
+  public confirmBox?: Phaser.GameObjects.Container;
+  /** The popup's body, for a test to read. */
+  public popupText?: Phaser.GameObjects.Text;
+  private reviewing = false;
+  /** What the last removal said, under the board. */
+  private reviewNote = '';
 
   public constructor() {
     super(RankingScene.KEY);
@@ -113,9 +163,17 @@ export class RankingScene extends Phaser.Scene {
     this.resetAt = 0;
     // The scene outlives a launch, and someone else may be signed in now.
     this.mine = '';
+    this.review = new Map();
+    this.reading = null;
+    this.popup = undefined;
+    this.confirmBox = undefined;
+    this.popupText = undefined;
+    this.reviewNote = '';
+    this.reviewing = false;
   }
 
   public create(): void {
+    this.reviewing = devToolsAllowed() && RANKING.shared.enabled;
     this.backButton = addBackButton(this, () => this.close());
     const { width, height } = this.scale;
     const copy = t().ranking;
@@ -177,12 +235,16 @@ export class RankingScene extends Phaser.Scene {
       if (this.scene.isActive()) {
         this.loading = false;
         this.drawNote();
+        void this.loadReview();
       }
     });
     void this.lookUpMine();
 
     const unwatchPersonal = personal.onChange(() => this.drawBoard());
     const flip = (event: KeyboardEvent): void => {
+      if (this.popup) {
+        return;
+      }
       if (['ArrowLeft', 'ArrowRight', 'KeyA', 'KeyD', 'Tab'].includes(event.code)) {
         event.preventDefault?.();
         this.setTab(this.tab === 'shared' ? 'personal' : 'shared');
@@ -302,8 +364,24 @@ export class RankingScene extends Phaser.Scene {
       if (lit) {
         this.board!.add(this.add.rectangle(this.scale.width / 2, y, tableWidth + 12, rowHeight, COLORS.panelActive, 1));
       }
-      // First place in gold; a place just entered in the accent colour.
-      const color = lit ? COLORS.accent : place === 1 ? COLORS.gearText : COLORS.text;
+      // First place in gold; a place just entered in the accent colour; for
+      // the admin, a run the review marks out of line in red.
+      const checked = this.review.get(reviewKey(entry));
+      const color = checked?.outlier
+        ? COLORS.suspectText
+        : lit
+          ? COLORS.accent
+          : place === 1
+            ? COLORS.gearText
+            : COLORS.text;
+      if (checked) {
+        const hit = this.add
+          .rectangle(this.scale.width / 2, y, tableWidth + 12, rowHeight, 0xffffff, 0.001)
+          .setInteractive({ useHandCursor: true })
+          .setName('reviewRow');
+        hit.on(Phaser.Input.Events.GAMEOBJECT_POINTER_DOWN, () => this.openReview(checked));
+        this.board!.add(hit);
+      }
       const placeCell = this.cellText(y, String(place), fontSize, color);
       const name = this.cellText(y, rankLabel(entry), fontSize, color);
       const damage = this.cellText(y, grouped(entry.damage), fontSize, color);
@@ -457,8 +535,217 @@ export class RankingScene extends Phaser.Scene {
         : ranking.source === 'shared'
           ? ''
           : copy.offlineNote;
-    this.note.setText([text, this.mine].filter(Boolean).join('   ·   '));
-    fitText(this.note, this.scale.width - 16);
+    const review = this.reviewing && this.review.size > 0
+      ? fill(copy.review.note, { n: [...this.review.values()].filter((row) => row.outlier).length })
+      : '';
+    this.note.setText([text, this.mine, review, this.reviewNote].filter(Boolean).join('   ·   '));
+    fitText(this.note.setScale(1), this.scale.width - 16);
+  }
+
+  /** The admin's review of today's board, read once the board is in. Public so a test can ask again. */
+  public async loadReview(): Promise<void> {
+    if (!this.reviewing) {
+      return;
+    }
+    const reply = await accountRequest('/api/ranking/review', { cache: 'no-store' });
+    const rows = (reply.body as { rows?: ReviewRow[] } | null)?.rows;
+    if (!reply.ok || !Array.isArray(rows) || !this.scene.isActive()) {
+      return;
+    }
+    this.review = new Map(rows.map((row) => [reviewKey(row), row]));
+    this.drawBoard();
+    this.drawNote();
+  }
+
+  /** The 판 내역 of one run, read out, with the way to take it off the board. Public so a test can open it. */
+  public openReview(row: ReviewRow): void {
+    this.closeReview();
+    this.reading = row;
+    const { width, height } = this.scale;
+    const copy = t().ranking.review;
+    const panelW = Math.min(560, width - 24);
+    const panelH = Math.min(height - 32, 470);
+    const top = (height - panelH) / 2;
+    const layer = this.add.container(0, 0).setDepth(DEPTH.ui + 10);
+    const dim = this.add.rectangle(0, 0, width, height, 0x05070b, 0.75).setOrigin(0, 0).setInteractive();
+    const panel = this.add
+      .rectangle(width / 2, height / 2, panelW, panelH, COLORS.panel, 1)
+      .setStrokeStyle(2, row.outlier ? 0xff6b6b : COLORS.gear, 1);
+    const title = this.add
+      .text(width / 2, top + 24, fill(copy.title, { name: row.name || '???' }), {
+        fontFamily: 'system-ui, sans-serif',
+        fontSize: TEXT.size.label,
+        color: row.outlier ? COLORS.suspectText : COLORS.gearText,
+      })
+      .setOrigin(0.5);
+    fitText(title, panelW - 16, 0);
+    const room = panelH - 48 - POPUP_BUTTON_H - 36;
+    const body = this.add
+      .text(width / 2 - panelW / 2 + 20, top + 48, this.describe(row).join('\n'), {
+        fontFamily: 'system-ui, sans-serif',
+        fontSize: TEXT.size.small,
+        color: COLORS.text,
+        lineSpacing: 5,
+        wordWrap: { width: panelW - 40 },
+      })
+      .setOrigin(0, 0);
+    // A run with a lot in it is drawn smaller rather than run off the panel.
+    if (body.height > room) {
+      body.setScale(room / body.height);
+    }
+    this.popupText = body;
+    const buttonsY = top + panelH - 18 - POPUP_BUTTON_H / 2;
+    const w = Math.min(POPUP_BUTTON_W, (panelW - 48) / 2);
+    const remove = this.popupButton(width / 2 - w / 2 - 8, buttonsY, w, copy.remove, () => this.askRemove());
+    remove.plate.setStrokeStyle(2, 0xff6b6b, 1);
+    const close = this.popupButton(width / 2 + w / 2 + 8, buttonsY, w, copy.close, () => this.closeReview());
+    layer.add([dim, panel, title, body, remove.plate, remove.label, close.plate, close.label]);
+    this.popup = layer;
+  }
+
+  /** The popup's lines: the run, how it stands against others, then what it said about itself. */
+  private describe(row: ReviewRow): string[] {
+    const copy = t().ranking.review;
+    const rule = RANKING.review;
+    const out = [fill(copy.summary, { damage: grouped(row.damage), time: clock(row.survivedMs), level: row.level })];
+    const window = Math.round(rule.timeWindow * 100);
+    out.push(
+      row.reference === null || row.ratio === null
+        ? fill(copy.unknown, { n: row.peers, min: rule.minPeers })
+        : fill(row.outlier ? copy.outlier : copy.normal, {
+            n: row.peers,
+            median: grouped(row.reference),
+            ratio: row.ratio >= 100 ? Math.round(row.ratio) : row.ratio.toFixed(1),
+            window,
+          }),
+    );
+    out.push('');
+    const d = row.detail;
+    if (!d) {
+      out.push(copy.noDetail);
+      return out;
+    }
+    const list = (items: string[]): string => (items.length > 0 ? items.join(', ') : copy.none);
+    out.push(fill(copy.version, { version: d.version || '?', build: d.build || '?' }) + (d.resumed ? ` · ${copy.resumed}` : ''));
+    const kills = Object.entries(d.kills ?? {}).sort((a, b) => b[1] - a[1]);
+    const total = kills.reduce((sum, [, n]) => sum + n, 0);
+    out.push(fill(copy.kills, { total: grouped(total), list: list(kills.map(([kind, n]) => `${named<EnemyKind>(kind, enemyName)} ${grouped(n)}`)) }));
+    out.push(fill(copy.bosses, { n: grouped(d.kills?.boss ?? 0) }));
+    out.push(fill(copy.bones, { list: list((d.bones ?? []).map((id) => named<BoneId>(id, boneName))) }));
+    const gear = d.gear;
+    out.push(
+      gear
+        ? fill(copy.gear, {
+            name: named<GearId>(gear.id, gearName),
+            lines: list([...gear.prefixes, ...gear.suffixes].map((line) => fill(copy.tier, { name: named<AffixId>(line.id, affixName), tier: line.tier }))),
+          })
+        : fill(copy.gear, { name: copy.none, lines: copy.none }),
+    );
+    out.push(fill(copy.skills, { list: list((d.skills ?? []).map((skill) => `${named<SkillId>(skill.id, skillName)} Lv ${skill.level}`)) }));
+    out.push(fill(copy.passives, {
+      list: list(Object.entries(d.passives ?? {}).filter(([, n]) => n > 0).map(([id, n]) => `${named<PassiveId>(id, passiveName)} ${n}`)),
+    }));
+    return out;
+  }
+
+  /** The second ask: nothing comes off the board until its own button is pressed. Public so a test can. */
+  public askRemove(): void {
+    const row = this.reading;
+    if (!row || this.confirmBox) {
+      return;
+    }
+    const { width, height } = this.scale;
+    const copy = t().ranking.review;
+    const panelW = Math.min(440, width - 32);
+    const panelH = 230;
+    const layer = this.add.container(0, 0).setDepth(DEPTH.ui + 20);
+    const dim = this.add.rectangle(0, 0, width, height, 0x05070b, 0.6).setOrigin(0, 0).setInteractive();
+    const panel = this.add
+      .rectangle(width / 2, height / 2, panelW, panelH, COLORS.panel, 1)
+      .setStrokeStyle(2, 0xff6b6b, 1);
+    const title = this.add
+      .text(width / 2, height / 2 - 78, copy.confirmTitle, {
+        fontFamily: 'system-ui, sans-serif',
+        fontSize: TEXT.size.label,
+        color: COLORS.suspectText,
+      })
+      .setOrigin(0.5);
+    fitText(title, panelW - 16, 0);
+    const body = this.add
+      .text(width / 2, height / 2 - 18, fill(copy.confirmBody, { name: row.name || '???', damage: grouped(row.damage) }), {
+        fontFamily: 'system-ui, sans-serif',
+        fontSize: TEXT.size.small,
+        color: COLORS.text,
+        align: 'center',
+        wordWrap: { width: panelW - 40 },
+      })
+      .setOrigin(0.5);
+    const w = Math.min(POPUP_BUTTON_W, (panelW - 48) / 2);
+    const yes = this.popupButton(width / 2 - w / 2 - 8, height / 2 + 72, w, copy.confirm, () => void this.confirmRemove());
+    yes.plate.setStrokeStyle(2, 0xff6b6b, 1);
+    const no = this.popupButton(width / 2 + w / 2 + 8, height / 2 + 72, w, copy.cancel, () => this.cancelRemove());
+    layer.add([dim, panel, title, body, yes.plate, yes.label, no.plate, no.label]);
+    this.confirmBox = layer;
+  }
+
+  /** Backs out of the second ask, the run left where it is. Public so a test can. */
+  public cancelRemove(): void {
+    this.confirmBox?.destroy();
+    this.confirmBox = undefined;
+  }
+
+  /** Takes the run being read off the board, then shows the board as it now stands. Public so a test can. */
+  public async confirmRemove(): Promise<void> {
+    const row = this.reading;
+    if (!row || !this.confirmBox) {
+      return;
+    }
+    const copy = t().ranking.review;
+    const reply = await accountRequest('/api/ranking/remove', {
+      method: 'POST',
+      cache: 'no-store',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ entryId: row.entryId }),
+    });
+    if (!this.scene.isActive()) {
+      return;
+    }
+    this.cancelRemove();
+    this.closeReview();
+    this.reviewNote = reply.ok ? fill(copy.removed, { name: row.name || '???' }) : copy.failed;
+    this.drawNote();
+    if (reply.ok) {
+      await ranking.refresh();
+      await this.loadReview();
+    }
+  }
+
+  /** Closes the 판 내역 popup (and the ask over it, if any). Public so a test can. */
+  public closeReview(): void {
+    this.cancelRemove();
+    this.popup?.destroy();
+    this.popup = undefined;
+    this.popupText = undefined;
+    this.reading = null;
+  }
+
+  private popupButton(
+    x: number,
+    y: number,
+    w: number,
+    label: string,
+    onPress: () => void,
+  ): { plate: Phaser.GameObjects.Rectangle; label: Phaser.GameObjects.Text } {
+    const plate = this.add
+      .rectangle(x, y, w, POPUP_BUTTON_H, COLORS.panel, 1)
+      .setStrokeStyle(2, COLORS.panelEdge, 1)
+      .setInteractive({ useHandCursor: true });
+    const text = this.add
+      .text(x, y, label, { fontFamily: 'system-ui, sans-serif', fontSize: TEXT.size.body, color: COLORS.text })
+      .setOrigin(0.5);
+    fitText(text, w - 12, 0);
+    plate.on(Phaser.Input.Events.GAMEOBJECT_POINTER_DOWN, onPress);
+    return { plate, label: text };
   }
 
   /** The signed-in account's own best, beside the note: where it stands, on the board or off it. */
@@ -479,6 +766,15 @@ export class RankingScene extends Phaser.Scene {
   }
 
   private close(): void {
+    // Esc and the back button take the topmost popup first.
+    if (this.confirmBox) {
+      this.cancelRemove();
+      return;
+    }
+    if (this.popup) {
+      this.closeReview();
+      return;
+    }
     const { onClose } = this.payload;
     this.scene.stop();
     onClose();

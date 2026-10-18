@@ -102,6 +102,9 @@ import {
 import { bones } from '@/systems/Bones';
 import { orbs } from '@/systems/Orbs';
 import { passives } from '@/systems/Passives';
+import { liveUpdate } from '@/systems/LiveUpdate';
+import type { RunDetail } from '@/systems/Ranking';
+import { PATCH_NOTES } from '@/content/patchNotes';
 import { settings } from '@/systems/Settings';
 import { TiltInput, requestTiltPermission, tiltAvailable } from '@/systems/TiltInput';
 import {
@@ -1453,6 +1456,7 @@ export class GameScene extends Phaser.Scene {
       survivedMs: this.elapsedMs,
       devRun: this.devRun,
       mainSkill: this.mainSkill ?? undefined,
+      detail: this.runDetail(),
       // Explicitly fresh. A restart with no data of its own keeps whatever
       // the scene was last started with, and after 불러오기 that is the
       // loaded run — which would quietly put a death back where it resumed.
@@ -1460,6 +1464,26 @@ export class GameScene extends Phaser.Scene {
     };
     this.scene.bringToTop(GameOverScene.KEY);
     this.scene.launch(GameOverScene.KEY, data);
+  }
+
+  /**
+   * 판 내역: what the run hands the ranking about itself — build, version,
+   * kills by kind, 뼈다귀, weapon, skills, 패시브, and whether it came back
+   * from a save — for the admin to read when a run looks out of line.
+   */
+  private runDetail(): RunDetail {
+    const gear = this.runGear;
+    const lines = (list: readonly { id: string; tier: number }[]) => list.map(({ id, tier }) => ({ id, tier }));
+    return {
+      build: liveUpdate.current,
+      version: PATCH_NOTES[0]?.version ?? '',
+      kills: this.stats.killsByKind as Record<string, number>,
+      bones: [...this.bones],
+      gear: gear ? { id: gear.id, prefixes: lines(gear.prefixes), suffixes: lines(gear.suffixes) } : null,
+      skills: this.loadout().map((line) => ({ id: line.id, level: line.level })),
+      passives: { ...passives.value.ranks } as Record<string, number>,
+      resumed: this.resuming !== null,
+    };
   }
 
   /** Title card that clears itself once the player gets going. */

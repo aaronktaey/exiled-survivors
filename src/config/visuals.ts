@@ -88,6 +88,8 @@ export const COLORS = {
   healText: '#7ef0b0',
   /** A 치명 hit of the survivor's own, so it reads apart from an ordinary one. */
   critText: '#ffb347',
+  /** A run on the board the admin's review marks out of line. */
+  suspectText: '#ff6b6b',
 } as const;
 
 export const DEPTH = {

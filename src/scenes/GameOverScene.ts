@@ -10,6 +10,7 @@ import type { RunSummary } from '@/systems/RunStats';
 import type { RankEntryData } from '@/scenes/RankEntryScene';
 import { prefersTouchControls } from '@/systems/VirtualJoystick';
 import { addBackButton, type BackButton } from '@/systems/BackButton';
+import type { RunDetail } from '@/systems/Ranking';
 
 export interface GameOverData {
   /** What the run amounted to, read out as a table. */
@@ -20,6 +21,8 @@ export interface GameOverData {
   readonly devRun?: boolean;
   /** The run's main skill, shown beside it on the board. */
   readonly mainSkill?: string;
+  /** 판 내역, handed in with the run for the admin's review. */
+  readonly detail?: RunDetail;
   /** Starts another run, with the 뼈다귀 picked for it. */
   readonly onRestart: (applied: readonly BoneId[]) => void;
 }
@@ -159,7 +162,7 @@ export class GameOverScene extends Phaser.Scene {
 
     const { summary, level, survivedMs } = this.payload;
     const data: RankEntryData = {
-      run: { damage: summary.damage, level, survivedMs, skill: this.payload.mainSkill ?? '' },
+      run: { damage: summary.damage, level, survivedMs, skill: this.payload.mainSkill ?? '', detail: this.payload.detail },
       onDone: (place) => {
         this.scene.resume();
         if (place > 0) {

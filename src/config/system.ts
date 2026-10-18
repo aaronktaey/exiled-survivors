@@ -122,6 +122,15 @@ export const RANKING = {
    */
   dailyReset: { hour: 5, utcOffsetHours: 9 },
   /**
+   * 이상치 검토, for the admin on the 랭킹 screen. Every run still goes on the
+   * board at once; one is marked an outlier when its damage is at least
+   * `factor` times the median of other accounts' runs whose length is within
+   * `timeWindow` of its own (±25%), over the last `lookbackDays`. With fewer
+   * than `minPeers` such runs there is nothing to compare it with, and it is
+   * not marked. The Worker and the screen read the same numbers.
+   */
+  review: { factor: 10, timeWindow: 0.25, minPeers: 3, lookbackDays: 14 },
+  /**
    * Whether the end of a run that made the board asks for a name at once.
    * The test harness turns it off so the end screen is what it expects;
    * test-ranking turns it back on.

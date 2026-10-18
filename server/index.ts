@@ -4,7 +4,7 @@
  * `assets` directory for free — so only /api requests run it and count
  * toward the request quota.
  *
- *   /api/ranking, /api/ranking/me   ranking.ts
+ *   /api/ranking, /api/ranking/me   ranking.ts (and the admin's /review, /remove)
  *   /api/auth/*, /api/me            auth.ts
  *   /api/save                       save.ts
  *   /api/balance                    tuning.ts
@@ -12,7 +12,7 @@
 import { callback, deleteMe, facebookDeletion, logout, me, start } from './auth';
 import type { Env } from './env';
 import { json } from './http';
-import { board, forgetBoard, mine, submit } from './ranking';
+import { board, forgetBoard, mine, removeEntry, review, submit } from './ranking';
 import { getSave, putSave } from './save';
 import { getTuning, putTuning } from './tuning';
 
@@ -33,6 +33,12 @@ export default {
     }
     if (pathname === '/api/ranking/me' && method === 'GET') {
       return mine(request, env);
+    }
+    if (pathname === '/api/ranking/review' && method === 'GET') {
+      return review(request, env);
+    }
+    if (pathname === '/api/ranking/remove' && method === 'POST') {
+      return removeEntry(request, env);
     }
 
     const auth = AUTH_ROUTE.exec(pathname);

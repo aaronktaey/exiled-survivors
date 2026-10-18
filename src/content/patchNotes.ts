@@ -15,6 +15,28 @@ export interface PatchNote {
 
 export const PATCH_NOTES: readonly PatchNote[] = [
   {
+    version: '0.62',
+    date: '2026-10-18',
+    changes: {
+      ko: [
+        '랭킹에 올리는 기록에 그 판의 내역(게임 버전, 적 종류별 처치 수, 뼈다귀, 장비, 스킬, 패시브)이 함께 저장됩니다. 다른 플레이어에게는 보이지 않으며, 비정상적인 기록을 가려내는 데만 쓰입니다.',
+        '비슷한 시간 동안 버틴 다른 기록들과 크게 차이 나는 기록은 운영자가 확인한 뒤 랭킹에서 지울 수 있습니다.',
+      ],
+      en: [
+        'A run put on the ranking now carries its detail (game version, kills by enemy kind, bones, weapon, skills, passives). It is never shown to other players and is used only to spot records that are out of line.',
+        'A run far out of line with other runs of a like length can be checked and taken off the ranking by the operator.',
+      ],
+      ja: [
+        'ランキングに登録する記録に、その回の内容（ゲームのバージョン、敵の種類ごとの撃破数、骨、装備、スキル、パッシブ）が一緒に保存されます。他のプレイヤーには表示されず、異常な記録を見分けるためだけに使われます。',
+        '近い時間を生き延びた他の記録と大きくかけ離れた記録は、運営が確認したうえでランキングから削除できます。',
+      ],
+      zh: [
+        '登上排行榜的记录会一并保存该局的详情（游戏版本、各类敌人的击杀数、骨头、装备、技能、被动）。其他玩家看不到，仅用于甄别异常记录。',
+        '与相近时长的其他记录相差悬殊的记录，运营者确认后可从排行榜删除。',
+      ],
+    },
+  },
+  {
     version: '0.61',
     date: '2026-10-18',
     changes: {

@@ -1,6 +1,7 @@
 // The game's Worker (server/), run locally by wrangler against an empty
 // database of its own: signing in (through the local-only test provider),
-// the ranking, the cloud save, signing out and deleting an account, and that
+// the ranking (and the admin's review of it), the cloud save, signing out
+// and deleting an account, and that
 // the built game is served beside the API.
 //
 // It needs no browser. It builds the game first if there is no build to
@@ -30,6 +31,12 @@ if (!existsSync(join(ROOT, 'dist', 'index.html'))) {
 const state = mkdtempSync(join(tmpdir(), 'es-api-'));
 const env = { ...process.env, CI: '1' };
 execSync(`npx wrangler d1 migrations apply DB --local --persist-to "${state}"`, { cwd: ROOT, env, stdio: 'ignore' });
+// Runs from yesterday by another account, all about ten minutes long, for
+// the review to compare today's runs with.
+const yesterday = Date.now() - 86_400_000;
+const peers = [[90000, 560000], [100000, 580000], [110000, 620000], [120000, 640000]]
+  .map(([damage, ms], i) => `('PEE', '', 'KR', ${damage}, 12, ${ms}, '${new Date(yesterday + i).toISOString()}', ${yesterday + i}, 'h', 'peer-user')`)
+  .join(', ');
 // One account named in ADMIN_USERS, signed in to through the test provider as "boss".
 execSync(
   `npx wrangler d1 execute DB --local --persist-to "${state}" --command "` +
@@ -42,7 +49,8 @@ execSync(
     `INSERT INTO users (id, created_at, display_name, rank_name) VALUES ('silver-user', 0, 'silver', 'SIL'), ('bronze-user', 0, 'bronze', 'BRO'); ` +
     `INSERT INTO identities (provider, subject, user_id) VALUES ('test', 'silver', 'silver-user'), ('test', 'bronze', 'bronze-user'); ` +
     `INSERT INTO daily_best (day, user_id, entry_id, damage, level, survived_ms, at) VALUES ` +
-    `(0, 'silver-user', 0, 999999, 50, 3600000, '1970-01-01T00:00:00.000Z'), (0, 'bronze-user', 0, 9999, 50, 3600000, '1970-01-01T00:00:00.000Z')"`,
+    `(0, 'silver-user', 0, 999999, 50, 3600000, '1970-01-01T00:00:00.000Z'), (0, 'bronze-user', 0, 9999, 50, 3600000, '1970-01-01T00:00:00.000Z'); ` +
+    `INSERT INTO entries (name, emoji, flag, damage, level, survived_ms, at, at_ms, ip_hash, user_id) VALUES ${peers}"`,
   { cwd: ROOT, env, stdio: 'ignore' },
 );
 const worker = spawn(
@@ -223,6 +231,50 @@ try {
     silverBest.body?.seconds === 1 && silverBest.body?.wins === 0 && silverBest.body?.thirds === 0 &&
       bronzeBest.body?.thirds === 1 && bronzeBest.body?.seconds === 0 && bossBest.body?.seconds === 0,
     JSON.stringify({ silver: silverBest.body, bronze: bronzeBest.body }));
+  // --- 랭킹 검토: 판 내역 kept, outliers marked for the admin, runs taken off with a fall-back ---
+  const cheat = browser();
+  await cheat.signIn('cheat');
+  const detail = {
+    build: 'abc123', version: '0.62', kills: { grunt: 1200, boss: 3, 'not a kind': 5 }, bones: ['skull', '<b>'],
+    gear: { id: 'onigoroshi', prefixes: [{ id: 'mighty', tier: 1 }, { id: 'cruel', tier: 99 }], suffixes: [] },
+    skills: [{ id: 'fireball', level: 30 }], passives: { damage: 10 }, resumed: true, extra: 'x'.repeat(50),
+  };
+  const odd = await read(await cheat.send('/api/ranking', 'POST', run({ name: 'CHT', damage: 5_000_000, detail })));
+  check('a run far out of line is still put on the board at once, 판 내역 and all',
+    odd.status === 200 && odd.body?.entries?.[0]?.name === 'CHT' && !('detail' in (odd.body?.entries?.[0] ?? {})),
+    `${odd.status} ${JSON.stringify(odd.body?.entries?.map((e) => e.name))}`);
+  const peek = await read(await bob.call('/api/ranking/review'));
+  const peekOut = await read(await fetch(`${BASE}/api/ranking/review`));
+  check('only the admin may read the review', peek.status === 403 && peekOut.status === 403, `${peek.status} ${peekOut.status}`);
+  const review = await read(await boss.call('/api/ranking/review'));
+  const rowOf = (name) => review.body?.rows?.find((r) => r.name === name);
+  const cht = rowOf('CHT');
+  check('the admin sees it marked against other accounts’ runs of a like length, and the rest not',
+    cht?.outlier === true && cht.ratio >= review.body?.rule?.factor && cht.peers >= review.body?.rule?.minPeers &&
+      cht.entryId > 0 && rowOf('ACE')?.outlier === false && rowOf('BOB')?.outlier === false,
+    JSON.stringify(review.body?.rows?.map((r) => `${r.name}:${r.ratio?.toFixed?.(1)}x/${r.peers}:${r.outlier}`)));
+  check('with the 판 내역 it handed in — the known fields in their shapes, nothing else',
+    cht?.detail?.kills?.boss === 3 && cht.detail.kills.grunt === 1200 && !('not a kind' in cht.detail.kills) &&
+      JSON.stringify(cht.detail.bones) === '["skull"]' && cht.detail.gear?.prefixes?.length === 1 &&
+      cht.detail.skills?.[0]?.level === 30 && cht.detail.resumed === true && !('extra' in cht.detail) &&
+      cht.detail.version === '0.62' && rowOf('BOB')?.detail === null,
+    JSON.stringify(cht?.detail));
+  const notYours = await read(await bob.send('/api/ranking/remove', 'POST', { entryId: cht?.entryId }));
+  check('nor may anyone else take a run off', notYours.status === 403, `${notYours.status}`);
+  const takenOff = await read(await boss.send('/api/ranking/remove', 'POST', { entryId: cht?.entryId }));
+  const boardNow = await read(await fetch(`${BASE}/api/ranking`));
+  const twice = await read(await boss.send('/api/ranking/remove', 'POST', { entryId: cht?.entryId }));
+  check('the admin takes it off: gone from the board at once, and not twice',
+    takenOff.status === 200 && !takenOff.body?.entries?.some((e) => e.name === 'CHT') &&
+      !boardNow.body?.entries?.some((e) => e.name === 'CHT') && twice.status === 404,
+    JSON.stringify(boardNow.body?.entries?.map((e) => e.name)));
+  const bobBest = rowOf('BOB');
+  await read(await boss.send('/api/ranking/remove', 'POST', { entryId: bobBest?.entryId }));
+  const fallen = await read(await fetch(`${BASE}/api/ranking`));
+  check('an account whose best is taken off falls back to its next best that day',
+    fallen.body?.entries?.find((e) => e.name === 'BOB')?.damage === 30000,
+    JSON.stringify(fallen.body?.entries?.map((e) => `${e.name}:${e.damage}`)));
+
   const boardHeaders = await fetch(`${BASE}/api/ranking`);
   await boardHeaders.arrayBuffer();
   check('the board is never kept by the browser, even when the edge has a copy',

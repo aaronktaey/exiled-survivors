@@ -7,14 +7,18 @@
  *
  * "Today" is the board's day (RANKING.dailyReset): it starts over at 05:00
  * Korean time, and every query is scoped to the day it is asked in.
- *   POST /api/ranking      one run handed in by a signed-in account
+ *   POST /api/ranking      one run handed in by a signed-in account, with
+ *                          what the game says about it (판 내역)
+ *   GET  /api/ranking/review   the admin's: today's board with each run's
+ *                              detail, and which look out of line
+ *   POST /api/ranking/remove   the admin's: { entryId } off the board
  *
  * Only accounts hand runs in, and an account has one name on the board —
  * set by the run it hands in — so a name cannot be worn by a crowd. The
  * rules a run has to pass are the game's own (RANKING) plus RULES.
  */
 import { RANKING, nextRankingReset, rankingDayStart } from '../src/config/system';
-import { sessionUser } from './auth';
+import { isAdmin, sessionUser } from './auth';
 import type { Env } from './env';
 import { hex, json, readJson, sameOrigin, sha256, unstored } from './http';
 
@@ -38,8 +42,8 @@ export const RULES = {
   perAddressPerDay: 180,
   /** How long the edge keeps a copy of the board before asking the database again. */
   cacheSeconds: 30,
-  /** Anything bigger than this is not a run. */
-  maxBodyBytes: 2_048,
+  /** Anything bigger than this is not a run (its 판 내역 included). */
+  maxBodyBytes: 8_192,
 } as const;
 
 const BOARD_PATH = '/api/ranking';
@@ -191,6 +195,61 @@ export async function mine(request: Request, env: Env): Promise<Response> {
   );
 }
 
+const ID = /^[A-Za-z]{1,32}$/;
+const whole = (value: unknown, max: number): number | null => {
+  const n = Math.floor(Number(value));
+  return Number.isFinite(n) && n >= 0 && n <= max ? n : null;
+};
+const lines = (raw: unknown): { id: string; tier: number }[] =>
+  (Array.isArray(raw) ? raw : [])
+    .slice(0, 6)
+    .map((line) => ({ id: String(line?.id ?? ''), tier: whole(line?.tier, 9) ?? 0 }))
+    .filter((line) => ID.test(line.id) && line.tier >= 1);
+
+/**
+ * 판 내역: what the game says about a run — the build and version it was
+ * played on, kills by kind, the 뼈다귀 it took, its weapon, skills and 패시브,
+ * and whether it was resumed from a save. Nothing on the board checks it;
+ * it is kept so the admin can read a run that looks out of line. Only the
+ * known fields, in their known shapes, are kept; anything else is dropped.
+ * Returns '' when there is nothing to keep (a client from before 0.62).
+ */
+export function cleanDetail(raw: unknown): string {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) {
+    return '';
+  }
+  const d = raw as Record<string, unknown>;
+  const counts = (value: unknown, max: number, keys: number): Record<string, number> => {
+    const out: Record<string, number> = {};
+    if (value && typeof value === 'object' && !Array.isArray(value)) {
+      for (const [key, count] of Object.entries(value).slice(0, keys)) {
+        const n = whole(count, max);
+        if (ID.test(key) && n !== null) {
+          out[key] = n;
+        }
+      }
+    }
+    return out;
+  };
+  const gear = d.gear && typeof d.gear === 'object' ? (d.gear as Record<string, unknown>) : null;
+  const detail = {
+    build: /^[\w.-]{1,40}$/.test(String(d.build ?? '')) ? String(d.build) : '',
+    version: /^[\w.-]{1,12}$/.test(String(d.version ?? '')) ? String(d.version) : '',
+    kills: counts(d.kills, 1e9, 40),
+    bones: (Array.isArray(d.bones) ? d.bones : []).map(String).filter((id) => ID.test(id)).slice(0, 10),
+    gear: gear && ID.test(String(gear.id ?? ''))
+      ? { id: String(gear.id), prefixes: lines(gear.prefixes), suffixes: lines(gear.suffixes) }
+      : null,
+    skills: (Array.isArray(d.skills) ? d.skills : [])
+      .slice(0, 12)
+      .map((skill) => ({ id: String(skill?.id ?? ''), level: whole(skill?.level, 999) ?? 0 }))
+      .filter((skill) => ID.test(skill.id)),
+    passives: counts(d.passives, 999, 30),
+    resumed: d.resumed === true,
+  };
+  return JSON.stringify(detail);
+}
+
 /** Why a run was refused, or null when it is a run. */
 export function problemWith(raw: unknown): string | null {
   if (!raw || typeof raw !== 'object') {
@@ -327,6 +386,7 @@ export async function submit(request: Request, env: Env, ctx: ExecutionContext):
   const level = Math.floor(Number(run.level));
   const survivedMs = Math.floor(Number(run.survivedMs));
   const skill = SKILL_ID.test(String(run.skill ?? '')) ? String(run.skill) : '';
+  const detail = cleanDetail(run.detail);
   const inserted = await env.DB.batch([
     env.DB.prepare('UPDATE users SET rank_name = ?2, rank_emoji = ?3, rank_flag = ?4 WHERE id = ?1').bind(
       user.id,
@@ -335,9 +395,9 @@ export async function submit(request: Request, env: Env, ctx: ExecutionContext):
       run.flag,
     ),
     env.DB.prepare(
-      `INSERT INTO entries (name, emoji, flag, damage, level, survived_ms, at, at_ms, ip_hash, user_id, skill)
-       VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11)`,
-    ).bind(run.name, run.emoji, run.flag, damage, level, survivedMs, at, now, address, user.id, skill),
+      `INSERT INTO entries (name, emoji, flag, damage, level, survived_ms, at, at_ms, ip_hash, user_id, skill, detail)
+       VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12)`,
+    ).bind(run.name, run.emoji, run.flag, damage, level, survivedMs, at, now, address, user.id, skill, detail),
   ]);
   const entryId = Number(inserted[1]?.meta.last_row_id ?? 0);
   const day = rankingDayStart(now);
@@ -357,6 +417,122 @@ export async function submit(request: Request, env: Env, ctx: ExecutionContext):
   const place = rows.findIndex((row) => row.userId === user.id) + 1;
   ctx.waitUntil(caches.default.delete(boardKey(request, day)));
   return json({ ok: true, place, entries: publicRows(rows) });
+}
+
+/** The middle of a list of numbers. */
+function median(values: number[]): number {
+  const sorted = [...values].sort((a, b) => a - b);
+  const mid = Math.floor(sorted.length / 2);
+  return sorted.length % 2 ? sorted[mid]! : (sorted[mid - 1]! + sorted[mid]!) / 2;
+}
+
+/** One run on today's board, as the admin's review reads it. */
+export interface ReviewRow {
+  readonly entryId: number;
+  readonly name: string;
+  readonly damage: number;
+  readonly level: number;
+  readonly survivedMs: number;
+  readonly at: string;
+  readonly skill: string;
+  /** Other accounts' runs of a like length it was compared with. */
+  readonly peers: number;
+  /** Their median damage, or null when there were too few. */
+  readonly reference: number | null;
+  /** Its damage over that median, or null. */
+  readonly ratio: number | null;
+  readonly outlier: boolean;
+  /** Its 판 내역, or null for a run handed in before there was one. */
+  readonly detail: unknown;
+}
+
+/**
+ * The admin's look at today's board: every run with its 판 내역, and how it
+ * stands against other accounts' runs of a like length (RANKING.review).
+ * Nothing here changes the board; an outlier is on it like any other run
+ * until the admin takes it off.
+ */
+export async function review(request: Request, env: Env): Promise<Response> {
+  const user = await sessionUser(request, env);
+  if (!user || !isAdmin(env, user.id)) {
+    return json({ error: 'admin only' }, 403, { 'Cache-Control': 'no-store' });
+  }
+  const now = Date.now();
+  const rule = RANKING.review;
+  const board = await env.DB.prepare(
+    `SELECT b.entry_id AS entryId, b.user_id AS userId, u.rank_name AS name, b.damage, b.level,
+            b.survived_ms AS survivedMs, b.at, b.skill, e.detail
+       FROM daily_best b JOIN users u ON u.id = b.user_id LEFT JOIN entries e ON e.id = b.entry_id
+      WHERE b.day = ?2
+      ORDER BY b.damage DESC, b.at ASC LIMIT ?1`,
+  )
+    .bind(RANKING.size, rankingDayStart(now))
+    .all<Omit<ReviewRow, 'peers' | 'reference' | 'ratio' | 'outlier' | 'detail'> & { userId: string; detail: string | null }>();
+  const recent = await env.DB.prepare(
+    'SELECT user_id AS userId, damage, survived_ms AS survivedMs FROM entries WHERE at_ms > ?1 AND removed_at IS NULL',
+  )
+    .bind(now - rule.lookbackDays * DAY_MS)
+    .all<{ userId: string; damage: number; survivedMs: number }>();
+  const runs = recent.results ?? [];
+
+  const rows: ReviewRow[] = (board.results ?? []).map(({ userId, detail, ...row }) => {
+    const low = row.survivedMs * (1 - rule.timeWindow);
+    const high = row.survivedMs * (1 + rule.timeWindow);
+    const peers = runs.filter((run) => run.userId !== userId && run.survivedMs >= low && run.survivedMs <= high);
+    const reference = peers.length >= rule.minPeers ? median(peers.map((run) => run.damage)) : null;
+    const ratio = reference && reference > 0 ? row.damage / reference : null;
+    let parsed: unknown = null;
+    try {
+      parsed = detail ? JSON.parse(detail) : null;
+    } catch {
+      parsed = null;
+    }
+    return { ...row, peers: peers.length, reference, ratio, outlier: ratio !== null && ratio >= rule.factor, detail: parsed };
+  });
+  return json({ rule, rows }, 200, { 'Cache-Control': 'no-store' });
+}
+
+/**
+ * The admin takes a run off the board. It is marked removed rather than
+ * deleted, and the account's place that day goes to its next best run (or
+ * it leaves the board). Answers with today's board as it now stands.
+ */
+export async function removeEntry(request: Request, env: Env): Promise<Response> {
+  if (!sameOrigin(request)) {
+    return json({ error: 'origin' }, 403);
+  }
+  const user = await sessionUser(request, env);
+  if (!user || !isAdmin(env, user.id)) {
+    return json({ error: 'admin only' }, 403);
+  }
+  const body = (await readJson(request, 256)) as { entryId?: unknown } | null;
+  const entryId = Math.floor(Number(body?.entryId));
+  if (!Number.isFinite(entryId) || entryId <= 0) {
+    return json({ error: 'entry' }, 400);
+  }
+  const entry = await env.DB.prepare(
+    'SELECT user_id AS userId, at_ms AS atMs FROM entries WHERE id = ?1 AND removed_at IS NULL',
+  )
+    .bind(entryId)
+    .first<{ userId: string; atMs: number }>();
+  if (!entry) {
+    return json({ error: 'not found' }, 404);
+  }
+  const day = rankingDayStart(entry.atMs);
+  await env.DB.batch([
+    env.DB.prepare('UPDATE entries SET removed_at = ?2 WHERE id = ?1').bind(entryId, Date.now()),
+    env.DB.prepare('DELETE FROM daily_best WHERE day = ?1 AND user_id = ?2').bind(day, entry.userId),
+    env.DB.prepare(
+      `INSERT INTO daily_best (day, user_id, entry_id, damage, level, survived_ms, at, skill)
+       SELECT ?1, user_id, id, damage, level, survived_ms, at, skill FROM entries
+        WHERE user_id = ?2 AND at_ms >= ?1 AND at_ms < ?3 AND removed_at IS NULL
+        ORDER BY damage DESC, at ASC LIMIT 1`,
+    ).bind(day, entry.userId, day + DAY_MS),
+  ]);
+  // The edge's copy of that day goes, so the next look is the board without it.
+  await caches.default.delete(boardKey(request, day));
+  const rows = await topRows(env, rankingDayStart(Date.now()));
+  return json({ ok: true, entries: publicRows(rows) }, 200, { 'Cache-Control': 'no-store' });
 }
 
 /** After an account is deleted, the board should not wait out its cache to forget it. */

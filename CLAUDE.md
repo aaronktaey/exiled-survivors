@@ -75,7 +75,7 @@ wrong shape.
 ## The test harness
 
 `tests/` drives a real Chrome over CDP against the dev server and checks the
-running game, not units. 43 suites, ~1170 checks. It is the only thing that has
+running game, not units. 43 suites, ~1200 checks. It is the only thing that has
 caught most of what has gone wrong here, so run all of it before every commit.
 
 ```sh
@@ -292,6 +292,22 @@ Read `git log` for what changed and when. What is not in the log:
   To look at the live database: `npm run db -- "SELECT * FROM daily_best"`
   (read-only queries only, unless the user asks; the dashboard's D1 console
   works too).
+- **랭킹 검토 (the admin's, 0.62).** Every run handed in carries a 판 내역
+  (`RunDetail`, built by `GameScene.runDetail`: build, version, kills by
+  kind, 뼈다귀, weapon, skills, 패시브, resumed), kept by the Worker in
+  `entries.detail` after `cleanDetail` keeps only the known fields (migration
+  0008). Nothing is held back: an outlier goes on the board like any run.
+  `GET /api/ranking/review` (admin only) gives today's board with each
+  run's detail and its ratio to the median of other accounts' runs within
+  `RANKING.review.timeWindow` of its length over `lookbackDays` (marked at
+  `factor`, none with fewer than `minPeers`); `RankingScene` shows it to
+  `devToolsAllowed()` — outliers in red, every row opens the popup, 기록
+  삭제 asks a second time. `POST /api/ranking/remove` marks the entry
+  `removed_at` (never deletes it), puts the account's next best that day in
+  `daily_best`, and drops the edge copy. A newer kind/skill id the client
+  does not know is shown as the id. The user asked for this on 2026-10-18
+  after JSM's 993M run on 0.59 — the server still trusts the numbers it is
+  sent; this only lets the admin see and undo.
 - **Cloudflare.** One Worker with static assets: `dist/` is served without
   running the Worker (free, unlimited); only `/api/*` runs `server/index.ts`.
   `npm run dev:api` runs it locally on 8787 and Vite proxies `/api` there.

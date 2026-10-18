@@ -370,6 +370,167 @@ check('a run the server turns down does not stay on the board',
 check('and when it cannot be reached, this device’s board stays and says so',
   sh.offline === 'offline' && sh.kept >= 2);
 
+// --- 10. 랭킹 검토: the admin sees which runs look out of line, reads each
+// one's 판 내역, and takes one off the board only after being askedTwice twice ---
+// A stand-in for /api/ranking, /review and /remove, kept on the page across
+// the probes below. On the dev server every account counts as the admin.
+const STAND_IN = `(() => {
+  const R = window.config.RANKING;
+  const now = Date.now();
+  const at = (ago) => new Date(now - ago).toISOString();
+  const detail = { build: 'abc123', version: '0.62', kills: { grunt: 1200, boss: 3 }, bones: ['skull'],
+    gear: { id: 'onigoroshi', prefixes: [{ id: 'mighty', tier: 1 }], suffixes: [{ id: 'giant', tier: 2 }] },
+    skills: [{ id: 'fireball', level: 30 }], passives: { damage: 10 }, resumed: true };
+  const board = [
+    { name: 'CHT', emoji: '', flag: 'KR', damage: 5000000, level: 20, survivedMs: 600000, at: at(3000), skill: 'fireball', wins: 0, seconds: 0, thirds: 0 },
+    { name: 'FIN', emoji: '', flag: 'KR', damage: 90000, level: 12, survivedMs: 600000, at: at(2000), skill: 'iceSpear', wins: 0, seconds: 0, thirds: 0 },
+    { name: 'OLD', emoji: '', flag: '', damage: 70000, level: 11, survivedMs: 590000, at: at(1000), skill: '', wins: 0, seconds: 0, thirds: 0 },
+  ];
+  const rows = [
+    { entryId: 11, name: 'CHT', damage: 5000000, level: 20, survivedMs: 600000, at: board[0].at, skill: 'fireball', peers: 6, reference: 85000, ratio: 5000000 / 85000, outlier: true, detail },
+    { entryId: 12, name: 'FIN', damage: 90000, level: 12, survivedMs: 600000, at: board[1].at, skill: 'iceSpear', peers: 6, reference: 85000, ratio: 90000 / 85000, outlier: false, detail: { ...detail, resumed: false } },
+    { entryId: 13, name: 'OLD', damage: 70000, level: 11, survivedMs: 590000, at: board[2].at, skill: '', peers: 1, reference: null, ratio: null, outlier: false, detail: null },
+  ];
+  const state = { removed: [] };
+  const reply = (body, status = 200) =>
+    new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
+  window.__realFetch ??= window.fetch;
+  window.fetch = async (url, init) => {
+    const path = String(url);
+    if (path === R.shared.url) return reply({ entries: board });
+    if (path === '/api/ranking/me') return reply({ best: null, place: 0 });
+    if (path === '/api/ranking/review') return reply({ rule: R.review, rows });
+    if (path === '/api/ranking/remove' && init?.method === 'POST') {
+      const { entryId } = JSON.parse(init.body);
+      state.removed.push(entryId);
+      const i = rows.findIndex((r) => r.entryId === entryId);
+      if (i >= 0) {
+        board.splice(board.findIndex((b) => b.at === rows[i].at), 1);
+        rows.splice(i, 1);
+      }
+      return reply({ ok: true, entries: board });
+    }
+    return reply({ error: 'not found' }, 404);
+  };
+  window.__review = state;
+  R.shared.enabled = true;
+  return 1;
+})()`;
+const UNDO = `(() => { window.fetch = window.__realFetch; window.config.RANKING.shared.enabled = false; return 1; })()`;
+
+await ev(STAND_IN);
+await scene('MenuScene', `s.icons.press('ranking'); return 1;`);
+await sleep(1200);
+const marked = await scene('RankingScene', `
+  const C = window.config.COLORS;
+  const rowOf = (name) => s.rows.find((r) => r[1].text.startsWith(name));
+  return {
+    size: s.review.size,
+    cht: rowOf('CHT')?.[1].style.color, fin: rowOf('FIN')?.[1].style.color, red: C.suspectText,
+    hits: s.board.list.filter((o) => o.name === 'reviewRow').length,
+    note: s.note.text,
+  };
+`);
+console.log('review marks:', JSON.stringify(marked));
+check('the admin sees the review: an outlier in red, the rest as they were, every row open to reading',
+  marked.size === 3 && marked.cht === marked.red && marked.fin !== marked.red && marked.hits === 3 && /이상치 1건/.test(marked.note),
+  JSON.stringify(marked));
+await shot('ranking-04-review');
+
+// Pressing the row opens its 판 내역.
+const reviewOpen = await scene('RankingScene', `
+  const hit = s.board.list.filter((o) => o.name === 'reviewRow')[0];
+  hit.emit('pointerdown');
+  return { open: !!s.popup, who: s.reading?.name, text: s.popupText?.text ?? '' };
+`);
+console.log('popup:', JSON.stringify(reviewOpen));
+check('a row pressed opens what the run said about itself: how it stands, version, kills, 우두머리, 뼈다귀, weapon, skills, 패시브',
+  reviewOpen.open && reviewOpen.who === 'CHT' && /이상치/.test(reviewOpen.text) && /58\.8배|59배/.test(reviewOpen.text) &&
+    /0\.62/.test(reviewOpen.text) && /abc123/.test(reviewOpen.text) && /우두머리 처치 3/.test(reviewOpen.text) &&
+    /이어서/.test(reviewOpen.text) && /뼈다귀:/.test(reviewOpen.text) && /장비:/.test(reviewOpen.text) && /1티어/.test(reviewOpen.text) &&
+    /Lv 30/.test(reviewOpen.text) && /패시브:/.test(reviewOpen.text),
+  reviewOpen.text.split('\n').join(' | '));
+await shot('ranking-05-detail');
+
+// Esc takes the popup down, not the screen.
+await cdp.send('Input.dispatchKeyEvent', { type: 'keyDown', key: 'Escape', code: 'Escape', windowsVirtualKeyCode: 27 });
+await cdp.send('Input.dispatchKeyEvent', { type: 'keyUp', key: 'Escape', code: 'Escape', windowsVirtualKeyCode: 27 });
+await sleep(300);
+const escaped = await scene('RankingScene', `return { open: !!s.popup, active: s.scene.isActive() };`);
+check('Esc closes the popup and leaves the board up', !escaped.open && escaped.active, JSON.stringify(escaped));
+
+// A run handed in before there was a 판 내역 says so.
+const bare = await scene('RankingScene', `
+  s.openReview(s.review.get([...s.review.keys()].find((k) => s.review.get(k).name === 'OLD')));
+  const text = s.popupText.text;
+  s.closeReview();
+  return text;
+`);
+check('a run from before this says it has no 판 내역, and that there was too little to compare it with',
+  /판 내역 없음/.test(bare) && /비교할 기록 부족/.test(bare), bare.split('\n').join(' | '));
+
+// 기록 삭제 asks first; backing out leaves the run where it is.
+const askedTwice = await scene('RankingScene', `
+  const row = [...s.review.values()].find((r) => r.name === 'CHT');
+  s.openReview(row);
+  s.askRemove();
+  const first = { confirm: !!s.confirmBox, removed: window.__review.removed.length };
+  s.cancelRemove();
+  return { ...first, afterCancel: { confirm: !!s.confirmBox, popup: !!s.popup, removed: window.__review.removed.length } };
+`);
+check('기록 삭제 asks again before anything happens, and 취소 backs out with the run still there',
+  askedTwice.confirm && askedTwice.removed === 0 && !askedTwice.afterCancel.confirm && askedTwice.afterCancel.popup && askedTwice.afterCancel.removed === 0,
+  JSON.stringify(askedTwice));
+await scene('RankingScene', `s.askRemove(); return 1;`);
+await shot('ranking-06-confirm');
+await cdp.send('Input.dispatchKeyEvent', { type: 'keyDown', key: 'Escape', code: 'Escape', windowsVirtualKeyCode: 27 });
+await cdp.send('Input.dispatchKeyEvent', { type: 'keyUp', key: 'Escape', code: 'Escape', windowsVirtualKeyCode: 27 });
+await sleep(300);
+const escAsk = await scene('RankingScene', `return { confirm: !!s.confirmBox, popup: !!s.popup, removed: window.__review.removed.length };`);
+check('Esc on the second ask backs out of it alone', !escAsk.confirm && escAsk.popup && escAsk.removed === 0, JSON.stringify(escAsk));
+
+const removed = await cdp.send('Runtime.evaluate', { awaitPromise: true, returnByValue: true, expression: `(async () => {
+  const s = window.game.scene.getScene('RankingScene');
+  s.askRemove();
+  await s.confirmRemove();
+  return { removed: window.__review.removed, popup: !!s.popup, confirm: !!s.confirmBox,
+           names: s.rows.map((r) => r[1].text), note: s.note.text, review: s.review.size };
+})()` });
+const rm = removed.result?.result?.value ?? {};
+console.log('removed:', JSON.stringify(rm));
+check('삭제 takes that run off: the server is asked for it by its entry, and the board comes back without it',
+  JSON.stringify(rm.removed) === '[11]' && !rm.popup && !rm.confirm && !rm.names?.some((n) => n.startsWith('CHT')) &&
+    rm.names?.some((n) => n.startsWith('FIN')) && rm.review === 2 && /삭제했습니다/.test(rm.note ?? ''),
+  JSON.stringify(rm));
+await scene('RankingScene', `s.backButton.press(); return 1;`);
+await sleep(400);
+await ev(UNDO);
+
+// The same popup and its ask, in another language, with nothing Korean left on them.
+await ev(`(() => { localStorage.setItem('exiled-survivors:settings:v1', JSON.stringify({ language: 'en' })); return 1; })()`);
+await cdp.send('Page.reload', {});
+await sleep(4500);
+await ev(STAND_IN);
+await scene('MenuScene', `s.icons.press('ranking'); return 1;`);
+await sleep(1200);
+const english = await scene('RankingScene', `
+  const row = [...s.review.values()].find((r) => r.name === 'CHT');
+  s.openReview(row);
+  const detail = s.popupText.text;
+  s.askRemove();
+  const texts = [...s.popup.list, ...s.confirmBox.list].filter((o) => typeof o.text === 'string').map((o) => o.text);
+  s.closeReview();
+  return { detail, texts, note: s.note.text };
+`);
+const hangul = [...(english.texts ?? []), english.note ?? ''].filter((line) => /[가-힣]/.test(line));
+check('in English the review, its popup and its ask carry no Korean',
+  english.texts?.length > 4 && hangul.length === 0 && /Outlier/.test(english.detail ?? ''),
+  hangul.join(' | ') || english.detail?.split('\n')[0]);
+await scene('RankingScene', `s.backButton.press(); return 1;`);
+await sleep(300);
+await ev(UNDO);
+await ev(`(() => { localStorage.setItem('exiled-survivors:settings:v1', JSON.stringify({ language: 'ko' })); return 1; })()`);
+
 console.log('\n=== SUMMARY ===');
 const failed = results.filter((r) => !r.p);
 console.log(`${results.length - failed.length}/${results.length} passed`);
