@@ -11,11 +11,25 @@ import { RANKING, STORAGE, rankingDayStart } from '@/config';
 import { account, accountRequest } from '@/systems/Account';
 import { cleanRankEntry, type RankEntry } from '@/systems/Ranking';
 
+/** The signed-in account's own run that day, and where it placed. */
+export interface PodiumMine {
+  readonly place: number;
+  readonly damage: number;
+  readonly level: number;
+  readonly survivedMs: number;
+}
+
 export interface PodiumResult {
   /** The board's day the three are from. */
   readonly day: number;
   /** First, second and third, best first; fewer when fewer ran that day. */
   readonly entries: readonly RankEntry[];
+  /** Signed in: whether this account was asked about at all. */
+  readonly signedIn: boolean;
+  /** This account's place that day, or null without a run (or signed out). */
+  readonly mine: PodiumMine | null;
+  /** How many accounts ran that day. */
+  readonly total: number;
 }
 
 class PodiumStore {
@@ -46,7 +60,25 @@ class PodiumStore {
       .map(cleanRankEntry)
       .filter((entry): entry is RankEntry => entry !== null)
       .slice(0, 3);
-    return { day: Number(body.day) || 0, entries };
+    // Signed in, where this account placed that day too.
+    const signedIn = account.user !== null;
+    let mine: PodiumMine | null = null;
+    let total = 0;
+    if (signedIn) {
+      const own = await accountRequest(`${RANKING.shared.podiumUrl}/me`, { cache: 'no-store' });
+      const found = own.body as { total?: unknown; mine?: Partial<PodiumMine> | null } | null;
+      total = Math.max(0, Math.floor(Number(found?.total) || 0));
+      const m = found?.mine;
+      if (own.ok && m && Number(m.place) >= 1) {
+        mine = {
+          place: Math.floor(Number(m.place)),
+          damage: Math.max(0, Math.floor(Number(m.damage) || 0)),
+          level: Math.max(1, Math.floor(Number(m.level) || 1)),
+          survivedMs: Math.max(0, Math.floor(Number(m.survivedMs) || 0)),
+        };
+      }
+    }
+    return { day: Number(body.day) || 0, entries, signedIn, mine, total };
   }
 
   /** It has been seen: not again today, here or — signed in — anywhere. */

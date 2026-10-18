@@ -4,6 +4,7 @@ import { COLORS, DEPTH, RANKING, SCENES, SCRIM, SKILL_ICONS, TEXT, TEXTURES } fr
 import { fill, t } from '@/i18n';
 import { addBackButton, type BackButton } from '@/systems/BackButton';
 import { fitText } from '@/systems/Layout';
+import type { PodiumMine } from '@/systems/Podium';
 import { flagTexture, rankLabel, type RankEntry } from '@/systems/Ranking';
 
 export interface PodiumSceneData {
@@ -11,6 +12,12 @@ export interface PodiumSceneData {
   readonly day: number;
   /** First, second and third, best first. */
   readonly entries: readonly RankEntry[];
+  /** Signed in (so the line under the three is this account's place). */
+  readonly signedIn?: boolean;
+  /** This account's place that day, or null without a run. */
+  readonly mine?: PodiumMine | null;
+  /** How many accounts ran that day. */
+  readonly total?: number;
   /** Called once, however it is closed: it has been seen. */
   readonly onSeen?: () => void;
   readonly onClose: () => void;
@@ -18,6 +25,8 @@ export interface PodiumSceneData {
 
 const CUPS = [TEXTURES.trophy, TEXTURES.trophySilver, TEXTURES.trophyBronze] as const;
 const ROW_H = 66;
+/** The line under the three: where this player placed. */
+const MINE_H = 34;
 const BUTTON_W = 160;
 const BUTTON_H = 44;
 
@@ -40,6 +49,8 @@ export class PodiumScene extends Phaser.Scene {
   public names: Phaser.GameObjects.Text[] = [];
   /** 확인. Public so a test can press it. */
   public okPlate?: Phaser.GameObjects.Rectangle;
+  /** "내 순위 12위 / 35명 · …". Public for tests. */
+  public mineLine?: Phaser.GameObjects.Text;
   private payload!: PodiumSceneData;
   private closed = false;
 
@@ -51,6 +62,7 @@ export class PodiumScene extends Phaser.Scene {
     this.payload = data;
     this.names = [];
     this.okPlate = undefined;
+    this.mineLine = undefined;
     this.closed = false;
   }
 
@@ -61,7 +73,7 @@ export class PodiumScene extends Phaser.Scene {
     this.backButton = addBackButton(this, () => this.close());
 
     const entries = this.payload.entries.slice(0, 3);
-    const block = 44 + 26 + 18 + entries.length * ROW_H + 18 + BUTTON_H;
+    const block = 44 + 26 + 18 + entries.length * ROW_H + MINE_H + 18 + BUTTON_H;
     let y = Math.max(64, (height - block) / 2);
 
     fitText(
@@ -103,7 +115,29 @@ export class PodiumScene extends Phaser.Scene {
         .setDepth(DEPTH.ui + 2);
       y += ROW_H;
     });
-    y += 18;
+
+    // Where this player placed that day — or why that cannot be said.
+    const mine = this.payload.mine;
+    const total = this.payload.total ?? 0;
+    const own = !this.payload.signedIn
+      ? copy.mineSignedOut
+      : mine
+        ? fill(copy.mine, {
+            place: mine.place,
+            total,
+            damage: Math.round(mine.damage).toLocaleString('en-US'),
+          })
+        : copy.mineNone;
+    this.mineLine = this.add
+      .text(width / 2, y + MINE_H / 2, own, {
+        fontFamily: 'system-ui, sans-serif',
+        fontSize: TEXT.size.body,
+        color: mine ? COLORS.accent : COLORS.muted,
+      })
+      .setOrigin(0.5)
+      .setDepth(DEPTH.ui + 2);
+    fitText(this.mineLine, width, 16);
+    y += MINE_H + 18;
 
     const plate = this.add
       .rectangle(width / 2, y + BUTTON_H / 2, BUTTON_W, BUTTON_H, COLORS.panel, 1)

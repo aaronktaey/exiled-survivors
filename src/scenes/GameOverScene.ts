@@ -19,6 +19,8 @@ export interface GameOverData {
   readonly survivedMs: number;
   /** The developer tools changed this run: it is not offered to the ranking. */
   readonly devRun?: boolean;
+  /** Which of them, said on the screen so a record that is not offered is not a mystery. */
+  readonly devReason?: 'debug' | 'draft';
   /** The run's main skill, shown beside it on the board. */
   readonly mainSkill?: string;
   /** 판 내역, handed in with the run for the admin's review. */
@@ -135,6 +137,22 @@ export class GameOverScene extends Phaser.Scene {
           : []),
       ],
     });
+
+    // A run the developer tools touched is on neither board, and says why —
+    // an admin with a 밸런스 experiment left on once set a record and was
+    // never asked for a name.
+    if (this.payload.devRun) {
+      const why = this.payload.devReason === 'draft' ? t().gameOver.devRunDraft : t().gameOver.devRunDebug;
+      fitText(
+        this.add
+          .text(centerX, height - 54, why, { fontFamily: 'system-ui, sans-serif', fontSize: TEXT.size.hint, color: COLORS.suspectText })
+          .setOrigin(0.5)
+          .setDepth(DEPTH.ui + 1)
+          .setName('devRunNote'),
+        width,
+        8,
+      );
+    }
 
     this.add
       .text(

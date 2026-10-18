@@ -231,6 +231,8 @@ export const ja: Strings = {
   },
 
   gameOver: {
+    devRunDebug: '開発者ツール（F キー）を使った回のため、ランキングと自分の記録に載りません',
+    devRunDraft: 'バランス実験中の回のため、ランキングと自分の記録に載りません · バランス画面で実験を取り消すか全体に適用',
     title: 'GAME OVER',
     damageDealt: '与ダメージ',
     killsDealt: '撃破',
@@ -312,6 +314,9 @@ export const ja: Strings = {
     title: '昨日のランキング',
     day: '{date} の結果',
     stats: 'Lv {level} · 生存 {time}',
+    mine: '自分の順位 {place} 位 / {total} 人 · ダメージ {damage}',
+    mineNone: '昨日は自分の記録がありません',
+    mineSignedOut: 'ログインすると自分の順位も見られます',
     ok: 'OK',
   },
 
@@ -427,6 +432,7 @@ export const ja: Strings = {
   },
 
   game: {
+    draftRun: 'バランス実験中 — この回はランキングと自分の記録に載りません',
     blocked: '防御',
     maxedHeal: '{skill} は強化しきりました — レベルアップが体力ポーションの効果になり体力 +{heal}',
     potionEffect: 'ポーション効果！',

@@ -45,6 +45,7 @@ const yday = today - DAY;
 const podiumSeed =
   `INSERT INTO users (id, created_at, display_name, rank_name, rank_flag) VALUES ` +
   `('y1', 0, 'y1', 'YON', 'KR'), ('y2', 0, 'y2', 'YTW', ''), ('y3', 0, 'y3', 'YTH', ''), ('y4', 0, 'y4', 'YFO', ''); ` +
+  `INSERT INTO identities (provider, subject, user_id) VALUES ('test', 'ytwo', 'y2'), ('test', 'yfour', 'y4'); ` +
   `INSERT INTO daily_best (day, user_id, entry_id, damage, level, survived_ms, at, skill) VALUES ` +
   `(${yday}, 'y2', 0, 200, 9, 500000, '${new Date(yday + 2).toISOString()}', ''), ` +
   `(${yday}, 'y1', 0, 300, 10, 600000, '${new Date(yday + 1).toISOString()}', 'fireball'), ` +
@@ -310,6 +311,20 @@ try {
     notSeen.body?.user?.podiumSeen === 0 && seenOut.status === 401 && seen.status === 200 &&
       nowSeen.body?.user?.podiumSeen === today && seen.body?.day === today,
     JSON.stringify({ before: notSeen.body?.user?.podiumSeen, after: nowSeen.body?.user?.podiumSeen, today }));
+
+  const ytwo = browser();
+  await ytwo.signIn('ytwo');
+  const yfour = browser();
+  await yfour.signIn('yfour');
+  const placeTwo = await read(await ytwo.call('/api/ranking/podium/me'));
+  const placeFour = await read(await yfour.call('/api/ranking/podium/me'));
+  const placeNone = await read(await alice.call('/api/ranking/podium/me'));
+  const placeOut = await read(await fetch(`${BASE}/api/ranking/podium/me`));
+  check('a signed-in account is told its own place that day, out of everyone who ran — inside the three or not',
+    placeTwo.body?.mine?.place === 2 && placeTwo.body?.total === 4 && placeTwo.body?.mine?.damage === 200 &&
+      placeFour.body?.mine?.place === 4 && placeFour.body?.mine?.level === 5 &&
+      placeNone.body?.mine === null && placeNone.body?.total === 4 && placeOut.body?.mine === null,
+    JSON.stringify({ two: placeTwo.body, four: placeFour.body?.mine, none: placeNone.body, out: placeOut.body }));
 
   // --- a save with a value that is not text comes back as text ---
   const objy = browser();

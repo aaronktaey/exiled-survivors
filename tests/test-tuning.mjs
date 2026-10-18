@@ -135,6 +135,28 @@ check('turning a skill’s base doubles what that skill in hand does, and keeps 
   `stat ${before.stat} → ${after.stat}, damage ${before.dmg} → ${after.dmg}, level ${before.level} → ${after.level}`);
 check('and the run it was turned in stays off the boards', before.tuned === false && after.tuned === true);
 
+// A run started while the experiment is on says so at once, and its end
+// screen says why no name is asked for (an admin once set a record so and
+// was never asked).
+await ev(`(() => { window.game.scene.getScene('GameScene').scene.restart({ save: null }); return 1; })()`);
+await sleep(1500);
+const started = await scene('GameScene', `return { tuned: s.tunedRun, toasts: s.toasts.lines };`);
+check('a run started with an experiment on says at once that it is off the boards',
+  started.tuned === true && started.toasts.some((line) => /밸런스 실험 중/.test(line)), JSON.stringify(started));
+await scene('GameScene', `s.player.invulnerableUntil = 0; s.player.setInvulnerable(false); s.player.takeDamage(1e9); return 1;`);
+await sleep(1500);
+const ended = await ev(`(() => {
+  const g = window.game.scene.getScene('GameOverScene');
+  const note = g.children.list.find((o) => o.name === 'devRunNote');
+  return { open: window.game.scene.isActive('GameOverScene'), note: note?.text ?? '', rank: g.menu.rows.some((r) => r.item.id === 'rank'),
+           entry: window.game.scene.isActive('RankEntryScene') };
+})()`);
+check('and its end says why: an experiment was on, with where to drop or apply it, and no name is asked for',
+  ended.open && /밸런스 실험 중인 판/.test(ended.note) && /실험 취소/.test(ended.note) && !ended.rank && !ended.entry,
+  JSON.stringify(ended));
+await ev(`(() => { window.game.scene.getScene('GameOverScene').scene.stop(); window.game.scene.getScene('GameScene').scene.start('MenuScene'); return 1; })()`);
+await sleep(800);
+
 // --- 3. made everyone's ---
 const published = await ev(`(async () => 1)()`);
 void published;

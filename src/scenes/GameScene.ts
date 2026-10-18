@@ -319,6 +319,11 @@ export class GameScene extends Phaser.Scene {
     this.toasts = new Toasts(this);
     this.debug = new DebugOverlay(this, this.debugActions());
     this.rareTooltip = new RareTooltip(this, this.spawner.group);
+    // A 밸런스 experiment on this device keeps the run off both boards: said
+    // at once, not only at the end.
+    if (this.tunedRun) {
+      this.announce(t().game.draftRun);
+    }
     // In the order they matter: a 우두머리 before a 신성한 조각, and both
     // before a skill lying in the grass.
     this.edgeMarkers = new EdgeMarkers(this, [
@@ -1455,6 +1460,7 @@ export class GameScene extends Phaser.Scene {
       level: this.progression.level,
       survivedMs: this.elapsedMs,
       devRun: this.devRun,
+      devReason: this.devUsedBefore || this.debug.used ? 'debug' : this.tunedRun ? 'draft' : undefined,
       mainSkill: this.mainSkill ?? undefined,
       detail: this.runDetail(),
       // Explicitly fresh. A restart with no data of its own keeps whatever

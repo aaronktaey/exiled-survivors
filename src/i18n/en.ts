@@ -231,6 +231,8 @@ export const en: Strings = {
   },
 
   gameOver: {
+    devRunDebug: 'Developer tools (F keys) were used: this run goes on neither the ranking nor My runs',
+    devRunDraft: 'A balance experiment was on: this run goes on neither the ranking nor My runs · Drop experiment or Apply to all in Balance',
     title: 'GAME OVER',
     damageDealt: 'Damage dealt',
     killsDealt: 'Kills',
@@ -312,6 +314,9 @@ export const en: Strings = {
     title: "Yesterday's Ranking",
     day: 'Results for {date}',
     stats: 'Lv {level} · survived {time}',
+    mine: 'Your place: {place} of {total} · damage {damage}',
+    mineNone: 'You had no run on the ranking that day',
+    mineSignedOut: 'Sign in to see your own place too',
     ok: 'OK',
   },
 
@@ -427,6 +432,7 @@ export const en: Strings = {
   },
 
   game: {
+    draftRun: 'Balance experiment on — this run goes on neither the ranking nor My runs',
     blocked: 'Blocked',
     maxedHeal: '{skill} is fully upgraded — the level-up works as a health potion: +{heal} HP',
     potionEffect: 'Potion!',

@@ -587,7 +587,14 @@ export class MenuScene extends Phaser.Scene {
       podium.asked = false;
       return;
     }
-    this.openOverlay(SCENES.podium, { day: result.day, entries: result.entries, onSeen: () => podium.markSeen() });
+    this.openOverlay(SCENES.podium, {
+      day: result.day,
+      entries: result.entries,
+      signedIn: result.signedIn,
+      mine: result.mine,
+      total: result.total,
+      onSeen: () => podium.markSeen(),
+    });
   }
 
   /** A line that rises over the hint and fades — how the title says something happened. */

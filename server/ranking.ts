@@ -13,6 +13,7 @@
  *                              detail, and which look out of line
  *   POST /api/ranking/remove   the admin's: { entryId } off the board
  *   GET  /api/ranking/podium   어제의 랭킹: the day before's first three
+ *   GET  /api/ranking/podium/me     the signed-in account's own place that day
  *   POST /api/ranking/podium/seen   the signed-in account has seen it today
  *
  * Only accounts hand runs in, and an account has one name on the board —
@@ -566,6 +567,37 @@ export async function podium(request: Request, env: Env, ctx: ExecutionContext):
   });
   ctx.waitUntil(cache.put(key, response.clone()));
   return unstored(response);
+}
+
+/**
+ * The signed-in account's own place on the day 어제의 랭킹 shows, out of how
+ * many accounts ran that day; `mine` is null signed out or without a run.
+ * Never cached: it is this account's.
+ */
+export async function podiumMine(request: Request, env: Env): Promise<Response> {
+  const day = rankingDayStart(Date.now()) - DAY_MS;
+  const counted = await env.DB.prepare('SELECT COUNT(*) AS n FROM daily_best WHERE day = ?1').bind(day).first<{ n: number }>();
+  const total = counted?.n ?? 0;
+  const user = await sessionUser(request, env);
+  const best = user
+    ? await env.DB.prepare(
+        'SELECT damage, level, survived_ms AS survivedMs, at FROM daily_best WHERE day = ?1 AND user_id = ?2',
+      )
+        .bind(day, user.id)
+        .first<{ damage: number; level: number; survivedMs: number; at: string }>()
+    : null;
+  if (!best) {
+    return json({ day, total, mine: null }, 200, { 'Cache-Control': 'no-store' });
+  }
+  const above = await env.DB.prepare(
+    'SELECT COUNT(*) AS n FROM daily_best WHERE day = ?3 AND (damage > ?1 OR (damage = ?1 AND at < ?2))',
+  )
+    .bind(best.damage, best.at, day)
+    .first<{ n: number }>();
+  const { damage, level, survivedMs } = best;
+  return json({ day, total, mine: { place: (above?.n ?? 0) + 1, damage, level, survivedMs } }, 200, {
+    'Cache-Control': 'no-store',
+  });
 }
 
 /** The signed-in account has seen today's 어제의 랭킹: it is not shown to it again today, on any device. */

@@ -332,6 +332,9 @@ export interface Strings {
   };
 
   readonly gameOver: {
+    /** Why a run is on neither board: the F keys were used, or a 밸런스 experiment was on. */
+    readonly devRunDebug: string;
+    readonly devRunDraft: string;
     readonly title: string;
     readonly survived: string;
     /** The table: what the run dealt, killed, earned, and was carrying. */
@@ -437,6 +440,12 @@ export interface Strings {
     readonly day: string;
     /** {level} and {time} under each place. */
     readonly stats: string;
+    /** This account's place: {place} of {total}, with {damage}. */
+    readonly mine: string;
+    /** Signed in, but no run that day. */
+    readonly mineNone: string;
+    /** Signed out: there is no account to place. */
+    readonly mineSignedOut: string;
     readonly ok: string;
   };
 
@@ -593,6 +602,8 @@ export interface Strings {
   };
 
   readonly game: {
+    /** Said as a run starts while this device has a 밸런스 experiment on. */
+    readonly draftRun: string;
     /** Over the survivor when a shot is turned aside (오니고로시). */
     readonly blocked: string;
     /** A level-up or pickup for a skill with every upgrade taken heals instead. */

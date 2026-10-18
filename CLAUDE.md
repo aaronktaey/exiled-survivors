@@ -315,7 +315,9 @@ Read `git log` for what changed and when. What is not in the log:
   (`STORAGE.podiumSeen`, in `ACCOUNT.localOnly` — synced, every device
   writing it each morning would set the records at odds) and on the account
   (`users.podium_seen`, migration 0009, set by `POST /api/ranking/podium/seen`,
-  read back as `podiumSeen` from /api/me). It waits if the title is covered
+  read back as `podiumSeen` from /api/me). Signed in, it also shows the
+  account's own place that day out of everyone who ran
+  (`GET /api/ranking/podium/me`, never cached). It waits if the title is covered
   (a conflict, a run being entered). `RANKING.shared.podiumSince` is the
   first day it covers: 10/17's cups were changed by hand, so that board's
   order no longer said who placed where.
@@ -385,7 +387,11 @@ Read `git log` for what changed and when. What is not in the log:
   only when `devToolsAllowed()`. Most numbers are read where used, so a turn
   needs nothing more; a skill's stats were copied on pickup, so
   `GameScene.retune` scales them (keeping picks and level). A run that saw a
-  draft is `tunedRun`, off both boards. test-tuning drives it with an
+  draft is `tunedRun`, off both boards — and says so (0.65): a toast as it
+  starts (`game.draftRun`) and a red line on the end screen
+  (`GameOverData.devReason`, `devRunNote`), the same for an F-key run. The
+  admin once set a record with a draft left on and was never asked for a
+  name; the draft stays in `TUNING.draftKey` until 실험 취소 or 전체 적용. test-tuning drives it with an
   in-page stand-in for /api/balance; test-api covers the endpoint.
 - **아이템 필터.** `config/itemFilter.ts` builds a switch per kind of drop
   from the tables (구슬, 뼈다귀, swords by base and by rarity, plus potion,

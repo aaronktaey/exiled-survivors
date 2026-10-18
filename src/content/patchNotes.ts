@@ -15,6 +15,28 @@ export interface PatchNote {
 
 export const PATCH_NOTES: readonly PatchNote[] = [
   {
+    version: '0.65',
+    date: '2026-10-18',
+    changes: {
+      ko: [
+        '어제의 랭킹에 내 순위도 표시됩니다(전날 기록한 계정 수 중 몇 위인지와 피해량).',
+        '랭킹과 내 기록에 오르지 않는 판(개발자 도구를 썼거나 밸런스 실험 중인 판)은 이제 끝난 화면에 그 이유를 표시하고, 밸런스 실험 중이면 판을 시작할 때도 알려 줍니다.',
+      ],
+      en: [
+        'Yesterday’s Ranking also shows your own place (out of how many accounts ran that day, with your damage).',
+        'A run that goes on neither the ranking nor My runs (developer tools used, or a balance experiment on) now says why on its end screen, and a balance experiment is also mentioned as the run starts.',
+      ],
+      ja: [
+        '昨日のランキングに自分の順位も表示されます（前日に記録したアカウント数のうち何位か、とダメージ）。',
+        'ランキングと自分の記録に載らない回（開発者ツールを使った、またはバランス実験中の回）は、終了画面にその理由を表示し、バランス実験中なら回の開始時にも知らせます。',
+      ],
+      zh: [
+        '昨日排行榜也会显示我的排名（在前一天有记录的账号中排第几，以及伤害）。',
+        '不会登上排行榜和我的记录的对局（使用了开发者工具或处于平衡实验中）现在会在结束画面显示原因；处于平衡实验中时，开局时也会提示。',
+      ],
+    },
+  },
+  {
     version: '0.64',
     date: '2026-10-18',
     changes: {

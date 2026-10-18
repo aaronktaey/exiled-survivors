@@ -551,6 +551,9 @@ const PODIUM_STAND_IN = `(() => {
       return reply({ day: today - DAY, entries: [entry('ONE', 3000000, 'KR', 'fireball'), entry('TWO', 2000000, 'US', 'iceSpear'), entry('THR', 1000000, '', '')] });
     }
     if (path === R.shared.podiumUrl + '/seen') { asked.seen += 1; return reply({ ok: true }); }
+    if (path === R.shared.podiumUrl + '/me') {
+      return reply({ day: today - DAY, total: 35, mine: { place: 12, damage: 1234567, level: 15, survivedMs: 500000 } });
+    }
     if (path === R.shared.url) return reply({ entries: [] });
     return reply({ error: 'not found' }, 404);
   };
@@ -579,6 +582,7 @@ const first = await cdp.send('Runtime.evaluate', { awaitPromise: true, returnByV
   await new Promise((r) => setTimeout(r, 600));
   const s = window.game.scene.getScene('PodiumScene');
   return { open: window.game.scene.isActive('PodiumScene'), names: s.names.map((n) => n.text),
+           mine: s.mineLine?.text ?? '',
            menuPaused: window.game.scene.isPaused('MenuScene'), asked: { ...window.__podium.asked } };
 })()` });
 const fp = first.result?.result?.value ?? {};
@@ -586,6 +590,8 @@ console.log('podium:', JSON.stringify(fp));
 check('the first visit to the title after the reset shows the day before’s first, second and third, in order',
   fp.open && JSON.stringify(fp.names) === '["ONE","TWO","THR"]' && fp.menuPaused && fp.asked?.podium === 1,
   JSON.stringify(fp));
+check('signed out, the line under them says signing in shows your own place',
+  /로그인하면 내 순위/.test(fp.mine ?? ''), fp.mine);
 await shot('ranking-07-podium');
 const closed = await scene('PodiumScene', `s.okPlate.emit('pointerdown'); return 1;`);
 void closed;
@@ -616,6 +622,26 @@ const elsewhere = await cdp.send('Runtime.evaluate', { awaitPromise: true, retur
 const el = elsewhere.result?.result?.value ?? {};
 check('nor to an account that has seen it on another device today',
   el.open === false && el.asked?.podium === 1, JSON.stringify(el));
+// Signed in and not seen yet: the account's own place is under the three.
+const ownPlace = await cdp.send('Runtime.evaluate', { awaitPromise: true, returnByValue: true, expression: `(async () => {
+  localStorage.removeItem('exiled-survivors:podium-seen:v1');
+  window.podium.asked = false;
+  window.account.user = { id: 'u', provider: 'test', name: 'u', rank: { name: '', emoji: '', flag: '' }, podiumSeen: 0 };
+  await window.game.scene.getScene('MenuScene').showPodium();
+  await new Promise((r) => setTimeout(r, 500));
+  const s = window.game.scene.getScene('PodiumScene');
+  const out = { open: window.game.scene.isActive('PodiumScene'), mine: s.mineLine?.text ?? '' };
+  s.close();
+  await new Promise((r) => setTimeout(r, 300));
+  out.seenPosted = window.__podium.asked.seen;
+  window.account.user = null;
+  return out;
+})()` });
+const op = ownPlace.result?.result?.value ?? {};
+console.log('own place:', JSON.stringify(op));
+check('signed in, it shows the account’s own place that day out of everyone, with its damage — and tells the account it was seen',
+  op.open && /12위/.test(op.mine) && /35명/.test(op.mine) && /1,234,567/.test(op.mine) && op.seenPosted === 1,
+  JSON.stringify(op));
 await ev(`(() => { window.fetch = window.__realFetch; window.config.RANKING.shared.enabled = false;
   window.config.RANKING.shared.podiumSince = window.__podium.since; return 1; })()`);
 

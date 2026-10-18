@@ -235,6 +235,8 @@ export const ko: Strings = {
   },
 
   gameOver: {
+    devRunDebug: '개발자 도구(F키)를 쓴 판이라 랭킹과 내 기록에 오르지 않습니다',
+    devRunDraft: '밸런스 실험 중인 판이라 랭킹과 내 기록에 오르지 않습니다 · 밸런스 화면에서 실험 취소 또는 전체 적용',
     title: 'GAME OVER',
     damageDealt: '가한 피해',
     killsDealt: '처치',
@@ -316,6 +318,9 @@ export const ko: Strings = {
     title: '어제의 랭킹',
     day: '{date} 결과',
     stats: 'Lv {level} · 생존 {time}',
+    mine: '내 순위 {place}위 / {total}명 · 피해 {damage}',
+    mineNone: '어제는 내 기록이 없습니다',
+    mineSignedOut: '로그인하면 내 순위도 볼 수 있습니다',
     ok: '확인',
   },
 
@@ -431,6 +436,7 @@ export const ko: Strings = {
   },
 
   game: {
+    draftRun: '밸런스 실험 중 — 이 판은 랭킹과 내 기록에 오르지 않습니다',
     blocked: '막음',
     maxedHeal: '{skill} 강화 완료 — 레벨업이 체력 포션 효과로 바뀌어 체력 +{heal}',
     potionEffect: '포션 효과!',

@@ -231,6 +231,8 @@ export const zh: Strings = {
   },
 
   gameOver: {
+    devRunDebug: '本局使用了开发者工具（F 键），不会登上排行榜和我的记录',
+    devRunDraft: '本局处于平衡实验中，不会登上排行榜和我的记录 · 请在平衡界面取消实验或应用到全部',
     title: 'GAME OVER',
     damageDealt: '造成伤害',
     killsDealt: '击杀',
@@ -312,6 +314,9 @@ export const zh: Strings = {
     title: '昨日排行榜',
     day: '{date} 结果',
     stats: 'Lv {level} · 生存 {time}',
+    mine: '我的排名 第 {place} 名 / 共 {total} 人 · 伤害 {damage}',
+    mineNone: '昨天没有我的记录',
+    mineSignedOut: '登录后也能看到自己的排名',
     ok: '确定',
   },
 
@@ -427,6 +432,7 @@ export const zh: Strings = {
   },
 
   game: {
+    draftRun: '平衡实验中 — 本局不会登上排行榜和我的记录',
     blocked: '格挡',
     maxedHeal: '{skill} 已全部强化 — 升级改为生命药水效果，生命 +{heal}',
     potionEffect: '药水效果！',

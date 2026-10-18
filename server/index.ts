@@ -12,7 +12,7 @@
 import { callback, deleteMe, facebookDeletion, logout, me, start } from './auth';
 import type { Env } from './env';
 import { json } from './http';
-import { board, forgetBoard, mine, podium, podiumSeen, removeEntry, review, submit } from './ranking';
+import { board, forgetBoard, mine, podium, podiumMine, podiumSeen, removeEntry, review, submit } from './ranking';
 import { getSave, putSave } from './save';
 import { getTuning, putTuning } from './tuning';
 
@@ -36,6 +36,9 @@ export default {
     }
     if (pathname === '/api/ranking/podium' && method === 'GET') {
       return podium(request, env, ctx);
+    }
+    if (pathname === '/api/ranking/podium/me' && method === 'GET') {
+      return podiumMine(request, env);
     }
     if (pathname === '/api/ranking/podium/seen' && method === 'POST') {
       return podiumSeen(request, env);
