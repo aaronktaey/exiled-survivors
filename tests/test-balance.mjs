@@ -281,12 +281,14 @@ check('play resumes after the picks', alive.over === false && alive.choosing ===
   `over=${alive.over} choosing=${alive.choosing} paused=${alive.paused}`);
 
 // --- the run gets harder for lasting ---
-// Every whole minute compounds the health an enemy spawns with, and adds a
-// point of a percent to how many of them come up rare.
+// Every whole minute compounds the health an enemy spawns with — by the base
+// step, then by that step times its tier (DIFFICULTY.hpStepTiers) — and adds
+// a point of a percent to how many of them come up rare.
 const curve = await run(`
   const d = window.config.DIFFICULTY;
   const out = [];
-  for (const m of [0, 1, 2, 5, 10]) {
+  const last = Math.max(...d.hpStepTiers.map((t) => t.afterMinute)) + 4;
+  for (let m = 0; m <= last; m++) {
     s.spawner.seed(m * 60000);
     out.push({ m, hp: s.spawner.hpScale, rare: s.spawner.rareChance });
   }
@@ -295,44 +297,50 @@ const curve = await run(`
   s.spawner.seed(0);
   return { d, out, underAMinute, base: window.config.RARE.chance };
 `);
-console.log('the curve:', JSON.stringify(curve));
-check('every minute multiplies the health an enemy spawns with',
-  curve.out.every(({ m, hp }) => Math.abs(hp - curve.d.hpScalePerMinute ** m) < 1e-9) &&
-    curve.d.hpScalePerMinute === 1.1,
-  curve.out.map(({ m, hp }) => `${m}m x${hp.toFixed(2)}`).join(' / '));
-check('and it compounds rather than adding up',
-  Math.abs(curve.out.find((o) => o.m === 10).hp - 2.5937424601) < 1e-6,
-  `ten minutes is x${curve.out.find((o) => o.m === 10).hp.toFixed(3)}, not x2`);
+console.log('the curve:', JSON.stringify(curve.out.map(({ m, hp }) => `${m}m x${hp.toFixed(3)}`)));
+const step = curve.d.hpScalePerMinute - 1;
+const tierOf = (minute) => {
+  let mult = 1, passed = -Infinity;
+  for (const t of curve.d.hpStepTiers) if (minute > t.afterMinute && t.afterMinute >= passed) { passed = t.afterMinute; mult = t.multiplier; }
+  return mult;
+};
+const firstTier = Math.min(...curve.d.hpStepTiers.map((t) => t.afterMinute));
+check('before the first tier, every minute multiplies the health an enemy spawns with by the base step',
+  curve.out.filter(({ m }) => m <= firstTier).every(({ m, hp }) => Math.abs(hp - curve.d.hpScalePerMinute ** m) < 1e-9),
+  curve.out.filter(({ m }) => m <= firstTier).map(({ m, hp }) => `${m}m x${hp.toFixed(3)}`).join(' / '));
+check('and past each tier the minute’s step is that tier’s multiple of it, compounding',
+  curve.out.every(({ m, hp }, i) => i === 0 || Math.abs(hp / curve.out[i - 1].hp - (1 + step * tierOf(m))) < 1e-9) &&
+    curve.d.hpStepTiers.every((t) => Math.abs(curve.out[t.afterMinute + 1].hp / curve.out[t.afterMinute].hp - (1 + step * t.multiplier)) < 1e-9),
+  curve.out.slice(1).map(({ m, hp }, i) => `${m}m x${(hp / curve.out[i].hp).toFixed(3)}`).join(' / '));
 check('the same minute adds a point of a percent to the rares',
-  curve.out.every(({ m, rare }) =>
-    Math.abs(rare - (curve.base + curve.d.rareChancePerMinute * m)) < 1e-9) &&
-    curve.d.rareChancePerMinute === 0.01,
+  curve.out.filter(({ m }) => m <= curve.d.lateFromMinute).every(({ m, rare }) =>
+    Math.abs(rare - Math.min(1, curve.base + curve.d.rareChancePerMinute * m)) < 1e-9),
   curve.out.map(({ m, rare }) => `${m}m ${(rare * 100).toFixed(0)}%`).join(' / '));
 check('it steps on the minute rather than creeping up to it',
   curve.underAMinute.hp === 1 && curve.underAMinute.rare === curve.base,
   `at 59s still x${curve.underAMinute.hp}`);
 
-// Past the late minute every step is lateMultiplier times as big.
+// Past the late minute the rare step is lateMultiplier times as big; health
+// does not follow it any more.
 const late = await run(`
   const d = window.config.DIFFICULTY;
   const out = [];
   for (const m of [d.lateFromMinute, d.lateFromMinute + 1, d.lateFromMinute + 2, d.lateFromMinute + 5]) {
     s.spawner.seed(m * 60000);
-    out.push({ m, hp: s.spawner.hpScale, rare: s.spawner.rareChance });
+    out.push({ m, rare: s.spawner.rareChance, hp: s.spawner.hpScale, want: window.config.enemyHpScaleAt(m * 60000) });
   }
   s.spawner.seed(0);
   return { d, out, base: window.config.RARE.chance };
 `);
 const L = late.d.lateFromMinute;
-const lateStep = 1 + (late.d.hpScalePerMinute - 1) * late.d.lateMultiplier;
-check('from the late minute on, each minute’s health step is that many times bigger',
-  late.out.every(({ m, hp }) =>
-    Math.abs(hp - late.d.hpScalePerMinute ** L * lateStep ** (m - L)) < 1e-6 * hp),
-  late.out.map(({ m, hp }) => `${m}m x${hp.toFixed(2)}`).join(' / '));
-check('and so is the rare step',
+check('from the late minute on, the rare step is that many times bigger',
   late.out.every(({ m, rare }) => Math.abs(rare - Math.min(1,
     late.base + late.d.rareChancePerMinute * (L + (m - L) * late.d.lateMultiplier))) < 1e-9),
   late.out.map(({ m, rare }) => `${m}m ${(rare * 100).toFixed(0)}%`).join(' / '));
+check('while health keeps to its tiers there',
+  late.out.every(({ m, hp, want }, i) => Math.abs(hp - want) < 1e-9 * want &&
+    (i === 0 || Math.abs(hp / late.out[i - 1].hp - (1 + step * tierOf(m)) ** (m - late.out[i - 1].m)) < 1e-9)),
+  late.out.map(({ m, hp }) => `${m}m x${hp.toFixed(2)}`).join(' / '));
 
 const walked = await run(`
   s.choosing = true;
@@ -345,7 +353,9 @@ const walked = await run(`
     e.spawn(600, 600, s.player, 'grunt', undefined, false, s.spawner.hpScale);
     const boss = s.spawner.group.get(600, 600);
     boss.spawn(600, 600, s.player, 'boss', undefined, false, s.spawner.hpScale);
-    const out = { minutes, grunt: e.hp, gruntMax: e.maxHp, boss: boss.hp };
+    // What the clock says, read off the config rather than written here.
+    const scale = window.config.enemyHpScaleAt(minutes * 60000) * window.config.BALANCE.enemyHpScale;
+    const out = { minutes, grunt: e.hp, gruntMax: e.maxHp, boss: boss.hp, scale };
     s.spawner.clear();
     return out;
   };
@@ -357,14 +367,14 @@ const walked = await run(`
 console.log('what walks in:', JSON.stringify(walked));
 check('an enemy walks in with the health the clock says',
   walked.out.every(({ minutes, grunt }) =>
-    grunt === Math.round(walked.base * 1.1 ** minutes)),
+    grunt === Math.round(walked.base * walked.out.find((o) => o.minutes === minutes).scale)),
   walked.out.map(({ minutes, grunt }) => `${minutes}m ${grunt}hp`).join(' / '));
 check('and remembers it, so a bar has something to measure against',
   walked.out.every(({ grunt, gruntMax }) => grunt === gruntMax),
   'hp === maxHp on arrival');
 check('the 우두머리 is on the same ladder',
   walked.out.every(({ minutes, boss }) =>
-    boss === Math.round(walked.bossBase * 1.1 ** minutes)),
+    boss === Math.round(walked.bossBase * walked.out.find((o) => o.minutes === minutes).scale)),
   walked.out.map(({ minutes, boss }) => `${minutes}m ${boss}hp`).join(' / '));
 
 // The roll really does follow the number, not just the read-out.

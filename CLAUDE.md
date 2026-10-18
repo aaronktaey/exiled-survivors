@@ -449,6 +449,13 @@ Read `git log` for what changed and when. What is not in the log:
   survivor may save: 하얀 망고, 자석, 포션, 제단. The flight you see is a
   picture (`flyIn`, `MAGNET.flyMs`), not the items. A new drop group goes in
   the `take` list there, or in the left-alone list in the comment.
+- **Enemy health steps by tiers, not a late wall (0.66).** `enemyHpScaleAt`
+  multiplies each whole minute by 1 + (hpScalePerMinute − 1) × that minute's
+  tier (`DIFFICULTY.hpStepTiers`, the last `afterMinute` passed; ×2 after 3,
+  ×3 after 6), each tier on the 밸런스 적 dials by index
+  (`DIFFICULTY.hpStepTiers.0.multiplier`). `lateFromMinute`/`lateMultiplier`
+  now move only the rare chance. The user asked for this on 2026-10-18:
+  minutes 5–10 were too easy and the ×5 step at ten a wall.
 - **Upgrade cards carry their numbers.** `upgradeOptionsFor(skill, stats)`
   adds `now`/`next` (the skill's own stat, before its folds — capped at
   `UPGRADE_CAP`) and `taken`/`maxPicks` (`maxPicksFor`: the pick limit or

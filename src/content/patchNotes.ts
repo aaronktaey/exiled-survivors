@@ -15,6 +15,28 @@ export interface PatchNote {
 
 export const PATCH_NOTES: readonly PatchNote[] = [
   {
+    version: '0.66',
+    date: '2026-10-18',
+    changes: {
+      ko: [
+        '시간에 따른 적 체력 증가 방식이 바뀌었습니다. 3분이 지나면 분당 체력 증가가 2배, 6분이 지나면 3배가 되고(현재 분당 +15.4% → +30.8% → +46.2%), 10분부터 증가가 5배로 뛰던 방식은 없어졌습니다. 중반은 더 단단해지고, 10분 이후의 급격한 벽은 완만해집니다.',
+        '사수가 투사체를 쏘기 시작하는 거리가 1.5배로 늘었습니다.',
+      ],
+      en: [
+        'Enemy health now rises differently over time: after minute 3 its rise per minute doubles, and after minute 6 it triples (currently +15.4% → +30.8% → +46.2% a minute), while the jump to five times the rise at minute 10 is gone. The middle of a run is tougher and the wall after ten minutes is gentler.',
+        'Shooters start firing from 1.5 times as far away.',
+      ],
+      ja: [
+        '時間による敵の体力の増え方が変わりました。3 分を過ぎると毎分の体力増加が 2 倍、6 分を過ぎると 3 倍になり（現在は毎分 +15.4% → +30.8% → +46.2%）、10 分から増加が 5 倍に跳ね上がる方式はなくなりました。中盤はより硬くなり、10 分以降の急な壁はなだらかになります。',
+        '射手が投射物を撃ち始める距離が 1.5 倍になりました。',
+      ],
+      zh: [
+        '敌人生命随时间增长的方式改变：过了第 3 分钟，每分钟的生命增长变为 2 倍，过了第 6 分钟变为 3 倍（当前为每分钟 +15.4% → +30.8% → +46.2%），第 10 分钟起增长变为 5 倍的方式已取消。中盘更耐打，10 分钟后的陡峭难度变得平缓。',
+        '射手开始发射投射物的距离提高到 1.5 倍。',
+      ],
+    },
+  },
+  {
     version: '0.65',
     date: '2026-10-18',
     changes: {

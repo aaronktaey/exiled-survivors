@@ -316,7 +316,8 @@ export const ENEMY_KINDS: Record<EnemyKind, EnemyKindSpec> = {
       speed: 230,
       /** One every four seconds: a 사수 is a nuisance, not a turret. */
       cooldownMs: 4000,
-      range: 300,
+      // How near it has to be to start shooting. 300 until 2026-10-18.
+      range: 450,
       // Outside 타격 and 화염구, inside 연쇄번개 and 얼음창: walk it down or
       // bring something with reach.
       standoff: 140,
@@ -699,12 +700,22 @@ export const RARE = {
  */
 export const DIFFICULTY = {
   hpScalePerMinute: 1.1,
+  /**
+   * Past `afterMinute` minutes, each minute's health step is `multiplier`
+   * times the base one (hpScalePerMinute − 1): with ×1.1, +10% a minute,
+   * then +20% from the fourth minute and +30% from the seventh, compounding
+   * the same way. The last tier passed is the one that counts. Until
+   * 2026-10-18 health instead leapt to five times the step at minute ten;
+   * the middle of a run was too easy and the end a wall.
+   */
+  hpStepTiers: [
+    { afterMinute: 3, multiplier: 2 },
+    { afterMinute: 6, multiplier: 3 },
+  ],
   rareChancePerMinute: 0.01,
   /**
-   * From this minute on, each minute's step is `lateMultiplier` times what
-   * it was: +10% health a minute becomes +50%, compounding the same way,
-   * and +1%p of rares becomes +5%p. The first ten minutes are the run; past
-   * them the field is meant to close in fast.
+   * From this minute on, each minute's rare step is `lateMultiplier` times
+   * what it was: +1%p of rares becomes +5%p. (Health no longer follows it.)
    */
   lateFromMinute: 10,
   lateMultiplier: 5,
@@ -722,16 +733,31 @@ function rampMinutes(elapsedMs: number): { early: number; late: number } {
   return { early, late: minutes - early };
 }
 
+/** How many times the base health step the `minute`th minute's is (DIFFICULTY.hpStepTiers). */
+export function hpStepMultiplierFor(minute: number): number {
+  let multiplier = 1;
+  let passed = -Infinity;
+  for (const tier of DIFFICULTY.hpStepTiers) {
+    if (minute > tier.afterMinute && tier.afterMinute >= passed) {
+      passed = tier.afterMinute;
+      multiplier = tier.multiplier;
+    }
+  }
+  return multiplier;
+}
+
 /**
  * What an enemy spawning now is worth in health, for the clock alone: each
- * early minute multiplies it by hpScalePerMinute, each late one by a step
- * `lateMultiplier` times as big (1.1 a minute, then 1.5).
+ * whole minute multiplies it by 1 + its step, the base step
+ * (hpScalePerMinute − 1) times that minute's tier (hpStepTiers).
  */
 export function enemyHpScaleAt(elapsedMs: number): number {
-  const { early, late } = rampMinutes(elapsedMs);
-  const lateStep =
-    1 + (DIFFICULTY.hpScalePerMinute - 1) * DIFFICULTY.lateMultiplier;
-  return DIFFICULTY.hpScalePerMinute ** early * lateStep ** late;
+  const step = DIFFICULTY.hpScalePerMinute - 1;
+  let scale = 1;
+  for (let minute = 1; minute <= runMinutes(elapsedMs); minute++) {
+    scale *= 1 + step * hpStepMultiplierFor(minute);
+  }
+  return scale;
 }
 
 /** The share of spawns that come up rare, after the same clock. */
