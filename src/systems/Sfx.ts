@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 
-import { AUDIO } from '@/config';
+import { AUDIO, type EnemyKind, type EnemySoundPart } from '@/config';
 import { settings } from '@/systems/Settings';
 import type { SkillId } from '@/weapons/skills';
 
@@ -9,6 +9,14 @@ export const effectVolume = (volume: number): number => volume * settings.value.
 
 /** Cache key for one variant of one skill's sound. */
 const keyFor = (skill: SkillId, index: number): string => `sfx-${skill}-${index}`;
+
+/** Cache key for one variant of one of an enemy kind's sounds. */
+const enemyKeyFor = (kind: EnemyKind, part: EnemySoundPart, index: number): string =>
+  `sfx-enemy-${kind}-${part}-${index}`;
+
+/** The same two, for an enemy's sounds, by kind and part. */
+const enemyLast = new Map<string, number>();
+const enemyReadyAt = new Map<string, number>();
 
 /** The variant each skill played last, so the next one is a different clip. */
 const lastPlayed = new Map<SkillId, number>();
@@ -36,6 +44,38 @@ export const sfx = {
       clip.files.forEach((file, index) => {
         scene.load.audio(keyFor(skill as SkillId, index), `${base}${file}`);
       });
+    }
+
+    for (const [kind, parts] of Object.entries(AUDIO.enemies)) {
+      for (const [part, sound] of Object.entries(parts ?? {})) {
+        sound?.files.forEach((file, index) => {
+          scene.load.audio(enemyKeyFor(kind as EnemyKind, part as EnemySoundPart, index), `${base}${file}`);
+        });
+      }
+    }
+  },
+
+  /** One of an enemy kind's sounds, if it has that one and it is not resting. */
+  playEnemy(scene: Phaser.Scene, kind: EnemyKind, part: EnemySoundPart): void {
+    const sound = AUDIO.enemies[kind]?.[part];
+    if (!sound || sound.files.length === 0) {
+      return;
+    }
+    const id = `${kind}-${part}`;
+    const now = scene.time.now;
+    if (now < (enemyReadyAt.get(id) ?? 0)) {
+      return;
+    }
+    enemyReadyAt.set(id, now + (sound.gapMs ?? AUDIO.minGapMs));
+
+    let index = Math.floor(Math.random() * sound.files.length);
+    if (sound.files.length > 1 && index === enemyLast.get(id)) {
+      index = (index + 1) % sound.files.length;
+    }
+    enemyLast.set(id, index);
+    const key = enemyKeyFor(kind, part, index);
+    if (scene.cache.audio.exists(key)) {
+      scene.sound.play(key, { volume: effectVolume(sound.volume) });
     }
   },
 
@@ -118,5 +158,7 @@ export const sfx = {
   reset(): void {
     lastPlayed.clear();
     readyAt.clear();
+    enemyLast.clear();
+    enemyReadyAt.clear();
   },
 };

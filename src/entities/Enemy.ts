@@ -28,6 +28,7 @@ import {
   type EnemyGiantSpec,
 } from '@/config';
 import { enemyName } from '@/i18n';
+import { sfx } from '@/systems/Sfx';
 
 /** Only the 속성 that mean something on an enemy. */
 const ENEMY_AFFIX_POOL = ENEMY_AFFIXES;
@@ -74,6 +75,8 @@ export interface EnemyHooks {
   readonly fireShot: (x: number, y: number, angle: number, spec: EnemyShotSpec) => void;
   /** Announces a 우두머리, so the run can say something about it. */
   readonly onBossSpawned?: () => void;
+  /** 키메라 러시 has begun: the field was just cleared for it. */
+  readonly onChimeraRush?: () => void;
 }
 
 /**
@@ -307,6 +310,7 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
     this.setVelocity(0, 0);
     this.drawOutline();
     this.drawHealthBar();
+    sfx.playEnemy(this.scene, kind, 'appear');
   }
 
   /** Reads a set of affixes into the multipliers the rest of the class uses. */
@@ -459,7 +463,8 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
 
   /** Frozen solid for a moment (얼음창 각성): no step, no shot. */
   public freeze(durationMs: number): void {
-    if (this.active) {
+    // A 키메라 (`unstoppable`) shrugs it off.
+    if (this.active && !this.spec.unstoppable) {
       this.frozenMs = Math.max(this.frozenMs, durationMs);
     }
   }
@@ -551,16 +556,17 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
       return;
     }
 
+    // The ring goes off whatever else it is doing — a 키메라 throws it mid-hop.
+    if (this.spec.volley) {
+      this.throwRing(dt, this.spec.volley);
+    }
+
     if (this.spec.hop) {
       this.hopAbout(dt, this.spec.hop);
       return;
     }
 
     const distance = Phaser.Math.Distance.Between(this.x, this.y, this.target.x, this.target.y);
-
-    if (this.spec.volley) {
-      this.throwRing(dt, this.spec.volley);
-    }
 
     if (this.spec.shot && this.fightAtRange(dt, distance, this.spec.shot)) {
       return;
@@ -687,6 +693,7 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
     }
 
     this.volleyCooldownMs = volley.cooldownMs;
+    sfx.playEnemy(this.scene, this.kind, 'cast');
 
     const step = (Math.PI * 2) / volley.count;
     // A different starting angle each time, or the gaps are always in the

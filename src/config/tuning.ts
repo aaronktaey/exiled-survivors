@@ -86,6 +86,8 @@ export const DIALS: readonly DialSpec[] = [
   { path: 'ENEMY_KINDS.erratic.hop.distance', kind: 'number', tab: 'enemies', min: 20 },
   { path: 'ENEMY_KINDS.erratic.hop.restMs', kind: 'ms', tab: 'enemies' },
   { path: 'ENEMY_KINDS.erratic.hop.lungeChance', kind: 'chance', tab: 'enemies', max: 1 },
+  { path: 'CHIMERA_RUSH.atMs', kind: 'ms', tab: 'enemies', min: 60_000 },
+  { path: 'CHIMERA_RUSH.intervalMs', kind: 'ms', tab: 'enemies', min: 500 },
 
   // What falls.
   { path: 'SKILL_DROP.chance', kind: 'chance', tab: 'drops', max: 0.2 },

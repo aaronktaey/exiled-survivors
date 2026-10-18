@@ -46,7 +46,7 @@ import { XpGem } from '@/entities/XpGem';
 import type { DamageNumbers } from '@/systems/DamageNumbers';
 import type { Progression } from '@/systems/Progression';
 import type { SkillDefinition, SkillId } from '@/weapons/skills';
-import { effectVolume } from '@/systems/Sfx';
+import { effectVolume, sfx } from '@/systems/Sfx';
 
 export interface CombatHooks {
   /**
@@ -84,6 +84,8 @@ export interface CombatHooks {
   readonly onRandomSkillCollected: () => void;
   /** Called when the survivor walks up to a 제단: call up what it offered. */
   readonly onAltarWoke: (offer: AltarOfferId, x: number, y: number) => void;
+  /** The nearest spot to (x, y) not on a 지형지물: nothing is dropped on a rock. */
+  readonly clearOfTerrain?: (x: number, y: number) => [number, number];
 }
 
 /** How far inside the edge of the world anything is let fall. */
@@ -192,6 +194,15 @@ export class CombatSystem {
     scene.physics.add.overlap(player, this.magnetDrops, this.onMagnetTouch, undefined, this);
   }
 
+  /** Where a drop meant for (x, y) lands: inside the world and off any rock. */
+  private onGround(x: number, y: number): [number, number] {
+    [x, y] = inWorld(x, y);
+    if (this.hooks.clearOfTerrain) {
+      [x, y] = inWorld(...this.hooks.clearOfTerrain(x, y));
+    }
+    return [x, y];
+  }
+
   /** Wires a newly acquired projectile weapon into enemy collisions. */
   public registerProjectiles(projectiles: Phaser.Physics.Arcade.Group, enemies: Phaser.Physics.Arcade.Group): void {
     this.scene.physics.add.overlap(projectiles, enemies, this.onProjectileHit, undefined, this);
@@ -205,7 +216,7 @@ export class CombatSystem {
 
   /** Places a potion directly — used by the kill roll and by debug keys. */
   public dropPotionAt(x: number, y: number): void {
-    [x, y] = inWorld(x, y);
+    [x, y] = this.onGround(x, y);
     const potion = this.potions.get() as HealthPotion | null;
     if (!potion) {
       return;
@@ -217,7 +228,7 @@ export class CombatSystem {
 
   /** Places a 신성한 조각 directly — used by the kill and by debug keys. */
   public dropShardAt(x: number, y: number): void {
-    [x, y] = inWorld(x, y);
+    [x, y] = this.onGround(x, y);
     const shard = this.shardDrops.get() as ShardDrop | null;
     if (!shard) {
       return;
@@ -231,7 +242,7 @@ export class CombatSystem {
 
   /** Places a 구슬 directly — used by the kill roll and by debug keys. */
   public dropOrbAt(x: number, y: number, id: OrbId): void {
-    [x, y] = inWorld(x, y);
+    [x, y] = this.onGround(x, y);
     const drop = this.orbDrops.get() as OrbDrop | null;
     if (!drop) {
       return;
@@ -243,7 +254,7 @@ export class CombatSystem {
 
   /** Places a 뼈다귀 directly — used by the kill roll and by debug keys. */
   public dropBoneAt(x: number, y: number, id: BoneId): void {
-    [x, y] = inWorld(x, y);
+    [x, y] = this.onGround(x, y);
     const drop = this.boneDrops.get() as BoneDrop | null;
     if (!drop) {
       return;
@@ -255,7 +266,7 @@ export class CombatSystem {
 
   /** Places a 하얀 망고 directly — used by the kill roll and by tests. */
   public dropMangoAt(x: number, y: number): void {
-    [x, y] = inWorld(x, y);
+    [x, y] = this.onGround(x, y);
     const drop = this.mangoDrops.get() as MangoDrop | null;
     if (!drop) {
       return;
@@ -267,7 +278,7 @@ export class CombatSystem {
 
   /** Places a 자석 directly — used by the kill roll and by tests. */
   public dropMagnetAt(x: number, y: number): void {
-    [x, y] = inWorld(x, y);
+    [x, y] = this.onGround(x, y);
     const drop = this.magnetDrops.get() as MagnetDrop | null;
     if (!drop) {
       return;
@@ -333,7 +344,7 @@ export class CombatSystem {
 
   /** Places a 무작위 스킬 directly — used by the kill roll and by tests. */
   public dropRandomSkillAt(x: number, y: number): void {
-    [x, y] = inWorld(x, y);
+    [x, y] = this.onGround(x, y);
     const drop = this.randomSkillDrops.get() as RandomSkillDrop | null;
     if (!drop) {
       return;
@@ -345,7 +356,7 @@ export class CombatSystem {
 
   /** Places a 제단 directly — used by the 우두머리 kill and by tests. */
   public dropAltarAt(x: number, y: number, offer: AltarOfferId): Altar | null {
-    [x, y] = inWorld(x, y);
+    [x, y] = this.onGround(x, y);
     const altar = this.altars.get() as Altar | null;
     if (!altar) {
       return null;
@@ -360,7 +371,7 @@ export class CombatSystem {
 
   /** Places a weapon directly — used by the 우두머리 kill and debug keys. */
   public dropGearAt(x: number, y: number, item: GearItem): void {
-    [x, y] = inWorld(x, y);
+    [x, y] = this.onGround(x, y);
     const drop = this.gearDrops.get() as GearDrop | null;
     if (!drop) {
       return;
@@ -372,7 +383,7 @@ export class CombatSystem {
 
   /** Places a drop directly — used by the spawner's roll and by debug keys. */
   public dropSkillAt(x: number, y: number, skill: SkillDefinition): void {
-    [x, y] = inWorld(x, y);
+    [x, y] = this.onGround(x, y);
     const drop = this.skillDrops.get() as SkillDrop | null;
     if (!drop) {
       return;
@@ -711,6 +722,7 @@ export class CombatSystem {
     const { x, y } = enemy;
     // Read the rewards before recycling, which resets the kind and affixes.
     this.stats.recordKill(enemy.kind);
+    sfx.playEnemy(this.scene, enemy.kind, 'death');
     const worth = enemy.xpValue;
     const dropBonus = enemy.dropBonus;
     const wasBoss = enemy.isBoss;

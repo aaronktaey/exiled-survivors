@@ -21,7 +21,16 @@ export class EnemyShot extends Phaser.Physics.Arcade.Image {
     this.remainingMs = spec.lifespanMs;
 
     this.enableBody(true, x, y, true, true);
-    this.setDisplaySize(spec.size, spec.size);
+    // Pooled: a shot that was a 키메라's thorn last time is a plain bolt now.
+    // A picture of its own is drawn at its own size; the plain square is
+    // stretched to the shot's (and its body with it, as it always was).
+    if (spec.texture) {
+      this.setTexture(spec.texture);
+      this.setScale(1);
+    } else {
+      this.setTexture(TEXTURES.enemyShot);
+      this.setDisplaySize(spec.size, spec.size);
+    }
     this.body?.setSize(spec.size, spec.size, true);
     this.setRotation(angle);
     this.scene.physics.velocityFromRotation(

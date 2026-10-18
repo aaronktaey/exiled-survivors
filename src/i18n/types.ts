@@ -613,6 +613,8 @@ export interface Strings {
     readonly potionEffect: string;
     /** A toast as a 우두머리 walks in. */
     readonly bossArrived: string;
+    /** 키메라 러시 begins: the field cleared, the ground shaking. */
+    readonly chimeraRush: string;
     readonly intro: string;
     readonly introHintKeyboard: string;
     readonly introHintTouch: string;

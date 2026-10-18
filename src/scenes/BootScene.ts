@@ -19,6 +19,7 @@ import {
   PLAYER,
   POTION,
   SHOTS,
+  TERRAIN,
   TEXTURES,
   VOID_ORB,
 } from '@/config';
@@ -70,11 +71,14 @@ export class BootScene extends Phaser.Scene {
         this.createFlashyTexture(kind.texture, kind.size);
       } else if (kind.giant) {
         this.createGiantTextures(kind.texture, kind.giant.drawn, kind.color);
+      } else if (kind.id === 'chimera') {
+        this.createChimeraTexture(kind.texture, kind.size);
       } else {
         this.createSquareTexture(kind.texture, kind.size, kind.color);
       }
     }
     this.createSquareTexture(TEXTURES.enemyShot, 8, COLORS.enemyShot);
+    this.createThornTexture();
     this.createShardTexture();
     this.createVoidOrbTexture();
     this.createPotionTexture();
@@ -131,6 +135,11 @@ export class BootScene extends Phaser.Scene {
       if (!(window as { __accountOn?: boolean }).__accountOn) {
         (ACCOUNT as { enabled: boolean }).enabled = false;
       }
+    }
+    if (import.meta.env.DEV && harness && !(window as { __terrainOn?: boolean }).__terrainOn) {
+      // A suite places enemies by hand and walks the survivor about; a rock
+      // in the way would move them. test-terrain keeps them (window.__terrainOn).
+      (TERRAIN as { enabled: boolean }).enabled = false;
     }
     if (import.meta.env.DEV) {
       // Turnstile only knows the real domain, and `wrangler dev` has no secret
@@ -263,6 +272,61 @@ export class BootScene extends Phaser.Scene {
 
     graphics.generateTexture(key, size, size);
     graphics.destroy();
+  }
+
+  /**
+   * 키메라, facing right: a lion's body and maned head, a goat's horns on
+   * top, and a serpent for a tail coiling up behind.
+   */
+  private createChimeraTexture(key: string, size: number): void {
+    const k = size / 30;
+    const g = this.add.graphics();
+    // The serpent tail, behind everything else.
+    g.lineStyle(3.2 * k, COLORS.chimeraTail, 1);
+    g.beginPath();
+    g.moveTo(7 * k, 19 * k);
+    g.lineTo(3 * k, 15 * k);
+    g.lineTo(3.5 * k, 9 * k);
+    g.lineTo(6.5 * k, 6 * k);
+    g.strokePath();
+    g.fillStyle(COLORS.chimeraTail, 1);
+    g.fillEllipse(8 * k, 5.5 * k, 5.5 * k, 4 * k);
+    g.fillStyle(0xffe066, 1);
+    g.fillCircle(9 * k, 5 * k, 0.8 * k);
+    // Legs, then the body over them.
+    const legs = Phaser.Display.Color.ValueToColor(COLORS.enemyChimera).darken(30).color;
+    g.fillStyle(legs, 1);
+    for (const x of [8, 12, 18, 22]) {
+      g.fillRoundedRect((x - 1.6) * k, 20 * k, 3.2 * k, 8 * k, 1.2 * k);
+    }
+    g.fillStyle(COLORS.enemyChimera, 1);
+    g.fillEllipse(15 * k, 19 * k, 20 * k, 11 * k);
+    // The mane, the head in it, and the horns over both.
+    g.fillStyle(COLORS.chimeraMane, 1);
+    g.fillCircle(21.5 * k, 12.5 * k, 7.5 * k);
+    g.fillStyle(COLORS.enemyChimera, 1);
+    g.fillCircle(23 * k, 13 * k, 4.6 * k);
+    g.fillStyle(COLORS.thorn, 1);
+    g.fillTriangle(17.5 * k, 7 * k, 20 * k, 6 * k, 15.5 * k, 1 * k);
+    g.fillTriangle(22 * k, 6 * k, 24.5 * k, 7 * k, 25.5 * k, 0.5 * k);
+    g.fillStyle(0xd23b2a, 1);
+    g.fillCircle(25 * k, 12 * k, 1 * k);
+    g.fillStyle(COLORS.chimeraMane, 1);
+    g.fillTriangle(26 * k, 15 * k, 28.5 * k, 14 * k, 26.5 * k, 16.5 * k);
+    g.generateTexture(key, size, size);
+    g.destroy();
+  }
+
+  /** A 키메라's thorn: a white spike, its point to the right (the way it flies). */
+  private createThornTexture(): void {
+    const g = this.add.graphics();
+    g.fillStyle(COLORS.thornEdge, 1);
+    g.fillTriangle(0, 1, 22, 4, 0, 7);
+    g.fillStyle(COLORS.thorn, 1);
+    g.fillTriangle(1, 2, 21, 4, 1, 6);
+    g.fillRect(0, 2.5, 4, 3);
+    g.generateTexture(TEXTURES.thorn, 22, 8);
+    g.destroy();
   }
 
   /** The void orb: a pale core inside a violet shell. */

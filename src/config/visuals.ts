@@ -14,6 +14,12 @@ export const COLORS = {
   /** Same accent as a number, for shapes (text takes the string form). */
   accentFill: 0xe0564a,
   grid: 0x1a1f2b,
+  /** 지형지물: a dark stone with a lit top and rim, over its shadow. */
+  rockShadow: 0x000000,
+  rockBody: 0x2a2f3a,
+  rockTop: 0x3c4352,
+  rockRim: 0x5c6680,
+  rockFleck: 0x4b5466,
   player: 0x8fd3ff,
   enemy: 0xe0564a,
   enemyBrute: 0xb44bd1,
@@ -25,6 +31,13 @@ export const COLORS = {
   /** 도망자: drawn white so the cycling tint over it reads as pure colour. */
   enemyFugitive: 0xffffff,
   enemyErratic: 0x9b6bff,
+  /** 키메라: a sand-gold lion's body, a dark mane, a green serpent tail. */
+  enemyChimera: 0xc9a25a,
+  chimeraMane: 0x6b3d22,
+  chimeraTail: 0x4f9a5a,
+  /** Its thorns: bone white with a grey spine. */
+  thorn: 0xf6f3ea,
+  thornEdge: 0x9a978f,
   /** Plain gold: the 랭킹 trophy, and the arrow that points at a 도망자. */
   gold: 0xffe066,
   /** 2위 and 3위's cups. */
@@ -94,6 +107,8 @@ export const COLORS = {
 
 export const DEPTH = {
   ground: 0,
+  /** 지형지물, on the floor and under everything that moves over it. */
+  terrain: 5,
   pickups: 10,
   enemies: 20,
   player: 30,
@@ -151,6 +166,8 @@ export const TEXTURES = {
   enemyBoss: "tex-enemy-boss",
   enemyFugitive: "tex-enemy-fugitive",
   enemyErratic: "tex-enemy-erratic",
+  enemyChimera: "tex-enemy-chimera",
+  thorn: "tex-thorn",
   enemyShot: "tex-enemy-shot",
   projectile: "tex-projectile",
   iceShard: "tex-ice-shard",

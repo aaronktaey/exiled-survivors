@@ -15,6 +15,40 @@ export interface PatchNote {
 
 export const PATCH_NOTES: readonly PatchNote[] = [
   {
+    version: '0.67',
+    date: '2026-10-19',
+    changes: {
+      ko: [
+        '맵에 지나갈 수 없는 바위가 생겼습니다. 판마다 모양과 자리가 무작위로 정해지며, 생존자도 적도 통과하지 못합니다. 적은 바위를 돌아서 다가오고, 투사체는 바위 위로 날아가며, 아이템은 바위 위에 떨어지지 않습니다. 이어하기를 하면 같은 배치가 나옵니다.',
+        '새로운 적 키메라가 추가되었습니다. 기행종처럼 뛰어다니며 우두머리처럼 사방으로 하얀 가시를 던지고, 체력은 우두머리와 같으며, 얼려도 멈추지 않습니다.',
+        '14분이 되면 화면이 흔들리며 모든 적이 사라지고, 그때부터는 맵 한가운데에서 5초마다 키메라만 나타납니다.',
+        '적이 처음 나오는 시간이 바뀌었습니다: 질주 30초, 거구·사수 1분, 기행종 1분 30초.',
+        '사수가 투사체를 쏘기 시작하는 거리가 2배로 늘었습니다.',
+      ],
+      en: [
+        'The map now has rocks nothing can pass through. Their shapes and places are new every run, and neither you nor an enemy can walk through them. Enemies walk round, shots fly over, and nothing drops onto one. A resumed run has the same rocks.',
+        'New enemy: the Chimera. It hops like an Oddity, throws white thorns all around like a Boss, has a Boss’s health, and freezing does not stop it.',
+        'At 14 minutes the screen shakes and every enemy vanishes; from then on only Chimeras come, one out of the middle of the map every 5 seconds.',
+        'Enemies first appear at new times: Runners at 30s, Brutes and Shooters at 1 minute, Oddities at 1 minute 30s.',
+        'Shooters start firing from twice as far away.',
+      ],
+      ja: [
+        'マップに通り抜けられない岩ができました。形と場所は毎回ランダムで、生存者も敵も通れません。敵は岩を回り込んで近づき、投射物は岩の上を飛び、アイテムは岩の上には落ちません。続きから遊ぶと同じ配置になります。',
+        '新しい敵キメラが追加されました。奇行種のように跳ね回り、ボスのように白い棘を四方に放ち、体力はボスと同じで、凍らせても止まりません。',
+        '14 分になると画面が揺れてすべての敵が消え、それからはマップの中央から 5 秒ごとにキメラだけが現れます。',
+        '敵が最初に現れる時間が変わりました：俊足 30 秒、巨漢・射手 1 分、奇行種 1 分 30 秒。',
+        '射手が投射物を撃ち始める距離が 2 倍になりました。',
+      ],
+      zh: [
+        '地图上出现了无法穿过的岩石。每局的形状和位置都是随机的，生存者和敌人都无法穿过。敌人会绕过岩石靠近，投射物从岩石上方飞过，物品不会掉在岩石上。继续游戏时岩石位置不变。',
+        '新增敌人奇美拉。它像奇行种一样跳跃，像首领一样向四周射出白色尖刺，生命值与首领相同，冰冻也无法让它停下。',
+        '到 14 分钟时画面震动、所有敌人消失，此后只会从地图中央每 5 秒出现一只奇美拉。',
+        '敌人首次出现的时间改变：疾走者 30 秒，巨汉、射手 1 分钟，奇行种 1 分 30 秒。',
+        '射手开始发射投射物的距离提高到 2 倍。',
+      ],
+    },
+  },
+  {
     version: '0.66',
     date: '2026-10-18',
     changes: {

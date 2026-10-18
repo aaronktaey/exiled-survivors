@@ -75,7 +75,7 @@ wrong shape.
 ## The test harness
 
 `tests/` drives a real Chrome over CDP against the dev server and checks the
-running game, not units. 43 suites, ~1200 checks. It is the only thing that has
+running game, not units. 45 suites, ~1250 checks. It is the only thing that has
 caught most of what has gone wrong here, so run all of it before every commit.
 
 ```sh
@@ -88,7 +88,7 @@ node run-all.mjs test-full test-skills test-balance test-chain test-ice \
   test-altar test-slot test-inventory test-locale test-back test-fugitive \
   test-ranking test-skillpick test-mango test-web test-loadout \
   test-carry test-api test-account test-live test-filter test-mastery \
-  test-tuning
+  test-tuning test-terrain test-chimera
 ```
 
 `run-all.mjs` runs the suites three at a time (`WORKERS=n` to change it):
@@ -607,6 +607,35 @@ Read `git log` for what changed and when. What is not in the log:
   The popup stays after a use, lighting the changed lines (`changed`); a
   destroyed weapon turns it into the notice and 확인. Closing hands the
   인벤토리 the weapon's uid (or null) and the note, and it restarts on them.
+- **지형지물 (0.67).** `systems/Terrain.ts` lays `TERRAIN`
+  (balance.ts) rocks per run from a seed (`SavedRun.terrainSeed`, so
+  불러오기 finds the same field): each outline is one distance per angle
+  round its centre (star-shaped), so inside is one comparison and out is
+  straight away from the centre. It pushes the survivor and every enemy out
+  on `postupdate`, after Arcade has moved them, and turns an enemy's
+  stopped step along the rock toward the survivor's side (`slide`), so
+  crowds walk round. Thrown things and gems fly over; every
+  `CombatSystem.drop*At` lands clear of rocks (`clearOfTerrain` hook).
+  `TERRAIN.devOnly` (false since 0.67) keeps a change to the dev server for
+  the user to try first — they asked for that once. The harness turns rocks off
+  (they would move hand-placed enemies) unless a page sets
+  `window.__terrainOn` (test-terrain does).
+- **키메라 and 키메라 러시 (0.67).** `ENEMY_KINDS.chimera` is a 기행종's
+  `hop` (copied from the erratic's *live* values when it was made) plus the
+  우두머리's `volley` with `texture: TEXTURES.thorn` (an `EnemyShotSpec`
+  with a texture is drawn at its own size and turned along its flight;
+  without one it is the plain square, as before), the 우두머리's `maxHp`,
+  and `unstoppable` (`Enemy.freeze` ignores it). The volley now runs before
+  the hop branch in `Enemy.update`, so a hopper can throw. It is not in
+  `SPAWN_TABLE`: `CHIMERA_RUSH` (balance.ts) is the only way in —
+  `SpawnDirector.rush` takes over `update` once the clock passes `atMs`:
+  clears the field (no kill, no drop), calls `onChimeraRush` (GameScene
+  shakes the camera, drops enemy shots, horn, toast), then a 키메라 at the
+  world's centre every `intervalMs` under `SPAWN.maxAlive`; nothing else
+  spawns but what a 제단 calls. `seed()` past `atMs` resumes in the rush.
+  Enemy sounds are a table, `AUDIO.enemies[kind][appear|death|cast]`,
+  played by `sfx.playEnemy` with a per-part rest; the 키메라's are cut from
+  `assets-src/chimera/hydra.mp3` by `tools/make-chimera-sfx.py`.
 - **Known gaps, left on purpose:**
   - The 뼈다귀 pick screen is reached only on the way into a fresh run (게임
     시작, and 다시하기 after a death — both through `BoneScene.before`).

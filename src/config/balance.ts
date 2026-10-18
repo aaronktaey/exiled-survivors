@@ -84,7 +84,8 @@ export type EnemyKind =
   | "shooter"
   | "boss"
   | "fugitive"
-  | "erratic";
+  | "erratic"
+  | "chimera";
 
 /** What a shooting enemy throws. */
 export interface EnemyShotSpec {
@@ -98,6 +99,11 @@ export interface EnemyShotSpec {
   readonly standoff: number;
   readonly size: number;
   readonly lifespanMs: number;
+  /**
+   * What it is drawn as, pointing the way it flies, at the picture's own
+   * size; its body for hits is still `size`. The plain square when unset.
+   */
+  readonly texture?: string;
 }
 
 /** A ring of bolts thrown outward, rather than aimed at anything. */
@@ -133,6 +139,8 @@ export interface EnemyKindSpec {
   readonly hop?: EnemyHopSpec;
   /** Drawn as a fat giant that strides and spins rather than as a square (EnemyGiantSpec). */
   readonly giant?: EnemyGiantSpec;
+  /** Nothing stops it where it stands: 얼음창's 각성 freeze does not take. */
+  readonly unstoppable?: boolean;
 }
 
 /**
@@ -302,6 +310,34 @@ export const ENEMY_KINDS: Record<EnemyKind, EnemyKindSpec> = {
     guaranteedSkill: true,
     flashy: true,
   },
+  /**
+   * 키메라. Hops like a 기행종 (the 기행종's live hop, 2026-10-19), throws the
+   * 우두머리's ring as white thorns, has the 우두머리's health, and nothing
+   * freezes it. Not in the spawn table: it comes only with CHIMERA_RUSH.
+   */
+  chimera: {
+    id: "chimera",
+    name: "키메라",
+    texture: TEXTURES.enemyChimera,
+    size: 30,
+    color: COLORS.enemyChimera,
+    maxHp: 5000,
+    speed: 355,
+    contactDamage: 60,
+    hop: { distance: 182, restMs: 260, lungeChance: 0.25 },
+    volley: {
+      damage: 60,
+      speed: 150,
+      cooldownMs: 5_000,
+      count: 18,
+      range: 0,
+      standoff: 0,
+      size: 10,
+      lifespanMs: 4000,
+      texture: TEXTURES.thorn,
+    },
+    unstoppable: true,
+  },
   shooter: {
     id: "shooter",
     name: "사수",
@@ -316,8 +352,9 @@ export const ENEMY_KINDS: Record<EnemyKind, EnemyKindSpec> = {
       speed: 230,
       /** One every four seconds: a 사수 is a nuisance, not a turret. */
       cooldownMs: 4000,
-      // How near it has to be to start shooting. 300 until 2026-10-18.
-      range: 450,
+      // How near it has to be to start shooting. 300 until 2026-10-18,
+      // 450 until 2026-10-19.
+      range: 900,
       // Outside 타격 and 화염구, inside 연쇄번개 and 얼음창: walk it down or
       // bring something with reach.
       standoff: 140,
@@ -885,11 +922,25 @@ export const SPAWN_TABLE: readonly {
   unlockMs: number;
 }[] = [
   { kind: "grunt", weight: 60, unlockMs: 0 },
-  { kind: "runner", weight: 22, unlockMs: 25_000 },
-  { kind: "shooter", weight: 16, unlockMs: 90_000 },
-  { kind: "brute", weight: 12, unlockMs: 75_000 },
-  { kind: "erratic", weight: 12, unlockMs: 45_000 },
+  { kind: "runner", weight: 22, unlockMs: 30_000 },
+  { kind: "shooter", weight: 16, unlockMs: 60_000 },
+  { kind: "brute", weight: 12, unlockMs: 60_000 },
+  { kind: "erratic", weight: 12, unlockMs: 90_000 },
 ];
+
+/**
+ * 키메라 러시: at `atMs` the screen shakes, every enemy on the field is gone
+ * (no kill, no drop), and from then on nothing comes but a 키메라 out of
+ * the middle of the world every `intervalMs` — no spawn table, no
+ * 우두머리, no 도망자. A 제단 still calls up what it offers.
+ */
+export const CHIMERA_RUSH = {
+  atMs: 14 * 60_000,
+  intervalMs: 5_000,
+  shakeMs: 1_200,
+  /** Share of the view the camera is thrown about by. */
+  shakeIntensity: 0.014,
+} as const;
 
 export const SPAWN = {
   startIntervalMs: 900,
@@ -897,6 +948,37 @@ export const SPAWN = {
   rampPerMinute: 0.55,
   maxAlive: 220,
   offscreenMargin: 80,
+} as const;
+
+/**
+ * 지형지물: rocks nobody walks through — not the survivor, not an enemy.
+ * Thrown things fly over them, and nothing is dropped on one. Each run lays out its own
+ * (a seed kept in the save, so 불러오기 finds the same field), each rock a
+ * smooth random outline round its centre, stretched one way or not.
+ */
+export const TERRAIN = {
+  enabled: true,
+  /** True keeps it to the dev server, for trying a change before it ships. */
+  devOnly: false,
+  /** How many it tries to lay; a crowded world takes fewer. */
+  count: 26,
+  /** A rock's size before it is stretched, from–to (px). */
+  minRadius: 34,
+  maxRadius: 120,
+  /** Longest side over shortest, at most: 1 is round, 3 a wall. */
+  maxStretch: 3.2,
+  /** How lumpy the outline is: 0 a smooth oval, 0.3 craggy. */
+  roughness: 0.22,
+  /** Open ground between two rocks and from a rock to the edge, at least. */
+  gap: 110,
+  /** Open ground round where the survivor starts. */
+  startClear: 320,
+  /**
+   * An enemy meeting a rock steps along it, toward the side the survivor
+   * is on, by this share of the step the rock stopped — so a crowd walks
+   * round rather than piling up against it.
+   */
+  slide: 1,
 } as const;
 
 export const MELEE = {

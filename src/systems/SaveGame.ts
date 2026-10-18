@@ -39,6 +39,8 @@ export interface SavedRun {
    */
   readonly damage?: number;
   readonly kills?: Partial<Record<EnemyKind, number>>;
+  /** The 지형지물 field's seed, so a resumed run finds its rocks where they were. */
+  readonly terrainSeed?: number;
 }
 
 /**

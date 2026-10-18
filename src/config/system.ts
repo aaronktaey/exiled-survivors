@@ -1,4 +1,14 @@
 import type { SkillId } from '@/weapons/skills';
+import type { EnemyKind } from '@/config/balance';
+
+/** When an enemy kind makes a sound of its own. */
+export type EnemySoundPart = 'appear' | 'death' | 'cast';
+
+export interface EnemySound {
+  readonly files: readonly string[];
+  readonly volume: number;
+  readonly gapMs?: number;
+}
 
 /**
  * Engine wiring: canvas and world size, scene keys, where saves and
@@ -339,6 +349,20 @@ export const AUDIO = {
   >,
   /** A skill cannot be heard again inside this, however fast it attacks. */
   minGapMs: 70,
+  /**
+   * An enemy kind's own sounds: walking in, dying, and throwing its ring.
+   * Variants as a skill's are (one at random, never twice running), and
+   * each part rests `gapMs` so a crowd of them is not a wall of noise.
+   * The 키메라's are cut from one hydra recording by
+   * tools/make-chimera-sfx.py (source in assets-src/chimera).
+   */
+  enemies: {
+    chimera: {
+      appear: { files: ['assets/chimeraAppear.mp3'], volume: 0.6, gapMs: 1500 },
+      death: { files: ['assets/chimeraDeath.mp3'], volume: 0.55, gapMs: 400 },
+      cast: { files: ['assets/chimeraCast1.mp3', 'assets/chimeraCast2.mp3'], volume: 0.5, gapMs: 500 },
+    },
+  } as Partial<Record<EnemyKind, Partial<Record<EnemySoundPart, EnemySound>>>>,
   /** The horn when a 우두머리 walks in. */
   bossAlert: {
     key: 'sfx-boss-alert',

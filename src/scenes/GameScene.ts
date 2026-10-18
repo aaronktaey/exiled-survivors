@@ -33,6 +33,8 @@ import {
   WORLD,
   SKILL_MASTERY,
   AUDIO,
+  TERRAIN,
+  CHIMERA_RUSH,
   UPGRADE_PERCENT,
 } from '@/config';
 import type { Enemy } from '@/entities/Enemy';
@@ -74,6 +76,7 @@ import {
 } from '@/systems';
 import { EdgeMarkers } from '@/systems/EdgeMarkers';
 import { WebField } from '@/systems/WebField';
+import { Terrain } from '@/systems/Terrain';
 import { RareTooltip } from '@/systems/RareTooltip';
 import { sfx, effectVolume } from '@/systems/Sfx';
 import { saveGame, type SavedRun } from '@/systems/SaveGame';
@@ -82,6 +85,7 @@ import { tuning } from '@/systems/Tuning';
 import { dropTierFor } from '@/systems/Gear';
 import { Toasts, type ToastTone } from '@/systems/Toasts';
 import { HealthPotion } from '@/entities/HealthPotion';
+import type { EnemyShot } from '@/entities/EnemyShot';
 import {
   NO_BONUS,
   gear,
@@ -163,6 +167,9 @@ type ChoiceRequest =
   | { readonly kind: 'upgrade'; readonly title: string; readonly subtitle: string; readonly skill: SkillId }
   | { readonly kind: 'pick' };
 
+/** How far from a rock's edge a drop is let fall, so it can be walked up to and seen whole. */
+const DROP_ROOM = 20;
+
 /** The run itself: player, spawning, weapons, pickups and progression. */
 export class GameScene extends Phaser.Scene {
   public static readonly KEY = 'GameScene';
@@ -173,6 +180,9 @@ export class GameScene extends Phaser.Scene {
   private progression!: Progression;
   private hud!: Hud;
   private separation!: Separation;
+  /** 지형지물, or null on a run without them. */
+  private terrain: Terrain | null = null;
+  private terrainSeed = 0;
   private damageNumbers!: DamageNumbers;
   /** The 거미줄 on the ground. Public for tests. */
   public webs!: WebField;
@@ -284,8 +294,14 @@ export class GameScene extends Phaser.Scene {
     this.spawner = new SpawnDirector(this, this.player, () => this.boneBonus, {
       fireShot: (x, y, angle, spec) => this.combat.fireEnemyShot(x, y, angle, spec),
       onBossSpawned: () => this.announceBoss(),
+      onChimeraRush: () => this.startChimeraRush(),
     });
     this.separation = new Separation(this.spawner.group, this.player);
+    // A resumed run lays the rocks it had; a new one rolls a field of its own.
+    this.terrainSeed = this.resuming?.terrainSeed ?? Terrain.newSeed();
+    this.terrain = GameScene.terrainOn()
+      ? new Terrain(this, this.terrainSeed, this.player, this.spawner.group)
+      : null;
     this.damageNumbers = new DamageNumbers(this);
     this.webs = new WebField(this);
     this.stats = new RunStats();
@@ -313,6 +329,7 @@ export class GameScene extends Phaser.Scene {
         onMagnetCollected: () => this.announce(t().game.magnetPulled),
         dropScale: () => this.boneBonus.dropScale,
         critMultiplier: () => critMultiplierFor(this.mods),
+        clearOfTerrain: (x, y) => this.terrain?.clear(x, y, DROP_ROOM) ?? [x, y],
       },
     );
     this.hud = new Hud(this, this.progression, (hold) => this.setInspecting('skill', hold));
@@ -683,6 +700,7 @@ export class GameScene extends Phaser.Scene {
       spawnerMs: this.spawner.clockMs,
       damage: this.stats.damageExact,
       kills: this.stats.killsByKind,
+      terrainSeed: this.terrainSeed,
     });
   }
 
@@ -827,6 +845,11 @@ export class GameScene extends Phaser.Scene {
         this.scene.start(SCENES.menu);
       },
     });
+  }
+
+  /** 지형지물 are tried on the dev server first; `TERRAIN.devOnly` off ships them. */
+  private static terrainOn(): boolean {
+    return TERRAIN.enabled && (import.meta.env.DEV || !TERRAIN.devOnly);
   }
 
   private createFloor(): void {
@@ -1074,6 +1097,23 @@ export class GameScene extends Phaser.Scene {
   private announceBoss(): void {
     sfx.playBossAlert(this);
     this.announce(t().game.bossArrived, 'warning');
+  }
+
+  /**
+   * 키메라 러시 begins: the field is already empty of enemies (the spawner
+   * cleared it); their shots in the air go too, the screen shakes, the horn
+   * goes, and the run says what is coming.
+   */
+  private startChimeraRush(): void {
+    for (const child of this.combat.enemyShots.getChildren()) {
+      const shot = child as EnemyShot;
+      if (shot.active) {
+        shot.despawn();
+      }
+    }
+    this.cameras.main.shake(CHIMERA_RUSH.shakeMs, CHIMERA_RUSH.shakeIntensity);
+    sfx.playBossAlert(this);
+    this.announce(t().game.chimeraRush, 'warning');
   }
 
   /** A line for the player — a pickup, a 우두머리 — as a toast in the top-right corner. */

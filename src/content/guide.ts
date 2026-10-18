@@ -30,6 +30,7 @@ import {
   SKILL_PICK,
   SPAWN,
   SPAWN_TABLE,
+  CHIMERA_RUSH,
   STATS,
   UPGRADE_CAP,
   UPGRADE_MAX_PICKS,
@@ -282,7 +283,7 @@ export function guideChapters(): readonly GuideChapter[] {
     ),
     chapter('enemies', [
       tab('common', [...prose('common', numbers), ...commonEnemyCards()]),
-      tab('boss', [bossCard(), ...prose('boss', numbers)]),
+      tab('boss', [bossCard(), chimeraCard(), ...prose('boss', numbers)]),
       tab('fugitive', [fugitiveCard(), ...prose('fugitive', numbers)]),
       tab('rares', [...prose('rares', numbers), ...rareAffixCards()]),
       tab('difficulty', prose('difficulty', numbers)),
@@ -378,6 +379,28 @@ function bossCard(): GuideCard {
     ],
     lines: [
       fill(g.enemyNotes.boss ?? '', { first: seconds(BOSS.firstMs), every: seconds(BOSS.intervalMs) }),
+    ],
+  };
+}
+
+/** 키메라: what 키메라 러시 sends, and when it starts. */
+function chimeraCard(): GuideCard {
+  const g = t().guide.labels;
+  const volley = ENEMY_KINDS.chimera.volley;
+  return {
+    title: enemyName('chimera'),
+    tone: 'boss',
+    facts: [
+      enemyStats('chimera'),
+      ...(volley
+        ? [fill(g.volley, { every: seconds(volley.cooldownMs), count: volley.count, damage: volley.damage })]
+        : []),
+    ],
+    lines: [
+      fill(g.enemyNotes.chimera ?? '', {
+        minute: round(CHIMERA_RUSH.atMs / 60_000),
+        every: seconds(CHIMERA_RUSH.intervalMs),
+      }),
     ],
   };
 }
