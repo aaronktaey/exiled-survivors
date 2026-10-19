@@ -130,6 +130,7 @@ export const en: Strings = {
   menu: {
     updating: 'Updating to the new version…',
     byline: 'created by whitemango',
+    notice: 'Tearing the game apart and rebuilding....\u00a0T_T',
     start: 'New Run',
     load: 'Continue',
     noSave: 'No save',

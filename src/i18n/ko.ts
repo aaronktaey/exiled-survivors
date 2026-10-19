@@ -134,6 +134,7 @@ export const ko: Strings = {
   menu: {
     updating: '새 버전으로 업데이트합니다…',
     byline: 'created by whitemango',
+    notice: '게임 갈아엎는 중....\u00a0ㅠㅜ',
     start: '게임 시작',
     load: '불러오기',
     noSave: '저장 없음',

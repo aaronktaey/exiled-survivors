@@ -130,6 +130,7 @@ export const ja: Strings = {
   menu: {
     updating: '新しいバージョンに更新します…',
     byline: 'created by whitemango',
+    notice: 'ゲームを作り直し中....\u00a0T_T',
     start: 'ゲーム開始',
     load: 'つづきから',
     noSave: 'セーブなし',

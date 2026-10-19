@@ -75,7 +75,7 @@ wrong shape.
 ## The test harness
 
 `tests/` drives a real Chrome over CDP against the dev server and checks the
-running game, not units. 45 suites, ~1250 checks. It is the only thing that has
+running game, not units. 46 suites, ~1270 checks. It is the only thing that has
 caught most of what has gone wrong here, so run all of it before every commit.
 
 ```sh
@@ -88,7 +88,7 @@ node run-all.mjs test-full test-skills test-balance test-chain test-ice \
   test-altar test-slot test-inventory test-locale test-back test-fugitive \
   test-ranking test-skillpick test-mango test-web test-loadout \
   test-carry test-api test-account test-live test-filter test-mastery \
-  test-tuning test-terrain test-chimera
+  test-tuning test-terrain test-chimera test-notice
 ```
 
 `run-all.mjs` runs the suites three at a time (`WORKERS=n` to change it):
@@ -636,6 +636,15 @@ Read `git log` for what changed and when. What is not in the log:
   Enemy sounds are a table, `AUDIO.enemies[kind][appear|death|cast]`,
   played by `sfx.playEnemy` with a per-part rest; the 키메라's are cut from
   `assets-src/chimera/hydra.mp3` by `tools/make-chimera-sfx.py`.
+- **The title's rainbow notice (0.68).** `TITLE_NOTICE` (visuals.ts;
+  `enabled: false` takes it off) draws the locale's `menu.notice` with
+  `systems/RainbowText` — one white glyph per Text, tinted round the hue
+  wheel each frame (a tint, so nothing is redrawn), wrapped at spaces but
+  not at ` `. `MenuScene.addNotice` puts it in the first room that
+  holds it at `minScale`: beside the rows (tilted), under them, over the
+  logo, or left of the icons; with none, the title goes without. The user
+  asked for it while the game is being rebuilt — expect to be asked to
+  change or remove it. test-notice checks five window shapes for overlap.
 - **Known gaps, left on purpose:**
   - The 뼈다귀 pick screen is reached only on the way into a fresh run (게임
     시작, and 다시하기 after a death — both through `BoneScene.before`).

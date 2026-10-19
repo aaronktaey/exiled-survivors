@@ -15,6 +15,16 @@ export interface PatchNote {
 
 export const PATCH_NOTES: readonly PatchNote[] = [
   {
+    version: '0.68',
+    date: '2026-10-19',
+    changes: {
+      ko: ['타이틀 화면 빈 곳에 무지개색 안내문이 생겼습니다: 게임 갈아엎는 중.... ㅠㅜ'],
+      en: ['The title screen now has a rainbow notice in its empty space: the game is being torn apart and rebuilt.... T_T'],
+      ja: ['タイトル画面の空いた場所に虹色のお知らせが出ます：ゲームを作り直し中.... T_T'],
+      zh: ['标题画面的空白处出现了彩虹色公告：游戏推倒重做中.... T_T'],
+    },
+  },
+  {
     version: '0.67',
     date: '2026-10-19',
     changes: {

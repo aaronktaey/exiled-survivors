@@ -12,6 +12,7 @@ import {
   SCRIM,
   TEXT,
   TEXTURES,
+  TITLE_NOTICE,
 } from '@/config';
 import { PATCH_NOTES } from '@/content/patchNotes';
 import { fill, t } from '@/i18n';
@@ -32,6 +33,7 @@ import { liveUpdate } from '@/systems/LiveUpdate';
 import { devToolsAllowed } from '@/systems/DevAccess';
 import { tuning } from '@/systems/Tuning';
 import { podium } from '@/systems/Podium';
+import { RainbowText } from '@/systems/RainbowText';
 
 /** Syncing starts once per page, the first time the title finds someone signed in. */
 let syncStarted = false;
@@ -64,6 +66,9 @@ export class MenuScene extends Phaser.Scene {
   public updating = false;
   /** "새 버전으로 업데이트합니다…", while it is. Public for tests. */
   public updatingText?: Phaser.GameObjects.Text;
+  /** The rainbow notice, and which room it went in. Public for tests. */
+  public notice?: RainbowText;
+  public noticeRoom?: 'side' | 'below' | 'above' | 'corner';
 
   public constructor() {
     super(MenuScene.KEY);
@@ -132,7 +137,7 @@ export class MenuScene extends Phaser.Scene {
       ],
     });
 
-    this.add
+    const hint = this.add
       .text(
         width / 2,
         height - 26,
@@ -198,6 +203,13 @@ export class MenuScene extends Phaser.Scene {
         : []),
     ]);
 
+    this.addNotice({
+      blockTop: top,
+      rowsTop: top + blockHeight + gap,
+      rowsBottom: top + blockHeight + gap + listHeight,
+      hintTop: hint.y - hint.height / 2,
+    });
+
     // The title is drawn before the account is known; when it turns out to be
     // the admin's (or stops being), the 밸런스 icon comes or goes.
     const admin = devToolsAllowed();
@@ -256,6 +268,53 @@ export class MenuScene extends Phaser.Scene {
       .setDepth(DEPTH.ui + 51);
     this.input.keyboard?.removeAllListeners();
     this.time.delayedCall(LIVE_UPDATE.noticeMs, () => liveUpdate.apply());
+  }
+
+  /**
+   * The rainbow notice (TITLE_NOTICE), in the first room that holds it:
+   * beside the rows on a wide screen, then under the rows, over the logo,
+   * and last the corner left of the icons. Where none does even shrunk, the
+   * title goes without — nothing is drawn over a button.
+   */
+  private addNotice(at: { blockTop: number; rowsTop: number; rowsBottom: number; hintTop: number }): void {
+    this.notice = undefined;
+    this.noticeRoom = undefined;
+    if (!TITLE_NOTICE.enabled) {
+      return;
+    }
+    const { width } = this.scale;
+    const m = TITLE_NOTICE.margin;
+    const iconBottom = Math.max(0, ...this.icons.views.map((v) => v.label.y + v.label.height));
+    const iconsLeft = Math.min(
+      width,
+      ...this.icons.views.map((v) => v.plate.x - Math.max(v.plate.width, v.label.width) / 2),
+    );
+    const sideRight = width / 2 - MENU.buttonWidth / 2 - m;
+    const rooms: { id: NonNullable<MenuScene['noticeRoom']>; x0: number; x1: number; y0: number; y1: number; minWidth: number; tilt: number }[] = [
+      { id: 'side', x0: m, x1: sideRight, y0: at.rowsTop, y1: at.rowsBottom, minWidth: TITLE_NOTICE.minSideWidth, tilt: TITLE_NOTICE.tiltDeg },
+      { id: 'below', x0: m, x1: width - m, y0: at.rowsBottom + m, y1: at.hintTop - m, minWidth: 0, tilt: 0 },
+      { id: 'above', x0: m, x1: width - m, y0: iconBottom + m, y1: at.blockTop - m, minWidth: 0, tilt: 0 },
+      { id: 'corner', x0: m, x1: iconsLeft - m, y0: m, y1: Math.min(iconBottom, at.blockTop - m), minWidth: 0, tilt: 0 },
+    ];
+    for (const room of rooms) {
+      const w = room.x1 - room.x0;
+      const h = room.y1 - room.y0;
+      if (w < Math.max(room.minWidth, 1) || h <= 0) {
+        continue;
+      }
+      // Leaning, it needs a little more room than it measures.
+      const lean = room.tilt === 0 ? 1 : 0.88;
+      const notice = new RainbowText(this, t().menu.notice, { maxWidth: w * lean });
+      const scale = Math.min(1, (w * lean) / Math.max(1, notice.width), (h * lean) / Math.max(1, notice.height));
+      if (scale < TITLE_NOTICE.minScale) {
+        notice.destroy();
+        continue;
+      }
+      notice.placeIn((room.x0 + room.x1) / 2, (room.y0 + room.y1) / 2, notice.height * scale, room.tilt);
+      this.notice = notice;
+      this.noticeRoom = room.id;
+      return;
+    }
   }
 
   /** The pixel logo, drifting slowly up and down. */

@@ -641,6 +641,32 @@ export const MENU = {
   logoBobMs: 2600,
 } as const;
 
+/**
+ * A notice in rainbow letters, in whatever room the title leaves: beside the
+ * logo and the rows on a wide screen, under or over them on a tall one. Its
+ * words are the locale's `menu.notice`; `enabled: false` takes it away.
+ */
+export const TITLE_NOTICE = {
+  enabled: true,
+  fontSize: 20,
+  lineHeight: 1.35,
+  /** Never shrunk below this to fit; a screen with less room goes without. */
+  minScale: 0.65,
+  /** Narrowest side room it is put in, and the air kept round it. */
+  minSideWidth: 110,
+  margin: 14,
+  /** Beside the rows it leans, like a note stuck on. */
+  tiltDeg: -6,
+  /** One glyph to the next moves this far round the colour wheel; a whole turn takes cycleMs. */
+  hueStep: 0.07,
+  cycleMs: 2600,
+  saturation: 0.72,
+  /** Each glyph bobs this far, a beat (waveStep) after the one before it. */
+  waveAmp: 2.5,
+  waveMs: 1400,
+  waveStep: 0.45,
+} as const;
+
 /** 패치노트 and 게임 가이드: a long page that scrolls inside a window. */
 export const INFO = {
   titleY: 44,

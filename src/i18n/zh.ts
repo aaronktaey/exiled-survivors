@@ -130,6 +130,7 @@ export const zh: Strings = {
   menu: {
     updating: '正在更新到新版本…',
     byline: 'created by whitemango',
+    notice: '游戏推倒重做中....\u00a0T_T',
     start: '开始游戏',
     load: '继续游戏',
     noSave: '没有存档',

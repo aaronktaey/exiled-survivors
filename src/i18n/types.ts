@@ -189,6 +189,8 @@ export interface Strings {
     /** Over the title while it reloads onto a new version. */
     readonly updating: string;
     readonly byline: string;
+    /** The rainbow notice on the title (TITLE_NOTICE), wrapped at spaces (never at a no-break space,  ). */
+    readonly notice: string;
     readonly start: string;
     readonly load: string;
     readonly noSave: string;
