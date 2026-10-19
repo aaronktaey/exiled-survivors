@@ -75,7 +75,7 @@ wrong shape.
 ## The test harness
 
 `tests/` drives a real Chrome over CDP against the dev server and checks the
-running game, not units. 46 suites, ~1270 checks. It is the only thing that has
+running game, not units. 47 suites, ~1280 checks. It is the only thing that has
 caught most of what has gone wrong here, so run all of it before every commit.
 
 ```sh
@@ -88,7 +88,7 @@ node run-all.mjs test-full test-skills test-balance test-chain test-ice \
   test-altar test-slot test-inventory test-locale test-back test-fugitive \
   test-ranking test-skillpick test-mango test-web test-loadout \
   test-carry test-api test-account test-live test-filter test-mastery \
-  test-tuning test-terrain test-chimera test-notice
+  test-tuning test-terrain test-chimera test-notice test-seal
 ```
 
 `run-all.mjs` runs the suites three at a time (`WORKERS=n` to change it):
@@ -128,7 +128,8 @@ set takes about six minutes. One suite on its own: `node run-all.mjs test-gear`.
   it and the suite dies with `undefined`. Return the answer, not the corpus.
 - Dev-only handles the suites drive: `window.game`, `window.config`,
   `window.gear`, `window.orbs`, `window.bones`, `window.passives`,
-  `window.gold`, `window.gearBonusFor`, `window.orbApplied`,
+  `window.gold`, `window.gearBonusFor`, `window.orbApplied`, `window.sealRecord`,
+  `window.openRecord`,
   `window.critMultiplierFor`. They are behind `import.meta.env.DEV`, so the
   deployed build does not have them — a live check can only click and look.
 - `#run` on the dev server skips the menu and drops straight into a run.
@@ -645,6 +646,24 @@ Read `git log` for what changed and when. What is not in the log:
   logo, or left of the icons; with none, the title goes without. The user
   asked for it while the game is being rebuilt — expect to be asked to
   change or remove it. test-notice checks five window shapes for overlap.
+- **Tampering (0.70, 2026-10-20).** One account topped the board three
+  days running with runs resumed from a save edited by hand (six skills in
+  the hundreds at character level 20, 111 kills). Two halves now:
+  - The server refuses a run whose 판 내역 is out of reach of itself
+    (`implausible` in server/ranking.ts, numbers in `RULES.upgrades*`): the
+    skills' upgrades summed against level-ups + a share of kills + 우두머리/
+    도망자, and against the clock; and a run with no 판 내역. It answers a
+    bare `refused`, never why — the user's ask. Checked against every live
+    run with a 판 내역 when it shipped: only that account's three were over.
+  - The saved run and the tree are sealed (systems/Seal.ts: a keyed hash in
+    `_s`, `SEAL.pepper`). A record that does not match is not taken (the
+    save is thrown away, the tree starts over). Unsealed ones are taken —
+    and resealed — until `SEAL.graceUntil` (30 days), then refused. Tests
+    write such records through `window.sealRecord`. CarryOver seals what
+    it brings in. The key is in the bundle: this stops edits in the
+    browser's tools, not someone reading the code — the server's check is
+    the other half. The user chose not to detect devtools, and to leave the
+    three runs on the board.
 - **Known gaps, left on purpose:**
   - The 뼈다귀 pick screen is reached only on the way into a fresh run (게임
     시작, and 다시하기 after a death — both through `BoneScene.before`).

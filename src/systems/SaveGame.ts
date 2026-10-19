@@ -1,5 +1,6 @@
 import { STORAGE, type BoneId } from '@/config';
 import { gearTitle } from '@/i18n';
+import { openRecord, sealRecord } from '@/systems/Seal';
 import type { SkillStats } from '@/systems/Progression';
 import type { SkillId } from '@/weapons/skills';
 import type { GearItem } from '@/systems/Gear';
@@ -51,7 +52,7 @@ export const saveGame = {
   write(run: Omit<SavedRun, 'version' | 'savedAt'>): void {
     const payload: SavedRun = { version: 1, savedAt: Date.now(), ...run };
     try {
-      window.localStorage.setItem(STORAGE.save, JSON.stringify(payload));
+      window.localStorage.setItem(STORAGE.save, sealRecord(STORAGE.save, payload));
     } catch {
       // Out of quota or storage blocked: the run just carries on unsaved.
     }
@@ -64,7 +65,13 @@ export const saveGame = {
         return null;
       }
 
-      const parsed = JSON.parse(raw) as SavedRun;
+      // A save changed outside the game is not offered, and is thrown away.
+      const opened = openRecord<SavedRun>(STORAGE.save, raw);
+      if (opened.state === 'tampered') {
+        saveGame.clear();
+        return null;
+      }
+      const parsed = opened.value;
       if (parsed.version !== 1 || typeof parsed.elapsedMs !== 'number') {
         return null;
       }

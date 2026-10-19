@@ -251,7 +251,7 @@ check('and the waiting dot goes with it', badgeGone.badge === false);
 
 // --- 5. 패시브 > 장비 > 전투 내 효과, in that order ---
 await ev(`(() => {
-  localStorage.setItem('exiled-survivors:passives:v1', JSON.stringify({
+  localStorage.setItem('exiled-survivors:passives:v1', window.sealRecord('exiled-survivors:passives:v1', {
     shards: 0, points: 0, ranks: { damage: 2, attackSpeed: 1 },
   }));
   localStorage.setItem('exiled-survivors:gear:v2', JSON.stringify({
@@ -360,7 +360,7 @@ await shot('passive-04-run');
 
 // --- 7. 이동속도 is on the survivor; 행운 is held but does nothing yet ---
 const legs = await cdp.evaluate(`(() => {
-  localStorage.setItem('exiled-survivors:passives:v1', JSON.stringify({
+  localStorage.setItem('exiled-survivors:passives:v1', window.sealRecord('exiled-survivors:passives:v1', {
     shards: 0, points: 0, ranks: { moveSpeed: 5, luck: 3 } }));
   return 1;
 })()`);

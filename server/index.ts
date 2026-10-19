@@ -17,7 +17,7 @@ import { getSave, putSave } from './save';
 import { getTuning, putTuning } from './tuning';
 
 export type { Env } from './env';
-export { RULES, problemWith } from './ranking';
+export { RULES, implausible, problemWith } from './ranking';
 
 const AUTH_ROUTE = /^\/api\/auth\/([a-z]+)\/(start|callback)$/;
 

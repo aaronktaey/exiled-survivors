@@ -933,7 +933,7 @@ await ev(`(() => {
   window.gear.add({ uid: 'spare', id: 'runedSword', prefixes: [{ id: 'mighty', tier: 2 }], suffixes: [] });
   window.gear.add({ uid: 'wornOut', id: 'ironSword', prefixes: [{ id: 'mighty', tier: 5 }], suffixes: [] });
   window.gear.equip('wornOut');
-  localStorage.setItem('exiled-survivors:save:v1', JSON.stringify({
+  localStorage.setItem('exiled-survivors:save:v1', window.sealRecord('exiled-survivors:save:v1', {
     version: 1, savedAt: Date.now(), elapsedMs: 120000, level: 4, xp: 2, hp: 12,
     skills: { meleeStrike: { damage: 15, cooldownMs: 1000, range: 90 } },
     spawnerMs: 120000,

@@ -172,7 +172,7 @@ check('"새로 시작" starts from nothing', fresh.level === 1 && fresh.elapsed 
 // started with. After 이어서 하기 that is the loaded run, so 다시하기 used
 // to put the death back exactly where it had been resumed from.
 await ev(`(() => {
-  localStorage.setItem('exiled-survivors:save:v1', JSON.stringify({
+  localStorage.setItem('exiled-survivors:save:v1', window.sealRecord('exiled-survivors:save:v1', {
     version: 1, savedAt: Date.now(), elapsedMs: 480000, level: 9, xp: 5, hp: 22,
     skills: { meleeStrike: { damage: 15, cooldownMs: 1000, range: 90 } },
     spawnerMs: 480000,

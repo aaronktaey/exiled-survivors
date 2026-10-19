@@ -1,5 +1,6 @@
 import { ECONOMY, PASSIVES, SHARD, STORAGE, type PassiveId } from '@/config';
 import { gold } from '@/systems/Gold';
+import { openRecord, sealRecord } from '@/systems/Seal';
 
 /** The stash of points, and where they have been spent. */
 export interface PassiveState {
@@ -165,9 +166,16 @@ class PassiveStore {
     this.loaded = true;
     try {
       const raw = window.localStorage.getItem(STORAGE.passives);
-      this.current = raw
-        ? this.sanitise({ ...DEFAULTS, ...(JSON.parse(raw) as Partial<PassiveState>) })
-        : { ...DEFAULTS, ranks: {} };
+      // A tree changed outside the game starts over; one from before the
+      // seal is taken and written back sealed.
+      const opened = raw ? openRecord<Partial<PassiveState>>(STORAGE.passives, raw) : null;
+      this.current =
+        opened && opened.state !== 'tampered'
+          ? this.sanitise({ ...DEFAULTS, ...opened.value })
+          : { ...DEFAULTS, ranks: {} };
+      if (opened && opened.state !== 'sealed') {
+        this.save();
+      }
     } catch {
       this.current = { ...DEFAULTS, ranks: {} };
     }
@@ -175,7 +183,7 @@ class PassiveStore {
 
   private save(): void {
     try {
-      window.localStorage.setItem(STORAGE.passives, JSON.stringify(this.current));
+      window.localStorage.setItem(STORAGE.passives, sealRecord(STORAGE.passives, this.current));
     } catch {
       // The tree lasts as long as the tab, then.
     }

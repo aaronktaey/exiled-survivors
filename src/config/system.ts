@@ -56,6 +56,17 @@ export const SCENES = {
   podium: "PodiumScene",
 } as const;
 
+/**
+ * The seal on the records a player could gain by editing (systems/Seal.ts).
+ * `pepper` is mixed into every seal; `graceUntil` is when a record written
+ * before the seal (none on it) stops being taken: 30 days after the seal
+ * shipped, for every player to have loaded the game once since.
+ */
+export const SEAL = {
+  pepper: 'es:7d1f:salt-of-the-exile:c41b',
+  graceUntil: Date.UTC(2026, 10, 19),
+} as const;
+
 /** Keys the browser keeps our state under. Bump the suffix to invalidate. */
 export const STORAGE = {
   settings: "exiled-survivors:settings:v1",

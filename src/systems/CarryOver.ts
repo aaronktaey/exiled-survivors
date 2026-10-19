@@ -12,6 +12,10 @@
  * It runs on import: main.ts imports it first of all.
  */
 
+// Kept light, for running first: the storage keys and the seal, nothing else.
+import { STORAGE } from '@/config/system';
+import { sealRecord } from '@/systems/Seal';
+
 /** Every key the game writes starts with this; nothing else is taken. */
 export const CARRY_PREFIX = 'exiled-survivors:';
 
@@ -53,6 +57,21 @@ export function decodeCarry(text: string): CarryPayload | null {
   }
 }
 
+/** The records the game seals (systems/Seal.ts): what comes over is sealed as it lands. */
+const SEALED_KEYS: readonly string[] = [STORAGE.save, STORAGE.passives];
+
+function sealCarried(key: string, value: string): string {
+  try {
+    const parsed = JSON.parse(value) as Record<string, unknown>;
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed) || '_s' in parsed) {
+      return value;
+    }
+    return sealRecord(key, parsed);
+  } catch {
+    return value;
+  }
+}
+
 /** True when this browser already holds anything of the game's here. */
 function holdsAnything(): boolean {
   for (let i = 0; i < localStorage.length; i++) {
@@ -91,7 +110,7 @@ export function takeCarriedSave(): 'none' | 'taken' | 'declined' | 'broken' {
       return 'declined';
     }
     for (const [key, value] of entries) {
-      localStorage.setItem(key, value);
+      localStorage.setItem(key, SEALED_KEYS.includes(key) ? sealCarried(key, value) : value);
     }
     return 'taken';
   } catch {
