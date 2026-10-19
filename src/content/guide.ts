@@ -120,6 +120,17 @@ const tierSpan = (tiers: readonly number[]): string => {
   return low === high ? `${low}` : `${low}~${high}`;
 };
 
+/** Each 등급's share of the gear that drops, by GEAR_DROP.grades' weights. */
+const gradeShares = (): { normalShare: string; magicShare: string; rareShare: string } => {
+  const { normal, magic, rare } = GEAR_DROP.grades;
+  const total = normal.weight + magic.weight + rare.weight;
+  return {
+    normalShare: percent(normal.weight / total),
+    magicShare: percent(magic.weight / total),
+    rareShare: percent(rare.weight / total),
+  };
+};
+
 /** When a kind joins the spawn table, in seconds. */
 const unlockOf = (kind: EnemyKind): string =>
   seconds(SPAWN_TABLE.find((row) => row.kind === kind)?.unlockMs ?? 0);
@@ -193,7 +204,10 @@ function values(): Record<string, string | number> {
         .map((spec) => spec.tier),
     ),
     maxPrefix: GEAR_DROP.maxPrefixes,
-    affixChance: percent(GEAR_DROP.affixChance),
+    normalLines: GEAR_DROP.grades.normal.lines,
+    magicLines: GEAR_DROP.grades.magic.lines,
+    rareLines: GEAR_DROP.grades.rare.lines,
+    ...gradeShares(),
     tierCount: affixTierCount,
     maxBones: BONE_RUN.maxApplied,
     maxBosses: BONE_RUN.maxBosses,

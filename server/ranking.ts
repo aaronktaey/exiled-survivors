@@ -62,6 +62,19 @@ export const RULES = {
   upgradesPerBoss: 1,
   upgradesPerMinute: 60,
   upgradeSlack: 6,
+  /**
+   * The run's second clock (RunDetail.wall, 0.71, the user's ask): the real
+   * time between the frames that moved the shown clock, kept out of sight in
+   * the client. The shown clock steps by at most 50ms a frame, so honest play
+   * has it at or under the second; one more than `paceAhead` over it (and
+   * `paceAheadMs`) was pushed on, and a second clock more than `paceBehind`
+   * times the shown one (and `paceBehindMs`) means the shown one was held
+   * back. Either is refused without saying why.
+   */
+  paceAhead: 0.1,
+  paceAheadMs: 15_000,
+  paceBehind: 3,
+  paceBehindMs: 60_000,
 } as const;
 
 const BOARD_PATH = '/api/ranking';
@@ -264,6 +277,7 @@ export function cleanDetail(raw: unknown): string {
       .filter((skill) => ID.test(skill.id)),
     passives: counts(d.passives, 999, 30),
     resumed: d.resumed === true,
+    wall: whole(d.wall, 1e9) ?? 0,
   };
   return JSON.stringify(detail);
 }
@@ -312,8 +326,9 @@ export function problemWith(raw: unknown): string | null {
 
 /**
  * Whether a run's 판 내역 says more than it could have: skill levels out of
- * reach of its level, its kills and its time — or no 판 내역 at all, which
- * every client since 0.62 sends. Refused without saying why.
+ * reach of its level, its kills and its time, or a shown clock far from its
+ * second one — or no 판 내역 (every client since 0.62 sends one) or no second
+ * clock (since 0.71). Refused without saying why.
  */
 export function implausible(raw: unknown): boolean {
   const run = raw as Record<string, unknown>;
@@ -322,7 +337,15 @@ export function implausible(raw: unknown): boolean {
     return true;
   }
   const level = Math.floor(Number(run.level));
-  const minutes = Math.floor(Number(run.survivedMs)) / 60_000;
+  const shown = Math.floor(Number(run.survivedMs));
+  const minutes = shown / 60_000;
+  const wall = Number(detail.wall);
+  if (!Number.isFinite(wall) || wall < 0) {
+    return true;
+  }
+  if (shown > wall * (1 + RULES.paceAhead) + RULES.paceAheadMs || wall > shown * RULES.paceBehind + RULES.paceBehindMs) {
+    return true;
+  }
   const kills = detail.kills && typeof detail.kills === 'object' ? (detail.kills as Record<string, unknown>) : {};
   const count = (value: unknown) => Math.max(0, Math.floor(Number(value) || 0));
   const killed = Object.values(kills).reduce<number>((sum, n) => sum + count(n), 0);

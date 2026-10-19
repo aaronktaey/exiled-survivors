@@ -4,6 +4,7 @@ import {
   ALL_ORBS,
   COLORS,
   DEPTH,
+  GEAR_COMBINE,
   GEAR_SLOTS,
   INVENTORY,
   RUN_BAG,
@@ -13,7 +14,7 @@ import {
   gearTexture,
   type GearSlot,
 } from '@/config';
-import { fill, gearTitle, orbShort, t } from '@/i18n';
+import { fill, gearName, gearTitle, orbShort, t } from '@/i18n';
 import { addBackButton, type BackButton } from '@/systems/BackButton';
 import { dropTierFor, type GearItem } from '@/systems/Gear';
 import { drawGearCard, type GearCardView } from '@/systems/GearCard';
@@ -50,7 +51,8 @@ const TITLE_Y = 30;
 /**
  * 장비 — the run's own: what is worn in each slot, the 보관함, and the 구슬
  * held, opened from the pause menu. A cell picks a piece; 착용 puts a kept
- * one on (what was worn goes into the 보관함), 버리기 lets a kept one go
+ * one on (what was worn goes into the 보관함), 합성 makes three kept of one
+ * base into one a tier better (asked twice), 버리기 lets a kept one go
  * (asked twice), 구슬 사용 opens the 구슬 popup on the picked piece, worn or
  * kept. Whatever changes, the run is refitted at once (GameScene listens to
  * the kit).
@@ -66,6 +68,7 @@ export class RunGearScene extends Phaser.Scene {
   public equipButton!: GearButton;
   public discardButton!: GearButton;
   public orbButton!: GearButton;
+  public combineButton!: GearButton;
   public status!: Phaser.GameObjects.Text;
   public orbLine!: Phaser.GameObjects.Text;
 
@@ -73,6 +76,8 @@ export class RunGearScene extends Phaser.Scene {
   private cursor!: Phaser.GameObjects.Rectangle;
   /** A 버리기 pressed once, waiting for the second: the uid it is for. */
   private armed: string | null = null;
+  /** A 합성 pressed once, the same way. */
+  private combineArmed: string | null = null;
   private cardAt = { x: 0, y: 0, w: 0 };
 
   public constructor() {
@@ -84,6 +89,7 @@ export class RunGearScene extends Phaser.Scene {
     this.cells = [];
     this.selected = 0;
     this.armed = null;
+    this.combineArmed = null;
     this.card = undefined;
   }
 
@@ -153,11 +159,13 @@ export class RunGearScene extends Phaser.Scene {
       ? { x: left + leftW + 24, y: TITLE_Y + 30, w: width - leftW - 56 }
       : { x: 16, y, w: width - 32 };
     const buttonsY = height - 74;
-    const bw = Math.min(150, (this.cardAt.w - 16) / 3);
+    const bw = Math.min(130, (this.cardAt.w - 24) / 4);
     const bx = this.cardAt.x + this.cardAt.w / 2;
-    this.equipButton = this.button(bx - bw - 8, buttonsY, bw, copy.equip, () => this.equip());
-    this.discardButton = this.button(bx, buttonsY, bw, copy.discard, () => this.discard());
-    this.orbButton = this.button(bx + bw + 8, buttonsY, bw, copy.orbs, () => this.openOrbs());
+    const at = (i: number) => bx + (i - 1.5) * (bw + 8);
+    this.equipButton = this.button(at(0), buttonsY, bw, copy.equip, () => this.equip());
+    this.combineButton = this.button(at(1), buttonsY, bw, copy.combine, () => this.combine());
+    this.orbButton = this.button(at(2), buttonsY, bw, copy.orbs, () => this.openOrbs());
+    this.discardButton = this.button(at(3), buttonsY, bw, copy.discard, () => this.discard());
     this.status = this.add
       .text(width / 2, height - 46, this.payload.note ?? '', {
         fontFamily: 'system-ui, sans-serif',
@@ -204,6 +212,7 @@ export class RunGearScene extends Phaser.Scene {
     if (index >= 0 && index < this.cells.length) {
       this.selected = index;
       this.armed = null;
+      this.combineArmed = null;
       this.refresh();
     }
   }
@@ -235,6 +244,38 @@ export class RunGearScene extends Phaser.Scene {
     }
     this.kit.remove(item.uid);
     this.restartOn(null);
+  }
+
+  /**
+   * 합성 on the picked kept piece, on the second press: it and two more of
+   * its base (RunKit.combineSet) make one a tier better. Public so a test can.
+   */
+  public combine(): void {
+    const item = this.picked;
+    const copy = t().runGear;
+    if (!item || this.cells[this.selected]?.slot) {
+      return;
+    }
+    const set = this.kit.combineSet(item.uid);
+    if (set === 'top') {
+      this.say(fill(copy.combineTop, { tier: GEAR_COMBINE.bestTier }));
+      return;
+    }
+    if (set === 'count') {
+      this.say(fill(copy.combineNeed, { n: GEAR_COMBINE.count }));
+      return;
+    }
+    if (this.combineArmed !== item.uid) {
+      this.combineArmed = item.uid;
+      this.say(fill(copy.combineConfirm, { n: GEAR_COMBINE.count, gear: gearName(item.id) }));
+      this.refresh();
+      return;
+    }
+    const made = this.kit.combine(item.uid);
+    if (typeof made === 'string') {
+      return;
+    }
+    this.restartOn(made.uid, fill(copy.combined, { gear: gearTitle(made) }));
   }
 
   /** The 구슬 popup on the picked piece. Public so a test can. */
@@ -341,6 +382,7 @@ export class RunGearScene extends Phaser.Scene {
     };
     paint(this.equipButton, kept);
     paint(this.discardButton, kept, this.armed !== null && this.armed === item?.uid);
+    paint(this.combineButton, kept && Array.isArray(this.kit.combineSet(item.uid)), this.combineArmed !== null && this.combineArmed === item?.uid);
     paint(this.orbButton, item !== null && this.kit.orbTotal > 0);
   }
 
@@ -398,6 +440,9 @@ export class RunGearScene extends Phaser.Scene {
           break;
         case 'KeyO':
           this.openOrbs();
+          break;
+        case 'KeyC':
+          this.combine();
           break;
         case 'Escape':
           this.close();

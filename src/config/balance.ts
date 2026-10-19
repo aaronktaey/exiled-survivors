@@ -1027,6 +1027,13 @@ export const SPAWN = {
   rampPerMinute: 0.55,
   maxAlive: 350,
   offscreenMargin: 80,
+  /**
+   * The opening, before the survivor has found any gear (0.71, the user's
+   * ask): every gap between spawns is `intervalScale` times as long until
+   * `untilMs`, then eases back to the usual ramp over `blendMs`. 1.6 is
+   * three in five of the enemies the first two minutes used to bring.
+   */
+  opening: { untilMs: 120_000, intervalScale: 1.6, blendMs: 30_000 },
 } as const;
 
 /**

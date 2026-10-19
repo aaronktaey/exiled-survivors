@@ -49,6 +49,8 @@ export interface RunDetail {
   readonly passives: Readonly<Record<string, number>>;
   /** It was picked up again from a save. */
   readonly resumed: boolean;
+  /** The run's second clock, in ms (systems/RunLedger.ts): the server weighs it against the shown one. */
+  readonly wall: number;
 }
 
 /** What a run hands in to be ranked. */

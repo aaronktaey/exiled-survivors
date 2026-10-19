@@ -189,7 +189,8 @@ await sleep(2500);
 await ev(addDials);
 await ev(`(() => { window.config.DEBUG.gatedInDev = true; return 1; })()`);
 await ev(standIn);
-await ev(`(() => { window.__balanceStandIn.overrides = { 'POTION.chance': 0.25 }; window.__balanceStandIn.updatedAt = 1; return 1; })()`);
+await ev(`(() => { window.__balanceStandIn.overrides = { 'POTION.chance': 0.25, 'ORBS.chaos.chance': 0.5 }; window.__balanceStandIn.updatedAt = 1;
+  window.__chaosWas = window.config.ORBS.chaos.chance; return 1; })()`);
 const player = await cdp.send('Runtime.evaluate', { awaitPromise: true, returnByValue: true, expression: `(async () => {
   window.tuning.draft = { 'POTION.chance': 0.9 };
   await window.tuning.load(window.game);
@@ -198,11 +199,12 @@ const player = await cdp.send('Runtime.evaluate', { awaitPromise: true, returnBy
   window.game.scene.getScene('MenuScene').scene.restart();
   await new Promise((r) => setTimeout(r, 800));
   const icons = window.game.scene.getScene('MenuScene').icons.views.map((v) => v.button.id);
-  return { potion: window.config.POTION.chance, icons };
+  return { potion: window.config.POTION.chance, icons, chaos: window.config.ORBS.chaos.chance, chaosWas: window.__chaosWas };
 })()` });
 const pl = player.result?.result?.value ?? {};
 check('a player who is not the admin plays on everyone’s values, never a draft, and has no 밸런스 icon',
   pl.potion === 0.25 && !pl.icons?.includes('tuning'), JSON.stringify(pl));
+check('a value the server still holds for a path that is no dial changes nothing', pl.chaos === pl.chaosWas, JSON.stringify(pl));
 await ev(`(() => { window.config.DEBUG.gatedInDev = false; window.tuning.draft = {}; localStorage.removeItem('exiled-survivors:tuning-draft:v1'); return 1; })()`);
 
 console.log('\n=== SUMMARY ===');

@@ -36,6 +36,9 @@ import {
   AUDIO,
   TERRAIN,
   GEAR_SLOTS,
+  GEAR_DROP,
+  STARTING_GEAR,
+  type GearSlot,
   CHIMERA_RUSH,
   UPGRADE_PERCENT,
 } from '@/config';
@@ -89,6 +92,7 @@ import { HealthPotion } from '@/entities/HealthPotion';
 import type { EnemyShot } from '@/entities/EnemyShot';
 import {
   NO_BONUS,
+  rollGearForSlot,
   rollGearFromKill,
   rollGearItem,
   slotOf,
@@ -96,6 +100,7 @@ import {
   type GearItem,
 } from '@/systems/Gear';
 import { RunKit } from '@/systems/RunKit';
+import { runLedger } from '@/systems/RunLedger';
 import { itemFilter } from '@/systems/ItemFilter';
 import { GearPickScene, type GearPickChoice, type GearPickData } from '@/scenes/GearPickScene';
 import {
@@ -208,6 +213,8 @@ export class GameScene extends Phaser.Scene {
   private gearBonus: GearBonus = NO_BONUS;
   /** The effects that last the whole run (장비, 패시브, 뼈다귀), built on the first look. */
   private lastingEffects?: EffectEntry[];
+  /** Kills since GEAR_DROP.emptySlot last left a piece, for its pity. */
+  private emptySlotDry = 0;
   /** The weapon this run went out with, as it was then; what the save carries. Public for tests. */
   /** What this run wears, keeps and holds (2026-10-19: gear lives and dies with the run). */
   public kit: RunKit = RunKit.fresh();
@@ -286,7 +293,12 @@ export class GameScene extends Phaser.Scene {
     // The scene outlives a run: what the last one wore, spent and bought is
     // not this one's (the icons left of the skills once showed it).
     this.lastingEffects = undefined;
+    this.emptySlotDry = 0;
     this.elapsedMs = 0;
+    runLedger.begin(0);
+    // Back from the pause menu: the wait there is not play.
+    this.events.off(Phaser.Scenes.Events.RESUME, runLedger.hold);
+    this.events.on(Phaser.Scenes.Events.RESUME, runLedger.hold);
     this.sinceSaveMs = 0;
     this.pendingChoices = [];
     this.pendingAccountXp = 0;
@@ -411,7 +423,6 @@ export class GameScene extends Phaser.Scene {
       },
       { group: this.combat.altars },
       { group: this.combat.shardDrops },
-      { group: this.combat.orbDrops },
       { group: this.combat.gearDrops },
       { group: this.combat.mangoDrops },
       { group: this.combat.magnetDrops },
@@ -568,11 +579,9 @@ export class GameScene extends Phaser.Scene {
     // The overlay wants the real cost of the frame, not the clamped value.
     this.debug.update(delta);
 
-    if (this.over || this.choosing) {
-      return;
-    }
-    // Reading a card or a rare under the mouse: nothing moves meanwhile.
-    if (this.held) {
+    // Reading a card or a rare under the mouse holds the run too: nothing moves meanwhile.
+    if (this.over || this.choosing || this.held) {
+      runLedger.hold();
       return;
     }
 
@@ -580,6 +589,7 @@ export class GameScene extends Phaser.Scene {
     // the world, so every system downstream runs on a clamped delta.
     const dt = Math.min(delta, TIMING.maxDeltaMs);
     this.elapsedMs += dt;
+    runLedger.step(dt);
 
     this.player.webbed = this.webs.update(dt, this.player.x, this.player.y);
     this.player.update();
@@ -648,6 +658,8 @@ export class GameScene extends Phaser.Scene {
 
     this.player.hp = run.hp;
     this.elapsedMs = run.elapsedMs;
+    // A save from before the second clock counts its own as the shown one.
+    runLedger.begin(run.wallMs ?? run.elapsedMs);
     this.hud.seed(run.elapsedMs);
     this.spawner.seed(run.spawnerMs);
     // What it had dealt and killed before the save still counts at the end.
@@ -733,6 +745,7 @@ export class GameScene extends Phaser.Scene {
       bones: this.bones,
       devUsed: this.devRun,
       elapsedMs: this.elapsedMs,
+      wallMs: runLedger.ms,
       level: this.progression.level,
       xp: this.progression.xp,
       hp: this.player.hp,
@@ -956,7 +969,42 @@ export class GameScene extends Phaser.Scene {
    * business.
    */
   private rollGearDrop(fromBoss: boolean, bonus = 1): GearItem | null {
-    return fromBoss ? rollGearItem() : rollGearFromKill(bonus);
+    return (fromBoss ? rollGearItem() : rollGearFromKill(bonus)) ?? this.rollEmptySlotGear();
+  }
+
+  /**
+   * The slots with nothing in them (GEAR_DROP.emptySlot): nothing worn — or
+   * the 녹슨 검 still bare in hand — nothing for it in the 보관함, and
+   * nothing for it lying on the ground. Public for tests.
+   */
+  public get emptySlots(): GearSlot[] {
+    const lying = new Set(
+      this.combat.gearDrops.getChildren()
+        .filter((drop) => drop.active)
+        .map((drop) => slotOf((drop as unknown as { item: GearItem }).item)),
+    );
+    const kept = new Set(this.kit.bag.map(slotOf));
+    return GEAR_SLOTS.filter((slot) => {
+      const worn = this.kit.equipped[slot];
+      const bare = !worn || (worn.id === STARTING_GEAR && worn.prefixes.length + worn.suffixes.length === 0);
+      return bare && !kept.has(slot) && !lying.has(slot);
+    });
+  }
+
+  /** A piece for an empty slot, at GEAR_DROP.emptySlot's chance — certain after its pity. */
+  private rollEmptySlotGear(): GearItem | null {
+    const open = this.emptySlots;
+    if (open.length === 0) {
+      this.emptySlotDry = 0;
+      return null;
+    }
+    this.emptySlotDry += 1;
+    const { chance, pityKills } = GEAR_DROP.emptySlot;
+    if (this.emptySlotDry < pityKills && Math.random() >= chance) {
+      return null;
+    }
+    this.emptySlotDry = 0;
+    return rollGearForSlot(open[Math.floor(Math.random() * open.length)]!);
   }
 
   /**
@@ -1668,6 +1716,7 @@ export class GameScene extends Phaser.Scene {
       skills: this.loadout().map((line) => ({ id: line.id, level: line.level })),
       passives: Object.fromEntries(passives.value.allocated.map((id) => [id, 1])),
       resumed: this.resuming !== null,
+      wall: runLedger.ms,
     };
   }
 

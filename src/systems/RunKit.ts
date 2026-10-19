@@ -1,5 +1,14 @@
-import { GEAR, GEAR_SLOTS, ORBS, RUN_BAG, type GearSlot, type OrbId } from '@/config';
-import { bareItem, gearBonusFor, readItem, slotOf, type GearBonus, type GearItem } from '@/systems/Gear';
+import { GEAR, GEAR_COMBINE, GEAR_SLOTS, ORBS, RUN_BAG, type GearSlot, type OrbId } from '@/config';
+import {
+  bareItem,
+  combineTargetFor,
+  gearBonusFor,
+  readItem,
+  rollGearItem,
+  slotOf,
+  type GearBonus,
+  type GearItem,
+} from '@/systems/Gear';
 
 /** What a run is carrying, as a save writes it. */
 export interface RunKitState {
@@ -7,6 +16,9 @@ export interface RunKitState {
   readonly bag: readonly GearItem[];
   readonly orbs: Partial<Record<OrbId, number>>;
 }
+
+/** Why a 합성 cannot go ahead: too few of the base, or one already at GEAR_COMBINE.bestTier. */
+export type CombineProblem = 'count' | 'top';
 
 /** Where an item is in the kit. */
 export type KitPlace = { readonly item: GearItem; readonly worn: boolean };
@@ -168,6 +180,50 @@ export class RunKit {
     this.kept[at] = item;
     this.changed();
     return true;
+  }
+
+  /**
+   * The pieces a 합성 on `uid` would spend: it, and GEAR_COMBINE.count − 1
+   * more of the same base from the 보관함 — those with the fewest 속성, so
+   * the better ones stay. Worn pieces never go in.
+   */
+  public combineSet(uid: string): readonly GearItem[] | CombineProblem {
+    const item = this.kept.find((kept) => kept.uid === uid);
+    if (!item) {
+      return 'count';
+    }
+    if (GEAR[item.id].tier - 1 < GEAR_COMBINE.bestTier) {
+      return 'top';
+    }
+    const lines = (piece: GearItem) => piece.prefixes.length + piece.suffixes.length;
+    const others = this.kept
+      .filter((kept) => kept.id === item.id && kept.uid !== uid)
+      .sort((a, b) => lines(a) - lines(b))
+      .slice(0, GEAR_COMBINE.count - 1);
+    return others.length === GEAR_COMBINE.count - 1 ? [item, ...others] : 'count';
+  }
+
+  /**
+   * 합성: spends the set `combineSet` names and puts the piece a tier better
+   * in the 보관함 — always. Returns it, or why it could not be done.
+   */
+  public combine(uid: string): GearItem | CombineProblem {
+    const set = this.combineSet(uid);
+    if (!Array.isArray(set)) {
+      return set as CombineProblem;
+    }
+    const target = combineTargetFor(set[0]!.id);
+    if (!target) {
+      return 'top';
+    }
+    const spent = new Set(set.map((piece) => piece.uid));
+    const at = this.kept.findIndex((kept) => kept.uid === uid);
+    const made = rollGearItem(target, 'normal');
+    const rest = this.kept.filter((kept) => !spent.has(kept.uid));
+    rest.splice(Math.min(at, rest.length), 0, made);
+    this.kept.splice(0, this.kept.length, ...rest);
+    this.changed();
+    return made;
   }
 
   public count(orb: OrbId): number {

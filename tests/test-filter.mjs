@@ -113,8 +113,8 @@ const hidden = await scene('GameScene', `
   const sword = c.gearDrops.getChildren().find((d) => d.active && d.item.uid === 'h1');
   s.edgeMarkers.update();
   const seen = {
-    orb: !!orb && orb.active && !orb.visible && orb.concealed && !orb.nameplate.label.visible &&
-      !(orb.nameplate.pillar?.visible ?? false),
+    orb: !!orb && orb.active && !orb.visible && orb.concealed &&
+      !orb.glow.visible,
     sword: !!sword && sword.active && !sword.visible && sword.concealed && !sword.nameplate.label.visible,
     markers: s.edgeMarkers.shown,
   };

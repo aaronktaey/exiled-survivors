@@ -123,7 +123,9 @@ const browser = () => {
 const read = async (response) => ({ status: response.status, body: await response.json().catch(() => null) });
 // An honest run's 판 내역: a level-12 run's upgrades, out of what its kills allow.
 const honest = { build: 'dev', version: '0.69', kills: { grunt: 300, boss: 2 }, bones: [], gear: null,
-  skills: [{ id: 'meleeStrike', level: 12 }, { id: 'fireball', level: 3 }], passives: {}, resumed: false };
+  skills: [{ id: 'meleeStrike', level: 12 }, { id: 'fireball', level: 3 }], passives: {}, resumed: false,
+  // The second clock (RunLedger): a little over the shown one, as honest play leaves it.
+  wall: 640000 };
 const run = (over = {}) => ({ name: 'ABC', emoji: '', flag: 'KR', damage: 120000, level: 12, survivedMs: 600000, detail: honest, ...over });
 
 try {
@@ -217,6 +219,20 @@ try {
   check('and is told nothing of why', edited.body?.error === 'refused' && bare.body?.error === 'refused' &&
     !/skill|upgrade|level|kill/i.test(JSON.stringify(edited.body)), JSON.stringify(edited.body));
 
+  // The shown clock against the second one (0.71): pushed on, held back, or
+  // with no second clock at all — refused the same way, saying nothing.
+  const { wall: _w, ...noWall } = honest;
+  const clocks = {
+    pushed: await read(await alice.send('/api/ranking', 'POST', run({ detail: { ...honest, wall: 300000 } }))),
+    held: await read(await alice.send('/api/ranking', 'POST', run({ detail: { ...honest, wall: 3000000 } }))),
+    none: await read(await alice.send('/api/ranking', 'POST', run({ detail: noWall }))),
+  };
+  check('a shown clock far from the second one, or no second clock, is turned down',
+    Object.values(clocks).every((r) => r.status === 400 && r.body?.error === 'refused'),
+    JSON.stringify(Object.fromEntries(Object.entries(clocks).map(([k, r]) => [k, r.status]))));
+  check('and says nothing of clocks either', !/clock|wall|time|pace/i.test(JSON.stringify(clocks.pushed.body)),
+    JSON.stringify(clocks.pushed.body));
+
   // A time made of frame times, with a fraction: rounded down, not refused.
   const first = await read(await alice.send('/api/ranking', 'POST', run({ name: 'ALI', damage: 50000.4, survivedMs: 600016.67 })));
   check('a signed-in run is taken, placed, and the board comes back with it',
@@ -274,7 +290,7 @@ try {
   const detail = {
     build: 'abc123', version: '0.62', kills: { grunt: 1200, boss: 3, 'not a kind': 5 }, bones: ['skull', '<b>'],
     gear: { id: 'onigoroshi', prefixes: [{ id: 'mighty', tier: 1 }, { id: 'cruel', tier: 99 }], suffixes: [] },
-    skills: [{ id: 'fireball', level: 30 }], passives: { damage: 10 }, resumed: true, extra: 'x'.repeat(50),
+    skills: [{ id: 'fireball', level: 30 }], passives: { damage: 10 }, resumed: true, wall: 612345, extra: 'x'.repeat(50),
   };
   const odd = await read(await cheat.send('/api/ranking', 'POST', run({ name: 'CHT', damage: 5_000_000, detail })));
   check('a run far out of line is still put on the board at once, 판 내역 and all',
@@ -294,7 +310,7 @@ try {
     cht?.detail?.kills?.boss === 3 && cht.detail.kills.grunt === 1200 && !('not a kind' in cht.detail.kills) &&
       JSON.stringify(cht.detail.bones) === '["skull"]' && cht.detail.gear?.prefixes?.length === 1 &&
       cht.detail.skills?.[0]?.level === 30 && cht.detail.resumed === true && !('extra' in cht.detail) &&
-      cht.detail.version === '0.62' && rowOf('BOB')?.detail?.version === honest.version,
+      cht.detail.version === '0.62' && cht.detail.wall === 612345 && rowOf('BOB')?.detail?.version === honest.version,
     JSON.stringify(cht?.detail));
   const notYours = await read(await bob.send('/api/ranking/remove', 'POST', { entryId: cht?.entryId }));
   check('nor may anyone else take a run off', notYours.status === 403, `${notYours.status}`);

@@ -297,14 +297,43 @@ export const ALL_GEAR: readonly GearSpec[] = Object.values(GEAR);
 /** What every survivor starts out holding. */
 export const STARTING_GEAR: GearId = 'rustySword';
 
+/**
+ * 장비 합성, in the run's 장비 screen: `count` of the same base out of the
+ * 보관함 make one piece a tier better, of the same slot, as an 일반 drop
+ * would roll it. It always works (0.71; it failed four times in five on the
+ * title's old 인벤토리). Tier 1 comes only off a 우두머리, so nothing makes
+ * it: `bestTier` is the best a 합성 reaches, and a piece already there
+ * cannot go in.
+ */
+export const GEAR_COMBINE = {
+  count: 3,
+  bestTier: 2,
+} as const;
+
 export const GEAR_DROP = {
   /**
-   * Each affix line has to win its own roll, and the roll repeats until one
-   * fails (or the weapon is full at six). At 0.6 (0.2 until 2026-10-17, 0.7
-   * for a day) six in ten drops carry at least one line. Above 0.5 a full
-   * six is commoner than five, the rolls past five all landing on it.
+   * A piece's 등급 decides how many 속성 it drops with: 일반 2, 마법 4, 희귀 6
+   * (the user's ask, 0.71). Which 등급 is by weight; these keep the share
+   * each had under the old roll of a line at a time (78 · 14 · 8 in 100).
+   * The 구슬 can still leave a piece at any count; the 등급 it shows is then
+   * read off that count (AUDIO.dropTiers).
    */
-  affixChance: 0.6,
+  /**
+   * A slot with nothing in it — no armour, no accessory, the 녹슨 검 still
+   * bare in hand — and nothing for it in the 보관함 or on the ground: each
+   * kill has `chance` to leave a piece for one such slot (of the bases with
+   * `fromKill`, by weight), and `pityKills` kills without one make the next
+   * one certain. Set so all three slots are filled inside the first two
+   * minutes (0.71, the user's ask): a run of the slowed opening kills about
+   * 125 by then, three pieces take some 65 kills on average, and three
+   * pities are 105.
+   */
+  emptySlot: { chance: 0.03, pityKills: 35 },
+  grades: {
+    normal: { lines: 2, weight: 78 },
+    magic: { lines: 4, weight: 14 },
+    rare: { lines: 6, weight: 8 },
+  },
   /** Path of Exile's ceiling for a rare: three of each. */
   maxPrefixes: 3,
   maxSuffixes: 3,
@@ -370,13 +399,29 @@ export interface OrbSpec {
   };
 }
 
+export const ORB_DROP = {
+  /** How big one is drawn on the ground. */
+  size: 16,
+  /**
+   * The run the 구슬's rates are reckoned for, in kills. A day's best on the
+   * live board averaged about 2,300 (2026-10-20) and most runs are shorter;
+   * since 0.71 the 구슬 are found and spent in the run, so each one's chance
+   * is the count a run this long should find (the user's ask, to try out:
+   * 변화 30, 혼돈 10, 각성 10, 폭발 5, 망고 3), over this.
+   */
+  runKills: 2000,
+} as const;
+
+/** A kill's chance at one 구슬, for `count` of them over a run of ORB_DROP.runKills. */
+const perRun = (count: number): number => count / ORB_DROP.runKills;
+
 export const ORBS: Record<OrbId, OrbSpec> = {
   transmute: {
     id: 'transmute',
     name: '변화의 구슬',
     short: '변화',
     detail: '속성을 1~2개로 다시 굴립니다',
-    chance: 0.0101,
+    chance: perRun(30),
     tier: 'magic',
     color: 0x6aa9ff,
     texture: TEXTURES.orbTransmute,
@@ -387,7 +432,7 @@ export const ORBS: Record<OrbId, OrbSpec> = {
     name: '혼돈의 구슬',
     short: '혼돈',
     detail: '속성을 2~4개로 다시 굴립니다',
-    chance: 0.002,
+    chance: perRun(10),
     tier: 'rare',
     color: 0xd45fd0,
     texture: TEXTURES.orbChaos,
@@ -398,7 +443,7 @@ export const ORBS: Record<OrbId, OrbSpec> = {
     name: '각성의 구슬',
     short: '각성',
     detail: '속성 1개를 더합니다 (최대 6)',
-    chance: 0.002,
+    chance: perRun(10),
     tier: 'rare',
     color: 0xffd34d,
     texture: TEXTURES.orbAwaken,
@@ -410,19 +455,18 @@ export const ORBS: Record<OrbId, OrbSpec> = {
     short: '폭발',
     detail: '1티어가 아닌 속성 1개를 한 단계 높은 것으로, 모두 1티어면 속성 1개를 다른 1티어 속성으로 — 20% 확률로 장비 파괴',
     // Off any kill now, raised like the rest — it was a 우두머리's only.
-    chance: 0.0011,
+    chance: perRun(5),
     tier: 'rare',
     color: 0xff7a3d,
     texture: TEXTURES.orbExplode,
     upgrade: { steps: 1, destroyChance: 0.2 },
   },
-  // A tenth as common as the 폭발의 구슬 it guards against.
   mango: {
     id: 'mango',
     name: '망고의 구슬',
     short: '망고',
     detail: '장비를 망고 상태로 — 다음 폭발의 구슬 한 번은 장비를 파괴하지 못하고, 그 구슬에 망고 상태가 사라집니다',
-    chance: 0.00032,
+    chance: perRun(3),
     tier: 'rare',
     color: 0xffe9a8,
     texture: TEXTURES.orbMango,
@@ -432,9 +476,5 @@ export const ORBS: Record<OrbId, OrbSpec> = {
 
 export const ALL_ORBS: readonly OrbSpec[] = Object.values(ORBS);
 
-export const ORB_DROP = {
-  /** How big one is drawn on the ground. */
-  size: 16,
-} as const;
 
 /** What selling this sword pays: its rank from the bottom × GEAR_SELL.perRank, + perAffix a 속성. */

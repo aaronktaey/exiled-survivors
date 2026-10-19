@@ -2,6 +2,7 @@ import {
   AFFIXES,
   AUDIO,
   GEAR,
+  GEAR_COMBINE,
   GEAR_DROP,
   STARTING_GEAR,
   LEGACY_AFFIX_TIER,
@@ -470,6 +471,27 @@ export function rollOrbDrop(scale = 1, fromBoss = false, bonus = 1): OrbSpec | n
   return null;
 }
 
+/**
+ * What a 합성 of `id` makes: a base of the same slot one tier better, by
+ * weight among them — or null when that would pass GEAR_COMBINE.bestTier.
+ */
+export function combineTargetFor(id: GearId): GearSpec | null {
+  const from = GEAR[id];
+  if (!from || from.tier - 1 < GEAR_COMBINE.bestTier) {
+    return null;
+  }
+  const above = Object.values(GEAR).filter((spec) => spec.slot === from.slot && spec.tier === from.tier - 1);
+  const total = above.reduce((sum, spec) => sum + spec.weight, 0);
+  let roll = Math.random() * total;
+  for (const spec of above) {
+    roll -= spec.weight;
+    if (roll <= 0) {
+      return spec;
+    }
+  }
+  return above[above.length - 1] ?? null;
+}
+
 /** A base from the whole roster, every slot, by weight — the way a 우두머리 picks one. */
 function rollGearBase(): GearSpec {
   const total = Object.values(GEAR).reduce((sum, spec) => sum + spec.weight, 0);
@@ -498,22 +520,42 @@ export function rollGearFromKill(bonus = 1): GearItem | null {
   return null;
 }
 
+/** A 등급 by GEAR_DROP.grades' weights. */
+export function rollGrade(): DropTier {
+  const grades = Object.entries(GEAR_DROP.grades) as [DropTier, { readonly weight: number }][];
+  const total = grades.reduce((sum, [, grade]) => sum + grade.weight, 0);
+  let roll = Math.random() * total;
+  for (const [grade, { weight }] of grades) {
+    roll -= weight;
+    if (roll < 0) {
+      return grade;
+    }
+  }
+  return 'normal';
+}
+
+/** A piece for `slot` from the bases an ordinary kill can leave, by weight (GEAR_DROP.emptySlot). */
+export function rollGearForSlot(slot: GearSlot): GearItem | null {
+  const bases = Object.values(GEAR).filter((spec) => spec.slot === slot && spec.fromKill !== undefined);
+  const total = bases.reduce((sum, spec) => sum + spec.weight, 0);
+  let roll = Math.random() * total;
+  for (const spec of bases) {
+    roll -= spec.weight;
+    if (roll <= 0) {
+      return rollGearItem(spec);
+    }
+  }
+  return bases.length > 0 ? rollGearItem(bases[bases.length - 1]) : null;
+}
+
 /**
  * A piece as it drops: a base — `base`, or one from the roster by weight —
- * then affix lines its slot allows, each having to win its own roll. Repeats
- * are allowed, the way a rare enemy can be born doubly 거대.
+ * then a 등급 (`grade`, or one by weight) and exactly that 등급's count of
+ * affix lines its slot allows. Repeats are allowed, the way a rare enemy can
+ * be born doubly 거대.
  */
-export function rollGearItem(base: GearSpec = rollGearBase()): GearItem {
-  const prefixes: AffixLine[] = [];
-  const suffixes: AffixLine[] = [];
-  while (Math.random() < GEAR_DROP.affixChance) {
-    const rolled = rollLine(base.slot, prefixes, suffixes);
-    if (!rolled) {
-      break;
-    }
-    (rolled.prefix ? prefixes : suffixes).push(rolled.line);
-  }
-
+export function rollGearItem(base: GearSpec = rollGearBase(), grade: DropTier = rollGrade()): GearItem {
+  const { prefixes, suffixes } = rollAffixLines(GEAR_DROP.grades[grade].lines, base.slot);
   return { uid: newUid(), id: base.id, prefixes, suffixes };
 }
 

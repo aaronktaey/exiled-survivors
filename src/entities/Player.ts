@@ -188,7 +188,10 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     return this.mangoLeftMs > 0;
   }
 
-  /** Eats a 하얀 망고: untouchable and twice as quick for MANGO.durationMs. */
+  /**
+   * Eats a 하얀 망고: quicker to swing and to move for MANGO.durationMs.
+   * It made the survivor untouchable too until 0.71 (the user's call).
+   */
   public eatMango(): void {
     this.mangoLeftMs = MANGO.durationMs;
     // A hit's blink would fight the rainbow; the rainbow wins.
@@ -261,9 +264,9 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
    * survivor's own invulnerable window, so a volley landing at once is one
    * hit rather than eighteen.
    */
-  /** Whether a thrown thing landing now would hurt: alive, outside the window, no 망고. */
+  /** Whether a thrown thing landing now would hurt: alive and outside the window. */
   public get wouldTakeShot(): boolean {
-    return this.isAlive && this.scene.time.now >= this.invulnerableUntil && !this.mangoActive;
+    return this.isAlive && this.scene.time.now >= this.invulnerableUntil;
   }
 
   public takeDamage(amount: number): void {
@@ -287,7 +290,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
    * Only the debug switch holds it off.
    */
   public takeContact(amount: number): void {
-    if (!this.isAlive || this.shielded || this.mangoActive) {
+    if (!this.isAlive || this.shielded) {
       return;
     }
 

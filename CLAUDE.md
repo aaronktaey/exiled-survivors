@@ -76,7 +76,7 @@ wrong shape.
 ## The test harness
 
 `tests/` drives a real Chrome over CDP against the dev server and checks the
-running game, not units. 46 suites, ~1160 checks. It is the only thing that has
+running game, not units. 47 suites, ~1200 checks. It is the only thing that has
 caught most of what has gone wrong here, so run all of it before every commit.
 
 ```sh
@@ -89,7 +89,7 @@ node run-all.mjs test-full test-skills test-balance test-chain test-ice \
   test-altar test-slot test-locale test-back test-fugitive \
   test-ranking test-skillpick test-mango test-web test-loadout \
   test-carry test-api test-account test-live test-filter test-mastery \
-  test-tuning test-terrain test-chimera test-notice test-seal
+  test-tuning test-terrain test-chimera test-notice test-seal test-runloot
 ```
 
 `run-all.mjs` runs the suites three at a time (`WORKERS=n` to change it):
@@ -222,21 +222,35 @@ Read `git log` for what changed and when. What is not in the log:
   ever writes to the real shared ranking. A suite that wants one of them
   turns it back on (`test-skillpick`, `test-ranking`, which also replaces
   `fetch` with an in-page stand-in for the shared board).
-- **Gear is the run's (2026-10-19, branch `overhaul`).** Three slots
+- **Gear is the run's (0.71).** Three slots
   (`GEAR_SLOTS`: 무기 · 방어구 · 장신구), five bases each, every base its
   icon and 고정 속성; each 속성 names the `slots` it rolls on (`affixPool`).
   A run's `RunKit` (systems/RunKit.ts) holds what is worn, the 보관함
   (`RUN_BAG.capacity`) and the 구슬 picked up; it starts on a bare 녹슨 검,
   is carried by the save (`SavedRun.kit`; an older save's `gear` comes back
-  worn) and goes with the run. The title has no 인벤토리, there is no 판매
-  or 합성, and the old stash and 구슬 drawer keys (`RETIRED_STORAGE`) are
+  worn) and goes with the run. The title has no 인벤토리, there is no 판매,
+  and the old stash and 구슬 drawer keys (`RETIRED_STORAGE`) are
   cleared on load — the user chose to delete them, not pay them out. A piece
   picked up queues a `gear` choice: `GearPickScene` shows it beside what is
   worn (`drawGearCard`) and offers 착용 (the old piece goes to the 보관함) or
   보관 — 버리기 instead when the 보관함 is full; one the 아이템 필터 hides goes
   into the 보관함 without asking. The pause menu's 장비 (`RunGearScene`)
-  wears, drops (asked twice) and opens `OrbScene` on any piece, worn or
-  kept. Every change refits the run at once (`GameScene.refitGear`, health
+  wears, combines and drops (both asked twice) and opens `OrbScene` on any
+  piece, worn or kept. 합성 (`RunKit.combineSet`/`combine`,
+  `combineTargetFor`): the picked kept piece and `GEAR_COMBINE.count` − 1
+  more of its base (the fewest-line ones) make an 일반 piece of the same
+  slot a tier up — always; nothing reaches past `GEAR_COMBINE.bestTier`
+  (tier 1 is a 우두머리's only, so a tier-2 piece cannot go in). A drop's
+  line count is its 등급's (`GEAR_DROP.grades`: 일반 2 · 마법 4 · 희귀 6, by
+  weight, `rollGrade`); 구슬 can still leave any count, and the 등급 shown is
+  read off the count (`AUDIO.dropTiers`). An empty slot (nothing worn, or
+  the 녹슨 검 still bare; nothing of it kept or lying on the ground —
+  `GameScene.emptySlots`) gets a piece off a kill at
+  `GEAR_DROP.emptySlot.chance`, certain after `pityKills` dry kills
+  (`rollEmptySlotGear`, `rollGearForSlot` over the `fromKill` bases): the
+  user wanted all three filled inside two minutes. The harness turns that
+  rule off (a suite would walk into 장비 획득) unless a page sets
+  `window.__emptySlotOn` (test-runloot does). Every change refits the run at once (`GameScene.refitGear`, health
   kept, only held under the new bar). `gearBonusFor` takes the worn list;
   `describeGear`/`orbNote` (systems/GearText) are the read-outs.
 - **Contact is per enemy.** A body hurts through `Player.takeContact` on its
@@ -389,12 +403,13 @@ Read `git log` for what changed and when. What is not in the log:
   Worker secret `ADMIN_USERS` (comma separated; `/api/me` answers
   `admin: true`). A run any F-key changed (`DebugOverlay.used`, kept in the
   save as `devUsed`) goes on neither the ranking nor 내 기록.
-- **No dial ships (2026-10-19, branch `overhaul`).** The user had every
-  dial taken off; `DIALS` is empty and a dial comes back only when they ask
-  for that one (a line in `config/tuning.ts` and its label). The live
-  overrides were copied into the tables first (balance.ts, equipment.ts,
-  passives.ts), so the server's `tuning` row is stale: clear it when the
-  overhaul ships. `tuning.addDial` registers a dial at run time — the seam
+- **No dial ships (0.71).** The user had every dial taken off; `DIALS` is
+  empty and a dial comes back only when they ask for that one (a line in
+  `config/tuning.ts` and its label). The live overrides were copied into the
+  tables first (balance.ts, equipment.ts, passives.ts) and the server's
+  `tuning` row cleared when 0.71 shipped. `Tuning.apply` lays a value over
+  only for a path that is a dial, so a stale row can never put an old
+  number back. `tuning.addDial` registers a dial at run time — the seam
   test-tuning drives the panel through.
 - **밸런스 다이얼.** `config/tuning.ts` lists every dial by path into the
   config tables (pure data — the Worker imports it to accept only those
@@ -540,10 +555,7 @@ Read `git log` for what changed and when. What is not in the log:
   `GearItem.mango`; it lasts one 폭발의 구슬 whatever it rolls: a destroy
   roll comes back `saved` (weapon unchanged, `mango` gone) instead of
   `destroyed`, and a climb comes back `upgrade` with `wardSpent` (the note
-  says the 망고 went). Only
-  구슬 are warded against — a failed 합성 still spends its swords. The
-  인벤토리 shows it on the cell (`GridItem.badge`) and in `stateLine` under
-  the name, not as a read-out line (that block is budgeted to the screen).
+  says the 망고 went). Only 구슬 are warded against.
 - **전투 알림 are toasts.** `GameScene.announce` hands every in-run line to
   `systems/Toasts.ts`: top-right (under the HUD on a narrow screen),
   `TOAST.lifeMs` each, at most `TOAST.max`, oldest out first. A toast's text
@@ -582,7 +594,7 @@ Read `git log` for what changed and when. What is not in the log:
   pauses physics until the pointer moves off. A touch shows the same without
   the hold — on a phone that finger is steering. A popup that closes while
   something is being read leaves the arena paused (`held`).
-- **패시브 is a PoE graph (overhaul phase 1, branch `overhaul`).** Every
+- **패시브 is a PoE graph (0.71).** Every
   lasting bonus is a `Modifier` (`config/stats.ts`: a `StatId`, a value, an
   optional skill tag); `systems/StatSheet` sums them (a tagged one counts
   only for a skill carrying the tag). `config/passives.ts` builds
@@ -608,8 +620,7 @@ Read `git log` for what changed and when. What is not in the log:
   screen says so under such a node. `PassiveScene` draws the graph through
   `treeCam` (zoom, drag, +/−), picks on a tap, takes and refunds with
   buttons; node names keep one size against the zoom. test-passive covers
-  shape, rules, screen and every 키스톤. No patch note yet: the overhaul is
-  local until the user says, and gets one version entry when it ships.
+  shape, rules, screen and every 키스톤.
 - **폭발의 구슬 climbs, or swaps at the top.** It picks among lines below
   tier 1, and the replacement comes only from 속성 that have the rung above.
   On a weapon whose every line is tier 1 it trades one for a different
@@ -622,6 +633,26 @@ Read `git log` for what changed and when. What is not in the log:
   draws on the next tick — a test that pins `Math.random` for the roll would
   otherwise trip Phaser's Text. A destroyed piece leaves its slot empty (a
   weapon slot too: no attack until another is worn).
+- **구슬 come like gems (0.71).** A run finds dozens (`ORBS[id].chance` is
+  `perRun(n)` over `ORB_DROP.runKills`, the user's 30/10/10/5/3 on trial),
+  so an `OrbDrop` has no name over it, no landing sound and no edge marker:
+  inside the survivor's `pickupRadius` it flies in the way an `XpGem` does,
+  and the pickup's toast names it.
+- **The opening is slower (0.71).** `SPAWN.opening`: every spawn gap is
+  `intervalScale` times as long until `untilMs`, easing back over `blendMs`
+  (`SpawnDirector.intervalMs`), so a survivor with no gear yet is not
+  buried. 하얀 망고 no longer makes the survivor untouchable (user's call);
+  its speed boosts stay.
+- **A second clock on every run (0.71).** `systems/RunLedger.ts` adds up
+  the real time between the frames that move `GameScene.elapsedMs`
+  (capped per frame, held while a card/popup/pause holds the run), in
+  module scope rather than on the scene; the save carries it sealed
+  (`SavedRun.wallMs`) and the run hands it in as `RunDetail.wall`. The
+  Worker refuses a run whose shown time is more than `RULES.paceAhead`
+  (+`paceAheadMs`) over it, or whose second clock is past `paceBehind` ×
+  the shown (+`paceBehindMs`), or that has none — as `refused`, saying
+  nothing (the user's ask). Honest play has the second clock at or a hair
+  under the shown one (the shown steps ≤ 50ms a frame).
 - **지형지물 (0.67).** `systems/Terrain.ts` lays `TERRAIN`
   (balance.ts) rocks per run from a seed (`SavedRun.terrainSeed`, so
   불러오기 finds the same field): each outline is one distance per angle

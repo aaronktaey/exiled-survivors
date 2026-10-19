@@ -141,6 +141,12 @@ export class BootScene extends Phaser.Scene {
       // in the way would move them. test-terrain keeps them (window.__terrainOn).
       (TERRAIN as { enabled: boolean }).enabled = false;
     }
+    if (import.meta.env.DEV && harness && !(window as { __emptySlotOn?: boolean }).__emptySlotOn) {
+      // Nor does a kill leave gear for an empty slot: a suite killing enemies
+      // round the survivor would walk into 장비 획득 and be held by it.
+      // test-runloot keeps it (window.__emptySlotOn).
+      Object.assign(GEAR_DROP.emptySlot as { chance: number; pityKills: number }, { chance: 0, pityKills: Infinity });
+    }
     if (import.meta.env.DEV) {
       // Turnstile only knows the real domain, and `wrangler dev` has no secret
       // to check a token with — so on the dev server nothing is asked for.

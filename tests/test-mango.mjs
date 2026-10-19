@@ -39,7 +39,7 @@ await run(`s.choosing = false; return 1;`);
 await sleep(300);
 await shot('mango-01-ground');
 
-// --- 2. eaten: untouchable, twice as quick, and in colour ---
+// --- 2. eaten: twice as quick, and in colour — and no longer untouchable (0.71) ---
 const eaten = await run(`
   s.choosing = true;
   const p = s.player;
@@ -52,7 +52,7 @@ const eaten = await run(`
   // Its clock, as a ring round the survivor: drawn once it starts to run.
   p.tickBuffs(1);
   during.ring = p.mangoRing.commandBuffer.length;
-  // Nothing gets through: not a body, not a bolt.
+  // A body and a bolt both still hurt.
   const e = s.spawner.group.get(p.x, p.y); e.spawn(p.x, p.y, p, 'brute');
   s.combat.onEnemyTouch(p, e);
   p.takeDamage(50);
@@ -65,7 +65,7 @@ const eaten = await run(`
 console.log('eaten:', JSON.stringify(eaten));
 check('eating it takes it off the ground and starts its clock',
   eaten.during.gone && eaten.during.active && eaten.during.left === ground.cfg.durationMs);
-check('nothing hurts while it lasts — no body, no bolt', eaten.hp === eaten.max);
+check('it is no shield: a body and a bolt still hurt while it lasts', eaten.hp < eaten.max, `${eaten.hp}/${eaten.max}`);
 check('move speed is multiplied by the configured amount',
   Math.abs(eaten.during.speed - eaten.before.speed * ground.cfg.moveSpeedScale) < 1e-6,
   `${eaten.before.speed} -> ${eaten.during.speed}`);

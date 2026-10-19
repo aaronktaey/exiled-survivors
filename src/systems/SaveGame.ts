@@ -12,6 +12,8 @@ export interface SavedRun {
   readonly version: 1;
   readonly savedAt: number;
   readonly elapsedMs: number;
+  /** The run's second clock (systems/RunLedger.ts). Absent before 0.71: taken as `elapsedMs`. */
+  readonly wallMs?: number;
   readonly level: number;
   readonly xp: number;
   readonly hp: number;

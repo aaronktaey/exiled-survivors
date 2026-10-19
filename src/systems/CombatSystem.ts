@@ -8,7 +8,6 @@ import {
   COLORS,
   DEPTH,
   FIREBALL,
-  ORBS,
   MANGO,
   POTION,
   SKILL_PICK,
@@ -257,8 +256,9 @@ export class CombatSystem {
       return;
     }
 
-    drop.drop(x, y, id);
-    this.land(drop, itemFilter.shows(`orb:${id}`), ORBS[id]?.tier ?? 'normal');
+    drop.drop(x, y, id, this.player);
+    // No sound of its own either: a run finds dozens, drawn in like gems.
+    this.land(drop, itemFilter.shows(`orb:${id}`), null);
   }
 
   /** Places a 뼈다귀 directly — used by the kill roll and by debug keys. */

@@ -235,7 +235,8 @@ const rim = await run(`
   const boss = s.spawner.spawnBoss();
   put = at(5.0, 640);
   boss.setPosition(put.x, put.y);
-  // One inside the view, which is already there to see.
+  // One inside the view, which is already there to see. (A 구슬 off it has
+  // no marker either since 0.71: a run finds dozens, drawn in like gems.)
   s.combat.dropOrbAt(p.x + 40, p.y + 30, 'transmute');
 
   s.edgeMarkers.update();
@@ -247,11 +248,11 @@ const rim = await run(`
            margin: window.config.EDGE_MARKERS.margin };
 `);
 console.log('the rim:', JSON.stringify(rim));
-check('one marker per thing off the screen, and none for what is on it',
-  rim.count === 5 && !rim.shown.some((m) => m.texture === 'tex-orb-transmute'),
+check('one marker per thing off the screen, none for what is on it, and none for a 구슬',
+  rim.count === 4 && !rim.shown.some((m) => m.texture.startsWith('tex-orb')),
   `${rim.count} markers: ${rim.shown.map((m) => m.texture.replace('tex-', '')).join(' ')}`);
 check('each wears the sprite of the thing it points at',
-  ['tex-enemy-boss', 'tex-shard', 'tex-orb-chaos', 'tex-gear-runedSword', 'tex-skill-fireball']
+  ['tex-enemy-boss', 'tex-shard', 'tex-gear-runedSword', 'tex-skill-fireball']
     .every((key) => rim.shown.some((m) => m.texture === key)),
   rim.shown.map((m) => m.texture.replace('tex-', '')).join(' / '));
 check('and sits inside the edge it points through',

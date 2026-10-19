@@ -235,7 +235,10 @@ class TuningStore {
   private apply(paths: readonly string[]): void {
     const useDraft = devToolsAllowed();
     for (const path of new Set(paths)) {
-      const spot = locate(path);
+      // Only a dial is laid over: a value the server still holds for a path
+      // that is no dial now (the rows from before 0.71, folded into the
+      // tables) would otherwise put the old number back over the new one.
+      const spot = DEFAULTS.has(path) ? locate(path) : null;
       if (!spot) {
         continue;
       }

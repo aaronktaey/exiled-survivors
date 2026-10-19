@@ -247,6 +247,15 @@ export interface Strings {
     readonly equipped: string;
     readonly discard: string;
     readonly discardConfirm: string;
+    readonly combine: string;
+    /** Asked before a 합성: {n} of {gear} go in. */
+    readonly combineConfirm: string;
+    /** Too few to combine: {n} needed. */
+    readonly combineNeed: string;
+    /** Already as good as a 합성 makes: tier {tier}. */
+    readonly combineTop: string;
+    /** What a 합성 made: {gear}. */
+    readonly combined: string;
     readonly orbs: string;
     readonly noOrbs: string;
     /** The 구슬 held: {list}. */

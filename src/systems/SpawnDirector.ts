@@ -140,11 +140,18 @@ export class SpawnDirector {
     return SPAWN_TABLE.filter((row) => this.elapsedMs >= row.unlockMs).map((row) => row.kind);
   }
 
-  /** Current gap between spawns, shrinking toward SPAWN.minIntervalMs. */
+  /**
+   * Current gap between spawns, shrinking toward SPAWN.minIntervalMs —
+   * stretched through the opening (SPAWN.opening), so a survivor with no
+   * gear yet is not buried before finding some.
+   */
   public get intervalMs(): number {
     const minutes = this.elapsedMs / 60_000;
     const decay = Math.pow(1 - SPAWN.rampPerMinute, minutes);
-    return SPAWN.minIntervalMs + (SPAWN.startIntervalMs - SPAWN.minIntervalMs) * decay;
+    const { untilMs, intervalScale, blendMs } = SPAWN.opening;
+    const past = Math.max(0, this.elapsedMs - untilMs);
+    const stretch = 1 + (intervalScale - 1) * Math.max(0, 1 - past / Math.max(1, blendMs));
+    return (SPAWN.minIntervalMs + (SPAWN.startIntervalMs - SPAWN.minIntervalMs) * decay) * stretch;
   }
 
   public update(delta: number): void {
