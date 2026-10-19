@@ -24,7 +24,8 @@ const KEY = 'exiled-survivors:passives:v1';
 const stored = () => ev(`(() => JSON.parse(localStorage.getItem('${KEY}') || 'null'))()`);
 /** Writes the tree's storage and comes back into a run that reads it. */
 const loadRun = async (state) => {
-  await ev(`(() => { localStorage.setItem('${KEY}', ${JSON.stringify(JSON.stringify(state))}); return 1; })()`);
+  // Written sealed, as the game writes it (systems/Seal.ts): an unsealed one is refused once the grace is over.
+  await ev(`(() => { localStorage.setItem('${KEY}', window.sealRecord('${KEY}', ${JSON.stringify(state)})); return 1; })()`);
   await cdp.send('Page.navigate', { url: 'http://localhost:5173/#run' });
   await sleep(900);
   await cdp.send('Page.reload', {});
@@ -171,7 +172,7 @@ check('an end can, for PASSIVE_RESPEC.shardCost shards', rules.endBack === true 
   `${rules.afterEnd.join(',')}; ${rules.shards} shards`);
 check('with no point free, nothing more is taken', rules.full === false);
 const sane = await ev(`(() => {
-  localStorage.setItem('${KEY}', JSON.stringify({ version: 2, shards: 0, xp: 0, bonusPoints: 2,
+  localStorage.setItem('${KEY}', window.sealRecord('${KEY}', { version: 2, shards: 0, xp: 0, bonusPoints: 2,
     allocated: ['warrior.s1', 'hunter.s5', 'warrior.s2', 'warrior.s3', 'made.up'] }));
   return 1;
 })()`);

@@ -15,6 +15,28 @@ export interface PatchNote {
 
 export const PATCH_NOTES: readonly PatchNote[] = [
   {
+    version: '0.70',
+    date: '2026-10-20',
+    changes: {
+      ko: [
+        '랭킹에 올라가는 기록의 검증을 강화했습니다.',
+        '저장 데이터가 보호됩니다. 게임 밖에서 고친 이어하기 저장본은 불러오지 않고, 고친 패시브는 초기화됩니다.',
+      ],
+      en: [
+        'Runs handed in to the ranking are checked more closely.',
+        'Saved data is now protected: a saved run changed outside the game is not loaded, and passives changed that way start over.',
+      ],
+      ja: [
+        'ランキングに登録される記録の検証を強化しました。',
+        '保存データが保護されます。ゲームの外で書き換えた続きのデータは読み込まれず、書き換えたパッシブは初期化されます。',
+      ],
+      zh: [
+        '加强了对提交到排行榜的记录的验证。',
+        '存档数据受到保护：在游戏外修改过的继续存档不会被读取，修改过的被动会被重置。',
+      ],
+    },
+  },
+  {
     version: '0.69',
     date: '2026-10-20',
     changes: {

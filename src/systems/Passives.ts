@@ -10,6 +10,7 @@ import {
 } from '@/config';
 import { gold } from '@/systems/Gold';
 import { StatSheet } from '@/systems/StatSheet';
+import { openRecord, sealRecord } from '@/systems/Seal';
 
 /** The tree and what feeds it, kept between runs. */
 export interface PassiveState {
@@ -203,7 +204,13 @@ class PassiveStore {
     this.cachedSheet = null;
     try {
       const raw = window.localStorage.getItem(STORAGE.passives);
-      this.current = raw ? PassiveStore.sanitise(JSON.parse(raw) as Partial<PassiveState>) : { ...DEFAULTS };
+      // A tree changed outside the game starts over; one from before the
+      // seal is taken and written back sealed.
+      const opened = raw ? openRecord<Partial<PassiveState>>(STORAGE.passives, raw) : null;
+      this.current = opened && opened.state !== 'tampered' ? PassiveStore.sanitise(opened.value) : { ...DEFAULTS };
+      if (opened && opened.state !== 'sealed') {
+        this.save();
+      }
     } catch {
       this.current = { ...DEFAULTS };
     }
@@ -211,7 +218,7 @@ class PassiveStore {
 
   private save(): void {
     try {
-      window.localStorage.setItem(STORAGE.passives, JSON.stringify(this.current));
+      window.localStorage.setItem(STORAGE.passives, sealRecord(STORAGE.passives, this.current));
     } catch {
       // The tree lasts as long as the tab, then.
     }

@@ -121,7 +121,10 @@ const browser = () => {
   return { call, signIn, send, jar };
 };
 const read = async (response) => ({ status: response.status, body: await response.json().catch(() => null) });
-const run = (over = {}) => ({ name: 'ABC', emoji: '', flag: 'KR', damage: 120000, level: 12, survivedMs: 600000, ...over });
+// An honest run's 판 내역: a level-12 run's upgrades, out of what its kills allow.
+const honest = { build: 'dev', version: '0.69', kills: { grunt: 300, boss: 2 }, bones: [], gear: null,
+  skills: [{ id: 'meleeStrike', level: 12 }, { id: 'fireball', level: 3 }], passives: {}, resumed: false };
+const run = (over = {}) => ({ name: 'ABC', emoji: '', flag: 'KR', damage: 120000, level: 12, survivedMs: 600000, detail: honest, ...over });
 
 try {
   let up = false;
@@ -203,6 +206,17 @@ try {
     refusedRuns.name === 'name' && refusedRuns.flag === 'flag' && refusedRuns.pace === 'pace' && refusedRuns.short === 'time',
     JSON.stringify(refusedRuns));
 
+  // Skills out of reach of the run's level, kills and time — a save edited
+  // by hand — and a run with no 판 내역: turned down without saying why.
+  const edited = await read(await alice.send('/api/ranking', 'POST', run({
+    detail: { ...honest, kills: { grunt: 111 }, skills: [{ id: 'fireball', level: 269 }, { id: 'voidOrb', level: 479 }], resumed: true },
+  })));
+  const bare = await read(await alice.send('/api/ranking', 'POST', run({ detail: undefined })));
+  check('a run whose skills are out of reach of its level, kills and time is turned down',
+    edited.status === 400 && bare.status === 400, `${edited.status} ${bare.status}`);
+  check('and is told nothing of why', edited.body?.error === 'refused' && bare.body?.error === 'refused' &&
+    !/skill|upgrade|level|kill/i.test(JSON.stringify(edited.body)), JSON.stringify(edited.body));
+
   // A time made of frame times, with a fraction: rounded down, not refused.
   const first = await read(await alice.send('/api/ranking', 'POST', run({ name: 'ALI', damage: 50000.4, survivedMs: 600016.67 })));
   check('a signed-in run is taken, placed, and the board comes back with it',
@@ -280,7 +294,7 @@ try {
     cht?.detail?.kills?.boss === 3 && cht.detail.kills.grunt === 1200 && !('not a kind' in cht.detail.kills) &&
       JSON.stringify(cht.detail.bones) === '["skull"]' && cht.detail.gear?.prefixes?.length === 1 &&
       cht.detail.skills?.[0]?.level === 30 && cht.detail.resumed === true && !('extra' in cht.detail) &&
-      cht.detail.version === '0.62' && rowOf('BOB')?.detail === null,
+      cht.detail.version === '0.62' && rowOf('BOB')?.detail?.version === honest.version,
     JSON.stringify(cht?.detail));
   const notYours = await read(await bob.send('/api/ranking/remove', 'POST', { entryId: cht?.entryId }));
   check('nor may anyone else take a run off', notYours.status === 403, `${notYours.status}`);

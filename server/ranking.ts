@@ -47,6 +47,21 @@ export const RULES = {
   cacheSeconds: 30,
   /** Anything bigger than this is not a run (its 판 내역 included). */
   maxBodyBytes: 8_192,
+  /**
+   * How many skill upgrades a run can have, all its skills together (each
+   * skill's level less its first). Upgrades come from level-ups and from
+   * skills picked up, so the ceiling is the level-ups, a generous share of
+   * the kills (a skill drop is a percent or two of them even with every
+   * drop bonus), every 우두머리 and 도망자 (each leaves one for certain), and
+   * a little slack; and, on the clock, at most `upgradesPerMinute`. The best
+   * honest runs sit far under both (2026-10-20: the top ten at under a third
+   * of the first, the closest at about two fifths of the second); runs resumed from an edited save, at character level 20
+   * with six skills in the hundreds, sat far over.
+   */
+  upgradesPerKill: 0.1,
+  upgradesPerBoss: 1,
+  upgradesPerMinute: 60,
+  upgradeSlack: 6,
 } as const;
 
 const BOARD_PATH = '/api/ranking';
@@ -295,6 +310,32 @@ export function problemWith(raw: unknown): string | null {
   return null;
 }
 
+/**
+ * Whether a run's 판 내역 says more than it could have: skill levels out of
+ * reach of its level, its kills and its time — or no 판 내역 at all, which
+ * every client since 0.62 sends. Refused without saying why.
+ */
+export function implausible(raw: unknown): boolean {
+  const run = raw as Record<string, unknown>;
+  const detail = run.detail && typeof run.detail === 'object' ? (run.detail as Record<string, unknown>) : null;
+  if (!detail || !Array.isArray(detail.skills) || detail.skills.length === 0) {
+    return true;
+  }
+  const level = Math.floor(Number(run.level));
+  const minutes = Math.floor(Number(run.survivedMs)) / 60_000;
+  const kills = detail.kills && typeof detail.kills === 'object' ? (detail.kills as Record<string, unknown>) : {};
+  const count = (value: unknown) => Math.max(0, Math.floor(Number(value) || 0));
+  const killed = Object.values(kills).reduce<number>((sum, n) => sum + count(n), 0);
+  const bosses = count(kills.boss) + count(kills.fugitive);
+  const upgrades = detail.skills.reduce<number>(
+    (sum, skill) => sum + Math.max(0, count((skill as { level?: unknown } | null)?.level) - 1),
+    0,
+  );
+  const byPlay = level - 1 + killed * RULES.upgradesPerKill + bosses * RULES.upgradesPerBoss + RULES.upgradeSlack;
+  const byClock = minutes * RULES.upgradesPerMinute + RULES.upgradeSlack;
+  return upgrades > byPlay || upgrades > byClock;
+}
+
 /** A short, salted, one-way stand-in for the address a run came from. */
 async function addressOf(request: Request, env: Env): Promise<string> {
   const ip = request.headers.get('CF-Connecting-IP') ?? 'local';
@@ -346,6 +387,10 @@ export async function submit(request: Request, env: Env, ctx: ExecutionContext):
   const problem = problemWith(raw);
   if (problem) {
     return json({ error: problem }, 400);
+  }
+  // Out of reach of the run itself: turned down like any other, with no reason given.
+  if (implausible(raw)) {
+    return json({ error: 'refused' }, 400);
   }
   const run = raw as Record<string, unknown>;
 

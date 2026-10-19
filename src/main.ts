@@ -19,6 +19,7 @@ import { gold } from '@/systems/Gold';
 import { critMultiplierFor } from '@/systems/Modifiers';
 import { bones as bonesStore } from '@/systems/Bones';
 import { passives } from '@/systems/Passives';
+import { openRecord, sealRecord } from '@/systems/Seal';
 import { itemFilter } from '@/systems/ItemFilter';
 import { tuning } from '@/systems/Tuning';
 import { podium } from '@/systems/Podium';
@@ -144,6 +145,8 @@ if (import.meta.env.DEV) {
     rollGearItem?: typeof rollGearItem;
     gearBonusFor?: typeof gearBonusFor;
     passives?: typeof passives;
+    sealRecord?: typeof sealRecord;
+    openRecord?: typeof openRecord;
     gold?: typeof gold;
     bones?: typeof bonesStore;
     orbApplied?: typeof orbApplied;
@@ -163,6 +166,8 @@ if (import.meta.env.DEV) {
   dev.rollGearItem = rollGearItem;
   dev.gearBonusFor = gearBonusFor;
   dev.passives = passives;
+  dev.sealRecord = sealRecord;
+  dev.openRecord = openRecord;
   dev.gold = gold;
   dev.bones = bonesStore;
   dev.orbApplied = orbApplied;
