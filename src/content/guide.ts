@@ -2,7 +2,8 @@ import {
   AFFIXES,
   ALL_BONES,
   ALL_ORBS,
-  ALL_PASSIVES,
+  ALL_PASSIVE_NODES,
+  PASSIVE_RESPEC,
   ALTAR,
   ALTAR_OFFERS,
   BALANCE,
@@ -56,7 +57,7 @@ import {
   gearName,
   orbDetail,
   orbName,
-  passiveDetail,
+  passiveLines,
   passiveName,
   skillName,
   skillSummary,
@@ -186,8 +187,7 @@ function values(): Record<string, string | number> {
     altarOffers: (Object.keys(ALTAR_OFFERS) as AltarOfferId[])
       .map((id) => altarOfferText(id))
       .join(', '),
-    perOrb: SHARD.perOrb,
-    points: SHARD.pointsPerOrb,
+    respecCost: PASSIVE_RESPEC.shardCost,
     fromKillTiers: tierSpan(
       Object.values(GEAR)
         .filter((spec) => spec.fromKill !== undefined)
@@ -507,15 +507,12 @@ function boneCards(): GuideCard[] {
 
 function passiveCards(): GuideCard[] {
   const g = t().guide.labels;
-  return ALL_PASSIVES.map((passive) => ({
-    title: passiveName(passive.id),
+  const copy = t().passives;
+  // The 핵심 and 키스톤: a small node is one line, and the tree itself shows those.
+  return ALL_PASSIVE_NODES.filter((node) => node.kind === 'notable' || node.kind === 'keystone').map((node) => ({
+    title: passiveName(node.id),
     tone: 'passive' as const,
-    facts: [
-      fill(g.passiveRank, { detail: passiveDetail(passive.id), max: passive.maxRank }),
-      ...(passive.requires
-        ? [fill(g.passiveNeeds, { name: passiveName(passive.requires.id), rank: passive.requires.rank })]
-        : []),
-    ],
-    lines: [],
+    facts: [fill(g.passiveKind, { branch: node.branch ? copy.branches[node.branch] : '', kind: copy.kinds[node.kind] })],
+    lines: passiveLines(node.id),
   }));
 }

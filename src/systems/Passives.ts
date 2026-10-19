@@ -1,74 +1,77 @@
-import { ECONOMY, PASSIVES, SHARD, STORAGE, type PassiveId } from '@/config';
+import {
+  ACCOUNT_LEVEL,
+  ECONOMY,
+  PASSIVE_NODES,
+  PASSIVE_RESPEC,
+  PASSIVE_START,
+  STORAGE,
+  type KeystoneId,
+  type PassiveId,
+} from '@/config';
 import { gold } from '@/systems/Gold';
+import { StatSheet } from '@/systems/StatSheet';
 
-/** The stash of points, and where they have been spent. */
+/** The tree and what feeds it, kept between runs. */
 export interface PassiveState {
-  /** 신성한 조각 held, short of the next 구슬. */
+  readonly version: 2;
+  /** 신성한 조각 held: what taking a node back costs. */
   readonly shards: number;
-  /** Points earned and not yet spent. */
-  readonly points: number;
-  readonly ranks: Partial<Record<PassiveId, number>>;
+  /** Account experience: every run's gems, added up. */
+  readonly xp: number;
+  /** Points owed from before the graph tree (the old ranks, given back), on top of the level's. */
+  readonly bonusPoints: number;
+  /** Nodes taken, the start not counted. */
+  readonly allocated: readonly PassiveId[];
 }
 
-/** What the tree is worth, before the weapon and before the run. */
-export interface PassiveBonus {
-  readonly damageScale: number;
-  readonly attackSpeedScale: number;
-  readonly moveSpeedScale: number;
-  /** 행운, as a share. Nothing reads it yet. */
-  readonly luck: number;
+/** Where an account level stands: the level, and the experience into and needed for the next. */
+export interface AccountLevel {
+  readonly level: number;
+  readonly into: number;
+  readonly need: number;
 }
 
-export const NO_PASSIVES: PassiveBonus = {
-  damageScale: 1,
-  attackSpeedScale: 1,
-  moveSpeedScale: 1,
-  luck: 0,
-};
+/** Experience to leave account level `level`. */
+export const accountXpToLeave = (level: number): number =>
+  Math.round(ACCOUNT_LEVEL.base * Math.pow(level, ACCOUNT_LEVEL.power));
 
-const DEFAULTS: PassiveState = { shards: 0, points: 0, ranks: {} };
+/** The account level a pot of experience reaches. */
+export function accountLevelFor(xp: number): AccountLevel {
+  let level = 1;
+  let left = Math.max(0, Math.floor(xp));
+  while (level < ACCOUNT_LEVEL.maxLevel && left >= accountXpToLeave(level)) {
+    left -= accountXpToLeave(level);
+    level += 1;
+  }
+  return { level, into: left, need: level >= ACCOUNT_LEVEL.maxLevel ? 0 : accountXpToLeave(level) };
+}
+
+const DEFAULTS: PassiveState = { version: 2, shards: 0, xp: 0, bonusPoints: 0, allocated: [] };
 
 type Listener = (state: PassiveState) => void;
 
-/**
- * What a set of ranks adds up to.
- *
- * Ranks of one line add together rather than compounding — three ranks of
- * +10% is +30%, not 1.1³ — so the tenth point in a line is worth what the
- * first was. The layers multiply with each other; that is Modifiers' job.
- */
-export function passiveBonusFor(ranks: PassiveState['ranks']): PassiveBonus {
-  let damageScale = 1;
-  let attackSpeedScale = 1;
-  let moveSpeedScale = 1;
-  let luck = 0;
-
-  for (const spec of Object.values(PASSIVES)) {
-    const rank = ranks[spec.id] ?? 0;
-    if (rank <= 0) {
-      continue;
-    }
-
-    damageScale += ((spec.damageScale ?? 1) - 1) * rank;
-    attackSpeedScale += ((spec.attackSpeedScale ?? 1) - 1) * rank;
-    moveSpeedScale += ((spec.moveSpeedScale ?? 1) - 1) * rank;
-    luck += (spec.luck ?? 0) * rank;
-  }
-
-  return { damageScale, attackSpeedScale, moveSpeedScale, luck };
+/** What a set of nodes adds up to. */
+export function passiveSheetFor(allocated: readonly PassiveId[]): StatSheet {
+  const nodes = allocated.map((id) => PASSIVE_NODES[id]).filter((node) => node !== undefined);
+  return new StatSheet(
+    nodes.flatMap((node) => node.mods),
+    nodes.map((node) => node.keystone).filter((k): k is KeystoneId => k !== undefined),
+  );
 }
 
 /**
  * The passive tree's own state, kept beside the equipment stash: both
  * outlive a run on purpose, and both are spent on the title screen.
  *
- * Shards turn into points as they arrive — holding ten of them and a
- * separate "make the orb" button would be a step with no decision in it.
+ * A node can be taken while a point is free and it touches one already
+ * taken (or the start); taken back for a 신성한 조각 while nothing else is
+ * cut off from the start by it.
  */
 class PassiveStore {
-  private current: PassiveState = { ...DEFAULTS, ranks: {} };
+  private current: PassiveState = { ...DEFAULTS };
   private readonly listeners = new Set<Listener>();
   private loaded = false;
+  private cachedSheet: StatSheet | null = null;
 
   public get value(): PassiveState {
     if (!this.loaded) {
@@ -77,76 +80,109 @@ class PassiveStore {
     return this.current;
   }
 
-  public get bonus(): PassiveBonus {
-    return passiveBonusFor(this.value.ranks);
+  /** What the tree is worth, for a run starting now. */
+  public get sheet(): StatSheet {
+    this.cachedSheet ??= passiveSheetFor(this.value.allocated);
+    return this.cachedSheet;
   }
 
-  public rankOf(id: PassiveId): number {
-    return this.value.ranks[id] ?? 0;
+  public get account(): AccountLevel {
+    return accountLevelFor(this.value.xp);
   }
 
-  /** Total points ever earned, for the line that reads them out. */
-  public get spent(): number {
-    return Object.values(this.value.ranks).reduce((sum, rank) => sum + (rank ?? 0), 0);
+  /** Every point the account has: one a level past the first, and the old tree's. */
+  public get totalPoints(): number {
+    return this.account.level - 1 + this.value.bonusPoints;
   }
 
-  /**
-   * One 신성한 조각, as a 우두머리 left it. Every SHARD.perOrb of them
-   * completes a 신성한 구슬, which is a point. Returns true when this shard
-   * was the one that completed one.
-   */
-  public addShard(): boolean {
-    const shards = this.value.shards + 1;
-    if (shards < SHARD.perOrb) {
-      this.commit({ ...this.value, shards });
+  public get freePoints(): number {
+    return Math.max(0, this.totalPoints - this.value.allocated.length);
+  }
+
+  public isAllocated(id: PassiveId): boolean {
+    return id === PASSIVE_START || this.value.allocated.includes(id);
+  }
+
+  /** Touches the start or a node already taken. */
+  public isReachable(id: PassiveId): boolean {
+    return PASSIVE_NODES[id]?.links.some((link) => this.isAllocated(link)) ?? false;
+  }
+
+  public canAllocate(id: PassiveId): boolean {
+    return PASSIVE_NODES[id] !== undefined && !this.isAllocated(id) && this.freePoints > 0 && this.isReachable(id);
+  }
+
+  public allocate(id: PassiveId): boolean {
+    if (!this.canAllocate(id)) {
       return false;
     }
+    this.commit({ ...this.value, allocated: [...this.value.allocated, id] });
+    return true;
+  }
 
+  /** Whether taking it back would leave every other node still joined to the start. */
+  public isLeaf(id: PassiveId): boolean {
+    if (id === PASSIVE_START || !this.value.allocated.includes(id)) {
+      return false;
+    }
+    const keep = new Set(this.value.allocated.filter((other) => other !== id));
+    const seen = new Set<PassiveId>([PASSIVE_START]);
+    const queue: PassiveId[] = [PASSIVE_START];
+    while (queue.length > 0) {
+      const at = queue.pop()!;
+      for (const next of PASSIVE_NODES[at]?.links ?? []) {
+        if (keep.has(next) && !seen.has(next)) {
+          seen.add(next);
+          queue.push(next);
+        }
+      }
+    }
+    return [...keep].every((other) => seen.has(other));
+  }
+
+  public canRefund(id: PassiveId): boolean {
+    return this.isLeaf(id) && this.value.shards >= PASSIVE_RESPEC.shardCost;
+  }
+
+  /** Takes a node back for a 신성한 조각; its point is free again. */
+  public refund(id: PassiveId): boolean {
+    if (!this.canRefund(id)) {
+      return false;
+    }
     this.commit({
       ...this.value,
-      shards: shards - SHARD.perOrb,
-      points: this.value.points + SHARD.pointsPerOrb,
+      shards: this.value.shards - PASSIVE_RESPEC.shardCost,
+      allocated: this.value.allocated.filter((other) => other !== id),
     });
     return true;
   }
 
-  /**
-   * Buys one 신성한 조각 with gold. It goes in as if a 우두머리 had left it,
-   * so ten bought shards finish a 구슬 the same way ten found ones do.
-   */
+  /** One 신성한 조각, as a 우두머리 left it. */
+  public addShard(): void {
+    this.commit({ ...this.value, shards: this.value.shards + 1 });
+  }
+
+  /** Buys one 신성한 조각 with gold. */
   public buyShard(): boolean {
     if (!gold.spend(ECONOMY.shardPrice)) {
       return false;
     }
-
     this.addShard();
     return true;
   }
 
-  /** Whether a line's branch is open: the line it hangs from holds enough ranks. */
-  public isOpen(id: PassiveId): boolean {
-    const needs = PASSIVES[id]?.requires;
-    return !needs || this.rankOf(needs.id) >= needs.rank;
-  }
-
-  /** Spends a point on a line. False when there is none, it is full, or its branch is shut. */
-  public spend(id: PassiveId): boolean {
-    const spec = PASSIVES[id];
-    const rank = this.rankOf(id);
-    if (!spec || this.value.points <= 0 || rank >= spec.maxRank || !this.isOpen(id)) {
-      return false;
+  /** A run's experience, into the account. Returns the levels before and after. */
+  public addXp(amount: number): { before: number; after: number } {
+    const before = this.account.level;
+    const gained = Math.max(0, Math.floor(amount));
+    if (gained > 0) {
+      this.commit({ ...this.value, xp: this.value.xp + gained });
     }
-
-    this.commit({
-      ...this.value,
-      points: this.value.points - 1,
-      ranks: { ...this.value.ranks, [id]: rank + 1 },
-    });
-    return true;
+    return { before, after: this.account.level };
   }
 
   public reset(): PassiveState {
-    this.commit({ ...DEFAULTS, ranks: {} });
+    this.commit({ ...DEFAULTS });
     return this.current;
   }
 
@@ -156,20 +192,20 @@ class PassiveStore {
   }
 
   private commit(next: PassiveState): void {
-    this.current = this.sanitise(next);
+    this.current = PassiveStore.sanitise(next);
+    this.cachedSheet = null;
     this.save();
     this.listeners.forEach((listener) => listener(this.current));
   }
 
   private load(): void {
     this.loaded = true;
+    this.cachedSheet = null;
     try {
       const raw = window.localStorage.getItem(STORAGE.passives);
-      this.current = raw
-        ? this.sanitise({ ...DEFAULTS, ...(JSON.parse(raw) as Partial<PassiveState>) })
-        : { ...DEFAULTS, ranks: {} };
+      this.current = raw ? PassiveStore.sanitise(JSON.parse(raw) as Partial<PassiveState>) : { ...DEFAULTS };
     } catch {
-      this.current = { ...DEFAULTS, ranks: {} };
+      this.current = { ...DEFAULTS };
     }
   }
 
@@ -181,21 +217,46 @@ class PassiveStore {
     }
   }
 
-  /** A hand-edited payload cannot buy a rank that does not exist. */
-  private sanitise(raw: PassiveState): PassiveState {
-    const ranks: Partial<Record<PassiveId, number>> = {};
-    for (const spec of Object.values(PASSIVES)) {
-      const rank = Math.floor(Number(raw.ranks?.[spec.id] ?? 0));
-      if (rank > 0) {
-        ranks[spec.id] = Math.min(spec.maxRank, rank);
-      }
+  /**
+   * A hand-edited payload cannot take a node that does not exist or is not
+   * joined to the start; one from before the graph tree (ranks and points)
+   * comes back as points to spend again, its shards kept.
+   */
+  private static sanitise(raw: Partial<PassiveState> & { ranks?: Record<string, number>; points?: number }): PassiveState {
+    const whole = (value: unknown) => Math.max(0, Math.floor(Number(value) || 0));
+    if (raw.version !== 2) {
+      const ranks = Object.values(raw.ranks ?? {}).reduce((sum, rank) => sum + whole(rank), 0);
+      return { ...DEFAULTS, shards: whole(raw.shards), bonusPoints: whole(raw.points) + ranks };
     }
 
-    return {
-      shards: Math.max(0, Math.min(SHARD.perOrb - 1, Math.floor(Number(raw.shards) || 0))),
-      points: Math.max(0, Math.floor(Number(raw.points) || 0)),
-      ranks,
+    // Kept in the order taken, and only while joined to what came before.
+    const allocated: PassiveId[] = [];
+    const taken = new Set<PassiveId>([PASSIVE_START]);
+    let pending = [...new Set((raw.allocated ?? []).filter((id) => id !== PASSIVE_START && PASSIVE_NODES[id]))];
+    let grew = true;
+    while (grew) {
+      grew = false;
+      pending = pending.filter((id) => {
+        if (PASSIVE_NODES[id]!.links.some((link) => taken.has(link))) {
+          taken.add(id);
+          allocated.push(id);
+          grew = true;
+          return false;
+        }
+        return true;
+      });
+    }
+
+    const state: PassiveState = {
+      version: 2,
+      shards: whole(raw.shards),
+      xp: whole(raw.xp),
+      bonusPoints: whole(raw.bonusPoints),
+      allocated,
     };
+    // Never more nodes than points: the last taken go first.
+    const points = accountLevelFor(state.xp).level - 1 + state.bonusPoints;
+    return allocated.length > points ? { ...state, allocated: allocated.slice(0, points) } : state;
   }
 }
 

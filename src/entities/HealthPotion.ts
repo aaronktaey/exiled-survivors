@@ -17,8 +17,8 @@ export class HealthPotion extends GroundItem {
    * What one potion restores, in hit points: a share of the survivor's own
    * bar as it stands — 거대 and all — not of the bar every survivor starts with.
    */
-  public static healingFor(maxHp: number): number {
-    return Math.max(1, Math.round(maxHp * POTION.healFraction));
+  public static healingFor(maxHp: number, scale = 1): number {
+    return Math.max(1, Math.round(maxHp * POTION.healFraction * scale));
   }
 
   public drop(x: number, y: number): void {

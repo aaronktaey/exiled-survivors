@@ -101,7 +101,7 @@ const grant = await run(`
 `);
 console.log('granted:', JSON.stringify(grant));
 check('연쇄번개 is 주문·번개·연쇄', grant.name === '연쇄번개' &&
-  JSON.stringify(grant.tags) === JSON.stringify(['주문', '번개', '연쇄']), `${grant.tags}`);
+  ['주문', '번개', '연쇄'].every((tag) => grant.tags.includes(tag)), `${grant.tags}`);
 check('it is granted at its configured base line',
   JSON.stringify(grant.stats) === JSON.stringify(grant.base) && grant.stats.chainCount >= 1 &&
   grant.stats.range === 160,

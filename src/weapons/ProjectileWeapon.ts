@@ -73,7 +73,7 @@ export abstract class ProjectileWeapon implements Weapon {
       }
     }
 
-    const spec = this.specFor(context);
+    const spec = { ...this.specFor(context), skill: this.definition.id };
     let launched = false;
     for (const angle of angles) {
       const shot = this.projectiles.get() as Projectile | null;

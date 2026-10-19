@@ -85,30 +85,41 @@ export interface Strings {
 
   readonly passives: {
     readonly title: string;
-    /** Points in hand, waiting to be spent. */
+    /** The account level, over the tree: {level}. */
+    readonly level: string;
+    /** Experience into the next account level: {into} of {need}. */
+    readonly xp: string;
+    /** Points free to spend: {points}. */
     readonly points: string;
-    /** Progress towards the next one: {held} of {need} shards. */
+    /** 신성한 조각 held: {shards}. */
     readonly shards: string;
-    /** A line's rank, as "3 / 10". */
-    readonly rank: string;
-    readonly maxed: string;
-    readonly spend: string;
-    /** Shown when there is nothing to spend. */
+    readonly goldHeld: string;
+    /** The button that takes the picked node. */
+    readonly allocate: string;
+    /** The one that takes it back, for {cost} shards. */
+    readonly refund: string;
+    /** The shop: a shard for {price} gold. */
+    readonly buyShard: string;
+    readonly taken: string;
+    readonly canTake: string;
+    readonly needsLink: string;
     readonly noPoints: string;
+    readonly cutsOff: string;
+    /** Taking back needs {cost} shards. */
+    readonly noShards: string;
+    readonly startNode: string;
+    /** Under a line whose tag no skill carries yet. */
+    readonly noSkillYet: string;
+    readonly kinds: Record<'start' | 'small' | 'notable' | 'keystone', string>;
+    readonly branches: Record<'warrior' | 'hunter' | 'elementalist' | 'voidcaller' | 'guardian' | 'assassin', string>;
+    /** A stat limited to one tag: {tag} and {stat}. */
+    readonly taggedStat: string;
+    /** One modifier written out: {stat} {sign}{value}{unit}. */
+    readonly statLine: string;
     readonly hintKeyboard: string;
     readonly hintTouch: string;
     /** What one 신성한 조각 is called, over it on the ground. */
     readonly shardName: string;
-    /** The shop row: a shard for {price} gold. */
-    readonly buyShard: string;
-    /** Gold in the purse. */
-    readonly goldHeld: string;
-    /** Under the root of the tree, over the points in it. */
-    readonly root: string;
-    /** What one rank of a line is worth: {detail}. */
-    readonly perRank: string;
-    /** A shut line: it opens at {name} rank {rank}. */
-    readonly locked: string;
   };
 
   /** 아이템 필터: the switches for what drops, reached from the title. */
@@ -343,6 +354,10 @@ export interface Strings {
     readonly damageDealt: string;
     readonly killsDealt: string;
     readonly goldEarned: string;
+    /** Account experience the run brought in. */
+    readonly accountXp: string;
+    /** Its figure: +{xp} · Lv {level}. */
+    readonly accountXpValue: string;
     /** One skill's line: "타격 Lv 3 · DPS 21". */
     readonly skillLine: string;
     readonly retry: string;
@@ -595,7 +610,8 @@ export interface Strings {
     };
     /** The passive icon's heading, and a line per line bought: {name} {rank} {detail}. */
     readonly effectPassive: string;
-    readonly effectPassiveLine: string;
+    /** How many nodes the tree has taken: {count}. */
+    readonly effectPassiveCount: string;
     /** 하얀 망고 while it lasts: {scale} {seconds}. */
     readonly effectMango: string;
     /** 거미줄's slow: its name, and {slow} percent. */
@@ -635,7 +651,8 @@ export interface Strings {
     /** 신성한 조각 picked up: {held} of {need} towards the next 구슬. */
     readonly shardFound: string;
     /** ...and the one that completed it. */
-    readonly orbMade: string;
+    /** The account went up a level mid-run: {level}, {points} points. */
+    readonly accountLevelUp: string;
     readonly pickedUp: string;
     readonly enhancedPickup: string;
     /** The plate over a 제단: {enemies} is what it will call up. */
@@ -717,6 +734,8 @@ export interface Strings {
     readonly gearImplicits?: Record<string, string>;
     readonly passives?: Record<string, string>;
     readonly passiveDetails?: Record<string, string>;
+    readonly stats?: Record<string, string>;
+    readonly keystoneDetails?: Record<string, string>;
   };
 
   /**
@@ -770,8 +789,8 @@ export interface Strings {
       readonly boneStack: string;
       readonly boneSingle: string;
       /** {detail} a rank, up to {max} ranks. */
-      readonly passiveRank: string;
-      readonly passiveNeeds: string;
+      /** A node's card: {branch} · {kind}. */
+      readonly passiveKind: string;
     };
   };
 }

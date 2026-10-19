@@ -124,6 +124,11 @@ const rare = await run(`${onPage}
   // Out of the way of the survivor's own swings, which now crit often
   // enough to drop it before the mouse gets there.
   e.hp = e.maxHp = 1e9;
+  // Held where it stands: a rare walking while the mouse is on its way
+  // could be a step past the pointer by the time it lands.
+  e.freeze(1e9);
+  // The field can have a rare of its own walking about: point at this one.
+  window.__rare = e;
   e.setPosition(s.player.x + 160, s.player.y);
   e.body.reset(e.x, e.y);
   const cam = s.cameras.main;
@@ -132,7 +137,7 @@ const rare = await run(`${onPage}
 await sleep(50);
 // The rare walks, so it is pointed at where it is now.
 const at = await run(`${onPage}
-  const e = s.spawner.group.getChildren().find((x) => x.active && x.rare);
+  const e = window.__rare;
   const cam = s.cameras.main;
   return { x: r.left + (e.x - cam.worldView.x) * k, y: r.top + (e.y - cam.worldView.y) * k };
 `);

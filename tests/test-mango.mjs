@@ -93,7 +93,7 @@ const ended = await run(`
   const p = s.player;
   for (let t = 0; t < window.config.MANGO.durationMs + 100; t += 50) p.tickBuffs(50);
   const out = { active: p.mangoActive, tint: p.isTinted, speed: p.moveSpeed, ring: p.mangoRing.commandBuffer.length,
-                base: window.config.PLAYER.speed * s.mods.passive.moveSpeedScale * s.mods.gear.moveSpeedScale };
+                base: window.config.PLAYER.speed * s.mods.passive.scale('moveSpeed') * s.mods.gear.moveSpeedScale };
   p.invulnerableUntil = 0;
   const hp = p.hp; p.takeDamage(5); out.hurt = hp - p.hp; p.hp = p.maxHp;
   s.choosing = false;

@@ -1208,7 +1208,7 @@ const steelBonus = await hold('steelSword');
 const steel = await run(`
   const c = window.config, base = c.SKILL_BASE.meleeStrike.damage;
   const st = s.progression.statsFor('meleeStrike');
-  const want = Math.round((base * s.mods.passive.damageScale + ${steelBonus.attack}) * ${steelBonus.damageScale} *
+  const want = Math.round((base * s.mods.passive.scale('damage') + ${steelBonus.attack}) * ${steelBonus.damageScale} *
     (st.damage / base) * (c.BALANCE.damageScale.meleeStrike ?? 1));
   return { got: s.damageOf('meleeStrike'), want, scale: ${steelBonus.damageScale} };
 `);
@@ -1223,7 +1223,7 @@ const pace = async (id) => {
     const c = window.config;
     const plain = (skill) => {
       const base = c.SKILL_BASE[skill].attackSpeed;
-      return base * s.mods.passive.attackSpeedScale * (s.progression.statsFor(skill).attackSpeed / base);
+      return base * s.mods.passive.scale('attackSpeed') * (s.progression.statsFor(skill).attackSpeed / base);
     };
     const want = (skill) => plain(skill) * s.gearBonus.attackSpeedScale * (s.gearBonus.skillAttackSpeed[skill] ?? 1);
     return { melee: 1000 / s.cooldownOf('meleeStrike'), fire: 1000 / s.cooldownOf('fireball'),

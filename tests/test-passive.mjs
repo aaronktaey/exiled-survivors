@@ -1,6 +1,11 @@
 import { connect, sleep } from './cdp-lib.mjs';
 import { writeFileSync } from 'node:fs';
 
+// 패시브 트리 (the graph): 신성한 조각 from 우두머리 as the eraser, account
+// experience from every gem as the points, the shape of the tree, the rules
+// for taking a node and taking it back, the screen, and what nodes and
+// 키스톤 do in a run.
+
 const cdp = await connect(9333);
 const SP = process.argv[2] ?? '.';
 const results = [];
@@ -11,21 +16,21 @@ const check = (n, p, d = '') => {
 const shot = async (n) => {
   const r = await cdp.send('Page.captureScreenshot', { format: 'png' });
   writeFileSync(`${SP}/${n}.png`, Buffer.from(r.result.data, 'base64'));
-  console.log('shot:', n);
 };
 const ev = (expr) => cdp.evaluate(expr);
-const run = (body) =>
-  cdp.evaluate(`(() => { const s = window.game.scene.getScene('GameScene'); ${body} })()`);
-const scene = (key, body) =>
-  cdp.evaluate(`(() => { const s = window.game.scene.getScene('${key}'); ${body} })()`);
-const openIcon = async (id) => {
-  await ev(`(() => window.game.scene.getScene('MenuScene').icons.press('${id}'))()`);
+const run = (body) => cdp.evaluate(`(() => { const s = window.game.scene.getScene('GameScene'); ${body} })()`);
+const scene = (key, body) => cdp.evaluate(`(() => { const s = window.game.scene.getScene('${key}'); ${body} })()`);
+const KEY = 'exiled-survivors:passives:v1';
+const stored = () => ev(`(() => JSON.parse(localStorage.getItem('${KEY}') || 'null'))()`);
+/** Writes the tree's storage and comes back into a run that reads it. */
+const loadRun = async (state) => {
+  await ev(`(() => { localStorage.setItem('${KEY}', ${JSON.stringify(JSON.stringify(state))}); return 1; })()`);
+  await cdp.send('Page.navigate', { url: 'http://localhost:5173/#run' });
   await sleep(900);
+  await cdp.send('Page.reload', {});
+  await sleep(4500);
 };
-const stored = () => ev(`(() => {
-  const raw = localStorage.getItem('exiled-survivors:passives:v1');
-  return raw ? JSON.parse(raw) : null;
-})()`);
+const spine = (branch, to = 7) => Array.from({ length: to }, (_, i) => `${branch}.s${i + 1}`);
 
 await cdp.send('Emulation.clearDeviceMetricsOverride', {});
 await cdp.send('Page.navigate', { url: 'http://localhost:5173/#run' });
@@ -34,21 +39,18 @@ await ev(`(() => { localStorage.clear(); return 1; })()`);
 await cdp.send('Page.reload', {});
 await sleep(4500);
 
-// --- 1. 신성한 조각: half of 우두머리 kills, and nothing else ---
+// --- 1. 신성한 조각: half of 우두머리 kills, and nothing else; now only counted ---
 const drops = await run(`
   s.choosing = true;
   s.spawner.clear();
   s.combat.shardDrops.getChildren().forEach(d => d.active && d.collect());
-
-  for (let i = 0; i < 400; i++) {
+  for (let i = 0; i < 300; i++) {
     const e = s.spawner.group.get(600, 600);
     e.spawn(600, 600, s.player, 'grunt');
     s.combat.hit(e, 999999);
   }
   const fromGrunts = s.combat.shardDrops.countActive(true);
-  s.combat.shardDrops.getChildren().forEach(d => d.active && d.collect());
-
-  const N = 800;
+  const N = 600;
   let fromBosses = 0;
   for (let i = 0; i < N; i++) {
     const boss = s.spawner.spawnBoss();
@@ -56,330 +58,254 @@ const drops = await run(`
     fromBosses += s.combat.shardDrops.countActive(true);
     s.combat.shardDrops.getChildren().forEach(d => d.active && d.collect());
   }
-
-  s.combat.gearDrops.getChildren().forEach(d => d.active && d.collect());
-  s.combat.skillDrops.getChildren().forEach(d => d.active && d.collect());
-  s.combat.gems.getChildren().forEach(g => g.active && g.collect());
+  for (const g of [s.combat.gearDrops, s.combat.skillDrops, s.combat.gems]) g.getChildren().forEach(d => d.active && d.collect());
   s.spawner.clear();
   s.choosing = false;
-  return { fromGrunts, fromBosses, N, rate: Number((fromBosses / N).toFixed(3)) };
+  return { fromGrunts, rate: fromBosses / N, chance: window.config.SHARD.chance };
 `);
-console.log('shards:', JSON.stringify(drops));
-check('400 ordinary kills leave no 신성한 조각', drops.fromGrunts === 0, `${drops.fromGrunts}`);
-check('about half of 우두머리 kills leave one',
-  Math.abs(drops.rate - 0.5) < 0.06, `${(drops.rate * 100).toFixed(1)}% of ${drops.N}`);
+check('ordinary kills leave no 신성한 조각', drops.fromGrunts === 0, `${drops.fromGrunts}`);
+check('우두머리 leave one at SHARD.chance', Math.abs(drops.rate - drops.chance) < 0.07,
+  `${(drops.rate * 100).toFixed(1)}% against ${drops.chance * 100}%`);
 
-// --- 2. ten shards make a 구슬, which is a point ---
-const counted = await run(`
+await run(`for (let i = 0; i < 3; i++) s.combat.dropShardAt(s.player.x, s.player.y); return 1;`);
+await sleep(1200);
+const three = await stored();
+const toast = await run(`return s.toasts.lines;`);
+check('a shard picked up is one more held, and no point any more',
+  three.shards === 3 && three.version === 2 && three.bonusPoints === 0, JSON.stringify(three));
+check('and the run says how many are held', toast.some((l) => l.includes('신성한 조각') && l.includes('3')), toast.join(' | '));
+
+// --- 2. every gem is account experience too ---
+const xp = await run(`
+  s.choosing = true;
   const p = s.player;
-  window.gear ? null : null;
-  const seen = [];
-  for (let i = 0; i < 9; i++) {
-    s.combat.dropShardAt(p.x, p.y);
+  const before = window.passives.value.xp;
+  let worth = 0;
+  for (let i = 0; i < 20; i++) {
+    const e = s.spawner.group.get(p.x, p.y);
+    e.spawn(p.x + 30, p.y, p, 'brute');
+    worth += e.xpValue;
+    s.combat.hit(e, 9999999);
   }
-  return { dropped: s.combat.shardDrops.countActive(true) };
+  s.combat.collectEverything();
+  const pending = s.pendingAccountXp;
+  s.writeSave();
+  s.choosing = false;
+  return { before, after: window.passives.value.xp, worth, pending };
 `);
-await sleep(1300);
-const nine = await stored();
-console.log('nine shards:', JSON.stringify(nine), counted.dropped);
-check('nine of them is nine, and no point yet',
-  nine.shards === 9 && nine.points === 0, `${nine.shards} shards, ${nine.points} points`);
+check('the gems a run picks up go into the account when it saves',
+  xp.after - xp.before === Math.floor(xp.pending) && xp.pending >= xp.worth * 0.99,
+  `${xp.before} -> ${xp.after}, ${xp.worth} worth of gems`);
+const curve = await ev(`(() => {
+  const A = window.config.ACCOUNT_LEVEL;
+  const cost = (n) => Math.round(A.base * Math.pow(n, A.power));
+  let need = 0; for (let n = 1; n < 6; n++) need += cost(n);
+  const p = window.passives;
+  const at = (xp) => { p.reset(); p.addXp(xp); return p.account.level; };
+  const out = { below: at(need - 1), exactly: at(need), free: p.freePoints };
+  p.reset();
+  return out;
+})()`);
+check('the account level follows ACCOUNT_LEVEL, a point a level past the first',
+  curve.below === 5 && curve.exactly === 6 && curve.free === 5, JSON.stringify(curve));
 
-await run(`s.combat.dropShardAt(s.player.x, s.player.y); return 1;`);
-await sleep(1000);
-const ten = await stored();
-const banner = await run(`
-  // 전투 알림 are toasts, their text inside the toast.
-  return { lines: [...s.toasts.lines, ...s.children.list.filter(o => o.type === 'Text').map(o => o.text)] };
-`);
-console.log('tenth shard:', JSON.stringify(ten));
-check('the tenth completes a 신성한 구슬, worth one point',
-  ten.shards === 0 && ten.points === 1, `${ten.shards} shards, ${ten.points} points`);
-check('and it says so', banner.lines.some((line) => /신성한 구슬/.test(line)),
-  banner.lines.find((line) => /신성한/.test(line)) ?? 'no banner');
-await shot('passive-01-shards');
+// --- 3. the old tree's points come back to spend again ---
+await loadRun({ shards: 4, points: 2, ranks: { damage: 3, attackSpeed: 1, moveSpeed: 2 } });
+const moved = await ev(`(() => ({ v: window.passives.value, free: window.passives.freePoints }))()`);
+check('a tree from before the graph comes back as points, its shards kept',
+  moved.v.version === 2 && moved.v.bonusPoints === 8 && moved.v.shards === 4 && moved.v.allocated.length === 0 && moved.free === 8,
+  JSON.stringify(moved));
 
-// --- 3. the corner icons, not the list ---
+// --- 4. the shape of the tree ---
+const shape = await ev(`(() => {
+  const N = window.config.PASSIVE_NODES, V = window.config.NODE_VALUES;
+  const all = Object.values(N);
+  const asym = all.filter(n => n.links.some(l => !N[l] || !N[l].links.includes(n.id))).map(n => n.id);
+  const seen = new Set(['start']); const q = ['start'];
+  while (q.length) { for (const l of N[q.pop()].links) if (!seen.has(l)) { seen.add(l); q.push(l); } }
+  const branches = [...new Set(all.map(n => n.branch).filter(Boolean))];
+  const keystones = all.filter(n => n.kind === 'keystone');
+  const far = (n) => Math.hypot(n.x, n.y);
+  // Each branch's 키스톤 is its furthest node.
+  const keyFurthest = keystones.every(k => all.filter(n => n.branch === k.branch).every(n => far(n) <= far(k) + 0.5));
+  // A small node out at ring 5 gives at least what one at ring 1 does, stat for stat.
+  const outward = Object.values(V).every(([a, b, c]) => a <= b && b <= c);
+  const smallOut = all.filter(n => n.kind === 'small' && n.mods.length === 1);
+  return { count: all.length, asym, reach: seen.size, branches: branches.length,
+           perBranch: branches.map(b => all.filter(n => n.branch === b).length),
+           keystones: keystones.length, keyFurthest, outward, small: smallOut.length,
+           notables: all.filter(n => n.kind === 'notable').length };
+})()`);
+console.log('shape:', JSON.stringify(shape));
+check('the tree is six branches out of one start', shape.branches === 6 && shape.perBranch.every((n) => n === shape.perBranch[0]),
+  shape.perBranch.join(','));
+check('every link goes both ways, and every node is joined to the start',
+  shape.asym.length === 0 && shape.reach === shape.count, `${shape.reach}/${shape.count} ${shape.asym.join(',')}`);
+check('each branch ends in its 키스톤', shape.keystones === 6 && shape.keyFurthest);
+check('and further out is better: no small node is paid less than one nearer in', shape.outward);
+
+// --- 5. taking and giving back ---
+const rules = await ev(`(() => {
+  const p = window.passives;
+  const out = {};
+  out.farOff = p.allocate('warrior.s3');
+  out.first = p.allocate('warrior.s1');
+  out.second = p.allocate('warrior.s2');
+  out.third = p.allocate('warrior.s3');
+  out.middleBack = p.refund('warrior.s2');
+  out.endBack = p.refund('warrior.s3');
+  out.afterEnd = p.value.allocated.slice();
+  out.shards = p.value.shards;
+  while (p.freePoints > 0) { const next = Object.values(window.config.PASSIVE_NODES).find(n => p.canAllocate(n.id)); if (!next) break; p.allocate(next.id); }
+  out.full = p.allocate(Object.values(window.config.PASSIVE_NODES).find(n => !p.isAllocated(n.id) && p.isReachable(n.id))?.id);
+  // Out of shards, nothing comes back.
+  const v = p.value;
+  localStorage.setItem('${KEY}', JSON.stringify({ ...v, shards: 0 }));
+  return out;
+})()`);
+console.log('rules:', JSON.stringify(rules));
+check('a node not joined to one taken cannot be taken', rules.farOff === false);
+check('a node joined to one taken can, a point each', rules.first && rules.second && rules.third);
+check('one that would cut others off cannot be given back', rules.middleBack === false);
+check('an end can, for PASSIVE_RESPEC.shardCost shards', rules.endBack === true && !rules.afterEnd.includes('warrior.s3') && rules.shards === 3,
+  `${rules.afterEnd.join(',')}; ${rules.shards} shards`);
+check('with no point free, nothing more is taken', rules.full === false);
+const sane = await ev(`(() => {
+  localStorage.setItem('${KEY}', JSON.stringify({ version: 2, shards: 0, xp: 0, bonusPoints: 2,
+    allocated: ['warrior.s1', 'hunter.s5', 'warrior.s2', 'warrior.s3', 'made.up'] }));
+  return 1;
+})()`);
+void sane;
+await cdp.send('Page.reload', {});
+await sleep(4200);
+const cleaned = await stored();
+const cleanedLive = await ev(`(() => window.passives.value.allocated)()`);
+check('a hand-edited tree keeps only what is joined to the start, and no more than its points',
+  JSON.stringify(cleanedLive) === JSON.stringify(['warrior.s1', 'warrior.s2']), JSON.stringify(cleanedLive));
+void cleaned;
+
+// --- 6. the screen ---
+await loadRun({ version: 2, shards: 2, xp: 0, bonusPoints: 3, allocated: [] });
 await ev(`(() => { window.game.scene.getScene('GameScene').scene.start('MenuScene'); return 1; })()`);
-await sleep(1700);
-const title = await scene('MenuScene', `
-  return {
-    rows: s.menu.rows.map(r => r.item.id),
-    icons: s.icons.views.map(v => ({
-      id: v.button.id, label: v.label.text,
-      x: Math.round(v.plate.x), y: Math.round(v.plate.y), badge: v.badge.visible,
-    })),
-    width: s.scale.width,
-  };
-`);
-console.log('title:', JSON.stringify(title));
-check('장비 and 패시브 have left the list', !title.rows.includes('gear'), title.rows.join(' / '));
-check('and sit as icons in the top-right corner',
-  ['gear', 'passives'].every((id) => title.icons.some((i) => i.id === id)) &&
-    title.icons.every((i) => i.x > title.width * 0.6 && i.y < 60),
-  title.icons.map((i) => `${i.label} at ${i.x},${i.y}`).join(' / '));
-check('the 패시브 icon wears a dot while a point is waiting',
-  title.icons.find((i) => i.id === 'passives').badge === true);
-await shot('passive-02-title');
-
-// --- 4. spending a point, on the tree ---
-await openIcon('passives');
-// x, y in the tree's own space; sx, sy where that is on screen now, through its camera.
-const nodesOf = `[...s.nodes.values()].map(n => ({ id: n.id, rank: n.rank.text, name: n.name.text, x: Math.round(n.x), y: Math.round(n.y),
-  sx: Math.round(s.view.x + n.x - s.treeCam.scrollX), sy: Math.round(s.view.y + n.y - s.treeCam.scrollY),
-  open: window.passives.isOpen(n.id), alpha: n.name.alpha }))`;
+await sleep(1600);
+const badge = await scene('MenuScene', `return s.icons.views.find(v => v.button.id === 'passives').badge.visible;`);
+check('the 패시브 icon wears a dot while a point is free', badge === true);
+await ev(`(() => window.game.scene.getScene('MenuScene').icons.press('passives'))()`);
+await sleep(1000);
 const screen = await scene('PassiveScene', `
-  const P = window.config.PASSIVES;
-  return { nodes: ${nodesOf}, purse: s.purse.text, detail: s.detail.text,
-           tree: window.config.ALL_PASSIVES.map(p => ({ id: p.id, parent: p.requires ? p.requires.id : null, needs: p.requires ? p.requires.rank : 0 })),
-           width: s.scale.width, height: s.scale.height, sideways: s.sideways,
-           view: { x: s.view.x, y: s.view.y, w: s.view.width, h: s.view.height } };
+  return { nodes: s.nodes.size, all: Object.keys(window.config.PASSIVE_NODES).length, purse: s.purse.text,
+           zoom: s.treeCam.zoom, view: { x: s.view.x, y: s.view.y, w: s.view.width, h: s.view.height },
+           start: s.screenOf('start'), s1: s.screenOf('warrior.s1') };
 `);
-console.log('패시브:', JSON.stringify(screen));
-const node = (id, list = screen.nodes) => list.find((n) => n.id === id);
-// 재생 is not among them any more: that is the sword's line to carry.
-check('패시브 draws every line as a node, each at rank zero',
-  screen.tree.every((p) => node(p.id)?.rank === '0 / 10') && !screen.nodes.some((n) => /재생/.test(n.name)),
-  screen.nodes.map((n) => `${n.name} ${n.rank}`).join(' / '));
-// Upright the tree grows down; on a wide window it lies on its side and grows right.
-const along = (n) => (screen.sideways ? n.x : n.y);
-check('a line sits a level past the one it hangs from, and the roots on the first level',
-  screen.tree.every((p) => {
-    const here = node(p.id);
-    if (!p.parent) return along(here) === Math.min(...screen.nodes.map(along));
-    return along(here) > along(node(p.parent));
-  }),
-  screen.nodes.map((n) => `${n.id}@${n.x},${n.y}`).join(' / '));
-const inView = (n, v = screen.view) => n.sx > v.x && n.sx < v.x + v.w && n.sy > v.y && n.sy < v.y + v.h;
-check('every node is inside the tree’s window',
-  screen.nodes.every((n) => inView(n)), screen.nodes.map((n) => `${n.id}@${n.sx},${n.sy}`).join(' / '));
-check('and reads out the point in hand', /포인트 1/.test(screen.purse), screen.purse);
-check('a branch is shut until the line it hangs from has its ranks',
-  screen.tree.every((p) => node(p.id).open === (p.needs === 0)) &&
-    screen.tree.filter((p) => p.needs > 0).every((p) => node(p.id).alpha < 1),
-  screen.nodes.map((n) => `${n.id} ${n.open ? 'open' : 'shut'}`).join(' / '));
+check('every node is drawn', screen.nodes === screen.all, `${screen.nodes}/${screen.all}`);
+check('the purse reads level, points and shards', /계정 Lv 1/.test(screen.purse) && /포인트 3/.test(screen.purse) && /신성한 조각 2/.test(screen.purse), screen.purse);
+check('the first look is centred on the start',
+  Math.abs(screen.start.x - (screen.view.x + screen.view.w / 2)) < 2 && Math.abs(screen.start.y - (screen.view.y + screen.view.h / 2)) < 2);
 
-// A shut line takes nothing, even with a point in hand.
-const shutId = screen.tree.find((p) => p.parent)?.id;
-const parentId = screen.tree.find((p) => p.id === shutId)?.parent;
-const shut = await scene('PassiveScene', `
-  s.spend('${shutId}');
-  return { points: window.passives.value.points, rank: window.passives.rankOf('${shutId}'), detail: s.detail.text };
-`);
-check('a point does not go into a shut line', shut.points === 1 && shut.rank === 0, shut.detail);
-
-// A first tap picks, the second spends.
-await scene('PassiveScene', `s.press('${parentId}'); return 1;`);
-const picked = await scene('PassiveScene', `
-  return { points: window.passives.value.points, detail: s.detail.text, focused: s.focused };
-`);
-check('a tap on a node picks it and says what it does', picked.points === 1 && picked.detail.includes(
-  await ev(`window.config.PASSIVES['${parentId}'].detail`)), picked.detail);
-await cdp.tap('Space', 32, ' ');
-await sleep(600);
-const spent = await scene('PassiveScene', `return { nodes: ${nodesOf}, purse: s.purse.text };`);
-const afterSpend = await stored();
-console.log('spent:', JSON.stringify({ spent, afterSpend }));
-check('spending puts a rank on that line and takes the point',
-  afterSpend.ranks[parentId] === 1 && afterSpend.points === 0 && node(parentId, spent.nodes).rank === '1 / 10',
-  `${node(parentId, spent.nodes).rank}, ${afterSpend.points} points left`);
-check('and opens the branch that hangs from it',
-  node(shutId, spent.nodes).open === true && node(shutId, spent.nodes).alpha === 1);
-const none = await scene('PassiveScene', `
-  s.spend('${shutId}');
-  return { rank: window.passives.rankOf('${shutId}') };
-`);
-check('with none left, no line can be bought', none.rank === 0, spent.purse);
-await shot('passive-03-spent');
-
-// --- 4b. the tree is dragged about under its window ---
-// Real mouse events at canvas points, so the drag goes through Phaser's input.
 const page = await ev(`(() => { const r = window.game.canvas.getBoundingClientRect();
   return { left: r.left, top: r.top, k: r.width / window.game.scale.width }; })()`);
-const mouse = async (type, x, y) => cdp.send('Input.dispatchMouseEvent', {
+const mouse = (type, x, y) => cdp.send('Input.dispatchMouseEvent', {
   type, x: page.left + x * page.k, y: page.top + y * page.k, button: 'left', buttons: type === 'mouseReleased' ? 0 : 1, clickCount: 1 });
-const drag = async (x, y, dx, dy) => {
-  await mouse('mousePressed', x, y);
-  for (let i = 1; i <= 6; i++) { await mouse('mouseMoved', x + (dx * i) / 6, y + (dy * i) / 6); await sleep(30); }
-  await mouse('mouseReleased', x + dx, y + dy);
-  await sleep(200);
-};
-const state = () => scene('PassiveScene', `return { scroll: [Math.round(s.treeCam.scrollX), Math.round(s.treeCam.scrollY)],
-  focused: s.focused, nodes: ${nodesOf}, view: { x: s.view.x, y: s.view.y, w: s.view.width, h: s.view.height } };`);
-const before = await state();
-const v = before.view;
-// From an empty corner of the window, into its middle.
-await drag(v.x + 14, v.y + 14, 30, 24);
-const draggedOnce = await state();
-console.log('drag:', JSON.stringify({ before: before.scroll, after: draggedOnce.scroll }));
-check('a drag on the tree’s window moves the tree with it',
-  draggedOnce.scroll[0] !== before.scroll[0] || draggedOnce.scroll[1] !== before.scroll[1],
-  `${before.scroll} -> ${draggedOnce.scroll}`);
-check('and picks nothing on the way', draggedOnce.focused === before.focused);
-
-// A drag that starts on a node is still a drag; a press that stays put is a tap.
-const other = draggedOnce.nodes.find((n, i) => i !== draggedOnce.focused && inView(n, v));
-await drag(other.sx, other.sy, -24, -20);
-const fromNode = await state();
-check('a drag that starts on a node does not pick it', fromNode.focused === draggedOnce.focused,
-  `${other.id}, focused ${fromNode.focused}`);
-const target = fromNode.nodes.find((n) => n.id === other.id);
-await mouse('mousePressed', target.sx, target.sy);
-await mouse('mouseReleased', target.sx, target.sy);
+// A tap on a node picks it; the button takes it.
+await mouse('mousePressed', screen.s1.x, screen.s1.y);
+await mouse('mouseReleased', screen.s1.x, screen.s1.y);
 await sleep(250);
-const tapped = await state();
-const wantIndex = tapped.nodes.findIndex((n) => n.id === other.id);
-check('a tap on a node picks it, wherever the tree was dragged', tapped.focused === wantIndex,
-  `${other.id} at ${target.sx},${target.sy}, focused ${tapped.focused}`);
+const picked = await scene('PassiveScene', `return { selected: s.selected, detail: s.detail.text, status: s.status.text };`);
+check('a tap on a node picks it and says what it gives', picked.selected === 'warrior.s1' && /근접 스킬 피해 \+\d+%/.test(picked.detail),
+  `${picked.selected}: ${picked.detail.replace(/\n/g, ' / ')}`);
+await scene('PassiveScene', `s.takeButton.plate.emit('pointerdown'); return 1;`);
+await sleep(200);
+const took = await ev(`(() => ({ taken: window.passives.isAllocated('warrior.s1'), free: window.passives.freePoints }))()`);
+check('and 찍기 takes it, for a point', took.taken && took.free === 2);
+// A drag moves the view, and picks nothing.
+const v = screen.view;
+const mid0 = await scene('PassiveScene', `return [s.treeCam.midPoint.x, s.treeCam.midPoint.y];`);
+await mouse('mousePressed', v.x + 20, v.y + v.h - 20);
+for (let i = 1; i <= 6; i++) { await mouse('mouseMoved', v.x + 20 + i * 8, v.y + v.h - 20 - i * 6); await sleep(30); }
+await mouse('mouseReleased', v.x + 68, v.y + v.h - 56);
+await sleep(200);
+const after = await scene('PassiveScene', `return { mid: [s.treeCam.midPoint.x, s.treeCam.midPoint.y], selected: s.selected };`);
+check('a drag on the window moves the tree', Math.hypot(after.mid[0] - mid0[0], after.mid[1] - mid0[1]) > 10);
+check('and picks nothing on the way', after.selected === 'warrior.s1');
+const zoomed = await scene('PassiveScene', `const a = s.treeCam.zoom; s.zoomBy(1.2); const b = s.treeCam.zoom;
+  s.zoomBy(100); const c = s.treeCam.zoom; s.zoomBy(0.001); return { a, b, c, d: s.treeCam.zoom,
+  min: window.config.PASSIVE_TREE.minZoom, max: window.config.PASSIVE_TREE.maxZoom };`);
+check('it zooms, inside its bounds', zoomed.b > zoomed.a && zoomed.c === zoomed.max && zoomed.d === zoomed.min, JSON.stringify(zoomed));
+await scene('PassiveScene', `s.zoomBy(2); s.select('warrior.s2'); return 1;`);
+await shot('passive-01-tree');
 
-// However far it is pulled, the tree cannot be lost off its window.
-const flung = await scene('PassiveScene', `
-  s.pan(50000, 50000); const a = ${nodesOf};
-  s.pan(-100000, -100000); const b = ${nodesOf};
-  return { a, b, view: { x: s.view.x, y: s.view.y, w: s.view.width, h: s.view.height } };
-`);
-check('pulled as far as it goes either way, some of the tree is still in the window',
-  flung.a.some((n) => inView(n, flung.view)) && flung.b.some((n) => inView(n, flung.view)));
-await shot('passive-03b-dragged');
-
-await cdp.tap('Escape', 27, 'Escape');
-await sleep(800);
-const badgeGone = await scene('MenuScene', `
-  return { badge: s.icons.views.find(v => v.button.id === 'passives').badge.visible };
-`);
-check('and the waiting dot goes with it', badgeGone.badge === false);
-
-// --- 5. 패시브 > 장비 > 전투 내 효과, in that order ---
-await ev(`(() => {
-  localStorage.setItem('exiled-survivors:passives:v1', JSON.stringify({
-    shards: 0, points: 0, ranks: { damage: 2, attackSpeed: 1 },
-  }));
-  localStorage.setItem('exiled-survivors:gear:v2', JSON.stringify({
-    items: [
-      { uid: 'starter', id: 'rustySword', prefixes: [], suffixes: [] },
-      { uid: 'loaded', id: 'steelSword', prefixes: [{ id: 'mighty', tier: 3 }, { id: 'honed', tier: 3 }], suffixes: [{ id: 'giant', tier: 3 }, { id: 'regrowth', tier: 3 }] },
-    ],
-    equipped: 'loaded',
-  }));
-  return 1;
-})()`);
-// Navigating to the same hash does not reload the document, and both stores
-// are already in memory; reload so they read what was just written.
-await cdp.send('Page.navigate', { url: 'http://localhost:5173/#run' });
-await sleep(900);
-await cdp.send('Page.reload', {});
-await sleep(4500);
-
-const folded = await run(`
+// --- 7. what nodes and 키스톤 do in a run ---
+const groupA = [...spine('warrior'), ...spine('guardian'), ...spine('voidcaller')];
+await loadRun({ version: 2, shards: 0, xp: 0, bonusPoints: groupA.length, allocated: groupA });
+const a = await run(`
+  s.choosing = true;
+  const c = window.config, N = c.PASSIVE_NODES, K = c.KEYSTONES;
+  const sum = (stat, tags) => ${JSON.stringify(groupA)}.flatMap(id => N[id].mods)
+    .filter(m => m.stat === stat && (!m.tag || (tags || []).includes(m.tag))).reduce((t, m) => t + m.value, 0);
+  const p = s.player;
+  p.setInvulnerable(false); p.invulnerableUntil = 0;
+  // 철인: two shots at once both land, each smaller.
+  const hp0 = p.hp; p.takeDamage(100); const one = hp0 - p.hp; p.takeDamage(100); const two = hp0 - p.hp - one;
+  const takenScale = (1 - sum('damageTaken') / 100) * K.ironWill.damageTakenMore;
+  // 학살자: a 근접 kill hurts the one standing by it.
+  s.spawner.clear();
+  const victim = s.spawner.group.get(p.x, p.y); victim.spawn(p.x + 200, p.y, p, 'brute');
+  const by = s.spawner.group.get(p.x, p.y); by.spawn(p.x + 230, p.y, p, 'brute');
+  const byHp = by.hp;
+  // Crits off for the measurement: a crit doubles the burst.
+  const savedCrit = c.PLAYER.critChance; c.PLAYER.critChance = 0;
+  s.combat.hit(victim, victim.hp + 1, 'meleeStrike');
+  c.PLAYER.critChance = savedCrit;
+  const burst = byHp - by.hp;
+  s.spawner.clear();
   return {
-    passive: s.mods.passive,
-    gear: s.mods.gear,
+    maxHp: p.maxHp, wantHp: Math.round(c.PLAYER.maxHp * s.mods.gear.maxHpScale * (1 + sum('maxHp') / 100)),
+    one, two, wantOne: Math.max(1, Math.round(100 * takenScale)),
+    burst, wantBurst: Math.round(victim.maxHp * K.slaughter.burstShare),
+    cooldown: s.cooldownOf('meleeStrike'),
+    wantCooldown: 1000 / (c.SKILL_BASE.meleeStrike.attackSpeed * (1 + sum('attackSpeed', ['물리','공격','근접','범위']) / 100) * K.eternity.attackSpeedMore * s.mods.gear.attackSpeedScale * (s.mods.gear.skillAttackSpeed.meleeStrike ?? 1)),
     damage: s.damageOf('meleeStrike'),
-    stat: s.progression.statsFor('meleeStrike').damage,
-    cooldown: Math.round(s.cooldownOf('meleeStrike')),
-    maxHp: s.player.maxHp,
-    // The sword is its tier's attack, and 강력 is added to its damage scale.
-    // The save also carries 예리 and 재생, which are gone: they must fall off
-    // rather than count.
-    wantAttack: window.config.attackForTier(window.config.GEAR.steelSword.tier),
-    wantScale: (window.config.GEAR.steelSword.implicit?.damageScale ?? 1) +
-      window.config.AFFIXES.mighty.gearTiers.find(t => t.tier === 3).gear.damageScale - 1,
-    base: window.config.SKILL_BASE.meleeStrike.damage,
-    lines: [...window.gear.equipped.prefixes, ...window.gear.equipped.suffixes].map(l => l.id),
-    wantMaxHp: Math.round(
-      window.config.PLAYER.maxHp *
-        window.config.AFFIXES.giant.gearTiers.find(t => t.tier === 3).gear.maxHpScale,
-    ),
+    wantDamage: Math.round((c.SKILL_BASE.meleeStrike.damage * (1 + sum('damage', ['물리','공격','근접','범위']) / 100) + s.mods.gear.attack) * s.mods.gear.damageScale * (c.BALANCE.damageScale.meleeStrike ?? 1)),
   };
 `);
-console.log('folded:', JSON.stringify(folded));
-// The base, lifted by the tree, with the weapon added to the result — and
-// the weapon's 고정 속성 (강철 검: 피해) scaling the lot.
-const wantDamage = Math.round(
-  (folded.base * folded.passive.damageScale + folded.gear.attack) * folded.gear.damageScale,
-);
-check('패시브 lifts the skill, then 장비 is added to the result',
-  folded.damage === wantDamage,
-  `(${folded.base} x ${folded.passive.damageScale.toFixed(2)} + ${folded.gear.attack}) x ${folded.gear.damageScale} = ${folded.damage}`);
-check('and the sword is its tier’s attack, with 강력 added to the damage scale',
-  folded.gear.attack === folded.wantAttack && Math.abs(folded.gear.damageScale - folded.wantScale) < 1e-9,
-  `+${folded.gear.attack} ×${folded.gear.damageScale}, wanted +${folded.wantAttack} ×${folded.wantScale}`);
-check('a saved 예리 and 재생 fall off the weapon instead of counting',
-  JSON.stringify(folded.lines) === JSON.stringify(['mighty', 'giant']),
-  folded.lines.join(' / '));
-check('attack speed folds the same way',
-  Math.abs(folded.cooldown - 1000 / (1 * folded.passive.attackSpeedScale * 1)) < 2,
-  `${folded.cooldown}ms at x${folded.passive.attackSpeedScale}`);
-// Written without a rung, so 거대 comes back at the middle one. Both the
-// rung and the survivor's own bar are tuned in balance.ts, so read them.
-check('거대 is on the bar it starts the run with',
-  folded.maxHp === folded.wantMaxHp, `${folded.maxHp}, wanted ${folded.wantMaxHp}`);
+console.log('group A:', JSON.stringify(a));
+check('최대 체력 nodes raise the bar the run starts on', a.maxHp === a.wantHp, `${a.maxHp} / ${a.wantHp}`);
+check('철인: no window after a hit — two shots at once both land', a.one > 0 && a.two === a.one);
+check('and every hit is smaller by the tree and 철인', a.one === a.wantOne, `${a.one} / ${a.wantOne}`);
+check('학살자: a 근접 kill bursts on what stands by it', a.burst === a.wantBurst, `${a.burst} / ${a.wantBurst}`);
+check('영원의 계약 and the attack-speed nodes fold into the cooldown', Math.abs(a.cooldown - a.wantCooldown) < 1,
+  `${a.cooldown.toFixed(1)} / ${a.wantCooldown.toFixed(1)}`);
+check('근접 damage nodes lift 타격', a.damage === a.wantDamage, `${a.damage} / ${a.wantDamage}`);
 
-// Within a layer the picks add up on the base; between layers they multiply.
-const stacked = await run(`
-  const base = window.config.SKILL_BASE.meleeStrike.damage;
-  const before = s.damageOf('meleeStrike');
-  // Five picks of +20% is +100% of the base, not 1.2 to the fifth.
-  for (let i = 0; i < 5; i++) s.progression.apply('meleeStrike', 'damage');
+const groupB = [...spine('hunter'), ...spine('assassin'), ...spine('elementalist')];
+await loadRun({ version: 2, shards: 0, xp: 0, bonusPoints: groupB.length, allocated: groupB });
+const b = await run(`
+  s.choosing = true;
+  const c = window.config, N = c.PASSIVE_NODES, K = c.KEYSTONES;
+  const sum = (stat) => ${JSON.stringify(groupB)}.flatMap(id => N[id].mods).filter(m => m.stat === stat && !m.tag).reduce((t, m) => t + m.value, 0);
+  s.acquire('fireball');
+  const before = s.damageOf('fireball');
+  // 원소 과부하: a crit charges 원소 skills.
+  const saved = c.PLAYER.critChance; c.PLAYER.critChance = 1;
+  s.spawner.clear();
+  const e = s.spawner.group.get(s.player.x, s.player.y); e.spawn(s.player.x + 300, s.player.y, s.player, 'brute');
+  const hp = e.hp; s.combat.hit(e, 10, 'meleeStrike'); const critHit = hp - e.hp;
+  c.PLAYER.critChance = saved;
+  const charged = s.damageOf('fireball');
+  s.spawner.clear();
   return {
-    base,
-    before,
-    stat: s.progression.statsFor('meleeStrike').damage,
-    after: s.damageOf('meleeStrike'),
-    passive: s.mods.passive.damageScale,
-    gear: s.mods.gear.attack,
-    gearScale: s.mods.gear.damageScale,
+    crit: s.player.critChance,
+    wantCrit: Math.min(1, c.PLAYER.critChance * (1 + s.mods.gear.critChanceIncrease + sum('critChance') / 100) * K.assassinMark.critChanceMore),
+    shots: s.projectilesOf('fireball').shots,
+    critHit, before, charged, more: K.overload.elementalMore,
   };
 `);
-console.log('stacked:', JSON.stringify(stacked));
-check('picks within the run add up on the base, rather than compounding',
-  stacked.stat === stacked.base * 2,
-  `${stacked.base} with five picks of +20% -> ${stacked.stat}`);
-check('and the layers multiply with each other',
-  stacked.after === Math.round((stacked.base * stacked.passive + stacked.gear) * stacked.gearScale * 2),
-  `(${stacked.base} x ${stacked.passive.toFixed(2)} + ${stacked.gear}) x ${stacked.gearScale} x 2 = ${stacked.after}`);
-
-// --- 6. life does not come back over time from anywhere ---
-// 재생 was taken off weapons, and the tree never had it: health comes back
-// from potions only.
-const regen = await run(`
-  return { gearKeys: Object.keys(s.mods.gear), hasRegenerate: typeof s.regenerate,
-           offered: window.config.ALL_PASSIVES.map(p => p.id) };
-`);
-console.log('regen:', JSON.stringify(regen));
-check('neither the weapon nor the run regenerates anything',
-  !regen.gearKeys.includes('regen') && regen.hasRegenerate === 'undefined',
-  regen.gearKeys.join(' / '));
-check('and the tree has no line of its own for it',
-  !regen.offered.includes('regen'),
-  regen.offered.join(' / '));
-check('the tree offers 피해, 공격속도, 이동속도 and 행운',
-  ['damage', 'attackSpeed', 'moveSpeed', 'luck'].every((id) => regen.offered.includes(id)),
-  regen.offered.join(' / '));
-await shot('passive-04-run');
-
-// --- 7. 이동속도 is on the survivor; 행운 is held but does nothing yet ---
-const legs = await cdp.evaluate(`(() => {
-  localStorage.setItem('exiled-survivors:passives:v1', JSON.stringify({
-    shards: 0, points: 0, ranks: { moveSpeed: 5, luck: 3 } }));
-  return 1;
-})()`);
-void legs;
-await cdp.send('Page.navigate', { url: 'http://localhost:5173/#run' });
-await sleep(900);
-await cdp.send('Page.reload', {});
-await sleep(4500);
-const moved = await run(`
-  const P = window.config.PASSIVES;
-  return { speed: s.player.moveSpeed, base: window.config.PLAYER.speed * s.mods.gear.moveSpeedScale,
-           perRank: P.moveSpeed.moveSpeedScale - 1, luck: s.mods.passive.luck, luckPerRank: P.luck.luck };
-`);
-console.log('legs:', JSON.stringify(moved));
-check('five ranks of 이동속도 move the survivor five ranks faster',
-  Math.abs(moved.speed - moved.base * (1 + 5 * moved.perRank)) < 1e-6,
-  `${moved.speed.toFixed(1)} against ${moved.base}`);
-check('three ranks of 행운 are counted, for when it starts to matter',
-  Math.abs(moved.luck - 3 * moved.luckPerRank) < 1e-9, `${moved.luck}`);
+console.log('group B:', JSON.stringify(b));
+check('암살자의 표식 and the crit nodes multiply the crit chance', Math.abs(b.crit - b.wantCrit) < 1e-9, `${b.crit} / ${b.wantCrit}`);
+check('일점사: a thrown skill throws one, whatever adds more', b.shots === 1);
+check('원소 과부하: a crit hits for no more than its number', b.critHit === 10, `${b.critHit}`);
+check('and charges 원소 skills for a while', Math.abs(b.charged / b.before - b.more) < 0.02, `${b.before} -> ${b.charged}`);
+await shot('passive-02-run');
 
 console.log('\n=== SUMMARY ===');
 const failed = results.filter((r) => !r.p);

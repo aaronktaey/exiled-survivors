@@ -18,8 +18,8 @@ export class IceSpear extends ProjectileWeapon {
       speed: context.projectileSpeed,
       range: context.range,
       pierce: context.pierceCount,
-      chillMs: CHILL.durationMs,
-      freezeMs: context.mastered ? SKILL_MASTERY.freezeMs : 0,
+      chillMs: CHILL.durationMs * (context.durationScale ?? 1),
+      freezeMs: context.mastered ? SKILL_MASTERY.freezeMs * (context.durationScale ?? 1) : 0,
       ...SHOTS.iceSpear,
     };
   }

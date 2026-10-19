@@ -41,7 +41,14 @@ export interface WeaponContext {
    * from one that orbits — the weapon's (룬 각인 검). Others ignore it.
    */
   readonly extraProjectiles: number;
-  /** Applies damage and resolves the kill (gem and skill drops). */
+  /**
+   * What the skill's area is multiplied by, as a radius: a swing's reach, a
+   * blast, an orb. From the passive tree; 1 (or unset) untouched.
+   */
+  readonly areaScale?: number;
+  /** How long what it leaves behind lasts (냉각, 동결, burning ground), against its own. */
+  readonly durationScale?: number;
+  /** Applies damage and resolves the kill (gem and skill drops), booked to this skill. */
   readonly hit: (enemy: Enemy, amount: number) => void;
   /** The skill is at SKILL_MASTERY.level: its 각성 effect is on. */
   readonly mastered: boolean;

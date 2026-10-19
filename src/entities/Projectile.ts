@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 
 import { DEPTH, TEXTURES, TIMING, WEAPON } from '@/config';
 import type { Enemy } from '@/entities/Enemy';
+import type { SkillId } from '@/weapons/skills';
 
 /** What a shot needs to know at launch, all of it from the skill's stats. */
 export interface LaunchSpec {
@@ -20,6 +21,10 @@ export interface LaunchSpec {
   readonly fireZoneDps?: number;
   /** 얼음창 각성: an enemy already under 냉각 is frozen this long. */
   readonly freezeMs?: number;
+  /** How long that burning ground lasts. */
+  readonly fireZoneMs?: number;
+  /** The skill that threw it, so what it hits and kills is booked to that skill. */
+  readonly skill?: SkillId;
   readonly texture: string;
   /** Drawn size. Width runs along the flight path. */
   readonly width: number;
@@ -40,6 +45,10 @@ export class Projectile extends Phaser.Physics.Arcade.Image {
   public fireZoneDps = 0;
   /** How long a chilled enemy it strikes is frozen. 0 for none. */
   public freezeMs = 0;
+  /** How long the ground it sets alight burns. */
+  public fireZoneMs = 0;
+  /** The skill that threw it. */
+  public skill?: SkillId;
 
   private remainingMs = 0;
   /** Enemies left to pass through before it fizzles. */
@@ -58,6 +67,8 @@ export class Projectile extends Phaser.Physics.Arcade.Image {
     this.blastRadius = spec.blastRadius ?? 0;
     this.fireZoneDps = spec.fireZoneDps ?? 0;
     this.freezeMs = spec.freezeMs ?? 0;
+    this.fireZoneMs = spec.fireZoneMs ?? 0;
+    this.skill = spec.skill;
     this.pierceLeft = Math.max(0, Math.round(spec.pierce));
     this.struck.clear();
 

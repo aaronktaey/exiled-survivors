@@ -20,8 +20,9 @@ export class Fireball extends ProjectileWeapon {
       range: context.range,
       pierce: 0,
       chillMs: 0,
-      blastRadius: FIREBALL.blastRadius,
+      blastRadius: FIREBALL.blastRadius * (context.areaScale ?? 1),
       fireZoneDps: context.mastered ? context.damage * SKILL_MASTERY.fireZone.damageShare : 0,
+      fireZoneMs: SKILL_MASTERY.fireZone.durationMs * (context.durationScale ?? 1),
       ...SHOTS.fireball,
     };
   }

@@ -17,7 +17,20 @@ export type SkillTag =
   | '냉기'
   | '관통'
   | '공허'
-  | '오라';
+  | '오라'
+  // Groups and kinds the passive tree speaks to: 원소 is any of 화염 · 냉기 ·
+  // 번개, 범위 a skill with an area to grow, 지속 one that leaves something
+  // behind for a while. The rest name kinds no skill is yet — the tree has
+  // nodes for them already, which count once a skill carries the tag.
+  | '원소'
+  | '범위'
+  | '지속'
+  | '소환'
+  | '출혈'
+  | '독'
+  | '점화'
+  | '감전'
+  | '동결';
 
 export type SkillId =
   | 'meleeStrike'
@@ -41,14 +54,14 @@ export const SKILLS: Record<SkillId, SkillDefinition> = {
   meleeStrike: {
     id: 'meleeStrike',
     name: '타격',
-    tags: ['물리', '공격', '근접'],
+    tags: ['물리', '공격', '근접', '범위'],
     upgrades: ['damage', 'attackSpeed'],
     summary: '가장 가까운 적을 향해 짧게 휘두릅니다. 범위 안의 적을 한꺼번에 때립니다.',
   },
   fireball: {
     id: 'fireball',
     name: '화염구',
-    tags: ['투사체', '원거리', '주문', '화염'],
+    tags: ['투사체', '원거리', '주문', '화염', '원소', '범위'],
     // No 사거리 pick: a thrown skill reaches further by flying faster.
     upgrades: ['damage', 'attackSpeed', 'projectileSpeed'],
     summary: '가장 가까운 적에게 불덩이를 던집니다. 처음 맞은 적에게서 터지며, 주변의 적도 함께 불에 휩싸입니다.',
@@ -56,14 +69,14 @@ export const SKILLS: Record<SkillId, SkillDefinition> = {
   chainLightning: {
     id: 'chainLightning',
     name: '연쇄번개',
-    tags: ['주문', '번개', '연쇄'],
+    tags: ['주문', '번개', '연쇄', '원소'],
     upgrades: ['damage', 'attackSpeed', 'chainCount'],
     summary: '즉발 번개가 적을 때리고, 가까운 다음 적으로 옮겨붙습니다. 같은 적을 두 번 때리지는 않습니다.',
   },
   iceSpear: {
     id: 'iceSpear',
     name: '얼음창',
-    tags: ['주문', '냉기', '투사체'],
+    tags: ['주문', '냉기', '투사체', '원소', '지속'],
     upgrades: ['damage', 'attackSpeed', 'projectileSpeed', 'pierceCount'],
     summary: '적을 관통하며, 맞은 적에게 냉각(이동속도 -30%)을 겁니다.',
   },
@@ -77,7 +90,7 @@ export const SKILLS: Record<SkillId, SkillDefinition> = {
   thunderStrike: {
     id: 'thunderStrike',
     name: '낙뢰',
-    tags: ['오라', '주문', '번개'],
+    tags: ['오라', '주문', '번개', '원소'],
     upgrades: ['damage', 'attackSpeed'],
     summary: '주위의 적 하나에게 하늘에서 벼락을 내립니다. 그 적이 죽으면 절반의 확률로 곧바로 한 번 더 떨어집니다.',
   },

@@ -38,6 +38,8 @@ export class VoidOrb implements Weapon {
 
   /** Where the first orb is on the circle, in radians. */
   private angle = 0;
+  /** How big each orb is now, its area grown by the tree. */
+  private orbRadius: number = VOID_ORB.radius;
   private elapsedMs = 0;
 
   public constructor(scene: Phaser.Scene) {
@@ -54,7 +56,7 @@ export class VoidOrb implements Weapon {
 
     const count = orbsHeld(context.orbCount, context.extraProjectiles ?? 0);
     const radius = Math.max(1, context.range);
-    this.sync(count);
+    this.sync(count, context.areaScale ?? 1);
 
     // Screen y grows downward, so a growing angle sweeps clockwise.
     const angularSpeed = context.orbitSpeed / radius;
@@ -99,15 +101,13 @@ export class VoidOrb implements Weapon {
   }
 
   /** Grows or hides orbs so exactly `count` of them are in the air. */
-  private sync(count: number): void {
+  private sync(count: number, area: number): void {
     while (this.orbs.length < count) {
-      this.orbs.push(
-        this.scene.add
-          .image(0, 0, TEXTURES.voidOrb)
-          .setDepth(DEPTH.projectiles)
-          .setDisplaySize(VOID_ORB.radius * 2, VOID_ORB.radius * 2),
-      );
+      this.orbs.push(this.scene.add.image(0, 0, TEXTURES.voidOrb).setDepth(DEPTH.projectiles));
     }
+    // Area makes each orb bigger, and what it touches with it.
+    this.orbRadius = VOID_ORB.radius * area;
+    this.orbs.forEach((orb) => orb.setDisplaySize(this.orbRadius * 2, this.orbRadius * 2));
 
     this.orbs.forEach((orb, index) => orb.setVisible(index < count));
   }
@@ -121,7 +121,7 @@ export class VoidOrb implements Weapon {
         continue;
       }
 
-      const reach = VOID_ORB.radius + VOID_ORB.hitPadding + (ENEMY_KINDS[enemy.kind].size / 2);
+      const reach = this.orbRadius + VOID_ORB.hitPadding + (ENEMY_KINDS[enemy.kind].size / 2);
       let records = this.hits.get(enemy);
       for (let i = 0; i < count && enemy.active; i++) {
         const orb = this.orbs[i];

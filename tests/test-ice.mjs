@@ -111,7 +111,7 @@ const grant = await run(`
 `);
 console.log('granted:', JSON.stringify(grant));
 check('얼음창 is 주문·냉기·투사체',
-  grant.name === '얼음창' && JSON.stringify(grant.tags) === JSON.stringify(['주문', '냉기', '투사체']),
+  grant.name === '얼음창' && ['주문', '냉기', '투사체'].every((tag) => grant.tags.includes(tag)),
   `${grant.tags}`);
 check('it starts on its configured stat line',
   ['damage', 'attackSpeed', 'range', 'projectileSpeed', 'pierceCount']

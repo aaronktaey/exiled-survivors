@@ -58,7 +58,8 @@ const start = await run(`return {
   owned: [...s.owned],
 };`);
 check('starts with melee only', start.weapons.length === 1 && start.weapons[0] === '타격', `${start.weapons}`);
-check('melee tags are 물리·공격·근접', start.tags[0] === '물리,공격,근접', start.tags[0]);
+// The tree adds tags of its own (범위, 원소…); the three a 타격 is made of stay.
+check('melee tags include 물리·공격·근접', ['물리', '공격', '근접'].every((tag) => start.tags[0].split(',').includes(tag)), start.tags[0]);
 
 // --- 2. melee auto-aims at the nearest enemy ---
 // Enemies are pooled now: take one from the group and spawn it, rather
@@ -330,7 +331,7 @@ const dials = await run(`
            fireStat: s.progression.statsFor('fireball').damage,
            meleeStat: s.progression.statsFor('meleeStrike').damage,
            sword: s.gearBonus.attack,
-           passive: s.mods.passive.damageScale,
+           passive: s.mods.passive.scale('damage'),
            fireBase: window.config.SKILL_BASE.fireball.damage,
            meleeBase: window.config.SKILL_BASE.meleeStrike.damage };
 `);

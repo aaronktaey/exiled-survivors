@@ -578,20 +578,34 @@ Read `git log` for what changed and when. What is not in the log:
   pauses physics until the pointer moves off. A touch shows the same without
   the hold — on a phone that finger is steering. A popup that closes while
   something is being read leaves the arena paused (`held`).
-- **패시브 is a tree drawn from its table.** A `PASSIVES` entry with
-  `requires: { id, rank }` hangs from that line and opens once it holds the
-  ranks (`passives.isOpen`, checked inside `passives.spend`, so the rule is
-  the store's, not the screen's); without it, it hangs from the root. Ranks
-  bought before a line was gated are kept. `PassiveScene.layOut` places
-  whatever shape the table gives — root on top, or on its side
-  (`sideways`) on a wide window — so a new line is a table entry. The
-  spacing shrinks to fit only down to `PASSIVE_TREE.minLevelGap` /
-  `minLeafGap`; a bigger tree runs off its window and is dragged. The tree
-  lives in its own container, drawn only by `treeCam` (a camera whose
-  viewport is the framed window — no `setMask` under WebGL), so its
-  coordinates are the window's own; a node is picked on the release of a
-  press that did not travel `DRAG_FROM_PX`, and `pan`/`scrollTo` keep some
-  of the tree in view (`dragMargin`).
+- **패시브 is a PoE graph (overhaul phase 1, branch `overhaul`).** Every
+  lasting bonus is a `Modifier` (`config/stats.ts`: a `StatId`, a value, an
+  optional skill tag); `systems/StatSheet` sums them (a tagged one counts
+  only for a skill carrying the tag). `config/passives.ts` builds
+  `PASSIVE_NODES` from six branch drafts (spine of seven rings, two arms, a
+  utility node between branches, arm ends cross-linked): a small node is
+  paid `NODE_VALUES[stat][ringTier(ring)]`, a 핵심 has its own mods, a
+  키스톤 a `KEYSTONES` entry whose numbers the code reads (학살자 in
+  `GameScene.onKilledBy`, 원소 과부하 via `onCrit`/`overloadOf`, 철인 in
+  `Player.takeDamage`/`hurt`, 암살자의 표식 via `nonCritScale` and
+  `Player.critChance`, 일점사/영원의 계약 in `Modifiers`). Points are the
+  account level (`ACCOUNT_LEVEL`; every gem's XP is gathered in
+  `GameScene.pendingAccountXp` and handed over by `flushAccountXp` on each
+  save and at death) plus `bonusPoints` (an old ranks tree, refunded on
+  load). 신성한 조각 are now only the refund cost (`PASSIVE_RESPEC`). The
+  store keeps `allocated` joined to the start (`isLeaf` for refunds).
+  `Modifiers.ts` folds the sheet per skill: damage, attack speed,
+  projectile speed (and so a thrown skill's range), extra projectiles,
+  pierce, chain, area (`WeaponContext.areaScale`, a radius: √ of the area
+  increase) and duration (`durationScale`: 냉각, 동결, burning ground).
+  Every hit carries its skill (`CombatSystem.hit(enemy, amount, skill)`,
+  `GameScene.hitterFor`, `Projectile.skill`). Tags no skill has yet (소환,
+  출혈, 독, 점화, 감전, 동결) are in `SkillTag` and on nodes already; the
+  screen says so under such a node. `PassiveScene` draws the graph through
+  `treeCam` (zoom, drag, +/−), picks on a tap, takes and refunds with
+  buttons; node names keep one size against the zoom. test-passive covers
+  shape, rules, screen and every 키스톤. No patch note yet: the overhaul is
+  local until the user says, and gets one version entry when it ships.
 - **폭발의 구슬 climbs, or swaps at the top.** It picks among lines below
   tier 1, and the replacement comes only from 속성 that have the rung above.
   On a weapon whose every line is tier 1 it trades one for a different

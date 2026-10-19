@@ -60,7 +60,7 @@ export class MeleeStrike implements Weapon {
   /** The enemy whose drawn edge is nearest, if any edge is within reach. */
   private nearestInReach(context: WeaponContext): Enemy | undefined {
     let best: Enemy | undefined;
-    let bestGap = context.range;
+    let bestGap = context.range * (context.areaScale ?? 1);
     for (const child of context.enemies.getChildren()) {
       const enemy = child as Enemy;
       if (!enemy.active) {
@@ -76,7 +76,9 @@ export class MeleeStrike implements Weapon {
   }
 
   private swing(context: WeaponContext, target: Phaser.GameObjects.Components.Transform): void {
-    const { origin, range } = context;
+    // Area grows the reach: the swing is a slice of a circle.
+    const { origin } = context;
+    const range = context.range * (context.areaScale ?? 1);
     const angle = Phaser.Math.Angle.Between(origin.x, origin.y, target.x, target.y);
     const halfArc = MELEE.arcRadians / 2;
 

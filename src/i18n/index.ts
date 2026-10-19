@@ -6,7 +6,9 @@ import {
   GEAR,
   ORBS,
   affixTier,
-  PASSIVES,
+  KEYSTONES,
+  PASSIVE_NODES,
+  STAT_SPECS,
   type AffixId,
   type AffixKind,
   type AltarOfferId,
@@ -14,7 +16,10 @@ import {
   type BoneId,
   type GearId,
   type OrbId,
+  type KeystoneId,
+  type Modifier,
   type PassiveId,
+  type StatId,
   SKILL_MASTERY,
 } from '@/config';
 import { en } from '@/i18n/en';
@@ -254,12 +259,65 @@ export function gearLabel(item: {
   return count > 0 ? `${gearName(item.id)}+${count}` : gearName(item.id);
 }
 
-export function passiveName(id: PassiveId): string {
-  return t().names?.passives?.[id] ?? PASSIVES[id].name;
+export function statName(stat: StatId): string {
+  return t().names?.stats?.[stat] ?? STAT_SPECS[stat].name;
 }
 
-export function passiveDetail(id: PassiveId): string {
-  return t().names?.passiveDetails?.[id] ?? PASSIVES[id].detail;
+/** "화염 스킬 피해" — what a modifier raises, without how much. */
+export function modifierSubject(mod: Modifier): string {
+  const stat = statName(mod.stat);
+  return mod.tag ? fill(t().passives.taggedStat, { tag: tagName(mod.tag), stat }) : stat;
+}
+
+/** "화염 스킬 피해 +6%" — a modifier written out, its first letter raised for the languages that have one. */
+export function modifierLine(mod: Modifier): string {
+  const spec = STAT_SPECS[mod.stat];
+  const line = fill(t().passives.statLine, {
+    stat: modifierSubject(mod),
+    sign: spec.sign,
+    value: Number(mod.value.toFixed(2)),
+    unit: spec.unit,
+  });
+  return line.charAt(0).toUpperCase() + line.slice(1);
+}
+
+/** A 키스톤's rule, its numbers filled from KEYSTONES. */
+export function keystoneDetail(id: KeystoneId): string {
+  const pct = (share: number) => `${Math.round(share * 100)}%`;
+  const spec = KEYSTONES[id];
+  const numbers: Record<KeystoneId, Record<string, string | number>> = {
+    slaughter: { share: pct(KEYSTONES.slaughter.burstShare), less: pct(1 - KEYSTONES.slaughter.projectileMore) },
+    singleShot: { more: pct(KEYSTONES.singleShot.projectileMore - 1) },
+    overload: { seconds: KEYSTONES.overload.buffMs / 1000, more: pct(KEYSTONES.overload.elementalMore - 1) },
+    eternity: { more: pct(KEYSTONES.eternity.durationMore - 1), less: pct(1 - KEYSTONES.eternity.attackSpeedMore) },
+    ironWill: { less: pct(1 - KEYSTONES.ironWill.damageTakenMore) },
+    assassinMark: { more: KEYSTONES.assassinMark.critChanceMore, less: pct(1 - KEYSTONES.assassinMark.nonCritMore) },
+  };
+  return fill(t().names?.keystoneDetails?.[id] ?? spec.detail, numbers[id]);
+}
+
+/** A node's name: a 핵심's or 키스톤's own, or what a small node raises. */
+export function passiveName(id: PassiveId): string {
+  const node = PASSIVE_NODES[id];
+  if (!node) {
+    return id;
+  }
+  if (node.kind === 'start') {
+    return t().passives.kinds.start;
+  }
+  if (node.name) {
+    return t().names?.passives?.[id] ?? node.name;
+  }
+  return node.mods[0] ? modifierSubject(node.mods[0]) : id;
+}
+
+/** What a node gives, a line each. */
+export function passiveLines(id: PassiveId): string[] {
+  const node = PASSIVE_NODES[id];
+  if (!node) {
+    return [];
+  }
+  return [...node.mods.map(modifierLine), ...(node.keystone ? [keystoneDetail(node.keystone)] : [])];
 }
 
 /**

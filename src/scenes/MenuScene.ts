@@ -163,7 +163,7 @@ export class MenuScene extends Phaser.Scene {
         id: 'passives',
         texture: TEXTURES.passive,
         label: () => t().passives.title,
-        badge: () => passives.value.points > 0,
+        badge: () => passives.freePoints > 0,
         onSelect: () => this.openOverlay(SCENES.passives),
       },
       {

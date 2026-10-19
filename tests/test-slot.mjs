@@ -256,8 +256,8 @@ const thunder = await run(`
            hurt, outsideHurt, nearestHit, chained, single, chance };
 `);
 console.log('낙뢰:', JSON.stringify(thunder));
-check('낙뢰 is 오라 · 주문 · 번개',
-  JSON.stringify(thunder.tags) === JSON.stringify(['오라', '주문', '번개']), thunder.tags.join(' · '));
+check('낙뢰 is 오라 · 주문 · 번개 (and 원소, for the tree)',
+  ['오라', '주문', '번개'].every((tag) => thunder.tags.includes(tag)), thunder.tags.join(' · '));
 check('it starts on its configured stat line',
   thunder.stat.damage === thunder.base.damage && thunder.stat.attackSpeed === thunder.base.attackSpeed,
   `${thunder.stat.damage} damage, every ${(1000 / thunder.stat.attackSpeed).toFixed(0)}ms`);

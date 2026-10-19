@@ -2,7 +2,8 @@ import Phaser from 'phaser';
 
 import {
   AFFIXES,
-  ALL_PASSIVES,
+  KEYSTONES,
+  PASSIVE_NODES,
   BALANCE,
   BONES,
   COLORS,
@@ -49,7 +50,6 @@ import {
   gearTitle,
   masteryText,
   orbName,
-  passiveDetail,
   passiveName,
   skillName,
   t,
@@ -97,10 +97,18 @@ import {
 } from '@/systems/Gear';
 import {
   NO_MODIFIERS,
+  areaRadiusFor,
   attackSpeedFor,
   critMultiplierFor,
   damageFor,
+  durationScaleFor,
+  extraChainsFor,
+  extraPierceFor,
+  extraProjectilesFor,
   gearAttackSpeedFor,
+  keystoneDamageFor,
+  passiveAttackSpeedFor,
+  projectileSpeedScaleFor,
   type RunModifiers,
 } from '@/systems/Modifiers';
 import { bones } from '@/systems/Bones';
@@ -230,6 +238,13 @@ export class GameScene extends Phaser.Scene {
   private devUsedBefore = false;
   /** The admin's 밸런스 draft was on during this run. */
   private tunedRun = false;
+  /** Account experience picked up since it was last handed to the tree's store, and in the whole of this sitting. */
+  private pendingAccountXp = 0;
+  private runAccountXp = 0;
+  /** 원소 과부하: until when (scene clock) the elements are charged. */
+  private overloadUntil = 0;
+  /** Each weapon's hit, booked to its skill, made once a weapon. */
+  private hitters = new Map<SkillId, (enemy: Enemy, amount: number) => void>();
   private startPick = false;
   /** Popups earned while one was already open. */
   private pendingChoices: ChoiceRequest[] = [];
@@ -263,6 +278,10 @@ export class GameScene extends Phaser.Scene {
     this.elapsedMs = 0;
     this.sinceSaveMs = 0;
     this.pendingChoices = [];
+    this.pendingAccountXp = 0;
+    this.runAccountXp = 0;
+    this.overloadUntil = 0;
+    this.hitters = new Map();
     this.choosing = false;
     this.inspecting = { skill: false, rare: false };
     this.over = false;
@@ -282,7 +301,7 @@ export class GameScene extends Phaser.Scene {
     // run takes the weapon it went out with, not whatever is in hand now.
     this.runGear = GameScene.gearFor(this.resuming);
     this.gearBonus = gearBonusFor(this.runGear);
-    this.mods = { passive: passives.bonus, gear: this.gearBonus };
+    this.mods = { passive: passives.sheet, gear: this.gearBonus };
 
     this.player = new Player(this, WORLD.width / 2, WORLD.height / 2);
     this.player.applyGear(this.gearBonus);
@@ -327,8 +346,21 @@ export class GameScene extends Phaser.Scene {
         onMangoCollected: () =>
           this.announce(fill(t().game.mangoEaten, { seconds: Math.round(MANGO.durationMs / 1000) })),
         onMagnetCollected: () => this.announce(t().game.magnetPulled),
-        dropScale: () => this.boneBonus.dropScale,
+        // 아이템 발견 from the tree, on top of what the 뼈다귀 do.
+        dropScale: () => this.boneBonus.dropScale * this.mods.passive.scale('itemFind'),
         critMultiplier: () => critMultiplierFor(this.mods),
+        nonCritScale: () => (this.mods.passive.has('assassinMark') ? KEYSTONES.assassinMark.nonCritMore : 1),
+        onCrit: () => {
+          if (this.mods.passive.has('overload')) {
+            this.overloadUntil = this.time.now + KEYSTONES.overload.buffMs;
+          }
+        },
+        onKill: (skill, x, y, maxHp) => this.onKilledBy(skill, x, y, maxHp),
+        xpScale: () => this.mods.passive.scale('xpGain'),
+        onXp: (amount) => {
+          this.pendingAccountXp += amount;
+          this.runAccountXp += amount;
+        },
         clearOfTerrain: (x, y) => this.terrain?.clear(x, y, DROP_ROOM) ?? [x, y],
       },
     );
@@ -541,19 +573,23 @@ export class GameScene extends Phaser.Scene {
     for (const weapon of this.weapons) {
       const id = weapon.definition.id;
       const stats = this.progression.statsFor(id);
+      const speedScale = projectileSpeedScaleFor(id, this.mods);
       weapon.update(dt, {
         origin: this.player,
         enemies: this.spawner.group,
         damage: this.damageOf(id),
         cooldownMs: this.cooldownOf(id),
-        range: this.progression.rangeFor(id),
-        projectileSpeed: stats.projectileSpeed,
-        chainCount: stats.chainCount,
+        // A thrown skill's reach is how far it flies: faster from the tree, further.
+        range: this.progression.rangeFor(id) * (stats.projectileSpeed > 0 ? speedScale : 1),
+        projectileSpeed: stats.projectileSpeed * speedScale,
+        chainCount: this.chainsOf(id),
         orbitSpeed: stats.orbitSpeed,
-        pierceCount: stats.pierceCount,
+        pierceCount: this.piercesOf(id),
         orbCount: stats.orbCount,
-        extraProjectiles: this.gearBonus.extraProjectiles,
-        hit: this.combat.hit,
+        extraProjectiles: extraProjectilesFor(id, this.mods),
+        areaScale: areaRadiusFor(id, this.mods),
+        durationScale: durationScaleFor(id, this.mods),
+        hit: this.hitterFor(id),
         mastered: this.progression.levelFor(id) >= SKILL_MASTERY.level,
         enemyShots: this.combat.enemyShots,
       });
@@ -658,13 +694,13 @@ export class GameScene extends Phaser.Scene {
       ].filter(Boolean);
       out.push({ id: 'gear', kind: 'gear', icon: gearTexture(item.id), title: gearTitle(item), lines });
     }
-    const bought = ALL_PASSIVES.filter((spec) => passives.rankOf(spec.id) > 0);
-    if (bought.length > 0) {
+    const taken = passives.value.allocated;
+    if (taken.length > 0) {
+      // The count, then the 키스톤 and 핵심 by name: the small nodes are too many to list.
+      const named = taken.filter((id) => PASSIVE_NODES[id]?.kind === 'keystone' || PASSIVE_NODES[id]?.kind === 'notable');
       out.push({
         id: 'passive', kind: 'passive', icon: TEXTURES.passive, title: copy.effectPassive,
-        lines: bought.map((spec) =>
-          fill(copy.effectPassiveLine, { name: passiveName(spec.id), rank: passives.rankOf(spec.id), detail: passiveDetail(spec.id) }),
-        ),
+        lines: [fill(copy.effectPassiveCount, { count: taken.length }), ...named.map((id) => passiveName(id))],
       });
     }
     for (const id of this.bones) {
@@ -681,6 +717,7 @@ export class GameScene extends Phaser.Scene {
     if (this.over) {
       return;
     }
+    this.flushAccountXp();
 
     const skills: Partial<Record<SkillId, SkillStats>> = {};
     for (const id of this.owned) {
@@ -924,13 +961,8 @@ export class GameScene extends Phaser.Scene {
    * the tree — and that is worth saying out loud when it happens.
    */
   private onShardCollected(): void {
-    const completed = passives.addShard();
-    const copy = t().game;
-    this.announce(
-      completed
-        ? copy.orbMade
-        : fill(copy.shardFound, { held: passives.value.shards, need: SHARD.perOrb }),
-    );
+    passives.addShard();
+    this.announce(fill(t().game.shardFound, { held: passives.value.shards }));
   }
 
   /**
@@ -978,7 +1010,56 @@ export class GameScene extends Phaser.Scene {
     const upgraded = this.progression.statsFor(skill).damage;
     // Whole numbers: a percentage from the tree would otherwise put a
     // decimal point on every damage number that floats off an enemy.
-    return Math.round(damageFor(skill, upgraded, this.mods) * (BALANCE.damageScale[skill] ?? 1));
+    return Math.round(damageFor(skill, upgraded, this.mods) * (BALANCE.damageScale[skill] ?? 1) * this.overloadOf(skill));
+  }
+
+  /** 원소 과부하, while a crit has it charged: an 원소 skill's damage, multiplied. */
+  private overloadOf(skill: SkillId): number {
+    const charged = this.mods.passive.has('overload') && this.time.now < this.overloadUntil;
+    return charged && SKILLS[skill].tags.includes('원소') ? KEYSTONES.overload.elementalMore : 1;
+  }
+
+  /** Enemies an arc jumps on to, and bodies a shot passes through: the run's picks and the tree's. */
+  private chainsOf(skill: SkillId): number {
+    return this.progression.statsFor(skill).chainCount + extraChainsFor(skill, this.mods);
+  }
+
+  private piercesOf(skill: SkillId): number {
+    return this.progression.statsFor(skill).pierceCount + extraPierceFor(skill, this.mods);
+  }
+
+  /** One hit function per skill, so every hit and kill knows which skill made it. */
+  private hitterFor(skill: SkillId): (enemy: Enemy, amount: number) => void {
+    let hitter = this.hitters.get(skill);
+    if (!hitter) {
+      hitter = (enemy, amount) => this.combat.hit(enemy, amount, skill);
+      this.hitters.set(skill, hitter);
+    }
+    return hitter;
+  }
+
+  /** 학살자: a 근접 kill bursts, hurting what stands round it by a share of the dead one's health. */
+  private onKilledBy(skill: SkillId | undefined, x: number, y: number, maxHp: number): void {
+    if (!skill || !this.mods.passive.has('slaughter') || !SKILLS[skill].tags.includes('근접')) {
+      return;
+    }
+    const { burstShare, burstRadius } = KEYSTONES.slaughter;
+    this.combat.blast(x, y, burstRadius, Math.max(1, Math.round(maxHp * burstShare)), undefined, undefined, COLORS.slaughterBurst);
+  }
+
+  /**
+   * Hands the experience picked up since last time to the account, and says
+   * so when that took it up a level. On every save and at the end of a run.
+   */
+  private flushAccountXp(): void {
+    if (this.pendingAccountXp <= 0) {
+      return;
+    }
+    const { before, after } = passives.addXp(this.pendingAccountXp);
+    this.pendingAccountXp = 0;
+    if (after > before) {
+      this.announce(fill(t().game.accountLevelUp, { level: after, points: after - before }));
+    }
   }
 
   /** The same fold, for how often that skill goes off. */
@@ -993,12 +1074,11 @@ export class GameScene extends Phaser.Scene {
   private loadout(): ReadonlyArray<LoadoutEntry> {
     return this.weapons.map((weapon) => {
       const id = weapon.definition.id;
-      const stats = this.progression.statsFor(id);
       // Read off the same folds the run fights with, so the number on the
       // HUD is the number the enemies are getting.
       const perSecond = 1000 / this.cooldownOf(id);
       const { shots, orbs } = this.projectilesOf(id);
-      const targets = (1 + stats.chainCount + stats.pierceCount + Math.max(0, orbs - 1)) * shots;
+      const targets = (1 + this.chainsOf(id) + this.piercesOf(id) + Math.max(0, orbs - 1)) * shots;
       const damage = this.damageOf(id);
       return {
         id,
@@ -1016,7 +1096,7 @@ export class GameScene extends Phaser.Scene {
    */
   private projectilesOf(skill: SkillId): { readonly shots: number; readonly orbs: number } {
     const stats = this.progression.statsFor(skill);
-    const extra = this.gearBonus.extraProjectiles;
+    const extra = extraProjectilesFor(skill, this.mods);
     return {
       shots: SKILL_BASE[skill].projectileSpeed > 0 ? 1 + extra : 1,
       orbs: stats.orbCount > 0 ? orbsHeld(stats.orbCount, extra) : 0,
@@ -1040,7 +1120,9 @@ export class GameScene extends Phaser.Scene {
       fill(copy.formulaDamage, {
         damage,
         base: num(base.damage),
-        passive: num(this.mods.passive.damageScale),
+        passive: num(
+          this.mods.passive.scale('damage', SKILLS[skill].tags) * keystoneDamageFor(skill, this.mods.passive) * this.overloadOf(skill),
+        ),
         gear: num(this.mods.gear.attack),
         run: num(runScale(base.damage, stats.damage)),
       }) +
@@ -1054,7 +1136,7 @@ export class GameScene extends Phaser.Scene {
       fill(copy.formulaRate, {
         rate: num(perSecond),
         base: num(base.attackSpeed),
-        passive: num(this.mods.passive.attackSpeedScale),
+        passive: num(passiveAttackSpeedFor(skill, this.mods.passive)),
         gear: num(gearAttackSpeedFor(skill, this.mods.gear)),
         run: num(runScale(base.attackSpeed, stats.attackSpeed)),
       }) + (mango === 1 ? '' : fill(copy.formulaMango, { mango: num(mango) }));
@@ -1285,7 +1367,7 @@ export class GameScene extends Phaser.Scene {
    * naming the skill.
    */
   private drinkForMaxedSkill(skill: SkillId): void {
-    const healed = this.player.heal(HealthPotion.healingFor(this.player.maxHp));
+    const healed = this.player.heal(HealthPotion.healingFor(this.player.maxHp, this.player.potionHealScale));
     const { x, y } = this.player;
     // Over the survivor's own name and health, not on them.
     this.damageNumbers.spawn(x, y - 70, 0, { text: t().game.potionEffect, color: COLORS.healText, crit: true });
@@ -1468,6 +1550,8 @@ export class GameScene extends Phaser.Scene {
     this.physics.pause();
     // A save is somewhere to come back from, not a way to undo a death.
     saveGame.clear();
+    // What the run picked up goes into the account before the screen reads it.
+    this.flushAccountXp();
 
     // The run is paid for the damage it dealt, so one that ended badly still
     // moved the tree forward. Paid once, here, before the screen reads it.
@@ -1496,6 +1580,8 @@ export class GameScene extends Phaser.Scene {
         survivedMs: this.elapsedMs,
         level: this.progression.level,
         gold: earned,
+        accountXp: this.runAccountXp,
+        accountLevel: passives.account.level,
       },
       level: this.progression.level,
       survivedMs: this.elapsedMs,
@@ -1527,7 +1613,7 @@ export class GameScene extends Phaser.Scene {
       bones: [...this.bones],
       gear: gear ? { id: gear.id, prefixes: lines(gear.prefixes), suffixes: lines(gear.suffixes) } : null,
       skills: this.loadout().map((line) => ({ id: line.id, level: line.level })),
-      passives: { ...passives.value.ranks } as Record<string, number>,
+      passives: Object.fromEntries(passives.value.allocated.map((id) => [id, 1])),
       resumed: this.resuming !== null,
     };
   }

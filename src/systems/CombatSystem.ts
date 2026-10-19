@@ -72,6 +72,15 @@ export interface CombatHooks {
   readonly dropScale: () => number;
   /** What one of the survivor's critical hits is worth. */
   readonly critMultiplier: () => number;
+  /** What a hit that does not crit is multiplied by (암살자의 표식 lowers it). */
+  readonly nonCritScale?: () => number;
+  /** A hit just crit, from this skill (원소 과부하 listens). */
+  readonly onCrit?: (skill: SkillId | undefined) => void;
+  /** A kill, and the skill that made it (학살자 listens): the dead enemy's place and full health. */
+  readonly onKill?: (skill: SkillId | undefined, x: number, y: number, maxHp: number) => void;
+  /** What every gem's experience is multiplied by, and where it goes besides the run (the account). */
+  readonly xpScale?: () => number;
+  readonly onXp?: (amount: number) => void;
   /** Called when the player walks over a dropped skill. */
   readonly onSkillCollected: (skill: SkillId) => void;
   /** A rare with the 거미 속성 died here: lay its web. */
@@ -426,13 +435,18 @@ export class CombatSystem {
    * and so 치명 on the carried weapon lands on everything the survivor
    * throws, the same way a rare's 치명 lands on everything it throws.
    */
-  public hit = (enemy: Enemy, amount: number): void => {
+  public hit = (enemy: Enemy, amount: number, skill?: SkillId): void => {
     if (!enemy.active) {
       return;
     }
 
     const crit = this.player.critChance > 0 && Math.random() < this.player.critChance;
-    const dealt = crit ? Math.round(amount * this.hooks.critMultiplier()) : amount;
+    const dealt = crit
+      ? Math.round(amount * this.hooks.critMultiplier())
+      : Math.max(1, Math.round(amount * (this.hooks.nonCritScale?.() ?? 1)));
+    if (crit) {
+      this.hooks.onCrit?.(skill);
+    }
 
     this.damageNumbers.spawn(
       enemy.x,
@@ -446,7 +460,9 @@ export class CombatSystem {
     this.stats.recordDamage(absorbed);
 
     if (enemy.takeDamage(dealt)) {
+      const { x, y, maxHp } = enemy;
       this.killEnemy(enemy);
+      this.hooks.onKill?.(skill, x, y, maxHp);
     }
   };
 
@@ -475,12 +491,12 @@ export class CombatSystem {
     // shot has to know whether it is done either way.
     const carriesOn = shot.consumePierce();
     const { x, y } = enemy;
-    this.hit(enemy, shot.damage);
+    this.hit(enemy, shot.damage, shot.skill);
 
     if (shot.blastRadius > 0) {
-      this.blast(x, y, shot.blastRadius, shot.damage, enemy);
+      this.blast(x, y, shot.blastRadius, shot.damage, enemy, shot.skill);
       if (shot.fireZoneDps > 0) {
-        this.burnGround(x, y, shot.blastRadius, shot.fireZoneDps);
+        this.burnGround(x, y, shot.blastRadius, shot.fireZoneDps, shot.fireZoneMs, shot.skill);
       }
     }
 
@@ -495,7 +511,15 @@ export class CombatSystem {
    * victims are gathered before any of them is hit, because a kill recycles
    * a sprite and the pool could hand it straight back.
    */
-  public blast(x: number, y: number, radius: number, damage: number, spared?: Enemy): number {
+  public blast(
+    x: number,
+    y: number,
+    radius: number,
+    damage: number,
+    spared?: Enemy,
+    skill?: SkillId,
+    color: number = COLORS.fireBlast,
+  ): number {
     const caught: Enemy[] = [];
     for (const child of this.enemies.getChildren()) {
       const other = child as Enemy;
@@ -505,11 +529,11 @@ export class CombatSystem {
       }
     }
 
-    caught.forEach((other) => this.hit(other, damage));
+    caught.forEach((other) => this.hit(other, damage, skill));
 
     const flash = this.scene.add
-      .circle(x, y, radius, COLORS.fireBlast, 0.35)
-      .setStrokeStyle(2, COLORS.fireBlast, 0.9)
+      .circle(x, y, radius, color, 0.35)
+      .setStrokeStyle(2, color, 0.9)
       .setDepth(DEPTH.vfx)
       .setScale(0.4);
     this.scene.tweens.add({
@@ -525,16 +549,32 @@ export class CombatSystem {
   }
 
   /** 화염구 각성: the patches of ground still burning. Public for tests. */
-  public readonly fireZones: { x: number; y: number; radius: number; dps: number; leftMs: number; sinceTickMs: number; view: Phaser.GameObjects.Arc }[] = [];
+  public readonly fireZones: {
+    x: number;
+    y: number;
+    radius: number;
+    dps: number;
+    leftMs: number;
+    sinceTickMs: number;
+    skill?: SkillId;
+    view: Phaser.GameObjects.Arc;
+  }[] = [];
 
-  /** Leaves the ground at (x, y) burning for SKILL_MASTERY.fireZone.durationMs. */
-  public burnGround(x: number, y: number, radius: number, dps: number): void {
+  /** Leaves the ground at (x, y) burning, for SKILL_MASTERY.fireZone.durationMs unless told otherwise. */
+  public burnGround(
+    x: number,
+    y: number,
+    radius: number,
+    dps: number,
+    durationMs: number = SKILL_MASTERY.fireZone.durationMs,
+    skill?: SkillId,
+  ): void {
     const view = this.scene.add
       .circle(x, y, radius, COLORS.fireBlast, 0.18)
       .setStrokeStyle(2, COLORS.fireBlast, 0.5)
       .setDepth(DEPTH.pickups - 1);
     this.scene.tweens.add({ targets: view, alpha: 0.7, duration: 260, yoyo: true, repeat: -1 });
-    this.fireZones.push({ x, y, radius, dps, leftMs: SKILL_MASTERY.fireZone.durationMs, sinceTickMs: 0, view });
+    this.fireZones.push({ x, y, radius, dps, leftMs: durationMs || SKILL_MASTERY.fireZone.durationMs, sinceTickMs: 0, skill, view });
   }
 
   /** Burns whatever stands in a fire, once every SKILL_MASTERY.fireZone.tickMs. */
@@ -554,7 +594,7 @@ export class CombatSystem {
             caught.push(enemy);
           }
         }
-        caught.forEach((enemy) => this.hit(enemy, amount));
+        caught.forEach((enemy) => this.hit(enemy, amount, zone.skill));
       }
       if (zone.leftMs <= 0) {
         this.scene.tweens.killTweensOf(zone.view);
@@ -610,7 +650,9 @@ export class CombatSystem {
     }
 
     gem.collect();
-    this.progression.addXp(gem.value);
+    const xp = gem.value * (this.hooks.xpScale?.() ?? 1);
+    this.progression.addXp(xp);
+    this.hooks.onXp?.(xp);
   };
 
   private onPotionTouch: Phaser.Types.Physics.Arcade.ArcadePhysicsCallback = (_player, b) => {
@@ -625,7 +667,7 @@ export class CombatSystem {
     }
 
     potion.collect();
-    const healed = this.player.heal(HealthPotion.healingFor(this.player.maxHp));
+    const healed = this.player.heal(HealthPotion.healingFor(this.player.maxHp, this.player.potionHealScale));
     this.damageNumbers.spawn(this.player.x, this.player.y - 18, healed, {
       prefix: '+',
       color: COLORS.healText,

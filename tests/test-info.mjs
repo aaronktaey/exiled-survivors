@@ -180,7 +180,7 @@ const coverage = await scene('InfoScene', `
     orbs: Object.values(c.ORBS).map(o => o.name),
     bones: Object.values(c.BONES).map(b => b.name),
     gear: Object.values(c.GEAR).map(g => g.name),
-    passives: Object.values(c.PASSIVES).map(p => p.name),
+    passives: Object.values(c.PASSIVE_NODES).filter(p => p.name).map(p => p.name),
   };
   const missing = Object.fromEntries(Object.entries(names).map(([k, list]) => [k, list.filter(n => !titles.has(n))]));
   const skillChapter = s.chapters.find(ch => ch.id === 'skills');

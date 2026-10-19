@@ -174,7 +174,7 @@ check('buying takes a hundred gold and leaves a shard',
   `${rich.gold} -> ${bought.gold} gold, ${bought.stored.shards} shard`);
 await shot('stats-02-shop');
 
-// Ten of them finish a 구슬, bought or found.
+// Bought shards are held like found ones: the tree's eraser, not its points.
 const tenth = await ev(`(() => {
   const s = window.game.scene.getScene('PassiveScene');
   const e = window.config.ECONOMY;
@@ -186,9 +186,9 @@ const tenth = await ev(`(() => {
            stored: JSON.parse(localStorage.getItem('exiled-survivors:passives:v1')) };
 })()`);
 console.log('ten bought:', JSON.stringify(tenth));
-check('ten bought shards make a 구슬, the same as ten found ones',
-  tenth.stored.points === 1 && tenth.stored.shards === 0,
-  `${tenth.stored.points} point, ${tenth.stored.shards} shards left`);
+check('ten bought shards are ten held, and no point',
+  tenth.stored.shards === 10 && tenth.stored.bonusPoints === 0,
+  `${tenth.stored.shards} shards, ${tenth.stored.bonusPoints} points`);
 
 // --- 6. the purse outlives the page ---
 await cdp.send('Page.reload', {});
