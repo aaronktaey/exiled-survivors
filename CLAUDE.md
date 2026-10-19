@@ -375,6 +375,13 @@ Read `git log` for what changed and when. What is not in the log:
   Worker secret `ADMIN_USERS` (comma separated; `/api/me` answers
   `admin: true`). A run any F-key changed (`DebugOverlay.used`, kept in the
   save as `devUsed`) goes on neither the ranking nor 내 기록.
+- **No dial ships (2026-10-19, branch `overhaul`).** The user had every
+  dial taken off; `DIALS` is empty and a dial comes back only when they ask
+  for that one (a line in `config/tuning.ts` and its label). The live
+  overrides were copied into the tables first (balance.ts, equipment.ts,
+  passives.ts), so the server's `tuning` row is stale: clear it when the
+  overhaul ships. `tuning.addDial` registers a dial at run time — the seam
+  test-tuning drives the panel through.
 - **밸런스 다이얼.** `config/tuning.ts` lists every dial by path into the
   config tables (pure data — the Worker imports it to accept only those
   paths). `systems/Tuning.ts` lays three layers over the tables in place:

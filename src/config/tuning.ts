@@ -35,82 +35,13 @@ export interface DialSpec {
   readonly maxFactor?: number;
 }
 
-const SKILL_IDS = ['meleeStrike', 'fireball', 'chainLightning', 'iceSpear', 'voidOrb', 'thunderStrike'] as const;
-
-/** What each skill's page holds, beyond damage, speed and reach. */
-const SKILL_EXTRAS: Record<(typeof SKILL_IDS)[number], readonly string[]> = {
-  meleeStrike: [],
-  fireball: ['projectileSpeed'],
-  chainLightning: ['chainCount'],
-  iceSpear: ['projectileSpeed', 'pierceCount'],
-  voidOrb: ['orbCount', 'orbitSpeed'],
-  thunderStrike: [],
-};
-
-const skillDials: DialSpec[] = SKILL_IDS.flatMap((skill) => [
-  { path: `SKILL_BASE.${skill}.damage`, kind: 'number' as const, tab: 'skills' as const, skill },
-  { path: `SKILL_BASE.${skill}.attackSpeed`, kind: 'number' as const, tab: 'skills' as const, skill },
-  { path: `SKILL_BASE.${skill}.range`, kind: 'number' as const, tab: 'skills' as const, skill },
-  ...SKILL_EXTRAS[skill].map((field) => ({
-    path: `SKILL_BASE.${skill}.${field}`,
-    kind: (field.endsWith('Count') ? 'count' : 'number') as DialKind,
-    tab: 'skills' as const,
-    skill,
-    ...(field.endsWith('Count') ? { max: 10 } : {}),
-  })),
-  { path: `BALANCE.damageScale.${skill}`, kind: 'scale' as const, tab: 'skills' as const, skill },
-]);
-
-export const DIALS: readonly DialSpec[] = [
-  ...skillDials,
-  // Every skill at once.
-  { path: 'UPGRADE_PERCENT.damage', kind: 'chance', tab: 'skills', skill: 'common', max: 1 },
-  { path: 'UPGRADE_PERCENT.attackSpeed', kind: 'chance', tab: 'skills', skill: 'common', max: 1 },
-  { path: 'PLAYER.critChance', kind: 'chance', tab: 'skills', skill: 'common', max: 1 },
-  { path: 'PLAYER.critMultiplier', kind: 'scale', tab: 'skills', skill: 'common', min: 1, max: 5 },
-
-  // How many, how tough, how fast it closes in.
-  { path: 'SPAWN.startIntervalMs', kind: 'ms', tab: 'enemies', min: 50 },
-  { path: 'SPAWN.minIntervalMs', kind: 'ms', tab: 'enemies', min: 20 },
-  { path: 'SPAWN.rampPerMinute', kind: 'chance', tab: 'enemies', max: 0.95 },
-  { path: 'SPAWN.maxAlive', kind: 'count', tab: 'enemies', min: 10, max: 600 },
-  { path: 'BALANCE.enemyHpScale', kind: 'scale', tab: 'enemies', min: 0.1, max: 5 },
-  { path: 'DIFFICULTY.hpScalePerMinute', kind: 'scale', tab: 'enemies', min: 1, max: 2 },
-  { path: 'DIFFICULTY.hpStepTiers.0.afterMinute', kind: 'count', tab: 'enemies', min: 0, max: 60 },
-  { path: 'DIFFICULTY.hpStepTiers.0.multiplier', kind: 'scale', tab: 'enemies', min: 0, max: 20 },
-  { path: 'DIFFICULTY.hpStepTiers.1.afterMinute', kind: 'count', tab: 'enemies', min: 0, max: 60 },
-  { path: 'DIFFICULTY.hpStepTiers.1.multiplier', kind: 'scale', tab: 'enemies', min: 0, max: 20 },
-  { path: 'RARE.chance', kind: 'chance', tab: 'enemies', max: 1 },
-  { path: 'BOSS.intervalMs', kind: 'ms', tab: 'enemies', min: 10_000 },
-  { path: 'ENEMY_KINDS.erratic.speed', kind: 'number', tab: 'enemies', min: 20 },
-  { path: 'ENEMY_KINDS.erratic.hop.distance', kind: 'number', tab: 'enemies', min: 20 },
-  { path: 'ENEMY_KINDS.erratic.hop.restMs', kind: 'ms', tab: 'enemies' },
-  { path: 'ENEMY_KINDS.erratic.hop.lungeChance', kind: 'chance', tab: 'enemies', max: 1 },
-  { path: 'CHIMERA_RUSH.atMs', kind: 'ms', tab: 'enemies', min: 60_000 },
-  { path: 'CHIMERA_RUSH.intervalMs', kind: 'ms', tab: 'enemies', min: 500 },
-
-  // What falls.
-  { path: 'SKILL_DROP.chance', kind: 'chance', tab: 'drops', max: 0.2 },
-  { path: 'SKILL_PICK.dropChance', kind: 'chance', tab: 'drops', max: 0.2 },
-  { path: 'POTION.chance', kind: 'chance', tab: 'drops', max: 0.3 },
-  { path: 'MANGO.chance', kind: 'chance', tab: 'drops', max: 0.05 },
-  { path: 'MAGNET.chance', kind: 'chance', tab: 'drops', max: 0.05 },
-  { path: 'ORBS.transmute.chance', kind: 'chance', tab: 'drops', max: 0.05 },
-  { path: 'ORBS.chaos.chance', kind: 'chance', tab: 'drops', max: 0.05 },
-  { path: 'ORBS.awaken.chance', kind: 'chance', tab: 'drops', max: 0.05 },
-  { path: 'ORBS.explode.chance', kind: 'chance', tab: 'drops', max: 0.05 },
-  { path: 'ORBS.mango.chance', kind: 'chance', tab: 'drops', max: 0.01 },
-  { path: 'BONES.skull.fromKill', kind: 'chance', tab: 'drops', max: 0.05 },
-  { path: 'BONES.rib.fromKill', kind: 'chance', tab: 'drops', max: 0.05 },
-  { path: 'BONES.spine.fromKill', kind: 'chance', tab: 'drops', max: 0.05 },
-  { path: 'GEAR.rustySword.fromKill', kind: 'chance', tab: 'drops', max: 0.05 },
-  { path: 'GEAR.ironSword.fromKill', kind: 'chance', tab: 'drops', max: 0.05 },
-  { path: 'GEAR.steelSword.fromKill', kind: 'chance', tab: 'drops', max: 0.05 },
-  { path: 'SHARD.chance', kind: 'chance', tab: 'drops', max: 1 },
-  { path: 'ALTAR.fromKill', kind: 'chance', tab: 'drops', max: 0.2 },
-  { path: 'RARE.dropBonusPerAffix', kind: 'chance', tab: 'drops', max: 2 },
-  { path: 'BOSS.dropBonus', kind: 'scale', tab: 'drops', max: 20 },
-];
+/**
+ * Empty on the user's word (2026-10-19): every dial was taken off, and a dial
+ * comes back only when the user asks for that one. The values they had on
+ * the live server were copied into the tables first, so nothing played
+ * differently for it.
+ */
+export const DIALS: readonly DialSpec[] = [];
 
 /** Every path the panel may set — what the Worker accepts and nothing else. */
 export const DIAL_PATHS: ReadonlySet<string> = new Set(DIALS.map((dial) => dial.path));

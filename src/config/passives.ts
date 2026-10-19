@@ -157,7 +157,7 @@ export const PASSIVE_RESPEC = {
 
 export const SHARD = {
   /** Share of 우두머리 kills that leave one. */
-  chance: 0.5,
+  chance: 0.195,
   /** How big it is drawn on the ground. */
   size: 16,
 } as const;

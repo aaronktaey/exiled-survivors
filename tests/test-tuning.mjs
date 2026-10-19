@@ -43,11 +43,22 @@ await cdp.send('Page.navigate', { url: 'about:blank' });
 await cdp.send('Page.navigate', { url: 'http://localhost:5173/' });
 await sleep(2500);
 await ev(standIn);
+// The list is empty until the user asks for a dial (2026-10-19); the panel is
+// driven here on three of the old ones, added for the test.
+const addDials = `(() => {
+  window.tuning.addDial({ path: 'SKILL_BASE.meleeStrike.damage', kind: 'number', tab: 'skills', skill: 'meleeStrike' });
+  window.tuning.addDial({ path: 'BALANCE.damageScale.meleeStrike', kind: 'scale', tab: 'skills', skill: 'meleeStrike' });
+  window.tuning.addDial({ path: 'POTION.chance', kind: 'chance', tab: 'drops', max: 0.3 });
+  return 1;
+})()`;
+const shipped = await ev(`(() => window.config.DIALS.length)()`);
+await ev(addDials);
 
 // --- 1. the panel, from the title ---
 await scene('MenuScene', `s.icons.press('tuning'); return 1;`);
 await sleep(700);
 const panel = await scene('TuningScene', `return { active: s.scene.isActive(), knobs: s.knobs.map((k) => k.dial.path), back: !!s.backButton };`);
+check('the game ships with no dials of its own (the user adds them one by one)', shipped === 0, `${shipped} dials`);
 check('the title’s 밸런스 icon opens the dials, a page a skill',
   panel.active && panel.back && panel.knobs.includes('SKILL_BASE.meleeStrike.damage') && panel.knobs.includes('BALANCE.damageScale.meleeStrike'),
   panel.knobs.join(' '));
@@ -60,6 +71,7 @@ for (const [w, h, shape] of [[0, 0, 'landscape'], [420, 860, 'upright']]) {
     await cdp.send('Page.navigate', { url: 'about:blank' });
     await cdp.send('Page.navigate', { url: 'http://localhost:5173/' });
     await sleep(2500);
+    await ev(addDials);
     await scene('MenuScene', `s.icons.press('tuning'); return 1;`);
     await sleep(600);
   }
@@ -71,13 +83,14 @@ for (const [w, h, shape] of [[0, 0, 'landscape'], [420, 860, 'upright']]) {
              right: Math.max(...s.knobs.map((k) => k.x)), width: s.scale.width };
   `);
   check(`${shape}: every 드랍 dial fits above the buttons`,
-    fit.count >= 15 && fit.bottom < fit.status && fit.right < fit.width, JSON.stringify(fit));
+    fit.count >= 1 && fit.bottom < fit.status && fit.right < fit.width, JSON.stringify(fit));
   await shot(`tuning-03-drops-${shape}`);
 }
 await cdp.send('Emulation.clearDeviceMetricsOverride', {});
 await cdp.send('Page.navigate', { url: 'about:blank' });
 await cdp.send('Page.navigate', { url: 'http://localhost:5173/' });
 await sleep(2500);
+await ev(addDials);
 await ev(standIn);
 await sleep(300);
 
@@ -173,6 +186,7 @@ check('전체 적용 hands the draft to the server and it becomes everyone’s v
 await cdp.send('Page.navigate', { url: 'about:blank' });
 await cdp.send('Page.navigate', { url: 'http://localhost:5173/' });
 await sleep(2500);
+await ev(addDials);
 await ev(`(() => { window.config.DEBUG.gatedInDev = true; return 1; })()`);
 await ev(standIn);
 await ev(`(() => { window.__balanceStandIn.overrides = { 'POTION.chance': 0.25 }; window.__balanceStandIn.updatedAt = 1; return 1; })()`);

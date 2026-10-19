@@ -164,11 +164,14 @@ try {
   const tunedHuge = await read(await boss.send('/api/balance', 'PUT', { overrides: { 'POTION.chance': 1e9 } }));
   check('nor can the admin set a path no dial has, or a value past belief', tunedStray.status === 400 && tunedHuge.status === 400,
     `${tunedStray.status} ${JSON.stringify(tunedStray.body)} / ${tunedHuge.status}`);
-  const tunedSet = await read(await boss.send('/api/balance', 'PUT', { overrides: { 'POTION.chance': 0.05, 'SKILL_BASE.fireball.damage': 240 } }));
+  // No dial ships (2026-10-19: the user adds them one by one), so a path
+  // that was a dial is refused now, and the admin can only clear the set.
+  const tunedOld = await read(await boss.send('/api/balance', 'PUT', { overrides: { 'POTION.chance': 0.05 } }));
+  check('a path that is no dial now is refused, even from the admin', tunedOld.status === 400, JSON.stringify(tunedOld.body));
+  const tunedSet = await read(await boss.send('/api/balance', 'PUT', { overrides: {} }));
   const tuned1 = await read(await fetch(`${BASE}/api/balance`));
-  check('the admin sets them, and the next look sees them at once',
-    tunedSet.status === 200 && tuned1.body?.overrides?.['POTION.chance'] === 0.05 &&
-      tuned1.body?.overrides?.['SKILL_BASE.fireball.damage'] === 240 && tuned1.body?.updatedAt > 0,
+  check('the admin can still clear them, and the next look sees it at once',
+    tunedSet.status === 200 && JSON.stringify(tuned1.body?.overrides) === '{}' && tuned1.body?.updatedAt > 0,
     JSON.stringify(tuned1.body));
 
   const forged = browser();

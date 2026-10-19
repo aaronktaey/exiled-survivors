@@ -23,7 +23,7 @@ export const BALANCE = {
   damageScale: {
     meleeStrike: 1,
     fireball: 1,
-    chainLightning: 0.7,
+    chainLightning: 0.8,
     iceSpear: 0.8,
     // 1.2 until 2026-10-16.
     voidOrb: 1,
@@ -255,9 +255,9 @@ export const ENEMY_KINDS: Record<EnemyKind, EnemyKindSpec> = {
     size: 16,
     color: COLORS.enemyErratic,
     maxHp: ENEMY.maxHp,
-    speed: 420,
+    speed: 355,
     contactDamage: ENEMY.contactDamage,
-    hop: { distance: 266, restMs: 260, lungeChance: 0.25 },
+    hop: { distance: 182, restMs: 260, lungeChance: 0.25 },
   },
   /**
    * 우두머리. Not in the spawn table: one arrives on the clock instead, and
@@ -736,7 +736,7 @@ export const RARE = {
  * 우두머리 walks in and everything behind it is tougher than it was.
  */
 export const DIFFICULTY = {
-  hpScalePerMinute: 1.1,
+  hpScalePerMinute: 1.154,
   /**
    * Past `afterMinute` minutes, each minute's health step is `multiplier`
    * times the base one (hpScalePerMinute − 1): with ×1.1, +10% a minute,
@@ -883,7 +883,7 @@ export const ALTAR = {
    * Share of every other kill that leaves one, rares included. A 갈비뼈
    * raises it the way it raises every other drop.
    */
-  fromKill: 0.01,
+  fromKill: 0.02,
   /**
    * How far from the kill it lands. Far enough that picking up what the
    * 우두머리 dropped does not set it off by accident.
@@ -946,7 +946,7 @@ export const SPAWN = {
   startIntervalMs: 900,
   minIntervalMs: 180,
   rampPerMinute: 0.55,
-  maxAlive: 220,
+  maxAlive: 350,
   offscreenMargin: 80,
 } as const;
 
@@ -1131,7 +1131,7 @@ export const SKILL_DROP = {
    * handing one out on the 슬롯머신, so the field is not where most of them
    * come from any more.
    */
-  chance: 0.015,
+  chance: 0.013,
 } as const;
 
 /**
@@ -1143,7 +1143,7 @@ export const SKILL_PICK = {
   /** How many cards are offered. */
   choices: 3,
   /** Share of kills that leave a 무작위 스킬. A 갈비뼈 raises it. */
-  dropChance: 0.01,
+  dropChance: 0.008,
   /**
    * Whether a fresh run opens on the choice at all. On the dev server the
    * test harness and `#run` turn it off, so they land in play holding
@@ -1179,7 +1179,7 @@ export const SLOT = {
  */
 export const MANGO = {
   /** Share of kills that leave one, whatever was killed. */
-  chance: 0.001,
+  chance: 0.0009,
   /** How long it lasts once eaten. */
   durationMs: 5000,
   /** Multiplies every skill's attacks per second while it lasts (+100%). */
@@ -1198,7 +1198,7 @@ export const MANGO = {
  */
 export const MAGNET = {
   /** Share of kills that leave one, whatever was killed. */
-  chance: 0.001,
+  chance: 0.0015,
   /** How long what it took is seen flying in. Only a picture: it is already taken. */
   flyMs: 350,
   /** At most this many of those pictures at once; past it the rest are taken unseen. */
@@ -1261,9 +1261,9 @@ export const SKILL_BASE: Record<SkillId, SkillBaseStats> = {
   // 180 damage once a second: three-quarters of a plain enemy per second
   // (it was 150, half of one, before the across-the-board +20%).
   meleeStrike: {
-    damage: 180,
+    damage: 201,
     attackSpeed: 1,
-    range: 66,
+    range: 71.2,
     projectileSpeed: 0,
     chainCount: 0,
     pierceCount: 0,
@@ -1272,10 +1272,10 @@ export const SKILL_BASE: Record<SkillId, SkillBaseStats> = {
   },
   fireball: {
     damage: 180,
-    attackSpeed: 1,
+    attackSpeed: 0.7,
     // 100 and 230 until 2026-10-16, then a fifth further and faster.
     range: 120,
-    projectileSpeed: 276,
+    projectileSpeed: 250,
     chainCount: 0,
     pierceCount: 0,
     orbCount: 0,
@@ -1284,7 +1284,7 @@ export const SKILL_BASE: Record<SkillId, SkillBaseStats> = {
   // Two enemies a cast. It was 0.8 casts a second — a third of an enemy per
   // second — and is a fifth faster than that now.
   chainLightning: {
-    damage: 72,
+    damage: 90,
     attackSpeed: 0.96,
     range: 160,
     projectileSpeed: 0,
@@ -1296,10 +1296,10 @@ export const SKILL_BASE: Record<SkillId, SkillBaseStats> = {
   // It stops at the first body now; what it leaves behind is the 냉각.
   iceSpear: {
     damage: 120,
-    attackSpeed: 1,
+    attackSpeed: 0.6,
     // 180 until 2026-10-16, then a fifth shorter.
     range: 144,
-    projectileSpeed: 320,
+    projectileSpeed: 290,
     chainCount: 0,
     /** Runs through two bodies before it is spent, and upgrades from there. */
     pierceCount: 2,
@@ -1308,7 +1308,7 @@ export const SKILL_BASE: Record<SkillId, SkillBaseStats> = {
   },
   // A bolt out of the sky once a second onto something nearby.
   thunderStrike: {
-    damage: 96,
+    damage: 105,
     attackSpeed: 1.2,
     range: 200,
     projectileSpeed: 0,

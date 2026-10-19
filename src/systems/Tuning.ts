@@ -20,6 +20,7 @@ import {
   BONES,
   BOSS,
   DIALS,
+  DIAL_PATHS,
   DIFFICULTY,
   ENEMY_KINDS,
   GEAR,
@@ -123,6 +124,26 @@ class TuningStore {
     // so a turned value reads as a number someone would type.
     const step = dial.kind === 'count' ? 1 : Math.max(dial.kind === 'ms' ? 10 : 1e-6, 10 ** Math.floor(Math.log10((max - min) / 200)));
     return { min, max, step };
+  }
+
+  /**
+   * Adds a dial while the game runs, its balance.ts value captured as it is
+   * now. A test seam: the list is empty until the user asks for a dial, and
+   * test-tuning still has to drive the panel.
+   */
+  public addDial(dial: DialSpec): void {
+    if (DEFAULTS.has(dial.path)) {
+      return;
+    }
+    const spot = locate(dial.path);
+    if (!spot) {
+      return;
+    }
+    DEFAULTS.set(dial.path, spot.holder[spot.key]!);
+    (DIALS as DialSpec[]).push(dial);
+    (DIAL_PATHS as Set<string>).add(dial.path);
+    // A draft or a shared value already held for it takes effect now.
+    this.apply([dial.path]);
   }
 
   /** Turns a dial on this game: the admin's draft, at once. */
