@@ -260,6 +260,9 @@ export class GameScene extends Phaser.Scene {
   }
 
   public create(): void {
+    // The scene outlives a run: what the last one wore, spent and bought is
+    // not this one's (the icons left of the skills once showed it).
+    this.lastingEffects = undefined;
     this.elapsedMs = 0;
     this.sinceSaveMs = 0;
     this.pendingChoices = [];

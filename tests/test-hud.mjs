@@ -261,6 +261,17 @@ check('and moving off closes it and lets the run go', effects.closed === true);
 await shot('hud-effects');
 await run(`s.player.mangoLeftMs = 0; s.player.webbed = false; s.player.setInvulnerable(false); return 1;`);
 
+// The next run's icons are its own: a 뼈다귀 spent on one run is not shown on
+// the next (the scene outlives a run, and the list was once kept across).
+await run(`s.scene.restart({ save: null, bones: ['rib'] }); return 1;`);
+await sleep(1500);
+const withRib = await run(`return s.effectsNow().map((e) => e.id);`);
+await run(`s.scene.restart({ save: null, bones: [] }); return 1;`);
+await sleep(1500);
+const without = await run(`return s.effectsNow().map((e) => e.id);`);
+check('a run started with a 뼈다귀 shows it, and the next run without one does not',
+  withRib.includes('bone:rib') && !without.includes('bone:rib'), `${withRib.join(',')} -> ${without.join(',')}`);
+
 console.log('\n=== SUMMARY ===');
 const failed = results.filter((r) => !r.p);
 console.log(`${results.length - failed.length}/${results.length} passed`);
