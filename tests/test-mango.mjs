@@ -259,8 +259,10 @@ const magnetRate = await run(`
   return out;
 `);
 console.log('magnet rate:', JSON.stringify(magnetRate));
-check('자석 drops off a kill at its chance, the same as the 하얀 망고',
-  magnetRate.chance === magnetRate.mango && magnetRate.under === 1 && magnetRate.over === 0,
+// Its own flat chance (it was the 하얀 망고's when it was made; the live
+// values have parted them since, and both are the user's).
+check('자석 drops off a kill at its own chance',
+  magnetRate.under === 1 && magnetRate.over === 0,
   `${magnetRate.chance} (망고 ${magnetRate.mango})`);
 check('and a rare does not raise it', magnetRate.rare === 0);
 
@@ -285,16 +287,20 @@ const magnet = await run(`
   q = at(1); c.dropAltarAt(q.x, q.y + 120, 'bosses');
   c.dropMagnetAt(p.x + 60, p.y);
   const before = {
-    gems: c.gems.countActive(true), orbs: window.orbs.count('chaos'), shards: window.passives.value.shards,
-    gear: window.gear.items.some((i) => i.uid === 'pulled'), level: s.progression.level,
+    gems: c.gems.countActive(true), orbs: s.kit.count('chaos'), shards: window.passives.value.shards,
+    gear: s.kit.find('pulled') !== null || s.pendingChoices.some((r) => r.kind === 'gear' && r.item.uid === 'pulled') ||
+      s.gearOnOffer?.uid === 'pulled',
+    level: s.progression.level,
     label: c.magnetDrops.getChildren().find((d) => d.active && Math.abs(d.x - p.x - 60) < 2)?.nameplate.text ?? null,
   };
   const picked = c.magnetDrops.getChildren().find((d) => d.active && Math.abs(d.x - p.x - 60) < 2);
   c.onMagnetTouch(p, picked);
   // The very same moment: everything is already taken.
   const after = {
-    gems: c.gems.countActive(true), orbs: window.orbs.count('chaos'), shards: window.passives.value.shards,
-    gear: window.gear.items.some((i) => i.uid === 'pulled'), level: s.progression.level,
+    gems: c.gems.countActive(true), orbs: s.kit.count('chaos'), shards: window.passives.value.shards,
+    gear: s.kit.find('pulled') !== null || s.pendingChoices.some((r) => r.kind === 'gear' && r.item.uid === 'pulled') ||
+      s.gearOnOffer?.uid === 'pulled',
+    level: s.progression.level,
     potions: c.potions.countActive(true), mangos: c.mangoDrops.countActive(true),
     magnets: c.magnetDrops.countActive(true), altars: c.altars.countActive(true),
     toast: s.toasts.lines.some((l) => /자석/.test(l)),
@@ -310,6 +316,8 @@ const later = await run(`
   // Tidy: close any popup the level-ups opened, and clear the ground.
   const up = window.game.scene.getScene('UpgradeScene');
   if (window.game.scene.isActive('UpgradeScene')) { up.payload.onPick(up.payload.options[0].id); up.scene.stop(); }
+  const pick = window.game.scene.getScene('GearPickScene');
+  if (window.game.scene.isActive('GearPickScene')) { pick.choose('keep'); }
   s.pendingChoices.length = 0;
   [c.potions, c.mangoDrops, c.magnetDrops, c.altars].forEach((g) => g.getChildren().forEach((d) => d.active && d.collect()));
   s.player.setInvulnerable(false);

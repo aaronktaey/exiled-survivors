@@ -387,7 +387,11 @@ export type AffixId =
   | "evasive"
   | "magnetic"
   | "volleying"
-  | "spider";
+  | "spider"
+  | "stalwart"
+  | "hale"
+  | "fortunate"
+  | "learned";
 
 export type AffixKind = "prefix" | "suffix";
 
@@ -415,6 +419,9 @@ export interface EnemyAffixEffect {
 }
 
 /** What the same 속성 does for whoever is holding the weapon it is on. */
+/** Where a piece of gear is worn. */
+export type GearSlot = 'weapon' | 'armor' | 'accessory';
+
 export interface GearAffixEffect {
   /**
    * Multiplies every skill's damage, the weapon's attack included — added
@@ -435,6 +442,12 @@ export interface GearAffixEffect {
   readonly invulnerableScale?: number;
   /** Multiplies how far a gem has to be before it drifts over. */
   readonly pickupScale?: number;
+  /** Multiplies every hit the survivor takes (below 1 is less). */
+  readonly damageTakenScale?: number;
+  /** Multiplies every gem's experience. */
+  readonly xpGainScale?: number;
+  /** Multiplies every item drop's chance. */
+  readonly itemFindScale?: number;
 }
 
 /**
@@ -476,8 +489,10 @@ export interface AffixSpec {
    * nothing on something that walks up and hits you.
    */
   readonly rangedOnly?: boolean;
-  /** What it does on a weapon, rung by rung. Tier 1 first. */
+  /** What it does on gear, rung by rung. Tier 1 first. */
   readonly gearTiers?: readonly AffixTierSpec[];
+  /** The slots it rolls on. Only with `gearTiers`. */
+  readonly slots?: readonly GearSlot[];
 }
 
 /**
@@ -542,6 +557,7 @@ export const AFFIXES: Record<AffixId, AffixSpec> = {
   mighty: {
     id: "mighty",
     kind: "prefix",
+    slots: ['weapon'],
     name: "강력",
     detail: "피해 +50%",
     enemy: { damageScale: 1.5 },
@@ -555,6 +571,7 @@ export const AFFIXES: Record<AffixId, AffixSpec> = {
   critical: {
     id: "critical",
     kind: "prefix",
+    slots: ['weapon', 'accessory'],
     name: "치명",
     detail: "치명타 확률 20%",
     enemy: { critChance: 0.2 },
@@ -569,6 +586,7 @@ export const AFFIXES: Record<AffixId, AffixSpec> = {
   cruel: {
     id: "cruel",
     kind: "prefix",
+    slots: ['weapon', 'accessory'],
     name: "잔혹",
     detail: "치명타 피해 +50%",
     gearTiers: tiers(
@@ -580,6 +598,7 @@ export const AFFIXES: Record<AffixId, AffixSpec> = {
   frenzied: {
     id: "frenzied",
     kind: "prefix",
+    slots: ['weapon'],
     name: "광포",
     detail: "공격속도 +15%",
     gearTiers: tiers(
@@ -608,6 +627,7 @@ export const AFFIXES: Record<AffixId, AffixSpec> = {
   giant: {
     id: "giant",
     kind: "suffix",
+    slots: ['weapon', 'armor'],
     name: "거대",
     detail: "체력 +50%",
     enemy: { hpScale: 1.5 },
@@ -620,6 +640,7 @@ export const AFFIXES: Record<AffixId, AffixSpec> = {
   swift: {
     id: "swift",
     kind: "suffix",
+    slots: ['weapon', 'armor', 'accessory'],
     name: "신속",
     detail: "이동속도 +20%",
     enemy: { speedScale: 1.2 },
@@ -632,6 +653,7 @@ export const AFFIXES: Record<AffixId, AffixSpec> = {
   evasive: {
     id: "evasive",
     kind: "suffix",
+    slots: ['weapon', 'armor'],
     name: "회피",
     detail: "피격 후 무적 시간 +30%",
     gearTiers: tiers(
@@ -643,12 +665,63 @@ export const AFFIXES: Record<AffixId, AffixSpec> = {
   magnetic: {
     id: "magnetic",
     kind: "suffix",
+    slots: ['weapon', 'accessory'],
     name: "자력",
     detail: "획득 범위 +40%",
     gearTiers: tiers(
       (v) => `획득 범위 +${v}%`,
       (v) => ({ pickupScale: 1 + v / 100 }),
       [80, 68, 56, 44, 32],
+    ),
+  },
+
+  // --- 방어구 and 장신구 ---
+  stalwart: {
+    id: "stalwart",
+    kind: "prefix",
+    slots: ["armor"],
+    name: "견고",
+    detail: "받는 피해 감소",
+    gearTiers: tiers(
+      (v) => `받는 피해 -${v}%`,
+      (v) => ({ damageTakenScale: 1 - v / 100 }),
+      [12, 10, 8, 6, 4],
+    ),
+  },
+  hale: {
+    id: "hale",
+    kind: "prefix",
+    slots: ["armor"],
+    name: "강건",
+    detail: "최대 체력 증가",
+    gearTiers: tiers(
+      (v) => `최대 체력 +${v}%`,
+      (v) => ({ maxHpScale: 1 + v / 100 }),
+      [30, 25, 20, 15, 10],
+    ),
+  },
+  fortunate: {
+    id: "fortunate",
+    kind: "prefix",
+    slots: ["accessory"],
+    name: "행운",
+    detail: "아이템 발견 증가",
+    gearTiers: tiers(
+      (v) => `아이템 발견 +${v}%`,
+      (v) => ({ itemFindScale: 1 + v / 100 }),
+      [40, 32, 24, 16, 10],
+    ),
+  },
+  learned: {
+    id: "learned",
+    kind: "suffix",
+    slots: ["accessory"],
+    name: "학식",
+    detail: "경험치 증가",
+    gearTiers: tiers(
+      (v) => `경험치 +${v}%`,
+      (v) => ({ xpGainScale: 1 + v / 100 }),
+      [30, 24, 18, 12, 8],
     ),
   },
 };
@@ -695,6 +768,12 @@ export const ENEMY_AFFIXES: readonly AffixSpec[] = Object.values(
 export const PREFIXES: readonly AffixSpec[] = Object.values(AFFIXES).filter(
   (affix) => affix.kind === "prefix" && affix.gearTiers !== undefined,
 );
+
+/** The 속성 of one kind that roll on one slot. */
+export const affixPool = (kind: AffixKind, slot: GearSlot): readonly AffixSpec[] =>
+  Object.values(AFFIXES).filter(
+    (affix) => affix.kind === kind && affix.gearTiers !== undefined && (affix.slots ?? ["weapon"]).includes(slot),
+  );
 
 export const SUFFIXES: readonly AffixSpec[] = Object.values(AFFIXES).filter(
   (affix) => affix.kind === "suffix" && affix.gearTiers !== undefined,

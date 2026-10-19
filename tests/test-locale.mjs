@@ -41,14 +41,6 @@ const KOREAN = `(() => {
 })()`;
 
 const STOCK = `(() => {
-  localStorage.setItem('exiled-survivors:gear:v2', JSON.stringify({ items: [
-    { uid: 'starter', id: 'rustySword', prefixes: [], suffixes: [] },
-    { uid: 'full', id: 'runedSword',
-      prefixes: [{ id: 'mighty', tier: 1 }, { id: 'critical', tier: 2 }, { id: 'cruel', tier: 3 }],
-      suffixes: [{ id: 'giant', tier: 1 }, { id: 'swift', tier: 4 }, { id: 'evasive', tier: 5 }] },
-    { uid: 'mag', id: 'ironSword', prefixes: [{ id: 'frenzied', tier: 2 }], suffixes: [{ id: 'magnetic', tier: 3 }] },
-  ], equipped: 'full' }));
-  localStorage.setItem('exiled-survivors:orbs:v1', JSON.stringify({ transmute: 2, chaos: 1, awaken: 1, explode: 1 }));
   localStorage.setItem('exiled-survivors:bones:v1', JSON.stringify({ rib: 2, skull: 1 }));
   return 1;
 })()`;
@@ -122,36 +114,6 @@ for (const lang of ['en', 'ja', 'zh']) {
   await take('credits');
   await close('CreditsScene');
 
-  await overlay('InventoryScene');
-  await ev(`(() => { const s = window.game.scene.getScene('InventoryScene'); s.menu.focus('full'); return 1; })()`);
-  await take('inventory 장비');
-  // 구슬 사용: every 구슬's rules, a result, and the news of a weapon destroyed.
-  await ev(`(() => { const s = window.game.scene.getScene('InventoryScene'); s.pressOrb('transmute'); return 1; })()`);
-  await sleep(700);
-  for (const id of ['transmute', 'chaos', 'awaken', 'explode', 'mango']) {
-    await ev(`(() => { window.game.scene.getScene('OrbScene').pick('${id}'); return 1; })()`);
-    await sleep(150);
-    await take(`orb popup ${id}`);
-  }
-  await ev(`(() => { const p = window.game.scene.getScene('OrbScene'); p.pick('transmute'); p.use(); return 1; })()`);
-  await sleep(300);
-  await take('orb popup used');
-  await ev(`(() => { const p = window.game.scene.getScene('OrbScene'); p.pick('explode');
-    const real = Math.random; Math.random = () => 0; try { p.use(); } finally { Math.random = real; } return 1; })()`);
-  await sleep(400);
-  await take('orb popup destroyed');
-  if (lang === 'en') await shot('locale-02-orb-destroyed-en');
-  await ev(`(() => { window.game.scene.getScene('OrbScene').close(); return 1; })()`);
-  await sleep(900);
-  await ev(`(() => { window.game.scene.getScene('InventoryScene').openTab('consumables'); return 1; })()`);
-  await sleep(600);
-  for (const id of ['orb:transmute', 'orb:explode', 'bone:rib', 'bone:skull']) {
-    await ev(`(() => { window.game.scene.getScene('InventoryScene').menu.focus('${id}'); return 1; })()`);
-    await take(`inventory ${id}`);
-  }
-  if (lang === 'en') await shot('locale-01-inventory-en');
-  await close('InventoryScene');
-
   await overlay('PassiveScene');
   await take('passives');
   await close('PassiveScene');
@@ -220,8 +182,58 @@ for (const lang of ['en', 'ja', 'zh']) {
   await ev(`(() => { window.game.scene.getScene('GameScene').pauseRun(); return 1; })()`);
   await sleep(600);
   await take('pause');
+
+  // 장비, the run's own: every slot worn and full, the 보관함, every 구슬.
+  await ev(`(() => {
+    const s = window.game.scene.getScene('GameScene');
+    const piece = (uid, id, prefixes, suffixes) => ({ uid, id, prefixes, suffixes });
+    s.kit.equip(piece('w', 'runedSword', [{ id: 'mighty', tier: 1 }, { id: 'critical', tier: 2 }, { id: 'cruel', tier: 3 }],
+      [{ id: 'giant', tier: 1 }, { id: 'swift', tier: 4 }, { id: 'evasive', tier: 5 }]));
+    s.kit.equip(piece('a', 'plateArmor', [{ id: 'stalwart', tier: 1 }, { id: 'hale', tier: 2 }], [{ id: 'giant', tier: 2 }]));
+    s.kit.equip(piece('j', 'rubyRing', [{ id: 'fortunate', tier: 1 }], [{ id: 'learned', tier: 2 }, { id: 'magnetic', tier: 3 }]));
+    s.kit.store(piece('k', 'chainArmor', [], [{ id: 'evasive', tier: 3 }]));
+    for (const id of ['transmute', 'chaos', 'awaken', 'explode', 'mango']) s.kit.addOrb(id);
+    const p = window.game.scene.getScene('PauseScene');
+    p.menu.rows.find((r) => r.item.id === 'gear').item.onSelect();
+    return 1;
+  })()`);
+  await sleep(700);
+  for (const at of [0, 1, 2, 3]) {
+    await ev(`(() => { window.game.scene.getScene('RunGearScene').select(${at}); return 1; })()`);
+    await take(`gear screen ${at}`);
+  }
+  if (lang === 'en') await shot('locale-01-gear-en');
+  // 구슬 사용, on the worn weapon: every 구슬's rules, a result, and a piece destroyed.
+  await ev(`(() => { const r = window.game.scene.getScene('RunGearScene'); r.select(0); r.openOrbs(); return 1; })()`);
+  await sleep(700);
+  for (const id of ['transmute', 'chaos', 'awaken', 'explode', 'mango']) {
+    await ev(`(() => { window.game.scene.getScene('OrbScene').pick('${id}'); return 1; })()`);
+    await sleep(150);
+    await take(`orb popup ${id}`);
+  }
+  await ev(`(() => { const p = window.game.scene.getScene('OrbScene'); p.pick('transmute'); p.use(); return 1; })()`);
+  await sleep(300);
+  await take('orb popup used');
+  await ev(`(() => { const p = window.game.scene.getScene('OrbScene'); p.pick('explode');
+    const real = Math.random; Math.random = () => 0; try { p.use(); } finally { Math.random = real; } return 1; })()`);
+  await sleep(400);
+  await take('orb popup destroyed');
+  if (lang === 'en') await shot('locale-02-orb-destroyed-en');
+  await ev(`(() => { window.game.scene.getScene('OrbScene').close(); return 1; })()`);
+  await sleep(900);
+  await take('gear screen after');
+  await ev(`(() => { window.game.scene.getScene('RunGearScene').close(); return 1; })()`);
+  await sleep(400);
   await ev(`(() => { const p = window.game.scene.getScene('PauseScene'); p.scene.stop(); window.game.scene.getScene('GameScene').scene.resume(); return 1; })()`);
   await sleep(300);
+
+  // 장비 획득: a piece picked up, beside what is worn.
+  await ev(`(() => { const s = window.game.scene.getScene('GameScene');
+    s.combat.dropGearAt(s.player.x, s.player.y, { uid: 'n', id: 'leatherArmor', prefixes: [{ id: 'hale', tier: 3 }], suffixes: [] }); return 1; })()`);
+  await sleep(700);
+  await take('gear pick');
+  await ev(`(() => { window.game.scene.getScene('GearPickScene').choose('keep'); return 1; })()`);
+  await sleep(400);
 
   await ev(`(() => { const s = window.game.scene.getScene('GameScene'); s.player.setInvulnerable(false);
     s.player.invulnerableUntil = 0; s.player.takeDamage(1e9); return 1; })()`);

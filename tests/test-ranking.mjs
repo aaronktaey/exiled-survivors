@@ -201,7 +201,9 @@ check('a run that would not make the board is not asked, and gets no row', !quie
 // opened and 게임 시작 fired with it, putting a run under the board.
 await ev(`(() => { window.game.scene.getScene('GameOverScene').toTitle(); return 1; })()`);
 await sleep(1200);
-for (let i = 0; i < 3; i++) { await cdp.tap('Tab', 9, 'Tab'); await sleep(150); }
+// As many Tabs as it takes to land on the trophy, wherever it sits in the row.
+const trophyAt = await ev(`(() => window.game.scene.getScene('MenuScene').icons.views.findIndex((v) => v.button.id === 'ranking'))()`);
+for (let i = 0; i <= trophyAt; i++) { await cdp.tap('Tab', 9, 'Tab'); await sleep(150); }
 await cdp.tap('Enter', 13, 'Enter');
 await sleep(900);
 const tabbed = await ev(`(() => ({ board: window.game.scene.isActive('RankingScene'),

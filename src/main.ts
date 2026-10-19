@@ -6,10 +6,10 @@ import Phaser from 'phaser';
 import './style.css';
 
 import * as balance from '@/config';
-import { COLORS } from '@/config';
+import { COLORS, RETIRED_STORAGE } from '@/config';
 import { settings } from '@/systems/Settings';
 import { registerSharpText } from '@/systems/SharpText';
-import { gear, gearBonusFor, orbApplied } from '@/systems/Gear';
+import { gearBonusFor, orbApplied, rollGearItem } from '@/systems/Gear';
 import { ranking } from '@/systems/Ranking';
 import { liveUpdate } from '@/systems/LiveUpdate';
 import { personal } from '@/systems/PersonalBest';
@@ -18,7 +18,6 @@ import { cloudSave } from '@/systems/CloudSave';
 import { gold } from '@/systems/Gold';
 import { critMultiplierFor } from '@/systems/Modifiers';
 import { bones as bonesStore } from '@/systems/Bones';
-import { orbs } from '@/systems/Orbs';
 import { passives } from '@/systems/Passives';
 import { itemFilter } from '@/systems/ItemFilter';
 import { tuning } from '@/systems/Tuning';
@@ -35,7 +34,8 @@ import {
   GameOverScene,
   GameScene,
   BoneScene,
-  InventoryScene,
+  RunGearScene,
+  GearPickScene,
   OrbScene,
   InfoScene,
   PassiveScene,
@@ -49,6 +49,16 @@ import {
   SkillPickScene,
   PodiumScene,
 } from '@/scenes';
+
+// The equipment stash and the 구슬 drawer are gone (gear lives and dies with
+// a run now): what a browser still holds of them is cleared.
+for (const key of RETIRED_STORAGE) {
+  try {
+    window.localStorage.removeItem(key);
+  } catch {
+    // Storage blocked: there is nothing held to clear, then.
+  }
+}
 
 // Language first: every scene reads its text as it is built.
 settings.prime();
@@ -97,7 +107,8 @@ const config: Phaser.Types.Core.GameConfig = {
     InfoScene,
     ConfirmScene,
     GameOverScene,
-    InventoryScene,
+    RunGearScene,
+  GearPickScene,
   OrbScene,
     PassiveScene,
     BoneScene,
@@ -130,11 +141,10 @@ if (import.meta.env.DEV) {
   const dev = window as Window & {
     game?: Phaser.Game;
     config?: typeof balance;
-    gear?: typeof gear;
+    rollGearItem?: typeof rollGearItem;
     gearBonusFor?: typeof gearBonusFor;
     passives?: typeof passives;
     gold?: typeof gold;
-    orbs?: typeof orbs;
     bones?: typeof bonesStore;
     orbApplied?: typeof orbApplied;
     critMultiplierFor?: typeof critMultiplierFor;
@@ -150,11 +160,10 @@ if (import.meta.env.DEV) {
   dev.game = game;
   // So a test can read a tuned number instead of carrying a copy of it.
   dev.config = balance;
-  dev.gear = gear;
+  dev.rollGearItem = rollGearItem;
   dev.gearBonusFor = gearBonusFor;
   dev.passives = passives;
   dev.gold = gold;
-  dev.orbs = orbs;
   dev.bones = bonesStore;
   dev.orbApplied = orbApplied;
   dev.critMultiplierFor = critMultiplierFor;

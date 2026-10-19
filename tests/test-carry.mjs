@@ -21,15 +21,13 @@ const BASE = 'http://localhost:5173/';
 // What the old address would hand over: the bridge's own encoding.
 const encode = (items) =>
   Buffer.from(JSON.stringify({ v: 1, items }), 'utf8').toString('base64url');
-const stash = {
-  items: [
-    { uid: 'starter', id: 'rustySword', prefixes: [], suffixes: [] },
-    { uid: 'moved', id: 'runedSword', prefixes: [{ id: 'mighty', tier: 1 }], suffixes: [] },
-  ],
-  equipped: 'moved',
-};
+// The tree, marked by its account experience: what a player keeps between runs.
+const MOVED_XP = 7007;
 const items = {
-  'exiled-survivors:gear:v2': JSON.stringify(stash),
+  'exiled-survivors:passives:v1': JSON.stringify({ version: 2, shards: 3, xp: MOVED_XP, bonusPoints: 0, allocated: [] }),
+  // The equipment stash an old browser still holds: gear no longer outlives a
+  // run, so it comes over and is cleared at once.
+  'exiled-survivors:gear:v2': JSON.stringify({ items: [{ uid: 'moved', id: 'runedSword', prefixes: [], suffixes: [] }], equipped: 'moved' }),
   'exiled-survivors:bones:v1': JSON.stringify({ rib: 2, skull: 1 }),
   // Not the game's: it is left behind.
   'someone-else:key': 'x',
@@ -60,8 +58,8 @@ try {
   await arrive(`${BASE}#carry=${encode(items)}`);
   const fresh = await ev(`(() => ({
     hash: location.hash,
-    gear: window.gear.items.map(i => i.uid),
-    equipped: window.gear.value.equipped,
+    xp: window.passives.value.xp,
+    stash: localStorage.getItem('exiled-survivors:gear:v2'),
     bones: window.bones.count('rib'),
     foreign: localStorage.getItem('someone-else:key'),
     asked: window.__asked ?? null,
@@ -69,9 +67,10 @@ try {
   }))()`);
   console.log('fresh:', JSON.stringify(fresh));
   check('a fresh browser takes the records it was brought, without asking',
-    fresh.gear.includes('moved') && fresh.equipped === 'moved' && fresh.bones === 2 && fresh.asked === null,
+    fresh.xp === MOVED_XP && fresh.bones === 2 && fresh.asked === null,
     JSON.stringify(fresh));
   check('only the game’s own keys are written', fresh.foreign === null);
+  check('and the old equipment stash it brings is cleared, gear being the run’s now', fresh.stash === null);
   check('the fragment comes off the address, and the game opens as usual',
     fresh.hash === '' && fresh.menu === true, `hash "${fresh.hash}"`);
   await shot('carry-01-taken');
@@ -86,15 +85,15 @@ try {
   // --- 3. a browser that already has records here is asked first ---
   await ev(`(() => { localStorage.setItem('__answer', 'no'); return 1; })()`);
   await arrive(`${BASE}#carry=${encode(items)}`);
-  const declined = await ev(`(() => ({ asked: window.__asked ?? null, equipped: window.gear.value.equipped, hash: location.hash }))()`);
+  const declined = await ev(`(() => ({ asked: window.__asked ?? null, xp: window.passives.value.xp, hash: location.hash }))()`);
   check('a browser with records here is asked, and keeps its own when it says no',
-    typeof declined.asked === 'string' && declined.asked.length > 0 && declined.equipped !== undefined && declined.hash === '',
+    typeof declined.asked === 'string' && declined.asked.length > 0 && declined.xp !== undefined && declined.hash === '',
     JSON.stringify(declined));
 
-  await ev(`(() => { localStorage.setItem('__answer', 'yes'); window.gear.reset(); return 1; })()`);
+  await ev(`(() => { localStorage.setItem('__answer', 'yes'); window.passives.reset(); return 1; })()`);
   await arrive(`${BASE}#carry=${encode(items)}`);
-  const accepted = await ev(`(() => ({ asked: window.__asked ?? null, equipped: window.gear.value.equipped }))()`);
-  check('and takes them when it says yes', typeof accepted.asked === 'string' && accepted.equipped === 'moved',
+  const accepted = await ev(`(() => ({ asked: window.__asked ?? null, xp: window.passives.value.xp }))()`);
+  check('and takes them when it says yes', typeof accepted.asked === 'string' && accepted.xp === MOVED_XP,
     JSON.stringify(accepted));
 
   // --- 4. a broken fragment changes nothing ---

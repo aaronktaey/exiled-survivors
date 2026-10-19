@@ -105,7 +105,7 @@ const hidden = await scene('GameScene', `
   const p = s.player, c = s.combat;
   c.gearDrops.getChildren().forEach((d) => d.active && d.collect());
   c.orbDrops.getChildren().forEach((d) => d.active && d.collect());
-  const orbsBefore = window.orbs.count('chaos');
+  const orbsBefore = s.kit.count('chaos');
   c.dropOrbAt(p.x + 600, p.y, 'chaos');
   const orb = c.orbDrops.getChildren().find((d) => d.active && d.orb === 'chaos');
   const plain = { uid: 'h1', id: 'rustySword', prefixes: [], suffixes: [] };
@@ -121,8 +121,9 @@ const hidden = await scene('GameScene', `
   // Walking over them: the same touch the overlap hands the survivor.
   c.onOrbTouch(p, orb);
   c.onGearTouch(p, sword);
-  return { ...seen, orbsGained: window.orbs.count('chaos') - orbsBefore,
-           swordKept: window.gear.items.some((i) => i.uid === 'h1'), orbLeft: orb.active, swordLeft: sword.active };
+  // A hidden piece is not asked about: it goes into the run's 보관함.
+  return { ...seen, orbsGained: s.kit.count('chaos') - orbsBefore,
+           swordKept: s.kit.bag.some((i) => i.uid === 'h1'), orbLeft: orb.active, swordLeft: sword.active };
 `);
 console.log('hidden:', JSON.stringify(hidden));
 check('a hidden drop still lies there, with no sprite, name, pillar or edge marker',

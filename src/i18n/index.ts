@@ -232,18 +232,22 @@ export function gearImplicitText(id: GearId): string {
   }
 
   const pct = (fraction: number): string => `${Number((fraction * 100).toFixed(2))}%`;
+  // The one effect a base has, as the player reads it: a share, or a count.
+  const raised = (scale?: number) => (scale === undefined ? undefined : pct(scale - 1));
   const value =
-    implicit.projectileBlock !== undefined
-      ? pct(implicit.projectileBlock)
-      : implicit.extraProjectiles !== undefined
-        ? String(implicit.extraProjectiles)
-        : implicit.damageScale !== undefined
-          ? pct(implicit.damageScale - 1)
-          : implicit.attackSpeedScale !== undefined
-            ? pct(implicit.attackSpeedScale - 1)
-            : implicit.skillAttackSpeed
-              ? pct(implicit.skillAttackSpeed.scale - 1)
-              : '';
+    (implicit.projectileBlock !== undefined ? pct(implicit.projectileBlock) : undefined) ??
+    (implicit.extraProjectiles !== undefined ? String(implicit.extraProjectiles) : undefined) ??
+    raised(implicit.damageScale) ??
+    raised(implicit.attackSpeedScale) ??
+    (implicit.skillAttackSpeed ? pct(implicit.skillAttackSpeed.scale - 1) : undefined) ??
+    raised(implicit.maxHpScale) ??
+    raised(implicit.invulnerableScale) ??
+    (implicit.damageTakenScale !== undefined ? pct(1 - implicit.damageTakenScale) : undefined) ??
+    raised(implicit.pickupScale) ??
+    raised(implicit.xpGainScale) ??
+    raised(implicit.itemFindScale) ??
+    (implicit.critChance !== undefined ? pct(implicit.critChance) : undefined) ??
+    '';
   const skill = implicit.skillAttackSpeed ? skillName(implicit.skillAttackSpeed.skill) : '';
   const template = t().names?.gearImplicits?.[id] ?? implicit.detail;
   return fill(template, { value, skill });

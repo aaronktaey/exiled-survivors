@@ -19,7 +19,6 @@ import { fill, t } from '@/i18n';
 import { bgm } from '@/systems/Bgm';
 import { IconBar } from '@/systems/IconBar';
 import { BoneScene } from '@/scenes/BoneScene';
-import { orbs } from '@/systems/Orbs';
 import { passives } from '@/systems/Passives';
 import { MenuList } from '@/systems/MenuList';
 import { saveGame } from '@/systems/SaveGame';
@@ -147,18 +146,10 @@ export class MenuScene extends Phaser.Scene {
       .setOrigin(0.5)
       .setDepth(DEPTH.ui);
 
-    // 인벤토리 and 패시브 live in the corner rather than in the list: they are
-    // where you go between runs, not a way out of the title.
+    // 패시브 and the rest live in the corner rather than in the list: they are
+    // where you go between runs, not a way out of the title. Gear has no
+    // place here any more: it lives and dies with a run.
     this.icons = new IconBar(this, [
-      {
-        id: 'gear',
-        texture: TEXTURES.gear,
-        label: () => t().menu.gear,
-        // A 구슬 in the drawer is something to do in there, the same way a
-        // point waiting is something to do in the tree.
-        badge: () => orbs.total > 0,
-        onSelect: () => this.openOverlay(SCENES.inventory),
-      },
       {
         id: 'passives',
         texture: TEXTURES.passive,

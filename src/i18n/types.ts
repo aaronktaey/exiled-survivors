@@ -235,6 +235,43 @@ export interface Strings {
   };
 
   /** 장비창, and the words a rolled weapon is described with. */
+  /** 장비 in a run: the pause screen's 장비, and the popup a piece picked up opens. */
+  readonly runGear: {
+    readonly title: string;
+    readonly slots: Record<'weapon' | 'armor' | 'accessory', string>;
+    /** An empty slot: {slot}. */
+    readonly emptySlot: string;
+    /** The 보관함's heading: {n} of {max}. */
+    readonly bag: string;
+    readonly equip: string;
+    readonly equipped: string;
+    readonly discard: string;
+    readonly discardConfirm: string;
+    readonly orbs: string;
+    readonly noOrbs: string;
+    /** The 구슬 held: {list}. */
+    readonly orbsHeld: string;
+    readonly hintKeyboard: string;
+    readonly hintTouch: string;
+    readonly pickTitle: string;
+    readonly pickFound: string;
+    readonly pickWorn: string;
+    readonly pickNone: string;
+    readonly pickWear: string;
+    readonly pickKeep: string;
+    readonly pickDiscard: string;
+    /** The 보관함 is full: {max}. */
+    readonly pickFull: string;
+    readonly pickHintKeyboard: string;
+    readonly pickHintTouch: string;
+    /** Toasts: {gear}. */
+    readonly wore: string;
+    readonly kept: string;
+    readonly bagFull: string;
+    /** The pause menu's row. */
+    readonly pauseRow: string;
+  };
+
   readonly gear: {
     readonly title: string;
     /** The weapon in hand, above the list. */

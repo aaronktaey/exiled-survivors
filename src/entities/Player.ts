@@ -135,7 +135,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   /** What every hit is multiplied by before it lands: the tree's, and 철인's. */
   public get damageTakenScale(): number {
     const iron = this.passive.has('ironWill') ? KEYSTONES.ironWill.damageTakenMore : 1;
-    return this.passive.scale('damageTaken') * iron;
+    return this.passive.scale('damageTaken') * this.gear.damageTakenScale * iron;
   }
 
   /** What a potion's healing is multiplied by. */
@@ -148,15 +148,19 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
    * than topped up, so a weapon with 거대 on it starts the run at the fuller
    * bar it earns.
    */
-  public applyGear(bonus: GearBonus): void {
+  public applyGear(bonus: GearBonus, keepHp = false): void {
     this.gear = bonus;
-    this.refit();
+    this.refit(keepHp);
   }
 
-  /** Full health from the weapon and the tree, the bar filled to it. */
-  private refit(): void {
+  /**
+   * Full health from what is worn and the tree. At the start of a run the bar
+   * is filled to it; a piece put on mid-run keeps the health there is, only
+   * held under the new full bar.
+   */
+  private refit(keepHp = false): void {
     this.maxHpValue = Math.max(1, Math.round(PLAYER.maxHp * this.gear.maxHpScale * this.passive.scale('maxHp')));
-    this.hp = this.maxHpValue;
+    this.hp = keepHp ? Math.min(this.hp, this.maxHpValue) : this.maxHpValue;
     this.drawHealthBar();
   }
 

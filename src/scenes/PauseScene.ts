@@ -73,6 +73,10 @@ export class PauseScene extends Phaser.Scene {
       onCancel: () => this.resume(),
       items: [
         { id: 'resume', label: () => t().pause.resume, onSelect: () => this.resume() },
+        // 장비: the run's own, worn and kept, and the 구슬 to spend on them.
+        ...(this.run()
+          ? [{ id: 'gear', label: () => t().runGear.pauseRow, onSelect: () => this.openOverlay(SCENES.runGear, { kit: this.run()!.kit }) }]
+          : []),
         { id: 'guide', label: () => t().menu.guide, onSelect: () => this.openOverlay(SCENES.info, { topic: 'guide' }) },
         { id: 'patch', label: () => t().menu.patch, onSelect: () => this.openOverlay(SCENES.info, { topic: 'patch' }) },
         {

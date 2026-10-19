@@ -43,10 +43,8 @@ export interface Conflict {
 
 /** What a set of records amounts to, for the choice between two of them. */
 export interface SaveSummary {
-  readonly swords: number;
   readonly passiveNodes: number;
   readonly accountLevel: number;
-  readonly orbs: number;
   readonly bones: number;
   readonly savedRun: boolean;
 }
@@ -96,14 +94,11 @@ function parse<T>(text: string | undefined, fallback: T): T {
 export function summarize(data: SaveData): SaveSummary {
   const sum = (record: Record<string, unknown>): number =>
     Object.values(record).reduce<number>((total, value) => total + (Number(value) || 0), 0);
-  const gear = parse<{ items?: unknown[] }>(data[STORAGE.gear], {});
   // The graph tree's nodes; a copy from before it counts its old ranks instead.
   const tree = parse<{ allocated?: unknown[]; xp?: number; ranks?: Record<string, number> }>(data[STORAGE.passives], {});
   return {
-    swords: Array.isArray(gear.items) ? gear.items.length : 0,
     passiveNodes: Array.isArray(tree.allocated) ? tree.allocated.length : sum(tree.ranks ?? {}),
     accountLevel: accountLevelFor(Number(tree.xp) || 0).level,
-    orbs: sum(parse<Record<string, number>>(data[STORAGE.orbs], {})),
     bones: sum(parse<Record<string, number>>(data[STORAGE.bones], {})),
     savedRun: Boolean(data[STORAGE.save]),
   };

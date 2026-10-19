@@ -45,7 +45,7 @@ const affixes = await ev(`(() => {
     ids,
     rolledEffects: Object.values(window.config.AFFIXES)
       .flatMap(a => (a.gearTiers ?? []).flatMap(t => Object.keys(t.gear))),
-    bonusKeys: Object.keys(window.gearBonusFor(window.gear.equipped)),
+    bonusKeys: Object.keys(window.gearBonusFor(window.game.scene.getScene('GameScene').kit.equipped.weapon)),
   };
 })()`);
 check('예리 and 재생 are no longer 속성 at all',

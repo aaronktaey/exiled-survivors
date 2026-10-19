@@ -41,7 +41,8 @@ export const SCENES = {
   info: "InfoScene",
   confirm: "ConfirmScene",
   gameOver: "GameOverScene",
-  inventory: "InventoryScene",
+  runGear: "RunGearScene",
+  gearPick: "GearPickScene",
   orb: "OrbScene",
   bones: "BoneScene",
   passives: "PassiveScene",
@@ -56,18 +57,21 @@ export const SCENES = {
   podium: "PodiumScene",
 } as const;
 
+/**
+ * Keys that held what no longer outlives a run: the equipment stash and the
+ * 구슬 drawer (2026-10-19, gear lives and dies with the run). Cleared on
+ * load; listed so nothing ever writes them again.
+ */
+export const RETIRED_STORAGE: readonly string[] = ['exiled-survivors:gear:v2', 'exiled-survivors:orbs:v1'];
+
 /** Keys the browser keeps our state under. Bump the suffix to invalidate. */
 export const STORAGE = {
   settings: "exiled-survivors:settings:v1",
   save: "exiled-survivors:save:v1",
-  /** The equipment stash, which outlives any one run. */
-  gear: "exiled-survivors:gear:v2",
   /** The passive tree, which outlives it too. */
   passives: "exiled-survivors:passives:v1",
   /** And the purse a run pays into. */
   gold: "exiled-survivors:gold:v1",
-  /** The 구슬 drawer, which outlives a run beside the stash. */
-  orbs: "exiled-survivors:orbs:v1",
   /** And the 뼈다귀 drawer, spent one run at a time. */
   bones: "exiled-survivors:bones:v1",
   /** The local ranking, until there is a shared one. */

@@ -68,14 +68,15 @@ wrong shape.
   centre it (`src/systems/Layout.ts`); landscape is only ever ~540 tall, so a
   screen that fits upright can still overflow lying down. Check both.
 - **Everything the player keeps is in `localStorage`** behind `STORAGE.*`:
-  the stash, the passive tree, the purse, the 구슬 drawer, the 뼈다귀 drawer,
-  the save slot and the settings. Stores cache: writing the key behind a
+  the passive tree, the purse, the 뼈다귀 drawer, the save slot and the
+  settings. Gear and 구슬 are not among them: they live in the run
+  (`RunKit`, carried by the save slot only). Stores cache: writing the key behind a
   store's back does not change what the store already has in memory.
 
 ## The test harness
 
 `tests/` drives a real Chrome over CDP against the dev server and checks the
-running game, not units. 46 suites, ~1270 checks. It is the only thing that has
+running game, not units. 45 suites, ~1150 checks. It is the only thing that has
 caught most of what has gone wrong here, so run all of it before every commit.
 
 ```sh
@@ -85,7 +86,7 @@ node run-all.mjs test-full test-skills test-balance test-chain test-ice \
   test-void test-enemies test-rare test-boss test-potion test-sfx test-perf \
   test-hud test-expiry test-audio test-touch test-shell test-shell2 test-info \
   test-i18n test-gear test-passive test-responsive test-stats test-bones \
-  test-altar test-slot test-inventory test-locale test-back test-fugitive \
+  test-altar test-slot test-locale test-back test-fugitive \
   test-ranking test-skillpick test-mango test-web test-loadout \
   test-carry test-api test-account test-live test-filter test-mastery \
   test-tuning test-terrain test-chimera test-notice
@@ -127,7 +128,7 @@ set takes about six minutes. One suite on its own: `node run-all.mjs test-gear`.
   everything on screen (the patch notes, every chapter of the guide) overflows
   it and the suite dies with `undefined`. Return the answer, not the corpus.
 - Dev-only handles the suites drive: `window.game`, `window.config`,
-  `window.gear`, `window.orbs`, `window.bones`, `window.passives`,
+  `window.bones`, `window.passives`, `window.rollGearItem`,
   `window.gold`, `window.gearBonusFor`, `window.orbApplied`,
   `window.critMultiplierFor`. They are behind `import.meta.env.DEV`, so the
   deployed build does not have them — a live check can only click and look.
@@ -220,11 +221,23 @@ Read `git log` for what changed and when. What is not in the log:
   ever writes to the real shared ranking. A suite that wants one of them
   turns it back on (`test-skillpick`, `test-ranking`, which also replaces
   `fetch` with an in-page stand-in for the shared board).
-- **The 인벤토리 replaced the 장비창.** `InventoryScene` (tabs 장비 · 소모품)
-  draws every tab on `ItemGrid`, a 6×12 grid that keeps MenuList's handles
-  (`items`, `selected`, `selectedId`, `focus`, `step`, `refresh`) — which is
-  why most of test-gear survived the swap. A tap only picks a cell; acting is
-  the buttons beside it or Space. The title icon's id is still `gear`.
+- **Gear is the run's (2026-10-19, branch `overhaul`).** Three slots
+  (`GEAR_SLOTS`: 무기 · 방어구 · 장신구), five bases each, every base its
+  icon and 고정 속성; each 속성 names the `slots` it rolls on (`affixPool`).
+  A run's `RunKit` (systems/RunKit.ts) holds what is worn, the 보관함
+  (`RUN_BAG.capacity`) and the 구슬 picked up; it starts on a bare 녹슨 검,
+  is carried by the save (`SavedRun.kit`; an older save's `gear` comes back
+  worn) and goes with the run. The title has no 인벤토리, there is no 판매
+  or 합성, and the old stash and 구슬 drawer keys (`RETIRED_STORAGE`) are
+  cleared on load — the user chose to delete them, not pay them out. A piece
+  picked up queues a `gear` choice: `GearPickScene` shows it beside what is
+  worn (`drawGearCard`) and offers 착용 (the old piece goes to the 보관함) or
+  보관 — 버리기 instead when the 보관함 is full; one the 아이템 필터 hides goes
+  into the 보관함 without asking. The pause menu's 장비 (`RunGearScene`)
+  wears, drops (asked twice) and opens `OrbScene` on any piece, worn or
+  kept. Every change refits the run at once (`GameScene.refitGear`, health
+  kept, only held under the new bar). `gearBonusFor` takes the worn list;
+  `describeGear`/`orbNote` (systems/GearText) are the read-outs.
 - **Contact is per enemy.** A body hurts through `Player.takeContact` on its
   own `ENEMY.contactCooldownMs`, so a crowd all hurt at once; only thrown
   things (`takeDamage`) open the survivor's invulnerable window. The debug /
@@ -430,15 +443,9 @@ Read `git log` for what changed and when. What is not in the log:
   `thunderRecastChance` — a kill always strikes again, up to `THUNDER.maxRecasts`). Reaching it calls `GameScene.celebrateMastery`
   once (`awakened`, rebuilt from a save without a show); the HUD slot goes
   gold and its card adds the line (`masteryText`). test-mastery covers it.
-- **A saved run carries its own weapon.** `SavedRun.gear` is a copy of the
-  item the run went out with (`GameScene.runGear`, written by every save);
-  a resumed run fights with that, so the 인벤토리 never locks — swapping,
-  구슬, 합성 and selling change only runs started afterwards. A save from
-  before this has no `gear` and takes the one in hand. It is said on screen
-  (0.63): `saveGame.describe` names the weapon, and the 인벤토리's 착용 중
-  line adds `savedRunGear` while the saved run's weapon is not the one in
-  hand — the user once reported the design itself as a swap that did not
-  take.
+- **A saved run carries its kit.** `SavedRun.kit` is the run's `RunKit`
+  state (worn, kept, 구슬); 불러오기 restores it, and `saveGame.describe`
+  names the weapon worn.
 - **What acts on the survivor is on the HUD.** `GameScene.effectsNow()`
   hands `Hud.update` an `EffectEntry` list — 장비 (`runGear`), 패시브, each
   뼈다귀 (built once a run), then 하얀 망고 and 거미줄 while they last — drawn
@@ -498,16 +505,18 @@ Read `git log` for what changed and when. What is not in the log:
   certain weapon, shards, a `fromBossOnly` 구슬, a 뼈다귀 with `fromKill: 0`)
   and what is certain are not multiplied. A new drop should go through the
   same `bonus` in `CombatSystem.killEnemy`.
-- **Weapons by tier — 1 is the best**, the same way round as an 속성's
+- **Gear by tier — 1 is the best**, the same way round as an 속성's
   tier (the user corrected this once). `attackForTier` counts up from the
-  weakest tier. A 우두머리 always leaves one, weighted over the whole `GEAR`
-  roster. A sword with `fromKill` set (tiers 3–5 now) can also come off any
-  kill at that chance × `bonus`; without it, 우두머리 only.
-- **A weapon's lines add, they do not compound.** `gearBonusFor` sums each
-  line's share (scale − 1) with the 고정 속성's and returns 1 + the sum, so
-  two +50% are +100%. 치명 is `critChanceIncrease`: the summed share raises
-  `PLAYER.critChance` by that much of itself (`Player.critChance`), never
-  points on top. (A rare enemy's 속성 still multiply — that is the enemy.)
+  weakest weapon tier; only weapons carry attack. A 우두머리 always leaves
+  one piece, weighted over the whole `GEAR` roster (every slot). A base with
+  `fromKill` set (tiers 3–5 of each slot) can also come off any kill at that
+  chance × `bonus`; without it, 우두머리 only.
+- **Gear lines add, they do not compound.** `gearBonusFor` sums each
+  line's share (scale − 1) across every piece worn, with each base's 고정
+  속성, and returns 1 + the sum, so two +50% are +100%. 치명 is
+  `critChanceIncrease`: the summed share raises `PLAYER.critChance` by that
+  much of itself (`Player.critChance`), never points on top. (A rare
+  enemy's 속성 still multiply — that is the enemy.)
 - **강력 · 광포 · 치명 · 잔혹 are balanced as three lines together** (the
   user's ask, 2026-10-18, 0.60–0.61): 치명 and 잔혹 multiply each other, so
   matching them line by line made a 치명 + 잔혹 weapon twice as strong as
@@ -526,15 +535,7 @@ Read `git log` for what changed and when. What is not in the log:
   `CombatSystem.onEnemyShotHit`, only for a shot that would hurt; the extra
   projectile is `WeaponContext.extraProjectiles` (one more
   shot per cast, or one more orb).
-- **장비 합성 is decided before it is shown.** `gear.combine(uids)` checks
-  (`combineProblem`), rolls `GEAR_COMBINE.successChance`, spends the swords
-  and adds the bare one tier up in one commit; `InventoryScene.playCombine`
-  then plays the light (`COMBINE_FX`) with `busy` set and restarts the scene
-  on the result. The 합성 button starts a pick, adds the cursor's sword, and
-  runs once `GEAR_COMBINE.count` are picked; Space toggles a cell, Esc backs
-  out. Its third button shares the row with 착용 · 버리기 so the pane is no
-  taller on a short phone.
-- **망고의 구슬 wards a weapon.** An `OrbSpec` with `ward` sets
+- **망고의 구슬 wards a piece.** An `OrbSpec` with `ward` sets
   `GearItem.mango`; it lasts one 폭발의 구슬 whatever it rolls: a destroy
   roll comes back `saved` (weapon unchanged, `mango` gone) instead of
   `destroyed`, and a climb comes back `upgrade` with `wardSpent` (the note
@@ -542,20 +543,15 @@ Read `git log` for what changed and when. What is not in the log:
   구슬 are warded against — a failed 합성 still spends its swords. The
   인벤토리 shows it on the cell (`GridItem.badge`) and in `stateLine` under
   the name, not as a read-out line (that block is budgeted to the screen).
-- **Swords are sold, not thrown away.** The 인벤토리's second button (still
-  `discard`/`pressDiscard` in code) pays `sellPriceFor(item)` into
-  `gold` (`GEAR_SELL`: rank from the weakest tier × `perRank`, + `perAffix`
-  of that a 속성, added). The rank counts from the weakest, so the best sword
-  is the dearest — the user chose that over the literal tier number.
 - **전투 알림 are toasts.** `GameScene.announce` hands every in-run line to
   `systems/Toasts.ts`: top-right (under the HUD on a narrow screen),
   `TOAST.lifeMs` each, at most `TOAST.max`, oldest out first. A toast's text
   is inside its container, not in `scene.children`; read `toasts.lines`.
-- **Each sword has its own picture.** `GEAR[id].icon` (a file under
-  `public/assets/icons/`, picked from the Raven Fantasy pack, listed in its
-  CREDITS.txt) is loaded as `gearTexture(id)`; the 인벤토리 grid, the drop on
-  the ground, the 합성 result and the 필터 all draw it. `TEXTURES.gear` is
-  left for the title's 인벤토리 icon and the 필터's rarity switches.
+- **Each base has its own picture.** `GEAR[id].icon` (a file under
+  `public/assets/icons/`, picked from the Raven Fantasy pack — the full pack
+  sits, git-ignored, in `public/assets/Free - Raven Fantasy Icons`; picks
+  are listed in icons/CREDITS.txt) is loaded as `gearTexture(id)`; the cards,
+  the cells, the drop on the ground and the 필터 all draw it.
 - **Rare drops stand in a light pillar.** `DropLabel` draws it for the 희귀
   tier (`LIGHT_PILLAR`, `TEXTURES.lightPillar`); the 제단 opts out with
   `{ pillar: false }` since it is walked up to, not picked up.
@@ -619,15 +615,12 @@ Read `git log` for what changed and when. What is not in the log:
   tier-1 속성 the weapon does not carry (`swapTopLine`, outcome `swap`); the
   destroy roll and the 망고 work the same. Only a weapon with no lines
   refuses it.
-- **구슬 are spent in a popup.** A 구슬 button (or its digit key) opens
-  `OrbScene` over the paused 인벤토리, on the weapon under the cursor: a tab
-  per 구슬, the picked one's `orbDetail` plus `OrbScene.rules` (every rule,
-  numbers from the table), the weapon's read-out (`InventoryScene.describe`).
-  `use()` decides and writes at once and draws on the next tick — a test
-  that pins `Math.random` for the roll would otherwise trip Phaser's Text.
-  The popup stays after a use, lighting the changed lines (`changed`); a
-  destroyed weapon turns it into the notice and 확인. Closing hands the
-  인벤토리 the weapon's uid (or null) and the note, and it restarts on them.
+- **구슬 are spent in a popup.** `OrbScene` takes the run's kit and a piece
+  (`OrbSceneData.kit`, `uid`), opened from 장비: a tab per 구슬, the picked
+  one's rules, the piece's read-out. `use()` decides and writes at once and
+  draws on the next tick — a test that pins `Math.random` for the roll would
+  otherwise trip Phaser's Text. A destroyed piece leaves its slot empty (a
+  weapon slot too: no attack until another is worn).
 - **지형지물 (0.67).** `systems/Terrain.ts` lays `TERRAIN`
   (balance.ts) rocks per run from a seed (`SavedRun.terrainSeed`, so
   불러오기 finds the same field): each outline is one distance per angle

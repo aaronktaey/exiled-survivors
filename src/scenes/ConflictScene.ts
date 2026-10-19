@@ -199,9 +199,7 @@ export class ConflictScene extends Phaser.Scene {
         at.x,
         at.y + 14,
         [
-          fill(copy.swords, { n: s.swords }),
           fill(copy.passives, { n: s.passiveNodes, level: s.accountLevel }),
-          fill(copy.orbs, { n: s.orbs }),
           fill(copy.bones, { n: s.bones }),
           s.savedRun ? copy.savedRun : copy.noSavedRun,
         ].join('\n'),

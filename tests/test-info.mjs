@@ -192,7 +192,7 @@ const coverage = await scene('InfoScene', `
     unfilled: words.filter(w => /[{}]/.test(w)).slice(0, 5),
     broken: words.filter(w => /undefined|NaN/.test(w)).slice(0, 5),
     emptyTabs: s.chapters.flatMap(ch => ch.tabs.filter(tb => tb.cards.length === 0).map(tb => tb.id)),
-    has: ['하얀 망고', '무작위 스킬', '제단', '신성한 조각', '치명타', '인벤토리', '랭킹', '고정']
+    has: ['하얀 망고', '무작위 스킬', '제단', '신성한 조각', '치명타', '보관함', '랭킹', '고정']
       .filter(w => !all.includes(w)),
   };
 `);

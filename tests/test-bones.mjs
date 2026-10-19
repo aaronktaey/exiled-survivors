@@ -55,8 +55,10 @@ check('and off a rare by its 속성, the same bonus as every drop',
   `one 속성 ${(chances.skullRare1 * 100).toFixed(3)}%, six ${(chances.skullRare6 * 100).toFixed(3)}%`);
 check('a 우두머리 raises it too, by the 우두머리 bonus',
   near(chances.skullBoss, chances.base * chances.boss), `${(chances.skullBoss * 100).toFixed(2)}%`);
-check('갈비뼈 comes off any kill at a 혼돈의 구슬’s chance, raised like every drop',
-  chances.ribBase > 0 && chances.ribBase === chances.chaos &&
+// Its own chance (it was a 혼돈의 구슬's when it was made; the live values
+// have parted them since).
+check('갈비뼈 comes off any kill at its own chance, raised like every drop',
+  chances.ribBase > 0 &&
     near(chances.ribPlain, chances.ribBase * chances.rare3) && near(chances.ribBoss, chances.ribBase * chances.boss),
   `${(chances.ribBase * 100).toFixed(2)}%, ${(chances.ribBoss * 100).toFixed(2)}% off a 우두머리`);
 

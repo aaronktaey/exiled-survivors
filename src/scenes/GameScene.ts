@@ -35,6 +35,7 @@ import {
   SKILL_MASTERY,
   AUDIO,
   TERRAIN,
+  GEAR_SLOTS,
   CHIMERA_RUSH,
   UPGRADE_PERCENT,
 } from '@/config';
@@ -88,13 +89,15 @@ import { HealthPotion } from '@/entities/HealthPotion';
 import type { EnemyShot } from '@/entities/EnemyShot';
 import {
   NO_BONUS,
-  gear,
-  gearBonusFor,
   rollGearFromKill,
   rollGearItem,
+  slotOf,
   type GearBonus,
   type GearItem,
 } from '@/systems/Gear';
+import { RunKit } from '@/systems/RunKit';
+import { itemFilter } from '@/systems/ItemFilter';
+import { GearPickScene, type GearPickChoice, type GearPickData } from '@/scenes/GearPickScene';
 import {
   NO_MODIFIERS,
   areaRadiusFor,
@@ -112,7 +115,6 @@ import {
   type RunModifiers,
 } from '@/systems/Modifiers';
 import { bones } from '@/systems/Bones';
-import { orbs } from '@/systems/Orbs';
 import { passives } from '@/systems/Passives';
 import { liveUpdate } from '@/systems/LiveUpdate';
 import type { RunDetail } from '@/systems/Ranking';
@@ -173,7 +175,8 @@ export interface GameSceneData {
  */
 type ChoiceRequest =
   | { readonly kind: 'upgrade'; readonly title: string; readonly subtitle: string; readonly skill: SkillId }
-  | { readonly kind: 'pick' };
+  | { readonly kind: 'pick' }
+  | { readonly kind: 'gear'; readonly item: GearItem };
 
 /** How far from a rock's edge a drop is let fall, so it can be walked up to and seen whole. */
 const DROP_ROOM = 20;
@@ -206,7 +209,12 @@ export class GameScene extends Phaser.Scene {
   /** The effects that last the whole run (장비, 패시브, 뼈다귀), built on the first look. */
   private lastingEffects?: EffectEntry[];
   /** The weapon this run went out with, as it was then; what the save carries. Public for tests. */
-  public runGear: GearItem | null = null;
+  /** What this run wears, keeps and holds (2026-10-19: gear lives and dies with the run). */
+  public kit: RunKit = RunKit.fresh();
+  /** The piece the 장비 획득 popup is asking about, while it is up. Public for tests. */
+  public gearOnOffer: GearItem | null = null;
+  /** The kit's listener, let go when the scene shuts down. */
+  private unwatchKit?: () => void;
   /** 패시브 and 장비 together, in the order they are applied. */
   private mods: RunModifiers = NO_MODIFIERS;
   /** What this run has done, read out on the screen that ends it. */
@@ -297,11 +305,18 @@ export class GameScene extends Phaser.Scene {
     this.createFloor();
 
     // Both are picked on the title screen, so they are fixed for the run:
-    // 패시브 first, then 장비, then whatever the run itself adds. A resumed
-    // run takes the weapon it went out with, not whatever is in hand now.
-    this.runGear = GameScene.gearFor(this.resuming);
-    this.gearBonus = gearBonusFor(this.runGear);
+    // 패시브 first, then 장비, then whatever the run itself adds. The kit is
+    // the run's own: fresh (a bare 녹슨 검) or the saved run's.
+    this.kit = RunKit.restore(this.resuming);
+    this.gearOnOffer = null;
+    this.gearBonus = this.kit.bonus;
     this.mods = { passive: passives.sheet, gear: this.gearBonus };
+    this.unwatchKit?.();
+    this.unwatchKit = this.kit.onChange(() => this.refitGear());
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      this.unwatchKit?.();
+      this.unwatchKit = undefined;
+    });
 
     this.player = new Player(this, WORLD.width / 2, WORLD.height / 2);
     this.player.applyGear(this.gearBonus);
@@ -347,7 +362,7 @@ export class GameScene extends Phaser.Scene {
           this.announce(fill(t().game.mangoEaten, { seconds: Math.round(MANGO.durationMs / 1000) })),
         onMagnetCollected: () => this.announce(t().game.magnetPulled),
         // 아이템 발견 from the tree, on top of what the 뼈다귀 do.
-        dropScale: () => this.boneBonus.dropScale * this.mods.passive.scale('itemFind'),
+        dropScale: () => this.boneBonus.dropScale * this.mods.passive.scale('itemFind') * this.gearBonus.itemFindScale,
         critMultiplier: () => critMultiplierFor(this.mods),
         nonCritScale: () => (this.mods.passive.has('assassinMark') ? KEYSTONES.assassinMark.nonCritMore : 1),
         onCrit: () => {
@@ -356,7 +371,7 @@ export class GameScene extends Phaser.Scene {
           }
         },
         onKill: (skill, x, y, maxHp) => this.onKilledBy(skill, x, y, maxHp),
-        xpScale: () => this.mods.passive.scale('xpGain'),
+        xpScale: () => this.mods.passive.scale('xpGain') * this.gearBonus.xpGainScale,
         onXp: (amount) => {
           this.pendingAccountXp += amount;
           this.runAccountXp += amount;
@@ -637,24 +652,6 @@ export class GameScene extends Phaser.Scene {
   }
 
   /**
-   * The weapon a run fights with: a resumed run's own (checked, since it
-   * comes from storage), or else — a new run, or a save from before saves
-   * carried one — the one in hand now, copied so later changes to it in the
-   * 인벤토리 do not reach this run.
-   */
-  private static gearFor(save: SavedRun | null): GearItem | null {
-    const saved = save?.gear;
-    if (saved === undefined) {
-      const inHand = gear.equipped;
-      return inHand ? { ...inHand, prefixes: [...inHand.prefixes], suffixes: [...inHand.suffixes] } : null;
-    }
-    if (saved === null || typeof saved.id !== 'string' || !Array.isArray(saved.prefixes) || !Array.isArray(saved.suffixes)) {
-      return null;
-    }
-    return saved;
-  }
-
-  /**
    * What is acting on the survivor, for the icons left of the skills: the
    * weapon the run went out with, the 패시브 bought, the 뼈다귀 spent, then
    * whatever is on them right now (하얀 망고, 거미줄). The first three are
@@ -684,15 +681,18 @@ export class GameScene extends Phaser.Scene {
   private buildLastingEffects(): EffectEntry[] {
     const copy = t().hud;
     const out: EffectEntry[] = [];
-    const item = this.runGear;
-    if (item && GEAR[item.id]) {
+    for (const slot of GEAR_SLOTS) {
+      const item = this.kit.equipped[slot];
+      if (!item || !GEAR[item.id]) {
+        continue;
+      }
       const lines = [
         gearImplicitText(item.id),
         ...[...item.prefixes, ...item.suffixes]
           .filter((line) => AFFIXES[line.id] !== undefined)
           .map((line) => affixGearDetail(line.id, line.tier)),
       ].filter(Boolean);
-      out.push({ id: 'gear', kind: 'gear', icon: gearTexture(item.id), title: gearTitle(item), lines });
+      out.push({ id: `gear:${slot}`, kind: 'gear', icon: gearTexture(item.id), title: gearTitle(item), lines });
     }
     const taken = passives.value.allocated;
     if (taken.length > 0) {
@@ -725,7 +725,7 @@ export class GameScene extends Phaser.Scene {
     }
 
     saveGame.write({
-      gear: this.runGear,
+      kit: this.kit.state,
       main: this.mainSkill ?? undefined,
       bones: this.bones,
       devUsed: this.devRun,
@@ -966,20 +966,66 @@ export class GameScene extends Phaser.Scene {
   }
 
   /**
-   * A weapon goes straight into the stash, which outlives the run. Putting
-   * it on is the title screen's business, so a run is never interrupted.
+   * A piece picked up: the run stops on the choice of wearing it (what was
+   * worn goes into the 보관함) or keeping it. One the 아이템 필터 hides was
+   * not wanted in sight, so it goes into the 보관함 without asking — or, with
+   * no room, is let go.
    */
   private onGearCollected(found: GearItem): void {
-    gear.add(found);
-    this.announce(fill(t().game.gearFound, { gear: gearTitle(found) }), dropTierFor(found) === 'rare' ? 'rare' : 'normal');
+    if (!itemFilter.showsGear(found)) {
+      this.keepGear(found);
+      return;
+    }
+    this.queueChoice({ kind: 'gear', item: found });
+  }
+
+  /** Into the 보관함, said; let go and said when it is full. */
+  private keepGear(item: GearItem): void {
+    const copy = t().runGear;
+    if (this.kit.store(item)) {
+      this.announce(fill(copy.kept, { gear: gearTitle(item) }));
+    } else {
+      this.announce(fill(copy.bagFull, { gear: gearTitle(item) }), 'warning');
+    }
+  }
+
+  /** The 장비 획득 popup for one piece. */
+  private openGearPick(item: GearItem): void {
+    this.gearOnOffer = item;
+    const data: GearPickData = {
+      item,
+      worn: this.kit.equipped[slotOf(item)],
+      bagFull: this.kit.bagFull,
+      onChoose: (choice: GearPickChoice) => {
+        this.gearOnOffer = null;
+        if (choice === 'wear') {
+          this.kit.equip(item);
+          this.announce(fill(t().runGear.wore, { gear: gearTitle(item) }), dropTierFor(item) === 'rare' ? 'rare' : 'normal');
+        } else if (choice === 'keep') {
+          this.keepGear(item);
+        }
+        this.afterChoice();
+      },
+    };
+    this.scene.bringToTop(GearPickScene.KEY);
+    this.scene.launch(GearPickScene.KEY, data);
   }
 
   /**
-   * A 구슬 goes into the drawer, not onto the weapon: what it is spent on is
-   * a decision, and the 인벤토리 is where the weapons are.
+   * What is worn changed (a piece put on, a 구슬 spent, a piece gone): the
+   * survivor is refitted at once — health kept as it is, only held under the
+   * new full bar — and the icons left of the skills say what is worn now.
    */
+  private refitGear(): void {
+    this.gearBonus = this.kit.bonus;
+    this.mods = { passive: this.mods.passive, gear: this.gearBonus };
+    this.player?.applyGear(this.gearBonus, true);
+    this.lastingEffects = undefined;
+  }
+
+  /** A 구슬 picked up goes into the run's kit, to be spent while paused. */
   private onOrbCollected(id: OrbId): void {
-    orbs.add(id);
+    this.kit.addOrb(id);
     this.announce(fill(t().game.orbFound, { orb: orbName(id) }));
   }
 
@@ -1295,6 +1341,10 @@ export class GameScene extends Phaser.Scene {
       this.openPick();
       return;
     }
+    if (request.kind === 'gear') {
+      this.openGearPick(request.item);
+      return;
+    }
 
     // Worked out here, where the live stats are, so an upgrade that has hit
     // its ceiling is simply not offered — and a skill with none left gets no
@@ -1604,7 +1654,7 @@ export class GameScene extends Phaser.Scene {
    * from a save — for the admin to read when a run looks out of line.
    */
   private runDetail(): RunDetail {
-    const gear = this.runGear;
+    const gear = this.kit.equipped.weapon;
     const lines = (list: readonly { id: string; tier: number }[]) => list.map(({ id, tier }) => ({ id, tier }));
     return {
       build: liveUpdate.current,

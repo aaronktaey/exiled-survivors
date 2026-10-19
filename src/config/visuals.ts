@@ -549,6 +549,13 @@ export const INVENTORY = {
   sideBySideFrom: 640,
 } as const;
 
+/** A piece of gear's name, by how rare it rolled: Path of Exile's white, blue and yellow. */
+export const GEAR_NAME_COLORS = {
+  normal: '#e8e4da',
+  magic: '#7fb2ff',
+  rare: '#ffd34d',
+} as const;
+
 export const SCRIM = {
   /** 게임 가이드 · 패치노트 · 설정 · 제작자 정보 · 확인 창. */
   reading: 1,

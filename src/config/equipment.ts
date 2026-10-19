@@ -1,21 +1,49 @@
 /**
- * ★ 장비 — the weapon the survivor carries, and what one can come out of a
- * 우두머리 carrying.
+ * ★ 장비 — what the survivor wears in a run: a 무기, a 방어구 and a 장신구.
  *
- * A weapon is a base plus its 속성. The base gives flat attack power,
- * which is added to every skill's damage, and the roster is swords a
- * step apart. The affixes are the same ones a rare enemy wears, split into
- * prefixes and suffixes the way Path of Exile splits them — see AFFIXES in
- * balance.ts.
+ * Gear lives and dies with the run (2026-10-19): every run starts on a bare
+ * 녹슨 검, whatever drops is found in the run, worn or kept in the run's 보관함
+ * there and then, and 구슬 picked up in the run are spent on it while
+ * paused. Nothing of it outlives the run.
  *
- * Adding a sword means a line in GEAR and a name in the locales.
+ * A piece is a base plus its 속성. A weapon's base gives flat attack power,
+ * added to every skill's damage; every base has one 고정 속성. The 속성 are
+ * the ones a rare enemy wears, split into prefixes and suffixes the way Path
+ * of Exile splits them, each allowed on the slots its `slots` names — see
+ * AFFIXES in balance.ts.
+ *
+ * Adding a base means a line in GEAR and a name in the locales.
  */
 
+import type { GearSlot } from '@/config/balance';
 import type { SkillId } from '@/weapons/skills';
 
-export type GearSlot = 'weapon';
+export type { GearSlot } from '@/config/balance';
 
-export type GearId = 'onigoroshi' | 'runedSword' | 'steelSword' | 'ironSword' | 'rustySword';
+export type GearId =
+  | 'onigoroshi'
+  | 'runedSword'
+  | 'steelSword'
+  | 'ironSword'
+  | 'rustySword'
+  | 'dragonArmor'
+  | 'plateArmor'
+  | 'chainArmor'
+  | 'leatherArmor'
+  | 'clothArmor'
+  | 'sunAmulet'
+  | 'rubyRing'
+  | 'jadeAmulet'
+  | 'silverRing'
+  | 'copperRing';
+
+/** The slots in the order they are shown. */
+export const GEAR_SLOTS: readonly GearSlot[] = ['weapon', 'armor', 'accessory'];
+
+/** The run's 보관함: what is found and not worn waits here, until the run ends. */
+export const RUN_BAG = {
+  capacity: 30,
+} as const;
 
 /**
  * 고정 속성 — what every sword of a base does, whatever it rolled. It sits
@@ -39,6 +67,20 @@ export interface GearImplicit {
   readonly attackSpeedScale?: number;
   /** Multiplies one skill's attack speed. */
   readonly skillAttackSpeed?: { readonly skill: SkillId; readonly scale: number };
+  /** Multiplies the survivor's full health. */
+  readonly maxHpScale?: number;
+  /** Multiplies the window after a hit. */
+  readonly invulnerableScale?: number;
+  /** Multiplies every hit the survivor takes (below 1 is less). */
+  readonly damageTakenScale?: number;
+  /** Multiplies how far things are picked up from. */
+  readonly pickupScale?: number;
+  /** Multiplies every gem's experience. */
+  readonly xpGainScale?: number;
+  /** Multiplies every item drop's chance. */
+  readonly itemFindScale?: number;
+  /** Raises the base crit chance by this share of itself. */
+  readonly critChance?: number;
 }
 
 export interface GearSpec {
@@ -140,21 +182,111 @@ export const GEAR: Record<GearId, GearSpec> = {
       skillAttackSpeed: { skill: 'meleeStrike', scale: 1.2 },
     },
   },
+  // 방어구: what stands between the survivor and a hit. Each tier's 고정
+  // 속성 is health or less damage taken; the kill chances match the swords'.
+  dragonArmor: {
+    id: 'dragonArmor',
+    icon: 'assets/icons/gear-dragonArmor.png',
+    slot: 'armor',
+    tier: 1,
+    name: '장식 갑옷',
+    weight: 0.5,
+    implicit: { detail: '받는 피해 -{value}', damageTakenScale: 0.88 },
+  },
+  plateArmor: {
+    id: 'plateArmor',
+    icon: 'assets/icons/gear-plateArmor.png',
+    slot: 'armor',
+    tier: 2,
+    name: '황금 판금',
+    weight: 1,
+    implicit: { detail: '최대 체력 +{value}', maxHpScale: 1.25 },
+  },
+  chainArmor: {
+    id: 'chainArmor',
+    icon: 'assets/icons/gear-chainArmor.png',
+    slot: 'armor',
+    tier: 3,
+    name: '사슬 갑옷',
+    weight: 2,
+    fromKill: 0.0016,
+    implicit: { detail: '받는 피해 -{value}', damageTakenScale: 0.94 },
+  },
+  leatherArmor: {
+    id: 'leatherArmor',
+    icon: 'assets/icons/gear-leatherArmor.png',
+    slot: 'armor',
+    tier: 4,
+    name: '가죽 외투',
+    weight: 3,
+    fromKill: 0.0025,
+    implicit: { detail: '무적 시간 +{value}', invulnerableScale: 1.2 },
+  },
+  clothArmor: {
+    id: 'clothArmor',
+    icon: 'assets/icons/gear-clothArmor.png',
+    slot: 'armor',
+    tier: 5,
+    name: '천옷',
+    weight: 4,
+    fromKill: 0.0036,
+    implicit: { detail: '최대 체력 +{value}', maxHpScale: 1.1 },
+  },
+  // 장신구: a ring or an amulet, for what is neither attack nor defence.
+  sunAmulet: {
+    id: 'sunAmulet',
+    icon: 'assets/icons/gear-sunAmulet.png',
+    slot: 'accessory',
+    tier: 1,
+    name: '불꽃 부적',
+    weight: 0.5,
+    implicit: { detail: '공격속도 +{value}', attackSpeedScale: 1.1 },
+  },
+  rubyRing: {
+    id: 'rubyRing',
+    icon: 'assets/icons/gear-rubyRing.png',
+    slot: 'accessory',
+    tier: 2,
+    name: '루비 반지',
+    weight: 1,
+    implicit: { detail: '기본 치명타 확률 +{value}', critChance: 0.3 },
+  },
+  jadeAmulet: {
+    id: 'jadeAmulet',
+    icon: 'assets/icons/gear-jadeAmulet.png',
+    slot: 'accessory',
+    tier: 3,
+    name: '비취 목걸이',
+    weight: 2,
+    fromKill: 0.0016,
+    implicit: { detail: '경험치 +{value}', xpGainScale: 1.1 },
+  },
+  silverRing: {
+    id: 'silverRing',
+    icon: 'assets/icons/gear-silverRing.png',
+    slot: 'accessory',
+    tier: 4,
+    name: '은 반지',
+    weight: 3,
+    fromKill: 0.0025,
+    implicit: { detail: '아이템 발견 +{value}', itemFindScale: 1.15 },
+  },
+  copperRing: {
+    id: 'copperRing',
+    icon: 'assets/icons/gear-copperRing.png',
+    slot: 'accessory',
+    tier: 5,
+    name: '구리 반지',
+    weight: 4,
+    fromKill: 0.0036,
+    implicit: { detail: '획득 범위 +{value}', pickupScale: 1.25 },
+  },
 };
 
-/**
- * ★ 장비 판매 — what a sword fetches in 골드 in place of throwing it away.
- * The weakest tier is worth `perRank`, and each tier up one more `perRank`
- * (1티어 오니고로시 500, 5티어 녹슨 검 100 with five tiers); every 속성 it
- * carries adds `perAffix` of that, added rather than compounded.
- */
-export const GEAR_SELL = {
-  perRank: 100,
-  perAffix: 0.1,
-} as const;
-
 /** The weakest tier on the roster — the one worth GEAR_BASE.lowestAttack. */
-export const LOWEST_GEAR_TIER = Math.max(...Object.values(GEAR).map((spec) => spec.tier));
+export const LOWEST_GEAR_TIER = Math.max(
+  ...Object.values(GEAR).filter((spec) => spec.slot === 'weapon').map((spec) => spec.tier),
+);
 
 /** Attack power for a tier, so the roster stays in step with the dial. */
 export const attackForTier = (tier: number): number =>
@@ -164,19 +296,6 @@ export const ALL_GEAR: readonly GearSpec[] = Object.values(GEAR);
 
 /** What every survivor starts out holding. */
 export const STARTING_GEAR: GearId = 'rustySword';
-
-/**
- * ★ 장비 합성 — three of the same sword, offered together, for a chance at
- * the sword one tier better. What comes out has no 속성 at all: it is the
- * base that is being reached for, not the lines the three happened to have.
- * The three are spent whether it takes or not.
- */
-export const GEAR_COMBINE = {
-  /** How many of the same sword go in. */
-  count: 3,
-  /** Share of combines that make the sword one tier up. */
-  successChance: 0.2,
-} as const;
 
 export const GEAR_DROP = {
   /**
@@ -319,8 +438,3 @@ export const ORB_DROP = {
 } as const;
 
 /** What selling this sword pays: its rank from the bottom × GEAR_SELL.perRank, + perAffix a 속성. */
-export function sellPriceFor(item: { readonly id: GearId; readonly prefixes: readonly unknown[]; readonly suffixes: readonly unknown[] }): number {
-  const rank = LOWEST_GEAR_TIER + 1 - GEAR[item.id].tier;
-  const lines = item.prefixes.length + item.suffixes.length;
-  return Math.round(rank * GEAR_SELL.perRank * (1 + GEAR_SELL.perAffix * lines));
-}
