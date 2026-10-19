@@ -15,6 +15,16 @@ export interface PatchNote {
 
 export const PATCH_NOTES: readonly PatchNote[] = [
   {
+    version: '0.69',
+    date: '2026-10-20',
+    changes: {
+      ko: ['한 번 접속한 채로 판을 여러 번 하면, 화면 왼쪽 위의 효과 아이콘(무기 · 패시브 · 뼈다귀)이 첫 판의 것으로 남아 있던 문제를 고쳤습니다.'],
+      en: ['Playing several runs in one visit no longer leaves the effect icons at the top left (weapon, passives, Bones) showing the first run’s.'],
+      ja: ['一度の接続で何回も遊ぶと、画面左上の効果アイコン（武器 · パッシブ · 骨）が最初の回のまま残っていた問題を修正しました。'],
+      zh: ['修复了在一次访问中连续游玩多局时，画面左上角的效果图标（武器 · 被动 · 骨头）一直显示第一局内容的问题。'],
+    },
+  },
+  {
     version: '0.68',
     date: '2026-10-19',
     changes: {
