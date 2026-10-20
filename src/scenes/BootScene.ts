@@ -87,6 +87,7 @@ export class BootScene extends Phaser.Scene {
     this.createDivineShardTexture();
     this.createRuneTextures();
     this.createChiselTexture();
+    this.createTurretTexture();
     this.createOrbTextures();
     this.createBoneTextures();
     this.createAltarTexture();
@@ -961,6 +962,24 @@ export class BootScene extends Phaser.Scene {
       graphics.generateTexture(runeTexture(rune.id), size, size);
       graphics.destroy();
     }
+  }
+
+  /** 포격의 룬's turret: a squat stone tower, its top lit. */
+  private createTurretTexture(): void {
+    const size = 32;
+    const graphics = this.add.graphics();
+    graphics.fillStyle(0x3a3f4c, 1);
+    graphics.fillRoundedRect(5, 12, 22, 18, 4);
+    graphics.fillStyle(0x555c6e, 1);
+    graphics.fillRect(3, 8, 26, 6);
+    graphics.fillStyle(0xd45f3a, 1);
+    graphics.fillRect(6, 4, 4, 5);
+    graphics.fillRect(14, 4, 4, 5);
+    graphics.fillRect(22, 4, 4, 5);
+    graphics.lineStyle(2, 0xd45f3a, 0.9);
+    graphics.strokeRoundedRect(5, 12, 22, 18, 4);
+    graphics.generateTexture(TEXTURES.turret, size, size);
+    graphics.destroy();
   }
 
   /** 룬 끌: a chisel, blade down and to the left, its handle wood. */

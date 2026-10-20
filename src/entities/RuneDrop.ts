@@ -14,16 +14,16 @@ export class RuneDrop extends GroundItem {
   /** The name above it. Public so a test can read what it says. */
   public readonly nameplate: DropLabel;
   /** Which 룬 this is. Public for the pickup and for tests. */
-  public rune: RuneId = 'power';
+  public rune: RuneId = 'split';
 
   public constructor(scene: Phaser.Scene, x: number, y: number) {
-    super(scene, x, y, runeTexture('power'), RUNES.power.color);
+    super(scene, x, y, runeTexture('split'), RUNES.split.color);
     this.setDisplaySize(RUNE_DROP.size, RUNE_DROP.size);
     this.nameplate = new DropLabel(scene, x, y);
   }
 
   public drop(x: number, y: number, id: RuneId): void {
-    const spec = RUNES[id] ?? RUNES.power;
+    const spec = RUNES[id] ?? RUNES.split;
     this.rune = spec.id;
     this.setTexture(runeTexture(spec.id));
     this.begin(x, y, RUNE_DROP.size);

@@ -617,6 +617,17 @@ Read `git log` for what changed and when. What is not in the log:
   a 룬 끌 queues a `chisel` choice (`RuneChiselScene`). The pause menu's 룬
   row opens `RuneScene` (a slot picked, then a held 룬 pressed or its
   number key; 빼기/Del takes one out). test-runes covers all of it.
+  0.75: 반복 (`repeatCount` → `WeaponContext.repeats`, a `RepeatQueue` in
+  each weapon that casts again `RUNE_REPEAT.gapMs` apart), 관통's price
+  (`pierceDecay` → `pierceKeep`, the shot's damage multiplied on each pass,
+  CombatSystem.onProjectileHit), 연쇄 on a thrown skill (`Projectile.chainTo`
+  the nearest unhit enemy within `SHOT_CHAIN.reach`, after its pierce), 지속
+  and 가속 lengthening a thrown skill's range (`GameScene.contextFor`), and
+  포격 (`turret` → `byTurretFor`: the survivor's weapon rests and
+  `GameScene.tickTurrets` sets a turret down every `TURRET.everyMs`, each
+  its own weapon instance, kept and reused, cast from the turret's body for
+  `TURRET.lifeMs`). Stats a 룬's `detail` says better are `hidden` in
+  STAT_SPECS. Extra projectiles fan out round the aim (`ProjectileWeapon.fire`).
 - **폭발의 구슬 climbs, or swaps at the top.** It picks among lines below
   tier 1, and the replacement comes only from 속성 that have the rung above.
   On a weapon whose every line is tier 1 it trades one for a different

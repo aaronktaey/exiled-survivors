@@ -25,6 +25,10 @@ export interface LaunchSpec {
   readonly fireZoneMs?: number;
   /** The skill that threw it, so what it hits and kills is booked to that skill. */
   readonly skill?: SkillId;
+  /** 연쇄: times a shot that has hit turns to another enemy, after its pierce is spent. */
+  readonly chain?: number;
+  /** 관통의 룬: what it keeps of its damage each time it passes through. 1 for all of it. */
+  readonly pierceKeep?: number;
   readonly texture: string;
   /** Drawn size. Width runs along the flight path. */
   readonly width: number;
@@ -49,6 +53,11 @@ export class Projectile extends Phaser.Physics.Arcade.Image {
   public fireZoneMs = 0;
   /** The skill that threw it. */
   public skill?: SkillId;
+  /** What it keeps of its damage on each pierce (관통의 룬). */
+  public pierceKeep = 1;
+  /** Turns to another enemy left (연쇄). */
+  public chainLeft = 0;
+  private speed = 0;
 
   private remainingMs = 0;
   /** Enemies left to pass through before it fizzles. */
@@ -70,6 +79,9 @@ export class Projectile extends Phaser.Physics.Arcade.Image {
     this.fireZoneMs = spec.fireZoneMs ?? 0;
     this.skill = spec.skill;
     this.pierceLeft = Math.max(0, Math.round(spec.pierce));
+    this.chainLeft = Math.max(0, Math.round(spec.chain ?? 0));
+    this.pierceKeep = spec.pierceKeep ?? 1;
+    this.speed = spec.speed;
     this.struck.clear();
 
     // Fizzle at the edge of the skill's range (plus a little overshoot), so a
@@ -111,6 +123,27 @@ export class Projectile extends Phaser.Physics.Arcade.Image {
     }
 
     this.pierceLeft -= 1;
+    return true;
+  }
+
+  /** Whether this shot has already hit the enemy (a 연쇄 does not turn back to one). */
+  public hasStruck(enemy: Enemy): boolean {
+    return this.struck.has(enemy);
+  }
+
+  /**
+   * 연쇄: turns the shot toward another enemy, from where it is, and gives it
+   * the time in the air to get there. False when it has no turns left.
+   */
+  public chainTo(x: number, y: number, reach: number): boolean {
+    if (this.chainLeft <= 0) {
+      return false;
+    }
+    this.chainLeft -= 1;
+    const angle = Phaser.Math.Angle.Between(this.x, this.y, x, y);
+    this.setRotation(angle);
+    this.scene.physics.velocityFromRotation(angle, this.speed, (this.body as Phaser.Physics.Arcade.Body).velocity);
+    this.remainingMs = Math.max(this.remainingMs, ((reach * WEAPON.rangeOvershoot) / Math.max(1, this.speed)) * 1000);
     return true;
   }
 

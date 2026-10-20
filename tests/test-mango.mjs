@@ -113,7 +113,7 @@ const rule = await run(`
   // pinned kills below then only reuse what is there.
   const P = s.player, cmb = s.combat;
   cmb.dropPotionAt(P.x, P.y); cmb.dropMangoAt(P.x, P.y); cmb.dropMagnetAt(P.x, P.y);
-  cmb.dropOrbAt(P.x, P.y, 'chaos'); cmb.dropBoneAt(P.x, P.y, 'rib'); cmb.dropRuneAt(P.x, P.y, 'power');
+  cmb.dropOrbAt(P.x, P.y, 'chaos'); cmb.dropBoneAt(P.x, P.y, 'rib'); cmb.dropRuneAt(P.x, P.y, 'split');
   cmb.dropAltarAt(P.x, P.y + 300, 'bosses');
   cmb.dropChiselAt(P.x, P.y);
   cmb.dropGearAt(P.x, P.y, { uid: 'warm', id: 'rustySword', prefixes: [], suffixes: [] });

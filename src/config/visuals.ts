@@ -181,6 +181,8 @@ export const TEXTURES = {
   orbMango: "tex-orb-mango",
   /** 룬 끌 on the ground and on its choice. */
   runeChisel: "tex-rune-chisel",
+  /** 포격의 룬's turret. */
+  turret: "tex-turret",
   trophy: "tex-trophy",
   /** 거미줄's slow, as an icon among the survivor's effects. */
   webIcon: "tex-web-icon",

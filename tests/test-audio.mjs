@@ -116,7 +116,7 @@ check('and a rare drop is one clip rather than two played together',
 
 // --- 5. picking a 룬 up must NOT play the drop sound again ---
 const onPickup = await run(`
-  s.combat.dropRuneAt(s.player.x + 300, s.player.y, 'power');
+  s.combat.dropRuneAt(s.player.x + 300, s.player.y, 'split');
   window.__plays = [];
   const mgr = s.sound;
   const orig = mgr.play.bind(mgr);
@@ -157,7 +157,7 @@ const viaKill = await run(`
   // Phaser rolls Math.random for a new Text: fill every pool a kill can draw
   // from first, with the real roll, before it is pinned.
   const c = s.combat, P = s.player;
-  c.dropRuneAt(P.x + 400, P.y, 'power'); c.dropChiselAt(P.x + 400, P.y); c.dropMangoAt(P.x + 400, P.y);
+  c.dropRuneAt(P.x + 400, P.y, 'split'); c.dropChiselAt(P.x + 400, P.y); c.dropMangoAt(P.x + 400, P.y);
   c.dropMagnetAt(P.x + 400, P.y); c.dropPotionAt(P.x + 400, P.y); c.dropOrbAt(P.x + 400, P.y, 'chaos');
   c.dropBoneAt(P.x + 400, P.y, 'rib'); c.dropAltarAt(P.x + 400, P.y + 300, 'bosses');
   c.dropGearAt(P.x + 400, P.y, { uid: 'warm', id: 'rustySword', prefixes: [], suffixes: [] });

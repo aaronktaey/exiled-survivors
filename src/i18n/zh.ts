@@ -507,16 +507,19 @@ export const zh: Strings = {
 
   names: {
     runes: {
-      power: '威力符文',
-      haste: '迅捷符文',
       split: '分裂符文',
       pierce: '贯穿符文',
       chain: '连锁符文',
       expanse: '扩展符文',
       linger: '持续符文',
-      precision: '精准符文',
-      brutality: '残酷符文',
       velocity: '加速符文',
+      repeat: '重复符文',
+      bombard: '炮击符文',
+    },
+    runeDetails: {
+      repeat: '技能施放 {casts} 次',
+      pierce: '每次贯穿伤害降低 {decay}（乘算）',
+      bombard: '由炮台代替玩家施放 — 每 {every} 秒设置一个，持续 {life} 秒',
     },
     stats: {
       damage: '伤害',
@@ -537,6 +540,9 @@ export const zh: Strings = {
       potionHeal: '药水回复量',
       xpGain: '经验值',
       itemFind: '物品发现',
+      repeatCount: '重复施放',
+      pierceDecay: '每次贯穿伤害降低',
+      turret: '炮台',
     },
     skills: {
       meleeStrike: '打击',

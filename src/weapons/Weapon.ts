@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 
+import { RUNE_REPEAT } from '@/config';
 import type { Enemy } from '@/entities/Enemy';
 import type { SkillDefinition } from '@/weapons/skills';
 
@@ -13,6 +14,8 @@ export interface Weapon {
   readonly projectiles?: Phaser.Physics.Arcade.Group;
   /** Advance the cooldown and fire if it is ready. */
   update(delta: number, context: WeaponContext): void;
+  /** Put away whatever it keeps on screen between casts (공허구체's orbs) while it is not being updated. */
+  rest?(): void;
 }
 
 export interface WeaponContext {
@@ -48,12 +51,47 @@ export interface WeaponContext {
   readonly areaScale?: number;
   /** How long what it leaves behind lasts (냉각, 동결, burning ground), against its own. */
   readonly durationScale?: number;
+  /** 반복의 룬: casts after each one that goes off, RUNE_REPEAT.gapMs apart. */
+  readonly repeats?: number;
+  /** 관통의 룬: what a shot keeps of its damage each time it passes through an enemy. */
+  readonly pierceKeep?: number;
   /** Applies damage and resolves the kill (gem and skill drops), booked to this skill. */
   readonly hit: (enemy: Enemy, amount: number) => void;
   /** The skill is at SKILL_MASTERY.level: its 각성 effect is on. */
   readonly mastered: boolean;
   /** The enemies' shots in the air, for a skill that can strike them down (타격). */
   readonly enemyShots: Phaser.Physics.Arcade.Group;
+}
+
+/**
+ * 반복의 룬's casts still owed after the one that went off, each
+ * RUNE_REPEAT.gapMs after the last. Ticked by the weapon's own update, so a
+ * held run (a card open, the pause) holds them too. A repeat that finds
+ * nothing in reach goes off as nothing.
+ */
+export class RepeatQueue {
+  private owed = 0;
+  private untilNextMs = 0;
+
+  /** After a cast: `count` more to come. */
+  public schedule(count: number): void {
+    if (count > 0) {
+      this.owed = count;
+      this.untilNextMs = RUNE_REPEAT.gapMs;
+    }
+  }
+
+  public tick(delta: number, cast: () => void): void {
+    if (this.owed <= 0) {
+      return;
+    }
+    this.untilNextMs -= delta;
+    while (this.owed > 0 && this.untilNextMs <= 0) {
+      this.owed -= 1;
+      this.untilNextMs += RUNE_REPEAT.gapMs;
+      cast();
+    }
+  }
 }
 
 /**

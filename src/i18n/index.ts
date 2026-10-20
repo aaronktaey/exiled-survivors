@@ -7,6 +7,7 @@ import {
   ORBS,
   affixTier,
   RUNES,
+  TURRET,
   STAT_SPECS,
   type AffixId,
   type AffixKind,
@@ -274,10 +275,13 @@ export function modifierSubject(mod: Modifier): string {
 /** "화염 스킬 피해 +6%" — a modifier written out, its first letter raised for the languages that have one. */
 export function modifierLine(mod: Modifier): string {
   const spec = STAT_SPECS[mod.stat];
+  // A modifier that takes away (a 룬's price) turns its sign round.
+  const flip = mod.value < 0;
+  const sign = flip ? (spec.sign === '+' ? '-' : '+') : spec.sign;
   const line = fill(t().runes.statLine, {
     stat: modifierSubject(mod),
-    sign: spec.sign,
-    value: Number(mod.value.toFixed(2)),
+    sign,
+    value: Number(Math.abs(mod.value).toFixed(2)),
     unit: spec.unit,
   });
   return line.charAt(0).toUpperCase() + line.slice(1);
@@ -290,7 +294,19 @@ export function runeName(id: RuneId): string {
 
 /** What a 룬 does, a line per modifier. */
 export function runeLines(id: RuneId): string[] {
-  return (RUNES[id]?.mods ?? []).map(modifierLine);
+  const spec = RUNES[id];
+  if (!spec) {
+    return [];
+  }
+  const value = (stat: string) => spec.mods.find((mod) => mod.stat === stat)?.value ?? 0;
+  const numbers = {
+    casts: 1 + value('repeatCount'),
+    decay: `${value('pierceDecay')}%`,
+    every: TURRET.everyMs / 1000,
+    life: TURRET.lifeMs / 1000,
+  };
+  const detail = spec.detail ? [fill(t().names?.runeDetails?.[id] ?? spec.detail, numbers)] : [];
+  return [...detail, ...spec.mods.filter((mod) => !STAT_SPECS[mod.stat].hidden).map(modifierLine)];
 }
 
 /** Which skills a 룬 works on, as one line. */

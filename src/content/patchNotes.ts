@@ -15,6 +15,52 @@ export interface PatchNote {
 
 export const PATCH_NOTES: readonly PatchNote[] = [
   {
+    version: '0.75',
+    date: '2026-10-20',
+    changes: {
+      ko: [
+        '위력·신속·정밀·잔혹의 룬을 없앴습니다.',
+        '추가 투사체는 이제 다른 적을 노리지 않고, 처음 쏘는 방향으로 부채꼴을 그리며 함께 날아갑니다.',
+        '반복의 룬 추가: 스킬을 3번 시전하고, 피해 -60%.',
+        '포격의 룬 추가: 플레이어 대신 포탑이 스킬을 시전합니다. 2초마다 발밑에 포탑을 설치하고, 포탑은 5초 동안 남습니다. 피해 -40%.',
+        '분열의 룬: 투사체 +1, 피해 -40%.',
+        '관통의 룬: 관통 +2, 관통할 때마다 피해가 30%씩 곱연산으로 줄어듭니다. 화염구에도 적용됩니다.',
+        '연쇄의 룬: 화염구와 얼음창에도 적용됩니다. 적에게 맞은 투사체가 근처의 다음 적으로 방향을 틉니다.',
+        '지속의 룬과 가속의 룬은 투사체 스킬의 사거리도 늘립니다.',
+      ],
+      en: [
+        'The Runes of Power, Haste, Precision and Brutality are gone.',
+        'Extra projectiles no longer aim at other enemies: they fly together in a fan around the first shot’s direction.',
+        'New Rune of Repetition: casts the skill 3 times, damage -60%.',
+        'New Rune of Bombardment: turrets cast the skill instead of you. One is set down at your feet every 2 seconds and lasts 5 seconds. Damage -40%.',
+        'Rune of Splitting: +1 projectile, damage -40%.',
+        'Rune of Piercing: +2 pierce, and each enemy passed through costs 30% of the damage, compounding. It now works on Fireball too.',
+        'Rune of Chaining: now works on Fireball and Ice Spear — a shot that hits turns to the next enemy nearby.',
+        'The Runes of Lingering and Velocity also lengthen a projectile skill’s range.',
+      ],
+      ja: [
+        '威力・迅速・精密・残酷のルーンを削除しました。',
+        '追加の投射物は他の敵を狙わず、最初に撃つ方向に扇状に一緒に飛ぶようになりました。',
+        '反復のルーンを追加：スキルを3回発動し、ダメージ -60%。',
+        '砲撃のルーンを追加：プレイヤーの代わりに砲台がスキルを発動します。2秒ごとに足元に砲台を設置し、砲台は5秒間残ります。ダメージ -40%。',
+        '分裂のルーン：投射物 +1、ダメージ -40%。',
+        '貫通のルーン：貫通 +2、貫通するたびにダメージが30%ずつ乗算で減ります。ファイアボールにも適用されます。',
+        '連鎖のルーン：ファイアボールとアイススピアにも適用されます。命中した投射物が近くの次の敵へ向きを変えます。',
+        '持続のルーンと加速のルーンは投射物スキルの射程も伸ばします。',
+      ],
+      zh: [
+        '移除了威力、迅捷、精准、残酷符文。',
+        '追加投射物不再瞄准其他敌人，而是沿第一发的方向呈扇形一起飞出。',
+        '新增重复符文：技能施放 3 次，伤害 -60%。',
+        '新增炮击符文：由炮台代替玩家施放技能。每 2 秒在脚下设置一个炮台，炮台持续 5 秒。伤害 -40%。',
+        '分裂符文：投射物 +1，伤害 -40%。',
+        '贯穿符文：贯穿 +2，每次贯穿伤害按乘算降低 30%。现在也适用于火球。',
+        '连锁符文：现在也适用于火球和冰枪，命中的投射物会转向附近的下一个敌人。',
+        '持续符文和加速符文也会增加投射物技能的射程。',
+      ],
+    },
+  },
+  {
     version: '0.74',
     date: '2026-10-20',
     changes: {

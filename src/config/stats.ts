@@ -39,7 +39,13 @@ export type StatId =
   /** Experience from every gem. */
   | 'xpGain'
   /** Every item drop's chance (not the 망고 or the 자석, which nothing raises). */
-  | 'itemFind';
+  | 'itemFind'
+  /** Count: casts after the one that went off (반복의 룬). */
+  | 'repeatCount'
+  /** Percent of its damage a shot loses each time it passes through an enemy (관통의 룬), compounding. */
+  | 'pierceDecay'
+  /** Count: the skill is cast by turrets instead (포격의 룬); more than one is still one. */
+  | 'turret';
 
 export interface Modifier {
   readonly stat: StatId;
@@ -56,6 +62,8 @@ export interface StatSpec {
   readonly unit: '%' | '';
   /** '-' for a stat that is better lower (받는 피해). */
   readonly sign: '+' | '-';
+  /** Not written out as a line: a 룬's own `detail` says it better. */
+  readonly hidden?: boolean;
 }
 
 export const STAT_SPECS: Record<StatId, StatSpec> = {
@@ -77,4 +85,7 @@ export const STAT_SPECS: Record<StatId, StatSpec> = {
   potionHeal: { name: '포션 회복량', unit: '%', sign: '+' },
   xpGain: { name: '경험치', unit: '%', sign: '+' },
   itemFind: { name: '아이템 발견', unit: '%', sign: '+' },
+  repeatCount: { name: '반복 시전', unit: '', sign: '+', hidden: true },
+  pierceDecay: { name: '관통당 피해 감소', unit: '%', sign: '+', hidden: true },
+  turret: { name: '포탑', unit: '', sign: '+', hidden: true },
 };

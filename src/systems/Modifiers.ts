@@ -112,6 +112,21 @@ export function areaRadiusFor(skill: SkillId, mods: RunModifiers): number {
   return Math.sqrt(runesOf(skill, mods).scale('area'));
 }
 
+/** 반복의 룬: casts after each one that goes off. */
+export function repeatsFor(skill: SkillId, mods: RunModifiers): number {
+  return Math.max(0, Math.round(runesOf(skill, mods).total('repeatCount')));
+}
+
+/** 관통의 룬: what a shot keeps of its damage each time it passes through an enemy. */
+export function pierceKeepFor(skill: SkillId, mods: RunModifiers): number {
+  return Math.max(0, 1 - runesOf(skill, mods).total('pierceDecay') / 100);
+}
+
+/** 포격의 룬: the skill is cast by turrets rather than by the survivor. */
+export function byTurretFor(skill: SkillId, mods: RunModifiers): boolean {
+  return runesOf(skill, mods).total('turret') > 0;
+}
+
 /** How long what the skill leaves behind lasts, against its own. */
 export function durationScaleFor(skill: SkillId, mods: RunModifiers): number {
   return runesOf(skill, mods).scale('duration');

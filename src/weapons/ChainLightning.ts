@@ -5,7 +5,7 @@ import type { Enemy } from '@/entities/Enemy';
 import { sfx } from '@/systems/Sfx';
 import { drawBolt } from '@/weapons/bolt';
 import { SKILLS } from '@/weapons/skills';
-import { findNearestEnemy, type Weapon, type WeaponContext } from '@/weapons/Weapon';
+import { RepeatQueue, findNearestEnemy, type Weapon, type WeaponContext } from '@/weapons/Weapon';
 
 /**
  * Drop-only skill: an instant arc that strikes the nearest enemy and then
@@ -19,6 +19,7 @@ export class ChainLightning implements Weapon {
   private readonly scene: Phaser.Scene;
   private readonly bolt: Phaser.GameObjects.Graphics;
   private sinceCastMs = 0;
+  private readonly repeats = new RepeatQueue();
   /** Victims of the current cast, so the arc cannot double back. */
   private readonly struck = new Set<Enemy>();
 
@@ -28,20 +29,30 @@ export class ChainLightning implements Weapon {
   }
 
   public update(delta: number, context: WeaponContext): void {
+    this.repeats.tick(delta, () => this.strikeNearest(context));
     this.sinceCastMs += delta;
     if (this.sinceCastMs < context.cooldownMs) {
       return;
     }
 
-    const first = findNearestEnemy(context.origin.x, context.origin.y, context.enemies, context.range);
-    if (!first) {
+    if (!this.strikeNearest(context)) {
       // Hold the charge so the first enemy to wander in is struck at once.
       this.sinceCastMs = context.cooldownMs;
       return;
     }
 
     this.sinceCastMs = 0;
+    this.repeats.schedule(context.repeats ?? 0);
+  }
+
+  /** One arc from the nearest enemy in range. False when nobody is. */
+  private strikeNearest(context: WeaponContext): boolean {
+    const first = findNearestEnemy(context.origin.x, context.origin.y, context.enemies, context.range);
+    if (!first) {
+      return false;
+    }
     this.strike(context, first);
+    return true;
   }
 
   /**

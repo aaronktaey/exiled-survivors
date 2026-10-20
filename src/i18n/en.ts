@@ -507,16 +507,19 @@ export const en: Strings = {
 
   names: {
     runes: {
-      power: 'Rune of Power',
-      haste: 'Rune of Haste',
       split: 'Rune of Splitting',
       pierce: 'Rune of Piercing',
       chain: 'Rune of Chaining',
       expanse: 'Rune of Expanse',
       linger: 'Rune of Lingering',
-      precision: 'Rune of Precision',
-      brutality: 'Rune of Brutality',
       velocity: 'Rune of Velocity',
+      repeat: 'Rune of Repetition',
+      bombard: 'Rune of Bombardment',
+    },
+    runeDetails: {
+      repeat: 'Casts the skill {casts} times',
+      pierce: 'Each enemy passed through costs {decay} of its damage (compounding)',
+      bombard: 'Turrets cast it instead of you — one set down every {every}s, lasting {life}s',
     },
     stats: {
       damage: 'damage',
@@ -537,6 +540,9 @@ export const en: Strings = {
       potionHeal: 'potion healing',
       xpGain: 'experience',
       itemFind: 'item find',
+      repeatCount: 'Repeat casts',
+      pierceDecay: 'Damage lost per pierce',
+      turret: 'Turret',
     },
     skills: {
       meleeStrike: 'Strike',

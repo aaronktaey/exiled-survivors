@@ -5,7 +5,7 @@ import type { Enemy } from '@/entities/Enemy';
 import { sfx } from '@/systems/Sfx';
 import { drawBolt } from '@/weapons/bolt';
 import { SKILLS } from '@/weapons/skills';
-import { findNearestEnemy, type Weapon, type WeaponContext } from '@/weapons/Weapon';
+import { RepeatQueue, findNearestEnemy, type Weapon, type WeaponContext } from '@/weapons/Weapon';
 
 /**
  * Drop-only skill: a bolt out of the sky onto the enemy nearest the
@@ -25,6 +25,7 @@ export class ThunderStrike implements Weapon {
   private readonly scene: Phaser.Scene;
   private readonly bolt: Phaser.GameObjects.Graphics;
   private sinceCastMs = 0;
+  private readonly repeats = new RepeatQueue();
   /** How many strikes the last cast came to. Public for tests. */
   public lastStrikes = 0;
 
@@ -34,19 +35,28 @@ export class ThunderStrike implements Weapon {
   }
 
   public update(delta: number, context: WeaponContext): void {
+    this.repeats.tick(delta, () => this.strikeOnce(context));
     this.sinceCastMs += delta;
     if (this.sinceCastMs < context.cooldownMs) {
       return;
     }
 
-    const first = this.pick(context);
-    if (!first) {
+    if (!this.strikeOnce(context)) {
       // Hold the charge so the first enemy to wander in is struck at once.
       this.sinceCastMs = context.cooldownMs;
       return;
     }
 
     this.sinceCastMs = 0;
+    this.repeats.schedule(context.repeats ?? 0);
+  }
+
+  /** One bolt, on an enemy picked in range. False when nobody is. */
+  private strikeOnce(context: WeaponContext): boolean {
+    const first = this.pick(context);
+    if (!first) {
+      return false;
+    }
     this.bolt.clear();
     this.lastStrikes = 0;
     this.cast(context, first);
@@ -54,6 +64,7 @@ export class ThunderStrike implements Weapon {
     this.bolt.setAlpha(1);
     this.scene.tweens.add({ targets: this.bolt, alpha: 0, duration: THUNDER.flashMs });
     sfx.playSkill(this.scene, this.definition.id);
+    return true;
   }
 
   /** One bolt: the first strike, then a recast for as long as kills keep winning the roll. */

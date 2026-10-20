@@ -18,7 +18,8 @@ export class Fireball extends ProjectileWeapon {
       damage: context.damage,
       speed: context.projectileSpeed,
       range: context.range,
-      pierce: 0,
+      // It bursts on everything it passes through (관통의 룬).
+      pierce: context.pierceCount,
       chillMs: 0,
       blastRadius: FIREBALL.blastRadius * (context.areaScale ?? 1),
       fireZoneDps: context.mastered ? context.damage * SKILL_MASTERY.fireZone.damageShare : 0,

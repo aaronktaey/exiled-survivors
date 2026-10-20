@@ -507,16 +507,19 @@ export const ja: Strings = {
 
   names: {
     runes: {
-      power: '威力のルーン',
-      haste: '迅速のルーン',
       split: '分裂のルーン',
       pierce: '貫通のルーン',
       chain: '連鎖のルーン',
       expanse: '拡張のルーン',
       linger: '持続のルーン',
-      precision: '精密のルーン',
-      brutality: '残酷のルーン',
       velocity: '加速のルーン',
+      repeat: '反復のルーン',
+      bombard: '砲撃のルーン',
+    },
+    runeDetails: {
+      repeat: 'スキルを{casts}回発動します',
+      pierce: '貫通するたびにダメージ {decay} 減少（乗算）',
+      bombard: 'プレイヤーの代わりに砲台が発動 — {every}秒ごとに設置、{life}秒持続',
     },
     stats: {
       damage: 'ダメージ',
@@ -537,6 +540,9 @@ export const ja: Strings = {
       potionHeal: 'ポーション回復量',
       xpGain: '経験値',
       itemFind: 'アイテム発見',
+      repeatCount: '反復発動',
+      pierceDecay: '貫通ごとのダメージ減少',
+      turret: '砲台',
     },
     skills: {
       meleeStrike: '打撃',

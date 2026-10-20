@@ -4,7 +4,7 @@ import { COLORS, DEPTH, MELEE } from '@/config';
 import type { Enemy } from '@/entities/Enemy';
 import { sfx } from '@/systems/Sfx';
 import { SKILLS } from '@/weapons/skills';
-import type { Weapon, WeaponContext } from '@/weapons/Weapon';
+import { RepeatQueue, type Weapon, type WeaponContext } from '@/weapons/Weapon';
 
 /**
  * How far the swing has to reach to touch an enemy as it is drawn, and how
@@ -32,6 +32,7 @@ export class MeleeStrike implements Weapon {
   private readonly scene: Phaser.Scene;
   private readonly flash: Phaser.GameObjects.Graphics;
   private sinceSwingMs = 0;
+  private readonly repeats = new RepeatQueue();
   /** Enemy shots struck down by the 각성 swing. Public for tests. */
   public strikes = 0;
 
@@ -41,20 +42,30 @@ export class MeleeStrike implements Weapon {
   }
 
   public update(delta: number, context: WeaponContext): void {
+    this.repeats.tick(delta, () => this.swingAtNearest(context));
     this.sinceSwingMs += delta;
     if (this.sinceSwingMs < context.cooldownMs) {
       return;
     }
 
-    const target = this.nearestInReach(context);
-    if (!target) {
+    if (!this.swingAtNearest(context)) {
       // Hold the charge so the first enemy to step into reach is hit at once.
       this.sinceSwingMs = context.cooldownMs;
       return;
     }
 
     this.sinceSwingMs = 0;
+    this.repeats.schedule(context.repeats ?? 0);
+  }
+
+  /** One swing at the nearest enemy in reach. False when nobody is. */
+  private swingAtNearest(context: WeaponContext): boolean {
+    const target = this.nearestInReach(context);
+    if (!target) {
+      return false;
+    }
     this.swing(context, target);
+    return true;
   }
 
   /** The enemy whose drawn edge is nearest, if any edge is within reach. */

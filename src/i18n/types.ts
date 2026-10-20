@@ -756,6 +756,8 @@ export interface Strings {
     /** A base's 고정 속성, with {value} and {skill}. Korean reads the table. */
     readonly gearImplicits?: Record<string, string>;
     readonly runes?: Record<string, string>;
+    /** A 룬's `detail`, with its {placeholders}. Korean reads the table. */
+    readonly runeDetails?: Record<string, string>;
     readonly stats?: Record<string, string>;
   };
 

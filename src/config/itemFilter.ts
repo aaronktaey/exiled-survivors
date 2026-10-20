@@ -38,7 +38,7 @@ export const ITEM_FILTER: readonly FilterSection[] = [
     id: 'supplies',
     entries: [
       { key: 'potion', texture: TEXTURES.potion, tier: 'normal' },
-      { key: 'rune', texture: runeTexture('power'), tier: 'magic' },
+      { key: 'rune', texture: runeTexture('split'), tier: 'magic' },
       { key: 'chisel', texture: TEXTURES.runeChisel, tier: 'rare' },
       { key: 'mango', texture: TEXTURES.mango, tier: 'rare' },
       { key: 'magnet', texture: TEXTURES.magnet, tier: 'rare' },

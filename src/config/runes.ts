@@ -15,17 +15,7 @@ import type { SkillId } from '@/weapons/skills';
  * Adding one means a line in RUNES, a name in the locales, and nothing else:
  * the drop, the label, the 룬 screen, the guide and the filter read this table.
  */
-export type RuneId =
-  | 'power'
-  | 'haste'
-  | 'split'
-  | 'pierce'
-  | 'chain'
-  | 'expanse'
-  | 'linger'
-  | 'precision'
-  | 'brutality'
-  | 'velocity';
+export type RuneId = 'repeat' | 'split' | 'pierce' | 'chain' | 'expanse' | 'linger' | 'velocity' | 'bombard';
 
 export interface RuneSpec {
   readonly id: RuneId;
@@ -33,6 +23,12 @@ export interface RuneSpec {
   readonly name: string;
   /** What it does to the skill it is set in. */
   readonly mods: readonly Modifier[];
+  /**
+   * A line said before the modifiers, for what they do not say by
+   * themselves — Korean, {placeholders} filled from the numbers (runeLines);
+   * a locale renames it through `names.runeDetails`.
+   */
+  readonly detail?: string;
   /**
    * The skills it does anything for, when not every one: a 룬 of 관통 on a
    * skill whose hits never fly does nothing, and the 룬 screen says so.
@@ -45,95 +41,92 @@ export interface RuneSpec {
   readonly glyph: readonly (readonly [number, number, number, number])[];
 }
 
-/** The skills whose hits fly: what a 룬 of 분열, 관통 or 가속 works on. */
-const THROWN: readonly SkillId[] = ['fireball', 'iceSpear', 'voidOrb'];
+/** The skills that throw what they hit with: what 관통, 지속 and 가속 change the flight of. */
+const THROWN: readonly SkillId[] = ['fireball', 'iceSpear'];
 
+/**
+ * 0.75 (the user's ask): 위력 · 신속 · 정밀 · 잔혹 went, 반복 and 포격 came,
+ * and each 룬 that adds something now asks something back.
+ */
 export const RUNES: Record<RuneId, RuneSpec> = {
-  power: {
-    id: 'power',
-    name: '위력의 룬',
-    mods: [{ stat: 'damage', value: 30 }],
-    weight: 14,
-    color: 0xe0564a,
-    glyph: [[0.5, 0.15, 0.5, 0.85], [0.25, 0.4, 0.5, 0.15], [0.75, 0.4, 0.5, 0.15]],
-  },
-  haste: {
-    id: 'haste',
-    name: '신속의 룬',
-    mods: [{ stat: 'attackSpeed', value: 20 }],
-    weight: 14,
+  repeat: {
+    id: 'repeat',
+    name: '반복의 룬',
+    // Two casts more than the one that went off: three in all.
+    mods: [{ stat: 'repeatCount', value: 2 }, { stat: 'damage', value: -60 }],
+    detail: '스킬을 {casts}번 시전합니다',
+    skills: ['meleeStrike', 'fireball', 'chainLightning', 'iceSpear', 'thunderStrike'],
+    weight: 10,
     color: 0xf0d050,
-    glyph: [[0.3, 0.2, 0.6, 0.5], [0.6, 0.5, 0.3, 0.8], [0.5, 0.2, 0.8, 0.5], [0.8, 0.5, 0.5, 0.8]],
+    glyph: [[0.2, 0.3, 0.8, 0.3], [0.2, 0.5, 0.8, 0.5], [0.2, 0.7, 0.8, 0.7]],
   },
   split: {
     id: 'split',
     name: '분열의 룬',
-    mods: [{ stat: 'projectileCount', value: 1 }],
-    skills: THROWN,
-    weight: 8,
+    mods: [{ stat: 'projectileCount', value: 1 }, { stat: 'damage', value: -40 }],
+    skills: ['fireball', 'iceSpear', 'voidOrb'],
+    weight: 12,
     color: 0x5cb85c,
     glyph: [[0.5, 0.85, 0.5, 0.5], [0.5, 0.5, 0.2, 0.15], [0.5, 0.5, 0.8, 0.15]],
   },
   pierce: {
     id: 'pierce',
     name: '관통의 룬',
-    mods: [{ stat: 'pierceCount', value: 2 }],
-    skills: ['fireball', 'iceSpear'],
-    weight: 10,
+    mods: [{ stat: 'pierceCount', value: 2 }, { stat: 'pierceDecay', value: 30 }],
+    detail: '관통할 때마다 피해 {decay} 감소 (곱연산)',
+    skills: THROWN,
+    weight: 12,
     color: 0x7fb8e8,
     glyph: [[0.15, 0.5, 0.85, 0.5], [0.6, 0.3, 0.85, 0.5], [0.6, 0.7, 0.85, 0.5], [0.35, 0.25, 0.35, 0.75]],
   },
   chain: {
     id: 'chain',
     name: '연쇄의 룬',
+    // On a thrown skill, a shot that has hit turns to the next enemy near it.
     mods: [{ stat: 'chainCount', value: 1 }],
-    skills: ['chainLightning'],
-    weight: 8,
+    skills: ['chainLightning', 'fireball', 'iceSpear'],
+    weight: 10,
     color: 0x9bd3ff,
     glyph: [[0.2, 0.2, 0.45, 0.45], [0.45, 0.45, 0.3, 0.6], [0.3, 0.6, 0.8, 0.8], [0.55, 0.2, 0.8, 0.45]],
   },
   expanse: {
     id: 'expanse',
     name: '확장의 룬',
+    // 공허구체: the orbs themselves grow.
     mods: [{ stat: 'area', value: 30 }],
     skills: ['meleeStrike', 'fireball', 'voidOrb'],
-    weight: 10,
+    weight: 12,
     color: 0xf0ad4e,
     glyph: [[0.5, 0.15, 0.5, 0.85], [0.15, 0.5, 0.85, 0.5], [0.25, 0.25, 0.75, 0.75], [0.75, 0.25, 0.25, 0.75]],
   },
   linger: {
     id: 'linger',
     name: '지속의 룬',
+    // A thrown shot stays in the air that much longer: it reaches further.
     mods: [{ stat: 'duration', value: 40 }],
-    skills: ['fireball', 'iceSpear'],
-    weight: 8,
+    skills: THROWN,
+    weight: 10,
     color: 0x9b6bff,
     glyph: [[0.25, 0.2, 0.75, 0.2], [0.25, 0.8, 0.75, 0.8], [0.3, 0.2, 0.7, 0.8], [0.7, 0.2, 0.3, 0.8]],
-  },
-  precision: {
-    id: 'precision',
-    name: '정밀의 룬',
-    mods: [{ stat: 'critChance', value: 50 }],
-    weight: 10,
-    color: 0xffffff,
-    glyph: [[0.5, 0.15, 0.5, 0.4], [0.5, 0.6, 0.5, 0.85], [0.15, 0.5, 0.4, 0.5], [0.6, 0.5, 0.85, 0.5]],
-  },
-  brutality: {
-    id: 'brutality',
-    name: '잔혹의 룬',
-    mods: [{ stat: 'critMultiplier', value: 30 }],
-    weight: 10,
-    color: 0xd45fd0,
-    glyph: [[0.2, 0.8, 0.5, 0.2], [0.5, 0.2, 0.8, 0.8], [0.3, 0.55, 0.7, 0.55]],
   },
   velocity: {
     id: 'velocity',
     name: '가속의 룬',
+    // Faster in the same time in the air: it reaches further too.
     mods: [{ stat: 'projectileSpeed', value: 30 }],
-    skills: ['fireball', 'iceSpear'],
-    weight: 8,
+    skills: THROWN,
+    weight: 10,
     color: 0x6aa9ff,
     glyph: [[0.15, 0.35, 0.6, 0.35], [0.15, 0.65, 0.6, 0.65], [0.6, 0.2, 0.85, 0.5], [0.85, 0.5, 0.6, 0.8]],
+  },
+  bombard: {
+    id: 'bombard',
+    name: '포격의 룬',
+    mods: [{ stat: 'turret', value: 1 }, { stat: 'damage', value: -40 }],
+    detail: '플레이어 대신 포탑이 시전합니다 — {every}초마다 설치, {life}초 지속',
+    weight: 8,
+    color: 0xd45f3a,
+    glyph: [[0.3, 0.85, 0.7, 0.85], [0.35, 0.85, 0.35, 0.45], [0.65, 0.85, 0.65, 0.45], [0.35, 0.45, 0.65, 0.45], [0.5, 0.45, 0.8, 0.15]],
   },
 };
 
@@ -158,6 +151,18 @@ export const RUNE_DROP = {
   /** How big one is drawn on the ground. */
   size: 22,
 } as const;
+
+/** 반복의 룬: how long after one cast the next of its repeats goes off. */
+export const RUNE_REPEAT = { gapMs: 160 } as const;
+
+/**
+ * 포격의 룬: the skill is cast by turrets instead of the survivor. One is set
+ * down where the survivor stands every `everyMs`, and each lasts `lifeMs`.
+ */
+export const TURRET = { everyMs: 2000, lifeMs: 5000, size: 30 } as const;
+
+/** 연쇄 on a thrown skill: how far from the enemy it hit a shot looks for the next. */
+export const SHOT_CHAIN = { reach: 260 } as const;
 
 /** ★ 룬 끌 — picked up, it adds a 강화 슬롯 to a skill the survivor picks. */
 export const RUNE_CHISEL = {

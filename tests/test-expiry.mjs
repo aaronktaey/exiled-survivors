@@ -18,7 +18,7 @@ const run = (body) => cdp.evaluate(`(() => { const s = window.game.scene.getScen
 await cdp.send('Page.reload', {});
 await sleep(4000);
 
-const DEF = `'power'`;
+const DEF = `'split'`;
 
 // --- 1. no cap any more ---
 const uncapped = await run(`
@@ -89,7 +89,7 @@ check('blink speeds up as time runs out',
 // --- 5. the halo is the drop's own colour ---
 const colour = await run(`
   const d = window.__drop;
-  return { glow: d.glow.fillColor, orb: window.config.RUNES.power.color };
+  return { glow: d.glow.fillColor, orb: window.config.RUNES.split.color };
 `);
 check('halo is lit in the 룬’s own colour', colour.glow === colour.orb,
   `glow=#${colour.glow.toString(16).toUpperCase()}`);

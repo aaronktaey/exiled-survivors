@@ -231,7 +231,7 @@ const rim = await run(`
   put = at(1.9, 620); s.combat.dropMangoAt(put.x, put.y);
   put = at(3.1, 560); s.combat.dropOrbAt(put.x, put.y, 'chaos');
   put = at(5.6, 760);
-  s.combat.dropRuneAt(put.x, put.y, 'power');
+  s.combat.dropRuneAt(put.x, put.y, 'split');
   const boss = s.spawner.spawnBoss();
   put = at(5.0, 640);
   boss.setPosition(put.x, put.y);
@@ -252,7 +252,7 @@ check('one marker per thing off the screen, none for what is on it, and none for
   rim.count === 4 && !rim.shown.some((m) => m.texture.startsWith('tex-orb')),
   `${rim.count} markers: ${rim.shown.map((m) => m.texture.replace('tex-', '')).join(' ')}`);
 check('each wears the sprite of the thing it points at',
-  ['tex-enemy-boss', 'tex-mango', 'tex-gear-runedSword', 'tex-rune-power']
+  ['tex-enemy-boss', 'tex-mango', 'tex-gear-runedSword', 'tex-rune-split']
     .every((key) => rim.shown.some((m) => m.texture === key)),
   rim.shown.map((m) => m.texture.replace('tex-', '')).join(' / '));
 check('and sits inside the edge it points through',

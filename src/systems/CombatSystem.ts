@@ -12,6 +12,7 @@ import {
   POTION,
   RUNE_CHISEL,
   RUNE_DROP,
+  SHOT_CHAIN,
   type RuneId,
   WEAPON,
   WORLD,
@@ -460,9 +461,32 @@ export class CombatSystem {
       }
     }
 
-    if (!carriesOn) {
-      shot.despawn();
+    if (carriesOn) {
+      // 관통의 룬: every body passed through costs a share of what is left.
+      shot.damage *= shot.pierceKeep;
+      return;
     }
+    // 연쇄: a shot that has used its pierce turns to the nearest enemy it has
+    // not hit yet, from where it struck.
+    if (shot.chainLeft > 0) {
+      let next: Enemy | undefined;
+      let best: number = SHOT_CHAIN.reach;
+      for (const child of this.enemies.getChildren()) {
+        const other = child as Enemy;
+        if (!other.active || other === enemy || shot.hasStruck(other)) {
+          continue;
+        }
+        const d = Phaser.Math.Distance.Between(x, y, other.x, other.y);
+        if (d < best) {
+          best = d;
+          next = other;
+        }
+      }
+      if (next && shot.chainTo(next.x, next.y, SHOT_CHAIN.reach)) {
+        return;
+      }
+    }
+    shot.despawn();
   };
 
   /**

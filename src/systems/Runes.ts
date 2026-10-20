@@ -10,7 +10,7 @@ export function rollRune(): RuneId {
       return rune.id;
     }
   }
-  return ALL_RUNES[0]?.id ?? 'power';
+  return ALL_RUNES[0]?.id ?? 'split';
 }
 
 /** Whether a 룬 does anything for a skill (RuneSpec.skills; every skill when it names none). */

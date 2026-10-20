@@ -46,6 +46,11 @@ export class VoidOrb implements Weapon {
     this.scene = scene;
   }
 
+  /** Hides the orbs while the survivor is not the one casting (포격의 룬) or the turret has gone. */
+  public rest(): void {
+    this.orbs.forEach((orb) => orb.setVisible(false));
+  }
+
   /** The live orbs, for tests and debug readouts. */
   public get active(): readonly Phaser.GameObjects.Image[] {
     return this.orbs.filter((orb) => orb.visible);

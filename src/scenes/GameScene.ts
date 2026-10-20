@@ -5,6 +5,8 @@ import {
   ALL_RUNES,
   RUNES,
   RUNE_SLOTS,
+  TURRET,
+  SKILL_ICONS,
   type RuneId,
   BALANCE,
   BONES,
@@ -113,8 +115,11 @@ import {
   extraPierceFor,
   extraProjectilesFor,
   gearAttackSpeedFor,
+  byTurretFor,
   critChanceFor,
+  pierceKeepFor,
   projectileSpeedScaleFor,
+  repeatsFor,
   runeAttackSpeedFor,
   runesOf,
   type RunModifiers,
@@ -143,6 +148,7 @@ import {
   UNSPUN_SKILL,
   type SkillId,
   type Weapon,
+  type WeaponContext,
 } from '@/weapons';
 
 /** How each skill turns into the weapon that runs it. */
@@ -181,6 +187,14 @@ type ChoiceRequest =
   | { readonly kind: 'chisel' }
   | { readonly kind: 'gear'; readonly item: GearItem };
 
+/** 포격의 룬: one turret — the skill's own weapon, cast from where the turret stands. */
+interface Turret {
+  readonly skill: SkillId;
+  readonly weapon: Weapon;
+  readonly body: Phaser.GameObjects.Container;
+  leftMs: number;
+}
+
 /** How far from a rock's edge a drop is let fall, so it can be walked up to and seen whole. */
 const DROP_ROOM = 20;
 
@@ -211,6 +225,9 @@ export class GameScene extends Phaser.Scene {
   private gearBonus: GearBonus = NO_BONUS;
   /** The effects that last the whole run (장비, 패시브, 뼈다귀), built on the first look. */
   private lastingEffects?: EffectEntry[];
+  /** 포격의 룬's turrets, kept and reused, and when each skill sets its next one down. */
+  private turrets: Turret[] = [];
+  private turretClock = new Map<SkillId, number>();
   /** When the last 구슬 pickup was said over the survivor, and on which row (ORB_DROP.pickupText). */
   private orbTextAt = -Infinity;
   private orbTextRow = 0;
@@ -291,6 +308,8 @@ export class GameScene extends Phaser.Scene {
     // The scene outlives a run: what the last one wore, spent and bought is
     // not this one's (the icons left of the skills once showed it).
     this.lastingEffects = undefined;
+    this.turrets = [];
+    this.turretClock = new Map();
     this.elapsedMs = 0;
     this.orbTextAt = -Infinity;
     this.orbTextRow = 0;
@@ -581,28 +600,16 @@ export class GameScene extends Phaser.Scene {
     // Each weapon runs on its own stats, so upgrades stay on their skill.
     for (const weapon of this.weapons) {
       const id = weapon.definition.id;
-      const stats = this.progression.statsFor(id);
-      const speedScale = projectileSpeedScaleFor(id, this.mods);
-      weapon.update(dt, {
-        origin: this.player,
-        enemies: this.spawner.group,
-        damage: this.damageOf(id),
-        cooldownMs: this.cooldownOf(id),
-        // A thrown skill's reach is how far it flies: faster from the tree, further.
-        range: this.progression.rangeFor(id) * (stats.projectileSpeed > 0 ? speedScale : 1),
-        projectileSpeed: stats.projectileSpeed * speedScale,
-        chainCount: this.chainsOf(id),
-        orbitSpeed: stats.orbitSpeed,
-        pierceCount: this.piercesOf(id),
-        orbCount: stats.orbCount,
-        extraProjectiles: extraProjectilesFor(id, this.mods),
-        areaScale: areaRadiusFor(id, this.mods),
-        durationScale: durationScaleFor(id, this.mods),
-        hit: this.hitterFor(id),
-        mastered: this.progression.levelFor(id) >= SKILL_MASTERY.level,
-        enemyShots: this.combat.enemyShots,
-      });
+      const context = this.contextFor(id);
+      // 포격의 룬: the survivor does not cast it; the turrets do.
+      if (byTurretFor(id, this.mods)) {
+        weapon.rest?.();
+        this.tickTurrets(id, dt, context);
+        continue;
+      }
+      weapon.update(dt, context);
     }
+    this.retireStrayTurrets();
     // 화염구's 각성: the ground it burst on keeps burning.
     this.combat.tickFireZones(dt);
 
@@ -1086,6 +1093,102 @@ export class GameScene extends Phaser.Scene {
       }
     }
     return out;
+  }
+
+  /** What one skill is cast with this frame: its stats, folded with its 룬 and the gear. */
+  private contextFor(id: SkillId): WeaponContext {
+    const stats = this.progression.statsFor(id);
+    const speedScale = projectileSpeedScaleFor(id, this.mods);
+    const durationScale = durationScaleFor(id, this.mods);
+    const thrown = stats.projectileSpeed > 0;
+    return {
+      origin: this.player,
+      enemies: this.spawner.group,
+      damage: this.damageOf(id),
+      cooldownMs: this.cooldownOf(id),
+      // A thrown skill's reach is how far it flies: faster, or longer in the
+      // air (가속의 룬, 지속의 룬), is further.
+      range: this.progression.rangeFor(id) * (thrown ? speedScale * durationScale : 1),
+      projectileSpeed: stats.projectileSpeed * speedScale,
+      chainCount: this.chainsOf(id),
+      orbitSpeed: stats.orbitSpeed,
+      pierceCount: this.piercesOf(id),
+      orbCount: stats.orbCount,
+      extraProjectiles: extraProjectilesFor(id, this.mods),
+      areaScale: areaRadiusFor(id, this.mods),
+      durationScale,
+      repeats: repeatsFor(id, this.mods),
+      pierceKeep: pierceKeepFor(id, this.mods),
+      hit: this.hitterFor(id),
+      mastered: this.progression.levelFor(id) >= SKILL_MASTERY.level,
+      enemyShots: this.combat.enemyShots,
+    };
+  }
+
+  /**
+   * 포격의 룬: a turret is set down where the survivor stands every
+   * TURRET.everyMs, lasts TURRET.lifeMs, and casts the skill from where it
+   * stands with the skill's own stats. Each turret is a weapon of its own
+   * (its own cooldown and shots), kept and reused once it has gone.
+   */
+  private tickTurrets(id: SkillId, dt: number, context: WeaponContext): void {
+    const next = (this.turretClock.get(id) ?? 0) - dt;
+    this.turretClock.set(id, next <= 0 ? next + TURRET.everyMs : next);
+    if (next <= 0) {
+      this.placeTurret(id);
+    }
+    for (const turret of this.turrets) {
+      if (turret.skill !== id || turret.leftMs <= 0) {
+        continue;
+      }
+      turret.leftMs -= dt;
+      if (turret.leftMs <= 0) {
+        this.retireTurret(turret);
+        continue;
+      }
+      // The last second fades it out, so its going is no surprise.
+      turret.body.setAlpha(Math.min(1, turret.leftMs / 1000));
+      turret.weapon.update(dt, { ...context, origin: turret.body });
+    }
+  }
+
+  private placeTurret(id: SkillId): void {
+    let turret = this.turrets.find((t) => t.skill === id && t.leftMs <= 0);
+    if (!turret) {
+      const weapon = WEAPONS[id](this);
+      if (weapon.projectiles) {
+        this.combat.registerProjectiles(weapon.projectiles, this.spawner.group);
+      }
+      const icon = SKILL_ICONS[id];
+      const body = this.add.container(0, 0, [
+        this.add.image(0, 0, TEXTURES.turret).setDisplaySize(TURRET.size, TURRET.size),
+        ...(icon && this.textures.exists(icon.key) ? [this.add.image(0, -4, icon.key).setDisplaySize(TURRET.size * 0.55, TURRET.size * 0.55)] : []),
+      ]).setDepth(DEPTH.pickups + 1);
+      turret = { skill: id, weapon, body, leftMs: 0 };
+      this.turrets.push(turret);
+    }
+    turret.leftMs = TURRET.lifeMs;
+    turret.body.setPosition(this.player.x, this.player.y).setVisible(true).setAlpha(1);
+  }
+
+  private retireTurret(turret: Turret): void {
+    turret.leftMs = 0;
+    turret.body.setVisible(false);
+    turret.weapon.rest?.();
+  }
+
+  /** Turrets whose skill no longer carries 포격의 룬 go at once. */
+  private retireStrayTurrets(): void {
+    for (const turret of this.turrets) {
+      if (turret.leftMs > 0 && !byTurretFor(turret.skill, this.mods)) {
+        this.retireTurret(turret);
+      }
+    }
+  }
+
+  /** The turrets standing now, for tests. */
+  public get liveTurrets(): readonly Turret[] {
+    return this.turrets.filter((turret) => turret.leftMs > 0);
   }
 
   /** Each skill's 룬, as the one sheet the folds read (Modifiers.ts). */
