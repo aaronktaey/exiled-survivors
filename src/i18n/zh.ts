@@ -60,6 +60,9 @@ export const zh: Strings = {
     fitReplace: '⚠ 槽位已满 — 最先装备的{rune}将被移除',
     fitted: '{skill} 装备了{rune}',
     fittedOver: '{skill}：移除{old}，装备{rune}',
+    discard: '丢弃',
+    discarded: '已丢弃{rune}',
+    uniqueLine: '每个技能只能装备一个',
   },
 
   filter: {
@@ -574,7 +577,7 @@ export const zh: Strings = {
       fireball: '向最近的敌人投出火球，命中第一个敌人后炸开，周围的敌人也会被波及。',
       chainLightning: '瞬发闪电命中敌人后跳向最近的下一个，不会重复命中同一个。',
       iceSpear: '穿透敌人前进，并给掠过的所有敌人附加冰冷（移动速度 -30%）。',
-      voidOrb: '球体顺时针环绕你，扫到的敌人都会受伤，无需瞄准。',
+      voidOrb: '球体顺时针环绕你，扫到的敌人都会受伤。攻击速度越快转得越快。无需瞄准。',
       thunderStrike: '从天上降下一道雷劈向你周围的一名敌人。若其死亡，有一半概率立刻再落一道。',
     },
     tags: {

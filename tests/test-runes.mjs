@@ -69,26 +69,49 @@ const fresh = await run(`
 check('the skill taken is the main skill, with RUNE_SLOTS.main 강화 슬롯', fresh.main === 'fireball' && fresh.slots === fresh.want && fresh.other === 0,
   JSON.stringify(fresh));
 
-// --- 4. 룬 on the ground, picked up — and straight into a skill (0.78) ---
+// --- 4. 룬 on the ground, picked up — always asked where, with 버리기 (0.79) ---
 const before = await run(`return { damage: s.damageOf('fireball'), sheet: s.mods.runes.fireball ?? null, shots: s.projectilesOf('fireball').shots };`);
-const picked = await run(`
+const touched = await run(`
   const p = s.player, c = s.combat;
   c.dropRuneAt(p.x + 30, p.y, 'split');
   const d = c.runeDrops.getChildren().find((x) => x.active && x.rune === 'split');
   const label = d.nameplate.text;
   c.onRuneTouch(p, d);
-  return { label, held: s.kit.runeCount('split'), slot: s.kit.socketsOf('fireball')[0], toast: s.toasts.lines.slice(-1)[0] ?? '',
-           asked: s.choosing || window.game.scene.isActive('SkillPickScene'),
-           over: s.damageNumbers.pool.some((f) => f.remainingMs > 0 && f.text.text.includes('분열의 룬')),
+  return { label, slot: s.kit.socketsOf('fireball')[0],
            gone: ['power', 'haste', 'precision', 'brutality'].filter((id) => id in window.config.RUNES),
            kinds: Object.keys(window.config.RUNES) };
 `);
-check('a 룬 lies under its name, and walking over it with one skill to take it sets it in the free slot, without asking',
-  picked.label === '분열의 룬' && picked.held === 0 && picked.slot === 'split' && !picked.asked, JSON.stringify(picked));
+await sleep(700);
+const firstAsk = await scene('SkillPickScene', `return { options: s.payload.options, note: s.payload.notes?.fireball ?? null,
+  discard: !!s.discardButton?.visible, discardLabel: s.payload.discard?.label ?? null };`);
+check('a 룬 lies under its name, and walking over it asks which skill even with one free slot — 버리기 offered too',
+  touched.label === '분열의 룬' && touched.slot === null && (await active('SkillPickScene')) &&
+    JSON.stringify(firstAsk.options) === JSON.stringify(['fireball']) && firstAsk.note && !firstAsk.note.warn && /빈 슬롯/.test(firstAsk.note.text) &&
+    firstAsk.discard && firstAsk.discardLabel === '버리기', JSON.stringify({ touched, firstAsk }));
+await shot('runes-01b-pick-with-discard');
+await sleep(300);
+await scene('SkillPickScene', `s.pick(0); return 1;`);
+await sleep(400);
+const picked = await run(`
+  return { held: s.kit.runeCount('split'), slot: s.kit.socketsOf('fireball')[0], toast: s.toasts.lines.slice(-1)[0] ?? '',
+           over: s.damageNumbers.pool.some((f) => f.remainingMs > 0 && f.text.text.includes('분열의 룬')), choosing: s.choosing };
+`);
+check('taking the card sets it in the free slot', picked.held === 0 && picked.slot === 'split' && !picked.choosing, JSON.stringify(picked));
 check('and says where it went, in a toast and over the survivor', /화염구/.test(picked.toast) && /분열의 룬/.test(picked.toast) && picked.over,
   JSON.stringify(picked));
+
+// 버리기: the 룬 goes, nothing is set, the run goes on.
+await run(`s.onRuneCollected('velocity'); return 1;`);
+await sleep(700);
+await scene('SkillPickScene', `s.discard(); return 1;`);
+await sleep(400);
+const dropped = await run(`return { slots: s.kit.socketsOf('fireball'), held: s.kit.runeTotal, toast: s.toasts.lines.slice(-1)[0] ?? '', choosing: s.choosing };`);
+check('버리기 lets the 룬 go: no slot changes, none held, said so',
+  !dropped.slots.includes('velocity') && dropped.held === 0 && /가속의 룬/.test(dropped.toast) && /버렸/.test(dropped.toast) && !dropped.choosing,
+  JSON.stringify(dropped));
+check(`the main skill starts with RUNE_SLOTS.main (${fresh.want}) 강화 슬롯 — two since 0.79`, fresh.want >= 2, JSON.stringify(fresh));
 check('위력 · 신속 · 정밀 · 잔혹 are gone; 반복 and 포격 are there (0.75)',
-  picked.gone.length === 0 && picked.kinds.includes('repeat') && picked.kinds.includes('bombard'), picked.kinds.join(','));
+  touched.gone.length === 0 && touched.kinds.includes('repeat') && touched.kinds.includes('bombard'), touched.kinds.join(','));
 const after = await run(`
   const c = window.config, mods = c.RUNES.split.mods;
   return { damage: s.damageOf('fireball'), scale: s.mods.runes.fireball?.scale('damage'), shots: s.projectilesOf('fireball').shots,
@@ -124,7 +147,8 @@ const fits = await run(`
 check('a kill only leaves 룬 a skill held can take', fits.kinds.length > 0 && fits.bad.length === 0, JSON.stringify(fits));
 
 // --- 5. a full skill: asked, warned, and the 룬 set longest ago goes ---
-await run(`s.onRuneCollected('linger'); return 1;`);
+// Filled up behind the 분열 already set, so 분열 is the oldest.
+await run(`while (s.kit.oldestIn('fireball') === null) s.kit.fit('fireball', 'velocity'); s.onRuneCollected('linger'); return 1;`);
 await sleep(700);
 const ask = await scene('SkillPickScene', `return { title: s.payload.title, options: s.payload.options, note: s.payload.notes?.fireball ?? null,
   color: s.cards[0] && s.children.list.find((o) => o.type === 'Text' && o.text === s.payload.notes?.fireball?.text)?.style.color,
@@ -137,13 +161,14 @@ await sleep(300);
 await scene('SkillPickScene', `s.pick(0); return 1;`);
 await sleep(400);
 const replaced = await run(`return { slot: s.kit.socketsOf('fireball'), held: s.kit.runeTotal, toast: s.toasts.lines.slice(-1)[0] ?? '', choosing: s.choosing };`);
-check('taking it puts it in and the 룬 set first is gone, said so', JSON.stringify(replaced.slot) === JSON.stringify(['linger']) && replaced.held === 0 &&
+check('taking it puts it in and the 룬 set first is gone, said so',
+  !replaced.slot.includes('split') && replaced.slot[replaced.slot.length - 1] === 'linger' && replaced.held === 0 &&
   /분열의 룬/.test(replaced.toast) && /제거/.test(replaced.toast) && !replaced.choosing, JSON.stringify(replaced));
 
 // Two slots: filled in turn, and once full the oldest goes first.
 const order = await run(`
   const k = s.kit;
-  k.addSlot('fireball');
+  k.socketed.fireball = ['linger', null];
   const one = k.fit('fireball', 'split');
   const two = k.fit('fireball', 'velocity');
   return { one, two, slots: k.socketsOf('fireball'), oldest: k.oldestIn('fireball') };
@@ -166,6 +191,40 @@ await sleep(400);
 const toChain = await run(`return { chain: s.kit.socketsOf('chainLightning'), fire: s.kit.socketsOf('fireball') };`);
 check('and the one taken gets it, the other untouched', JSON.stringify(toChain.chain) === JSON.stringify(['chain']) &&
   JSON.stringify(toChain.fire) === JSON.stringify(['split', 'velocity']), JSON.stringify(toChain));
+
+// --- 5b. one-per-skill 룬 (포격 and the like) and the ones that stack (0.79) ---
+const uniq = await run(`
+  const k = s.kit, c = window.config;
+  const unique = Object.values(c.RUNES).filter((r) => r.unique).map((r) => r.id);
+  k.socketed.fireball = [null, null, null];
+  k.fit('fireball', 'bombard');
+  const offered = s.runeTargets('bombard').includes('fireball');
+  const second = k.fit('fireball', 'bombard');
+  const afterBombard = [...k.socketsOf('fireball')];
+  k.socketed.fireball = [null, null, null];
+  k.fit('fireball', 'split');
+  const stillOffered = s.runeTargets('split').includes('fireball');
+  k.fit('fireball', 'split');
+  const shots = s.projectilesOf('fireball').shots;
+  const more = c.RUNES.split.mods.find((m) => m.stat === 'projectileCount').value;
+  // The 룬 screen refuses a second one too.
+  k.addRune('bombard'); k.socketed.fireball = ['bombard', null];
+  const screen = k.socket('fireball', 1, 'bombard');
+  const kept = k.runeCount('bombard');
+  k.runeBag.bombard = 0;
+  k.socketed.fireball = [null, null];
+  s.onRuneCollected('bombard');
+  return { unique, offered, second, afterBombard, stillOffered, shots, want: 1 + 2 * more, screen, kept };
+`);
+await sleep(700);
+const uniqLine = await scene('SkillPickScene', `const t = s.payload.subtitle; s.discard(); return t;`);
+await sleep(400);
+await run(`s.kit.socketed.fireball = ['split', 'velocity']; return 1;`);
+check('포격 is one per skill: a skill holding it is not offered another, and cannot take one',
+  uniq.unique.includes('bombard') && uniq.offered === false && uniq.second === null &&
+    uniq.afterBombard.filter((r) => r === 'bombard').length === 1 && uniq.screen === false && uniq.kept === 1, JSON.stringify(uniq));
+check('and its pick says so', /하나만/.test(uniqLine ?? ''), uniqLine);
+check('every other 룬 stacks: two 분열 are two more shots', uniq.stillOffered && uniq.shots === uniq.want, JSON.stringify(uniq));
 
 // The 룬 screen still sets a 룬 a save held, overwriting asked twice.
 await run(`s.kit.ensureSlots('fireball', 1); s.kit.socketed.fireball = [null]; s.kit.socketed.chainLightning = [];

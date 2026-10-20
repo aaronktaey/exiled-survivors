@@ -426,8 +426,11 @@ Read `git log` for what changed and when. What is not in the log:
   `config/tuning.ts`, its root in `Tuning.ts` ROOTS, and its label — 구슬,
   뼈다귀 and gear are named from their tables). Back in 0.77: enemy health
   (`BALANCE.enemyHpScale`, `hpScalePerMinute`, each `hpStepTiers` index's
-  minute and multiplier) and every drop off a kill. test-tuning reads the
-  tables and fails on a kill drop or a health tier with no dial. The live overrides were copied into the
+  minute and multiplier) and every drop off a kill; in 0.79 every skill's
+  `SKILL_BASE` stats that are above zero and its `BALANCE.damageScale`, a
+  page a skill (`SKILL_IDS`/`SKILL_EXTRAS` in tuning.ts). test-tuning reads
+  the tables and fails on a kill drop, a health tier or a skill stat with
+  no dial. The live overrides were copied into the
   tables first (balance.ts, equipment.ts, and the passive tree's file) and the server's
   `tuning` row cleared when 0.71 shipped. `Tuning.apply` lays a value over
   only for a path that is a dial, so a stale row can never put an old
@@ -475,8 +478,9 @@ Read `git log` for what changed and when. What is not in the log:
   strike by `chainBonusPerJump` for every jump still to come (it never
   doubles back — that was the old awakening),
   얼음창 shots carry `freezeMs` for an enemy already chilled (`Enemy.freeze`),
-  공허구체 (whose hit timers are per orb: each orb hits an enemy once a
-  cooldown, every orb on its own) pulls enemies near its orbit toward the survivor by moving x/y
+  공허구체 (attack speed is its spin since 0.79: it travels round at
+  `orbitSpeed` × attacks a second, read off `cooldownMs`; each orb hits an
+  enemy at most once every `VOID_ORB.rehitMs`, every orb on its own) pulls enemies near its orbit toward the survivor by moving x/y
   the way Separation does, 낙뢰 casts
   `thunderRecastChance` — a kill always strikes again, up to `THUNDER.maxRecasts`). Reaching it calls `GameScene.celebrateMastery`
   once (`awakened`, rebuilt from a save without a show); the HUD slot goes
@@ -642,10 +646,14 @@ Read `git log` for what changed and when. What is not in the log:
   overwritten, asked twice, and the old one is gone (`RunKit.socket`;
   `unsocket` is left for tools). Since 0.78 a 룬 is not held at all: picked
   up it goes straight into a skill (`GameScene.onRuneCollected`,
-  `runeTargets`: held, a slot, the 룬 working there). One target with a free
-  slot takes it with a toast; otherwise a `rune` choice opens the skill
-  cards (`SkillPickScene` with `notes`, a full skill's in `COLORS.warnText`
-  naming the 룬 it would lose). A skill's sockets are packed oldest first
+  `runeTargets`: held, a slot, the 룬 working there, and a `unique` 룬 not
+  set there already). Since 0.79 it always asks: a `rune` choice opens the
+  skill cards (`SkillPickScene` with `notes`, a full skill's in
+  `COLORS.warnText` naming the 룬 it would lose) and a 버리기 button
+  (`SkillPickData.discard`, Esc too). `RuneSpec.unique` (포격, 반복 — two
+  반복 would be −120% damage) is one per skill (`RunKit.canTake`, which
+  `fit`/`socket` and RuneScene honour); every other 룬 stacks, its mods
+  summed. A skill's sockets are packed oldest first
   (`RunKit.fit`/`oldestIn`): a free slot first, then the oldest goes.
   `RuneScene` is left for 룬 a save still holds. test-runes covers all of it.
   0.75: 반복 (`repeatCount` → `WeaponContext.repeats`, a `RepeatQueue` in

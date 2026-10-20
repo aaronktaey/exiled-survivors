@@ -24,6 +24,11 @@ export interface SkillPickData {
   readonly notes?: Partial<Record<SkillId, { readonly text: string; readonly warn?: boolean }>>;
   /** Given, a back button (and Esc) leave the choice this way — the run's first skill goes back to the title. */
   readonly onBack?: () => void;
+  /**
+   * Given, a button under the cards (and Esc, without `onBack`) takes none
+   * of them: a 룬 found is let go (0.79).
+   */
+  readonly discard?: { readonly label: string; readonly onDiscard: () => void };
 }
 
 const LEFT_CODES = ['KeyA', 'ArrowLeft'];
@@ -37,6 +42,10 @@ const CARD_MAX_WIDTH = 230;
 const CARD_HEIGHT = 210;
 const CARD_GAP = 18;
 const SIDE_MARGIN = 16;
+/** The 버리기 button's size, and the room it takes under the cards. */
+const DISCARD_W = 160;
+const DISCARD_H = 38;
+const DISCARD_ROOM = DISCARD_H + 16;
 
 interface CardView {
   readonly skill: SkillId;
@@ -66,6 +75,8 @@ export class SkillPickScene extends Phaser.Scene {
   public selected = 0;
   /** How many cards a row holds. Public for tests. */
   public columns = 1;
+  /** The 버리기 button, when the choice offers one. Public for tests. */
+  public discardButton?: Phaser.GameObjects.Rectangle;
   private unlocked = false;
   private picked = false;
 
@@ -79,6 +90,7 @@ export class SkillPickScene extends Phaser.Scene {
     this.selected = 0;
     this.picked = false;
     this.unlocked = false;
+    this.discardButton = undefined;
   }
 
   public create(): void {
@@ -102,10 +114,11 @@ export class SkillPickScene extends Phaser.Scene {
     this.columns = columns;
     const cardWidth = Math.min(columns === 1 ? 320 : CARD_MAX_WIDTH, (usable - CARD_GAP * (columns - 1)) / columns);
     const margin = onBack ? 44 : 16;
-    const cardHeight = Math.min(CARD_HEIGHT, (height - margin - 16 - 90 - 40 - CARD_GAP * (rows - 1)) / rows);
+    const extra = this.payload.discard ? DISCARD_ROOM : 0;
+    const cardHeight = Math.min(CARD_HEIGHT, (height - margin - 16 - 90 - 40 - extra - CARD_GAP * (rows - 1)) / rows);
     // A card under 200 high cannot hold its picture over its words: side by side then.
     const compact = cardHeight < 200;
-    const block = 90 + rows * cardHeight + (rows - 1) * CARD_GAP + 40;
+    const block = 90 + rows * cardHeight + (rows - 1) * CARD_GAP + extra + 40;
     const top = Math.max(margin, (height - block) / 2);
 
     fitText(
@@ -140,9 +153,12 @@ export class SkillPickScene extends Phaser.Scene {
       return this.buildCard(index, skill, x, y, cardWidth, cardHeight, compact);
     });
 
-    const lastBottom = this.cards.length
+    let lastBottom = this.cards.length
       ? this.cards[this.cards.length - 1]!.y + cardHeight / 2
       : firstY;
+    if (this.payload.discard) {
+      lastBottom = this.addDiscard(centerX, lastBottom + 12 + DISCARD_H / 2, this.payload.discard.label) + DISCARD_H / 2;
+    }
     fitText(
       this.add
         .text(centerX, Math.min(height - 16, lastBottom + 28), prefersTouchControls() ? copy.hintTouch : copy.hintKeyboard, {
@@ -172,6 +188,40 @@ export class SkillPickScene extends Phaser.Scene {
     this.picked = true;
     this.scene.stop();
     onBack();
+  }
+
+  /** Takes none of the cards, where that is offered. Public so a test can. */
+  public discard(): void {
+    const { discard } = this.payload;
+    if (this.picked || !this.unlocked || !discard) {
+      return;
+    }
+    this.picked = true;
+    this.scene.stop();
+    discard.onDiscard();
+  }
+
+  /** The 버리기 button under the cards; returns where its middle is. */
+  private addDiscard(x: number, y: number, label: string): number {
+    const plate = this.add
+      .rectangle(x, y, DISCARD_W, DISCARD_H, COLORS.panel, 1)
+      .setStrokeStyle(2, COLORS.panelEdge, 1)
+      .setDepth(DEPTH.ui)
+      .setInteractive({ useHandCursor: true });
+    const text = this.add
+      .text(x, y, prefersTouchControls() ? label : `${label}  (Esc)`, {
+        fontFamily: 'system-ui, sans-serif',
+        fontSize: TEXT.size.body,
+        color: COLORS.warnText,
+      })
+      .setOrigin(0.5)
+      .setDepth(DEPTH.ui + 1);
+    fitText(text, DISCARD_W - 10, 0);
+    plate.on(Phaser.Input.Events.GAMEOBJECT_POINTER_OVER, () => plate.setStrokeStyle(3, COLORS.accentFill, 1));
+    plate.on(Phaser.Input.Events.GAMEOBJECT_POINTER_OUT, () => plate.setStrokeStyle(2, COLORS.panelEdge, 1));
+    plate.on(Phaser.Input.Events.GAMEOBJECT_POINTER_DOWN, () => this.discard());
+    this.discardButton = plate;
+    return y;
   }
 
   /** Takes a card. Public so a test can take one without hunting for it. */
@@ -308,7 +358,11 @@ export class SkillPickScene extends Phaser.Scene {
     } else if (CONFIRM_CODES.includes(event.code)) {
       this.pick(this.selected);
     } else if (event.code === 'Escape') {
-      this.back();
+      if (this.payload.onBack) {
+        this.back();
+      } else {
+        this.discard();
+      }
     }
   }
 }

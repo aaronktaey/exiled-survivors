@@ -60,6 +60,9 @@ export const ja: Strings = {
     fitReplace: '⚠ スロットが満杯です — 最初に装着した{rune}が外れます',
     fitted: '{skill}に{rune}を装着',
     fittedOver: '{skill}：{old}を外し、{rune}を装着',
+    discard: '捨てる',
+    discarded: '{rune}を捨てました',
+    uniqueLine: '1つのスキルに1つまで',
   },
 
   filter: {
@@ -574,7 +577,7 @@ export const ja: Strings = {
       fireball: '最も近い敵へ火の玉を投げます。最初に当たった敵で弾け、周りの敵も巻き込みます。',
       chainLightning: '即着の雷が敵を打ち、近くの次の敵へ移ります。同じ敵は二度打ちません。',
       iceSpear: '敵を貫いて進み、かすめた敵すべてに冷却（移動速度 -30%）を与えます。',
-      voidOrb: '球が時計回りに周回し、触れた敵を叩きます。狙いは不要です。',
+      voidOrb: '球が時計回りに周回し、触れた敵を叩きます。攻撃速度が速いほど速く回ります。狙いは不要です。',
       thunderStrike: '周囲の敵ひとりに空から雷を落とします。その敵が倒れると、半分の確率ですぐにもう一度落ちます。',
     },
     tags: {

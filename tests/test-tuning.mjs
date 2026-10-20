@@ -61,7 +61,11 @@ const shipped = await ev(`(() => {
     'RUNE_DROP.chance', 'RUNE_CHISEL.chance', 'RANDOM_SKILL.chance', 'POTION.chance', 'MANGO.chance', 'MAGNET.chance', 'ALTAR.fromKill',
     ...Object.keys(c.ORBS).filter((id) => !c.ORBS[id].fromBossOnly).map((id) => 'ORBS.' + id + '.chance'),
     ...Object.keys(c.BONES).filter((id) => c.BONES[id].fromKill > 0).map((id) => 'BONES.' + id + '.fromKill'),
-    ...Object.keys(c.GEAR).filter((id) => c.GEAR[id].fromKill !== undefined).map((id) => 'GEAR.' + id + '.fromKill')];
+    ...Object.keys(c.GEAR).filter((id) => c.GEAR[id].fromKill !== undefined).map((id) => 'GEAR.' + id + '.fromKill'),
+    // Every skill's stats (0.79): each one it has at all, and its 피해 배율.
+    ...Object.keys(c.SKILL_BASE).flatMap((id) => [
+      ...Object.keys(c.SKILL_BASE[id]).filter((stat) => c.SKILL_BASE[id][stat] > 0).map((stat) => 'SKILL_BASE.' + id + '.' + stat),
+      'BALANCE.damageScale.' + id])];
   const value = (path) => path.split('.').reduce((o, k) => (o == null ? undefined : o[k]), c);
   return { missing: want.filter((p) => !paths.has(p)), loose: [...paths].filter((p) => typeof value(p) !== 'number'),
            tabs: [...new Set(c.DIALS.map((d) => d.tab))] };
@@ -72,7 +76,7 @@ await ev(addDials);
 await scene('MenuScene', `s.icons.press('tuning'); return 1;`);
 await sleep(700);
 const panel = await scene('TuningScene', `return { active: s.scene.isActive(), knobs: s.knobs.map((k) => k.dial.path), back: !!s.backButton };`);
-check('it ships with a dial for enemy health, a minute and each tier, and for every drop off a kill',
+check('it ships with a dial for every skill stat, enemy health, a minute and each tier, and every drop off a kill',
   shipped.missing.length === 0 && shipped.loose.length === 0, JSON.stringify(shipped));
 check('the title’s 밸런스 icon opens the dials, a page a skill',
   panel.active && panel.back && panel.knobs.includes('SKILL_BASE.meleeStrike.damage') && panel.knobs.includes('BALANCE.damageScale.meleeStrike'),

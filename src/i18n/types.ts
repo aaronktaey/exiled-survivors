@@ -111,6 +111,11 @@ export interface Strings {
     /** Toasts: {rune} set in {skill}; and {old} pushed out of {skill}. */
     readonly fitted: string;
     readonly fittedOver: string;
+    /** The 룬 pick's button that takes none of the skills. */
+    readonly discard: string;
+    readonly discarded: string;
+    /** Said of a `unique` 룬, after its other lines. */
+    readonly uniqueLine: string;
     readonly hintKeyboard: string;
     readonly hintTouch: string;
     readonly chisel: string;

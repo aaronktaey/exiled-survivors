@@ -109,13 +109,20 @@ const sweep = await run(`
   const toDeg = (r) => (r * 180) / Math.PI;
   const stepped = wrap(after - before);
   const expected = (st.orbitSpeed / st.range) * 0.25;
-  return { deg: Number(toDeg(stepped).toFixed(1)), expectedDeg: Number(toDeg(expected).toFixed(1)) };
+  // Twice the attacks a second (0.79): twice the spin.
+  const fast = { ...ctx, cooldownMs: 500 };
+  const b2 = angleNow();
+  for (let i = 0; i < 10; i++) w.update(25, fast);
+  const fastDeg = toDeg(wrap(angleNow() - b2));
+  return { deg: Number(toDeg(stepped).toFixed(1)), expectedDeg: Number(toDeg(expected).toFixed(1)), fastDeg: Number(fastDeg.toFixed(1)) };
 `);
 console.log('sweep:', JSON.stringify(sweep));
 // Screen y grows downward, so a growing angle is clockwise on screen.
 check('the orbs sweep clockwise', sweep.deg > 0, `${sweep.deg}° in 250ms`);
 check('at the speed its stats ask for', Math.abs(sweep.deg - sweep.expectedDeg) < 2,
   `${sweep.deg}° vs ${sweep.expectedDeg}° expected`);
+check('attack speed is the spin: twice the attacks a second, twice as fast round', Math.abs(sweep.fastDeg - 2 * sweep.deg) < 2,
+  `${sweep.deg}° at 1/s, ${sweep.fastDeg}° at 2/s`);
 
 // --- 4. they follow the player ---
 const followed = await run(`
@@ -151,8 +158,10 @@ const contact = await run(`
   const hpStart = e.hp;
   // Two seconds of orbiting, 16ms at a time.
   for (let i = 0; i < 125; i++) w.update(16, ctx);
+  // Orbs that sweep past one spot in 2s: the turn made, over the gap between orbs.
+  const passes = st.orbCount * (2 * st.orbitSpeed * (1000 / ctx.cooldownMs)) / (2 * Math.PI * st.range);
   const out = { hpStart, hp: e.active ? e.hp : 0, cooldownMs: Math.round(ctx.cooldownMs),
-                damage: ctx.damage };
+                damage: ctx.damage, passes };
   s.spawner.clear();
   s.choosing = false;
   return out;
@@ -161,8 +170,8 @@ console.log('contact:', JSON.stringify(contact));
 const hits = (contact.hpStart - contact.hp) / contact.damage;
 check('an orb hurts what it sweeps through', hits >= 1,
   `${hits} hits in 2s of orbiting`);
-check('a pass through costs a hit, not a hit per frame', hits <= 4,
-  `${hits} hits in 2s (a per-frame hit would be ~125)`);
+check('a pass through costs a hit, not a hit per frame', hits <= Math.ceil(contact.passes) + 1,
+  `${hits} hits in 2s, ~${contact.passes.toFixed(1)} orbs passing (a per-frame hit would be ~125)`);
 
 // --- 5b. parked on the enemy: now the cooldown is what is being measured ---
 const parked = await run(`
@@ -187,15 +196,15 @@ const parked = await run(`
   const before = e.hp;
   for (let i = 0; i < 125; i++) w.update(16, ctx);
   window.config.PLAYER.critChance = crit;
-  const out = { hits: (before - e.hp) / st.damage, cooldownMs: Math.round(ctx.cooldownMs) };
+  const out = { hits: (before - e.hp) / st.damage, rehitMs: window.config.VOID_ORB.rehitMs };
   s.spawner.clear();
   s.choosing = false;
   return out;
 `);
 console.log('parked:', JSON.stringify(parked));
-check('a parked orb re-hits at its attack speed',
-  Math.abs(parked.hits - 2000 / parked.cooldownMs) <= 1,
-  `${parked.hits} hits in 2s at one per ${parked.cooldownMs}ms`);
+check('a parked orb re-hits every VOID_ORB.rehitMs',
+  Math.abs(parked.hits - 2000 / parked.rehitMs) <= 1,
+  `${parked.hits} hits in 2s at one per ${parked.rehitMs}ms`);
 
 // --- 6. a recycled enemy does not inherit the old one's cooldown ---
 const recycled = await run(`

@@ -34,6 +34,12 @@ export interface RuneSpec {
    * skill whose hits never fly does nothing, and the 룬 screen says so.
    */
   readonly skills?: readonly SkillId[];
+  /**
+   * At most one in a skill (0.79, the user's ask: 포격 and the like). Every
+   * other 룬 stacks — two of 분열 are two more projectiles, their prices
+   * added too. A skill already holding one is not offered it again.
+   */
+  readonly unique?: boolean;
   /** Relative chance of being the 룬 a drop is. */
   readonly weight: number;
   readonly color: number;
@@ -56,6 +62,8 @@ export const RUNES: Record<RuneId, RuneSpec> = {
     mods: [{ stat: 'repeatCount', value: 2 }, { stat: 'damage', value: -60 }],
     detail: '스킬을 {casts}번 시전합니다',
     skills: ['meleeStrike', 'fireball', 'chainLightning', 'iceSpear', 'thunderStrike'],
+    // Two would be −120% damage: nothing at all.
+    unique: true,
     weight: 10,
     color: 0xf0d050,
     glyph: [[0.2, 0.3, 0.8, 0.3], [0.2, 0.5, 0.8, 0.5], [0.2, 0.7, 0.8, 0.7]],
@@ -124,6 +132,8 @@ export const RUNES: Record<RuneId, RuneSpec> = {
     name: '포격의 룬',
     mods: [{ stat: 'turret', value: 1 }, { stat: 'damage', value: -40 }],
     detail: '플레이어 대신 포탑이 시전합니다 — {every}초마다 설치, {life}초 지속',
+    // A second turns nothing more into a turret, and costs another −40%.
+    unique: true,
     weight: 8,
     color: 0xd45f3a,
     glyph: [[0.3, 0.85, 0.7, 0.85], [0.35, 0.85, 0.35, 0.45], [0.65, 0.85, 0.65, 0.45], [0.35, 0.45, 0.65, 0.45], [0.5, 0.45, 0.8, 0.15]],
@@ -135,9 +145,9 @@ export const ALL_RUNES: readonly RuneSpec[] = Object.values(RUNES);
 /** A 룬's own picture: a stone with its mark, drawn in BootScene. */
 export const runeTexture = (id: RuneId): string => `tex-rune-${id}`;
 
-/** A skill's 강화 슬롯: the main skill starts with `main`, every skill can reach `max`. */
+/** A skill's 강화 슬롯: the main skill starts with `main`, every skill can reach `max`. 1 until 0.79. */
 export const RUNE_SLOTS = {
-  main: 1,
+  main: 2,
   max: 4,
 } as const;
 

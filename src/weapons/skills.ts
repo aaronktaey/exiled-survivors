@@ -85,7 +85,7 @@ export const SKILLS: Record<SkillId, SkillDefinition> = {
     name: '공허구체',
     tags: ['공허', '주문', '투사체'],
     upgrades: ['damage', 'orbitSpeed', 'orbCount'],
-    summary: '구체가 주위를 시계방향으로 돌며 닿는 적을 때립니다. 겨냥이 필요 없습니다.',
+    summary: '구체가 주위를 시계방향으로 돌며 닿는 적을 때립니다. 공격속도가 빠를수록 빨리 돕니다. 겨냥이 필요 없습니다.',
   },
   thunderStrike: {
     id: 'thunderStrike',

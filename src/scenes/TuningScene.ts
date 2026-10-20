@@ -49,7 +49,11 @@ const SWEEP_FROM = Math.PI * 0.75;
 const SWEEP = Math.PI * 1.5;
 const DRAFT = 0xffb347;
 const SHARED = 0x6aa9ff;
-const PAGE_SKILLS = ['meleeStrike', 'fireball', 'chainLightning', 'iceSpear', 'voidOrb', 'thunderStrike', 'common'];
+/** The 스킬 tab's pages: the skills with dials, and 공통 only while some dial is on it. */
+const pageSkills = (): string[] =>
+  ['meleeStrike', 'fireball', 'chainLightning', 'iceSpear', 'voidOrb', 'thunderStrike', 'common'].filter((page) =>
+    DIALS.some((dial) => dial.tab === 'skills' && dial.skill === page),
+  );
 
 /**
  * 밸런스 — the admin's dials, over the title or a paused run.
@@ -122,8 +126,9 @@ export class TuningScene extends Phaser.Scene {
     if (this.tab === 'skills') {
       const size = 30;
       const gap = 6;
-      const left = width / 2 - (PAGE_SKILLS.length * (size + gap) - gap) / 2 + size / 2;
-      PAGE_SKILLS.forEach((id, i) => {
+      const pages = pageSkills();
+      const left = width / 2 - (pages.length * (size + gap) - gap) / 2 + size / 2;
+      pages.forEach((id, i) => {
         const x = left + i * (size + gap);
         const plate = this.tabButton(`page:${id}`, x, y + size / 2, size, size, '', () => this.reopen({ tab: 'skills', page: id }));
         if (id === 'common') {

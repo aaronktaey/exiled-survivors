@@ -306,7 +306,8 @@ export function runeLines(id: RuneId): string[] {
     life: TURRET.lifeMs / 1000,
   };
   const detail = spec.detail ? [fill(t().names?.runeDetails?.[id] ?? spec.detail, numbers)] : [];
-  return [...detail, ...spec.mods.filter((mod) => !STAT_SPECS[mod.stat].hidden).map(modifierLine)];
+  const unique = spec.unique ? [t().runes.uniqueLine] : [];
+  return [...detail, ...spec.mods.filter((mod) => !STAT_SPECS[mod.stat].hidden).map(modifierLine), ...unique];
 }
 
 /** Which skills a 룬 works on, as one line. */

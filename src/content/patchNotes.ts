@@ -15,6 +15,44 @@ export interface PatchNote {
 
 export const PATCH_NOTES: readonly PatchNote[] = [
   {
+    version: '0.79',
+    date: '2026-10-20',
+    changes: {
+      ko: [
+        '메인 스킬이 강화 슬롯 2개로 시작합니다.',
+        '룬을 주우면 항상 장착할 스킬 목록이 나오고, 버리기도 고를 수 있습니다.',
+        '포격의 룬과 반복의 룬은 스킬 하나에 하나만 장착할 수 있습니다. 다른 룬은 같은 룬을 여러 개 장착하면 효과가 겹칩니다.',
+        '공허구체의 기본 구체 수가 3개에서 5개로 늘었습니다.',
+        '공허구체는 공격속도만큼 빠르게 돕니다. 공격속도를 올리는 강화·장비·하얀 망고가 모두 회전 속도를 올립니다. 구체 하나는 같은 적을 0.5초에 한 번까지 때립니다.',
+        '각 스킬의 기본 수치(피해, 공격속도, 사거리 등)를 서버에서 바로 조정할 수 있게 했습니다. 바뀐 값은 다음 판부터 적용됩니다.',
+      ],
+      en: [
+        'The main skill starts with 2 rune slots.',
+        'Picking up a rune always shows the skills it can go in, with a Discard option.',
+        'The Runes of Bombardment and Repetition are one per skill. Every other rune stacks when set more than once.',
+        'Void Orb starts with 5 orbs instead of 3.',
+        'Void Orb spins as fast as its attack speed: attack speed upgrades, gear and the White Mango all spin it faster. One orb hits the same enemy at most once every 0.5s.',
+        'Each skill\'s base stats (damage, attack speed, range and more) can now be tuned from the server. Changes apply from the next run.',
+      ],
+      ja: [
+        'メインスキルは強化スロット2つで始まります。',
+        'ルーンを拾うと常に装着先のスキル一覧が表示され、捨てることもできます。',
+        '砲撃のルーンと反復のルーンは1つのスキルに1つまでです。他のルーンは同じものを複数装着すると効果が重なります。',
+        '虚無球の基本の球の数が3個から5個になりました。',
+        '虚無球は攻撃速度の分だけ速く回ります。攻撃速度を上げる強化・装備・白いマンゴーがすべて回転速度を上げます。球1つは同じ敵を0.5秒に1回まで叩きます。',
+        '各スキルの基本数値（ダメージ、攻撃速度、射程など）をサーバーから直接調整できるようにしました。変更は次のプレイから適用されます。',
+      ],
+      zh: [
+        '主技能开局拥有2个强化槽。',
+        '拾取符文时总会显示可装备的技能列表，也可以选择丢弃。',
+        '炮击符文和重复符文每个技能只能装备一个。其他符文装备多个相同符文时效果叠加。',
+        '虚空球的基础球数从3个增加到5个。',
+        '虚空球的旋转速度随攻击速度提升：提升攻击速度的强化、装备和白芒果都会加快旋转。每个球对同一敌人每0.5秒最多命中一次。',
+        '现在可以在服务器上直接调整各技能的基础数值（伤害、攻击速度、射程等），改动从下一局开始生效。',
+      ],
+    },
+  },
+  {
     version: '0.78',
     date: '2026-10-20',
     changes: {

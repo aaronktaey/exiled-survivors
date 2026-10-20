@@ -123,7 +123,7 @@ export class RuneScene extends Phaser.Scene {
       this.say(copy.pickSlot);
       return false;
     }
-    if (!runeWorksFor(rune, at.skill)) {
+    if (!runeWorksFor(rune, at.skill) || !this.kit.canTake(at.skill, rune, at.slot)) {
       this.say(copy.cantSet);
       return false;
     }

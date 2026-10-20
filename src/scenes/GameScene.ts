@@ -948,34 +948,32 @@ export class GameScene extends Phaser.Scene {
   }
 
   /**
-   * A 룬 picked up goes straight into a skill (0.78): the skills it does
-   * something for that have a 강화 슬롯. One such skill with a slot free
-   * takes it there and then; otherwise the cards ask which (a full one says
-   * which 룬 it would lose). With none at all — only a debug drop or a test
-   * gets there, a kill never leaves such a 룬 — it is held, for the 룬 screen.
+   * A 룬 picked up goes into a skill (0.78), and since 0.79 the survivor is
+   * always asked which: the skills it can go in, each card saying where it
+   * would sit (a full one which 룬 it would lose), and 버리기. With none at
+   * all — only a debug drop or a test gets there, a kill never leaves such a
+   * 룬 — it is held, for the 룬 screen.
    */
   private onRuneCollected(id: RuneId): void {
-    const targets = this.runeTargets(id);
-    const color = RUNES[id]?.color ?? 0xffffff;
-    if (targets.length === 0) {
+    if (this.runeTargets(id).length === 0) {
       this.kit.addRune(id);
       const line = fill(t().runes.found, { rune: runeName(id) });
       this.announce(line);
-      this.sayOverhead(line, color);
-      return;
-    }
-    const only = targets[0]!;
-    if (targets.length === 1 && this.kit.oldestIn(only) === null) {
-      this.fitRune(only, id);
+      this.sayOverhead(line, RUNES[id]?.color ?? 0xffffff);
       return;
     }
     // The cards' title names it; said over the survivor too it would show through them.
     this.queueChoice({ kind: 'rune', rune: id });
   }
 
-  /** The skills a 룬 can go in: held, with a 강화 슬롯, and the 룬 doing something there. */
+  /**
+   * The skills a 룬 can go in: held, with a 강화 슬롯, the 룬 doing something
+   * there, and — a `unique` one — not set there already.
+   */
   public runeTargets(id: RuneId): SkillId[] {
-    return this.skillsHeld.filter((skill) => runeWorksFor(id, skill) && this.kit.socketsOf(skill).length > 0);
+    return this.skillsHeld.filter(
+      (skill) => runeWorksFor(id, skill) && this.kit.socketsOf(skill).length > 0 && this.kit.canTake(skill, id),
+    );
   }
 
   /** Puts a 룬 in a skill and says so — loudly when it pushed the oldest out. */
@@ -1019,6 +1017,13 @@ export class GameScene extends Phaser.Scene {
       onPick: (skill) => {
         this.fitRune(skill, id);
         this.afterChoice();
+      },
+      discard: {
+        label: copy.discard,
+        onDiscard: () => {
+          this.announce(fill(copy.discarded, { rune: runeName(id) }));
+          this.afterChoice();
+        },
       },
     };
     this.scene.bringToTop(SkillPickScene.KEY);

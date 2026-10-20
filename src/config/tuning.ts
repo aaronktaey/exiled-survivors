@@ -35,14 +35,44 @@ export interface DialSpec {
   readonly maxFactor?: number;
 }
 
+const SKILL_IDS = ['meleeStrike', 'fireball', 'chainLightning', 'iceSpear', 'voidOrb', 'thunderStrike'] as const;
+
+/** What each skill's page holds beyond damage, attack speed and reach: the stats it has at all. */
+const SKILL_EXTRAS: Record<(typeof SKILL_IDS)[number], readonly string[]> = {
+  meleeStrike: [],
+  fireball: ['projectileSpeed'],
+  chainLightning: ['chainCount'],
+  iceSpear: ['projectileSpeed', 'pierceCount'],
+  voidOrb: ['orbCount', 'orbitSpeed'],
+  thunderStrike: [],
+};
+
+/** A page per skill (0.79, the user's ask): its SKILL_BASE line and its 피해 배율. */
+const skillDials: DialSpec[] = SKILL_IDS.flatMap((skill) => [
+  { path: `SKILL_BASE.${skill}.damage`, kind: 'number' as const, tab: 'skills' as const, skill, min: 1 },
+  { path: `SKILL_BASE.${skill}.attackSpeed`, kind: 'number' as const, tab: 'skills' as const, skill, min: 0.05 },
+  { path: `SKILL_BASE.${skill}.range`, kind: 'number' as const, tab: 'skills' as const, skill, min: 10 },
+  ...SKILL_EXTRAS[skill].map((field) => ({
+    path: `SKILL_BASE.${skill}.${field}`,
+    kind: (field.endsWith('Count') ? 'count' : 'number') as DialKind,
+    tab: 'skills' as const,
+    skill,
+    ...(field.endsWith('Count') ? { max: 10 } : { min: 10 }),
+  })),
+  { path: `BALANCE.damageScale.${skill}`, kind: 'scale' as const, tab: 'skills' as const, skill },
+]);
+
 /**
  * Every dial was taken off on the user's word (2026-10-19), and a dial comes
  * back only when the user asks for that one. Back since (0.77): enemy health
  * (the overall multiplier, the step a minute and each tier of it) and every
- * drop rate. A new 구슬, 뼈다귀 or gear base that drops off kills needs its
- * line here; the panel names it from the tables.
+ * drop rate; (0.79) every skill's stats. A new 구슬, 뼈다귀 or gear base that
+ * drops off kills needs its line here, a new skill its id in SKILL_IDS; the
+ * panel names them from the tables.
  */
 export const DIALS: readonly DialSpec[] = [
+  ...skillDials,
+
   // Enemy health: how tough overall, how much more each minute, and from
   // which minute each tier steps it up (DIFFICULTY.hpStepTiers, by index).
   { path: 'BALANCE.enemyHpScale', kind: 'scale', tab: 'enemies', min: 0.1, max: 5 },

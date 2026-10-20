@@ -64,6 +64,9 @@ export const ko: Strings = {
     fitReplace: '⚠ 슬롯이 가득 찼습니다 — 가장 먼저 장착한 {rune}이(가) 제거됩니다',
     fitted: '{skill}에 {rune} 장착',
     fittedOver: '{skill}: {old} 제거, {rune} 장착',
+    discard: '버리기',
+    discarded: '{rune}을(를) 버렸습니다',
+    uniqueLine: '스킬 하나에 하나만 장착',
   },
 
   filter: {

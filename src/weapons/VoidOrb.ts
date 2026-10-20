@@ -21,9 +21,10 @@ interface HitRecord {
  * damage is in where the player stands.
  *
  * It reads the shared stats as an orbit: `range` is how far out the orbs
- * ride, `orbitSpeed` how fast they travel around that circle, and the
- * cooldown (from attack speed) how often one orb may hit the same enemy
- * again. Tags: 공허 · 주문 · 투사체.
+ * ride, and they travel round that circle at `orbitSpeed` × attacks a
+ * second (0.79: attack speed is the spin — read back off the cooldown, so
+ * every fold of it counts). One orb hits the same enemy at most once every
+ * VOID_ORB.rehitMs. Tags: 공허 · 주문 · 투사체.
  */
 export class VoidOrb implements Weapon {
   public readonly definition = SKILLS.voidOrb;
@@ -64,7 +65,8 @@ export class VoidOrb implements Weapon {
     this.sync(count, context.areaScale ?? 1);
 
     // Screen y grows downward, so a growing angle sweeps clockwise.
-    const angularSpeed = context.orbitSpeed / radius;
+    const attacksPerSecond = 1000 / Math.max(1, context.cooldownMs);
+    const angularSpeed = (context.orbitSpeed * attacksPerSecond) / radius;
     this.angle = Phaser.Math.Angle.Wrap(this.angle + angularSpeed * (delta / 1000));
 
     const { x, y } = context.origin;
@@ -117,7 +119,7 @@ export class VoidOrb implements Weapon {
     this.orbs.forEach((orb, index) => orb.setVisible(index < count));
   }
 
-  /** Damages everything an orb is touching: each orb at most once per cooldown on each enemy. */
+  /** Damages everything an orb is touching: each orb at most once per VOID_ORB.rehitMs on each enemy. */
   private sweep(context: WeaponContext, count: number): void {
     // Copy first: a kill recycles the enemy and mutates the group's list.
     for (const child of [...context.enemies.getChildren()]) {
@@ -141,7 +143,7 @@ export class VoidOrb implements Weapon {
           records = new Map();
           this.hits.set(enemy, records);
         }
-        records.set(i, { life: enemy.lives, readyAt: this.elapsedMs + context.cooldownMs });
+        records.set(i, { life: enemy.lives, readyAt: this.elapsedMs + VOID_ORB.rehitMs });
         context.hit(enemy, context.damage);
         // Held well apart by its own gap, or an orbit would drone.
         sfx.playSkill(this.scene, this.definition.id);

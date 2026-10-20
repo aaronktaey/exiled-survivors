@@ -60,6 +60,9 @@ export const en: Strings = {
     fitReplace: '⚠ Every slot is full — {rune}, set first, will be removed',
     fitted: '{rune} set in {skill}',
     fittedOver: '{skill}: {old} removed, {rune} set',
+    discard: 'Discard',
+    discarded: '{rune} discarded',
+    uniqueLine: 'One per skill',
   },
 
   filter: {
@@ -574,7 +577,7 @@ export const en: Strings = {
       fireball: 'Throws a bolt at the nearest enemy. It bursts on the first body it meets, and everything close by burns with it.',
       chainLightning: 'An instant arc that jumps from victim to victim, never hitting the same one twice.',
       iceSpear: 'Runs a line through the crowd, chilling everything it passes (-30% move speed).',
-      voidOrb: 'Orbs ride around you clockwise and hurt whatever they sweep through. No aiming.',
+      voidOrb: 'Orbs ride around you clockwise and hurt whatever they sweep through. Attack speed spins them faster. No aiming.',
       thunderStrike: 'Calls a bolt out of the sky onto one enemy near you. If it dies, there is an even chance another bolt falls at once.',
     },
     tags: {

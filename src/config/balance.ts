@@ -1149,6 +1149,12 @@ export const VOID_ORB = {
   radius: 15,
   /** Forgiveness on the contact check, so a graze still counts. */
   hitPadding: 2,
+  /**
+   * How soon one orb may hit the same enemy again. Longer than a pass
+   * through an ordinary enemy takes, so each pass is one hit; an enemy as
+   * wide as a 우두머리 is hit again while an orb is still crossing it.
+   */
+  rehitMs: 500,
 } as const;
 
 /**
@@ -1417,17 +1423,20 @@ export const SKILL_BASE: Record<SkillId, SkillBaseStats> = {
     orbCount: 0,
     orbitSpeed: 0,
   },
-  // An orbit rather than a shot: range is how far out the orbs ride,
-  // orbitSpeed how fast they travel around, and attackSpeed how often one
-  // orb may hit the same enemy again.
+  // An orbit rather than a shot: range is how far out the orbs ride, and
+  // they travel round it at orbitSpeed × attacks a second (0.79, the user's
+  // ask: attack speed is how fast it spins) — so at 1 they go at orbitSpeed,
+  // and every attack speed upgrade, 룬 or piece of gear spins them faster.
+  // How often one orb may hit the same enemy again is VOID_ORB.rehitMs.
+  // 3 orbs and attackSpeed 1.5 (then the re-hit rate) until 0.79.
   voidOrb: {
     damage: 60,
-    attackSpeed: 1.5,
+    attackSpeed: 1,
     range: 90,
     projectileSpeed: 0,
     chainCount: 0,
     pierceCount: 0,
-    orbCount: 3,
+    orbCount: 5,
     orbitSpeed: 200,
   },
 };

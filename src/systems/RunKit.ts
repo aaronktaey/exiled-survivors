@@ -217,6 +217,18 @@ export class RunKit {
     return this.socketsOf(skill).filter((rune): rune is RuneId => rune !== null);
   }
 
+  /**
+   * Whether a skill may have this 룬 set in it at all: a `unique` one only
+   * while the skill holds none of it (0.79). `slot`, when given, is the one
+   * about to be overwritten — what is there now does not count.
+   */
+  public canTake(skill: SkillId, rune: RuneId, slot?: number): boolean {
+    if (!RUNES[rune]?.unique) {
+      return true;
+    }
+    return !this.socketsOf(skill).some((set, index) => set === rune && index !== slot);
+  }
+
   /** Gives a skill at least `slots` 강화 슬롯 (the main skill's, as the run starts). */
   public ensureSlots(skill: SkillId, slots: number): void {
     const list = [...this.socketsOf(skill)];
@@ -253,7 +265,7 @@ export class RunKit {
    */
   public socket(skill: SkillId, slot: number, rune: RuneId): boolean {
     const list = [...this.socketsOf(skill)];
-    if (slot < 0 || slot >= list.length || this.runeCount(rune) <= 0) {
+    if (slot < 0 || slot >= list.length || this.runeCount(rune) <= 0 || !this.canTake(skill, rune, slot)) {
       return false;
     }
     this.runeBag[rune] = this.runeCount(rune) - 1;
@@ -266,11 +278,12 @@ export class RunKit {
   /**
    * A 룬 just picked up, put straight into a skill (0.78): the first empty
    * slot, or — every slot full — in place of the one set longest ago.
-   * Null when the skill has no slot at all.
+   * Null when the skill has no slot at all, or already holds a `unique` 룬
+   * of it.
    */
   public fit(skill: SkillId, rune: RuneId): RuneFit | null {
     const list = packed([...this.socketsOf(skill)]);
-    if (list.length === 0) {
+    if (list.length === 0 || !this.canTake(skill, rune)) {
       return null;
     }
     const { list: next, removed } = withNewest(list, rune);
