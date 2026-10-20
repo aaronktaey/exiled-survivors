@@ -509,29 +509,33 @@ await sleep(400);
 await ev(UNDO);
 
 // The same popup and its ask, in another language, with nothing Korean left on them.
-await ev(`(() => { localStorage.setItem('exiled-survivors:settings:v1', JSON.stringify({ language: 'en' })); return 1; })()`);
-await cdp.send('Page.reload', {});
-await sleep(4500);
-await ev(STAND_IN);
-await scene('MenuScene', `s.icons.press('ranking'); return 1;`);
-await sleep(1200);
-const english = await scene('RankingScene', `
-  const row = [...s.review.values()].find((r) => r.name === 'CHT');
-  s.openReview(row);
-  const detail = s.popupText.text;
-  s.askRemove();
-  const texts = [...s.popup.list, ...s.confirmBox.list].filter((o) => typeof o.text === 'string').map((o) => o.text);
-  s.closeReview();
-  return { detail, texts, note: s.note.text };
-`);
-const hangul = [...(english.texts ?? []), english.note ?? ''].filter((line) => /[가-힣]/.test(line));
-check('in English the review, its popup and its ask carry no Korean',
-  english.texts?.length > 4 && hangul.length === 0 && /Outlier/.test(english.detail ?? ''),
-  hangul.join(' | ') || english.detail?.split('\n')[0]);
-await scene('RankingScene', `s.backButton.press(); return 1;`);
-await sleep(300);
-await ev(UNDO);
-await ev(`(() => { localStorage.setItem('exiled-survivors:settings:v1', JSON.stringify({ language: 'ko' })); return 1; })()`);
+// Only while a language can be chosen (LOCALE.choosable): until the official
+// release the game is Korean only and the per-language checks wait (the user's word).
+if (await ev(`(() => window.config.LOCALE.choosable)()`)) {
+  await ev(`(() => { localStorage.setItem('exiled-survivors:settings:v1', JSON.stringify({ language: 'en' })); return 1; })()`);
+  await cdp.send('Page.reload', {});
+  await sleep(4500);
+  await ev(STAND_IN);
+  await scene('MenuScene', `s.icons.press('ranking'); return 1;`);
+  await sleep(1200);
+  const english = await scene('RankingScene', `
+    const row = [...s.review.values()].find((r) => r.name === 'CHT');
+    s.openReview(row);
+    const detail = s.popupText.text;
+    s.askRemove();
+    const texts = [...s.popup.list, ...s.confirmBox.list].filter((o) => typeof o.text === 'string').map((o) => o.text);
+    s.closeReview();
+    return { detail, texts, note: s.note.text };
+  `);
+  const hangul = [...(english.texts ?? []), english.note ?? ''].filter((line) => /[가-힣]/.test(line));
+  check('in English the review, its popup and its ask carry no Korean',
+    english.texts?.length > 4 && hangul.length === 0 && /Outlier/.test(english.detail ?? ''),
+    hangul.join(' | ') || english.detail?.split('\n')[0]);
+  await scene('RankingScene', `s.backButton.press(); return 1;`);
+  await sleep(300);
+  await ev(UNDO);
+  await ev(`(() => { localStorage.setItem('exiled-survivors:settings:v1', JSON.stringify({ language: 'ko' })); return 1; })()`);
+}
 
 // --- 11. 어제의 랭킹: the day before's first three, over the title, once a day ---
 await cdp.send('Page.reload', {});

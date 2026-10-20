@@ -72,6 +72,8 @@ export interface CombatHooks {
   readonly xpScale?: () => number;
   /** Called when the player walks over a 룬. */
   readonly onRuneCollected: (id: RuneId) => void;
+  /** Whether some skill held can take this 룬 — the only ones a kill leaves (0.78). */
+  readonly runeFits: (id: RuneId) => boolean;
   /** Called when the player walks over a 룬 끌. */
   readonly onChiselCollected: () => void;
   /** Whether a 룬 끌 would do anything now: some skill held still has room for a slot. */
@@ -329,8 +331,16 @@ export class CombatSystem {
     });
   }
 
-  /** Places a 룬 directly — one by weight when none is named. Used by the kill roll, debug keys and tests. */
-  public dropRuneAt(x: number, y: number, id: RuneId = rollRune()): void {
+  /**
+   * Places a 룬 directly — one by weight among those a skill held can take
+   * when none is named (none at all if no skill can). Used by the kill roll,
+   * debug keys and tests.
+   */
+  public dropRuneAt(x: number, y: number, named?: RuneId): void {
+    const id = named ?? rollRune(this.hooks.runeFits);
+    if (!id) {
+      return;
+    }
     [x, y] = this.onGround(x, y);
     const drop = this.runeDrops.get() as RuneDrop | null;
     if (!drop) {

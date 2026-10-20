@@ -76,7 +76,7 @@ wrong shape.
 ## The test harness
 
 `tests/` drives a real Chrome over CDP against the dev server and checks the
-running game, not units. 48 suites, ~1200 checks. It is the only thing that has
+running game, not units. 48 suites (46 in the run below), ~1200 checks. It is the only thing that has
 caught most of what has gone wrong here, so run all of it before every commit.
 
 ```sh
@@ -85,13 +85,18 @@ cd tests
 node run-all.mjs test-full test-skills test-balance test-chain test-ice \
   test-void test-enemies test-rare test-boss test-potion test-sfx test-perf \
   test-hud test-expiry test-audio test-touch test-shell test-shell2 test-info \
-  test-i18n test-gear test-runes test-responsive test-stats test-bones \
-  test-altar test-slot test-locale test-back test-fugitive \
+  test-gear test-runes test-responsive test-stats test-bones \
+  test-altar test-slot test-back test-fugitive \
   test-ranking test-skillpick test-mango test-web test-loadout \
   test-carry test-api test-account test-live test-filter test-mastery \
   test-tuning test-terrain test-chimera test-notice test-seal test-runloot \
   test-subskill
 ```
+
+test-i18n and test-locale are left out until the official release (the
+user's word, 2026-10-20): the language choice is off (`LOCALE`, below), and
+the language checks inside other suites are skipped while
+`window.config.LOCALE.choosable` is false. Put both back when it is on.
 
 `run-all.mjs` runs the suites three at a time (`WORKERS=n` to change it):
 one muted Chrome per worker (`CHROME_PATH` overrides where it looks), each
@@ -206,11 +211,18 @@ Read `git log` for what changed and when. What is not in the log:
   `assets-src/slot` and prints the offsets to copy into config. The jackpot
   clips (in `assets-src/slot` and `public/assets`) are kept for later: do not
   use or delete them.
-- **Every other language is checked for Korean.** Data tables are written in
-  Korean and a locale renames what it knows (`names.*`); `test-locale` walks
-  every screen in en/ja/zh and fails on any Hangul left on it. A new name,
-  line or button needs its entry in all three, and a weapon tier line goes
-  through `names.affixGearDetails` with `{value}`.
+- **The language choice is off until release (`LOCALE`, system.ts).** While
+  `LOCALE.choosable` is false the game shows `LOCALE.fixed` (ko) whatever a
+  browser stored (`Settings` keeps the stored choice, `shownLanguage` picks),
+  설정 has no Language row and the title says 설정, not "Settings". The code
+  stays built for every language: every word through `t()`, all four
+  locales kept in step with types.ts, patch notes in all four. Turning the
+  flag on is the whole of putting it back.
+- **Every other language is checked for Korean (at release).** Data tables
+  are written in Korean and a locale renames what it knows (`names.*`);
+  `test-locale` walks every screen in en/ja/zh and fails on any Hangul left
+  on it. A new name, line or button needs its entry in all three, and a
+  weapon tier line goes through `names.affixGearDetails` with `{value}`.
 - **Back buttons.** Every screen but the title and the run calls
   `addBackButton` (top-left, arrow only below 600 wide) with the same exit
   Esc takes; `test-back` checks each one sits clear and goes where it
@@ -236,24 +248,22 @@ Read `git log` for what changed and when. What is not in the log:
 - **Gear is the run's (0.71).** Three slots
   (`GEAR_SLOTS`: 무기 · 방어구 · 장신구), five bases each, every base its
   icon and 고정 속성; each 속성 names the `slots` it rolls on (`affixPool`).
-  A run's `RunKit` (systems/RunKit.ts) holds what is worn, the 보관함
-  (`RUN_BAG.capacity`) and the 구슬 picked up; it starts on `STARTING_KIT`
+  A run's `RunKit` (systems/RunKit.ts) holds what is worn and the 구슬
+  picked up — no 보관함 since 0.78 (a save's `bag` is dropped on restore);
+  it starts on `STARTING_KIT`
   worn bare (a 녹슨 검 and, since 0.72, a 천옷),
   is carried by the save (`SavedRun.kit`; an older save's `gear` comes back
   worn) and goes with the run. The title has no 인벤토리, there is no 판매,
   and the old stash and 구슬 drawer keys (`RETIRED_STORAGE`) are
   cleared on load — the user chose to delete them, not pay them out. A piece
-  picked up queues a `gear` choice: `GearPickScene` shows it beside what is
-  worn (`drawGearCard`) and always offers all three (0.72): 착용 (the old
-  piece goes to the 보관함), 보관 (dimmed and dead while the 보관함 is full)
-  and 버리기; one the 아이템 필터 hides goes
-  into the 보관함 without asking. The pause menu's 장비 (`RunGearScene`)
-  wears, combines and drops (both asked twice) and opens `OrbScene` on any
-  piece, worn or kept. 합성 (`RunKit.combineSet`/`combine`,
-  `combineTargetFor`): the picked kept piece and `GEAR_COMBINE.count` − 1
-  more of its base (the fewest-line ones) make an 일반 piece of the same
-  slot a tier up — always; nothing reaches past `GEAR_COMBINE.bestTier`
-  (tier 1 is a 우두머리's only, so a tier-2 piece cannot go in). A drop's
+  picked up queues a `gear` choice: `GearPickScene` (0.78, the user's
+  layout) draws what is worn on the left, the piece found on the right
+  (stacked, worn on top, under 600 wide) and a gold arrow between
+  (`arrowAt`), and offers only 착용 (the old piece is let go) and 버리기
+  (Esc too); one the 아이템 필터 hides is let go without asking. The pause
+  menu's 장비 (`RunGearScene`) is for 구슬 only: the three worn slots and
+  구슬 사용, which opens `OrbScene` on the picked piece. 합성 went with the
+  보관함 (0.78). A drop's
   line count is its 등급's (`GEAR_DROP.grades`: 일반 2 · 마법 4 · 희귀 6, by
   weight, `rollGrade`); 구슬 can still leave any count, and the 등급 shown is
   read off the count (`AUDIO.dropTiers`). (0.71 had an empty-slot rule —
@@ -623,13 +633,21 @@ Read `git log` for what changed and when. What is not in the log:
   skill gets `RUNE_SLOTS.main` slots when acquired (`RunKit.ensureSlots`),
   any skill can reach `RUNE_SLOTS.max`. 룬 and 강화 슬롯 live in the
   `RunKit` (held `runes`, per-skill `sockets`, carried by the save). A kill
-  leaves a 룬 at `RUNE_DROP.chance` × its bonus (`rollRune` by weight) and a
+  leaves a 룬 at `RUNE_DROP.chance` × its bonus (`rollRune` by weight,
+  only among those `runeFits` — some skill held can take it) and a
   룬 끌 at `RUNE_CHISEL.chance` while `chiselWanted` (some skill not full);
   a 룬 끌 queues a `chisel` choice (`RuneChiselScene`). The pause menu's 룬
   row opens `RuneScene` (a slot picked, then a held 룬 pressed or its
   number key). A set 룬 never comes out (0.76, the user's ask): it is only
   overwritten, asked twice, and the old one is gone (`RunKit.socket`;
-  `unsocket` is left for tools). test-runes covers all of it.
+  `unsocket` is left for tools). Since 0.78 a 룬 is not held at all: picked
+  up it goes straight into a skill (`GameScene.onRuneCollected`,
+  `runeTargets`: held, a slot, the 룬 working there). One target with a free
+  slot takes it with a toast; otherwise a `rune` choice opens the skill
+  cards (`SkillPickScene` with `notes`, a full skill's in `COLORS.warnText`
+  naming the 룬 it would lose). A skill's sockets are packed oldest first
+  (`RunKit.fit`/`oldestIn`): a free slot first, then the oldest goes.
+  `RuneScene` is left for 룬 a save still holds. test-runes covers all of it.
   0.75: 반복 (`repeatCount` → `WeaponContext.repeats`, a `RepeatQueue` in
   each weapon that casts again `RUNE_REPEAT.gapMs` apart), 관통's price
   (`pierceDecay` → `pierceKeep`, the shot's damage multiplied on each pass,

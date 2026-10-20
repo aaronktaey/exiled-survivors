@@ -69,47 +69,26 @@ const fresh = await run(`
 check('the skill taken is the main skill, with RUNE_SLOTS.main 강화 슬롯', fresh.main === 'fireball' && fresh.slots === fresh.want && fresh.other === 0,
   JSON.stringify(fresh));
 
-// --- 4. 룬 on the ground, and picked up ---
+// --- 4. 룬 on the ground, picked up — and straight into a skill (0.78) ---
+const before = await run(`return { damage: s.damageOf('fireball'), sheet: s.mods.runes.fireball ?? null, shots: s.projectilesOf('fireball').shots };`);
 const picked = await run(`
   const p = s.player, c = s.combat;
   c.dropRuneAt(p.x + 30, p.y, 'split');
   const d = c.runeDrops.getChildren().find((x) => x.active && x.rune === 'split');
   const label = d.nameplate.text;
   c.onRuneTouch(p, d);
-  return { label, held: s.kit.runeCount('split'), toast: s.toasts.lines.slice(-1)[0] ?? '',
+  return { label, held: s.kit.runeCount('split'), slot: s.kit.socketsOf('fireball')[0], toast: s.toasts.lines.slice(-1)[0] ?? '',
+           asked: s.choosing || window.game.scene.isActive('SkillPickScene'),
            over: s.damageNumbers.pool.some((f) => f.remainingMs > 0 && f.text.text.includes('분열의 룬')),
            gone: ['power', 'haste', 'precision', 'brutality'].filter((id) => id in window.config.RUNES),
            kinds: Object.keys(window.config.RUNES) };
 `);
-check('a 룬 lies under its name and is taken by walking over it', picked.label === '분열의 룬' && picked.held === 1, JSON.stringify(picked));
-check('and the pickup is said, in a toast and over the survivor', /분열의 룬/.test(picked.toast) && picked.over, JSON.stringify(picked));
+check('a 룬 lies under its name, and walking over it with one skill to take it sets it in the free slot, without asking',
+  picked.label === '분열의 룬' && picked.held === 0 && picked.slot === 'split' && !picked.asked, JSON.stringify(picked));
+check('and says where it went, in a toast and over the survivor', /화염구/.test(picked.toast) && /분열의 룬/.test(picked.toast) && picked.over,
+  JSON.stringify(picked));
 check('위력 · 신속 · 정밀 · 잔혹 are gone; 반복 and 포격 are there (0.75)',
   picked.gone.length === 0 && picked.kinds.includes('repeat') && picked.kinds.includes('bombard'), picked.kinds.join(','));
-
-// No skill drops in a run; a 우두머리 leaves a 룬 for certain.
-const boss = await run(`
-  const before = s.combat.runeDrops.countActive(true);
-  const b = s.spawner.spawnBoss(); s.combat.hit(b, 1e9);
-  const out = { runes: s.combat.runeDrops.countActive(true) - before, skillGroups: 'skillDrops' in s.combat };
-  for (const g of [s.combat.runeDrops, s.combat.chiselDrops, s.combat.gearDrops, s.combat.gems, s.combat.orbDrops, s.combat.altars, s.combat.boneDrops])
-    g.getChildren().forEach((d) => d.active && d.collect());
-  s.pendingChoices.length = 0;
-  return out;
-`);
-check('no particular skill drops (a 무작위 스킬 is the only way to one), and a 우두머리 always leaves a 룬', boss.runes >= 1 && boss.skillGroups === false, JSON.stringify(boss));
-
-// --- 5. setting it in the main skill's slot ---
-const before = await run(`return { damage: s.damageOf('fireball'), sheet: s.mods.runes.fireball ?? null, shots: s.projectilesOf('fireball').shots };`);
-await run(`window.game.scene.getScene('GameScene').scene.pause(); s.scene.launch('RuneScene', { kit: s.kit, skills: s.skillsHeld, onClose: () => s.scene.resume() }); return 1;`);
-await sleep(700);
-await shot('runes-02-screen-empty');
-const setIt = await scene('RuneScene', `
-  const ok = s.setRune('split');
-  return { ok, held: s.payload.kit.runeCount('split'), slot: s.payload.kit.socketsOf('fireball')[0], note: s.status.text };
-`);
-check('the 룬 screen sets a held 룬 in the slot picked', setIt.ok && setIt.held === 0 && setIt.slot === 'split', JSON.stringify(setIt));
-await sleep(200);
-await shot('runes-03-screen-set');
 const after = await run(`
   const c = window.config, mods = c.RUNES.split.mods;
   return { damage: s.damageOf('fireball'), scale: s.mods.runes.fireball?.scale('damage'), shots: s.projectilesOf('fireball').shots,
@@ -118,6 +97,86 @@ const after = await run(`
 check('and the skill takes it at once: 분열 throws one more, for less damage each',
   before.sheet === null && after.shots === before.shots + after.more && Math.abs(after.scale - after.want) < 1e-9 && after.damage < before.damage,
   `${before.shots} -> ${after.shots} shots, ${before.damage} -> ${after.damage} (×${after.scale})`);
+
+// No skill drops in a run; a 우두머리 leaves a 룬 for certain.
+const boss = await run(`
+  const before = s.combat.runeDrops.countActive(true);
+  const b = s.spawner.spawnBoss(); s.combat.hit(b, 1e9);
+  const out = { runes: s.combat.runeDrops.countActive(true) - before, skillGroups: 'skillDrops' in s.combat };
+  for (const g of [s.combat.chiselDrops, s.combat.gearDrops, s.combat.gems, s.combat.orbDrops, s.combat.altars, s.combat.boneDrops])
+    g.getChildren().forEach((d) => d.active && d.collect());
+  s.combat.runeDrops.getChildren().forEach((d) => d.active && d.recycle?.());
+  s.combat.runeDrops.getChildren().forEach((d) => d.active && d.setActive(false).setVisible(false));
+  s.pendingChoices.length = 0;
+  return out;
+`);
+check('no particular skill drops (a 무작위 스킬 is the only way to one), and a 우두머리 always leaves a 룬', boss.runes >= 1 && boss.skillGroups === false, JSON.stringify(boss));
+
+// Only a 룬 some skill held can take ever falls: here only fireball has a slot.
+const fits = await run(`
+  const c = s.combat, before = new Set(c.runeDrops.getChildren().filter((d) => d.active));
+  for (let i = 0; i < 120; i++) c.dropRuneAt(s.player.x + 400, s.player.y + 400);
+  const fresh = c.runeDrops.getChildren().filter((d) => d.active && !before.has(d));
+  const kinds = [...new Set(fresh.map((d) => d.rune))];
+  fresh.forEach((d) => d.setActive(false).setVisible(false));
+  return { kinds, bad: kinds.filter((id) => s.runeTargets(id).length === 0) };
+`);
+check('a kill only leaves 룬 a skill held can take', fits.kinds.length > 0 && fits.bad.length === 0, JSON.stringify(fits));
+
+// --- 5. a full skill: asked, warned, and the 룬 set longest ago goes ---
+await run(`s.onRuneCollected('linger'); return 1;`);
+await sleep(700);
+const ask = await scene('SkillPickScene', `return { title: s.payload.title, options: s.payload.options, note: s.payload.notes?.fireball ?? null,
+  color: s.cards[0] && s.children.list.find((o) => o.type === 'Text' && o.text === s.payload.notes?.fireball?.text)?.style.color,
+  warnColor: window.config.COLORS.warnText };`);
+check('with the only skill full, the 룬 asks first — its card warns which 룬 would go, in red',
+  (await active('SkillPickScene')) && ask.options.length === 1 && ask.note?.warn === true && /분열의 룬/.test(ask.note.text) && /제거/.test(ask.note.text) &&
+    ask.color === ask.warnColor, JSON.stringify(ask));
+await shot('runes-02-full-warning');
+await sleep(300);
+await scene('SkillPickScene', `s.pick(0); return 1;`);
+await sleep(400);
+const replaced = await run(`return { slot: s.kit.socketsOf('fireball'), held: s.kit.runeTotal, toast: s.toasts.lines.slice(-1)[0] ?? '', choosing: s.choosing };`);
+check('taking it puts it in and the 룬 set first is gone, said so', JSON.stringify(replaced.slot) === JSON.stringify(['linger']) && replaced.held === 0 &&
+  /분열의 룬/.test(replaced.toast) && /제거/.test(replaced.toast) && !replaced.choosing, JSON.stringify(replaced));
+
+// Two slots: filled in turn, and once full the oldest goes first.
+const order = await run(`
+  const k = s.kit;
+  k.addSlot('fireball');
+  const one = k.fit('fireball', 'split');
+  const two = k.fit('fireball', 'velocity');
+  return { one, two, slots: k.socketsOf('fireball'), oldest: k.oldestIn('fireball') };
+`);
+check('a free slot is filled before anything is pushed out, and then the oldest goes',
+  order.one.removed === null && order.two.removed === 'linger' && JSON.stringify(order.slots) === JSON.stringify(['split', 'velocity']) && order.oldest === 'split',
+  JSON.stringify(order));
+
+// Two skills it works for: the cards say which has room.
+await run(`s.acquire('chainLightning'); s.kit.addSlot('chainLightning'); s.onRuneCollected('chain'); return 1;`);
+await sleep(700);
+const two = await scene('SkillPickScene', `return { options: s.payload.options, notes: s.payload.notes };`);
+check('with two skills it works for, the cards ask which — the full one warns, the other has room',
+  JSON.stringify([...two.options].sort()) === JSON.stringify(['chainLightning', 'fireball']) && two.notes.fireball?.warn === true &&
+    !two.notes.chainLightning?.warn && /빈 슬롯/.test(two.notes.chainLightning?.text ?? ''), JSON.stringify(two));
+await shot('runes-03-two-skills');
+await sleep(300);
+await scene('SkillPickScene', `s.pick(s.payload.options.indexOf('chainLightning')); return 1;`);
+await sleep(400);
+const toChain = await run(`return { chain: s.kit.socketsOf('chainLightning'), fire: s.kit.socketsOf('fireball') };`);
+check('and the one taken gets it, the other untouched', JSON.stringify(toChain.chain) === JSON.stringify(['chain']) &&
+  JSON.stringify(toChain.fire) === JSON.stringify(['split', 'velocity']), JSON.stringify(toChain));
+
+// The 룬 screen still sets a 룬 a save held, overwriting asked twice.
+await run(`s.kit.ensureSlots('fireball', 1); s.kit.socketed.fireball = [null]; s.kit.socketed.chainLightning = [];
+  window.game.scene.getScene('GameScene').scene.pause(); s.scene.launch('RuneScene', { kit: s.kit, skills: s.skillsHeld, onClose: () => s.scene.resume() }); return 1;`);
+await sleep(700);
+const setIt = await scene('RuneScene', `
+  s.payload.kit.addRune('split');
+  const ok = s.setRune('split');
+  return { ok, held: s.payload.kit.runeCount('split'), slot: s.payload.kit.socketsOf('fireball')[0] };
+`);
+check('the 룬 screen sets a held 룬 in the slot picked', setIt.ok && setIt.held === 0 && setIt.slot === 'split', JSON.stringify(setIt));
 const over = await scene('RuneScene', `
   const k = s.payload.kit;
   k.addRune('linger');
@@ -134,13 +193,6 @@ check('overwriting is asked once, then done, and the 룬 it replaced is gone',
     over.split === 0 && over.linger === 0, JSON.stringify(over));
 // Put it back as the later checks expect: the slot empty (a tool-only way out).
 await scene('RuneScene', `s.payload.kit.unsocket('fireball', 0); s.payload.kit.runeBag.linger = 0; return 1;`);
-
-const wrong = await scene('RuneScene', `
-  s.payload.kit.addRune('bombard');
-  s.payload.kit.addRune('chain');
-  return 1;
-`);
-void wrong;
 await scene('RuneScene', `s.close(); return 1;`);
 await sleep(300);
 

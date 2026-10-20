@@ -95,6 +95,8 @@ export const COLORS = {
   critText: '#ffb347',
   /** A run on the board the admin's review marks out of line. */
   suspectText: '#ff6b6b',
+  /** A warning on a card: what a choice would cost (a 룬 pushed out of a full skill). */
+  warnText: '#ff6b6b',
 } as const;
 
 export const DEPTH = {

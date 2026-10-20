@@ -101,6 +101,16 @@ export interface Strings {
     readonly overwrite: string;
     /** A 룬 that does nothing for the skill cannot go in. */
     readonly cantSet: string;
+    /** A 룬 just picked up asks for its skill: {rune}. */
+    readonly pickTitle: string;
+    readonly pickSubtitle: string;
+    /** On a skill's card: a slot is free, {n} of {max} used. */
+    readonly fitFree: string;
+    /** On a full skill's card: {rune}, set longest ago, goes. */
+    readonly fitReplace: string;
+    /** Toasts: {rune} set in {skill}; and {old} pushed out of {skill}. */
+    readonly fitted: string;
+    readonly fittedOver: string;
     readonly hintKeyboard: string;
     readonly hintTouch: string;
     readonly chisel: string;
@@ -239,21 +249,7 @@ export interface Strings {
     readonly slots: Record<'weapon' | 'armor' | 'accessory', string>;
     /** An empty slot: {slot}. */
     readonly emptySlot: string;
-    /** The 보관함's heading: {n} of {max}. */
-    readonly bag: string;
-    readonly equip: string;
     readonly equipped: string;
-    readonly discard: string;
-    readonly discardConfirm: string;
-    readonly combine: string;
-    /** Asked before a 합성: {n} of {gear} go in. */
-    readonly combineConfirm: string;
-    /** Too few to combine: {n} needed. */
-    readonly combineNeed: string;
-    /** Already as good as a 합성 makes: tier {tier}. */
-    readonly combineTop: string;
-    /** What a 합성 made: {gear}. */
-    readonly combined: string;
     readonly orbs: string;
     readonly noOrbs: string;
     /** The 구슬 held: {list}. */
@@ -265,16 +261,11 @@ export interface Strings {
     readonly pickWorn: string;
     readonly pickNone: string;
     readonly pickWear: string;
-    readonly pickKeep: string;
     readonly pickDiscard: string;
-    /** The 보관함 is full: {max}. */
-    readonly pickFull: string;
     readonly pickHintKeyboard: string;
     readonly pickHintTouch: string;
     /** Toasts: {gear}. */
     readonly wore: string;
-    readonly kept: string;
-    readonly bagFull: string;
     /** The pause menu's row. */
     readonly pauseRow: string;
   };

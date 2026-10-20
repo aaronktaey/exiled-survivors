@@ -1,4 +1,4 @@
-import { SETTINGS_RANGE, STORAGE } from '@/config';
+import { LOCALE, SETTINGS_RANGE, STORAGE } from '@/config';
 import { LANGUAGES, detectLanguage, setLanguage, type Language } from '@/i18n';
 
 /**
@@ -70,7 +70,7 @@ class SettingsStore {
 
   public update(patch: Partial<GameSettings>): GameSettings {
     this.current = this.sanitise({ ...this.value, ...patch });
-    setLanguage(this.current.language);
+    setLanguage(shownLanguage(this.current.language));
     this.save();
     this.listeners.forEach((listener) => listener(this.current));
     return this.current;
@@ -119,7 +119,7 @@ class SettingsStore {
       this.current = { ...DEFAULTS };
     }
 
-    setLanguage(this.current.language);
+    setLanguage(shownLanguage(this.current.language));
   }
 
   private save(): void {
@@ -146,3 +146,12 @@ class SettingsStore {
 }
 
 export const settings = new SettingsStore();
+
+/**
+ * The language the game is shown in: the one chosen, once choosing is on
+ * (LOCALE.choosable); until then always LOCALE.fixed. The choice itself is
+ * still kept, so nothing is lost when it comes back.
+ */
+function shownLanguage(chosen: Language): Language {
+  return LOCALE.choosable ? chosen : (LOCALE.fixed as Language);
+}

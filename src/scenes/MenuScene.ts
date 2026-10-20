@@ -5,6 +5,7 @@ import {
   COLORS,
   DEPTH,
   LIVE_UPDATE,
+  LOCALE,
   MENU,
   RANKING,
   rankingDayStart,
@@ -117,8 +118,9 @@ export class MenuScene extends Phaser.Scene {
         },
         {
           id: 'settings',
-          // Always "Settings", like the Language row it leads to.
-          label: () => 'Settings',
+          // Always "Settings", like the Language row it leads to — while there
+          // is one to find (LOCALE.choosable); in the game's own words until then.
+          label: () => (LOCALE.choosable ? 'Settings' : t().menu.settings),
           onSelect: () => this.openOverlay(SCENES.settings, { allowLanguage: true }),
         },
         {

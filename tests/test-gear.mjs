@@ -52,12 +52,12 @@ const fresh = await run(`
   const k = s.kit;
   return { weapon: k.equipped.weapon && { id: k.equipped.weapon.id, lines: k.equipped.weapon.prefixes.length + k.equipped.weapon.suffixes.length },
            armor: k.equipped.armor && { id: k.equipped.armor.id, lines: k.equipped.armor.prefixes.length + k.equipped.armor.suffixes.length },
-           accessory: k.equipped.accessory, bag: k.bag.length, orbs: k.orbTotal, kit: window.config.STARTING_KIT,
+           accessory: k.equipped.accessory, bag: 'bag' in k.state, orbs: k.orbTotal, kit: window.config.STARTING_KIT,
            start: window.config.STARTING_GEAR };
 `);
 check('a run starts wearing STARTING_KIT bare — a 녹슨 검 and a 천옷 — and no 장신구', fresh.weapon?.id === fresh.start &&
   fresh.weapon.id === fresh.kit.weapon && fresh.weapon.lines === 0 && fresh.armor?.id === fresh.kit.armor && fresh.armor.lines === 0 &&
-  fresh.accessory === null && fresh.bag === 0 && fresh.orbs === 0, JSON.stringify(fresh));
+  fresh.accessory === null && fresh.bag === false && fresh.orbs === 0, JSON.stringify(fresh));
 
 // --- 3. each slot rolls only what it may ---
 const pools = await ev(`(() => {
@@ -89,7 +89,7 @@ const popup = await scene('GearPickScene', `return { found: s.found?.name?.text 
   buttons: s.buttons.map((b) => b.choice), held: window.game.scene.getScene('GameScene').choosing };`);
 check('picking a piece up opens 장비 획득 and holds the run', (await active('GearPickScene')) && popup.held === true, JSON.stringify(popup));
 check('it shows the piece beside what is worn in that slot (the starting 천옷)', popup.found !== null && popup.worn !== null, JSON.stringify(popup));
-check('and always offers all three: 착용, 보관, 버리기', JSON.stringify(popup.buttons) === JSON.stringify(['wear', 'keep', 'drop']));
+check('and offers only 착용 and 버리기', JSON.stringify(popup.buttons) === JSON.stringify(['wear', 'drop']));
 await shot('gear-01-pick');
 const hpBefore = await run(`s.player.hp = Math.round(s.player.maxHp / 2); return { hp: s.player.hp, max: s.player.maxHp, taken: s.player.damageTakenScale };`);
 await scene('GearPickScene', `s.choose('wear'); return 1;`);
@@ -106,50 +106,41 @@ check('and what it gives is on the survivor straight away', Math.abs(wore.taken 
 check('putting it on mid-run does not fill the bar', wore.hp === hpBefore.hp, `${hpBefore.hp} -> ${wore.hp}`);
 check('the icons left of the skills show each piece worn', wore.icons === 2, `${wore.icons}`);
 
-// A second armour: kept, then worn — what was worn goes into the 보관함.
+// A second armour: shown beside the one worn; 버리기 leaves that one on,
+// 착용 lets it go — there is no 보관함 (0.78).
 await run(`s.combat.dropGearAt(s.player.x, s.player.y, window.rollGearItem(window.config.GEAR.plateArmor)); return 1;`);
 await sleep(800);
-const second = await scene('GearPickScene', `return { worn: s.worn?.name?.text ?? null };`);
-check('a second one of a slot is shown beside the one worn', second.worn !== null);
-await scene('GearPickScene', `s.choose('keep'); return 1;`);
-await sleep(300);
-const kept = await run(`return { bag: s.kit.bag.map((i) => i.id), armor: s.kit.equipped.armor?.id };`);
-check('보관 puts it in the 보관함 and leaves what is worn (the 천옷 taken off went there too)',
-  JSON.stringify(kept.bag) === JSON.stringify(['clothArmor', 'plateArmor']) && kept.armor === 'chainArmor', JSON.stringify(kept));
-
-// --- 5. a full 보관함, and what the 아이템 필터 hides ---
-const full = await run(`
-  const c = window.config;
-  while (!s.kit.bagFull) s.kit.store(window.rollGearItem(c.GEAR.copperRing));
-  s.combat.dropGearAt(s.player.x, s.player.y, window.rollGearItem(c.GEAR.silverRing));
-  return s.kit.bag.length;
-`);
-await sleep(800);
-const fullPopup = await scene('GearPickScene', `const keep = s.buttons.find((b) => b.choice === 'keep');
-  s.choose('keep');
-  return { choices: s.buttons.map((b) => b.choice), dim: keep.label.alpha < 1, stillOpen: window.game.scene.isActive('GearPickScene') };`);
-check('with the 보관함 full, 보관 is still shown but dimmed, and does nothing', JSON.stringify(fullPopup.choices) === JSON.stringify(['wear', 'keep', 'drop']) &&
-  fullPopup.dim && fullPopup.stillOpen, JSON.stringify(fullPopup));
+const second = await scene('GearPickScene', `return { worn: s.worn?.name?.text ?? null, choices: s.buttons.map((b) => b.choice) };`);
+check('a second one of a slot is shown beside the one worn, with 착용 and 버리기 only', second.worn !== null &&
+  JSON.stringify(second.choices) === JSON.stringify(['wear', 'drop']), JSON.stringify(second));
 await scene('GearPickScene', `s.choose('drop'); return 1;`);
 await sleep(300);
-const hidden = await run(`
+const kept = await run(`return { armor: s.kit.equipped.armor?.id, state: Object.keys(s.kit.state) };`);
+check('버리기 lets it go and leaves what is worn', kept.armor === 'chainArmor' && !kept.state.includes('bag'), JSON.stringify(kept));
+await run(`s.combat.dropGearAt(s.player.x, s.player.y, window.rollGearItem(window.config.GEAR.plateArmor)); return 1;`);
+await sleep(800);
+const wasOn = await run(`return s.kit.equipped.armor.uid;`);
+await scene('GearPickScene', `s.choose('wear'); return 1;`);
+await sleep(300);
+const swappedOn = await run(`return { armor: s.kit.equipped.armor?.id, old: s.kit.find(${JSON.stringify(wasOn)}) };`);
+check('착용 puts it on and the piece taken off is gone', swappedOn.armor === 'plateArmor' && swappedOn.old === null, JSON.stringify(swappedOn));
+
+// --- 5. what the 아이템 필터 hides is let go without asking ---
+await run(`
   const c = window.config;
-  s.kit.remove(s.kit.bag[0].uid);
   window.itemFilter.toggle('gear:jadeAmulet');
   const item = window.rollGearItem(c.GEAR.jadeAmulet);
   s.combat.dropGearAt(s.player.x, s.player.y, item);
   window.__hidden = item.uid;
-  return { bag: s.kit.bag.length, cap: c.RUN_BAG.capacity };
+  return 1;
 `);
 await sleep(800);
 const quiet = await run(`window.itemFilter.toggle('gear:jadeAmulet');
-  return { popup: window.game.scene.isActive('GearPickScene'), inBag: s.kit.bag.some((i) => i.uid === window.__hidden) };`);
-check('a piece the 필터 hides goes into the 보관함 without asking', full === hidden.cap && quiet.popup === false && quiet.inBag === true, JSON.stringify(quiet));
+  return { popup: window.game.scene.isActive('GearPickScene'), worn: s.kit.find(window.__hidden) !== null };`);
+check('a piece the 필터 hides is let go without asking', quiet.popup === false && quiet.worn === false, JSON.stringify(quiet));
 
 // --- 6. the pause menu's 장비 ---
 await run(`
-  while (s.kit.bag.length > 1) s.kit.remove(s.kit.bag[s.kit.bag.length - 1].uid);
-  s.kit.store(window.rollGearItem(window.config.GEAR.steelSword));
   s.kit.addOrb('chaos');
   s.kit.addOrb('transmute');
   s.pauseRun();
@@ -158,39 +149,10 @@ await run(`
 await sleep(600);
 await scene('PauseScene', `s.menu.rows.find((r) => r.item.id === 'gear').item.onSelect(); return 1;`);
 await sleep(700);
-const screen = await scene('RunGearScene', `return { cells: s.cells.length, orbs: s.orbLine.text, slots: s.cells.filter((c) => c.slot).length,
-  cap: window.config.RUN_BAG.capacity };`);
-check('the pause menu opens 장비: three worn slots and the whole 보관함', screen.slots === 3 && screen.cells === 3 + screen.cap, JSON.stringify(screen));
+const screen = await scene('RunGearScene', `return { cells: s.cells.length, orbs: s.orbLine.text, slots: s.cells.filter((c) => c.slot).length };`);
+check('the pause menu opens 장비: the three worn slots, nothing else', screen.slots === 3 && screen.cells === 3, JSON.stringify(screen));
 check('with the 구슬 held read out', /혼돈 1/.test(screen.orbs) && /변화 1/.test(screen.orbs), screen.orbs);
 await shot('gear-02-screen');
-const swap = await scene('RunGearScene', `
-  const kit = window.game.scene.getScene('GameScene').kit;
-  const at = s.cells.findIndex((c, i) => s.itemAt(i)?.id === 'steelSword');
-  s.select(at);
-  const before = kit.equipped.weapon.id;
-  s.equip();
-  return { before, at };
-`);
-await sleep(500);
-const swapped = await run(`return { weapon: s.kit.equipped.weapon?.id, bag: s.kit.bag.map((i) => i.id), attack: s.gearBonus.attack,
-  want: window.config.attackForTier(window.config.GEAR.steelSword.tier) };`);
-check('착용 from the 보관함 swaps it with what was worn', swapped.weapon === 'steelSword' && swapped.bag.includes(swap.before), JSON.stringify(swapped));
-check('and the run fights with it at once', swapped.attack === swapped.want, `${swapped.attack}`);
-const dropBag = await scene('RunGearScene', `
-  const kit = window.game.scene.getScene('GameScene').kit;
-  const at = s.cells.findIndex((c, i) => !c.slot && s.itemAt(i));
-  s.select(at);
-  const uid = s.picked.uid;
-  s.discard();
-  const afterOne = kit.find(uid) !== null;
-  return { uid, afterOne };
-`);
-await sleep(100);
-await scene('RunGearScene', `s.discard(); return 1;`);
-await sleep(500);
-const gone = await run(`return s.kit.find(${JSON.stringify(dropBag.uid)}) === null;`);
-check('버리기 asks a second press before it lets a piece go', dropBag.afterOne === true && gone === true);
-
 // 구슬 사용 on the worn weapon, from 장비.
 const orbed = await scene('RunGearScene', `s.select(0); s.openOrbs(); return 1;`);
 void orbed;
@@ -230,16 +192,16 @@ const savedKit = await run(`
   s.kit.addOrb('explode');
   s.writeSave();
   const saved = JSON.parse(localStorage.getItem(window.config.STORAGE.save));
-  window.__kit = JSON.stringify({ worn: Object.values(s.kit.equipped).map((i) => i && i.uid), bag: s.kit.bag.map((i) => i.uid), orbs: s.kit.state.orbs });
+  window.__kit = JSON.stringify({ worn: Object.values(s.kit.equipped).map((i) => i && i.uid), orbs: s.kit.state.orbs });
   s.scene.restart({ save: saved });
   return Object.keys(saved);
 `);
 await sleep(1500);
-const resumed = await run(`return JSON.stringify({ worn: Object.values(s.kit.equipped).map((i) => i && i.uid), bag: s.kit.bag.map((i) => i.uid), orbs: s.kit.state.orbs }) === window.__kit;`);
-check('a saved run carries what it wears, keeps and holds', savedKit.includes('kit') && resumed === true);
+const resumed = await run(`return JSON.stringify({ worn: Object.values(s.kit.equipped).map((i) => i && i.uid), orbs: s.kit.state.orbs }) === window.__kit;`);
+check('a saved run carries what it wears and holds', savedKit.includes('kit') && resumed === true);
 await run(`s.scene.restart({ save: null }); return 1;`);
 await sleep(1500);
-const anew = await run(`return { bag: s.kit.bag.length, orbs: s.kit.orbTotal, armor: s.kit.equipped.armor?.id, weapon: s.kit.equipped.weapon?.id,
+const anew = await run(`return { bag: 0, orbs: s.kit.orbTotal, armor: s.kit.equipped.armor?.id, weapon: s.kit.equipped.weapon?.id,
   kit: window.config.STARTING_KIT };`);
 check('and a new run starts over: the starting kit and nothing else', anew.bag === 0 && anew.orbs === 0 && anew.armor === anew.kit.armor && anew.weapon === anew.kit.weapon,
   JSON.stringify(anew));

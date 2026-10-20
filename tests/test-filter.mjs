@@ -121,15 +121,15 @@ const hidden = await scene('GameScene', `
   // Walking over them: the same touch the overlap hands the survivor.
   c.onOrbTouch(p, orb);
   c.onGearTouch(p, sword);
-  // A hidden piece is not asked about: it goes into the run's 보관함.
-  return { ...seen, orbsGained: s.kit.count('chaos') - orbsBefore,
-           swordKept: s.kit.bag.some((i) => i.uid === 'h1'), orbLeft: orb.active, swordLeft: sword.active };
+  // A hidden piece is not asked about: it is let go (there is no 보관함 since 0.78).
+  return { ...seen, orbsGained: s.kit.count('chaos') - orbsBefore, asked: window.game.scene.isActive('GearPickScene') || s.pendingChoices.length > 0,
+           swordWorn: s.kit.find('h1') !== null, orbLeft: orb.active, swordLeft: sword.active };
 `);
 console.log('hidden:', JSON.stringify(hidden));
 check('a hidden drop still lies there, with no sprite, name, pillar or edge marker',
   hidden.orb && hidden.sword && hidden.markers === 0, JSON.stringify(hidden));
 check('and walking over it picks it up all the same',
-  hidden.orbsGained === 1 && hidden.swordKept && !hidden.orbLeft && !hidden.swordLeft, JSON.stringify(hidden));
+  hidden.orbsGained === 1 && !hidden.asked && !hidden.swordWorn && !hidden.orbLeft && !hidden.swordLeft, JSON.stringify(hidden));
 check('a weapon shows only when both its rarity and its kind are on',
   landed.afterPlain === landed.before?.gear && landed.afterRare === landed.before?.gear + 1 &&
     landed.afterBase === landed.afterRare,

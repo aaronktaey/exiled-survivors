@@ -1,9 +1,9 @@
 import { connect, sleep } from './cdp-lib.mjs';
 import { writeFileSync } from 'node:fs';
 
-// What a run finds and how (0.71–0.72): the opening's slower spawns, a
-// piece's 등급 deciding its line count, a 합성 that always works and stops
-// short of tier 1, 구슬 drawn in like gems with no name over them and
+// What a run finds and how (0.71–0.78): the opening's slower spawns, a
+// piece's 등급 deciding its line count, a piece picked up worn or let go
+// (no 보관함 since 0.78), 구슬 drawn in like gems with no name over them and
 // counted at the bottom right, and the run's second clock that the ranking
 // weighs the shown one by.
 
@@ -60,58 +60,80 @@ const grades = await ev(`(() => {
 const seen = Object.keys(grades.counts).map(Number).sort((a, b) => a - b);
 check('every drop carries exactly its 등급’s count of lines', JSON.stringify(seen) === JSON.stringify(grades.want), JSON.stringify(grades.counts));
 
-// --- 4. 합성: always, and never into tier 1 ---
-const combine = await run(`
-  const c = window.config, k = s.kit;
-  const tierOf = (tier, slot) => Object.values(c.GEAR).find((g) => g.slot === slot && g.tier === tier);
-  const low = tierOf(Math.max(...Object.values(c.GEAR).map((g) => g.tier)), 'armor');
-  for (const item of [...k.bag]) k.remove(item.uid);
-  for (let i = 0; i < c.GEAR_COMBINE.count; i++) k.store(window.rollGearItem(low));
-  return { low: low.id, lowTier: low.tier, bag: k.bag.length };
+// --- 4. a piece picked up: worn on the left, found on the right, 착용 or 버리기 (0.78) ---
+const pickOpen = async () => {
+  const offer = await run(`
+    const c = window.config, k = s.kit;
+    const base = Object.values(c.GEAR).find((g) => g.slot === 'armor' && g.id !== k.equipped.armor?.id);
+    const item = window.rollGearItem(base);
+    window.__found = item; window.__was = k.equipped.armor;
+    s.onGearCollected(item);
+    return { found: item.uid, was: k.equipped.armor?.uid ?? null };
+  `);
+  await sleep(700);
+  return offer;
+};
+const look = () => scene('GearPickScene', `
+  const g = s.arrow, a = s.arrowAt;
+  return { open: s.scene.isActive(), choices: s.buttons.map((b) => b.choice),
+    wornX: s.worn.container.x, foundX: s.found.container.x, wornY: s.worn.container.y, foundY: s.found.container.y,
+    arrow: a, gold: window.config.COLORS.gold, width: s.scale.width,
+    strokes: g?.commandBuffer?.length ?? 0 };
 `);
+const first = await pickOpen();
+const desk = await look();
+check('a piece picked up offers only 착용 and 버리기 — there is no 보관함',
+  desk.open && JSON.stringify(desk.choices) === JSON.stringify(['wear', 'drop']), JSON.stringify(desk));
+check('what is worn is on the left, the piece found on the right, a gold arrow pointing between them',
+  desk.wornX < desk.foundX && desk.arrow.way === 'right' && desk.arrow.x > desk.wornX && desk.arrow.x < desk.foundX && desk.strokes > 0,
+  JSON.stringify(desk));
+await shot('runloot-01-gear-pick');
+await scene('GearPickScene', `s.choose('wear'); return 1;`);
+await sleep(400);
+const wore = await run(`return { worn: s.kit.equipped.armor?.uid, was: window.__was ? s.kit.find(window.__was.uid) : null, state: Object.keys(s.kit.state) };`);
+check('착용 puts it on and the old piece is gone, kept nowhere', wore.worn === first.found && wore.was === null && !wore.state.includes('bag'),
+  JSON.stringify(wore));
+const second = await pickOpen();
+await scene('GearPickScene', `s.choose('drop'); return 1;`);
+await sleep(400);
+const dropped = await run(`return s.kit.equipped.armor?.uid;`);
+check('버리기 leaves what is worn as it was', dropped === second.was, `${second.was} -> ${dropped}`);
+
+// On a phone the two stack, worn on top, and the arrow points down.
+await cdp.send('Emulation.setDeviceMetricsOverride', { width: 390, height: 844, deviceScaleFactor: 2, mobile: true });
+await cdp.send('Page.reload', {});
+await sleep(4500);
+await run(`s.player.setInvulnerable(true); s.spawner.clear(); s.spawner.update = () => {}; return 1;`);
+await pickOpen();
+const phone = await look();
+check('on a phone the worn piece is on top, the found one under it, the arrow pointing down',
+  phone.wornY < phone.foundY && phone.arrow.way === 'down' && phone.arrow.y > phone.wornY && phone.arrow.y < phone.foundY,
+  JSON.stringify(phone));
+await shot('runloot-02-gear-pick-phone');
+await scene('GearPickScene', `s.choose('drop'); return 1;`);
+await sleep(300);
+await cdp.send('Emulation.clearDeviceMetricsOverride', {});
+await cdp.send('Page.reload', {});
+await sleep(4500);
+await run(`s.player.setInvulnerable(true); s.spawner.clear(); s.spawner.update = () => {}; return 1;`);
+
+// The pause menu's 장비 is for 구슬 only: the three worn slots and 구슬 사용.
 await run(`s.scene.launch('RunGearScene', { kit: s.kit, onClose: () => {} }); return 1;`);
 await sleep(700);
-await scene('RunGearScene', `s.select(s.cells.findIndex((c) => c.bag === 0)); s.combine(); return 1;`);
-const asked = await scene('RunGearScene', `return { note: s.status.text, bag: s.kit.bag.length };`);
-check('합성 asks once before it spends anything', asked.bag === combine.bag, JSON.stringify(asked));
-await shot('runloot-01-combine-ask');
-await scene('RunGearScene', `s.combine(); return 1;`);
-await sleep(700);
-const made = await scene('RunGearScene', `
-  const c = window.config, bag = s.kit.bag;
-  return { bag: bag.map((i) => ({ id: i.id, tier: c.GEAR[i.id].tier, slot: c.GEAR[i.id].slot, lines: i.prefixes.length + i.suffixes.length })),
-           picked: s.picked?.uid === bag[0]?.uid, note: s.status.text, normal: c.GEAR_DROP.grades.normal.lines };
-`);
-check('and on the second, three of a base always make one a tier better, of the same slot', made.bag.length === 1 &&
-  made.bag[0].tier === combine.lowTier - 1 && made.bag[0].slot === 'armor', JSON.stringify(made));
-check('the piece it makes is an 일반 drop’s, and the cursor is on it', made.bag[0]?.lines === made.normal && made.picked, JSON.stringify(made));
-await shot('runloot-02-combined');
-const limits = await run(`
-  const c = window.config, k = s.kit;
-  const of = (tier) => Object.values(c.GEAR).find((g) => g.slot === 'weapon' && g.tier === tier);
-  const out = {};
-  for (const item of [...k.bag]) k.remove(item.uid);
-  k.store(window.rollGearItem(of(4))); k.store(window.rollGearItem(of(4)));
-  out.two = k.combine(k.bag[0].uid);
-  for (const item of [...k.bag]) k.remove(item.uid);
-  const best = c.GEAR_COMBINE.bestTier;
-  for (let i = 0; i < c.GEAR_COMBINE.count; i++) k.store(window.rollGearItem(of(best)));
-  out.top = k.combine(k.bag[0].uid);
-  for (const item of [...k.bag]) k.remove(item.uid);
-  for (let i = 0; i < c.GEAR_COMBINE.count; i++) k.store(window.rollGearItem(of(best + 1)));
-  const up = k.combine(k.bag[0].uid);
-  out.up = typeof up === 'string' ? up : c.GEAR[up.id].tier;
-  out.best = best;
-  out.bossOnly = Object.values(c.GEAR).filter((g) => g.tier < best).every((g) => g.fromKill === undefined);
-  for (const item of [...k.bag]) k.remove(item.uid);
-  return out;
-`);
-check('too few of a base is not combined', limits.two === 'count', JSON.stringify(limits));
-check('a piece at the best tier a 합성 makes cannot go in, and one below reaches it', limits.top === 'top' && limits.up === limits.best,
-  JSON.stringify(limits));
-check('the tier above is a 우두머리’s only', limits.bossOnly);
+const craft = await scene('RunGearScene', `return { cells: s.cells.map((c) => c.slot), combine: typeof s.combine, equip: typeof s.equip, orbs: !!s.orbButton };`);
+check('the pause 장비 shows the three worn slots and 구슬 사용, nothing to wear, combine or drop',
+  JSON.stringify(craft.cells) === JSON.stringify(['weapon', 'armor', 'accessory']) && craft.combine === 'undefined' && craft.equip === 'undefined' && craft.orbs,
+  JSON.stringify(craft));
+await shot('runloot-03-gear-craft');
 await scene('RunGearScene', `s.close(); return 1;`);
 await sleep(300);
+// A save from before still holding a 보관함 comes back without it.
+const restored = await run(`
+  const old = { equipped: s.kit.state.equipped, bag: [window.rollGearItem(Object.values(window.config.GEAR)[0])], orbs: {} };
+  const kit = s.kit.constructor.restore({ kit: old });
+  return { keys: Object.keys(kit.state), worn: kit.equipped.armor?.uid === s.kit.equipped.armor?.uid };
+`);
+check('a save that still has a 보관함 comes back without it, worn as it was', !restored.keys.includes('bag') && restored.worn, JSON.stringify(restored));
 
 // --- 5. 구슬: no name over it, drawn in like a gem, and a toast ---
 const orb = await run(`
@@ -172,7 +194,7 @@ check('the 구슬 held are shown at the bottom right, every kind as its icon and
   JSON.stringify(tray));
 check('a kind not held is faint, and the count follows the run at once', tray.faint && tray.lit && tray.after === (tray.held.mango ?? 0) + 1,
   JSON.stringify(tray));
-await shot('runloot-03-orbs');
+await shot('runloot-04-orbs');
 
 // --- 6. the second clock ---
 await run(`s.choosing = false; return 1;`);

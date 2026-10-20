@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 
-import { COLORS, DEPTH, JOYSTICK, MENU, SCENES, SCRIM, TEXT } from '@/config';
+import { COLORS, DEPTH, JOYSTICK, LOCALE, MENU, SCENES, SCRIM, TEXT } from '@/config';
 import { centredTop, fitWidth } from '@/systems/Layout';
 import { fill, languageName, t } from '@/i18n';
 import { bgm } from '@/systems/Bgm';
@@ -86,15 +86,16 @@ export class SettingsScene extends Phaser.Scene {
       onCancel: () => this.close(),
       onMove: () => this.setHint(),
       items: [
-        {
+        // Off until the official release (LOCALE.choosable): the row is not there at all.
+        ...(LOCALE.choosable ? [{
           id: 'language',
           // Always "Language", in every language — that is the point of it.
           label: () => 'Language',
           detail: () => languageName(settings.value.language),
           enabled: () => this.payload.allowLanguage !== false,
           onSelect: () => this.changeLanguage(1),
-          onAdjust: (direction) => this.changeLanguage(direction),
-        },
+          onAdjust: (direction: -1 | 1) => this.changeLanguage(direction),
+        }] : []),
         {
           id: 'joystickScale',
           label: () => t().settings.padSize,

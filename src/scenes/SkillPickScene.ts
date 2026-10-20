@@ -17,6 +17,11 @@ export interface SkillPickData {
   /** The level each owned one is at, for its card. */
   readonly levels?: Partial<Record<SkillId, number>>;
   readonly onPick: (skill: SkillId) => void;
+  /**
+   * A line of its own for a card, in place of the skill's summary — a 룬's
+   * pick says where it would go, `warn` (in red) when it would push one out.
+   */
+  readonly notes?: Partial<Record<SkillId, { readonly text: string; readonly warn?: boolean }>>;
   /** Given, a back button (and Esc) leave the choice this way — the run's first skill goes back to the title. */
   readonly onBack?: () => void;
 }
@@ -242,11 +247,12 @@ export class SkillPickScene extends Phaser.Scene {
       .setDepth(DEPTH.ui + 1);
     ty += meta.height + 6;
 
+    const note = this.payload.notes?.[skill];
     this.add
-      .text(textX, ty, skillSummary(skill), {
+      .text(textX, ty, note ? note.text : skillSummary(skill), {
         fontFamily: 'system-ui, sans-serif',
         fontSize: TEXT.size.hint,
-        color: COLORS.muted,
+        color: note?.warn ? COLORS.warnText : note ? COLORS.text : COLORS.muted,
         align: compact ? 'left' : 'center',
         wordWrap: { width: textWidth },
         // As many lines as the card has room left for.

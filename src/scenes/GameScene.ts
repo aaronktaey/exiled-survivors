@@ -58,12 +58,14 @@ import {
   gearTitle,
   masteryText,
   orbName,
+  runeLines,
   runeName,
   skillName,
   t,
 } from '@/i18n';
 import { GameOverScene, type GameOverData } from '@/scenes/GameOverScene';
 import { SkillPickScene, type SkillPickData } from '@/scenes/SkillPickScene';
+import { runeWorksFor } from '@/systems/Runes';
 import { UpgradeScene, type UpgradeChoiceData } from '@/scenes/UpgradeScene';
 import type { SlotData } from '@/scenes/SlotScene';
 import type { UpgradeOption } from '@/systems/Progression';
@@ -194,6 +196,8 @@ type ChoiceRequest =
   /** A 무작위 스킬: the 슬롯머신 for a 보조 스킬. */
   | { readonly kind: 'slot' }
   | { readonly kind: 'chisel' }
+  /** A 룬 picked up, for more than one skill or a full one: which skill it goes in. */
+  | { readonly kind: 'rune'; readonly rune: RuneId }
   | { readonly kind: 'gear'; readonly item: GearItem };
 
 /** 포격의 룬: one turret — the skill's own weapon, cast from where the turret stands. */
@@ -385,6 +389,7 @@ export class GameScene extends Phaser.Scene {
       this.stats,
       {
         onRuneCollected: (id) => this.onRuneCollected(id),
+        runeFits: (id) => this.runeTargets(id).length > 0,
         onChiselCollected: () => this.queueChoice({ kind: 'chisel' }),
         chiselWanted: () => [...this.owned].some((skill) => this.kit.canAddSlot(skill)),
         onRandomSkillCollected: () => this.queueChoice({ kind: 'slot' }),
@@ -942,12 +947,82 @@ export class GameScene extends Phaser.Scene {
     }
   }
 
-  /** A 룬 picked up goes among the run's, to be set from the pause menu — said at once, and over the survivor. */
+  /**
+   * A 룬 picked up goes straight into a skill (0.78): the skills it does
+   * something for that have a 강화 슬롯. One such skill with a slot free
+   * takes it there and then; otherwise the cards ask which (a full one says
+   * which 룬 it would lose). With none at all — only a debug drop or a test
+   * gets there, a kill never leaves such a 룬 — it is held, for the 룬 screen.
+   */
   private onRuneCollected(id: RuneId): void {
-    this.kit.addRune(id);
-    const line = fill(t().runes.found, { rune: runeName(id) });
-    this.announce(line);
+    const targets = this.runeTargets(id);
+    const color = RUNES[id]?.color ?? 0xffffff;
+    if (targets.length === 0) {
+      this.kit.addRune(id);
+      const line = fill(t().runes.found, { rune: runeName(id) });
+      this.announce(line);
+      this.sayOverhead(line, color);
+      return;
+    }
+    const only = targets[0]!;
+    if (targets.length === 1 && this.kit.oldestIn(only) === null) {
+      this.fitRune(only, id);
+      return;
+    }
+    // The cards' title names it; said over the survivor too it would show through them.
+    this.queueChoice({ kind: 'rune', rune: id });
+  }
+
+  /** The skills a 룬 can go in: held, with a 강화 슬롯, and the 룬 doing something there. */
+  public runeTargets(id: RuneId): SkillId[] {
+    return this.skillsHeld.filter((skill) => runeWorksFor(id, skill) && this.kit.socketsOf(skill).length > 0);
+  }
+
+  /** Puts a 룬 in a skill and says so — loudly when it pushed the oldest out. */
+  private fitRune(skill: SkillId, id: RuneId): void {
+    const fit = this.kit.fit(skill, id);
+    if (!fit) {
+      return;
+    }
+    const copy = t().runes;
+    const line = fit.removed
+      ? fill(copy.fittedOver, { skill: skillName(skill), old: runeName(fit.removed), rune: runeName(id) })
+      : fill(copy.fitted, { skill: skillName(skill), rune: runeName(id) });
+    this.announce(line, fit.removed ? 'warning' : 'normal');
     this.sayOverhead(line, RUNES[id]?.color ?? 0xffffff);
+  }
+
+  /** Which skill a 룬 goes in: a card each, a full skill's saying which 룬 it would lose. */
+  private openRunePick(id: RuneId): void {
+    const options = this.runeTargets(id);
+    if (options.length === 0) {
+      this.kit.addRune(id);
+      this.afterChoice();
+      return;
+    }
+    const copy = t().runes;
+    const notes: NonNullable<SkillPickData['notes']> = {};
+    for (const skill of options) {
+      const oldest = this.kit.oldestIn(skill);
+      const slots = this.kit.socketsOf(skill);
+      notes[skill] = oldest
+        ? { text: fill(copy.fitReplace, { rune: runeName(oldest) }), warn: true }
+        : { text: fill(copy.fitFree, { n: slots.filter((rune) => rune !== null).length + 1, max: slots.length }) };
+    }
+    const data: SkillPickData = {
+      title: fill(copy.pickTitle, { rune: runeName(id) }),
+      subtitle: `${copy.pickSubtitle} · ${runeLines(id).join(' · ')}`,
+      options,
+      owned: options,
+      levels: Object.fromEntries(options.map((skill) => [skill, this.progression.levelFor(skill)])),
+      notes,
+      onPick: (skill) => {
+        this.fitRune(skill, id);
+        this.afterChoice();
+      },
+    };
+    this.scene.bringToTop(SkillPickScene.KEY);
+    this.scene.launch(SkillPickScene.KEY, data);
   }
 
   /**
@@ -992,27 +1067,15 @@ export class GameScene extends Phaser.Scene {
   }
 
   /**
-   * A piece picked up: the run stops on the choice of wearing it (what was
-   * worn goes into the 보관함) or keeping it. One the 아이템 필터 hides was
-   * not wanted in sight, so it goes into the 보관함 without asking — or, with
-   * no room, is let go.
+   * A piece picked up: the run stops on wearing it (what was worn is let go)
+   * or letting it go — there is no 보관함 (0.78). One the 아이템 필터 hides
+   * was not wanted, so it is let go without asking.
    */
   private onGearCollected(found: GearItem): void {
     if (!itemFilter.showsGear(found)) {
-      this.keepGear(found);
       return;
     }
     this.queueChoice({ kind: 'gear', item: found });
-  }
-
-  /** Into the 보관함, said; let go and said when it is full. */
-  private keepGear(item: GearItem): void {
-    const copy = t().runGear;
-    if (this.kit.store(item)) {
-      this.announce(fill(copy.kept, { gear: gearTitle(item) }));
-    } else {
-      this.announce(fill(copy.bagFull, { gear: gearTitle(item) }), 'warning');
-    }
   }
 
   /** The 장비 획득 popup for one piece. */
@@ -1021,14 +1084,11 @@ export class GameScene extends Phaser.Scene {
     const data: GearPickData = {
       item,
       worn: this.kit.equipped[slotOf(item)],
-      bagFull: this.kit.bagFull,
       onChoose: (choice: GearPickChoice) => {
         this.gearOnOffer = null;
         if (choice === 'wear') {
           this.kit.equip(item);
           this.announce(fill(t().runGear.wore, { gear: gearTitle(item) }), dropTierFor(item) === 'rare' ? 'rare' : 'normal');
-        } else if (choice === 'keep') {
-          this.keepGear(item);
         }
         this.afterChoice();
       },
@@ -1556,6 +1616,10 @@ export class GameScene extends Phaser.Scene {
     }
     if (request.kind === 'gear') {
       this.openGearPick(request.item);
+      return;
+    }
+    if (request.kind === 'rune') {
+      this.openRunePick(request.rune);
       return;
     }
 

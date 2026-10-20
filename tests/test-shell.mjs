@@ -75,9 +75,11 @@ const menu = await scene('MenuScene', `
   return { rows, logo: logo ? { y: logo.y, w: Math.round(logo.displayWidth), h: Math.round(logo.displayHeight) } : null };
 `);
 console.log('menu:', JSON.stringify(menu));
+// "Settings" stays English while there is a Language row to find there (LOCALE.choosable).
+const choosable = await ev(`(() => window.config.LOCALE.choosable)()`);
 check('every entry is there, in order',
   JSON.stringify(menu.rows.map(r => r.label)) ===
-    JSON.stringify(['게임 시작', '불러오기', 'Settings', '게임 가이드', '패치노트']),
+    JSON.stringify(['게임 시작', '불러오기', choosable ? 'Settings' : '설정', '게임 가이드', '패치노트']),
   menu.rows.map(r => r.label).join(' / '));
 check('불러오기 is dim and says so with no save',
   menu.rows[1].enabled === false && menu.rows[1].detail === '저장 없음', menu.rows[1].detail);
@@ -162,9 +164,11 @@ const rows = await scene('SettingsScene', `
   return { labels: s.menu.rows.map(r => r.item.label()), details: s.menu.rows.map(r => r.item.detail ? r.item.detail() : '') };
 `);
 console.log('settings rows:', JSON.stringify(rows.labels));
-check('설정 offers language, pad size, movement and volume',
-  rows.labels[0] === 'Language' && rows.labels[1].includes('크기') &&
-  rows.labels[2].includes('이동 방식') && rows.labels[3].includes('배경음') &&
+// No Language row until the official release (LOCALE.choosable).
+const at = choosable ? 1 : 0;
+check(choosable ? '설정 offers language, pad size, movement and volume' : '설정 offers pad size, movement and volume — no language until release',
+  (choosable ? rows.labels[0] === 'Language' : !rows.labels.includes('Language')) && rows.labels[at].includes('크기') &&
+  rows.labels[at + 1].includes('이동 방식') && rows.labels[at + 2].includes('배경음') &&
   !rows.labels.some((l) => l.includes('위치')),
   rows.labels.join(' / '));
 

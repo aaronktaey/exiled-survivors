@@ -77,6 +77,18 @@ export const RETIRED_STORAGE: readonly string[] = [
  * before the seal (none on it) stops being taken: 30 days after the seal
  * shipped, for every player to have loaded the game once since.
  */
+/**
+ * ★ 언어 선택 (2026-10-20, the user's ask): off until the official release.
+ * While `choosable` is false the game runs in `fixed` whatever a browser
+ * stored or reports, and 설정 has no Language row. Everything else is built
+ * for every language as before — four locales kept in step, every word
+ * through t() — so turning this back on is the only step at launch.
+ */
+export const LOCALE = {
+  choosable: false,
+  fixed: 'ko',
+} as const;
+
 export const SEAL = {
   pepper: 'es:7d1f:salt-of-the-exile:c41b',
   graceUntil: Date.UTC(2026, 10, 19),

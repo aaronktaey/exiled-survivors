@@ -1,56 +1,52 @@
 import {
   GEAR,
-  GEAR_COMBINE,
   GEAR_SLOTS,
   ORBS,
   RUNES,
   RUNE_SLOTS,
-  RUN_BAG,
   STARTING_KIT,
   type GearSlot,
   type OrbId,
   type RuneId,
 } from '@/config';
 import { SKILLS, type SkillId } from '@/weapons/skills';
-import {
-  bareItem,
-  combineTargetFor,
-  gearBonusFor,
-  readItem,
-  rollGearItem,
-  slotOf,
-  type GearBonus,
-  type GearItem,
-} from '@/systems/Gear';
+import { bareItem, gearBonusFor, readItem, slotOf, type GearBonus, type GearItem } from '@/systems/Gear';
 
 /** What a run is carrying, as a save writes it. */
 export interface RunKitState {
   readonly equipped: Partial<Record<GearSlot, GearItem | null>>;
-  readonly bag: readonly GearItem[];
+  /** The 보관함, until 0.78: a save that still has one has it dropped. */
+  readonly bag?: readonly GearItem[];
   readonly orbs: Partial<Record<OrbId, number>>;
-  /** 룬 held, not set in anything. Absent before 0.74. */
+  /** 룬 held, not set in anything (a save from 0.74–0.77). Absent before 0.74. */
   readonly runes?: Partial<Record<RuneId, number>>;
-  /** Each skill's 강화 슬롯, in order: the 룬 set there, or null. Its length is the slots it has. */
+  /**
+   * Each skill's 강화 슬롯: the 룬 set there, oldest first, then the empty
+   * ones (null). Its length is the slots it has.
+   */
   readonly sockets?: Partial<Record<SkillId, readonly (RuneId | null)[]>>;
 }
 
-/** Why a 합성 cannot go ahead: too few of the base, or one already at GEAR_COMBINE.bestTier. */
-export type CombineProblem = 'count' | 'top';
-
-/** Where an item is in the kit. */
+/** Where an item is in the kit: only what is worn, since there is no 보관함 (0.78). */
 export type KitPlace = { readonly item: GearItem; readonly worn: boolean };
+
+/** What putting a 룬 in a skill did: the slot it went to, and the 룬 it pushed out (null when a slot was free). */
+export interface RuneFit {
+  readonly slot: number;
+  readonly removed: RuneId | null;
+}
 
 type Listener = () => void;
 
 /**
  * 장비, for one run (2026-10-19): what is worn in each of the three slots,
- * the 보관함 for what was found and not worn, and the 구슬 picked up. It is
- * made fresh when a run starts — a bare 녹슨 검 in hand, nothing else — and
- * goes when the run does; a save carries it across a 불러오기 and no further.
+ * the 구슬 picked up, and each skill's 강화 슬롯. There is no 보관함 since
+ * 0.78: a piece found is worn or let go there and then. It is made fresh when
+ * a run starts (STARTING_KIT, bare) and goes when the run does; a save
+ * carries it across a 불러오기 and no further.
  */
 export class RunKit {
   private readonly worn: Record<GearSlot, GearItem | null> = { weapon: null, armor: null, accessory: null };
-  private readonly kept: GearItem[] = [];
   private readonly held: Partial<Record<OrbId, number>> = {};
   private readonly runeBag: Partial<Record<RuneId, number>> = {};
   private readonly socketed: Partial<Record<SkillId, (RuneId | null)[]>> = {};
@@ -81,12 +77,6 @@ export class RunKit {
         const item = readItem(saved.kit.equipped?.[slot]);
         kit.worn[slot] = item && slotOf(item) === slot ? item : null;
       }
-      for (const raw of saved.kit.bag ?? []) {
-        const item = readItem(raw);
-        if (item && kit.kept.length < RUN_BAG.capacity) {
-          kit.kept.push(item);
-        }
-      }
       for (const id of Object.keys(ORBS) as OrbId[]) {
         const count = Math.floor(Number(saved.kit.orbs?.[id]) || 0);
         if (count > 0) {
@@ -101,9 +91,9 @@ export class RunKit {
       }
       for (const [skill, raw] of Object.entries(saved.kit.sockets ?? {}) as [SkillId, readonly unknown[]][]) {
         if (SKILLS[skill] && Array.isArray(raw)) {
-          kit.socketed[skill] = raw
-            .slice(0, RUNE_SLOTS.max)
-            .map((rune) => (typeof rune === 'string' && rune in RUNES ? (rune as RuneId) : null));
+          kit.socketed[skill] = packed(
+            raw.slice(0, RUNE_SLOTS.max).map((rune) => (typeof rune === 'string' && rune in RUNES ? (rune as RuneId) : null)),
+          );
         }
       }
     } else {
@@ -118,20 +108,12 @@ export class RunKit {
     const orbs = Object.fromEntries(Object.entries(this.held).filter(([, n]) => (n ?? 0) > 0));
     const runes = Object.fromEntries(Object.entries(this.runeBag).filter(([, n]) => (n ?? 0) > 0));
     const sockets = Object.fromEntries(Object.entries(this.socketed).map(([skill, list]) => [skill, [...(list ?? [])]]));
-    return { equipped: { ...this.worn }, bag: [...this.kept], orbs, runes, sockets };
+    return { equipped: { ...this.worn }, orbs, runes, sockets };
   }
 
   /** What is worn in each slot. */
   public get equipped(): Readonly<Record<GearSlot, GearItem | null>> {
     return this.worn;
-  }
-
-  public get bag(): readonly GearItem[] {
-    return this.kept;
-  }
-
-  public get bagFull(): boolean {
-    return this.kept.length >= RUN_BAG.capacity;
   }
 
   /** What everything worn is worth together. */
@@ -146,14 +128,12 @@ export class RunKit {
         return { item, worn: true };
       }
     }
-    const kept = this.kept.find((item) => item.uid === uid);
-    return kept ? { item: kept, worn: false } : null;
+    return null;
   }
 
   /**
-   * Puts a piece on: one found just now, or one from the 보관함. What was
-   * worn in its slot goes into the 보관함 — or, with no room, is let go.
-   * Returns what was taken off, if anything.
+   * Puts a piece found on. What was worn in its slot is let go — there is
+   * nowhere to keep it (0.78). Returns what was taken off, if anything.
    */
   public equip(item: GearItem): GearItem | null {
     if (!GEAR[item.id]) {
@@ -161,29 +141,12 @@ export class RunKit {
     }
     const slot = slotOf(item);
     const off = this.worn[slot];
-    const at = this.kept.findIndex((kept) => kept.uid === item.uid);
-    if (at >= 0) {
-      this.kept.splice(at, 1);
-    }
     this.worn[slot] = item;
-    if (off && off.uid !== item.uid && this.kept.length < RUN_BAG.capacity) {
-      this.kept.push(off);
-    }
     this.changed();
     return off && off.uid !== item.uid ? off : null;
   }
 
-  /** Into the 보관함. False when it is full. */
-  public store(item: GearItem): boolean {
-    if (this.bagFull || this.find(item.uid)) {
-      return false;
-    }
-    this.kept.push(item);
-    this.changed();
-    return true;
-  }
-
-  /** Gone for good: from the 보관함, or off the survivor. */
+  /** Gone for good, off the survivor (a 구슬 that destroyed it). */
   public remove(uid: string): boolean {
     for (const slot of GEAR_SLOTS) {
       if (this.worn[slot]?.uid === uid) {
@@ -192,16 +155,10 @@ export class RunKit {
         return true;
       }
     }
-    const at = this.kept.findIndex((item) => item.uid === uid);
-    if (at < 0) {
-      return false;
-    }
-    this.kept.splice(at, 1);
-    this.changed();
-    return true;
+    return false;
   }
 
-  /** A piece changed in place (a 구슬): the same uid, wherever it was. */
+  /** A worn piece changed in place (a 구슬): the same uid. */
   public replace(item: GearItem): boolean {
     for (const slot of GEAR_SLOTS) {
       if (this.worn[slot]?.uid === item.uid) {
@@ -210,57 +167,7 @@ export class RunKit {
         return true;
       }
     }
-    const at = this.kept.findIndex((kept) => kept.uid === item.uid);
-    if (at < 0) {
-      return false;
-    }
-    this.kept[at] = item;
-    this.changed();
-    return true;
-  }
-
-  /**
-   * The pieces a 합성 on `uid` would spend: it, and GEAR_COMBINE.count − 1
-   * more of the same base from the 보관함 — those with the fewest 속성, so
-   * the better ones stay. Worn pieces never go in.
-   */
-  public combineSet(uid: string): readonly GearItem[] | CombineProblem {
-    const item = this.kept.find((kept) => kept.uid === uid);
-    if (!item) {
-      return 'count';
-    }
-    if (GEAR[item.id].tier - 1 < GEAR_COMBINE.bestTier) {
-      return 'top';
-    }
-    const lines = (piece: GearItem) => piece.prefixes.length + piece.suffixes.length;
-    const others = this.kept
-      .filter((kept) => kept.id === item.id && kept.uid !== uid)
-      .sort((a, b) => lines(a) - lines(b))
-      .slice(0, GEAR_COMBINE.count - 1);
-    return others.length === GEAR_COMBINE.count - 1 ? [item, ...others] : 'count';
-  }
-
-  /**
-   * 합성: spends the set `combineSet` names and puts the piece a tier better
-   * in the 보관함 — always. Returns it, or why it could not be done.
-   */
-  public combine(uid: string): GearItem | CombineProblem {
-    const set = this.combineSet(uid);
-    if (!Array.isArray(set)) {
-      return set as CombineProblem;
-    }
-    const target = combineTargetFor(set[0]!.id);
-    if (!target) {
-      return 'top';
-    }
-    const spent = new Set(set.map((piece) => piece.uid));
-    const at = this.kept.findIndex((kept) => kept.uid === uid);
-    const made = rollGearItem(target, 'normal');
-    const rest = this.kept.filter((kept) => !spent.has(kept.uid));
-    rest.splice(Math.min(at, rest.length), 0, made);
-    this.kept.splice(0, this.kept.length, ...rest);
-    this.changed();
-    return made;
+    return false;
   }
 
   public count(orb: OrbId): number {
@@ -339,8 +246,10 @@ export class RunKit {
   }
 
   /**
-   * Sets a held 룬 in a skill's slot. What was there is overwritten — gone,
-   * not given back (0.76). False when the slot or the 룬 is not there to use.
+   * Sets a held 룬 in a skill's slot (the 룬 screen, for a 룬 a save still
+   * holds). What was there is overwritten — gone, not given back (0.76) —
+   * and the new one counts as the newest set. False when the slot or the 룬
+   * is not there to use.
    */
   public socket(skill: SkillId, slot: number, rune: RuneId): boolean {
     const list = [...this.socketsOf(skill)];
@@ -348,10 +257,32 @@ export class RunKit {
       return false;
     }
     this.runeBag[rune] = this.runeCount(rune) - 1;
-    list[slot] = rune;
-    this.socketed[skill] = list;
+    list[slot] = null;
+    this.socketed[skill] = withNewest(packed(list), rune).list;
     this.changed();
     return true;
+  }
+
+  /**
+   * A 룬 just picked up, put straight into a skill (0.78): the first empty
+   * slot, or — every slot full — in place of the one set longest ago.
+   * Null when the skill has no slot at all.
+   */
+  public fit(skill: SkillId, rune: RuneId): RuneFit | null {
+    const list = packed([...this.socketsOf(skill)]);
+    if (list.length === 0) {
+      return null;
+    }
+    const { list: next, removed } = withNewest(list, rune);
+    this.socketed[skill] = next;
+    this.changed();
+    return { slot: next.lastIndexOf(rune), removed };
+  }
+
+  /** The 룬 a full skill would lose to the next one fitted: the one set longest ago. Null while a slot is free. */
+  public oldestIn(skill: SkillId): RuneId | null {
+    const list = this.socketsOf(skill);
+    return list.length > 0 && list.every((rune) => rune !== null) ? list[0]! : null;
   }
 
   /** Takes a 룬 out of a slot and back among those held. The 룬 screen offers no way to (0.76); kept for tests and tools. */
@@ -376,4 +307,21 @@ export class RunKit {
   private changed(): void {
     this.listeners.forEach((listener) => listener());
   }
+}
+
+/** The 룬 set first, in the order they went in, then the empty slots. */
+function packed(list: readonly (RuneId | null)[]): (RuneId | null)[] {
+  const set = list.filter((rune): rune is RuneId => rune !== null);
+  return [...set, ...list.slice(set.length).map(() => null)];
+}
+
+/** A packed list with `rune` added as the newest: into the first empty slot, or pushing out the oldest. */
+function withNewest(list: readonly (RuneId | null)[], rune: RuneId): { list: (RuneId | null)[]; removed: RuneId | null } {
+  const free = list.indexOf(null);
+  if (free >= 0) {
+    const next = [...list];
+    next[free] = rune;
+    return { list: next, removed: null };
+  }
+  return { list: [...list.slice(1), rune], removed: list[0] ?? null };
 }

@@ -634,7 +634,8 @@ export const AFFIXES: Record<AffixId, AffixSpec> = {
     gearTiers: tiers(
       (v) => `최대 체력 +${v}%`,
       (v) => ({ maxHpScale: 1 + v / 100 }),
-      [45, 38, 30, 22, 15],
+      [22.5, 19, 15, 11, 7.5],
+      // Half of [45, 38, 30, 22, 15] until 0.78 (the user's ask: every 접미어 on gear halved).
     ),
   },
   swift: {
@@ -647,7 +648,8 @@ export const AFFIXES: Record<AffixId, AffixSpec> = {
     gearTiers: tiers(
       (v) => `이동속도 +${v}%`,
       (v) => ({ moveSpeedScale: 1 + v / 100 }),
-      [36, 30, 24, 18, 12],
+      [18, 15, 12, 9, 6],
+      // Half of [36, 30, 24, 18, 12] until 0.78 (the user's ask: every 접미어 on gear halved).
     ),
   },
   evasive: {
@@ -659,7 +661,8 @@ export const AFFIXES: Record<AffixId, AffixSpec> = {
     gearTiers: tiers(
       (v) => `무적 시간 +${v}%`,
       (v) => ({ invulnerableScale: 1 + v / 100 }),
-      [50, 42, 34, 26, 18],
+      [25, 21, 17, 13, 9],
+      // Half of [50, 42, 34, 26, 18] until 0.78 (the user's ask: every 접미어 on gear halved).
     ),
   },
   magnetic: {
@@ -671,7 +674,8 @@ export const AFFIXES: Record<AffixId, AffixSpec> = {
     gearTiers: tiers(
       (v) => `획득 범위 +${v}%`,
       (v) => ({ pickupScale: 1 + v / 100 }),
-      [80, 68, 56, 44, 32],
+      [40, 34, 28, 22, 16],
+      // Half of [80, 68, 56, 44, 32] until 0.78 (the user's ask: every 접미어 on gear halved).
     ),
   },
 
@@ -721,7 +725,8 @@ export const AFFIXES: Record<AffixId, AffixSpec> = {
     gearTiers: tiers(
       (v) => `경험치 +${v}%`,
       (v) => ({ xpGainScale: 1 + v / 100 }),
-      [30, 24, 18, 12, 8],
+      [15, 12, 9, 6, 4],
+      // Half of [30, 24, 18, 12, 8] until 0.78 (the user's ask: every 접미어 on gear halved).
     ),
   },
 };

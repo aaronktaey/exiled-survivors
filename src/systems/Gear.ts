@@ -2,7 +2,6 @@ import {
   AFFIXES,
   AUDIO,
   GEAR,
-  GEAR_COMBINE,
   GEAR_DROP,
   STARTING_GEAR,
   LEGACY_AFFIX_TIER,
@@ -469,27 +468,6 @@ export function rollOrbDrop(scale = 1, fromBoss = false, bonus = 1): OrbSpec | n
   }
 
   return null;
-}
-
-/**
- * What a 합성 of `id` makes: a base of the same slot one tier better, by
- * weight among them — or null when that would pass GEAR_COMBINE.bestTier.
- */
-export function combineTargetFor(id: GearId): GearSpec | null {
-  const from = GEAR[id];
-  if (!from || from.tier - 1 < GEAR_COMBINE.bestTier) {
-    return null;
-  }
-  const above = Object.values(GEAR).filter((spec) => spec.slot === from.slot && spec.tier === from.tier - 1);
-  const total = above.reduce((sum, spec) => sum + spec.weight, 0);
-  let roll = Math.random() * total;
-  for (const spec of above) {
-    roll -= spec.weight;
-    if (roll <= 0) {
-      return spec;
-    }
-  }
-  return above[above.length - 1] ?? null;
 }
 
 /** A base from the whole roster, every slot, by weight — the way a 우두머리 picks one. */

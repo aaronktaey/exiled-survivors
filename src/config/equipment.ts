@@ -40,11 +40,6 @@ export type GearId =
 /** The slots in the order they are shown. */
 export const GEAR_SLOTS: readonly GearSlot[] = ['weapon', 'armor', 'accessory'];
 
-/** The run's 보관함: what is found and not worn waits here, until the run ends. */
-export const RUN_BAG = {
-  capacity: 30,
-} as const;
-
 /**
  * 고정 속성 — what every sword of a base does, whatever it rolled. It sits
  * outside the 접두어 / 접미어 slots and does not count against them. Set
@@ -299,19 +294,6 @@ export const STARTING_KIT: Partial<Record<GearSlot, GearId>> = { weapon: 'rustyS
 
 /** The weapon of it: what a run with no weapon to read back falls back on. */
 export const STARTING_GEAR: GearId = 'rustySword';
-
-/**
- * 장비 합성, in the run's 장비 screen: `count` of the same base out of the
- * 보관함 make one piece a tier better, of the same slot, as an 일반 drop
- * would roll it. It always works (0.71; it failed four times in five on the
- * title's old 인벤토리). Tier 1 comes only off a 우두머리, so nothing makes
- * it: `bestTier` is the best a 합성 reaches, and a piece already there
- * cannot go in.
- */
-export const GEAR_COMBINE = {
-  count: 3,
-  bestTier: 2,
-} as const;
 
 export const GEAR_DROP = {
   /**

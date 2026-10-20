@@ -15,6 +15,44 @@ export interface PatchNote {
 
 export const PATCH_NOTES: readonly PatchNote[] = [
   {
+    version: '0.78',
+    date: '2026-10-20',
+    changes: {
+      ko: [
+        '룬은 주우면 바로 스킬에 장착됩니다. 효과가 있는 스킬이 하나이고 빈 슬롯이 있으면 바로 들어가고, 아니면 장착할 스킬을 고릅니다. 빈 슬롯부터 채우고, 가득 찬 스킬에 넣으면 가장 먼저 장착한 룬이 제거됩니다(카드에 경고 표시).',
+        '장착할 스킬이 있는 룬만 떨어집니다.',
+        '장비 보관함과 합성이 없어졌습니다. 장비를 주우면 왼쪽에 지금 착용 중인 장비, 오른쪽에 새 장비가 화살표와 함께 나오고, 착용하거나 버립니다. 착용하면 원래 장비는 사라집니다.',
+        '일시정지의 장비에서는 착용 중인 장비를 골라 구슬을 사용합니다.',
+        '장비의 접미어 속성(거대 · 신속 · 회피 · 자력 · 학식) 수치를 절반으로 낮췄습니다.',
+        '설정에서 언어 선택을 뺐습니다. 정식 출시 후 다시 추가되며, 그때까지는 한국어로만 표시됩니다.',
+      ],
+      en: [
+        'A rune goes into a skill the moment it is picked up. With one skill it works for and a free slot it goes straight in; otherwise you choose the skill. Free slots fill first; setting it in a full skill removes the rune set there first (the card warns you).',
+        'Only runes a skill you hold can take drop now.',
+        'The gear stash and combining are gone. Picking up gear shows what you wear on the left and the new piece on the right, with an arrow between: wear it or drop it. Wearing it lets the old piece go.',
+        'Pause → Gear is where you use orbs on a piece you wear.',
+        'Gear suffixes (Giant, Swift, Evasive, Magnetic, Learned) are halved.',
+        'Language choice is out of Settings until the official release; the game is shown in Korean until then.',
+      ],
+      ja: [
+        'ルーンは拾うとすぐスキルに装着されます。効果のあるスキルが1つで空きスロットがあればそのまま入り、そうでなければ装着先を選びます。空きスロットから埋まり、満杯のスキルに入れると最初に装着したルーンが外れます（カードに警告が出ます）。',
+        '装着できるスキルがあるルーンだけが落ちるようになりました。',
+        '装備の保管箱と合成がなくなりました。装備を拾うと左に今の装備、右に新しい装備が矢印付きで表示され、装備するか捨てるかを選びます。装備すると元の装備は消えます。',
+        '一時停止の装備では、装備中の装備を選んでオーブを使います。',
+        '装備の接尾辞（巨大 · 俊敏 · 回避 · 磁力 · 博識）の数値を半分にしました。',
+        '設定から言語選択を外しました。正式リリース後に戻り、それまでは韓国語のみで表示されます。',
+      ],
+      zh: [
+        '符文拾取后会立即装到技能上。只有一个技能可用且有空槽时直接装入，否则选择要装备的技能。先填空槽；装入已满的技能时，最先装备的符文会被移除（卡片上会有警告）。',
+        '现在只会掉落你持有的技能能装备的符文。',
+        '移除了装备储物箱和合成。拾取装备时左边显示当前穿戴的装备，右边显示新装备，中间有箭头，选择穿戴或丢弃。穿戴后原装备消失。',
+        '暂停 → 装备中可以选择正在穿戴的装备使用宝珠。',
+        '装备后缀属性（巨大 · 迅捷 · 闪避 · 磁力 · 博学）的数值减半。',
+        '设置中暂时移除了语言选择，正式发布后会恢复，在此之前只显示韩语。',
+      ],
+    },
+  },
+  {
     version: '0.77',
     date: '2026-10-20',
     changes: {
