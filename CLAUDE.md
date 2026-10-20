@@ -411,9 +411,13 @@ Read `git log` for what changed and when. What is not in the log:
   Worker secret `ADMIN_USERS` (comma separated; `/api/me` answers
   `admin: true`). A run any F-key changed (`DebugOverlay.used`, kept in the
   save as `devUsed`) goes on neither the ranking nor 내 기록.
-- **No dial ships (0.71).** The user had every dial taken off; `DIALS` is
-  empty and a dial comes back only when they ask for that one (a line in
-  `config/tuning.ts` and its label). The live overrides were copied into the
+- **A dial ships only when asked for (0.71).** The user had every dial taken
+  off; a dial comes back only when they ask for that one (a line in
+  `config/tuning.ts`, its root in `Tuning.ts` ROOTS, and its label — 구슬,
+  뼈다귀 and gear are named from their tables). Back in 0.77: enemy health
+  (`BALANCE.enemyHpScale`, `hpScalePerMinute`, each `hpStepTiers` index's
+  minute and multiplier) and every drop off a kill. test-tuning reads the
+  tables and fails on a kill drop or a health tier with no dial. The live overrides were copied into the
   tables first (balance.ts, equipment.ts, and the passive tree's file) and the server's
   `tuning` row cleared when 0.71 shipped. `Tuning.apply` lays a value over
   only for a path that is a dial, so a stale row can never put an old

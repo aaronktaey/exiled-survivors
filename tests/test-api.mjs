@@ -169,10 +169,13 @@ try {
   const tunedHuge = await read(await boss.send('/api/balance', 'PUT', { overrides: { 'POTION.chance': 1e9 } }));
   check('nor can the admin set a path no dial has, or a value past belief', tunedStray.status === 400 && tunedHuge.status === 400,
     `${tunedStray.status} ${JSON.stringify(tunedStray.body)} / ${tunedHuge.status}`);
-  // No dial ships (2026-10-19: the user adds them one by one), so a path
-  // that was a dial is refused now, and the admin can only clear the set.
-  const tunedOld = await read(await boss.send('/api/balance', 'PUT', { overrides: { 'POTION.chance': 0.05 } }));
+  // A dial ships only when the user asks for it (2026-10-19): a path that
+  // was one and is not now is refused; one that is (0.77: drops) is taken.
+  const tunedOld = await read(await boss.send('/api/balance', 'PUT', { overrides: { 'SPAWN.maxAlive': 300 } }));
   check('a path that is no dial now is refused, even from the admin', tunedOld.status === 400, JSON.stringify(tunedOld.body));
+  const tunedDial = await read(await boss.send('/api/balance', 'PUT', { overrides: { 'POTION.chance': 0.05, 'DIFFICULTY.hpStepTiers.1.multiplier': 4 } }));
+  check('a dial that ships is taken from the admin', tunedDial.status === 200 && tunedDial.body?.overrides?.['POTION.chance'] === 0.05,
+    JSON.stringify(tunedDial.body));
   const tunedSet = await read(await boss.send('/api/balance', 'PUT', { overrides: {} }));
   const tuned1 = await read(await fetch(`${BASE}/api/balance`));
   check('the admin can still clear them, and the next look sees it at once',

@@ -15,6 +15,24 @@ export interface PatchNote {
 
 export const PATCH_NOTES: readonly PatchNote[] = [
   {
+    version: '0.77',
+    date: '2026-10-20',
+    changes: {
+      ko: [
+        '적 체력(전체 배율, 분당 증가율, 시간대별 증가 단계)과 모든 아이템의 드랍률을 서버에서 바로 조정할 수 있게 했습니다. 밸런스가 업데이트 없이 바뀔 수 있으며, 바뀐 값은 다음 판부터 적용됩니다.',
+      ],
+      en: [
+        'Enemy health (overall multiplier, rise per minute and its tiers over time) and every item’s drop rate can now be adjusted on the server directly. Balance may change without an update; a change applies from your next run.',
+      ],
+      ja: [
+        '敵の体力（全体倍率、分あたり増加率、時間帯ごとの増加段階）とすべてのアイテムのドロップ率をサーバーで直接調整できるようにしました。アップデートなしでバランスが変わることがあり、変更は次のプレイから適用されます。',
+      ],
+      zh: [
+        '敌人生命（整体倍率、每分钟增长率及各时段的增长阶段）和所有物品的掉落率现在可以在服务器上直接调整。平衡可能在不更新的情况下改变，改动从下一局开始生效。',
+      ],
+    },
+  },
+  {
     version: '0.76',
     date: '2026-10-20',
     changes: {

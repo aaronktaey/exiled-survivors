@@ -36,12 +36,49 @@ export interface DialSpec {
 }
 
 /**
- * Empty on the user's word (2026-10-19): every dial was taken off, and a dial
- * comes back only when the user asks for that one. The values they had on
- * the live server were copied into the tables first, so nothing played
- * differently for it.
+ * Every dial was taken off on the user's word (2026-10-19), and a dial comes
+ * back only when the user asks for that one. Back since (0.77): enemy health
+ * (the overall multiplier, the step a minute and each tier of it) and every
+ * drop rate. A new 구슬, 뼈다귀 or gear base that drops off kills needs its
+ * line here; the panel names it from the tables.
  */
-export const DIALS: readonly DialSpec[] = [];
+export const DIALS: readonly DialSpec[] = [
+  // Enemy health: how tough overall, how much more each minute, and from
+  // which minute each tier steps it up (DIFFICULTY.hpStepTiers, by index).
+  { path: 'BALANCE.enemyHpScale', kind: 'scale', tab: 'enemies', min: 0.1, max: 5 },
+  { path: 'DIFFICULTY.hpScalePerMinute', kind: 'scale', tab: 'enemies', min: 1, max: 2 },
+  { path: 'DIFFICULTY.hpStepTiers.0.afterMinute', kind: 'count', tab: 'enemies', min: 0, max: 60 },
+  { path: 'DIFFICULTY.hpStepTiers.0.multiplier', kind: 'scale', tab: 'enemies', min: 0, max: 20 },
+  { path: 'DIFFICULTY.hpStepTiers.1.afterMinute', kind: 'count', tab: 'enemies', min: 0, max: 60 },
+  { path: 'DIFFICULTY.hpStepTiers.1.multiplier', kind: 'scale', tab: 'enemies', min: 0, max: 20 },
+
+  // What falls, as a share of kills (before a rare's or a 우두머리's bonus).
+  { path: 'RUNE_DROP.chance', kind: 'chance', tab: 'drops', max: 0.2 },
+  { path: 'RUNE_CHISEL.chance', kind: 'chance', tab: 'drops', max: 0.05 },
+  { path: 'RANDOM_SKILL.chance', kind: 'chance', tab: 'drops', max: 0.05 },
+  { path: 'POTION.chance', kind: 'chance', tab: 'drops', max: 0.3 },
+  { path: 'MANGO.chance', kind: 'chance', tab: 'drops', max: 0.05 },
+  { path: 'MAGNET.chance', kind: 'chance', tab: 'drops', max: 0.05 },
+  { path: 'ALTAR.fromKill', kind: 'chance', tab: 'drops', max: 0.2 },
+  { path: 'ALTAR.fromBoss', kind: 'chance', tab: 'drops', max: 1 },
+  { path: 'ORBS.transmute.chance', kind: 'chance', tab: 'drops', max: 0.1 },
+  { path: 'ORBS.chaos.chance', kind: 'chance', tab: 'drops', max: 0.05 },
+  { path: 'ORBS.awaken.chance', kind: 'chance', tab: 'drops', max: 0.05 },
+  { path: 'ORBS.explode.chance', kind: 'chance', tab: 'drops', max: 0.05 },
+  { path: 'ORBS.mango.chance', kind: 'chance', tab: 'drops', max: 0.02 },
+  { path: 'BONES.skull.fromKill', kind: 'chance', tab: 'drops', max: 0.05 },
+  { path: 'BONES.rib.fromKill', kind: 'chance', tab: 'drops', max: 0.05 },
+  { path: 'BONES.spine.fromKill', kind: 'chance', tab: 'drops', max: 0.05 },
+  { path: 'GEAR.steelSword.fromKill', kind: 'chance', tab: 'drops', max: 0.05 },
+  { path: 'GEAR.ironSword.fromKill', kind: 'chance', tab: 'drops', max: 0.05 },
+  { path: 'GEAR.rustySword.fromKill', kind: 'chance', tab: 'drops', max: 0.05 },
+  { path: 'GEAR.chainArmor.fromKill', kind: 'chance', tab: 'drops', max: 0.05 },
+  { path: 'GEAR.leatherArmor.fromKill', kind: 'chance', tab: 'drops', max: 0.05 },
+  { path: 'GEAR.clothArmor.fromKill', kind: 'chance', tab: 'drops', max: 0.05 },
+  { path: 'GEAR.jadeAmulet.fromKill', kind: 'chance', tab: 'drops', max: 0.05 },
+  { path: 'GEAR.silverRing.fromKill', kind: 'chance', tab: 'drops', max: 0.05 },
+  { path: 'GEAR.copperRing.fromKill', kind: 'chance', tab: 'drops', max: 0.05 },
+];
 
 /** Every path the panel may set — what the Worker accepts and nothing else. */
 export const DIAL_PATHS: ReadonlySet<string> = new Set(DIALS.map((dial) => dial.path));

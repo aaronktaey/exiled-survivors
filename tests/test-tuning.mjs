@@ -43,22 +43,37 @@ await cdp.send('Page.navigate', { url: 'about:blank' });
 await cdp.send('Page.navigate', { url: 'http://localhost:5173/' });
 await sleep(2500);
 await ev(standIn);
-// The list is empty until the user asks for a dial (2026-10-19); the panel is
-// driven here on three of the old ones, added for the test.
+// A dial ships only when the user asks for it (2026-10-19); the skill ones
+// are added here for the test, beside what ships (0.77: enemy health, drops).
 const addDials = `(() => {
   window.tuning.addDial({ path: 'SKILL_BASE.meleeStrike.damage', kind: 'number', tab: 'skills', skill: 'meleeStrike' });
   window.tuning.addDial({ path: 'BALANCE.damageScale.meleeStrike', kind: 'scale', tab: 'skills', skill: 'meleeStrike' });
   window.tuning.addDial({ path: 'POTION.chance', kind: 'chance', tab: 'drops', max: 0.3 });
   return 1;
 })()`;
-const shipped = await ev(`(() => window.config.DIALS.length)()`);
+// What ships: enemy health — overall, a minute, every tier of it — and
+// every drop off a kill, read off the tables so a new one without its dial fails.
+const shipped = await ev(`(() => {
+  const c = window.config;
+  const paths = new Set(c.DIALS.map((d) => d.path));
+  const want = ['BALANCE.enemyHpScale', 'DIFFICULTY.hpScalePerMinute',
+    ...c.DIFFICULTY.hpStepTiers.flatMap((_, i) => ['DIFFICULTY.hpStepTiers.' + i + '.afterMinute', 'DIFFICULTY.hpStepTiers.' + i + '.multiplier']),
+    'RUNE_DROP.chance', 'RUNE_CHISEL.chance', 'RANDOM_SKILL.chance', 'POTION.chance', 'MANGO.chance', 'MAGNET.chance', 'ALTAR.fromKill',
+    ...Object.keys(c.ORBS).filter((id) => !c.ORBS[id].fromBossOnly).map((id) => 'ORBS.' + id + '.chance'),
+    ...Object.keys(c.BONES).filter((id) => c.BONES[id].fromKill > 0).map((id) => 'BONES.' + id + '.fromKill'),
+    ...Object.keys(c.GEAR).filter((id) => c.GEAR[id].fromKill !== undefined).map((id) => 'GEAR.' + id + '.fromKill')];
+  const value = (path) => path.split('.').reduce((o, k) => (o == null ? undefined : o[k]), c);
+  return { missing: want.filter((p) => !paths.has(p)), loose: [...paths].filter((p) => typeof value(p) !== 'number'),
+           tabs: [...new Set(c.DIALS.map((d) => d.tab))] };
+})()`);
 await ev(addDials);
 
 // --- 1. the panel, from the title ---
 await scene('MenuScene', `s.icons.press('tuning'); return 1;`);
 await sleep(700);
 const panel = await scene('TuningScene', `return { active: s.scene.isActive(), knobs: s.knobs.map((k) => k.dial.path), back: !!s.backButton };`);
-check('the game ships with no dials of its own (the user adds them one by one)', shipped === 0, `${shipped} dials`);
+check('it ships with a dial for enemy health, a minute and each tier, and for every drop off a kill',
+  shipped.missing.length === 0 && shipped.loose.length === 0, JSON.stringify(shipped));
 check('the title’s 밸런스 icon opens the dials, a page a skill',
   panel.active && panel.back && panel.knobs.includes('SKILL_BASE.meleeStrike.damage') && panel.knobs.includes('BALANCE.damageScale.meleeStrike'),
   panel.knobs.join(' '));
@@ -189,8 +204,8 @@ await sleep(2500);
 await ev(addDials);
 await ev(`(() => { window.config.DEBUG.gatedInDev = true; return 1; })()`);
 await ev(standIn);
-await ev(`(() => { window.__balanceStandIn.overrides = { 'POTION.chance': 0.25, 'ORBS.chaos.chance': 0.5 }; window.__balanceStandIn.updatedAt = 1;
-  window.__chaosWas = window.config.ORBS.chaos.chance; return 1; })()`);
+await ev(`(() => { window.__balanceStandIn.overrides = { 'POTION.chance': 0.25, 'SPAWN.maxAlive': 5 }; window.__balanceStandIn.updatedAt = 1;
+  window.__chaosWas = window.config.SPAWN.maxAlive; return 1; })()`);
 const player = await cdp.send('Runtime.evaluate', { awaitPromise: true, returnByValue: true, expression: `(async () => {
   window.tuning.draft = { 'POTION.chance': 0.9 };
   await window.tuning.load(window.game);
@@ -199,7 +214,7 @@ const player = await cdp.send('Runtime.evaluate', { awaitPromise: true, returnBy
   window.game.scene.getScene('MenuScene').scene.restart();
   await new Promise((r) => setTimeout(r, 800));
   const icons = window.game.scene.getScene('MenuScene').icons.views.map((v) => v.button.id);
-  return { potion: window.config.POTION.chance, icons, chaos: window.config.ORBS.chaos.chance, chaosWas: window.__chaosWas };
+  return { potion: window.config.POTION.chance, icons, chaos: window.config.SPAWN.maxAlive, chaosWas: window.__chaosWas };
 })()` });
 const pl = player.result?.result?.value ?? {};
 check('a player who is not the admin plays on everyone’s values, never a draft, and has no 밸런스 icon',
