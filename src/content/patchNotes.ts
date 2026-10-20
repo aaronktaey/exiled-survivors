@@ -15,6 +15,44 @@ export interface PatchNote {
 
 export const PATCH_NOTES: readonly PatchNote[] = [
   {
+    version: '0.74',
+    date: '2026-10-20',
+    changes: {
+      ko: [
+        '시작 스킬을 모든 스킬 중에서 고릅니다. 스킬 선택 창에서 돌아가기를 누르면 타이틀로 돌아가고, 넣었던 뼈다귀는 돌려받습니다.',
+        '타이틀의 패시브가 없어졌습니다.',
+        '룬이 생겼습니다. 스킬의 강화 슬롯에 룬을 장착하면 그 스킬에 효과가 붙습니다(피해, 공격속도, 투사체 추가, 관통, 연쇄, 범위, 지속시간, 치명타 확률, 치명타 피해, 투사체 속도 — 10종). 장착은 일시정지의 룬 화면에서 합니다.',
+        '메인 스킬은 강화 슬롯 1개로 시작하고, 스킬마다 최대 4개까지 늘릴 수 있습니다.',
+        '룬 끌이 생겼습니다. 주우면 고른 스킬에 강화 슬롯을 하나 더합니다.',
+        '판 도중에 스킬이 떨어지지 않습니다. 무작위 스킬이 떨어지던 자리에 룬이 떨어지고, 우두머리와 도망자는 스킬 대신 룬을 반드시 남깁니다.',
+      ],
+      en: [
+        'The starting skill is chosen from every skill. Back on the skill choice returns to the title, and the Bones you put in come back.',
+        'The passive tree on the title is gone.',
+        'Runes are new: set one in a skill’s rune slot and that skill gains its effect (damage, attack speed, extra projectile, pierce, chain, area, duration, crit chance, crit damage or projectile speed — 10 kinds). Runes are set from the Runes screen in the pause menu.',
+        'The main skill starts with 1 rune slot, and any skill can have up to 4.',
+        'The Rune Chisel is new: picked up, it adds a rune slot to the skill you choose.',
+        'Skills no longer drop during a run. Runes drop where Random Skills used to, and bosses and fugitives always leave a rune instead of a skill.',
+      ],
+      ja: [
+        '開始スキルをすべてのスキルから選べます。スキル選択画面で戻るを押すとタイトルに戻り、入れた骨は返ってきます。',
+        'タイトルのパッシブがなくなりました。',
+        'ルーンを追加しました。スキルの強化スロットにルーンを装着すると、そのスキルに効果が付きます（ダメージ、攻撃速度、投射物追加、貫通、連鎖、範囲、持続時間、クリティカル率、クリティカルダメージ、投射物速度 — 10種）。装着はポーズのルーン画面で行います。',
+        'メインスキルは強化スロット1つで始まり、スキルごとに最大4つまで増やせます。',
+        'ルーンのノミを追加しました。拾うと、選んだスキルに強化スロットを1つ加えます。',
+        'プレイ中にスキルは落ちなくなりました。ランダムスキルが落ちていたところにルーンが落ち、ボスと逃亡者はスキルの代わりにルーンを必ず落とします。',
+      ],
+      zh: [
+        '初始技能可以从所有技能中选择。在技能选择画面点返回会回到标题，放入的骨头会退还。',
+        '标题画面的被动已移除。',
+        '新增符文：在技能的强化槽中装入符文，该技能即获得效果（伤害、攻击速度、追加投射物、贯穿、连锁、范围、持续时间、暴击率、暴击伤害、投射物速度 — 共 10 种）。在暂停菜单的符文画面中装入。',
+        '主技能初始有 1 个强化槽，每个技能最多可增加到 4 个。',
+        '新增符文凿：拾取后为所选技能增加一个强化槽。',
+        '当局中不再掉落技能。原先掉落随机技能的地方改为掉落符文，首领和逃亡者必定掉落符文而不是技能。',
+      ],
+    },
+  },
+  {
     version: '0.73',
     date: '2026-10-20',
     changes: {

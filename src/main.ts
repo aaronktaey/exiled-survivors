@@ -17,7 +17,6 @@ import { account } from '@/systems/Account';
 import { cloudSave } from '@/systems/CloudSave';
 import { critMultiplierFor } from '@/systems/Modifiers';
 import { bones as bonesStore } from '@/systems/Bones';
-import { passives } from '@/systems/Passives';
 import { openRecord, sealRecord } from '@/systems/Seal';
 import { itemFilter } from '@/systems/ItemFilter';
 import { tuning } from '@/systems/Tuning';
@@ -37,8 +36,9 @@ import {
   RunGearScene,
   GearPickScene,
   OrbScene,
+  RuneScene,
+  RuneChiselScene,
   InfoScene,
-  PassiveScene,
   MenuScene,
   PauseScene,
   SettingsScene,
@@ -110,7 +110,8 @@ const config: Phaser.Types.Core.GameConfig = {
     RunGearScene,
   GearPickScene,
   OrbScene,
-    PassiveScene,
+    RuneScene,
+    RuneChiselScene,
     BoneScene,
     AccountScene,
     ConflictScene,
@@ -143,7 +144,6 @@ if (import.meta.env.DEV) {
     config?: typeof balance;
     rollGearItem?: typeof rollGearItem;
     gearBonusFor?: typeof gearBonusFor;
-    passives?: typeof passives;
     sealRecord?: typeof sealRecord;
     openRecord?: typeof openRecord;
     bones?: typeof bonesStore;
@@ -163,7 +163,6 @@ if (import.meta.env.DEV) {
   dev.config = balance;
   dev.rollGearItem = rollGearItem;
   dev.gearBonusFor = gearBonusFor;
-  dev.passives = passives;
   dev.sealRecord = sealRecord;
   dev.openRecord = openRecord;
   dev.bones = bonesStore;

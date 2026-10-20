@@ -2,8 +2,10 @@ import {
   AFFIXES,
   ALL_BONES,
   ALL_ORBS,
-  ALL_PASSIVE_NODES,
-  PASSIVE_POINTS,
+  ALL_RUNES,
+  RUNE_CHISEL,
+  RUNE_DROP,
+  RUNE_SLOTS,
   ALTAR,
   ALTAR_OFFERS,
   BALANCE,
@@ -23,10 +25,8 @@ import {
   RARE,
   SAVE,
   SKILL_BASE,
-  SKILL_DROP,
   SKILL_MASTERY,
   RUN_BAG,
-  SKILL_PICK,
   SPAWN,
   SPAWN_TABLE,
   CHIMERA_RUSH,
@@ -55,8 +55,9 @@ import {
   gearName,
   orbDetail,
   orbName,
-  passiveLines,
-  passiveName,
+  runeLines,
+  runeName,
+  runeWorksOn,
   skillName,
   skillSummary,
   t,
@@ -145,7 +146,6 @@ function values(): Record<string, string | number> {
 
   return {
     hp: PLAYER.maxHp,
-    choices: SKILL_PICK.choices,
     bossFirst: seconds(BOSS.firstMs),
     bossEvery: seconds(BOSS.intervalMs),
     fugFirst: seconds(FUGITIVE.firstMs),
@@ -154,8 +154,10 @@ function values(): Record<string, string | number> {
     pickup: PLAYER.pickupRadius,
     maxPicks: Math.max(UPGRADE_MAX_PICKS.damage ?? 0, UPGRADE_MAX_PICKS.attackSpeed ?? 0),
     chainCap: UPGRADE_CAP.chainCount ?? 0,
-    skillChance: percent(SKILL_DROP.chance),
-    randomSkillChance: percent(SKILL_PICK.dropChance),
+    runeChance: percent(RUNE_DROP.chance),
+    chiselChance: percent(RUNE_CHISEL.chance),
+    mainSlots: RUNE_SLOTS.main,
+    maxSlots: RUNE_SLOTS.max,
     critChance: percent(PLAYER.critChance),
     critMulti: round(PLAYER.critMultiplier),
     critAffix: affixName('critical'),
@@ -195,7 +197,6 @@ function values(): Record<string, string | number> {
     altarOffers: (Object.keys(ALTAR_OFFERS) as AltarOfferId[])
       .map((id) => altarOfferText(id))
       .join(', '),
-    passivePoints: PASSIVE_POINTS,
     fromKillTiers: tierSpan(
       Object.values(GEAR)
         .filter((spec) => spec.fromKill !== undefined)
@@ -234,7 +235,7 @@ const PROSE_TONE: Partial<Record<GuideTabId, GuideTone>> = {
   affixes: 'rare',
   orbs: 'orb',
   bones: 'bone',
-  passives: 'passive',
+  runes: 'passive',
 };
 
 /** A tab's prose, filled. */
@@ -302,10 +303,10 @@ export function guideChapters(): readonly GuideChapter[] {
       tab('gear', [...prose('gear', numbers), ...gearCards()]),
       tab('affixes', [...prose('affixes', numbers), ...affixCards()]),
       tab('orbs', [...prose('orbs', numbers), ...orbCards()]),
+      tab('runes', [...prose('runes', numbers), ...runeCards()]),
       tab('bones', [...prose('bones', numbers), ...boneCards()]),
     ]),
     chapter('progress', [
-      tab('passives', [...prose('passives', numbers), ...passiveCards()]),
       tab('inventory', prose('inventory', numbers)),
       tab('ranking', prose('ranking', numbers)),
     ]),
@@ -513,14 +514,14 @@ function boneCards(): GuideCard[] {
   }));
 }
 
-function passiveCards(): GuideCard[] {
+function runeCards(): GuideCard[] {
   const g = t().guide.labels;
-  const copy = t().passives;
-  // The 핵심 and 키스톤: a small node is one line, and the tree itself shows those.
-  return ALL_PASSIVE_NODES.filter((node) => node.kind === 'notable' || node.kind === 'keystone').map((node) => ({
-    title: passiveName(node.id),
+  // Each 룬's own share of RUNE_DROP.chance, by its weight.
+  const total = ALL_RUNES.reduce((sum, rune) => sum + rune.weight, 0);
+  return ALL_RUNES.map((rune) => ({
+    title: runeName(rune.id),
     tone: 'passive' as const,
-    facts: [fill(g.passiveKind, { branch: node.branch ? copy.branches[node.branch] : '', kind: copy.kinds[node.kind] })],
-    lines: passiveLines(node.id),
+    facts: [fill(g.chanceKill, { chance: percent((RUNE_DROP.chance * rune.weight) / total) }), runeWorksOn(rune.id)],
+    lines: runeLines(rune.id),
   }));
 }

@@ -1,4 +1,17 @@
-import { GEAR, GEAR_COMBINE, GEAR_SLOTS, ORBS, RUN_BAG, STARTING_KIT, type GearSlot, type OrbId } from '@/config';
+import {
+  GEAR,
+  GEAR_COMBINE,
+  GEAR_SLOTS,
+  ORBS,
+  RUNES,
+  RUNE_SLOTS,
+  RUN_BAG,
+  STARTING_KIT,
+  type GearSlot,
+  type OrbId,
+  type RuneId,
+} from '@/config';
+import { SKILLS, type SkillId } from '@/weapons/skills';
 import {
   bareItem,
   combineTargetFor,
@@ -15,6 +28,10 @@ export interface RunKitState {
   readonly equipped: Partial<Record<GearSlot, GearItem | null>>;
   readonly bag: readonly GearItem[];
   readonly orbs: Partial<Record<OrbId, number>>;
+  /** 룬 held, not set in anything. Absent before 0.74. */
+  readonly runes?: Partial<Record<RuneId, number>>;
+  /** Each skill's 강화 슬롯, in order: the 룬 set there, or null. Its length is the slots it has. */
+  readonly sockets?: Partial<Record<SkillId, readonly (RuneId | null)[]>>;
 }
 
 /** Why a 합성 cannot go ahead: too few of the base, or one already at GEAR_COMBINE.bestTier. */
@@ -35,6 +52,8 @@ export class RunKit {
   private readonly worn: Record<GearSlot, GearItem | null> = { weapon: null, armor: null, accessory: null };
   private readonly kept: GearItem[] = [];
   private readonly held: Partial<Record<OrbId, number>> = {};
+  private readonly runeBag: Partial<Record<RuneId, number>> = {};
+  private readonly socketed: Partial<Record<SkillId, (RuneId | null)[]>> = {};
   private readonly listeners = new Set<Listener>();
 
   /** A fresh run's: STARTING_KIT worn, bare. */
@@ -74,6 +93,19 @@ export class RunKit {
           kit.held[id] = count;
         }
       }
+      for (const id of Object.keys(RUNES) as RuneId[]) {
+        const count = Math.floor(Number(saved.kit.runes?.[id]) || 0);
+        if (count > 0) {
+          kit.runeBag[id] = count;
+        }
+      }
+      for (const [skill, raw] of Object.entries(saved.kit.sockets ?? {}) as [SkillId, readonly unknown[]][]) {
+        if (SKILLS[skill] && Array.isArray(raw)) {
+          kit.socketed[skill] = raw
+            .slice(0, RUNE_SLOTS.max)
+            .map((rune) => (typeof rune === 'string' && rune in RUNES ? (rune as RuneId) : null));
+        }
+      }
     } else {
       const weapon = readItem(saved.gear);
       kit.worn.weapon = weapon && slotOf(weapon) === 'weapon' ? weapon : null;
@@ -84,7 +116,9 @@ export class RunKit {
   public get state(): RunKitState {
     // A 구슬 spent down to none is not held at all.
     const orbs = Object.fromEntries(Object.entries(this.held).filter(([, n]) => (n ?? 0) > 0));
-    return { equipped: { ...this.worn }, bag: [...this.kept], orbs };
+    const runes = Object.fromEntries(Object.entries(this.runeBag).filter(([, n]) => (n ?? 0) > 0));
+    const sockets = Object.fromEntries(Object.entries(this.socketed).map(([skill, list]) => [skill, [...(list ?? [])]]));
+    return { equipped: { ...this.worn }, bag: [...this.kept], orbs, runes, sockets };
   }
 
   /** What is worn in each slot. */
@@ -247,6 +281,93 @@ export class RunKit {
       return false;
     }
     this.held[orb] = this.count(orb) - 1;
+    this.changed();
+    return true;
+  }
+
+  // --- 룬 ---------------------------------------------------------------
+
+  public runeCount(rune: RuneId): number {
+    return this.runeBag[rune] ?? 0;
+  }
+
+  public get runeTotal(): number {
+    return Object.values(this.runeBag).reduce((sum, n) => sum + (n ?? 0), 0);
+  }
+
+  public addRune(rune: RuneId): void {
+    this.runeBag[rune] = this.runeCount(rune) + 1;
+    this.changed();
+  }
+
+  /** A skill's 강화 슬롯, in order (empty when it has none). */
+  public socketsOf(skill: SkillId): readonly (RuneId | null)[] {
+    return this.socketed[skill] ?? [];
+  }
+
+  /** Every 룬 set in a skill, in slot order. */
+  public runesIn(skill: SkillId): RuneId[] {
+    return this.socketsOf(skill).filter((rune): rune is RuneId => rune !== null);
+  }
+
+  /** Gives a skill at least `slots` 강화 슬롯 (the main skill's, as the run starts). */
+  public ensureSlots(skill: SkillId, slots: number): void {
+    const list = [...this.socketsOf(skill)];
+    if (list.length >= slots) {
+      return;
+    }
+    while (list.length < Math.min(slots, RUNE_SLOTS.max)) {
+      list.push(null);
+    }
+    this.socketed[skill] = list;
+    this.changed();
+  }
+
+  /** Whether a 룬 끌 can add a slot to this skill. */
+  public canAddSlot(skill: SkillId): boolean {
+    return this.socketsOf(skill).length < RUNE_SLOTS.max;
+  }
+
+  /** 룬 끌: one more 강화 슬롯. False at RUNE_SLOTS.max. */
+  public addSlot(skill: SkillId): boolean {
+    if (!this.canAddSlot(skill)) {
+      return false;
+    }
+    this.socketed[skill] = [...this.socketsOf(skill), null];
+    this.changed();
+    return true;
+  }
+
+  /**
+   * Sets a held 룬 in a skill's slot. What was there goes back among the
+   * 룬 held. False when the slot or the 룬 is not there to use.
+   */
+  public socket(skill: SkillId, slot: number, rune: RuneId): boolean {
+    const list = [...this.socketsOf(skill)];
+    if (slot < 0 || slot >= list.length || this.runeCount(rune) <= 0) {
+      return false;
+    }
+    const was = list[slot];
+    this.runeBag[rune] = this.runeCount(rune) - 1;
+    if (was) {
+      this.runeBag[was] = this.runeCount(was) + 1;
+    }
+    list[slot] = rune;
+    this.socketed[skill] = list;
+    this.changed();
+    return true;
+  }
+
+  /** Takes a 룬 out of a slot and back among those held. */
+  public unsocket(skill: SkillId, slot: number): boolean {
+    const list = [...this.socketsOf(skill)];
+    const was = list[slot];
+    if (!was) {
+      return false;
+    }
+    list[slot] = null;
+    this.runeBag[was] = this.runeCount(was) + 1;
+    this.socketed[skill] = list;
     this.changed();
     return true;
   }

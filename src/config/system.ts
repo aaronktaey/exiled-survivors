@@ -45,10 +45,11 @@ export const SCENES = {
   gearPick: "GearPickScene",
   orb: "OrbScene",
   bones: "BoneScene",
-  passives: "PassiveScene",
   slot: "SlotScene",
   ranking: "RankingScene",
   skillPick: "SkillPickScene",
+  runeChisel: "RuneChiselScene",
+  runes: "RuneScene",
   rankEntry: "RankEntryScene",
   account: "AccountScene",
   conflict: "ConflictScene",
@@ -59,14 +60,15 @@ export const SCENES = {
 
 /**
  * Keys that held what is gone: the equipment stash and the 구슬 drawer
- * (2026-10-19, gear lives and dies with the run), and the gold purse (0.72,
- * nothing is bought any more). Cleared on load; listed so nothing ever
+ * (2026-10-19, gear lives and dies with the run), the gold purse (0.72,
+ * nothing is bought any more) and the passive tree (0.74, taken out). Cleared on load; listed so nothing ever
  * writes them again.
  */
 export const RETIRED_STORAGE: readonly string[] = [
   'exiled-survivors:gear:v2',
   'exiled-survivors:orbs:v1',
   'exiled-survivors:gold:v1',
+  'exiled-survivors:passives:v1',
 ];
 
 /**
@@ -84,8 +86,6 @@ export const SEAL = {
 export const STORAGE = {
   settings: "exiled-survivors:settings:v1",
   save: "exiled-survivors:save:v1",
-  /** The passive tree, which outlives it too. */
-  passives: "exiled-survivors:passives:v1",
   /** And the 뼈다귀 drawer, spent one run at a time. */
   bones: "exiled-survivors:bones:v1",
   /** The local ranking, until there is a shared one. */

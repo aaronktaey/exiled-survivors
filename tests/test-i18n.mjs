@@ -139,7 +139,7 @@ check('skills, enemies and items are named in English',
     /Onigoroshi/.test(guide.text) && /White Mango/.test(guide.text));
 const pctOf = await ev(`(() => {
   const p = (f) => Number((f * 100).toFixed(2)) + '%';
-  return { rare: p(window.config.RARE.chance), skill: p(window.config.SKILL_DROP.chance) };
+  return { rare: p(window.config.RARE.chance), skill: p(window.config.RUNE_DROP.chance) };
 })()`);
 check('the numbers still come from the config',
   guide.text.includes(pctOf.rare) && guide.text.includes(pctOf.skill),
@@ -198,7 +198,7 @@ await shot('i18n-05-upgrade-en');
 await cdp.tap('Space', 32, ' ');
 await sleep(600);
 
-// --- 7. a rare's tooltip, and a dropped skill's plate ---
+// --- 7. a rare's tooltip, and a dropped 룬's plate ---
 const rare = await scene('GameScene', `
   s.spawner.clear();
   s.player.setInvulnerable(true);
@@ -207,9 +207,8 @@ const rare = await scene('GameScene', `
   rare.body.stop();
   s.rareTooltip.inspectAt(
     (rare.x - s.cameras.main.worldView.x), (rare.y - s.cameras.main.worldView.y));
-  const drop = s.combat.skillDrops.get();
-  drop.drop(s.player.x + 200, s.player.y, { id: 'voidOrb', name: '공허구체',
-    tags: ['공허'], upgrades: ['damage'], summary: '' });
+  const drop = s.combat.runeDrops.get();
+  drop.drop(s.player.x + 200, s.player.y, 'split');
   return { tooltip: s.rareTooltip.text, title: s.rareTooltip.title.text, plate: drop.nameplate.text };
 `);
 console.log('rare + drop:', JSON.stringify(rare));
@@ -217,7 +216,7 @@ check('a rare lists its affixes in English',
   // Any affix can come up (거미 included), so: English words and no Hangul.
   rare.title === 'RARE' && /[A-Za-z]{3,}/.test(rare.tooltip) && !/[가-힣]/.test(rare.tooltip),
   `${rare.title}: ${rare.tooltip.replace(/\n/g, ' | ')}`);
-check('a dropped skill is labelled in English', rare.plate === 'Void Orb', rare.plate);
+check('a dropped 룬 is labelled in English', rare.plate === 'Rune of Splitting', rare.plate);
 await shot('i18n-06-run-en');
 
 // --- 8. the choice survives a reload ---

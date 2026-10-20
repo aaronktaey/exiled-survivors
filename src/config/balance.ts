@@ -131,8 +131,8 @@ export interface EnemyKindSpec {
   readonly flee?: EnemyFleeSpec;
   /** Gone after this long, kill or no kill, and leaving nothing behind. */
   readonly lifespanMs?: number;
-  /** Killing it always leaves a skill, the way a 우두머리 does. */
-  readonly guaranteedSkill?: boolean;
+  /** Killing it always leaves a 룬, the way a 우두머리 does (a skill until 0.74). */
+  readonly guaranteedRune?: boolean;
   /** Drawn to be seen: a colour that cycles, and a body that breathes. */
   readonly flashy?: boolean;
   /** Only a 기행종 has one: it does not walk, it hops (EnemyHopSpec). */
@@ -307,7 +307,7 @@ export const ENEMY_KINDS: Record<EnemyKind, EnemyKindSpec> = {
     contactDamage: 0,
     flee: { distance: 240, arc: Math.PI * 0.9 },
     lifespanMs: 60_000,
-    guaranteedSkill: true,
+    guaranteedRune: true,
     flashy: true,
   },
   /**
@@ -1211,25 +1211,12 @@ export const GROUND_ITEM = {
   glowAlpha: 0.65,
 } as const;
 
-export const SKILL_DROP = {
-  /**
-   * Chance that killing an enemy drops a skill. Halved when every run began
-   * handing one out on the 슬롯머신, so the field is not where most of them
-   * come from any more.
-   */
-  chance: 0.013,
-} as const;
-
 /**
- * ★ 무작위 스킬 — three skills on cards, one to take. A run's first skill is
- * chosen this way, and a 무작위 스킬 lying on the ground opens the same
- * choice when it is walked over.
+ * ★ 시작 스킬 — a run's first skill, chosen out of every skill there is
+ * (0.74). There are no skill drops in a run any more: the 무작위 스킬 that
+ * opened this choice in the field became a 룬 (config/runes.ts).
  */
 export const SKILL_PICK = {
-  /** How many cards are offered. */
-  choices: 3,
-  /** Share of kills that leave a 무작위 스킬. A 갈비뼈 raises it. */
-  dropChance: 0.008,
   /**
    * Whether a fresh run opens on the choice at all. On the dev server the
    * test harness and `#run` turn it off, so they land in play holding

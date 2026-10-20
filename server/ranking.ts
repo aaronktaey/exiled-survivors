@@ -276,6 +276,7 @@ export function cleanDetail(raw: unknown): string {
       .map((skill) => ({ id: String(skill?.id ?? ''), level: whole(skill?.level, 999) ?? 0 }))
       .filter((skill) => ID.test(skill.id)),
     passives: counts(d.passives, 999, 30),
+    runes: counts(d.runes, 99, 20),
     resumed: d.resumed === true,
     wall: whole(d.wall, 1e9) ?? 0,
   };

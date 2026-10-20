@@ -9,6 +9,9 @@ import {
   ENEMY_KINDS,
   giantFrame,
   GEAR_DROP,
+  ALL_RUNES,
+  RUNE_CHISEL,
+  runeTexture,
   ICONS,
   GEAR,
   SKILL_ICONS,
@@ -82,7 +85,8 @@ export class BootScene extends Phaser.Scene {
     this.createPotionTexture();
     this.createGearTexture();
     this.createDivineShardTexture();
-    this.createPassiveTexture();
+    this.createRuneTextures();
+    this.createChiselTexture();
     this.createOrbTextures();
     this.createBoneTextures();
     this.createAltarTexture();
@@ -939,18 +943,53 @@ export class BootScene extends Phaser.Scene {
     }
   }
 
-  /** 패시브's icon: a lit node with a ring around it. */
-  private createPassiveTexture(): void {
-    const size = 48;
-    const half = size / 2;
+  /** Each 룬: a dark stone, its edge and its mark in the 룬's own colour (RuneSpec.glyph). */
+  private createRuneTextures(): void {
+    const size = 32;
+    for (const rune of ALL_RUNES) {
+      const graphics = this.add.graphics();
+      graphics.fillStyle(0x2b2f3a, 1);
+      graphics.fillRoundedRect(2, 2, size - 4, size - 4, 7);
+      graphics.lineStyle(2, rune.color, 0.9);
+      graphics.strokeRoundedRect(2, 2, size - 4, size - 4, 7);
+      graphics.lineStyle(3, rune.color, 1);
+      const pad = 7;
+      const span = size - pad * 2;
+      for (const [x1, y1, x2, y2] of rune.glyph) {
+        graphics.lineBetween(pad + x1 * span, pad + y1 * span, pad + x2 * span, pad + y2 * span);
+      }
+      graphics.generateTexture(runeTexture(rune.id), size, size);
+      graphics.destroy();
+    }
+  }
+
+  /** 룬 끌: a chisel, blade down and to the left, its handle wood. */
+  private createChiselTexture(): void {
+    const size = 32;
     const graphics = this.add.graphics();
-
-    graphics.lineStyle(Math.round(size * 0.1), COLORS.passiveEdge, 1);
-    graphics.strokeCircle(half, half, half - size * 0.1);
-    graphics.fillStyle(COLORS.passive, 1);
-    graphics.fillCircle(half, half, size * 0.24);
-
-    graphics.generateTexture(TEXTURES.passive, size, size);
+    graphics.fillStyle(RUNE_CHISEL.color, 1);
+    graphics.fillPoints(
+      [
+        new Phaser.Math.Vector2(18, 4),
+        new Phaser.Math.Vector2(28, 14),
+        new Phaser.Math.Vector2(20, 22),
+        new Phaser.Math.Vector2(10, 12),
+      ],
+      true,
+    );
+    graphics.fillStyle(0xd8dde6, 1);
+    graphics.fillPoints(
+      [
+        new Phaser.Math.Vector2(10, 12),
+        new Phaser.Math.Vector2(20, 22),
+        new Phaser.Math.Vector2(8, 30),
+        new Phaser.Math.Vector2(2, 24),
+      ],
+      true,
+    );
+    graphics.lineStyle(2, 0x5a4630, 1);
+    graphics.lineBetween(14, 8, 24, 18);
+    graphics.generateTexture(TEXTURES.runeChisel, size, size);
     graphics.destroy();
   }
 

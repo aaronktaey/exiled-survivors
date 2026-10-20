@@ -46,8 +46,6 @@ export const COLORS = {
   bossOutline: 0xffd34d,
   /** 화염구's burst where it lands. */
   fireBlast: 0xff8a3d,
-  /** 학살자's burst off a 근접 kill. */
-  slaughterBurst: 0xb3262e,
   /** 제단: dark stone with an ember on top, so it reads as a threat. */
   altarStone: 0x4a4f5c,
   altarFlame: 0xff5a3c,
@@ -83,11 +81,6 @@ export const COLORS = {
   /** 공허: a violet core inside a darker rim. */
   voidOrb: 0xb07cff,
   voidOrbCore: 0xefe4ff,
-  /** A pale blue for text: the passive screen's points and its keystones' names. */
-  shardText: '#d6ecff',
-  /** 패시브, on its icon and its screen. */
-  passive: 0x7ef0b0,
-  passiveEdge: 0xcdfbe2,
   /** 장비 on the ground: a brass crate, lit gold, named in gold. */
   gear: 0xc08a3e,
   gearEdge: 0xf2d08a,
@@ -186,7 +179,8 @@ export const TEXTURES = {
   orbAwaken: "tex-orb-awaken",
   orbExplode: "tex-orb-explode",
   orbMango: "tex-orb-mango",
-  passive: "tex-passive",
+  /** 룬 끌 on the ground and on its choice. */
+  runeChisel: "tex-rune-chisel",
   trophy: "tex-trophy",
   /** 거미줄's slow, as an icon among the survivor's effects. */
   webIcon: "tex-web-icon",
@@ -583,39 +577,6 @@ export const ICON_BAR = {
 } as const;
 
 /** Where the shell screens — title, settings, credits, pause — are tuned. */
-/** 패시브's tree: how its nodes are drawn. */
-export const PASSIVE_TREE = {
-  /** Radius of each kind of node, in the tree's own px (the camera zooms them). */
-  radius: { start: 22, small: 10, notable: 16, keystone: 23 },
-  /** The edge round a node that can be taken now. */
-  buyable: 0x7ef0b0,
-  /** A taken node's rim, and the line between two taken nodes. */
-  taken: 0xffd34d,
-  /** Lines: between two taken, from a taken one outward, between two not taken. */
-  edgeLit: 0xffd34d,
-  edgeOpen: 0x6b7385,
-  edgeShut: 0x2b3445,
-  edgeWidth: 4,
-  /** A node out of reach is drawn this faint. */
-  shutAlpha: 0.45,
-  /** Each branch's own colour, for its taken nodes. */
-  branchColors: {
-    warrior: 0xd9534f,
-    hunter: 0x5cb85c,
-    elementalist: 0xf0ad4e,
-    voidcaller: 0x9b6bff,
-    guardian: 0x5bc0de,
-    assassin: 0xd7dce6,
-  },
-  /** How far the camera zooms, and each step of the buttons or the wheel. */
-  minZoom: 0.25,
-  maxZoom: 1.4,
-  zoomStep: 1.2,
-  /** The first look shows this many rings out from the start. */
-  firstRings: 3.4,
-  /** How far past the tree's edge the middle of the view can be dragged. */
-  dragMargin: 60,
-} as const;
 
 export const MENU = {
   /** Wide enough that a row's name and its value never touch. */

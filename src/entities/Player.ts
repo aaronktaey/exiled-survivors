@@ -1,9 +1,8 @@
 import Phaser from 'phaser';
 
-import { COLORS, DEPTH, ENEMY, HUD, KEYSTONES, MANGO, MANGO_RING, PLAYER, TEXTURES, WEB } from '@/config';
+import { COLORS, DEPTH, ENEMY, HUD, MANGO, MANGO_RING, PLAYER, TEXTURES, WEB } from '@/config';
 import { fill, t } from '@/i18n';
 import { NO_BONUS, type GearBonus } from '@/systems/Gear';
-import { StatSheet } from '@/systems/StatSheet';
 import type { AnalogInput } from '@/systems/VirtualJoystick';
 
 type WasdKeys = Record<'W' | 'A' | 'S' | 'D', Phaser.Input.Keyboard.Key>;
@@ -28,8 +27,6 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   private level = 1;
   /** What the carried weapon is worth to this survivor. */
   private gear: GearBonus = NO_BONUS;
-  /** What the passive tree does to the survivor's own body: one layer under the weapon's. */
-  private passive: StatSheet = StatSheet.EMPTY;
   /** Left of a 하얀 망고, in ms. Public for tests. */
   public mangoLeftMs = 0;
   /** The ring that shows how much of it is left. Public for tests. */
@@ -114,33 +111,29 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     return this.gear.projectileBlock;
   }
 
+  /** The survivor's crit chance before any skill's 룬: the base, raised by the gear's 치명 as a share of itself. */
   public get critChance(): number {
-    // The weapon's 치명 and the tree's raise the base by a share of itself,
-    // summed; 암살자의 표식 doubles what that comes to.
-    const increase = this.gear.critChanceIncrease + this.passive.share('critChance');
-    const mark = this.passive.has('assassinMark') ? KEYSTONES.assassinMark.critChanceMore : 1;
-    return Math.min(1, PLAYER.critChance * (1 + increase) * mark);
+    return Math.min(1, PLAYER.critChance * (1 + this.gear.critChanceIncrease));
   }
 
   /** How far a gem has to be before it starts drifting over. */
   public get pickupRadius(): number {
-    return PLAYER.pickupRadius * this.gear.pickupScale * this.passive.scale('pickup');
+    return PLAYER.pickupRadius * this.gear.pickupScale;
   }
 
-  /** The window after a hit, and a body's wait between hurts: the weapon's 회피 and the tree's. */
+  /** The window after a hit, and a body's wait between hurts: the gear's 회피. */
   public get invulnerableScale(): number {
-    return this.gear.invulnerableScale * this.passive.scale('invulnerable');
+    return this.gear.invulnerableScale;
   }
 
-  /** What every hit is multiplied by before it lands: the tree's, and 철인's. */
+  /** What every hit is multiplied by before it lands: the gear's. */
   public get damageTakenScale(): number {
-    const iron = this.passive.has('ironWill') ? KEYSTONES.ironWill.damageTakenMore : 1;
-    return this.passive.scale('damageTaken') * this.gear.damageTakenScale * iron;
+    return this.gear.damageTakenScale;
   }
 
-  /** What a potion's healing is multiplied by. */
+  /** What a potion's healing is multiplied by (nothing raises it since the tree went, 0.74). */
   public get potionHealScale(): number {
-    return this.passive.scale('potionHeal');
+    return 1;
   }
 
   /**
@@ -154,12 +147,12 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   }
 
   /**
-   * Full health from what is worn and the tree. At the start of a run the bar
+   * Full health from what is worn. At the start of a run the bar
    * is filled to it; a piece put on mid-run keeps the health there is, only
    * held under the new full bar.
    */
   private refit(keepHp = false): void {
-    this.maxHpValue = Math.max(1, Math.round(PLAYER.maxHp * this.gear.maxHpScale * this.passive.scale('maxHp')));
+    this.maxHpValue = Math.max(1, Math.round(PLAYER.maxHp * this.gear.maxHpScale));
     this.hp = keepHp ? Math.min(this.hp, this.maxHpValue) : this.maxHpValue;
     this.drawHealthBar();
   }
@@ -170,17 +163,11 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     this.drawHealthBar();
   }
 
-  /** What the passive tree does to the survivor's own body. */
-  public applyPassives(sheet: StatSheet): void {
-    this.passive = sheet;
-    this.refit();
-  }
-
   /** Move speed right now, before a stick's tilt. Public for tests. */
   public get moveSpeed(): number {
     const mango = this.mangoActive ? MANGO.moveSpeedScale : 1;
     const web = this.webbed ? 1 - WEB.slow : 1;
-    return PLAYER.speed * this.passive.scale('moveSpeed') * this.gear.moveSpeedScale * mango * web;
+    return PLAYER.speed * this.gear.moveSpeedScale * mango * web;
   }
 
   /** True while a 하얀 망고 is working. */
@@ -275,10 +262,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
       return;
     }
 
-    // 철인 has no window: every shot that lands, lands.
-    if (!this.passive.has('ironWill')) {
-      this.invulnerableUntil = now + PLAYER.invulnerableMs * this.invulnerableScale;
-    }
+    this.invulnerableUntil = now + PLAYER.invulnerableMs * this.invulnerableScale;
     this.hurt(amount);
   }
 

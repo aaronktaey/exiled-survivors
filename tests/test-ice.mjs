@@ -273,39 +273,6 @@ console.log('row of 4 after the upgrade:', JSON.stringify(deeper));
 check('and the next spear reaches one enemy further', struck(deeper.hp, 3),
   `hp down the row: ${deeper.hp.join(' / ')}`);
 
-// --- 10. it joins the same drop roll as the rest ---
-const rate = await run(`
-  const seen = {};
-  const N = 150000;
-  let drops = 0;
-  for (let i = 0; i < N; i++) {
-    const d = s.rollSkillDrop();
-    if (d) { drops++; seen[d.id] = (seen[d.id] ?? 0) + 1; }
-  }
-  return { rate: drops / N, seen, want: window.config.SKILL_DROP.chance };
-`);
-console.log('drop roll:', JSON.stringify(rate));
-check('total drop chance is the configured one', Math.abs(rate.rate - rate.want) < rate.want * 0.15,
-  `measured ${(rate.rate * 100).toFixed(2)}%, configured ${(rate.want * 100).toFixed(2)}%`);
-const share = (rate.rate * 150000) / Object.keys(rate.seen).length;
-check('every droppable gets an even share of the roll, 얼음창 among them',
-  'iceSpear' in rate.seen && Object.values(rate.seen).every(n => Math.abs(n - share) < share * 0.25),
-  Object.entries(rate.seen).map(([k, n]) => `${k} ${n}`).join(' / '));
-
-// --- 11. its ground label ---
-const drop = await run(`
-  s.combat.dropSkillAt(s.player.x + 300, s.player.y, s.constructor === null ? null : (() => {
-    const all = Object.values(window.__skills || {});
-    return { id: 'iceSpear', name: '얼음창', tags: ['주문','냉기','관통','투사체'],
-             upgrades: ['damage','attackSpeed','pierceCount'] };
-  })());
-  const d = s.combat.skillDrops.getChildren().find(x => x.active);
-  return { label: d.nameplate.text, style: d.nameplate.style };
-`);
-check('its ground label reads 얼음창, in the ordinary dress',
-  drop.label === '얼음창' && drop.style.plateAlpha === 0,
-  `"${drop.label}" on ${drop.plate}`);
-
 // --- 12. all four skills run together ---
 await run(`
   window.__kills = 0;

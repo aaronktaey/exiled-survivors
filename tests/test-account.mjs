@@ -73,12 +73,12 @@ const user = { id: 'u1', provider: 'google', name: 'Alice', rank: { name: '', em
 // A record this browser keeps, marked so each change can be told apart: the
 // tree's account experience (the equipment stash was the marker until gear
 // stopped outliving a run).
-// Each tree is told apart by how far up the 전사 spine it has gone.
+// Each set of records is told apart by how many 고대 두개골 its drawer holds.
 const XP = { mine: 1, later: 2, fromOther: 3, localOnly: 4, remoteOnly: 5 };
-const spine = (n) => Array.from({ length: n }, (_, i) => `warrior.s${i + 1}`);
-const mark = (name) => `window.passives.reset(); ${JSON.stringify(spine(XP[name]))}.forEach((id) => window.passives.allocate(id));`;
-const tree = (name) => JSON.stringify({ version: 3, allocated: spine(XP[name]) });
-const holds = (data, name) => { try { return JSON.parse(data?.['exiled-survivors:passives:v1'] ?? '{}').allocated?.length === XP[name]; } catch { return false; } };
+const BONES_KEY = 'exiled-survivors:bones:v1';
+const mark = (name) => `window.bones.reset(); window.bones.add('skull', ${XP[name]});`;
+const tree = (name) => JSON.stringify({ skull: XP[name] });
+const holds = (data, name) => { try { return JSON.parse(data?.[BONES_KEY] ?? '{}').skull === XP[name]; } catch { return false; } };
 
 try {
   // --- 1. signed out: the corner icon, and the ways in ---
@@ -101,6 +101,8 @@ try {
   await fake(`s.user = ${JSON.stringify(user)}`);
   await arrive(`${BASE}#login=ok`);
   await sleep(800);
+  // Under load the first upload can still be on its way: wait for it, a while.
+  for (let i = 0; i < 20 && (await ev(`window.cloudSave.status`)) === 'syncing'; i++) await sleep(250);
   const first = await ev(`(() => { const s = window.__fake.load(); return {
     hash: location.hash, uploaded: Object.keys(s.save.data || {}), at: s.save.updatedAt,
     note: JSON.parse(localStorage.getItem('exiled-survivors:sync:v1') || 'null'),
@@ -109,7 +111,7 @@ try {
   check('coming back signed in takes the fragment off and shows as signed in',
     first.hash === '' && first.icon === '계정', JSON.stringify({ hash: first.hash, icon: first.icon }));
   check('a first sign-in with an empty account uploads this browser’s records',
-    first.uploaded.includes('exiled-survivors:passives:v1') && !first.uploaded.includes('exiled-survivors:sync:v1') &&
+    first.uploaded.includes(BONES_KEY) && !first.uploaded.includes('exiled-survivors:sync:v1') &&
       first.at > 0 && first.note?.at === first.at && first.status === 'synced',
     JSON.stringify(first));
 
@@ -122,17 +124,17 @@ try {
     holds(flushed.save.data, 'later') && flushed.save.updatedAt > first.at);
 
   // --- 4. another device moved the account on; this browser did not change ---
-  const other = { 'exiled-survivors:passives:v1': tree('fromOther') };
+  const other = { [BONES_KEY]: tree('fromOther') };
   await fake(`s.save = { data: ${JSON.stringify(other)}, updatedAt: s.save.updatedAt + 1000 }`);
   await arrive();
   await sleep(2500);
-  const took = await ev(`({ xp: window.passives.value.allocated.length, conflict: window.cloudSave.conflict !== null })`);
+  const took = await ev(`({ xp: window.bones.count('skull'), conflict: window.cloudSave.conflict !== null })`);
   check('when only the account changed, its records are taken and the game starts on them',
     took.xp === XP.fromOther && !took.conflict, JSON.stringify(took));
 
   // --- 5. both changed: the player is asked ---
   await ev(`(() => { ${mark('localOnly')} return 1; })()`);
-  await fake(`s.save = { data: { 'exiled-survivors:passives:v1': ${JSON.stringify(tree('remoteOnly'))} }, updatedAt: s.save.updatedAt + 1000 }`);
+  await fake(`s.save = { data: { '${BONES_KEY}': ${JSON.stringify(tree('remoteOnly'))} }, updatedAt: s.save.updatedAt + 1000 }`);
   await arrive();
   await sleep(1500);
   const texts = `s.children.list.filter((o) => o.type === 'Text').map((o) => o.text)`;
@@ -160,7 +162,7 @@ try {
   const kept = await fake(`0`);
   check('keeping this device’s writes it over the account’s copy',
     holds(kept.save.data, 'localOnly') && !holds(kept.save.data, 'remoteOnly'),
-    (kept.save.data?.['exiled-survivors:passives:v1'] ?? '').slice(0, 120));
+    (kept.save.data?.[BONES_KEY] ?? '').slice(0, 120));
 
   // --- 6. the ranking: entering goes by way of signing in ---
   await scene('MenuScene', `
@@ -206,7 +208,7 @@ try {
   await scene('AccountScene', `s.menu.items.find(i => i.id === 'delete').onSelect(); return 1;`);
   await sleep(1200);
   const gone = await ev(`(() => ({ deleted: !!window.__fake.load().deleted, user: window.account.user,
-    note: localStorage.getItem('exiled-survivors:sync:v1'), xp: window.passives.value.allocated.length,
+    note: localStorage.getItem('exiled-survivors:sync:v1'), xp: window.bones.count('skull'),
     rows: window.game.scene.getScene('AccountScene').menu?.items.map(i => i.id) }))()`);
   check('the second press deletes the account; this browser keeps its records but no longer syncs',
     gone.deleted && gone.user === null && gone.note === null && gone.xp > 0 && gone.rows?.[0] === 'login:google',

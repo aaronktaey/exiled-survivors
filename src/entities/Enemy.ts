@@ -230,9 +230,9 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
     return this.kind === 'boss';
   }
 
-  /** A 우두머리 and a 도망자 both always leave a skill. */
-  public get alwaysDropsSkill(): boolean {
-    return this.isBoss || this.spec.guaranteedSkill === true;
+  /** A 우두머리 and a 도망자 both always leave a 룬 (a skill until 0.74). */
+  public get alwaysDropsRune(): boolean {
+    return this.isBoss || this.spec.guaranteedRune === true;
   }
 
   /** How many 거미 this one carries — how wide a web it leaves. */

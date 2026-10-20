@@ -6,8 +6,7 @@ import {
   GEAR,
   ORBS,
   affixTier,
-  KEYSTONES,
-  PASSIVE_NODES,
+  RUNES,
   STAT_SPECS,
   type AffixId,
   type AffixKind,
@@ -16,9 +15,8 @@ import {
   type BoneId,
   type GearId,
   type OrbId,
-  type KeystoneId,
   type Modifier,
-  type PassiveId,
+  type RuneId,
   type StatId,
   SKILL_MASTERY,
 } from '@/config';
@@ -270,13 +268,13 @@ export function statName(stat: StatId): string {
 /** "화염 스킬 피해" — what a modifier raises, without how much. */
 export function modifierSubject(mod: Modifier): string {
   const stat = statName(mod.stat);
-  return mod.tag ? fill(t().passives.taggedStat, { tag: tagName(mod.tag), stat }) : stat;
+  return mod.tag ? fill(t().runes.taggedStat, { tag: tagName(mod.tag), stat }) : stat;
 }
 
 /** "화염 스킬 피해 +6%" — a modifier written out, its first letter raised for the languages that have one. */
 export function modifierLine(mod: Modifier): string {
   const spec = STAT_SPECS[mod.stat];
-  const line = fill(t().passives.statLine, {
+  const line = fill(t().runes.statLine, {
     stat: modifierSubject(mod),
     sign: spec.sign,
     value: Number(mod.value.toFixed(2)),
@@ -285,43 +283,20 @@ export function modifierLine(mod: Modifier): string {
   return line.charAt(0).toUpperCase() + line.slice(1);
 }
 
-/** A 키스톤's rule, its numbers filled from KEYSTONES. */
-export function keystoneDetail(id: KeystoneId): string {
-  const pct = (share: number) => `${Math.round(share * 100)}%`;
-  const spec = KEYSTONES[id];
-  const numbers: Record<KeystoneId, Record<string, string | number>> = {
-    slaughter: { share: pct(KEYSTONES.slaughter.burstShare), less: pct(1 - KEYSTONES.slaughter.projectileMore) },
-    singleShot: { more: pct(KEYSTONES.singleShot.projectileMore - 1) },
-    overload: { seconds: KEYSTONES.overload.buffMs / 1000, more: pct(KEYSTONES.overload.elementalMore - 1) },
-    eternity: { more: pct(KEYSTONES.eternity.durationMore - 1), less: pct(1 - KEYSTONES.eternity.attackSpeedMore) },
-    ironWill: { less: pct(1 - KEYSTONES.ironWill.damageTakenMore) },
-    assassinMark: { more: KEYSTONES.assassinMark.critChanceMore, less: pct(1 - KEYSTONES.assassinMark.nonCritMore) },
-  };
-  return fill(t().names?.keystoneDetails?.[id] ?? spec.detail, numbers[id]);
+/** A 룬's name: Korean from the table, a locale's own where it has one. */
+export function runeName(id: RuneId): string {
+  return t().names?.runes?.[id] ?? RUNES[id]?.name ?? id;
 }
 
-/** A node's name: a 핵심's or 키스톤's own, or what a small node raises. */
-export function passiveName(id: PassiveId): string {
-  const node = PASSIVE_NODES[id];
-  if (!node) {
-    return id;
-  }
-  if (node.kind === 'start') {
-    return t().passives.kinds.start;
-  }
-  if (node.name) {
-    return t().names?.passives?.[id] ?? node.name;
-  }
-  return node.mods[0] ? modifierSubject(node.mods[0]) : id;
+/** What a 룬 does, a line per modifier. */
+export function runeLines(id: RuneId): string[] {
+  return (RUNES[id]?.mods ?? []).map(modifierLine);
 }
 
-/** What a node gives, a line each. */
-export function passiveLines(id: PassiveId): string[] {
-  const node = PASSIVE_NODES[id];
-  if (!node) {
-    return [];
-  }
-  return [...node.mods.map(modifierLine), ...(node.keystone ? [keystoneDetail(node.keystone)] : [])];
+/** Which skills a 룬 works on, as one line. */
+export function runeWorksOn(id: RuneId): string {
+  const skills = RUNES[id]?.skills;
+  return skills ? fill(t().runes.worksOn, { skills: skills.map((skill) => skillName(skill)).join(' · ') }) : t().runes.worksOnAll;
 }
 
 /**

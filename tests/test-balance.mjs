@@ -415,7 +415,7 @@ const crit = await run(`
                   prefixes: [{ id: 'critical', tier: 1 }], suffixes: [] };
   const cruel = { uid: 'cruel', id: 'rustySword',
                   prefixes: [{ id: 'cruel', tier: 1 }], suffixes: [] };
-  const mods = (item) => ({ passive: window.passives.sheet, gear: window.gearBonusFor(item) });
+  const mods = (item) => ({ runes: {}, gear: window.gearBonusFor(item) });
   // Two 치명 on one weapon: the base chance raised by both shares of itself.
   const A = window.config.AFFIXES;
   const rung = (id, tier) => A[id].gearTiers.find((t) => t.tier === tier).gear;

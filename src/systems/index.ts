@@ -33,7 +33,6 @@ export { RareTooltip } from '@/systems/RareTooltip';
 export { canvasSizeFor, currentCanvasSize, type CanvasSize } from '@/systems/Viewport';
 export { centredTop, fitText, fitWidth } from '@/systems/Layout';
 export { RunKit, type RunKitState } from '@/systems/RunKit';
-export { passives, passiveSheetFor, type PassiveState } from '@/systems/Passives';
 export { StatSheet } from '@/systems/StatSheet';
 export { RunStats, type RunSummary, type RunSkillLine } from '@/systems/RunStats';
 export { IconBar, type IconButton } from '@/systems/IconBar';

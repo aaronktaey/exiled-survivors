@@ -64,7 +64,7 @@ const OVERLAYS = [
   ['InfoScene', "{ topic: 'guide' }"],
   ['InfoScene', "{ topic: 'patch' }"],
   ['CreditsScene', '{}'],
-  ['PassiveScene', '{}'],
+  ['RuneScene', `(() => { const k = window.game.scene.getScene('GameScene').kit; k.ensureSlots('meleeStrike', 1); k.addRune('power'); k.socket('meleeStrike', 0, 'power'); k.addRune('split'); return { kit: k, skills: ['meleeStrike'] }; })()`],
   ['AccountScene', '{}'],
   ['ConflictScene', '{}'],
   ['FilterScene', '{}'],

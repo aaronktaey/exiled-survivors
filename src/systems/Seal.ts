@@ -1,10 +1,10 @@
 import { SEAL } from '@/config/system';
 
 /**
- * A seal on the records a player could gain by editing: the saved run and
- * the passive tree (2026-10-20, after runs resumed from a save edited by hand
- * — six skills in the hundreds of levels at character level 20 — topped the
- * board). Each record is written with a keyed hash of itself under `_s`; a
+ * A seal on the record a player could gain by editing: the saved run (the
+ * passive tree too, until it went in 0.74). It came on 2026-10-20, after runs
+ * resumed from a save edited by hand — six skills in the hundreds of levels
+ * at character level 20 — topped the board. Each record is written with a keyed hash of itself under `_s`; a
  * record whose hash does not match was changed outside the game, and is not
  * taken.
  *

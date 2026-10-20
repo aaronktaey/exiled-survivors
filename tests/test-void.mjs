@@ -288,35 +288,6 @@ check('and the orbs space themselves out again',
   `gaps ${spacing.join('° / ')}°`);
 await shot('void-02-orbs');
 
-// --- 10. it joins the drop roll, with its own ground label ---
-const rate = await run(`
-  const seen = {};
-  const N = 150000;
-  let drops = 0;
-  for (let i = 0; i < N; i++) {
-    const d = s.rollSkillDrop();
-    if (d) { drops++; seen[d.id] = (seen[d.id] ?? 0) + 1; }
-  }
-  return { rate: drops / N, seen, want: window.config.SKILL_DROP.chance };
-`);
-console.log('drop roll:', JSON.stringify(rate));
-check('the total drop chance is the configured one', Math.abs(rate.rate - rate.want) < rate.want * 0.15,
-  `measured ${(rate.rate * 100).toFixed(2)}%, configured ${(rate.want * 100).toFixed(2)}%`);
-const kinds = Object.keys(rate.seen).length;
-check('공허구체 joined the pool at an even share',
-  Math.abs(rate.seen.voidOrb / (rate.rate * 150000) - 1 / kinds) < 0.25 / kinds,
-  Object.entries(rate.seen).map(([k, n]) => `${k} ${n}`).join(' / '));
-
-const label = await run(`
-  s.combat.dropSkillAt(s.player.x + 220, s.player.y, {
-    id: 'voidOrb', name: '공허구체', tags: ['공허','주문','투사체'],
-    upgrades: ['damage','attackSpeed','orbCount'] });
-  const d = s.combat.skillDrops.getChildren().find(x => x.active);
-  return { label: d.nameplate.text, style: d.nameplate.style };
-`);
-check('its ground label reads 공허구체, in the ordinary dress',
-  label.label === '공허구체' && label.style.plateAlpha === 0, `"${label.label}"`);
-
 // --- 11. a real run with it ---
 await run(`
   window.__kills = 0;

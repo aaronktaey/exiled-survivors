@@ -21,15 +21,13 @@ const BASE = 'http://localhost:5173/';
 // What the old address would hand over: the bridge's own encoding.
 const encode = (items) =>
   Buffer.from(JSON.stringify({ v: 1, items }), 'utf8').toString('base64url');
-// The tree, marked by its account experience: what a player keeps between runs.
-// The tree that comes over is told by how many nodes it has taken.
+// What a player keeps between runs, told apart by how many 고대 두개골 it holds.
 const MOVED_XP = 3;
 const items = {
-  'exiled-survivors:passives:v1': JSON.stringify({ version: 3, allocated: ['warrior.s1', 'warrior.s2', 'warrior.s3'] }),
   // The equipment stash an old browser still holds: gear no longer outlives a
   // run, so it comes over and is cleared at once.
   'exiled-survivors:gear:v2': JSON.stringify({ items: [{ uid: 'moved', id: 'runedSword', prefixes: [], suffixes: [] }], equipped: 'moved' }),
-  'exiled-survivors:bones:v1': JSON.stringify({ rib: 2, skull: 1 }),
+  'exiled-survivors:bones:v1': JSON.stringify({ rib: 2, skull: MOVED_XP }),
   // Not the game's: it is left behind.
   'someone-else:key': 'x',
 };
@@ -59,7 +57,7 @@ try {
   await arrive(`${BASE}#carry=${encode(items)}`);
   const fresh = await ev(`(() => ({
     hash: location.hash,
-    xp: window.passives.value.allocated.length,
+    xp: window.bones.count('skull'),
     stash: localStorage.getItem('exiled-survivors:gear:v2'),
     bones: window.bones.count('rib'),
     foreign: localStorage.getItem('someone-else:key'),
@@ -86,14 +84,14 @@ try {
   // --- 3. a browser that already has records here is asked first ---
   await ev(`(() => { localStorage.setItem('__answer', 'no'); return 1; })()`);
   await arrive(`${BASE}#carry=${encode(items)}`);
-  const declined = await ev(`(() => ({ asked: window.__asked ?? null, xp: window.passives.value.allocated.length, hash: location.hash }))()`);
+  const declined = await ev(`(() => ({ asked: window.__asked ?? null, xp: window.bones.count('skull'), hash: location.hash }))()`);
   check('a browser with records here is asked, and keeps its own when it says no',
     typeof declined.asked === 'string' && declined.asked.length > 0 && declined.xp !== undefined && declined.hash === '',
     JSON.stringify(declined));
 
-  await ev(`(() => { localStorage.setItem('__answer', 'yes'); window.passives.reset(); return 1; })()`);
+  await ev(`(() => { localStorage.setItem('__answer', 'yes'); window.bones.reset(); return 1; })()`);
   await arrive(`${BASE}#carry=${encode(items)}`);
-  const accepted = await ev(`(() => ({ asked: window.__asked ?? null, xp: window.passives.value.allocated.length }))()`);
+  const accepted = await ev(`(() => ({ asked: window.__asked ?? null, xp: window.bones.count('skull') }))()`);
   check('and takes them when it says yes', typeof accepted.asked === 'string' && accepted.xp === MOVED_XP,
     JSON.stringify(accepted));
 

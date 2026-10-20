@@ -195,36 +195,6 @@ check('one more chain reaches one more enemy',
   struck(longer, longer.chainCount) && longer.chainCount === line.chainCount + 1,
   `hp along the row: ${longer.hp.join(' / ')} at chainCount ${longer.chainCount}`);
 
-// --- 10. both skills share the one 3% roll ---
-const rate = await run(`
-  const seen = { fireball: 0, chainLightning: 0 };
-  const N = 90000;
-  let drops = 0;
-  for (let i = 0; i < N; i++) {
-    const d = s.rollSkillDrop();
-    if (d) { drops++; seen[d.id]++; }
-  }
-  return { rate: drops / N, seen, want: window.config.SKILL_DROP.chance };
-`);
-console.log('drop roll:', JSON.stringify(rate));
-check('total drop chance is the configured one', Math.abs(rate.rate - rate.want) < rate.want * 0.15,
-  `measured ${(rate.rate * 100).toFixed(2)}%, configured ${(rate.want * 100).toFixed(2)}%`);
-check('the two droppables split it evenly',
-  Math.abs(rate.seen.fireball - rate.seen.chainLightning) < rate.seen.fireball * 0.25,
-  `화염구 ${rate.seen.fireball} vs 연쇄번개 ${rate.seen.chainLightning}`);
-
-// --- 11. it drops with its own ground label ---
-const drop = await run(`
-  s.combat.dropSkillAt(s.player.x + 300, s.player.y, { id: 'chainLightning', name: '연쇄번개',
-    tags: ['주문','번개','연쇄'] });
-  const d = s.combat.skillDrops.getChildren().find(x => x.active);
-  return { skillId: d.skillId, label: d.nameplate.text, style: d.nameplate.style };
-`);
-console.log('drop:', JSON.stringify(drop));
-check('its ground label reads 연쇄번개, in the ordinary dress',
-  drop.label === '연쇄번개' && drop.style.plateAlpha === 0,
-  `"${drop.label}" in ${drop.style.colour}`);
-
 // --- 12. a level-up spends on the run's main skill ---
 // Whatever the roll: 연쇄번개 was picked up later, so the level goes to the
 // skill the run started on, with that skill's own picks.

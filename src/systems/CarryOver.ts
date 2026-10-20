@@ -58,7 +58,7 @@ export function decodeCarry(text: string): CarryPayload | null {
 }
 
 /** The records the game seals (systems/Seal.ts): what comes over is sealed as it lands. */
-const SEALED_KEYS: readonly string[] = [STORAGE.save, STORAGE.passives];
+const SEALED_KEYS: readonly string[] = [STORAGE.save];
 
 function sealCarried(key: string, value: string): string {
   try {

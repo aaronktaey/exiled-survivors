@@ -101,8 +101,8 @@ const fromKills = await run(`
     s.combat.hit(b, 1e12);
     bossAltars += s.combat.altars.countActive(true);
   }
-  [s.combat.gearDrops, s.combat.skillDrops, s.combat.orbDrops, s.combat.gems, s.combat.potions,
-   s.combat.boneDrops, s.combat.randomSkillDrops, s.combat.mangoDrops, s.combat.magnetDrops]
+  [s.combat.gearDrops, s.combat.runeDrops, s.combat.orbDrops, s.combat.gems, s.combat.potions,
+   s.combat.boneDrops, s.combat.chiselDrops, s.combat.mangoDrops, s.combat.magnetDrops]
     .forEach((g) => g.getChildren().forEach((d) => d.active && d.collect()));
   s.spawner.clear();
   // Ordinary kills leave one only now and then: off, then certain, so each
@@ -331,7 +331,7 @@ const newOffers = await run(`
     const came = s.spawner.summon(altar.x, altar.y, id);
     const alive = s.spawner.group.getChildren().filter((e) => e.active);
     out[id] = { label, came, want: O[id].count, kinds: [...new Set(alive.map((e) => e.kind))],
-                skills: alive.every((e) => e.alwaysDropsSkill === true) };
+                skills: alive.every((e) => e.alwaysDropsRune === true) };
   }
   s.spawner.clear();
   s.combat.altars.getChildren().forEach((a) => a.active && a.collect());

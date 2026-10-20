@@ -57,7 +57,7 @@ const fought = await run(`
   }
 
   s.combat.gems.getChildren().forEach(g => g.active && g.collect());
-  s.combat.skillDrops.getChildren().forEach(d => d.active && d.collect());
+  s.combat.runeDrops.getChildren().forEach(d => d.active && d.collect());
   s.combat.gearDrops.getChildren().forEach(d => d.active && d.collect());
   s.spawner.clear();
   s.choosing = false;
@@ -120,7 +120,7 @@ check('nothing in the table runs off the screen',
   `) === true, 'every line inside the canvas');
 await shot('stats-01-summary');
 
-// --- 5. nothing to buy: no shop on 패시브, no purse kept ---
+// --- 5. nothing to buy: no purse kept ---
 await ev(`(() => {
   const s = window.game.scene.getScene('GameOverScene');
   const i = s.menu.rows.findIndex(r => r.item.id === 'menu');
@@ -128,14 +128,10 @@ await ev(`(() => {
 })()`);
 await cdp.tap('Space', 32, ' ');
 await sleep(1800);
-await ev(`(() => window.game.scene.getScene('MenuScene').icons.press('passives'))()`);
-await sleep(1000);
-const shopless = await scene('PassiveScene', `
-  return { shop: 'shopButton' in s, purse: s.purse.text, gold: localStorage.getItem('exiled-survivors:gold:v1'),
-           handle: 'gold' in window };
-`);
-check('패시브 has no shop, and reads out only its points', shopless.shop === false && !/골드|조각/.test(shopless.purse), JSON.stringify(shopless));
-check('and no purse is kept', shopless.gold === null && shopless.handle === false, JSON.stringify(shopless));
+const shopless = await ev(`(() => ({ gold: localStorage.getItem('exiled-survivors:gold:v1'), handle: 'gold' in window,
+  icons: window.game.scene.getScene('MenuScene').icons.views.map((v) => v.button.id) }))()`);
+check('no purse is kept, and the title has nothing to buy with one', shopless.gold === null && shopless.handle === false &&
+  !shopless.icons.includes('passives'), JSON.stringify(shopless));
 await cdp.send('Page.reload', {});
 await sleep(4200);
 

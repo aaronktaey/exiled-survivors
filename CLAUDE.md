@@ -39,7 +39,7 @@ wrong shape.
 | `src/config/balance.ts` | ★ the tuning file. Enemies, skills, 속성 and their tier ladders, the difficulty ramp. The user edits this directly. |
 | `src/config/equipment.ts` | weapons (장비) and the 구슬 that change them |
 | `src/config/bones.ts` | 뼈다귀 — what is spent before a run to change that run |
-| `src/config/passives.ts` | the passive tree on its grid, and the points everyone has |
+| `src/config/runes.ts` | 룬 (what a skill's 강화 슬롯 take), the slots, the 룬 끌 |
 | `src/config/visuals.ts` | colours, depths, text sizes, texture keys, label tiers |
 | `src/config/system.ts` | scene keys, storage keys, separation, tilt, timing |
 | `src/entities/` | Player, Enemy, and everything that lies on the ground |
@@ -68,7 +68,7 @@ wrong shape.
   centre it (`src/systems/Layout.ts`); landscape is only ever ~540 tall, so a
   screen that fits upright can still overflow lying down. Check both.
 - **Everything the player keeps is in `localStorage`** behind `STORAGE.*`:
-  the passive tree, the 뼈다귀 drawer, the save slot and the
+  the 뼈다귀 drawer, the save slot and the
   settings. Gear and 구슬 are not among them: they live in the run
   (`RunKit`, carried by the save slot only). Stores cache: writing the key behind a
   store's back does not change what the store already has in memory.
@@ -85,7 +85,7 @@ cd tests
 node run-all.mjs test-full test-skills test-balance test-chain test-ice \
   test-void test-enemies test-rare test-boss test-potion test-sfx test-perf \
   test-hud test-expiry test-audio test-touch test-shell test-shell2 test-info \
-  test-i18n test-gear test-passive test-responsive test-stats test-bones \
+  test-i18n test-gear test-runes test-responsive test-stats test-bones \
   test-altar test-slot test-locale test-back test-fugitive \
   test-ranking test-skillpick test-mango test-web test-loadout \
   test-carry test-api test-account test-live test-filter test-mastery \
@@ -128,7 +128,7 @@ set takes about six minutes. One suite on its own: `node run-all.mjs test-gear`.
   everything on screen (the patch notes, every chapter of the guide) overflows
   it and the suite dies with `undefined`. Return the answer, not the corpus.
 - Dev-only handles the suites drive: `window.game`, `window.config`,
-  `window.bones`, `window.passives`, `window.rollGearItem`,
+  `window.bones`, `window.rollGearItem`,
   `window.gearBonusFor`, `window.orbApplied`, `window.sealRecord`,
   `window.openRecord`,
   `window.critMultiplierFor`. They are behind `import.meta.env.DEV`, so the
@@ -177,19 +177,22 @@ Read `git log` for what changed and when. What is not in the log:
   `place`.
 - **No basic attack.** Every skill, 타격 included, is in `DROPPABLE_SKILLS`;
   a fresh run holds only what it picks off three cards (`SkillPickScene`,
-  `SKILL_PICK`), and that first skill is the run's **main skill**
+  `SKILL_PICK`; every skill since 0.74, with a back button to the title
+  that gives the 뼈다귀 put in back), and that first skill is the run's **main skill**
   (`GameScene.mainSkill`, kept in the save as `main`): every level-up
   upgrades it; once it has taken every upgrade, a level-up (or a repeat
   pickup of any maxed skill) heals a 체력 포션's worth instead
   (`drinkForMaxedSkill`, said plainly: 포션 효과! and the health over the
   survivor, a green burst, a `heal` toast naming the skill) — it never moves
   on to another skill. Every upgrade has a ceiling now (`UPGRADE_MAX_PICKS`
-  or `UPGRADE_CAP`), so every skill does get there. A skill found
-  later is upgraded by finding it again. (Level-ups once went to a random skill; the user read that as the
-  main skill changing, and asked for this.) With the
-  choice off (`#run`, the harness) a run starts on `UNSPUN_SKILL` (타격) so
-  suites have something deterministic. A 무작위 스킬 on the ground opens the
-  same three cards; taking one already held queues its upgrade next.
+  or `UPGRADE_CAP`), so every skill does get there. Nothing drops a skill
+  in a run any more (0.74): the 무작위 스킬 became a 룬, and a 우두머리 /
+  도망자 (`guaranteedRune`) leaves a 룬 instead. `GameScene.onSkillCollected`
+  is kept as a seam — the F-keys and the harness give skills through it (a
+  new one acquired, a held one's upgrade queued). (Level-ups once went to a
+  random skill; the user read that as the main skill changing, and asked
+  for this.) With the choice off (`#run`, the harness) a run starts on
+  `UNSPUN_SKILL` (타격) so suites have something deterministic.
 - **The slot sound is one file in two parts** (`AUDIO.slot`: run / stop),
   levelled quiet on purpose — the user found the first mix far too loud.
   `tools/mix-slot.py` rebuilds `public/assets/slot.mp3` from
@@ -319,7 +322,7 @@ Read `git log` for what changed and when. What is not in the log:
   works too).
 - **랭킹 검토 (the admin's, 0.62).** Every run handed in carries a 판 내역
   (`RunDetail`, built by `GameScene.runDetail`: build, version, kills by
-  kind, 뼈다귀, weapon, skills, 패시브, resumed), kept by the Worker in
+  kind, 뼈다귀, weapon, skills, 룬 set (`runes`, 패시브 before 0.74), resumed), kept by the Worker in
   `entries.detail` after `cleanDetail` keeps only the known fields (migration
   0008). Nothing is held back: an outlier goes on the board like any run.
   `GET /api/ranking/review` (admin only) gives today's board with each
@@ -403,7 +406,7 @@ Read `git log` for what changed and when. What is not in the log:
 - **No dial ships (0.71).** The user had every dial taken off; `DIALS` is
   empty and a dial comes back only when they ask for that one (a line in
   `config/tuning.ts` and its label). The live overrides were copied into the
-  tables first (balance.ts, equipment.ts, passives.ts) and the server's
+  tables first (balance.ts, equipment.ts, and the passive tree's file) and the server's
   `tuning` row cleared when 0.71 shipped. `Tuning.apply` lays a value over
   only for a path that is a dial, so a stale row can never put an old
   number back. `tuning.addDial` registers a dial at run time — the seam
@@ -428,7 +431,7 @@ Read `git log` for what changed and when. What is not in the log:
   in-page stand-in for /api/balance; test-api covers the endpoint.
 - **아이템 필터.** `config/itemFilter.ts` builds a switch per kind of drop
   from the tables (구슬, 뼈다귀, swords by base and by rarity, plus potion,
-  skill, 무작위 스킬, 망고); `systems/ItemFilter.ts` keeps the ones
+  룬, 룬 끌, 망고); `systems/ItemFilter.ts` keeps the ones
   switched off (`STORAGE.itemFilter`, synced with the rest). A switched-off
   drop still lands and is still taken by touch or 자석 — it is only hidden
   (`GroundItem.conceal`: no sprite, name, pillar, halo, sound, edge marker
@@ -460,7 +463,7 @@ Read `git log` for what changed and when. What is not in the log:
   state (worn, kept, 구슬); 불러오기 restores it, and `saveGame.describe`
   names the weapon worn.
 - **What acts on the survivor is on the HUD.** `GameScene.effectsNow()`
-  hands `Hud.update` an `EffectEntry` list — 장비 (`runGear`), 패시브, each
+  hands `Hud.update` an `EffectEntry` list — 장비 (`runGear`), each
   뼈다귀 (built once a run), then 하얀 망고 and 거미줄 while they last — drawn
   as icons left of the skills (`HUD.effectSlot`, buff/debuff edges in
   `HUD.effectEdge`), or on a row under them when that would run into the
@@ -569,7 +572,7 @@ Read `git log` for what changed and when. What is not in the log:
   `InfoScene`). Prose lives in each locale's `guide.cards[tab]` with
   `{placeholders}` that `values()` in guide.ts fills from config — a new
   number needs a key there, never a literal in the copy. Lists (skills,
-  enemies, 속성, 구슬, 뼈다귀, swords, 패시브) are built from their tables,
+  enemies, 속성, 구슬, 룬, 뼈다귀, swords) are built from their tables,
   so a new entry gets a card by itself; test-info's 누락 검사 fails if any
   table entry has no card or a placeholder is left unfilled. The page is
   drawn by a camera of its own (`pageCam`) whose viewport is the reading
@@ -591,40 +594,29 @@ Read `git log` for what changed and when. What is not in the log:
   pauses physics until the pointer moves off. A touch shows the same without
   the hold — on a phone that finger is steering. A popup that closes while
   something is being read leaves the arena paused (`held`).
-- **패시브 is a PoE graph (0.71).** Every
-  lasting bonus is a `Modifier` (`config/stats.ts`: a `StatId`, a value, an
-  optional skill tag); `systems/StatSheet` sums them (a tagged one counts
-  only for a skill carrying the tag). `config/passives.ts` builds
-  `PASSIVE_NODES` from six branch drafts (spine of seven rings, two arms,
-  arm ends cross-linked) laid on a grid (`TREE_SHAPE`, 0.72): every link
-  runs straight across or up and down, at most one each way from a node,
-  and none over another node — so an arrow key walks the link that way
-  (`PassiveScene.linkedToward`), and test-passive checks all of it. Three
-  branches climb and three go down from three columns: the middle one off
-  the start, the side ones off a junction (`util.1`/`util.3`) the start
-  reaches in one long step, with a utility node past each. A small node is
-  paid `NODE_VALUES[stat][ringTier(ring)]`, a 핵심 has its own mods, a
-  키스톤 a `KEYSTONES` entry whose numbers the code reads (학살자 in
-  `GameScene.onKilledBy`, 원소 과부하 via `onCrit`/`overloadOf`, 철인 in
-  `Player.takeDamage`/`hurt`, 암살자의 표식 via `nonCritScale` and
-  `Player.critChance`, 일점사/영원의 계약 in `Modifiers`). Every player has
-  `PASSIVE_POINTS` (15) and takes a node back for nothing (0.72, the
-  user's ask: no account level, no 신성한 조각, no gold — the purse key is
-  in `RETIRED_STORAGE`); a stored tree from before (version 2) starts
-  empty. The store keeps `allocated` joined to the start (`isLeaf` for
-  refunds) and no longer than the points. Fifteen points hold two branches
-  at most, so test-passive tries the 키스톤 two branches at a time.
-  `Modifiers.ts` folds the sheet per skill: damage, attack speed,
-  projectile speed (and so a thrown skill's range), extra projectiles,
-  pierce, chain, area (`WeaponContext.areaScale`, a radius: √ of the area
-  increase) and duration (`durationScale`: 냉각, 동결, burning ground).
-  Every hit carries its skill (`CombatSystem.hit(enemy, amount, skill)`,
-  `GameScene.hitterFor`, `Projectile.skill`). Tags no skill has yet (소환,
-  출혈, 독, 점화, 감전, 동결) are in `SkillTag` and on nodes already; the
-  screen says so under such a node. `PassiveScene` draws the graph through
-  `treeCam` (zoom, drag, +/−), picks on a tap, takes and refunds with
-  buttons; node names keep one size against the zoom. test-passive covers
-  shape, rules, screen and every 키스톤.
+- **룬 (0.74, the user's ask) replaced the passive tree.** The tree, its
+  screen and its record are gone (`exiled-survivors:passives:v1` is in
+  `RETIRED_STORAGE`; the keystones went with it). Every lasting bonus is
+  still a `Modifier` (`config/stats.ts`: a `StatId`, a value, an optional
+  skill tag), summed by `systems/StatSheet`; the layer the tree had is now
+  each skill's own 룬: `RunModifiers.runes[skill]` (Modifiers.ts,
+  `runesOf`), rebuilt by `GameScene.runeSheets` whenever the kit changes.
+  It folds damage, attack speed, projectile speed (and so a thrown skill's
+  range), extra projectiles, pierce, chain, area (`WeaponContext.areaScale`,
+  a radius: √ of the area increase), duration (`durationScale`) and a
+  skill's own crits (`critChanceFor` / `critMultiplierFor`, through the
+  `critChance`/`critMultiplier` hooks CombatSystem rolls with). `RUNES`
+  (config/runes.ts) is the table: mods, the `skills` a 룬 does anything for
+  (`runeWorksFor`; it can still be set elsewhere, and the screen says it
+  does nothing), weight, colour and a `glyph` BootScene draws. The main
+  skill gets `RUNE_SLOTS.main` slots when acquired (`RunKit.ensureSlots`),
+  any skill can reach `RUNE_SLOTS.max`. 룬 and 강화 슬롯 live in the
+  `RunKit` (held `runes`, per-skill `sockets`, carried by the save). A kill
+  leaves a 룬 at `RUNE_DROP.chance` × its bonus (`rollRune` by weight) and a
+  룬 끌 at `RUNE_CHISEL.chance` while `chiselWanted` (some skill not full);
+  a 룬 끌 queues a `chisel` choice (`RuneChiselScene`). The pause menu's 룬
+  row opens `RuneScene` (a slot picked, then a held 룬 pressed or its
+  number key; 빼기/Del takes one out). test-runes covers all of it.
 - **폭발의 구슬 climbs, or swaps at the top.** It picks among lines below
   tier 1, and the replacement comes only from 속성 that have the rung above.
   On a weapon whose every line is tier 1 it trades one for a different
@@ -708,9 +700,10 @@ Read `git log` for what changed and when. What is not in the log:
     도망자, and against the clock; and a run with no 판 내역. It answers a
     bare `refused`, never why — the user's ask. Checked against every live
     run with a 판 내역 when it shipped: only that account's three were over.
-  - The saved run and the tree are sealed (systems/Seal.ts: a keyed hash in
-    `_s`, `SEAL.pepper`). A record that does not match is not taken (the
-    save is thrown away, the tree starts over). Unsealed ones are taken —
+  - The saved run is sealed (systems/Seal.ts: a keyed hash in `_s`,
+    `SEAL.pepper`; the passive tree was too, until it went in 0.74). A
+    record that does not match is not taken (the save is thrown away).
+    Unsealed ones are taken —
     and resealed — until `SEAL.graceUntil` (30 days), then refused. Tests
     write such records through `window.sealRecord`. CarryOver seals what
     it brings in. The key is in the bundle: this stops edits in the

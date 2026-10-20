@@ -93,7 +93,7 @@ const ended = await run(`
   const p = s.player;
   for (let t = 0; t < window.config.MANGO.durationMs + 100; t += 50) p.tickBuffs(50);
   const out = { active: p.mangoActive, tint: p.isTinted, speed: p.moveSpeed, ring: p.mangoRing.commandBuffer.length,
-                base: window.config.PLAYER.speed * s.mods.passive.scale('moveSpeed') * s.mods.gear.moveSpeedScale };
+                base: window.config.PLAYER.speed * s.mods.gear.moveSpeedScale };
   p.invulnerableUntil = 0;
   const hp = p.hp; p.takeDamage(5); out.hurt = hp - p.hp; p.hp = p.maxHp;
   s.choosing = false;
@@ -113,12 +113,12 @@ const rule = await run(`
   // pinned kills below then only reuse what is there.
   const P = s.player, cmb = s.combat;
   cmb.dropPotionAt(P.x, P.y); cmb.dropMangoAt(P.x, P.y); cmb.dropMagnetAt(P.x, P.y);
-  cmb.dropOrbAt(P.x, P.y, 'chaos'); cmb.dropBoneAt(P.x, P.y, 'rib'); cmb.dropRandomSkillAt(P.x, P.y);
+  cmb.dropOrbAt(P.x, P.y, 'chaos'); cmb.dropBoneAt(P.x, P.y, 'rib'); cmb.dropRuneAt(P.x, P.y, 'power');
   cmb.dropAltarAt(P.x, P.y + 300, 'bosses');
-  cmb.dropSkillAt(P.x, P.y, { id: 'fireball' });
+  cmb.dropChiselAt(P.x, P.y);
   cmb.dropGearAt(P.x, P.y, { uid: 'warm', id: 'rustySword', prefixes: [], suffixes: [] });
-  [cmb.potions, cmb.mangoDrops, cmb.magnetDrops, cmb.orbDrops, cmb.boneDrops, cmb.randomSkillDrops,
-   cmb.altars, cmb.skillDrops, cmb.gearDrops].forEach((g) => g.getChildren().forEach((d) => d.active && d.collect()));
+  [cmb.potions, cmb.mangoDrops, cmb.magnetDrops, cmb.orbDrops, cmb.boneDrops, cmb.runeDrops,
+   cmb.altars, cmb.chiselDrops, cmb.gearDrops].forEach((g) => g.getChildren().forEach((d) => d.active && d.collect()));
   const c = window.config;
   const was = { potion: c.POTION.chance, mango: c.MANGO.chance };
   const roll = Math.random;
@@ -252,8 +252,8 @@ const magnetRate = await run(`
     c.MAGNET.chance = was;
   }
   s.combat.magnetDrops.getChildren().forEach((d) => d.active && d.collect());
-  [s.combat.gems, s.combat.skillDrops, s.combat.potions, s.combat.gearDrops, s.combat.orbDrops,
-   s.combat.boneDrops, s.combat.randomSkillDrops, s.combat.mangoDrops, s.combat.altars]
+  [s.combat.gems, s.combat.runeDrops, s.combat.potions, s.combat.gearDrops, s.combat.orbDrops,
+   s.combat.boneDrops, s.combat.chiselDrops, s.combat.mangoDrops, s.combat.altars]
     .forEach((g) => g.getChildren().forEach((d) => d.active && d.collect()));
   s.choosing = false;
   return out;

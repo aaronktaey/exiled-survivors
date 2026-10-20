@@ -2,8 +2,10 @@ import Phaser from 'phaser';
 
 import {
   AFFIXES,
-  KEYSTONES,
-  PASSIVE_NODES,
+  ALL_RUNES,
+  RUNES,
+  RUNE_SLOTS,
+  type RuneId,
   BALANCE,
   BONES,
   COLORS,
@@ -24,7 +26,6 @@ import {
   SAVE,
   SCENES,
   SKILL_BASE,
-  SKILL_DROP,
   SKILL_PICK,
   MANGO,
   TEXT,
@@ -52,7 +53,7 @@ import {
   gearTitle,
   masteryText,
   orbName,
-  passiveName,
+  runeName,
   skillName,
   t,
 } from '@/i18n';
@@ -100,6 +101,7 @@ import { runLedger } from '@/systems/RunLedger';
 import { OrbTray } from '@/systems/OrbTray';
 import { itemFilter } from '@/systems/ItemFilter';
 import { GearPickScene, type GearPickChoice, type GearPickData } from '@/scenes/GearPickScene';
+import { RuneChiselScene, type RuneChiselData } from '@/scenes/RuneChiselScene';
 import {
   NO_MODIFIERS,
   areaRadiusFor,
@@ -111,13 +113,14 @@ import {
   extraPierceFor,
   extraProjectilesFor,
   gearAttackSpeedFor,
-  keystoneDamageFor,
-  passiveAttackSpeedFor,
+  critChanceFor,
   projectileSpeedScaleFor,
+  runeAttackSpeedFor,
+  runesOf,
   type RunModifiers,
 } from '@/systems/Modifiers';
 import { bones } from '@/systems/Bones';
-import { passives } from '@/systems/Passives';
+import { StatSheet } from '@/systems/StatSheet';
 import { liveUpdate } from '@/systems/LiveUpdate';
 import type { RunDetail } from '@/systems/Ranking';
 import { PATCH_NOTES } from '@/content/patchNotes';
@@ -138,7 +141,6 @@ import {
   VoidOrb,
   ThunderStrike,
   UNSPUN_SKILL,
-  type SkillDefinition,
   type SkillId,
   type Weapon,
 } from '@/weapons';
@@ -170,14 +172,13 @@ export interface GameSceneData {
   readonly startPick?: boolean;
 }
 
-/** One queued upgrade popup, from a level-up or a skill pickup. */
 /**
- * One queued popup: an upgrade for one skill (a level-up, a repeat pickup),
- * or the three cards a 무작위 스킬 opens.
+ * One queued popup: an upgrade for one skill (a level-up), a piece of gear
+ * picked up, or a 룬 끌's choice of skill.
  */
 type ChoiceRequest =
   | { readonly kind: 'upgrade'; readonly title: string; readonly subtitle: string; readonly skill: SkillId }
-  | { readonly kind: 'pick' }
+  | { readonly kind: 'chisel' }
   | { readonly kind: 'gear'; readonly item: GearItem };
 
 /** How far from a rock's edge a drop is let fall, so it can be walked up to and seen whole. */
@@ -255,7 +256,6 @@ export class GameScene extends Phaser.Scene {
   private tunedRun = false;
   /** Account experience picked up since it was last handed to the tree's store, and in the whole of this sitting. */
   /** 원소 과부하: until when (scene clock) the elements are charged. */
-  private overloadUntil = 0;
   /** Each weapon's hit, booked to its skill, made once a weapon. */
   private hitters = new Map<SkillId, (enemy: Enemy, amount: number) => void>();
   private startPick = false;
@@ -300,7 +300,6 @@ export class GameScene extends Phaser.Scene {
     this.events.on(Phaser.Scenes.Events.RESUME, runLedger.hold);
     this.sinceSaveMs = 0;
     this.pendingChoices = [];
-    this.overloadUntil = 0;
     this.hitters = new Map();
     this.choosing = false;
     this.inspecting = { skill: false, rare: false };
@@ -316,13 +315,12 @@ export class GameScene extends Phaser.Scene {
 
     this.createFloor();
 
-    // Both are picked on the title screen, so they are fixed for the run:
-    // 패시브 first, then 장비, then whatever the run itself adds. The kit is
-    // the run's own: fresh (a bare 녹슨 검) or the saved run's.
+    // The kit is the run's own: fresh (the starting gear) or the saved run's —
+    // its gear, its 구슬, its 룬 and every skill's 강화 슬롯.
     this.kit = RunKit.restore(this.resuming);
     this.gearOnOffer = null;
     this.gearBonus = this.kit.bonus;
-    this.mods = { passive: passives.sheet, gear: this.gearBonus };
+    this.mods = { runes: this.runeSheets(), gear: this.gearBonus };
     this.unwatchKit?.();
     this.unwatchKit = this.kit.onChange(() => this.refitGear());
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
@@ -332,7 +330,6 @@ export class GameScene extends Phaser.Scene {
 
     this.player = new Player(this, WORLD.width / 2, WORLD.height / 2);
     this.player.applyGear(this.gearBonus);
-    this.player.applyPassives(this.mods.passive);
     this.cameras.main.startFollow(this.player, true, 0.12, 0.12);
 
     this.progression = new Progression();
@@ -359,29 +356,24 @@ export class GameScene extends Phaser.Scene {
       this.damageNumbers,
       this.stats,
       {
-        rollSkillDrop: (bonus, guaranteed) => this.rollSkillDrop(bonus, guaranteed),
-        onSkillCollected: (skill) => this.onSkillCollected(skill),
+        onRuneCollected: (id) => this.onRuneCollected(id),
+        onChiselCollected: () => this.queueChoice({ kind: 'chisel' }),
+        chiselWanted: () => [...this.owned].some((skill) => this.kit.canAddSlot(skill)),
         rollGearDrop: (fromBoss, bonus) => this.rollGearDrop(fromBoss, bonus),
         onGearCollected: (found) => this.onGearCollected(found),
         onOrbCollected: (id) => this.onOrbCollected(id),
         onBoneCollected: (id) => this.onBoneCollected(id),
         onAltarWoke: (offer, x, y) => this.onAltarWoke(offer, x, y),
-        onRandomSkillCollected: () => this.queueChoice({ kind: 'pick' }),
         onWeb: (x, y, stacks) => this.webs.spawn(x, y, stacks),
         onMangoCollected: () =>
           this.announce(fill(t().game.mangoEaten, { seconds: Math.round(MANGO.durationMs / 1000) })),
         onMagnetCollected: () => this.announce(t().game.magnetPulled),
-        // 아이템 발견 from the tree, on top of what the 뼈다귀 do.
-        dropScale: () => this.boneBonus.dropScale * this.mods.passive.scale('itemFind') * this.gearBonus.itemFindScale,
-        critMultiplier: () => critMultiplierFor(this.mods),
-        nonCritScale: () => (this.mods.passive.has('assassinMark') ? KEYSTONES.assassinMark.nonCritMore : 1),
-        onCrit: () => {
-          if (this.mods.passive.has('overload')) {
-            this.overloadUntil = this.time.now + KEYSTONES.overload.buffMs;
-          }
-        },
-        onKill: (skill, x, y, maxHp) => this.onKilledBy(skill, x, y, maxHp),
-        xpScale: () => this.mods.passive.scale('xpGain') * this.gearBonus.xpGainScale,
+        // 아이템 발견 from the gear, on top of what the 뼈다귀 do.
+        dropScale: () => this.boneBonus.dropScale * this.gearBonus.itemFindScale,
+        // A skill's crits: the gear's, and that skill's 룬.
+        critChance: (skill) => critChanceFor(skill, this.mods),
+        critMultiplier: (skill) => critMultiplierFor(this.mods, skill),
+        xpScale: () => this.gearBonus.xpGainScale,
         clearOfTerrain: (x, y) => this.terrain?.clear(x, y, DROP_ROOM) ?? [x, y],
       },
     );
@@ -418,8 +410,8 @@ export class GameScene extends Phaser.Scene {
       { group: this.combat.gearDrops },
       { group: this.combat.mangoDrops },
       { group: this.combat.magnetDrops },
-      { group: this.combat.randomSkillDrops },
-      { group: this.combat.skillDrops },
+      { group: this.combat.runeDrops },
+      { group: this.combat.chiselDrops },
       { group: this.combat.potions },
     ]);
     this.armInspect();
@@ -457,7 +449,7 @@ export class GameScene extends Phaser.Scene {
    * upgrade puts on it, and the title card waits until the skill is in hand.
    */
   private openStartPick(): void {
-    const options = this.randomSkills();
+    const options = DROPPABLE_SKILLS.map((skill) => skill.id);
     if (options.length === 0) {
       this.showIntro();
       return;
@@ -471,6 +463,16 @@ export class GameScene extends Phaser.Scene {
       subtitle: t().skillPick.startSubtitle,
       options,
       owned: [...this.owned],
+      // Back to the title instead: nothing has been played, so the 뼈다귀 put
+      // in for this run go back in the drawer.
+      onBack: () => {
+        for (const id of this.bones) {
+          bones.add(id);
+        }
+        this.bones = [];
+        this.over = true;
+        this.scene.start(SCENES.menu);
+      },
       onPick: (skill) => {
         this.choosing = false;
         if (!this.held) {
@@ -487,19 +489,6 @@ export class GameScene extends Phaser.Scene {
     };
     this.scene.bringToTop(SkillPickScene.KEY);
     this.scene.launch(SkillPickScene.KEY, data);
-  }
-
-  /**
-   * SKILL_PICK.choices different skills, at even odds, from every skill
-   * there is — held ones included, which come up as 강화.
-   */
-  public randomSkills(): SkillId[] {
-    const pool = DROPPABLE_SKILLS.map((skill) => skill.id);
-    for (let i = pool.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [pool[i], pool[j]] = [pool[j]!, pool[i]!];
-    }
-    return pool.slice(0, SKILL_PICK.choices);
   }
 
   /**
@@ -686,7 +675,6 @@ export class GameScene extends Phaser.Scene {
   }
 
   private buildLastingEffects(): EffectEntry[] {
-    const copy = t().hud;
     const out: EffectEntry[] = [];
     for (const slot of GEAR_SLOTS) {
       const item = this.kit.equipped[slot];
@@ -700,15 +688,6 @@ export class GameScene extends Phaser.Scene {
           .map((line) => affixGearDetail(line.id, line.tier)),
       ].filter(Boolean);
       out.push({ id: `gear:${slot}`, kind: 'gear', icon: gearTexture(item.id), title: gearTitle(item), lines });
-    }
-    const taken = passives.value.allocated;
-    if (taken.length > 0) {
-      // The count, then the 키스톤 and 핵심 by name: the small nodes are too many to list.
-      const named = taken.filter((id) => PASSIVE_NODES[id]?.kind === 'keystone' || PASSIVE_NODES[id]?.kind === 'notable');
-      out.push({
-        id: 'passive', kind: 'passive', icon: TEXTURES.passive, title: copy.effectPassive,
-        lines: [fill(copy.effectPassiveCount, { count: taken.length }), ...named.map((id) => passiveName(id))],
-      });
     }
     for (const id of this.bones) {
       const bone = BONES[id];
@@ -910,6 +889,10 @@ export class GameScene extends Phaser.Scene {
     }
     this.owned.add(skill);
     this.mainSkill ??= skill;
+    // The main skill comes with its 강화 슬롯; a save already holds them.
+    if (this.mainSkill === skill) {
+      this.kit.ensureSlots(skill, RUNE_SLOTS.main);
+    }
 
     const weapon = WEAPONS[skill](this);
     this.weapons.push(weapon);
@@ -920,11 +903,12 @@ export class GameScene extends Phaser.Scene {
   }
 
   /**
-   * The first pickup simply grants the skill at its base stats. Every later
-   * one opens that skill's own upgrade choice, so repeat drops stay worth
-   * walking over.
+   * Gives a skill the way a pickup did before 0.74: one not held is
+   * acquired at its base stats, one held opens its upgrade choice. Nothing
+   * in play drops a skill any more; the F-keys and the harness give one
+   * through here.
    */
-  private onSkillCollected(skill: SkillId): void {
+  public onSkillCollected(skill: SkillId): void {
     const isNew = !this.owned.has(skill);
     this.acquire(skill);
 
@@ -937,20 +921,43 @@ export class GameScene extends Phaser.Scene {
     }
   }
 
+  /** A 룬 picked up goes among the run's, to be set from the pause menu — said at once, and over the survivor. */
+  private onRuneCollected(id: RuneId): void {
+    this.kit.addRune(id);
+    const line = fill(t().runes.found, { rune: runeName(id) });
+    this.announce(line);
+    this.sayOverhead(line, RUNES[id]?.color ?? 0xffffff);
+  }
+
   /**
-   * Droppable skills keep dropping; a repeat drop upgrades instead.
-   * `bonus` is the killed enemy's drop multiplier — 1 for anything ordinary.
+   * A 룬 끌's choice: every skill held, the full ones shut. Taking one adds
+   * a 강화 슬롯 to it; with nothing to take (all full) it says so and goes.
    */
-  private rollSkillDrop(bonus = 1, guaranteed = false): SkillDefinition | null {
-    if (DROPPABLE_SKILLS.length === 0) {
-      return null;
+  private openChiselPick(): void {
+    const skills = this.skillsHeld;
+    if (!skills.some((skill) => this.kit.canAddSlot(skill))) {
+      this.announce(t().runes.chiselFull);
+      this.afterChoice();
+      return;
     }
+    const data: RuneChiselData = {
+      kit: this.kit,
+      skills,
+      onPick: (skill) => {
+        if (this.kit.addSlot(skill)) {
+          this.announce(fill(t().runes.chiselAdded, { skill: skillName(skill), n: this.kit.socketsOf(skill).length, max: RUNE_SLOTS.max }));
+        }
+        this.afterChoice();
+      },
+    };
+    this.scene.bringToTop(RuneChiselScene.KEY);
+    this.scene.launch(RuneChiselScene.KEY, data);
+  }
 
-    if (!guaranteed && Math.random() >= SKILL_DROP.chance * bonus) {
-      return null;
-    }
-
-    return DROPPABLE_SKILLS[Math.floor(Math.random() * DROPPABLE_SKILLS.length)] ?? null;
+  /** The skills held, the main one first. Public for the 룬 screens and for tests. */
+  public get skillsHeld(): SkillId[] {
+    const main = this.mainSkill;
+    return [...(main && this.owned.has(main) ? [main] : []), ...[...this.owned].filter((skill) => skill !== main)];
   }
 
   /**
@@ -1016,7 +1023,7 @@ export class GameScene extends Phaser.Scene {
    */
   private refitGear(): void {
     this.gearBonus = this.kit.bonus;
-    this.mods = { passive: this.mods.passive, gear: this.gearBonus };
+    this.mods = { runes: this.runeSheets(), gear: this.gearBonus };
     this.player?.applyGear(this.gearBonus, true);
     this.lastingEffects = undefined;
   }
@@ -1027,11 +1034,16 @@ export class GameScene extends Phaser.Scene {
     const line = fill(t().game.orbFound, { orb: orbName(id) });
     this.announce(line);
     // And over the survivor, in the 구슬's colour (0.73, the user's ask).
+    this.sayOverhead(line, ORBS[id]?.color ?? 0xffffff);
+  }
+
+  /** A pickup said over the survivor; ones close together stack up (ORB_DROP.pickupText). */
+  private sayOverhead(line: string, color: number): void {
     const { above, step, windowMs, max } = ORB_DROP.pickupText;
     const now = this.time.now;
     this.orbTextRow = now - this.orbTextAt < windowMs ? (this.orbTextRow + 1) % max : 0;
     this.orbTextAt = now;
-    const colour = `#${(ORBS[id]?.color ?? 0xffffff).toString(16).padStart(6, '0')}`;
+    const colour = `#${color.toString(16).padStart(6, '0')}`;
     this.damageNumbers.spawn(this.player.x, this.player.y - above - this.orbTextRow * step, 0, { text: line, color: colour, crit: true });
   }
 
@@ -1062,13 +1074,30 @@ export class GameScene extends Phaser.Scene {
     const upgraded = this.progression.statsFor(skill).damage;
     // Whole numbers: a percentage from the tree would otherwise put a
     // decimal point on every damage number that floats off an enemy.
-    return Math.round(damageFor(skill, upgraded, this.mods) * (BALANCE.damageScale[skill] ?? 1) * this.overloadOf(skill));
+    return Math.round(damageFor(skill, upgraded, this.mods) * (BALANCE.damageScale[skill] ?? 1));
   }
 
-  /** 원소 과부하, while a crit has it charged: an 원소 skill's damage, multiplied. */
-  private overloadOf(skill: SkillId): number {
-    const charged = this.mods.passive.has('overload') && this.time.now < this.overloadUntil;
-    return charged && SKILLS[skill].tags.includes('원소') ? KEYSTONES.overload.elementalMore : 1;
+  /** Every 룬 set in any skill, counted by kind — what the run hands the ranking. */
+  private runeCounts(): Record<string, number> {
+    const out: Record<string, number> = {};
+    for (const skill of Object.keys(SKILLS) as SkillId[]) {
+      for (const rune of this.kit.runesIn(skill)) {
+        out[rune] = (out[rune] ?? 0) + 1;
+      }
+    }
+    return out;
+  }
+
+  /** Each skill's 룬, as the one sheet the folds read (Modifiers.ts). */
+  private runeSheets(): RunModifiers['runes'] {
+    const out: RunModifiers['runes'] = {};
+    for (const skill of Object.keys(SKILLS) as SkillId[]) {
+      const runes = this.kit.runesIn(skill);
+      if (runes.length > 0) {
+        out[skill] = new StatSheet(runes.flatMap((rune) => RUNES[rune].mods));
+      }
+    }
+    return out;
   }
 
   /** Enemies an arc jumps on to, and bodies a shot passes through: the run's picks and the tree's. */
@@ -1088,15 +1117,6 @@ export class GameScene extends Phaser.Scene {
       this.hitters.set(skill, hitter);
     }
     return hitter;
-  }
-
-  /** 학살자: a 근접 kill bursts, hurting what stands round it by a share of the dead one's health. */
-  private onKilledBy(skill: SkillId | undefined, x: number, y: number, maxHp: number): void {
-    if (!skill || !this.mods.passive.has('slaughter') || !SKILLS[skill].tags.includes('근접')) {
-      return;
-    }
-    const { burstShare, burstRadius } = KEYSTONES.slaughter;
-    this.combat.blast(x, y, burstRadius, Math.max(1, Math.round(maxHp * burstShare)), undefined, undefined, COLORS.slaughterBurst);
   }
 
   /** The same fold, for how often that skill goes off. */
@@ -1157,9 +1177,7 @@ export class GameScene extends Phaser.Scene {
       fill(copy.formulaDamage, {
         damage,
         base: num(base.damage),
-        passive: num(
-          this.mods.passive.scale('damage', SKILLS[skill].tags) * keystoneDamageFor(skill, this.mods.passive) * this.overloadOf(skill),
-        ),
+        passive: num(runesOf(skill, this.mods).scale('damage')),
         gear: num(this.mods.gear.attack),
         run: num(runScale(base.damage, stats.damage)),
       }) +
@@ -1173,7 +1191,7 @@ export class GameScene extends Phaser.Scene {
       fill(copy.formulaRate, {
         rate: num(perSecond),
         base: num(base.attackSpeed),
-        passive: num(passiveAttackSpeedFor(skill, this.mods.passive)),
+        passive: num(runeAttackSpeedFor(skill, this.mods)),
         gear: num(gearAttackSpeedFor(skill, this.mods.gear)),
         run: num(runScale(base.attackSpeed, stats.attackSpeed)),
       }) + (mango === 1 ? '' : fill(copy.formulaMango, { mango: num(mango) }));
@@ -1251,7 +1269,7 @@ export class GameScene extends Phaser.Scene {
         enemyShots: this.combat.enemyShots.countActive(true),
         projectiles: this.weapons.reduce((n, w) => n + (w.projectiles?.countActive(true) ?? 0), 0),
         gems: this.combat.gems.countActive(true),
-        drops: this.combat.skillDrops.countActive(true),
+        drops: this.combat.runeDrops.countActive(true),
         potions: this.combat.potions.countActive(true),
         altars: this.combat.altars.countActive(true),
         damageNumbers: this.damageNumbers.activeCount,
@@ -1269,11 +1287,13 @@ export class GameScene extends Phaser.Scene {
       clearEnemies: () => this.spawner.clear(),
       grantLevel: () => this.progression.addXp(this.progression.xpToNext),
       dropSkill: () => {
-        const skill = DROPPABLE_SKILLS[this.nextDebugDrop % DROPPABLE_SKILLS.length];
+        // A 룬 now, in turn, and a 룬 끌 beside it: there are no skill drops any more.
+        const rune = ALL_RUNES[this.nextDebugDrop % ALL_RUNES.length];
         this.nextDebugDrop += 1;
-        if (skill) {
-          this.combat.dropSkillAt(this.player.x + 60, this.player.y, skill);
+        if (rune) {
+          this.combat.dropRuneAt(this.player.x + 60, this.player.y, rune.id);
         }
+        this.combat.dropChiselAt(this.player.x + 60, this.player.y + 40);
       },
       dropPotion: () => this.combat.dropPotionAt(this.player.x + 60, this.player.y),
       toggleInvulnerable: () => {
@@ -1328,8 +1348,8 @@ export class GameScene extends Phaser.Scene {
     // The finger steering now goes to the cards; the stick lets it go.
     this.analog?.release?.();
 
-    if (request.kind === 'pick') {
-      this.openPick();
+    if (request.kind === 'chisel') {
+      this.openChiselPick();
       return;
     }
     if (request.kind === 'gear') {
@@ -1355,36 +1375,6 @@ export class GameScene extends Phaser.Scene {
     };
     this.scene.bringToTop(UpgradeScene.KEY);
     this.scene.launch(UpgradeScene.KEY, data);
-  }
-
-  /**
-   * A 무작위 스킬's three cards. A skill not yet held is acquired; one held
-   * already goes on to its own upgrade choice, ahead of anything else queued.
-   */
-  private openPick(): void {
-    const data: SkillPickData = {
-      title: t().skillPick.dropTitle,
-      subtitle: t().skillPick.dropSubtitle,
-      options: this.randomSkills(),
-      owned: [...this.owned],
-      levels: Object.fromEntries([...this.owned].map((id) => [id, this.progression.levelFor(id)])),
-      onPick: (skill) => {
-        if (this.owned.has(skill)) {
-          this.pendingChoices.unshift({
-            kind: 'upgrade',
-            title: skillName(skill),
-            subtitle: t().upgrade.enhanced,
-            skill,
-          });
-        } else {
-          this.acquire(skill);
-          this.announce(fill(t().game.pickedUp, { skill: skillName(skill) }));
-        }
-        this.afterChoice();
-      },
-    };
-    this.scene.bringToTop(SkillPickScene.KEY);
-    this.scene.launch(SkillPickScene.KEY, data);
   }
 
   private onUpgradePicked(skill: SkillId, upgrade: UpgradeId): void {
@@ -1645,7 +1635,7 @@ export class GameScene extends Phaser.Scene {
       bones: [...this.bones],
       gear: gear ? { id: gear.id, prefixes: lines(gear.prefixes), suffixes: lines(gear.suffixes) } : null,
       skills: this.loadout().map((line) => ({ id: line.id, level: line.level })),
-      passives: Object.fromEntries(passives.value.allocated.map((id) => [id, 1])),
+      runes: this.runeCounts(),
       resumed: this.resuming !== null,
       wall: runLedger.ms,
     };

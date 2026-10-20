@@ -32,7 +32,6 @@ import {
   RARE,
   SCENES,
   SKILL_BASE,
-  SKILL_DROP,
   SKILL_PICK,
   SPAWN,
   TUNING,
@@ -46,7 +45,7 @@ type Listener = (path: string, was: number, now: number) => void;
 
 const ROOTS: Record<string, unknown> = {
   ALTAR, BALANCE, BONES, BOSS, DIFFICULTY, ENEMY_KINDS, GEAR, MAGNET, MANGO, ORBS, PLAYER, POTION, RARE,
-  SKILL_BASE, SKILL_DROP, SKILL_PICK, SPAWN, UPGRADE_PERCENT,
+  SKILL_BASE, SKILL_PICK, SPAWN, UPGRADE_PERCENT,
 };
 
 /** The object a path's value sits on, and its key there. */

@@ -114,9 +114,9 @@ for (const lang of ['en', 'ja', 'zh']) {
   await take('credits');
   await close('CreditsScene');
 
-  await overlay('PassiveScene');
-  await take('passives');
-  await close('PassiveScene');
+  await overlay('RuneScene', `(() => { const k = window.game.scene.getScene('GameScene').kit; k.ensureSlots('meleeStrike', 1); k.addRune('power'); k.socket('meleeStrike', 0, 'power'); k.addRune('split'); return { kit: k, skills: ['meleeStrike'] }; })()`);
+  await take('runes');
+  await close('RuneScene');
 
   await overlay('BoneScene', '{ onStart: () => {}, onCancel: () => {} }');
   await take('bones');

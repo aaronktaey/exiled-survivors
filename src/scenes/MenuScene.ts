@@ -19,7 +19,6 @@ import { fill, t } from '@/i18n';
 import { bgm } from '@/systems/Bgm';
 import { IconBar } from '@/systems/IconBar';
 import { BoneScene } from '@/scenes/BoneScene';
-import { passives } from '@/systems/Passives';
 import { MenuList } from '@/systems/MenuList';
 import { saveGame } from '@/systems/SaveGame';
 import { centredTop, fitText } from '@/systems/Layout';
@@ -146,17 +145,10 @@ export class MenuScene extends Phaser.Scene {
       .setOrigin(0.5)
       .setDepth(DEPTH.ui);
 
-    // 패시브 and the rest live in the corner rather than in the list: they are
+    // 랭킹 and the rest live in the corner rather than in the list: they are
     // where you go between runs, not a way out of the title. Gear has no
     // place here any more: it lives and dies with a run.
     this.icons = new IconBar(this, [
-      {
-        id: 'passives',
-        texture: TEXTURES.passive,
-        label: () => t().passives.title,
-        badge: () => passives.freePoints > 0,
-        onSelect: () => this.openOverlay(SCENES.passives),
-      },
       {
         id: 'ranking',
         texture: TEXTURES.trophy,
