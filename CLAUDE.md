@@ -641,7 +641,9 @@ Read `git log` for what changed and when. What is not in the log:
   `perRun(n)` over `ORB_DROP.runKills`, the user's 30/10/10/5/3 on trial),
   so an `OrbDrop` has no name over it, no landing sound and no edge marker:
   inside the survivor's `pickupRadius` it flies in the way an `XpGem` does,
-  and the pickup's toast names it. What is held is counted at the bottom
+  and the pickup's toast names it — and so does a line over the survivor
+  in the 구슬's colour (`ORB_DROP.pickupText`, on `damageNumbers`, rows
+  stacking for pickups close together; 0.73). What is held is counted at the bottom
   right through the run (`systems/OrbTray.ts`, `HUD.orbTray`: every kind's
   icon and number, faint at none — 0.72).
 - **The opening is slower (0.71).** `SPAWN.opening`: every spawn gap is

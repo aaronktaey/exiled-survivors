@@ -403,6 +403,13 @@ export const ORB_DROP = {
    * 변화 30, 혼돈 10, 각성 10, 폭발 5, 망고 3), over this.
    */
   runKills: 2000,
+  /**
+   * What a pickup says over the survivor (0.73): the 구슬's name in its own
+   * colour, `above` px over the survivor's middle; pickups within `windowMs`
+   * of each other (a 자석, a crowd of drops) stack `step` px higher, up to
+   * `max` rows, so they do not print over one another.
+   */
+  pickupText: { above: 64, step: 18, windowMs: 600, max: 4 },
 } as const;
 
 /** A kill's chance at one 구슬, for `count` of them over a run of ORB_DROP.runKills. */

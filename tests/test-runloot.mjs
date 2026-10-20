@@ -137,6 +137,23 @@ const pulled = await run(`
 check('one inside the pickup radius is drawn in and taken, like a gem', pulled.held === orb.held + 1, JSON.stringify(pulled));
 check('and its toast says so', pulled.lines.length > 0, JSON.stringify(pulled.lines));
 check('one outside it lies where it fell', pulled.farMoved === 0, `${pulled.farMoved}`);
+// And over the survivor, in the 구슬's own colour; several at once stack up.
+const over = await run(`
+  const c = window.config, p = s.player;
+  const live = () => s.damageNumbers.pool.filter((f) => f.remainingMs > 0 && f.text.text.includes('구슬'));
+  s.damageNumbers.reset();
+  s.onOrbCollected('chaos');
+  const one = live().map((f) => ({ text: f.text.text, x: f.text.x, y: f.text.y, color: f.text.style.color }));
+  s.onOrbCollected('awaken');
+  s.onOrbCollected('mango');
+  const three = live().map((f) => f.text.y);
+  for (const id of ['chaos', 'awaken', 'mango']) s.kit.spend(id);
+  return { one, three, px: p.x, py: p.y, want: '#' + c.ORBS.chaos.color.toString(16).padStart(6, '0'), above: c.ORB_DROP.pickupText.above };
+`);
+check('a 구슬 picked up is said right over the survivor, in its own colour',
+  over.one.length === 1 && /혼돈의 구슬/.test(over.one[0].text) && Math.abs(over.one[0].x - over.px) < 1 &&
+    over.one[0].y < over.py && over.py - over.one[0].y <= over.above + 1 && over.one[0].color === over.want, JSON.stringify(over));
+check('and several at once stack instead of printing over each other', new Set(over.three.map(Math.round)).size === 3, JSON.stringify(over.three));
 const tray = await run(`
   const t = s.orbTray;
   const ids = t.entries.map((e) => e.orb);

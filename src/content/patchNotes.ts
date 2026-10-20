@@ -15,6 +15,16 @@ export interface PatchNote {
 
 export const PATCH_NOTES: readonly PatchNote[] = [
   {
+    version: '0.73',
+    date: '2026-10-20',
+    changes: {
+      ko: ['구슬을 주우면 캐릭터 바로 위에 그 구슬의 색으로 획득했다고 표시됩니다. 한꺼번에 여러 개를 주우면 겹치지 않게 위로 쌓입니다.'],
+      en: ['Picking up an orb now says so right above your character, in the orb’s own colour; several at once stack instead of overlapping.'],
+      ja: ['オーブを拾うと、キャラクターのすぐ上にそのオーブの色で入手が表示されます。まとめて拾うと重ならないように上へ積み重なります。'],
+      zh: ['拾取宝珠时，会在角色正上方以该宝珠的颜色显示获得提示；同时拾取多个时会向上叠放，不会重叠。'],
+    },
+  },
+  {
     version: '0.72',
     date: '2026-10-20',
     changes: {

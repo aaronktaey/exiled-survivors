@@ -36,6 +36,8 @@ import {
   TERRAIN,
   GEAR_SLOTS,
   CHIMERA_RUSH,
+  ORBS,
+  ORB_DROP,
   UPGRADE_PERCENT,
 } from '@/config';
 import type { Enemy } from '@/entities/Enemy';
@@ -208,6 +210,9 @@ export class GameScene extends Phaser.Scene {
   private gearBonus: GearBonus = NO_BONUS;
   /** The effects that last the whole run (장비, 패시브, 뼈다귀), built on the first look. */
   private lastingEffects?: EffectEntry[];
+  /** When the last 구슬 pickup was said over the survivor, and on which row (ORB_DROP.pickupText). */
+  private orbTextAt = -Infinity;
+  private orbTextRow = 0;
   /** The 구슬 held, bottom right. Public for tests. */
   public orbTray?: OrbTray;
   /** The weapon this run went out with, as it was then; what the save carries. Public for tests. */
@@ -287,6 +292,8 @@ export class GameScene extends Phaser.Scene {
     // not this one's (the icons left of the skills once showed it).
     this.lastingEffects = undefined;
     this.elapsedMs = 0;
+    this.orbTextAt = -Infinity;
+    this.orbTextRow = 0;
     runLedger.begin(0);
     // Back from the pause menu: the wait there is not play.
     this.events.off(Phaser.Scenes.Events.RESUME, runLedger.hold);
@@ -1017,7 +1024,15 @@ export class GameScene extends Phaser.Scene {
   /** A 구슬 picked up goes into the run's kit, to be spent while paused. */
   private onOrbCollected(id: OrbId): void {
     this.kit.addOrb(id);
-    this.announce(fill(t().game.orbFound, { orb: orbName(id) }));
+    const line = fill(t().game.orbFound, { orb: orbName(id) });
+    this.announce(line);
+    // And over the survivor, in the 구슬's colour (0.73, the user's ask).
+    const { above, step, windowMs, max } = ORB_DROP.pickupText;
+    const now = this.time.now;
+    this.orbTextRow = now - this.orbTextAt < windowMs ? (this.orbTextRow + 1) % max : 0;
+    this.orbTextAt = now;
+    const colour = `#${(ORBS[id]?.color ?? 0xffffff).toString(16).padStart(6, '0')}`;
+    this.damageNumbers.spawn(this.player.x, this.player.y - above - this.orbTextRow * step, 0, { text: line, color: colour, crit: true });
   }
 
   /**
