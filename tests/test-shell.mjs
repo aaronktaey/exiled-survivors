@@ -296,11 +296,13 @@ check('pausing writes the run out',
   saveWhilePaused !== null && saveWhilePaused.version === 1 && saveWhilePaused.elapsedMs > 0,
   `lv ${saveWhilePaused?.level}, ${Math.round((saveWhilePaused?.elapsedMs ?? 0) / 1000)}s, skills ${Object.keys(saveWhilePaused?.skills ?? {})}`);
 
-// Give the run something to remember, then quit to the title.
+// Give the run something to remember, then quit to the title. The marker
+// sits above the skill's base: a restore never takes a stat under it (0.83).
+const MARK = await ev(`(() => window.config.SKILL_BASE.meleeStrike.damage + 42)()`);
 await ev(`(() => {
   const s = window.game.scene.getScene('GameScene');
   s.progression.level = 6;
-  s.progression.statsFor('meleeStrike').damage = 42;
+  s.progression.statsFor('meleeStrike').damage = ${MARK};
   s.onSkillCollected('fireball');
   s.player.hp = 11;
   s.elapsedMs = 95000;
@@ -313,7 +315,7 @@ check('저장하고 타이틀로 returns to the title', quit.menu === true && qu
 
 const savedRun = await stored('exiled-survivors:save:v1');
 check('the quit save holds the run that was played',
-  savedRun.level === 6 && savedRun.hp === 11 && savedRun.skills.meleeStrike.damage === 42 &&
+  savedRun.level === 6 && savedRun.hp === 11 && savedRun.skills.meleeStrike.damage === MARK &&
   Boolean(savedRun.skills.fireball),
   `lv ${savedRun.level} hp ${savedRun.hp} dmg ${savedRun.skills.meleeStrike.damage} skills ${Object.keys(savedRun.skills)}`);
 
@@ -335,7 +337,7 @@ const loaded = await scene('GameScene', `
 `);
 console.log('loaded:', JSON.stringify(loaded));
 check('불러오기 puts the run back together',
-  loaded.level === 6 && loaded.hp === 11 && loaded.damage === 42 && loaded.owned.includes('fireball'),
+  loaded.level === 6 && loaded.hp === 11 && loaded.damage === MARK && loaded.owned.includes('fireball'),
   `lv ${loaded.level} hp ${loaded.hp} dmg ${loaded.damage} skills ${loaded.owned}`);
 check('the clock resumes where it stopped', loaded.elapsed >= 95,
   `${loaded.clock} (${loaded.elapsed}s)`);

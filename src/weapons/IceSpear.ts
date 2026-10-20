@@ -20,6 +20,7 @@ export class IceSpear extends ProjectileWeapon {
       pierce: context.pierceCount,
       chillMs: CHILL.durationMs,
       freezeMs: context.mastered ? SKILL_MASTERY.freezeMs : 0,
+      chilledBonus: context.masteredTwice ? SKILL_MASTERY.second.iceChilledBonus : 0,
       ...SHOTS.iceSpear,
     };
   }

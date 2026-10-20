@@ -13,7 +13,7 @@ import { findNearestEnemy, type Weapon, type WeaponContext } from '@/weapons/Wea
  * range until 2026-10-16; the user asked for the nearest). A recast after a
  * kill goes to whoever is nearest then.
  *
- * A strike that kills rolls THUNDER.recastChance to strike again at once,
+ * A strike that kills rolls the skill's recastChance to strike again at once,
  * and each recast rolls its own — a crowd of the nearly dead can take a
  * string of them from one cast.
  *
@@ -66,7 +66,7 @@ export class ThunderStrike implements Weapon {
       const killed = this.strike(context, target);
       strikes += 1;
       // 각성: a kill always strikes again.
-      const recast = context.mastered ? SKILL_MASTERY.thunderRecastChance : THUNDER.recastChance;
+      const recast = context.mastered ? SKILL_MASTERY.thunderRecastChance : context.recastChance;
       if (!killed || Math.random() >= recast) {
         break;
       }
@@ -82,8 +82,26 @@ export class ThunderStrike implements Weapon {
     // can be handed out again, so its life count is what says it died.
     const { x, y, lives } = target;
     drawBolt(this.bolt, x, y - THUNDER.height, x, y);
+    // 2차 각성: what stands round it takes a share too — gathered before any
+    // hit, since a kill recycles a sprite.
+    const splash = context.masteredTwice ? SKILL_MASTERY.second.thunderSplash : null;
+    const around: Enemy[] = [];
+    if (splash) {
+      for (const child of context.enemies.getChildren()) {
+        const other = child as Enemy;
+        if (other.active && other !== target && Phaser.Math.Distance.Between(x, y, other.x, other.y) <= splash.radius) {
+          around.push(other);
+        }
+      }
+    }
     context.hit(target, context.damage);
-    return !target.active || target.lives !== lives;
+    const killed = !target.active || target.lives !== lives;
+    if (splash) {
+      around.forEach((other) => other.active && context.hit(other, context.damage * splash.damageShare));
+      this.bolt.lineStyle(2, 0xf0d050, 0.8);
+      this.bolt.strokeCircle(x, y, splash.radius);
+    }
+    return killed;
   }
 
   /** The enemy nearest the survivor within range, or undefined if none is. */

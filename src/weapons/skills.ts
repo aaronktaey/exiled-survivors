@@ -42,7 +42,7 @@ export const SKILLS: Record<SkillId, SkillDefinition> = {
     id: 'meleeStrike',
     name: '타격',
     tags: ['물리', '공격', '근접'],
-    upgrades: ['damage', 'attackSpeed'],
+    upgrades: ['damage', 'attackSpeed', 'range'],
     summary: '가장 가까운 적을 향해 짧게 휘두릅니다. 범위 안의 적을 한꺼번에 때립니다.',
   },
   fireball: {
@@ -50,7 +50,7 @@ export const SKILLS: Record<SkillId, SkillDefinition> = {
     name: '화염구',
     tags: ['투사체', '원거리', '주문', '화염'],
     // No 사거리 pick: a thrown skill reaches further by flying faster.
-    upgrades: ['damage', 'attackSpeed', 'projectileSpeed'],
+    upgrades: ['damage', 'attackSpeed', 'blastRadius'],
     summary: '가장 가까운 적에게 불덩이를 던집니다. 처음 맞은 적에게서 터지며, 주변의 적도 함께 불에 휩싸입니다.',
   },
   chainLightning: {
@@ -64,7 +64,7 @@ export const SKILLS: Record<SkillId, SkillDefinition> = {
     id: 'iceSpear',
     name: '얼음창',
     tags: ['주문', '냉기', '투사체'],
-    upgrades: ['damage', 'attackSpeed', 'projectileSpeed', 'pierceCount'],
+    upgrades: ['damage', 'attackSpeed', 'pierceCount'],
     summary: '적을 관통하며, 맞은 적에게 냉각(이동속도 -30%)을 겁니다.',
   },
   voidOrb: {
@@ -78,7 +78,7 @@ export const SKILLS: Record<SkillId, SkillDefinition> = {
     id: 'thunderStrike',
     name: '낙뢰',
     tags: ['오라', '주문', '번개'],
-    upgrades: ['damage', 'attackSpeed'],
+    upgrades: ['damage', 'attackSpeed', 'recastChance'],
     summary: '주위의 적 하나에게 하늘에서 벼락을 내립니다. 그 적이 죽으면 절반의 확률로 곧바로 한 번 더 떨어집니다.',
   },
 };

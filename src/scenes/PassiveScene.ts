@@ -4,14 +4,11 @@ import {
   ALL_PASSIVES,
   COLORS,
   DEPTH,
-  ECONOMY,
   PASSIVES,
   PASSIVE_TREE,
   SCENES,
   SCRIM,
-  SHARD,
   TEXT,
-  TEXTURES,
   type PassiveId,
 } from '@/config';
 import { fill, passiveDetail, passiveName, t } from '@/i18n';
@@ -59,7 +56,7 @@ const DRAG_FROM_PX = 6;
  * The root holds the points in hand; every line hangs from it or from the
  * line its `requires` names, and opens once that one holds enough ranks. A
  * ring round each node fills as its ranks are bought. Tap a node to pick it
- * and again to spend, or use 투자; the gold-for-a-shard shop sits beside it.
+ * and again to spend, or use 투자.
  * The shape is read off `PASSIVES`, so a new line places itself.
  *
  * The tree is drawn by a camera of its own (`treeCam`) whose viewport is the
@@ -72,17 +69,16 @@ export class PassiveScene extends Phaser.Scene {
   public static readonly KEY = SCENES.passives;
   /** The way out in the corner. Public so a test can press it. */
   public backButton?: BackButton;
-  /** Points, shards and gold in hand. Public for tests. */
+  /** Points and gold in hand. Public for tests. */
   public purse!: Phaser.GameObjects.Text;
   /** Every node, by its line. Public so a test can read and press one. */
   public nodes = new Map<PassiveId, PassiveNode>();
   /** What the picked node is and does. Public for tests. */
   public detail!: Phaser.GameObjects.Text;
-  /** What is being pointed at: an index into the lines, or `ALL_PASSIVES.length` for the shop. */
+  /** What is being pointed at: an index into the lines. */
   public focused = 0;
-  /** The 투자 and shop buttons. Public for tests. */
+  /** The 투자 button. Public for tests. */
   public spendButton!: PassiveButton;
-  public shopButton!: PassiveButton;
   /** The camera the tree is seen through; its scroll is where the tree has been dragged to. Public for tests. */
   public treeCam!: Phaser.Cameras.Scene2D.Camera;
 
@@ -132,8 +128,7 @@ export class PassiveScene extends Phaser.Scene {
     this.add.rectangle(0, 0, width, height, 0x05070b, SCRIM.reading).setOrigin(0, 0).setDepth(DEPTH.ui);
     fitText(text(width / 2, TITLE_Y, copy.title, TEXT.size.screen, COLORS.text), width - 220);
 
-    this.add.image(0, PURSE_Y, TEXTURES.shard).setDisplaySize(20, 20).setDepth(DEPTH.ui + 2).setName('purseShard');
-    this.purse = text(width / 2, PURSE_Y, '', TEXT.size.hint, COLORS.shardText);
+    this.purse = text(width / 2, PURSE_Y, '', TEXT.size.hint, COLORS.gearText);
 
     const below = height - FOOTER - 8 - BELOW;
     this.view.setTo(8, VIEW_TOP, width - 16, below - VIEW_TOP - 4);
@@ -158,18 +153,8 @@ export class PassiveScene extends Phaser.Scene {
 
     const buttonY = below + 54 + 20;
     const buttonW = Math.min(220, Math.floor((width - 48) / 2));
-    this.spendButton = this.button(width / 2 - buttonW / 2 - 6, buttonY, buttonW, copy.spend, () => this.spend(this.picked));
-    this.shopButton = this.button(
-      width / 2 + buttonW / 2 + 6,
-      buttonY,
-      buttonW,
-      fill(copy.buyShard, { price: ECONOMY.shardPrice }),
-      () => {
-        this.focused = ALL_PASSIVES.length;
-        this.buy();
-      },
-    );
-    this.shopButton.plate.on(Phaser.Input.Events.GAMEOBJECT_POINTER_OVER, () => this.point(ALL_PASSIVES.length));
+    // The shop beside it went with the 신성한 조각 (0.83).
+    this.spendButton = this.button(width / 2, buttonY, buttonW, copy.spend, () => this.spend(this.picked));
 
     fitText(
       text(width / 2, height - FOOTER / 2, prefersTouchControls() ? copy.hintTouch : copy.hintKeyboard, TEXT.size.hint, COLORS.muted),
@@ -281,11 +266,6 @@ export class PassiveScene extends Phaser.Scene {
     );
   }
 
-  /** Whether the shop can sell a shard now. Public for tests. */
-  public get shopOpen(): boolean {
-    return gold.value >= ECONOMY.shardPrice;
-  }
-
   /** What a tap on a node does: the first picks it, the next spends. Public so a test can tap. */
   public press(id: PassiveId): void {
     const index = ALL_PASSIVES.findIndex((spec) => spec.id === id);
@@ -301,12 +281,6 @@ export class PassiveScene extends Phaser.Scene {
     this.picked = id;
     this.focused = ALL_PASSIVES.findIndex((spec) => spec.id === id);
     passives.spend(id);
-    this.refresh();
-  }
-
-  /** Gold for a shard — the slow, certain road to a point. Public so a test can. */
-  public buy(): void {
-    passives.buyShard();
     this.refresh();
   }
 
@@ -446,7 +420,7 @@ export class PassiveScene extends Phaser.Scene {
   private refresh(): void {
     const copy = t().passives;
     const g = this.drawn.clear();
-    const { points, shards } = passives.value;
+    const { points } = passives.value;
 
     // Branches first, under the nodes: lit where a rank went in, faint where shut.
     // Where a branch leaves a node (under its name, or off its right side
@@ -536,16 +510,13 @@ export class PassiveScene extends Phaser.Scene {
     this.detail.setScale(1).setText(status ? `${head} · ${what}\n${status}` : `${head} · ${what}`);
     fitText(this.detail, this.scale.width - 24, 0);
 
-    // The purse: points (when there are any), shards towards the next, gold.
+    // The purse: points (when there are any) and gold.
     const parts = [
       ...(points > 0 ? [fill(copy.points, { points })] : []),
-      fill(copy.shards, { held: shards, need: SHARD.perOrb }),
       fill(copy.goldHeld, { gold: gold.value }),
     ];
     this.purse.setText(parts.join('   ·   '));
     fitText(this.purse.setScale(1), this.scale.width - 40);
-    const icon = this.children.getByName('purseShard') as Phaser.GameObjects.Image | null;
-    icon?.setX(this.purse.x - this.purse.displayWidth / 2 - 14);
 
     const paint = (button: PassiveButton, on: boolean, focused: boolean) => {
       button.plate.setFillStyle(focused ? COLORS.panelActive : COLORS.panel, 1);
@@ -553,7 +524,6 @@ export class PassiveScene extends Phaser.Scene {
       button.label.setAlpha(on ? 1 : 0.45);
     };
     paint(this.spendButton, PassiveScene.buyable(this.picked), false);
-    paint(this.shopButton, this.shopOpen, this.focused === ALL_PASSIVES.length);
   }
 
   /** Arrows between nodes by where they sit (the shop is under them), Space to act, Esc out. */
@@ -568,7 +538,6 @@ export class PassiveScene extends Phaser.Scene {
         const node = this.nodes.get(spec.id)!;
         return { x: this.view.x + node.x - this.treeCam.scrollX, y: this.view.y + node.y - this.treeCam.scrollY };
       }),
-      { x: this.shopButton.plate.x, y: this.shopButton.plate.y },
     ];
     const step = (dx: number, dy: number): void => {
       const all = spots();
@@ -619,8 +588,6 @@ export class PassiveScene extends Phaser.Scene {
           const spec = ALL_PASSIVES[this.focused];
           if (spec) {
             this.spend(spec.id);
-          } else {
-            this.buy();
           }
           break;
         }

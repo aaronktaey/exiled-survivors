@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 
-import { COLORS, DEPTH, HUD, SKILL_ICONS, SKILL_MASTERY, TEXT, TEXTURES } from '@/config';
+import { COLORS, DEPTH, HUD, SKILL_ICONS, TEXT, TEXTURES } from '@/config';
 import { fill, masteryText, t } from '@/i18n';
 import type { Progression } from '@/systems/Progression';
 import { SKILLS, type SkillId } from '@/weapons/skills';
@@ -13,6 +13,8 @@ export interface LoadoutEntry {
   readonly name: string;
   /** Picks taken on this skill, the pickup included. */
   readonly level: number;
+  /** How far it is awakened (GameScene.masteryOf): 0, 1 or 2. Only the main skill ever is. */
+  readonly mastery: 0 | 1 | 2;
   /** Damage per second, counting everything the skill touches at once. */
   readonly dps: number;
   /** The lines of its hover card: how that DPS is reached, step by step. */
@@ -311,9 +313,9 @@ export class Hud {
         slot.icon.setTexture(key).setDisplaySize(SLOT - 8, SLOT - 8);
       }
       slot.level.setText(String(entry.level));
-      // 각성: gold round the icon and on the number.
-      const mastered = entry.level >= SKILL_MASTERY.level;
-      slot.plate.setStrokeStyle(mastered ? 2 : 1, mastered ? MASTERY_GOLD : COLORS.panelEdge, 1);
+      // 각성: gold round the icon and on the number — thicker at the second.
+      const mastered = entry.mastery >= 1;
+      slot.plate.setStrokeStyle(entry.mastery === 2 ? 3 : mastered ? 2 : 1, mastered ? MASTERY_GOLD : COLORS.panelEdge, 1);
       slot.level.setColor(mastered ? '#ffd76a' : COLORS.text);
     });
 
@@ -437,7 +439,8 @@ export class Hud {
     this.cardText.setText([
       `${entry.name}  ${fill(copy.level, { level: entry.level })}`,
       ...entry.breakdown,
-      ...(entry.level >= SKILL_MASTERY.level ? [fill(t().mastery.card, { effect: masteryText(entry.id) })] : []),
+      ...(entry.mastery >= 1 ? [fill(t().mastery.card, { effect: masteryText(entry.id) })] : []),
+      ...(entry.mastery >= 2 ? [fill(t().mastery.card2, { effect: masteryText(entry.id, 2) })] : []),
     ]);
 
     // Under the bar, starting at the skill.

@@ -112,12 +112,12 @@ const rule = await run(`
   // kill can draw from is filled once first, with the real roll — the
   // pinned kills below then only reuse what is there.
   const P = s.player, cmb = s.combat;
-  cmb.dropPotionAt(P.x, P.y); cmb.dropMangoAt(P.x, P.y); cmb.dropMagnetAt(P.x, P.y); cmb.dropShardAt(P.x, P.y);
+  cmb.dropPotionAt(P.x, P.y); cmb.dropMangoAt(P.x, P.y); cmb.dropMagnetAt(P.x, P.y);
   cmb.dropOrbAt(P.x, P.y, 'chaos'); cmb.dropBoneAt(P.x, P.y, 'rib'); cmb.dropRandomSkillAt(P.x, P.y);
   cmb.dropAltarAt(P.x, P.y + 300, 'bosses');
   cmb.dropSkillAt(P.x, P.y, { id: 'fireball' });
   cmb.dropGearAt(P.x, P.y, { uid: 'warm', id: 'rustySword', prefixes: [], suffixes: [] });
-  [cmb.potions, cmb.mangoDrops, cmb.magnetDrops, cmb.shardDrops, cmb.orbDrops, cmb.boneDrops, cmb.randomSkillDrops,
+  [cmb.potions, cmb.mangoDrops, cmb.magnetDrops, cmb.orbDrops, cmb.boneDrops, cmb.randomSkillDrops,
    cmb.altars, cmb.skillDrops, cmb.gearDrops].forEach((g) => g.getChildren().forEach((d) => d.active && d.collect()));
   const c = window.config;
   const was = { potion: c.POTION.chance, mango: c.MANGO.chance };
@@ -203,6 +203,11 @@ const capped = await run(`
   const max = window.config.UPGRADE_MAX_PICKS;
   for (let i = 0; i < 30; i++) { s.progression.apply(id, 'damage'); s.progression.apply(id, 'attackSpeed'); }
   const st = s.progression.statsFor(id);
+  const two = { damage: st.damage, attackSpeed: st.attackSpeed };
+  // Every other pick the skill lists too (타격's 공격 범위 since 0.83), so it has nothing left.
+  for (const u of s.weapons.find((w) => w.definition.id === id).definition.upgrades) {
+    for (let i = 0; i < 30; i++) s.progression.apply(id, u);
+  }
   const step = (u) => base[u] * window.config.UPGRADE_PERCENT[u];
   // Count the level-up popups that would open now: 타격 has nothing left.
   s.owned.clear(); s.owned.add(id);
@@ -211,7 +216,7 @@ const capped = await run(`
   s.onLevelUp(s.progression.level);
   s.queueChoice = q;
   s.choosing = false;
-  return { damage: st.damage, attackSpeed: st.attackSpeed,
+  return { damage: two.damage, attackSpeed: two.attackSpeed,
            wantDamage: base.damage + step('damage') * max.damage,
            wantSpeed: base.attackSpeed + step('attackSpeed') * max.attackSpeed,
            max, asked };
@@ -252,7 +257,7 @@ const magnetRate = await run(`
     c.MAGNET.chance = was;
   }
   s.combat.magnetDrops.getChildren().forEach((d) => d.active && d.collect());
-  [s.combat.gems, s.combat.skillDrops, s.combat.potions, s.combat.gearDrops, s.combat.shardDrops, s.combat.orbDrops,
+  [s.combat.gems, s.combat.skillDrops, s.combat.potions, s.combat.gearDrops, s.combat.orbDrops,
    s.combat.boneDrops, s.combat.randomSkillDrops, s.combat.mangoDrops, s.combat.altars]
     .forEach((g) => g.getChildren().forEach((d) => d.active && d.collect()));
   s.choosing = false;
@@ -278,7 +283,6 @@ const magnet = await run(`
   const need = s.progression.xpToNext;
   for (let i = 0; i < 6; i++) { const g = c.gems.get(); const q = at(i); g.drop(q.x, q.y, Math.ceil(need / 3), p); }
   let q = at(0); c.dropOrbAt(q.x, q.y, 'chaos');
-  q = at(1); c.dropShardAt(q.x, q.y);
   q = at(2); c.dropGearAt(q.x, q.y, { uid: 'pulled', id: 'rustySword', prefixes: [], suffixes: [] });
   // What a survivor might be keeping for later: it stays put.
   q = at(3); c.dropPotionAt(q.x, q.y);
@@ -287,7 +291,7 @@ const magnet = await run(`
   q = at(1); c.dropAltarAt(q.x, q.y + 120, 'bosses');
   c.dropMagnetAt(p.x + 60, p.y);
   const before = {
-    gems: c.gems.countActive(true), orbs: window.orbs.count('chaos'), shards: window.passives.value.shards,
+    gems: c.gems.countActive(true), orbs: window.orbs.count('chaos'),
     gear: window.gear.items.some((i) => i.uid === 'pulled'), level: s.progression.level,
     label: c.magnetDrops.getChildren().find((d) => d.active && Math.abs(d.x - p.x - 60) < 2)?.nameplate.text ?? null,
   };
@@ -295,7 +299,7 @@ const magnet = await run(`
   c.onMagnetTouch(p, picked);
   // The very same moment: everything is already taken.
   const after = {
-    gems: c.gems.countActive(true), orbs: window.orbs.count('chaos'), shards: window.passives.value.shards,
+    gems: c.gems.countActive(true), orbs: window.orbs.count('chaos'),
     gear: window.gear.items.some((i) => i.uid === 'pulled'), level: s.progression.level,
     potions: c.potions.countActive(true), mangos: c.mangoDrops.countActive(true),
     magnets: c.magnetDrops.countActive(true), altars: c.altars.countActive(true),
@@ -319,9 +323,9 @@ const later = await run(`
 `);
 console.log('magnet:', JSON.stringify({ magnet, later }));
 check('자석 lies on the ground under its name', magnet.before.label === '자석', `${magnet.before.label}`);
-check('picked up, every gem and item on the map is taken at that instant — the XP, the 구슬, the 조각, the sword',
+check('picked up, every gem and item on the map is taken at that instant — the XP, the 구슬, the sword',
   magnet.after.gems === 0 && magnet.after.level > magnet.before.level &&
-    magnet.after.orbs === magnet.before.orbs + 1 && magnet.after.shards === magnet.before.shards + 1 &&
+    magnet.after.orbs === magnet.before.orbs + 1 &&
     magnet.after.gear === true && magnet.after.toast,
   JSON.stringify(magnet.after));
 check('but what might be kept for later stays: the 포션, the 하얀 망고, the other 자석 and the 제단',

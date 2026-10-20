@@ -34,70 +34,41 @@ await ev(`(() => { localStorage.clear(); return 1; })()`);
 await cdp.send('Page.reload', {});
 await sleep(4500);
 
-// --- 1. 신성한 조각: half of 우두머리 kills, and nothing else ---
-const drops = await run(`
+// --- 1. no 신성한 조각 since 0.83: nothing drops one, nothing makes a point of one ---
+const gone = await run(`
   s.choosing = true;
   s.spawner.clear();
-  s.combat.shardDrops.getChildren().forEach(d => d.active && d.collect());
-
-  for (let i = 0; i < 400; i++) {
+  const before = s.children.list.length;
+  for (let i = 0; i < 100; i++) {
     const e = s.spawner.group.get(600, 600);
     e.spawn(600, 600, s.player, 'grunt');
     s.combat.hit(e, 999999);
   }
-  const fromGrunts = s.combat.shardDrops.countActive(true);
-  s.combat.shardDrops.getChildren().forEach(d => d.active && d.collect());
-
-  const N = 800;
-  let fromBosses = 0;
-  for (let i = 0; i < N; i++) {
+  for (let i = 0; i < 40; i++) {
     const boss = s.spawner.spawnBoss();
     s.combat.hit(boss, 999999);
-    fromBosses += s.combat.shardDrops.countActive(true);
-    s.combat.shardDrops.getChildren().forEach(d => d.active && d.collect());
   }
-
+  const named = s.children.list.filter((o) => o.type === 'Text' && /신성한 조각/.test(o.text)).length;
   s.combat.gearDrops.getChildren().forEach(d => d.active && d.collect());
   s.combat.skillDrops.getChildren().forEach(d => d.active && d.collect());
   s.combat.gems.getChildren().forEach(g => g.active && g.collect());
   s.spawner.clear();
   s.choosing = false;
-  return { fromGrunts, fromBosses, N, rate: Number((fromBosses / N).toFixed(3)), want: window.config.SHARD.chance };
+  const c = window.config;
+  return { named, group: 'shardDrops' in s.combat, drop: typeof s.combat.dropShardAt,
+           add: typeof window.passives.addShard, buy: typeof window.passives.buyShard,
+           dial: c.DIALS.some((d) => d.path.startsWith('SHARD')), table: 'SHARD' in c,
+           filter: c.ALL_FILTER_KEYS.some((key) => key.includes('shard')) };
 `);
-console.log('shards:', JSON.stringify(drops));
-check('400 ordinary kills leave no 신성한 조각', drops.fromGrunts === 0, `${drops.fromGrunts}`);
-check('우두머리 kills leave one at SHARD.chance',
-  Math.abs(drops.rate - drops.want) < 0.06, `${(drops.rate * 100).toFixed(1)}% of ${drops.N}, SHARD.chance ${drops.want}`);
+console.log('shards gone:', JSON.stringify(gone));
+check('no kill, 우두머리 or not, leaves a 신성한 조각, and nothing is there to drop or make one',
+  gone.named === 0 && !gone.group && gone.drop === 'undefined' && gone.add === 'undefined' && gone.buy === 'undefined' &&
+    !gone.dial && !gone.table && !gone.filter, JSON.stringify(gone));
 
-// --- 2. ten shards make a 구슬, which is a point ---
-const counted = await run(`
-  const p = s.player;
-  window.gear ? null : null;
-  const seen = [];
-  for (let i = 0; i < 9; i++) {
-    s.combat.dropShardAt(p.x, p.y);
-  }
-  return { dropped: s.combat.shardDrops.countActive(true) };
-`);
-await sleep(1300);
-const nine = await stored();
-console.log('nine shards:', JSON.stringify(nine), counted.dropped);
-check('nine of them is nine, and no point yet',
-  nine.shards === 9 && nine.points === 0, `${nine.shards} shards, ${nine.points} points`);
-
-await run(`s.combat.dropShardAt(s.player.x, s.player.y); return 1;`);
-await sleep(1000);
-const ten = await stored();
-const banner = await run(`
-  // 전투 알림 are toasts, their text inside the toast.
-  return { lines: [...s.toasts.lines, ...s.children.list.filter(o => o.type === 'Text').map(o => o.text)] };
-`);
-console.log('tenth shard:', JSON.stringify(ten));
-check('the tenth completes a 신성한 구슬, worth one point',
-  ten.shards === 0 && ten.points === 1, `${ten.shards} shards, ${ten.points} points`);
-check('and it says so', banner.lines.some((line) => /신성한 구슬/.test(line)),
-  banner.lines.find((line) => /신성한/.test(line)) ?? 'no banner');
-await shot('passive-01-shards');
+// A point to spend on the tree below: points come only as gifts now.
+await ev(`(() => { window.passives.commit({ points: 1, ranks: {} }); return 1; })()`);
+const one = await stored();
+check('a point held is kept, sealed', one.points === 1, JSON.stringify(one));
 
 // --- 3. the corner icons, not the list ---
 await ev(`(() => { window.game.scene.getScene('GameScene').scene.start('MenuScene'); return 1; })()`);
@@ -252,7 +223,7 @@ check('and the waiting dot goes with it', badgeGone.badge === false);
 // --- 5. 패시브 > 장비 > 전투 내 효과, in that order ---
 await ev(`(() => {
   localStorage.setItem('exiled-survivors:passives:v1', window.sealRecord('exiled-survivors:passives:v1', {
-    shards: 0, points: 0, ranks: { damage: 2, attackSpeed: 1 },
+    points: 0, ranks: { damage: 2, attackSpeed: 1 },
   }));
   localStorage.setItem('exiled-survivors:gear:v2', JSON.stringify({
     items: [
@@ -358,10 +329,10 @@ check('the tree offers 피해, 공격속도, 이동속도 and 행운',
   regen.offered.join(' / '));
 await shot('passive-04-run');
 
-// --- 7. 이동속도 is on the survivor; 행운 is held but does nothing yet ---
+// --- 7. 이동속도 is on the survivor; 행운 raises the drops ---
 const legs = await cdp.evaluate(`(() => {
   localStorage.setItem('exiled-survivors:passives:v1', window.sealRecord('exiled-survivors:passives:v1', {
-    shards: 0, points: 0, ranks: { moveSpeed: 5, luck: 3 } }));
+    points: 0, ranks: { moveSpeed: 5, luck: 3 } }));
   return 1;
 })()`);
 void legs;
@@ -372,14 +343,16 @@ await sleep(4500);
 const moved = await run(`
   const P = window.config.PASSIVES;
   return { speed: s.player.moveSpeed, base: window.config.PLAYER.speed * s.mods.gear.moveSpeedScale,
-           perRank: P.moveSpeed.moveSpeedScale - 1, luck: s.mods.passive.luck, luckPerRank: P.luck.luck };
+           perRank: P.moveSpeed.moveSpeedScale - 1, luck: s.mods.passive.luck, luckPerRank: P.luck.luck,
+           drops: s.combat.hooks.luck() };
 `);
 console.log('legs:', JSON.stringify(moved));
 check('five ranks of 이동속도 move the survivor five ranks faster',
   Math.abs(moved.speed - moved.base * (1 + 5 * moved.perRank)) < 1e-6,
   `${moved.speed.toFixed(1)} against ${moved.base}`);
-check('three ranks of 행운 are counted, for when it starts to matter',
-  Math.abs(moved.luck - 3 * moved.luckPerRank) < 1e-9, `${moved.luck}`);
+check('three ranks of 행운 raise what drops by three ranks (0.83), multiplied in',
+  Math.abs(moved.luck - 3 * moved.luckPerRank) < 1e-9 && Math.abs(moved.drops - (1 + 3 * moved.luckPerRank)) < 1e-9,
+  `${moved.luck} → ×${moved.drops}`);
 
 console.log('\n=== SUMMARY ===');
 const failed = results.filter((r) => !r.p);

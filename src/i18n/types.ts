@@ -87,8 +87,6 @@ export interface Strings {
     readonly title: string;
     /** Points in hand, waiting to be spent. */
     readonly points: string;
-    /** Progress towards the next one: {held} of {need} shards. */
-    readonly shards: string;
     /** A line's rank, as "3 / 10". */
     readonly rank: string;
     readonly maxed: string;
@@ -97,10 +95,6 @@ export interface Strings {
     readonly noPoints: string;
     readonly hintKeyboard: string;
     readonly hintTouch: string;
-    /** What one 신성한 조각 is called, over it on the ground. */
-    readonly shardName: string;
-    /** The shop row: a shard for {price} gold. */
-    readonly buyShard: string;
     /** Gold in the purse. */
     readonly goldHeld: string;
     /** Under the root of the tree, over the points in it. */
@@ -118,9 +112,9 @@ export interface Strings {
     readonly icon: string;
     readonly lead: string;
     readonly sections: { readonly supplies: string; readonly orbs: string; readonly bones: string; readonly rarity: string; readonly bases: string };
-    readonly items: { readonly potion: string; readonly skill: string; readonly randomSkill: string; readonly mango: string; readonly magnet: string; readonly shard: string };
+    readonly items: { readonly potion: string; readonly skill: string; readonly randomSkill: string; readonly mango: string; readonly magnet: string };
     /** The same, short enough to sit under an icon. */
-    readonly itemsShort: { readonly potion: string; readonly skill: string; readonly randomSkill: string; readonly mango: string; readonly magnet: string; readonly shard: string };
+    readonly itemsShort: { readonly potion: string; readonly skill: string; readonly randomSkill: string; readonly mango: string; readonly magnet: string };
     readonly rarity: { readonly normal: string; readonly magic: string; readonly rare: string };
     readonly shown: string;
     readonly hidden: string;
@@ -146,6 +140,18 @@ export interface Strings {
       readonly voidOrb: string;
       readonly thunderStrike: string;
     };
+    /** 2차 각성 (SKILL_MASTERY.second): its banner, its card line, and one line a skill. */
+    readonly title2: string;
+    readonly card2: string;
+    /** {arc} {delay} {blastShare} {forks} {chilled} {innerShare} {splashShare} filled from SKILL_MASTERY.second. */
+    readonly effects2: {
+      readonly meleeStrike: string;
+      readonly fireball: string;
+      readonly chainLightning: string;
+      readonly iceSpear: string;
+      readonly voidOrb: string;
+      readonly thunderStrike: string;
+    };
   };
   /** 밸런스: the admin's dial panel. */
   readonly tuning: {
@@ -164,6 +170,8 @@ export interface Strings {
       readonly pierceCount: string;
       readonly orbCount: string;
       readonly orbitSpeed: string;
+      readonly blastRadius: string;
+      readonly recastChance: string;
       readonly damageScale: string;
     };
     /** By dial path, for the dials that are not a skill's stat or a 구슬 · 뼈다귀 · 검. */
@@ -636,10 +644,6 @@ export interface Strings {
     /** 자석: its label on the ground, and the line when it is picked up. */
     readonly magnet: string;
     readonly magnetPulled: string;
-    /** 신성한 조각 picked up: {held} of {need} towards the next 구슬. */
-    readonly shardFound: string;
-    /** ...and the one that completed it. */
-    readonly orbMade: string;
     readonly pickedUp: string;
     readonly enhancedPickup: string;
     /** The plate over a 제단: {enemies} is what it will call up. */
@@ -691,7 +695,9 @@ export interface Strings {
     | 'orbitSpeed'
     | 'chainCount'
     | 'pierceCount'
-    | 'orbCount',
+    | 'orbCount'
+    | 'blastRadius'
+    | 'recastChance',
     { readonly label: string; readonly detail: string }
   >;
 

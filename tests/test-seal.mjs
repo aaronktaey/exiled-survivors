@@ -39,8 +39,8 @@ await sleep(1500);
 const written = await ev(`(() => {
   const s = window.game.scene.getScene('GameScene');
   s.writeSave();
-  window.passives.buyShard?.();
-  window.passives.addShard();
+  // A point held is a change to the tree like any other (신성한 조각 went in 0.83).
+  window.passives.commit({ points: 1, ranks: {} });
   const save = localStorage.getItem('${SAVE}'), tree = localStorage.getItem('${TREE}');
   return { save: JSON.parse(save)._s !== undefined, tree: JSON.parse(tree)._s !== undefined,
            saveOpen: window.openRecord('${SAVE}', save).state, treeOpen: window.openRecord('${TREE}', tree).state };
@@ -71,7 +71,7 @@ await ev(`(() => {
 })()`);
 await reload();
 const tree = await ev(`(() => window.passives.value)()`);
-check('a tree edited by hand starts over', tree.points === 0 && tree.shards === 0, JSON.stringify(tree));
+check('a tree edited by hand starts over', tree.points === 0 && Object.keys(tree.ranks).length === 0, JSON.stringify(tree));
 
 // --- 4. records from before the seal: taken and sealed in the grace, refused after ---
 await ev(`(() => {

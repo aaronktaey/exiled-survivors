@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 
-import { COLORS, DEPTH, MELEE } from '@/config';
+import { COLORS, DEPTH, MELEE, SKILL_MASTERY } from '@/config';
 import type { Enemy } from '@/entities/Enemy';
 import { sfx } from '@/systems/Sfx';
 import { SKILLS } from '@/weapons/skills';
@@ -79,7 +79,9 @@ export class MeleeStrike implements Weapon {
   private swing(context: WeaponContext, target: Phaser.GameObjects.Components.Transform): void {
     const { origin, range } = context;
     const angle = Phaser.Math.Angle.Between(origin.x, origin.y, target.x, target.y);
-    const halfArc = MELEE.arcRadians / 2;
+    // 2차 각성: the swing opens to SKILL_MASTERY.second.meleeArcDegrees.
+    const arc = context.masteredTwice ? Phaser.Math.DegToRad(SKILL_MASTERY.second.meleeArcDegrees) : MELEE.arcRadians;
+    const halfArc = arc / 2;
 
     this.showFlash(origin.x, origin.y, angle, halfArc, range);
     sfx.playSkill(this.scene, this.definition.id);

@@ -58,11 +58,11 @@ const plain = await run(`
 
   s.combat.dropSkillAt(s.player.x + 300, s.player.y,
     { id: 'fireball', name: '화염구', tags: [] });
-  s.combat.dropShardAt(s.player.x + 320, s.player.y);
+  s.combat.dropOrbAt(s.player.x + 320, s.player.y, 'chaos');
 
   const calls = window.__plays.slice();
   mgr.play = orig;
-  s.combat.shardDrops.getChildren().forEach(d => d.active && d.collect());
+  s.combat.orbDrops.getChildren().forEach(d => d.active && d.collect());
   return { calls };
 `);
 console.log('plain drops:', JSON.stringify(plain.calls));
@@ -70,7 +70,7 @@ check('a skill lands on the ordinary clip',
   plain.calls[0]?.key === 'sfx-drop-normal', `key=${plain.calls[0]?.key}`);
 // Its nameplate is the 희귀 one, so its sound is the 희귀 one: the ear and
 // the eye are told the same thing about the same object on the floor.
-check('a 신성한 조각 sounds as rare as it is labelled',
+check('a 혼돈의 구슬 sounds as rare as it is labelled',
   plain.calls[1]?.key === 'sfx-drop-rare', `key=${plain.calls[1]?.key}`);
 check('at the configured volume', plain.calls[0]?.cfg?.volume === 0.55,
   `volume=${plain.calls[0]?.cfg?.volume}`);

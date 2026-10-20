@@ -52,7 +52,7 @@ const shipped = await ev(`(() => {
   const paths = new Set(c.DIALS.map((d) => d.path));
   const want = ['BALANCE.enemyHpScale', 'DIFFICULTY.hpScalePerMinute',
     ...c.DIFFICULTY.hpStepTiers.flatMap((_, i) => ['DIFFICULTY.hpStepTiers.' + i + '.afterMinute', 'DIFFICULTY.hpStepTiers.' + i + '.multiplier']),
-    'SKILL_DROP.chance', 'SKILL_PICK.dropChance', 'POTION.chance', 'MANGO.chance', 'MAGNET.chance', 'ALTAR.fromKill', 'ALTAR.fromBoss', 'SHARD.chance',
+    'SKILL_DROP.chance', 'SKILL_PICK.dropChance', 'POTION.chance', 'MANGO.chance', 'MAGNET.chance', 'ALTAR.fromKill', 'ALTAR.fromBoss',
     ...Object.keys(c.ORBS).filter((id) => !c.ORBS[id].fromBossOnly).map((id) => 'ORBS.' + id + '.chance'),
     ...Object.keys(c.BONES).filter((id) => c.BONES[id].fromKill > 0).map((id) => 'BONES.' + id + '.fromKill'),
     ...Object.keys(c.GEAR).filter((id) => c.GEAR[id].fromKill !== undefined).map((id) => 'GEAR.' + id + '.fromKill'),

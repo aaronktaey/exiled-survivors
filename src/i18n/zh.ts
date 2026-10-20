@@ -32,18 +32,15 @@ export const zh: Strings = {
   passives: {
     title: '被动',
     points: '点数 {points}',
-    shards: '神圣碎片 {held}/{need}',
     rank: '{rank} / {max}',
     maxed: '已满',
     spend: '投入',
-    noPoints: '还没有点数 — 击杀首领以收集神圣碎片。',
+    noPoints: '没有可用的点数。',
     hintKeyboard: '方向键 移动   Space 投入   拖动或滚轮移动技能树   Esc 返回',
     hintTouch: '点击节点选中，再点一次投入 · 拖动以移动技能树',
     root: '点数',
     perRank: '每阶 {detail}',
     locked: '{name} 达到 {rank} 阶后开启',
-    shardName: '神圣碎片',
-    buyShard: '购买神圣碎片  {price} 金币',
     goldHeld: '金币 {gold}',
   },
 
@@ -52,8 +49,8 @@ export const zh: Strings = {
     icon: '过滤',
     lead: '关闭的物品在地上不显示，但走过去照样拾取 · 装备需等级和种类都开启才会显示',
     sections: { supplies: '消耗品', orbs: '宝珠', bones: '骨头', rarity: '装备等级', bases: '装备种类' },
-    items: { potion: '生命药水', skill: '技能', randomSkill: '随机技能', mango: '白芒果', magnet: '磁铁', shard: '神圣碎片' },
-    itemsShort: { potion: '药水', skill: '技能', randomSkill: '随机', mango: '芒果', magnet: '磁铁', shard: '碎片' },
+    items: { potion: '生命药水', skill: '技能', randomSkill: '随机技能', mango: '白芒果', magnet: '磁铁' },
+    itemsShort: { potion: '药水', skill: '技能', randomSkill: '随机', mango: '芒果', magnet: '磁铁' },
     rarity: { normal: '普通', magic: '魔法', rare: '稀有' },
     shown: '显示',
     hidden: '隐藏',
@@ -74,13 +71,23 @@ export const zh: Strings = {
       voidOrb: '缓慢将周围的敌人拉向玩家',
       thunderStrike: '击杀敌人时必定再次落下',
     },
+    title2: '{skill} 二次觉醒！',
+    card2: '二次觉醒 — {effect}',
+    effects2: {
+      meleeStrike: '挥击范围扩大到 {arc}°',
+      fireball: '不再留下火焰地带，被击中的敌人在 {delay} 秒后以火球伤害的 {blastShare} 再次爆炸',
+      chainLightning: '闪电同时分 {forks} 路开始',
+      iceSpear: '对被冷却的敌人伤害提高 {chilled}',
+      voidOrb: '内侧多出一圈反向旋转的球体（伤害 {innerShare}）',
+      thunderStrike: '落点周围的敌人也受到 {splashShare} 的伤害',
+    },
   },
   tuning: {
     title: '平衡',
     icon: '平衡',
     tabs: { skills: '技能', enemies: '敌人', drops: '掉落' },
     common: '所有技能通用',
-    fields: { damage: '伤害', attackSpeed: '每秒攻击', range: '射程', projectileSpeed: '投射物速度', chainCount: '连锁', pierceCount: '贯穿', orbCount: '球数', orbitSpeed: '旋转速度', damageScale: '伤害倍率' },
+    fields: { damage: '伤害', attackSpeed: '每秒攻击', range: '射程', projectileSpeed: '投射物速度', chainCount: '连锁', pierceCount: '贯穿', orbCount: '球数', orbitSpeed: '旋转速度', blastRadius: '爆炸范围', recastChance: '重施几率', damageScale: '伤害倍率' },
     labels: {
       'UPGRADE_PERCENT.damage': '强化伤害 %',
       'UPGRADE_PERCENT.attackSpeed': '强化攻速 %',
@@ -109,7 +116,6 @@ export const zh: Strings = {
       'POTION.chance': '药水',
       'MANGO.chance': '芒果',
       'MAGNET.chance': '磁铁',
-      'SHARD.chance': '神圣碎片',
       'ALTAR.fromKill': '祭坛',
       'RARE.dropBonusPerAffix': '每条稀有词缀加成',
       'BOSS.dropBonus': '首领加成',
@@ -457,8 +463,6 @@ export const zh: Strings = {
     magnetPulled: '磁铁！已拾取地图上的所有物品与经验',
     mangoEaten: '白芒果！{seconds} 秒无敌 · 攻击速度与移动速度 +100%',
     boneFound: '获得{bone}',
-    shardFound: '神圣碎片 {held}/{need}',
-    orbMade: '神圣宝珠完成 — 被动点数 +1',
     pickedUp: '获得 {skill}',
     enhancedPickup: '强化 {skill}',
     altarOffer: '祭坛 · {enemies}',
@@ -502,6 +506,8 @@ export const zh: Strings = {
     chainCount: { label: '连锁次数 +{n}', detail: '{skill}多连锁 {n} 个敌人' },
     pierceCount: { label: '穿透次数 +{n}', detail: '{skill}多穿透 {n} 个敌人' },
     orbCount: { label: '球体数量 +{n}', detail: '{skill}多环绕 {n} 个球体' },
+    blastRadius: { label: '爆炸范围 +{n}%', detail: '{skill}的爆炸范围按基础值扩大 {n}%' },
+    recastChance: { label: '击杀重施 +{n}%', detail: '{skill}击杀敌人后再次落下的几率提高 {n}%' },
   },
 
   names: {
@@ -626,7 +632,7 @@ export const zh: Strings = {
       damage: '伤害 +3%',
       attackSpeed: '攻击速度 +3%',
       moveSpeed: '移动速度 +1%',
-      luck: '幸运 +1%（暂无效果）',
+      luck: '物品掉落率 +1%',
     },
   },
 
@@ -775,13 +781,8 @@ export const zh: Strings = {
         {
           title: '技能觉醒',
           lines: [
-            '技能达到 {masteryLevel} 级时觉醒，额外获得一个效果。觉醒的瞬间会在画面上醒目提示，图标变为金框。',
-            '打击 — 同时摧毁攻击范围内的敌方投射物。',
-            '火球 — 在爆炸处留下持续 {fireZoneSecs} 秒的火焰地带，每秒造成火球伤害的 {fireZoneShare}。',
-            '连锁闪电 — 可以再次连锁到已经击中过的敌人。',
-            '冰枪 — 命中已被冷却的敌人时使其冻结 {freezeSecs} 秒。',
-            '虚空球 — 缓慢将周围的敌人拉向玩家。',
-            '落雷 — 击杀敌人时有 {thunderRecast} 几率再次落下。',
+            '主技能在 {masteryLevel} 级觉醒，额外获得一个效果，在 {masteryLevel2} 级二次觉醒再获得一个。之后获得的技能不会觉醒。觉醒的瞬间会在画面上醒目提示，图标变为金框。',
+            '各技能的觉醒效果写在技能页的卡片上。',
           ],
         },
       ],
@@ -848,7 +849,6 @@ export const zh: Strings = {
           title: '首领留下的东西',
           lines: [
             '必定掉落一个技能和一把剑，并有 {altarBoss} 几率留下祭坛。',
-            '有 {shardChance} 几率掉落神圣碎片，神圣碎片只由首领掉落。',
             '其余所有掉落的几率提高 {bossBonus}。',
           ],
         },
@@ -956,12 +956,6 @@ export const zh: Strings = {
             '可能出现的：{altarOffers}。',
           ],
         },
-        {
-          title: '神圣碎片',
-          lines: [
-            '首领有 {shardChance} 几率掉落。集齐 {perOrb} 个变成神圣宝珠，即 {points} 点被动点数。',
-          ],
-        },
       ],
       gear: [
         {
@@ -1007,7 +1001,7 @@ export const zh: Strings = {
         {
           title: '被动',
           lines: [
-            '{perOrb} 个神圣碎片 = 1 个神圣宝珠，1 个宝珠 = {points} 点被动点数。',
+            '所有玩家都已获得足以将所有被动升到满级的点数。',
             '点数在标题画面的被动中使用。被动对每一局始终生效。',
           ],
         },

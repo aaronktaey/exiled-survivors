@@ -36,6 +36,10 @@ export interface WeaponContext {
   readonly orbCount: number;
   /** How fast those orbs travel, in px per second. */
   readonly orbitSpeed: number;
+  /** How far a burst reaches round where it lands, in px (화염구). */
+  readonly blastRadius: number;
+  /** The chance a strike that kills strikes again (낙뢰). */
+  readonly recastChance: number;
   /**
    * Shots beyond the first from a skill that throws, and orbs beyond its own
    * from one that orbits — the weapon's (룬 각인 검). Others ignore it.
@@ -43,8 +47,10 @@ export interface WeaponContext {
   readonly extraProjectiles: number;
   /** Applies damage and resolves the kill (gem and skill drops). */
   readonly hit: (enemy: Enemy, amount: number) => void;
-  /** The skill is at SKILL_MASTERY.level: its 각성 effect is on. */
+  /** The main skill at SKILL_MASTERY.level: its 각성 effect is on. */
   readonly mastered: boolean;
+  /** The main skill at SKILL_MASTERY.second.level: its 2차 각성 is on too. */
+  readonly masteredTwice?: boolean;
   /** The enemies' shots in the air, for a skill that can strike them down (타격). */
   readonly enemyShots: Phaser.Physics.Arcade.Group;
   /**

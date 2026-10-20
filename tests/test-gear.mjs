@@ -355,7 +355,6 @@ const ladder = await run(`
   s.spawner.clear();
   s.combat.skillDrops.getChildren().forEach(d => d.active && d.collect());
   s.combat.gearDrops.getChildren().forEach(d => d.active && d.collect());
-  s.combat.shardDrops.getChildren().forEach(d => d.active && d.collect());
 
   const read = (d) => ({
     text: d.nameplate.text,
@@ -387,11 +386,8 @@ const ladder = await run(`
   out.five = gearAt(['mighty', 'frenzied', 'cruel'], ['swift', 'giant']);
   out.six = gearAt(['mighty', 'frenzied', 'cruel'], ['swift', 'giant', 'magnetic']);
 
-  s.combat.dropShardAt(-800, -800);
-  out.shard = read(s.combat.shardDrops.getChildren().find(d => d.active));
 
   s.combat.gearDrops.getChildren().forEach(d => d.active && d.collect());
-  s.combat.shardDrops.getChildren().forEach(d => d.active && d.collect());
   s.combat.skillDrops.getChildren().forEach(d => d.active && d.collect());
   s.choosing = false;
   return out;
@@ -417,8 +413,6 @@ check('three or four 속성 reads as 마법 — its own colour, no plate',
 check('five or six reads as 희귀 — the loudest colour, still no plate',
   isRare(ladder.five) && isRare(ladder.six),
   `${ladder.five.text} / ${ladder.six.text}`);
-check('a 신성한 조각 is 희귀 whatever else is on the floor',
-  isRare(ladder.shard) && ladder.shard.text === '신성한 조각', ladder.shard.text);
 
 // Visibility goes up with rarity, and never down.
 const steps = [ladder.plain, ladder.three, ladder.five];

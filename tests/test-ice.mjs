@@ -205,7 +205,7 @@ const fire = await run(`
   const p = s.player;
   // The second body stands outside the burst, so a hit on it could only
   // mean the shot went through.
-  const row = [50, 50 + window.config.FIREBALL.blastRadius * 2].map((dx) => {
+  const row = [50, 50 + window.config.SKILL_BASE.fireball.blastRadius * 2].map((dx) => {
     const e = s.spawner.group.get(p.x + dx, p.y);
     e.spawn(p.x + dx, p.y, p);
     e.body.stop();
@@ -217,7 +217,7 @@ const fire = await run(`
   w.sinceShotMs = 99999;
   w.update(16, { origin: p, enemies: s.spawner.group, damage: s.damageOf('fireball'), cooldownMs: 1,
     range: 400, projectileSpeed: st.projectileSpeed, chainCount: 0, pierceCount: st.pierceCount,
-    hit: s.combat.hit });
+    blastRadius: st.blastRadius, hit: s.combat.hit });
   window.__row = row;
   return { launched: true };
 `);
@@ -244,9 +244,10 @@ console.log('popup:', JSON.stringify(choice));
 check('repeat pickup opens the 얼음창 choice',
   choice.open === true && choice.skill === 'iceSpear' && choice.title === '얼음창',
   `title=${choice.title} subtitle=${choice.subtitle}`);
-check('it offers 피해량, 공격속도, 투사체 속도, 관통 횟수',
+// 투사체 속도 went in 0.83: where eight picks took it is the base.
+check('it offers 피해량, 공격속도, 관통 횟수',
   JSON.stringify(choice.cards?.map(c => c.id)) ===
-    JSON.stringify(['damage', 'attackSpeed', 'projectileSpeed', 'pierceCount']),
+    JSON.stringify(['damage', 'attackSpeed', 'pierceCount']),
   `${choice.cards?.map(c => c.label).join(' | ')}`);
 await shot('ice-01-choice');
 
@@ -258,8 +259,8 @@ const onPierce = await popup();
 check('an arrow moves the caret without confirming',
   onPierce.selected === 1 && onPierce.open === true,
   `selected=${onPierce.selected}, popup still open=${onPierce.open}`);
-check('관통 횟수 is the fourth card', onPierce.cards[3].id === 'pierceCount', onPierce.cards[3].label);
-await cdp.tap('Digit4', 52, '4');
+check('관통 횟수 is the third card', onPierce.cards[2]?.id === 'pierceCount', onPierce.cards[2]?.label);
+await cdp.tap('Digit3', 51, '3');
 await sleep(600);
 const after = await run(`return { ice: s.progression.statsFor('iceSpear'), fire: s.progression.statsFor('fireball') };`);
 check('관통 횟수 +1 touches nothing else',

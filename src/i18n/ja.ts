@@ -32,18 +32,15 @@ export const ja: Strings = {
   passives: {
     title: 'パッシブ',
     points: 'ポイント {points}',
-    shards: '神聖な欠片 {held}/{need}',
     rank: '{rank} / {max}',
     maxed: '最大',
     spend: '投資',
-    noPoints: 'ポイントがありません — ボスを倒して神聖な欠片を集めてください。',
+    noPoints: 'ポイントがありません。',
     hintKeyboard: '矢印キー 移動   Space 投資   ドラッグ・ホイールでツリー移動   Esc 戻る',
     hintTouch: 'ノードをタップで選択、もう一度タップで投資 · ドラッグでツリー移動',
     root: 'ポイント',
     perRank: '1 段階ごとに {detail}',
     locked: '{name} {rank} 段階で解放',
-    shardName: '神聖な欠片',
-    buyShard: '神聖な欠片を購入  {price} ゴールド',
     goldHeld: 'ゴールド {gold}',
   },
 
@@ -52,8 +49,8 @@ export const ja: Strings = {
     icon: 'フィルター',
     lead: 'オフにしたアイテムは床に表示されませんが、踏めばそのまま拾えます · 装備は等級と種類の両方がオンのときだけ表示されます',
     sections: { supplies: '消耗品', orbs: '球', bones: '骨', rarity: '装備の等級', bases: '装備の種類' },
-    items: { potion: '回復ポーション', skill: 'スキル', randomSkill: 'ランダムスキル', mango: '白いマンゴー', magnet: '磁石', shard: '神聖な欠片' },
-    itemsShort: { potion: 'ポーション', skill: 'スキル', randomSkill: 'ランダム', mango: 'マンゴー', magnet: '磁石', shard: '欠片' },
+    items: { potion: '回復ポーション', skill: 'スキル', randomSkill: 'ランダムスキル', mango: '白いマンゴー', magnet: '磁石' },
+    itemsShort: { potion: 'ポーション', skill: 'スキル', randomSkill: 'ランダム', mango: 'マンゴー', magnet: '磁石' },
     rarity: { normal: 'ノーマル', magic: 'マジック', rare: 'レア' },
     shown: '表示',
     hidden: '非表示',
@@ -74,13 +71,23 @@ export const ja: Strings = {
       voidOrb: '周りの敵をプレイヤーのほうへゆっくり引き寄せます',
       thunderStrike: '敵を倒すと必ずもう一度落ちます',
     },
+    title2: '{skill} 第二覚醒!',
+    card2: '第二覚醒 — {effect}',
+    effects2: {
+      meleeStrike: '振りの範囲が {arc}° に広がります',
+      fireball: '炎の地帯の代わりに、当たった敵が {delay} 秒後に火球ダメージの {blastShare} でもう一度爆発します',
+      chainLightning: '稲妻が {forks} 本に分かれて始まります',
+      iceSpear: '冷却された敵へのダメージが {chilled} 増えます',
+      voidOrb: '内側に逆回りの球の輪がもう一つできます（ダメージ {innerShare}）',
+      thunderStrike: '落ちた場所の周りの敵にもダメージの {splashShare} を与えます',
+    },
   },
   tuning: {
     title: 'バランス',
     icon: 'バランス',
     tabs: { skills: 'スキル', enemies: '敵', drops: 'ドロップ' },
     common: '全スキル共通',
-    fields: { damage: 'ダメージ', attackSpeed: '毎秒攻撃', range: '射程', projectileSpeed: '投射物速度', chainCount: '連鎖', pierceCount: '貫通', orbCount: '球の数', orbitSpeed: '回転速度', damageScale: 'ダメージ倍率' },
+    fields: { damage: 'ダメージ', attackSpeed: '毎秒攻撃', range: '射程', projectileSpeed: '投射物速度', chainCount: '連鎖', pierceCount: '貫通', orbCount: '球の数', orbitSpeed: '回転速度', blastRadius: '爆発範囲', recastChance: '再発動確率', damageScale: 'ダメージ倍率' },
     labels: {
       'UPGRADE_PERCENT.damage': '強化ダメージ %',
       'UPGRADE_PERCENT.attackSpeed': '強化攻速 %',
@@ -109,7 +116,6 @@ export const ja: Strings = {
       'POTION.chance': 'ポーション',
       'MANGO.chance': 'マンゴー',
       'MAGNET.chance': '磁石',
-      'SHARD.chance': '神聖な欠片',
       'ALTAR.fromKill': '祭壇',
       'RARE.dropBonusPerAffix': 'レア属性ごとのボーナス',
       'BOSS.dropBonus': 'ボスボーナス',
@@ -457,8 +463,6 @@ export const ja: Strings = {
     magnetPulled: '磁石！マップ上のすべてのアイテムと経験値を拾いました',
     mangoEaten: '白いマンゴー！{seconds} 秒間無敵 · 攻撃速度と移動速度 +100%',
     boneFound: '{bone} 入手',
-    shardFound: '神聖な欠片 {held}/{need}',
-    orbMade: '神聖なオーブ完成 — パッシブポイント +1',
     pickedUp: '{skill} 習得',
     enhancedPickup: '{skill} 強化',
     altarOffer: '祭壇 · {enemies}',
@@ -502,6 +506,8 @@ export const ja: Strings = {
     chainCount: { label: '連鎖回数 +{n}', detail: '{skill}が {n} 体多く連鎖します' },
     pierceCount: { label: '貫通回数 +{n}', detail: '{skill}が {n} 体多く貫きます' },
     orbCount: { label: '球の数 +{n}', detail: '{skill}が {n} 個多く周回します' },
+    blastRadius: { label: '爆発範囲 +{n}%', detail: '{skill}の爆発範囲が基本値の {n}% 広がります' },
+    recastChance: { label: '撃破時の再発動 +{n}%', detail: '{skill}が敵を倒したとき再び落ちる確率が {n}% 上がります' },
   },
 
   names: {
@@ -626,7 +632,7 @@ export const ja: Strings = {
       damage: 'ダメージ +3%',
       attackSpeed: '攻撃速度 +3%',
       moveSpeed: '移動速度 +1%',
-      luck: '幸運 +1%（まだ効果なし）',
+      luck: 'アイテムドロップ率 +1%',
     },
   },
 
@@ -777,13 +783,8 @@ export const ja: Strings = {
         {
           title: 'スキル覚醒',
           lines: [
-            'スキルが {masteryLevel} レベルになると覚醒し、効果がもう 1 つ付きます。覚醒した瞬間は画面に大きく表示され、アイコンが金色の枠になります。',
-            '打撃 — 攻撃範囲内の敵の投射物も破壊します。',
-            '火球 — 爆発した場所に {fireZoneSecs} 秒間、炎の地帯を残します。毎秒 火球ダメージの {fireZoneShare}。',
-            '連鎖雷 — すでに当たった敵にも再び連鎖します。',
-            '氷槍 — すでに冷却された敵に当たると {freezeSecs} 秒間凍りつきます。',
-            '虚無球 — 周りの敵をプレイヤーのほうへゆっくり引き寄せます。',
-            '落雷 — 敵を倒すと {thunderRecast} の確率でもう一度落ちます。',
+            'メインスキルは {masteryLevel} レベルで覚醒して効果がもう 1 つ付き、{masteryLevel2} レベルで第二覚醒してさらに 1 つ付きます。後から得たスキルは覚醒しません。覚醒した瞬間は画面に大きく表示され、アイコンが金枠になります。',
+            '各スキルの覚醒効果はスキルのカードに書かれています。',
           ],
         },
       ],
@@ -852,7 +853,6 @@ export const ja: Strings = {
           title: 'ボスが残すもの',
           lines: [
             'スキル 1 つと剣 1 本を必ず落とし、{altarBoss} の確率で祭壇を残します。',
-            '神聖な欠片を {shardChance} の確率で落とします。神聖な欠片はボスだけが落とします。',
             'そのほかのドロップはすべて確率が {bossBonus} 上がります。',
           ],
         },
@@ -960,12 +960,6 @@ export const ja: Strings = {
             '出てくるもの：{altarOffers}。',
           ],
         },
-        {
-          title: '神聖な欠片',
-          lines: [
-            'ボスが {shardChance} の確率で落とします。{perOrb} 個集めると神聖な球になり、パッシブポイント {points} 点になります。',
-          ],
-        },
       ],
       gear: [
         {
@@ -1013,7 +1007,7 @@ export const ja: Strings = {
         {
           title: 'パッシブ',
           lines: [
-            '神聖な欠片 {perOrb} 個で神聖な球 1 個、球 1 個でパッシブポイント {points} 点です。',
+            '全プレイヤーに、すべてのパッシブを最大にできるだけのポイントが配られています。',
             'ポイントはタイトル画面のパッシブで使います。パッシブはすべての回に常に適用されます。',
           ],
         },

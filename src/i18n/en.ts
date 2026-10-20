@@ -32,18 +32,15 @@ export const en: Strings = {
   passives: {
     title: 'Passives',
     points: '{points} points',
-    shards: 'Divine Shards {held}/{need}',
     rank: '{rank} / {max}',
     maxed: 'max',
     spend: 'Spend',
-    noPoints: 'No points yet — kill a Boss and collect Divine Shards.',
+    noPoints: 'No points to spend.',
     hintKeyboard: 'Arrows to move   Space to spend   Drag or wheel to move the tree   Esc to go back',
     hintTouch: 'Tap a node to pick it, tap it again to spend · drag to move the tree',
     root: 'Points',
     perRank: '{detail} a rank',
     locked: 'Opens at {name} rank {rank}',
-    shardName: 'Divine Shard',
-    buyShard: 'Buy a Divine Shard  {price} gold',
     goldHeld: '{gold} gold',
   },
 
@@ -52,8 +49,8 @@ export const en: Strings = {
     icon: 'Filter',
     lead: 'Anything switched off is hidden on the ground but still picked up by walking over it · a weapon shows only when both its rarity and its kind are on',
     sections: { supplies: 'Supplies', orbs: 'Orbs', bones: 'Bones', rarity: 'Rarity', bases: 'Weapons' },
-    items: { potion: 'Potion', skill: 'Skill', randomSkill: 'Random Skill', mango: 'White Mango', magnet: 'Magnet', shard: 'Divine Shard' },
-    itemsShort: { potion: 'Potion', skill: 'Skill', randomSkill: 'Random', mango: 'Mango', magnet: 'Magnet', shard: 'Shard' },
+    items: { potion: 'Potion', skill: 'Skill', randomSkill: 'Random Skill', mango: 'White Mango', magnet: 'Magnet' },
+    itemsShort: { potion: 'Potion', skill: 'Skill', randomSkill: 'Random', mango: 'Mango', magnet: 'Magnet' },
     rarity: { normal: 'Normal', magic: 'Magic', rare: 'Rare' },
     shown: 'shown',
     hidden: 'hidden',
@@ -74,13 +71,23 @@ export const en: Strings = {
       voidOrb: 'Slowly pulls nearby enemies in toward you',
       thunderStrike: 'A kill always calls down another bolt',
     },
+    title2: '{skill} Awakened Again!',
+    card2: 'Second awakening — {effect}',
+    effects2: {
+      meleeStrike: 'The swing widens to {arc}°',
+      fireball: 'In place of the fire zone, what it hits bursts again {delay}s later for {blastShare} of Fireball damage',
+      chainLightning: 'Lightning starts down {forks} paths at once',
+      iceSpear: 'Deals {chilled} more to chilled enemies',
+      voidOrb: 'A second ring of orbs turns the other way inside the first ({innerShare} damage)',
+      thunderStrike: 'Enemies around the strike take {splashShare} of its damage too',
+    },
   },
   tuning: {
     title: 'Balance',
     icon: 'Balance',
     tabs: { skills: 'Skills', enemies: 'Enemies', drops: 'Drops' },
     common: 'Every skill',
-    fields: { damage: 'Damage', attackSpeed: 'Attacks/s', range: 'Range', projectileSpeed: 'Shot speed', chainCount: 'Chains', pierceCount: 'Pierce', orbCount: 'Orbs', orbitSpeed: 'Orbit speed', damageScale: 'Damage ×' },
+    fields: { damage: 'Damage', attackSpeed: 'Attacks/s', range: 'Range', projectileSpeed: 'Shot speed', chainCount: 'Chains', pierceCount: 'Pierce', orbCount: 'Orbs', orbitSpeed: 'Orbit speed', blastRadius: 'Blast radius', recastChance: 'Recast chance', damageScale: 'Damage ×' },
     labels: {
       'UPGRADE_PERCENT.damage': 'Upgrade dmg %',
       'UPGRADE_PERCENT.attackSpeed': 'Upgrade speed %',
@@ -109,7 +116,6 @@ export const en: Strings = {
       'POTION.chance': 'Potion',
       'MANGO.chance': 'Mango',
       'MAGNET.chance': 'Magnet',
-      'SHARD.chance': 'Divine shard',
       'ALTAR.fromKill': 'Altar',
       'RARE.dropBonusPerAffix': 'Bonus per rare affix',
       'BOSS.dropBonus': 'Boss bonus',
@@ -457,8 +463,6 @@ export const en: Strings = {
     magnetPulled: 'Magnet! Every item and XP gem on the map is yours',
     mangoEaten: 'White Mango! Untouchable for {seconds}s · attack and move speed +100%',
     boneFound: 'Found {bone}',
-    shardFound: 'Divine Shard {held}/{need}',
-    orbMade: 'A Divine Orb — one passive point',
     pickedUp: '{skill} acquired',
     enhancedPickup: '{skill} upgraded',
     altarOffer: 'Altar · {enemies}',
@@ -502,6 +506,8 @@ export const en: Strings = {
     chainCount: { label: 'Chains +{n}', detail: '{skill} jumps to {n} more enemy' },
     pierceCount: { label: 'Pierce +{n}', detail: '{skill} passes through {n} more enemy' },
     orbCount: { label: 'Orbs +{n}', detail: '{skill} keeps {n} more orb in the air' },
+    blastRadius: { label: 'Blast radius +{n}%', detail: '{skill} bursts {n}% wider than its base radius' },
+    recastChance: { label: 'Recast on kill +{n}%', detail: '{skill} strikes again after a kill {n} points more often' },
   },
 
   names: {
@@ -626,7 +632,7 @@ export const en: Strings = {
       damage: 'Damage +3%',
       attackSpeed: 'Attack speed +3%',
       moveSpeed: 'Move speed +1%',
-      luck: 'Luck +1% (no effect yet)',
+      luck: 'Item drop rate +1%',
     },
   },
 
@@ -777,13 +783,8 @@ export const en: Strings = {
         {
           title: 'Awakening',
           lines: [
-            'A skill that reaches level {masteryLevel} awakens and gains one more effect. The moment it happens is announced across the screen, and its icon turns gold.',
-            'Strike — also destroys enemy projectiles within its reach.',
-            'Fireball — leaves a fire zone for {fireZoneSecs}s where it bursts, at {fireZoneShare} of its damage per second.',
-            'Chain Lightning — can chain back to enemies it has already struck.',
-            'Ice Spear — freezes an already chilled enemy solid for {freezeSecs}s.',
-            'Void Orb — slowly pulls nearby enemies in toward you.',
-            'Thunderstrike — a kill calls down another bolt {thunderRecast} of the time.',
+            'The main skill awakens at level {masteryLevel}, gaining one more effect, and again at level {masteryLevel2}. Skills found later never awaken. The moment it happens is announced across the screen, and its icon turns gold.',
+            'Each skill\'s awakenings are listed on its card under Skills.',
           ],
         },
       ],
@@ -852,7 +853,6 @@ export const en: Strings = {
           title: 'What a Boss leaves',
           lines: [
             'A skill and a sword every time, and an altar {altarBoss} of the time.',
-            'A Divine Shard {shardChance} of the time — only Bosses drop them.',
             'Every other drop is {bossBonus} more likely.',
           ],
         },
@@ -960,12 +960,6 @@ export const en: Strings = {
             'What it can call: {altarOffers}.',
           ],
         },
-        {
-          title: 'Divine Shard',
-          lines: [
-            'Bosses drop one {shardChance} of the time. {perOrb} make a Divine Orb, which is {points} passive point.',
-          ],
-        },
       ],
       gear: [
         {
@@ -1013,7 +1007,7 @@ export const en: Strings = {
         {
           title: 'Passives',
           lines: [
-            '{perOrb} Divine Shards make a Divine Orb, and an orb is {points} passive point.',
+            'Every player has been given enough points to max every passive.',
             'Spend points from Passives on the title screen. Passives apply to every run.',
           ],
         },

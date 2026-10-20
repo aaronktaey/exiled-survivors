@@ -3,9 +3,9 @@ import { ECONOMY, STORAGE } from '@/config';
 type Listener = (gold: number) => void;
 
 /**
- * The purse. It is paid out of how much damage a run dealt and spent on
- * 신성한 조각, so a run that ended badly still moved the passive tree
- * forward — which is what makes a run you lose worth playing.
+ * The purse. It is paid out of how much damage a run dealt. Since 0.83 it
+ * buys nothing (the 신성한 조각 it bought went); the user put taking it out
+ * on hold, so it is still earned and shown.
  *
  * Kept beside the stash and the tree: all three outlive a run on purpose.
  */

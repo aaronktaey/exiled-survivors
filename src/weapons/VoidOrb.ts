@@ -30,6 +30,8 @@ export class VoidOrb implements Weapon {
 
   private readonly scene: Phaser.Scene;
   private readonly orbs: Phaser.GameObjects.Image[] = [];
+  /** 2차 각성: the ring inside, turning the other way. Public for tests. */
+  public readonly inner: Phaser.GameObjects.Image[] = [];
   /**
    * Re-hit timers by enemy, one per orb: an orb does not hit the same enemy
    * again inside the cooldown, but every orb that sweeps through it does.
@@ -56,7 +58,9 @@ export class VoidOrb implements Weapon {
 
     const count = orbsHeld(context.orbCount, context.extraProjectiles ?? 0);
     const radius = Math.max(1, context.range);
-    this.sync(count);
+    const innerCount = context.masteredTwice ? count : 0;
+    this.sync(this.orbs, count);
+    this.sync(this.inner, innerCount);
 
     // Screen y grows downward, so a growing angle sweeps clockwise.
     const angularSpeed = context.orbitSpeed / radius;
@@ -75,11 +79,21 @@ export class VoidOrb implements Weapon {
       const orbAngle = this.angle + (i / count) * TAU;
       this.orbs[i]?.setPosition(x + Math.cos(orbAngle) * radius, y + Math.sin(orbAngle) * radius);
     }
+    // 2차 각성: the inner ring, the other way round, offset half a gap.
+    const { radiusShare, damageShare } = SKILL_MASTERY.second.voidInner;
+    for (let i = 0; i < innerCount; i++) {
+      const orbAngle = -this.angle + ((i + 0.5) / innerCount) * TAU;
+      this.inner[i]?.setPosition(x + Math.cos(orbAngle) * radius * radiusShare, y + Math.sin(orbAngle) * radius * radiusShare);
+    }
 
     if (context.mastered) {
       this.pull(context, count, delta);
     }
-    this.sweep(context, count);
+    this.sweep(context, this.orbs, count, 0, context.damage);
+    if (innerCount > 0) {
+      // Keys past the outer ring's, so the two rings keep their own timers.
+      this.sweep(context, this.inner, innerCount, 1000, context.damage * damageShare);
+    }
   }
 
   /**
@@ -107,10 +121,10 @@ export class VoidOrb implements Weapon {
     }
   }
 
-  /** Grows or hides orbs so exactly `count` of them are in the air. */
-  private sync(count: number): void {
-    while (this.orbs.length < count) {
-      this.orbs.push(
+  /** Grows or hides a ring's orbs so exactly `count` of them are in the air. */
+  private sync(orbs: Phaser.GameObjects.Image[], count: number): void {
+    while (orbs.length < count) {
+      orbs.push(
         this.scene.add
           .image(0, 0, TEXTURES.voidOrb)
           .setDepth(DEPTH.projectiles)
@@ -118,11 +132,11 @@ export class VoidOrb implements Weapon {
       );
     }
 
-    this.orbs.forEach((orb, index) => orb.setVisible(index < count));
+    orbs.forEach((orb, index) => orb.setVisible(index < count));
   }
 
   /** Damages everything an orb is touching: each orb at most once per cooldown on each enemy. */
-  private sweep(context: WeaponContext, count: number): void {
+  private sweep(context: WeaponContext, orbs: readonly Phaser.GameObjects.Image[], count: number, key: number, damage: number): void {
     // Copy first: a kill recycles the enemy and mutates the group's list.
     for (const child of [...context.enemies.getChildren()]) {
       const enemy = child as Enemy;
@@ -133,11 +147,11 @@ export class VoidOrb implements Weapon {
       const reach = VOID_ORB.radius + VOID_ORB.hitPadding + (ENEMY_KINDS[enemy.kind].size / 2);
       let records = this.hits.get(enemy);
       for (let i = 0; i < count && enemy.active; i++) {
-        const orb = this.orbs[i];
+        const orb = orbs[i];
         if (!orb || Phaser.Math.Distance.Between(orb.x, orb.y, enemy.x, enemy.y) > reach) {
           continue;
         }
-        const record = records?.get(i);
+        const record = records?.get(key + i);
         if (record !== undefined && record.life === enemy.lives && this.elapsedMs < record.readyAt) {
           continue;
         }
@@ -145,8 +159,8 @@ export class VoidOrb implements Weapon {
           records = new Map();
           this.hits.set(enemy, records);
         }
-        records.set(i, { life: enemy.lives, readyAt: this.elapsedMs + context.cooldownMs });
-        context.hit(enemy, context.damage);
+        records.set(key + i, { life: enemy.lives, readyAt: this.elapsedMs + context.cooldownMs });
+        context.hit(enemy, damage);
         // Held well apart by its own gap, or an orbit would drone.
         sfx.playSkill(this.scene, this.definition.id);
       }

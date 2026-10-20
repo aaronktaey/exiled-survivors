@@ -39,7 +39,7 @@ wrong shape.
 | `src/config/balance.ts` | ★ the tuning file. Enemies, skills, 속성 and their tier ladders, the difficulty ramp. The user edits this directly. |
 | `src/config/equipment.ts` | weapons (장비) and the 구슬 that change them |
 | `src/config/bones.ts` | 뼈다귀 — what is spent before a run to change that run |
-| `src/config/passives.ts` | the passive tree, bought with 신성한 조각 |
+| `src/config/passives.ts` | the passive tree (points come only as gifts since 0.83) |
 | `src/config/visuals.ts` | colours, depths, text sizes, texture keys, label tiers |
 | `src/config/system.ts` | scene keys, storage keys, separation, tilt, timing |
 | `src/entities/` | Player, Enemy, and everything that lies on the ground |
@@ -187,8 +187,16 @@ Read `git log` for what changed and when. What is not in the log:
   pickup of any maxed skill) heals a 체력 포션's worth instead
   (`drinkForMaxedSkill`, said plainly: 포션 효과! and the health over the
   survivor, a green burst, a `heal` toast naming the skill) — it never moves
-  on to another skill. Every upgrade has a ceiling now (`UPGRADE_MAX_PICKS`
-  or `UPGRADE_CAP`), so every skill does get there. A skill found
+  on to another skill. Every upgrade stops at its pick count
+  (`UPGRADE_MAX_PICKS`; `UPGRADE_CAP` is empty since 0.83, so what gear adds
+  — an extra orb — comes on top and never counts against it), so every
+  skill does get there. 0.83's picks (the user's): 타격 공격 범위 (`range`,
+  +10% ×5), 화염구 폭발 범위 (`blastRadius`, a SKILL_BASE stat now, +15% ×5),
+  낙뢰 처치 시 재시전 (`recastChance`, base 0.3, +0.1 ×5, shown in points —
+  `UPGRADE_SHOWN_AS_CHANCE`), and 연쇄/관통/구체 수 at five picks each; the
+  투사체 속도 pick is gone, its eight-pick state (speed and reach ×2.2) the
+  base. A save from before is restored no lower than today's base
+  (`GameScene` restore loop). A skill found
   later is upgraded by finding it again. (Level-ups once went to a random skill; the user read that as the
   main skill changing, and asked for this.) With the
   choice off (`#run`, the harness) a run starts on `UNSPUN_SKILL` (타격) so
@@ -482,8 +490,9 @@ Read `git log` for what changed and when. What is not in the log:
   running (`safeNow`), by a reload — never mid-run. A reload that comes back
   on the old build is not retried (sessionStorage). Off on the dev server
   (`current === 'dev'`); test-live drives it through `liveUpdate.found`.
-- **스킬 각성.** `SKILL_MASTERY` (balance.ts): at `level` a skill gets one
-  more effect — `WeaponContext.mastered` is true and each weapon does its own
+- **스킬 각성.** `SKILL_MASTERY` (balance.ts): only the main skill awakens
+  (0.83, `GameScene.masteryOf`: 0, 1 or 2 — a skill found later never does).
+  At `level` it gets one more effect — `WeaponContext.mastered` is true and each weapon does its own
   (타격 strikes `enemyShots` in the swing, 화염구 shots carry `fireZoneDps`
   into `CombatSystem.burnGround`/`tickFireZones`, 연쇄번개 amplifies each
   strike by `chainBonusPerJump` for every jump still to come (it never
@@ -494,7 +503,17 @@ Read `git log` for what changed and when. What is not in the log:
   the way Separation does, 낙뢰 casts
   `thunderRecastChance` — a kill always strikes again, up to `THUNDER.maxRecasts`). Reaching it calls `GameScene.celebrateMastery`
   once (`awakened`, rebuilt from a save without a show); the HUD slot goes
-  gold and its card adds the line (`masteryText`). test-mastery covers it.
+  gold and its card adds the line (`masteryText`). At `second.level` (20)
+  the 2차 각성 (0.83, the user's designs) adds `masteredTwice`: 타격's swing
+  opens to `meleeArcDegrees` (180), 화염구 drops the burning ground and arms
+  a second burst on what it hit (`CombatSystem.armBlast`, ticked with the
+  fire zones, `fireBlast.delayMs` later at `damageShare`), 연쇄번개 starts
+  `chainForks` arcs, 얼음창 deals `iceChilledBonus` more to a chilled enemy,
+  공허구체 gets an inner ring turning the other way (`VoidOrb.inner`,
+  `voidInner`), 낙뢰 splashes `thunderSplash`. It has its own banner
+  (`celebrateMastery(skill, 2)`, `awakenedTwice`), a thicker gold edge and a
+  second card line (`mastery.card2`, `masteryText(id, 2)`); the guide's
+  skill cards list both tiers. test-mastery covers it.
 - **A saved run carries its own weapon.** `SavedRun.gear` is a copy of the
   item the run went out with (`GameScene.runGear`, written by every save);
   a resumed run fights with that, so the 인벤토리 never locks — swapping,
@@ -560,9 +579,15 @@ Read `git log` for what changed and when. What is not in the log:
   1 + `BOSS.dropBonus` for a 우두머리. The 하얀 망고 and the 자석 are the
   exceptions the user asked for: a flat `MANGO.chance` / `MAGNET.chance` off
   every kill. What only a 우두머리 leaves (its
-  certain weapon, shards, a `fromBossOnly` 구슬, a 뼈다귀 with `fromKill: 0`)
+  certain weapon, a `fromBossOnly` 구슬, a 뼈다귀 with `fromKill: 0`)
   and what is certain are not multiplied. A new drop should go through the
-  same `bonus` in `CombatSystem.killEnemy`.
+  same `bonus` in `CombatSystem.killEnemy`. 행운 (the passive, 0.83) is
+  folded into `dropBonus` there (`hooks.luck`, 1 + `passives.bonus.luck`), so
+  it raises exactly what a rare's 속성 raise — the user's scope.
+- **No 신성한 조각 since 0.83.** The drop, its entity, its 필터 switch and
+  dial, the passive screen's gold shop and the shard copy all went (the
+  user's ask). Gold stays — still earned and shown — though nothing spends
+  it: taking it out too is on hold, the user's word.
 - **Weapons by tier — 1 is the best**, the same way round as an 속성's
   tier (the user corrected this once). `attackForTier` counts up from the
   weakest tier. A 우두머리 always leaves one, weighted over the whole `GEAR`

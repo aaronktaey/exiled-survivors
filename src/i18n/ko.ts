@@ -36,18 +36,15 @@ export const ko: Strings = {
   passives: {
     title: '패시브',
     points: '포인트 {points}',
-    shards: '신성한 조각 {held}/{need}',
     rank: '{rank} / {max}',
     maxed: '최대',
     spend: '투자',
-    noPoints: '포인트가 없습니다 — 우두머리를 처치해 신성한 조각을 모으세요.',
+    noPoints: '포인트가 없습니다.',
     hintKeyboard: '방향키 이동   Space 투자   드래그·휠로 트리 이동   Esc 돌아가기',
     hintTouch: '노드를 눌러 고르고, 한 번 더 누르면 투자 · 끌어서 트리 이동',
     root: '포인트',
     perRank: '단계당 {detail}',
     locked: '{name} {rank}단계부터 열림',
-    shardName: '신성한 조각',
-    buyShard: '신성한 조각 구매  {price}골드',
     goldHeld: '골드 {gold}',
   },
 
@@ -56,8 +53,8 @@ export const ko: Strings = {
     icon: '필터',
     lead: '눌러서 끈 아이템은 바닥에서 보이지 않지만 밟으면 그대로 얻습니다 · 장비는 등급과 종류가 모두 켜져 있어야 보입니다',
     sections: { supplies: '소모품', orbs: '구슬', bones: '뼈다귀', rarity: '장비 등급', bases: '장비 종류' },
-    items: { potion: '체력 포션', skill: '스킬', randomSkill: '무작위 스킬', mango: '하얀 망고', magnet: '자석', shard: '신성한 조각' },
-    itemsShort: { potion: '포션', skill: '스킬', randomSkill: '무작위', mango: '망고', magnet: '자석', shard: '조각' },
+    items: { potion: '체력 포션', skill: '스킬', randomSkill: '무작위 스킬', mango: '하얀 망고', magnet: '자석' },
+    itemsShort: { potion: '포션', skill: '스킬', randomSkill: '무작위', mango: '망고', magnet: '자석' },
     rarity: { normal: '일반', magic: '마법', rare: '희귀' },
     shown: '보임',
     hidden: '숨김',
@@ -78,13 +75,23 @@ export const ko: Strings = {
       voidOrb: '주변 적을 플레이어 쪽으로 천천히 끌어당깁니다',
       thunderStrike: '적을 처치하면 반드시 다시 떨어집니다',
     },
+    title2: '{skill} 2차 각성!',
+    card2: '2차 각성 — {effect}',
+    effects2: {
+      meleeStrike: '휘두르기가 {arc}°로 넓어집니다',
+      fireball: '화염지대 대신, 맞은 적이 {delay}초 뒤 화염구 피해의 {blastShare}로 한 번 더 폭발합니다',
+      chainLightning: '번개가 {forks}갈래로 시작합니다',
+      iceSpear: '냉각된 적에게 주는 피해가 {chilled} 늘어납니다',
+      voidOrb: '안쪽에 반대로 도는 구체 고리가 하나 더 생깁니다 (피해 {innerShare})',
+      thunderStrike: '떨어진 자리 주변의 적에게도 피해의 {splashShare}를 줍니다',
+    },
   },
   tuning: {
     title: '밸런스',
     icon: '밸런스',
     tabs: { skills: '스킬', enemies: '적', drops: '드랍' },
     common: '모든 스킬 공통',
-    fields: { damage: '피해', attackSpeed: '초당 공격', range: '사거리', projectileSpeed: '투사체 속도', chainCount: '연쇄', pierceCount: '관통', orbCount: '구체 수', orbitSpeed: '회전 속도', damageScale: '피해 배율' },
+    fields: { damage: '피해', attackSpeed: '초당 공격', range: '사거리', projectileSpeed: '투사체 속도', chainCount: '연쇄', pierceCount: '관통', orbCount: '구체 수', orbitSpeed: '회전 속도', blastRadius: '폭발 범위', recastChance: '재시전 확률', damageScale: '피해 배율' },
     labels: {
       'UPGRADE_PERCENT.damage': '강화 피해 %',
       'UPGRADE_PERCENT.attackSpeed': '강화 공속 %',
@@ -113,7 +120,6 @@ export const ko: Strings = {
       'POTION.chance': '포션',
       'MANGO.chance': '망고',
       'MAGNET.chance': '자석',
-      'SHARD.chance': '신성한 조각',
       'ALTAR.fromKill': '제단',
       'RARE.dropBonusPerAffix': '희귀 속성당 보너스',
       'BOSS.dropBonus': '우두머리 보너스',
@@ -461,8 +467,6 @@ export const ko: Strings = {
     magnetPulled: '자석! 맵의 모든 아이템과 경험치를 주웠습니다',
     mangoEaten: '하얀 망고! {seconds}초간 무적 · 공격속도와 이동속도 +100%',
     boneFound: '{bone} 획득',
-    shardFound: '신성한 조각 {held}/{need}',
-    orbMade: '신성한 구슬 완성 — 패시브 포인트 +1',
     pickedUp: '{skill} 획득',
     enhancedPickup: '{skill} 강화',
     altarOffer: '제단 · {enemies}',
@@ -500,12 +504,14 @@ export const ko: Strings = {
   upgrades: {
     damage: { label: '공격력 +{n}%', detail: '{skill}의 피해가 기본값의 {n}%만큼 늘어납니다' },
     attackSpeed: { label: '공격속도 +{n}%', detail: '{skill}의 초당 공격 횟수가 기본값의 {n}%만큼 늘어납니다' },
-    range: { label: '사정거리 +{n}%', detail: '{skill}의 사정거리가 기본값의 {n}%만큼 늘어납니다' },
+    range: { label: '공격 범위 +{n}%', detail: '{skill}의 공격 범위가 기본값의 {n}%만큼 늘어납니다' },
     projectileSpeed: { label: '투사체 속도 +{n}%', detail: '{skill}{이가} 기본값의 {n}%만큼 더 빠르게, 그만큼 더 멀리 날아갑니다' },
     orbitSpeed: { label: '회전 속도 +{n}%', detail: '{skill}{이가} 기본값의 {n}%만큼 더 빠르게 공전합니다' },
     chainCount: { label: '연쇄 횟수 +{n}', detail: '{skill}{이가} {n}명에게 더 옮겨붙습니다' },
     pierceCount: { label: '관통 횟수 +{n}', detail: '{skill}{이가} {n}명을 더 꿰뚫고 지나갑니다' },
     orbCount: { label: '구체 수 +{n}', detail: '{skill}{이가} {n}개 더 공전합니다' },
+    blastRadius: { label: '폭발 범위 +{n}%', detail: '{skill}의 폭발 범위가 기본값의 {n}%만큼 넓어집니다' },
+    recastChance: { label: '처치 시 재시전 +{n}%', detail: '{skill}{이가} 적을 처치하면 다시 떨어질 확률이 {n}%p 오릅니다' },
   },
 
   guideChapters: {
@@ -655,13 +661,8 @@ export const ko: Strings = {
         {
           title: '스킬 각성',
           lines: [
-            '스킬이 {masteryLevel}레벨이 되면 각성해 효과가 하나 더 붙습니다. 각성하는 순간 화면에 크게 알려 주고, 아이콘이 금테로 바뀝니다.',
-            '타격 — 공격 범위 안의 적 투사체도 파괴합니다.',
-            '화염구 — 터진 자리에 {fireZoneSecs}초 동안 화염지대를 남깁니다. 초당 화염구 피해의 {fireZoneShare}.',
-            '연쇄번개 — 이미 맞은 적에게도 다시 연쇄합니다.',
-            '얼음창 — 이미 냉각된 적을 맞히면 {freezeSecs}초 동안 얼어붙습니다.',
-            '공허구체 — 주변 적을 플레이어 쪽으로 천천히 끌어당깁니다.',
-            '낙뢰 — 적을 처치하면 {thunderRecast} 확률로 다시 떨어집니다.',
+            '메인 스킬이 {masteryLevel}레벨이 되면 각성해 효과가 하나 더 붙고, {masteryLevel2}레벨에 2차 각성으로 또 하나가 붙습니다. 보조로 얻은 스킬은 각성하지 않습니다. 각성하는 순간 화면에 크게 알려 주고, 아이콘이 금테로 바뀝니다.',
+            '각 스킬의 각성 효과는 스킬 탭의 카드에 적혀 있습니다.',
           ],
         },
       ],
@@ -732,7 +733,6 @@ export const ko: Strings = {
           title: '우두머리가 남기는 것',
           lines: [
             '스킬 하나와 검 한 자루를 반드시 떨어뜨리고, {altarBoss} 확률로 제단을 남깁니다.',
-            '신성한 조각을 {shardChance} 확률로 떨어뜨립니다. 신성한 조각은 우두머리만 떨어뜨립니다.',
             '그 밖의 모든 드랍은 확률이 {bossBonus} 올라갑니다.',
           ],
         },
@@ -840,12 +840,6 @@ export const ko: Strings = {
             '나올 수 있는 것: {altarOffers}.',
           ],
         },
-        {
-          title: '신성한 조각',
-          lines: [
-            '우두머리가 {shardChance} 확률로 떨어뜨립니다. {perOrb}개를 모으면 신성한 구슬이 되어 패시브 포인트 {points}점이 됩니다.',
-          ],
-        },
       ],
       gear: [
         {
@@ -893,7 +887,7 @@ export const ko: Strings = {
         {
           title: '패시브',
           lines: [
-            '신성한 조각 {perOrb}개가 신성한 구슬 1개, 구슬 1개가 패시브 포인트 {points}점입니다.',
+            '모든 플레이어가 모든 패시브를 최대로 올릴 수 있는 만큼의 포인트를 받았습니다.',
             '포인트는 시작 화면의 패시브에서 씁니다. 패시브는 모든 판에 늘 적용됩니다.',
           ],
         },

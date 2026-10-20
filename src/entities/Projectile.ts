@@ -20,6 +20,10 @@ export interface LaunchSpec {
   readonly fireZoneDps?: number;
   /** 얼음창 각성: an enemy already under 냉각 is frozen this long. */
   readonly freezeMs?: number;
+  /** 화염구 2차 각성: what it hits bursts again later, for this much. 0 for none. */
+  readonly delayedBlast?: number;
+  /** 얼음창 2차 각성: a share more damage to an enemy already under 냉각. */
+  readonly chilledBonus?: number;
   readonly texture: string;
   /** Drawn size. Width runs along the flight path. */
   readonly width: number;
@@ -40,6 +44,10 @@ export class Projectile extends Phaser.Physics.Arcade.Image {
   public fireZoneDps = 0;
   /** How long a chilled enemy it strikes is frozen. 0 for none. */
   public freezeMs = 0;
+  /** The second burst's damage on what it hits (화염구 2차 각성). 0 for none. */
+  public delayedBlast = 0;
+  /** A share more on an enemy already under 냉각 (얼음창 2차 각성). */
+  public chilledBonus = 0;
 
   private remainingMs = 0;
   /** Enemies left to pass through before it fizzles. */
@@ -58,6 +66,8 @@ export class Projectile extends Phaser.Physics.Arcade.Image {
     this.blastRadius = spec.blastRadius ?? 0;
     this.fireZoneDps = spec.fireZoneDps ?? 0;
     this.freezeMs = spec.freezeMs ?? 0;
+    this.delayedBlast = spec.delayedBlast ?? 0;
+    this.chilledBonus = spec.chilledBonus ?? 0;
     this.pierceLeft = Math.max(0, Math.round(spec.pierce));
     this.struck.clear();
 

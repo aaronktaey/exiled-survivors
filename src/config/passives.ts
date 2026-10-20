@@ -1,10 +1,8 @@
 /**
- * ★ 패시브 — what carries over between runs, bought with what a 우두머리
- * leaves behind.
- *
- * A 우두머리 drops a 신성한 조각 half the time; ten of them make one
- * 신성한 구슬, and one 구슬 is one point. A point buys a rank of one of the
- * two lines below, and the ranks stack.
+ * ★ 패시브 — what carries over between runs. A point buys a rank of one
+ * of the lines below, and the ranks stack. Points came from 신성한 조각
+ * until 0.83; now every player holds enough to fill every line (0.81's
+ * gift), and nothing else gives them.
  *
  * Health regeneration is not one of them, and no longer anywhere else
  * either: life comes back from potions.
@@ -34,8 +32,8 @@ export interface PassiveSpec {
   /** Multiplies the survivor's move speed, per rank. */
   readonly moveSpeedScale?: number;
   /**
-   * 행운, per rank, as a share. Nothing reads it yet — it is bought and
-   * shown now so the points spent on it are there when it starts to count.
+   * 행운, per rank, as a share (0.83): every drop an enemy's 속성 raise is
+   * multiplied by 1 + the sum (CombatSystem.killEnemy).
    */
   readonly luck?: number;
 }
@@ -66,7 +64,7 @@ export const PASSIVES: Record<PassiveId, PassiveSpec> = {
   luck: {
     id: 'luck',
     name: '행운',
-    detail: '행운 +1% (아직 효과 없음)',
+    detail: '아이템 드랍률 +1%',
     maxRank: 10,
     requires: { id: 'moveSpeed', rank: 1 },
     luck: 0.01,
@@ -74,14 +72,3 @@ export const PASSIVES: Record<PassiveId, PassiveSpec> = {
 };
 
 export const ALL_PASSIVES: readonly PassiveSpec[] = Object.values(PASSIVES);
-
-export const SHARD = {
-  /** Share of 우두머리 kills that leave one. */
-  chance: 0.195,
-  /** How many make one 신성한 구슬. */
-  perOrb: 10,
-  /** One 구슬 is worth this many points. */
-  pointsPerOrb: 1,
-  /** How big it is drawn on the ground. */
-  size: 16,
-} as const;

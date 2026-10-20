@@ -101,7 +101,7 @@ const fromKills = await run(`
     s.combat.hit(b, 1e12);
     bossAltars += s.combat.altars.countActive(true);
   }
-  [s.combat.gearDrops, s.combat.skillDrops, s.combat.shardDrops, s.combat.orbDrops, s.combat.gems, s.combat.potions,
+  [s.combat.gearDrops, s.combat.skillDrops, s.combat.orbDrops, s.combat.gems, s.combat.potions,
    s.combat.boneDrops, s.combat.randomSkillDrops, s.combat.mangoDrops, s.combat.magnetDrops]
     .forEach((g) => g.getChildren().forEach((d) => d.active && d.collect()));
   s.spawner.clear();

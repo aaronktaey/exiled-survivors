@@ -34,7 +34,6 @@ import { OrbDrop } from '@/entities/OrbDrop';
 import { RandomSkillDrop } from '@/entities/RandomSkillDrop';
 import { MangoDrop } from '@/entities/MangoDrop';
 import { MagnetDrop } from '@/entities/MagnetDrop';
-import { ShardDrop } from '@/entities/ShardDrop';
 import { dropTierFor, rollOrbDrop, type GearItem } from '@/systems/Gear';
 import type { RunStats } from '@/systems/RunStats';
 import { HealthPotion } from '@/entities/HealthPotion';
@@ -58,9 +57,6 @@ export interface CombatHooks {
   /** A weapon to leave behind, or null when nothing is owed. */
   readonly rollGearDrop: (fromBoss: boolean, bonus: number) => GearItem | null;
   readonly onGearCollected: (item: GearItem) => void;
-  /** True when this kill also owes a 신성한 조각. */
-  readonly rollShardDrop: (fromBoss: boolean) => boolean;
-  readonly onShardCollected: () => void;
   /** Called when the player walks over a 구슬. */
   readonly onOrbCollected: (id: OrbId) => void;
   /** Called when the player walks over a 뼈다귀. */
@@ -70,6 +66,12 @@ export interface CombatHooks {
    * health it gives every enemy by making everything likelier to drop.
    */
   readonly dropScale: () => number;
+  /**
+   * 행운 (0.83): what the passive tree multiplies every drop an enemy's
+   * 속성 raise by — 1 + its share. What only a 우두머리 leaves, what is
+   * certain, and the flat 망고 and 자석 it does not touch.
+   */
+  readonly luck: () => number;
   /** What one of the survivor's critical hits is worth. */
   readonly critMultiplier: () => number;
   /** Called when the player walks over a dropped skill. */
@@ -114,7 +116,6 @@ export class CombatSystem {
   public readonly enemyShots: Phaser.Physics.Arcade.Group;
   public readonly potions: Phaser.Physics.Arcade.Group;
   public readonly gearDrops: Phaser.Physics.Arcade.Group;
-  public readonly shardDrops: Phaser.Physics.Arcade.Group;
   public readonly orbDrops: Phaser.Physics.Arcade.Group;
   public readonly boneDrops: Phaser.Physics.Arcade.Group;
   /** 무작위 스킬 lying on the ground. */
@@ -171,7 +172,6 @@ export class CombatSystem {
 
     this.potions = scene.physics.add.group({ classType: HealthPotion, runChildUpdate: true });
     this.gearDrops = scene.physics.add.group({ classType: GearDrop, runChildUpdate: true });
-    this.shardDrops = scene.physics.add.group({ classType: ShardDrop, runChildUpdate: true });
     this.orbDrops = scene.physics.add.group({ classType: OrbDrop, runChildUpdate: true });
     this.boneDrops = scene.physics.add.group({ classType: BoneDrop, runChildUpdate: true });
     this.randomSkillDrops = scene.physics.add.group({ classType: RandomSkillDrop, runChildUpdate: true });
@@ -186,7 +186,6 @@ export class CombatSystem {
     scene.physics.add.overlap(player, this.gems, this.onGemTouch, undefined, this);
     scene.physics.add.overlap(player, this.skillDrops, this.onSkillTouch, undefined, this);
     scene.physics.add.overlap(player, this.gearDrops, this.onGearTouch, undefined, this);
-    scene.physics.add.overlap(player, this.shardDrops, this.onShardTouch, undefined, this);
     scene.physics.add.overlap(player, this.orbDrops, this.onOrbTouch, undefined, this);
     scene.physics.add.overlap(player, this.boneDrops, this.onBoneTouch, undefined, this);
     scene.physics.add.overlap(player, this.randomSkillDrops, this.onRandomSkillTouch, undefined, this);
@@ -224,20 +223,6 @@ export class CombatSystem {
 
     potion.drop(x, y);
     this.land(potion, itemFilter.shows('potion'), null);
-  }
-
-  /** Places a 신성한 조각 directly — used by the kill and by debug keys. */
-  public dropShardAt(x: number, y: number): void {
-    [x, y] = this.onGround(x, y);
-    const shard = this.shardDrops.get() as ShardDrop | null;
-    if (!shard) {
-      return;
-    }
-
-    shard.drop(x, y);
-    // Its nameplate is the 희귀 one, so its sound is too: one ladder, or the
-    // ear and the eye disagree about the same object on the floor.
-    this.land(shard, itemFilter.shows('shard'), 'rare');
   }
 
   /** Places a 구슬 directly — used by the kill roll and by debug keys. */
@@ -318,7 +303,6 @@ export class CombatSystem {
     take(this.gems, this.onGemTouch);
     take(this.skillDrops, this.onSkillTouch);
     take(this.gearDrops, this.onGearTouch);
-    take(this.shardDrops, this.onShardTouch);
     take(this.orbDrops, this.onOrbTouch);
     take(this.boneDrops, this.onBoneTouch);
     take(this.randomSkillDrops, this.onRandomSkillTouch);
@@ -463,6 +447,9 @@ export class CombatSystem {
       return;
     }
 
+    // 얼음창 2차 각성: one already under 냉각 takes more — read before this
+    // spear chills it.
+    const chilledBonus = shot.chilledBonus > 0 && enemy.isChilled ? 1 + shot.chilledBonus : 1;
     // 얼음창 각성: one already under 냉각 is frozen solid by the next spear.
     if (shot.freezeMs > 0 && enemy.isChilled) {
       enemy.freeze(shot.freezeMs);
@@ -474,13 +461,16 @@ export class CombatSystem {
     // Spend the pierce before the hit: a kill recycles the enemy, and the
     // shot has to know whether it is done either way.
     const carriesOn = shot.consumePierce();
-    const { x, y } = enemy;
-    this.hit(enemy, shot.damage);
+    const { x, y, lives } = enemy;
+    this.hit(enemy, shot.damage * chilledBonus);
 
     if (shot.blastRadius > 0) {
       this.blast(x, y, shot.blastRadius, shot.damage, enemy);
       if (shot.fireZoneDps > 0) {
         this.burnGround(x, y, shot.blastRadius, shot.fireZoneDps);
+      }
+      if (shot.delayedBlast > 0) {
+        this.armBlast(enemy, lives, x, y, shot.blastRadius, shot.delayedBlast);
       }
     }
 
@@ -524,6 +514,41 @@ export class CombatSystem {
     return caught.length;
   }
 
+  /** 화염구 2차 각성: bursts waiting to go off. Public for tests. */
+  public readonly delayedBlasts: { enemy: Enemy; lives: number; x: number; y: number; radius: number; damage: number; leftMs: number; view: Phaser.GameObjects.Arc }[] = [];
+
+  /**
+   * A second burst on what a 화염구 hit, SKILL_MASTERY.second.fireBlast.delayMs
+   * later: where that enemy stands then, or where it fell. A ring closes on
+   * it meanwhile, so it can be seen coming.
+   */
+  public armBlast(enemy: Enemy, lives: number, x: number, y: number, radius: number, damage: number): void {
+    const view = this.scene.add
+      .circle(x, y, radius, COLORS.fireBlast, 0.08)
+      .setStrokeStyle(2, COLORS.fireBlast, 0.8)
+      .setDepth(DEPTH.vfx);
+    this.delayedBlasts.push({ enemy, lives, x, y, radius, damage, leftMs: SKILL_MASTERY.second.fireBlast.delayMs, view });
+  }
+
+  /** Counts the waiting bursts down — stepped with the run, so a pause holds them — and sets off the ones that are due. */
+  private tickDelayedBlasts(delta: number): void {
+    const { delayMs } = SKILL_MASTERY.second.fireBlast;
+    for (let i = this.delayedBlasts.length - 1; i >= 0; i--) {
+      const pending = this.delayedBlasts[i]!;
+      if (pending.enemy.active && pending.enemy.lives === pending.lives) {
+        pending.x = pending.enemy.x;
+        pending.y = pending.enemy.y;
+      }
+      pending.leftMs -= delta;
+      pending.view.setPosition(pending.x, pending.y).setScale(0.4 + 0.6 * Math.max(0, pending.leftMs / delayMs));
+      if (pending.leftMs <= 0) {
+        pending.view.destroy();
+        this.delayedBlasts.splice(i, 1);
+        this.blast(pending.x, pending.y, pending.radius, pending.damage);
+      }
+    }
+  }
+
   /** 화염구 각성: the patches of ground still burning. Public for tests. */
   public readonly fireZones: { x: number; y: number; radius: number; dps: number; leftMs: number; sinceTickMs: number; view: Phaser.GameObjects.Arc }[] = [];
 
@@ -539,6 +564,7 @@ export class CombatSystem {
 
   /** Burns whatever stands in a fire, once every SKILL_MASTERY.fireZone.tickMs. */
   public tickFireZones(delta: number): void {
+    this.tickDelayedBlasts(delta);
     const { tickMs } = SKILL_MASTERY.fireZone;
     for (let i = this.fireZones.length - 1; i >= 0; i--) {
       const zone = this.fireZones[i]!;
@@ -656,16 +682,6 @@ export class CombatSystem {
     }
   };
 
-  private onShardTouch: Phaser.Types.Physics.Arcade.ArcadePhysicsCallback = (_player, b) => {
-    const shard = b as unknown as ShardDrop;
-    if (!shard.active) {
-      return;
-    }
-
-    shard.collect();
-    this.hooks.onShardCollected();
-  };
-
   private onOrbTouch: Phaser.Types.Physics.Arcade.ArcadePhysicsCallback = (_player, object) => {
     const drop = object as OrbDrop;
     if (!drop.active) {
@@ -724,7 +740,8 @@ export class CombatSystem {
     this.stats.recordKill(enemy.kind);
     sfx.playEnemy(this.scene, enemy.kind, 'death');
     const worth = enemy.xpValue;
-    const dropBonus = enemy.dropBonus;
+    // 행운 rides on the same bonus a rare's 속성 raise (0.83).
+    const dropBonus = enemy.dropBonus * this.hooks.luck();
     const wasBoss = enemy.isBoss;
     const certainSkill = enemy.alwaysDropsSkill;
     const webStacks = enemy.webStacks;
@@ -773,11 +790,6 @@ export class CombatSystem {
     const found = this.hooks.rollGearDrop(wasBoss, bonus);
     if (found) {
       this.dropGearAt(x, y, found);
-    }
-
-    // And half of them leave a 신성한 조각 beside it.
-    if (this.hooks.rollShardDrop(wasBoss)) {
-      this.dropShardAt(x + 18, y);
     }
 
     // And a 제단 — always off a 우두머리, now and then off anything else —

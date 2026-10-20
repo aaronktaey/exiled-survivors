@@ -81,11 +81,6 @@ export const COLORS = {
   /** 공허: a violet core inside a darker rim. */
   voidOrb: 0xb07cff,
   voidOrbCore: 0xefe4ff,
-  /** 신성한 조각: a pale shard, lit the way a gem is. */
-  shard: 0xd6ecff,
-  shardEdge: 0x7fb8e8,
-  shardGlow: 0xaad4ff,
-  shardText: '#d6ecff',
   /** 패시브, on its icon and its screen. */
   passive: 0x7ef0b0,
   passiveEdge: 0xcdfbe2,
@@ -178,7 +173,6 @@ export const TEXTURES = {
   gem: "tex-gem",
   skillOrb: "tex-skill-orb",
   gear: "tex-gear",
-  shard: "tex-shard",
   boneSkull: "tex-bone-skull",
   boneRib: "tex-bone-rib",
   boneSpine: "tex-bone-spine",

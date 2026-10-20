@@ -44,24 +44,28 @@ check('every level-up goes to the main skill',
   levels.seen.length === 12 && levels.seen.every((id) => id === 'meleeStrike'), levels.seen.join(','));
 check('and the save remembers which it is', levels.savedMain === 'meleeStrike');
 
-// --- 2. reaching the level awakens it, loudly ---
+// --- 2. reaching the level awakens the main skill, loudly — and only the main skill (0.83) ---
 const woke = await run(`
   const L = window.config.SKILL_MASTERY.level;
-  const id = 'fireball';
+  const other = 'fireball';
+  while (s.progression.levelFor(other) < L) s.progression.apply(other, 'damage');
+  s.onUpgradePicked(other, 'damage');
+  const otherWoke = s.awakened.has(other) || s.masteryOf(other) > 0;
+  const id = s.mainSkill;
   while (s.progression.levelFor(id) < L - 1) s.progression.apply(id, 'damage');
   const before = s.awakened.has(id);
   s.onUpgradePicked(id, 'damage');
-  return { L, level: s.progression.levelFor(id), before, after: s.awakened.has(id),
+  return { L, id, level: s.progression.levelFor(id), before, after: s.awakened.has(id), otherWoke,
            banner: s.masteryBanner?.text ?? '' };
 `);
 await sleep(500);
 await shot('mastery-01-banner');
 console.log('woke:', JSON.stringify(woke));
-check('a skill reaching the level is awakened, once',
-  woke.level === woke.L && !woke.before && woke.after, JSON.stringify(woke));
-check('and says so in a banner of its own', /화염구/.test(woke.banner) && /각성/.test(woke.banner), woke.banner);
+check('the main skill reaching the level is awakened, once — a skill found later never is',
+  woke.level === woke.L && !woke.before && woke.after && woke.otherWoke === false, JSON.stringify(woke));
+check('and says so in a banner of its own', /타격/.test(woke.banner) && /각성/.test(woke.banner), woke.banner);
 const hud = await run(`
-  const i = s.loadout().findIndex((l) => l.id === 'fireball');
+  const i = s.loadout().findIndex((l) => l.id === s.mainSkill);
   const slot = s.hud.slots[i];
   s.hud.point(i);
   const card = s.hud.cardText.text;
@@ -69,7 +73,31 @@ const hud = await run(`
   return { stroke: slot.plate.strokeColor, level: slot.level.style.color, card };
 `);
 check('the HUD wears it in gold, and its card says what it now does',
-  hud.level === '#ffd76a' && /각성/.test(hud.card) && /화염지대/.test(hud.card), JSON.stringify(hud));
+  hud.level === '#ffd76a' && /각성/.test(hud.card) && /파괴/.test(hud.card), JSON.stringify(hud));
+
+// --- 2b. and again at SKILL_MASTERY.second.level: the 2차 각성 ---
+const twice = await run(`
+  const L2 = window.config.SKILL_MASTERY.second.level;
+  const id = s.mainSkill;
+  while (s.progression.levelFor(id) < L2 - 1) s.progression.apply(id, 'damage');
+  const before = s.awakenedTwice.has(id);
+  s.onUpgradePicked(id, 'damage');
+  const i = s.loadout().findIndex((l) => l.id === id);
+  // The HUD reads the loadout it was last handed: hand it the new one.
+  s.hud.update(0, s.spawner.alive, s.loadout(), s.effectsNow());
+  s.hud.point(i);
+  const card = s.hud.cardText.text;
+  s.hud.point(-1);
+  return { L2, level: s.progression.levelFor(id), before, after: s.awakenedTwice.has(id), tier: s.masteryOf(id),
+           banner: s.masteryBanner?.text ?? '', card, edge: s.hud.slots[i].plate.lineWidth };
+`);
+await sleep(400);
+await shot('mastery-02-second');
+console.log('twice:', JSON.stringify(twice));
+check('at the second level the main skill awakens again, with a banner of its own',
+  twice.level === twice.L2 && !twice.before && twice.after && twice.tier === 2 && /2차 각성/.test(twice.banner), JSON.stringify(twice));
+check('and its card carries both lines, its edge a heavier gold',
+  /각성 —/.test(twice.card) && /2차 각성 —/.test(twice.card) && twice.edge === 3, twice.card);
 
 // --- 3. what each awakening does ---
 const effects = await run(`
@@ -82,7 +110,7 @@ const effects = await run(`
     return e;
   };
   const ctx = (over) => ({ origin: p, enemies: g, damage: 10, cooldownMs: 0, range: 220, projectileSpeed: 400,
-    chainCount: 4, pierceCount: 0, orbCount: 2, orbitSpeed: 100, extraProjectiles: 0,
+    chainCount: 4, pierceCount: 0, orbCount: 2, orbitSpeed: 100, extraProjectiles: 0, recastChance: 0.3, blastRadius: 30,
     hit: c.hit, mastered: true, enemyShots: c.enemyShots, ...over });
   const weapon = (id) => { s.acquire(id); return s.weapons.find((w) => w.definition.id === id); };
   const out = {};
@@ -108,9 +136,11 @@ const effects = await run(`
   for (let i = 1; i < 5; i++) put(80 + i * 30, 0);
   const record = () => { const amounts = []; return { ctx: ctx({ hit: (e, amt) => amounts.push(amt) }), amounts }; };
   let probe = record();
+  chain.struck.clear();
   chain.strike({ ...probe.ctx, mastered: false }, a);
   out.chainPlain = probe.amounts;
   probe = record();
+  chain.struck.clear();
   chain.strike(probe.ctx, a);
   out.chainAwake = probe.amounts;
   out.chainBonus = window.config.SKILL_MASTERY.chainBonusPerJump;
@@ -178,9 +208,9 @@ const effects = await run(`
   let hits = 0;
   const counting = ctx({ hit: (e, a) => { hits++; }, orbCount: 2, cooldownMs: 1000 });
   voidOrb.active.forEach((o) => o.setPosition(struck.x, struck.y));
-  voidOrb.sweep(counting, 2);
+  voidOrb.sweep(counting, voidOrb.active, 2, 0, 10);
   out.twoOrbs = hits;
-  voidOrb.sweep(counting, 2);
+  voidOrb.sweep(counting, voidOrb.active, 2, 0, 10);
   out.again = hits - out.twoOrbs;
   s.spawner.clear();
   s.choosing = false;
@@ -208,6 +238,111 @@ check('낙뢰: awakened, every kill strikes again',
   effects.boltsPlain === 1 && effects.boltsAwake === effects.boltsWant, `${effects.boltsPlain} → ${effects.boltsAwake} strikes on 3 weak enemies`);
 check('공허구체: each orb hits an enemy it sweeps; the same orb not again inside its cooldown',
   effects.twoOrbs === 2 && effects.again === 0, `two orbs: ${effects.twoOrbs} hits, at once again: ${effects.again}`);
+
+// --- 3x. what each 2차 각성 does (0.83) ---
+const second = await run(`
+  s.choosing = true;
+  s.spawner.clear();
+  const p = s.player, c = s.combat, g = s.spawner.group, S2 = window.config.SKILL_MASTERY.second;
+  const put = (dx, dy, hp = 1e9) => {
+    const e = g.get(p.x + dx, p.y + dy);
+    e.spawn(p.x + dx, p.y + dy, p, 'brute', undefined, false, hp / window.config.ENEMY_KINDS.brute.maxHp);
+    return e;
+  };
+  const ctx = (over) => ({ origin: p, enemies: g, damage: 10, cooldownMs: 0, range: 220, projectileSpeed: 400,
+    chainCount: 1, pierceCount: 0, orbCount: 3, orbitSpeed: 100, extraProjectiles: 0, recastChance: 0, blastRadius: 30,
+    hit: c.hit, mastered: true, masteredTwice: true, enemyShots: c.enemyShots, ...over });
+  const weapon = (id) => { s.acquire(id); return s.weapons.find((w) => w.definition.id === id); };
+  const critWas = window.config.PLAYER.critChance;
+  window.config.PLAYER.critChance = 0;
+  const out = {};
+
+  // 타격: one standing off to the side, out of the old arc but inside 180°, is cut only at the second.
+  const melee = weapon('meleeStrike');
+  // Past the old arc and the width it allows for a body, inside 180°.
+  const front = put(60, 0), side = put(-5, 60);
+  const sideHp = side.hp;
+  melee.swing(ctx({ masteredTwice: false }), front);
+  out.sidePlain = sideHp - side.hp;
+  melee.swing(ctx({}), front);
+  out.sideTwice = sideHp - side.hp;
+  s.spawner.clear();
+
+  // 화염구: what it hit bursts again fireBlast.delayMs later, for its share.
+  const hitOne = put(300, 0), beside = put(300, 20);
+  const fake = { active: true, damage: 10, chillMs: 0, freezeMs: 0, blastRadius: 30, fireZoneDps: 0, delayedBlast: 10 * S2.fireBlast.damageShare, chilledBonus: 0,
+    registerHit: () => true, consumePierce: () => false, despawn() { this.active = false; } };
+  c.onProjectileHit(fake, hitOne);
+  const h1 = hitOne.hp, b1 = beside.hp;
+  out.armed = c.delayedBlasts.length;
+  for (let t = 0; t < S2.fireBlast.delayMs - 100; t += 50) c.tickFireZones(50);
+  out.early = h1 - hitOne.hp;
+  for (let t = 0; t < 200; t += 50) c.tickFireZones(50);
+  out.burst = { hit: h1 - hitOne.hp, beside: b1 - beside.hp, want: 10 * S2.fireBlast.damageShare, left: c.delayedBlasts.length };
+  s.spawner.clear();
+
+  // 연쇄번개: two arcs from one cast, each from its own nearest enemy.
+  const chain = weapon('chainLightning');
+  put(80, 0); put(-80, 0); put(160, 0); put(-160, 0);
+  const amounts = [];
+  chain.sinceCastMs = 1e9;
+  chain.update(16, ctx({ hit: (e, a) => amounts.push(a), chainCount: 1, mastered: false }));
+  out.forks = amounts.length;
+  out.forksWant = S2.chainForks * 2;
+  s.spawner.clear();
+
+  // 얼음창: a share more on an enemy already chilled; the same on one that was not.
+  const cold = put(300, 0), warm = put(-300, 0);
+  cold.chill(2000);
+  const spear = () => ({ active: true, damage: 10, chillMs: 2000, freezeMs: 0, blastRadius: 0, fireZoneDps: 0, delayedBlast: 0,
+    chilledBonus: S2.iceChilledBonus, registerHit: () => true, consumePierce: () => true, despawn() {} });
+  const c0 = cold.hp, w0 = warm.hp;
+  c.onProjectileHit(spear(), cold);
+  c.onProjectileHit(spear(), warm);
+  out.ice = { cold: c0 - cold.hp, warm: w0 - warm.hp, want: 10 * (1 + S2.iceChilledBonus) };
+  s.spawner.clear();
+
+  // 공허구체: an inner ring as many orbs, turning the other way.
+  const orb = weapon('voidOrb');
+  orb.update(16, ctx({ masteredTwice: false, range: 120 }));
+  out.innerPlain = orb.inner.filter((o) => o.visible).length;
+  orb.update(16, ctx({ range: 120 }));
+  const inner = orb.inner.filter((o) => o.visible);
+  out.inner = { count: inner.length, outer: orb.active.length,
+    radius: inner.length ? Math.round(Math.hypot(inner[0].x - p.x, inner[0].y - p.y)) : 0, want: Math.round(120 * S2.voidInner.radiusShare) };
+  orb.update(16, ctx({ masteredTwice: false, range: 120 }));
+  s.spawner.clear();
+
+  // 낙뢰: what stands round the strike takes its share.
+  const thunder = weapon('thunderStrike');
+  const struck = put(60, 0), near = put(60 + S2.thunderSplash.radius - 10, 0), far = put(60 + S2.thunderSplash.radius + 60, 0);
+  const n0 = near.hp, f0 = far.hp;
+  thunder.sinceCastMs = 1e9;
+  thunder.update(16, ctx({ masteredTwice: false }));
+  out.splashPlain = n0 - near.hp;
+  thunder.sinceCastMs = 1e9;
+  thunder.update(16, ctx({}));
+  out.splash = { near: n0 - near.hp, far: f0 - far.hp, want: 10 * S2.thunderSplash.damageShare };
+  s.spawner.clear();
+
+  window.config.PLAYER.critChance = critWas;
+  s.choosing = false;
+  return out;
+`);
+console.log('second:', JSON.stringify(second));
+check('2차 각성 타격: the swing opens to 180°, cutting what stood beside the target',
+  second.sidePlain === 0 && second.sideTwice > 0, JSON.stringify(second));
+check('2차 각성 화염구: what it hit bursts again after the delay, for its share, round it too',
+  second.armed === 1 && second.early === 0 && second.burst.hit === second.burst.want && second.burst.beside === second.burst.want && second.burst.left === 0,
+  JSON.stringify(second.burst));
+check('2차 각성 연쇄번개: one cast runs down more arcs', second.forks === second.forksWant, `${second.forks} strikes, want ${second.forksWant}`);
+check('2차 각성 얼음창: a share more on what is already chilled, the plain hit on the rest',
+  Math.abs(second.ice.cold - second.ice.want) < 1e-6 && second.ice.warm === 10, JSON.stringify(second.ice));
+check('2차 각성 공허구체: an inner ring as many orbs, at its share of the radius',
+  second.innerPlain === 0 && second.inner.count === second.inner.outer && Math.abs(second.inner.radius - second.inner.want) <= 2,
+  JSON.stringify(second.inner));
+check('2차 각성 낙뢰: what stands round the strike takes its share, what stands further does not',
+  second.splashPlain === 0 && second.splash.near === second.splash.want && second.splash.far === 0, JSON.stringify(second.splash));
 
 // --- 3b. a skill with every upgrade taken: a level is a potion ---
 const maxed = await run(`
@@ -311,12 +446,13 @@ const thunderCards = await cardsFor('thunderStrike');
 const pierce = await run(`
   const st = s.progression.statsFor('iceSpear');
   for (let i = 0; i < 20; i++) s.progression.apply('iceSpear', 'pierceCount');
-  return { pierce: st.pierceCount, cap: window.config.UPGRADE_CAP.pierceCount };
+  const c = window.config;
+  return { pierce: st.pierceCount, want: c.SKILL_BASE.iceSpear.pierceCount + c.UPGRADE_MAX_PICKS.pierceCount };
 `);
-check('얼음창 offers 투사체 속도, and 낙뢰 no longer offers 사거리',
-  iceCards?.includes('projectileSpeed') && thunderCards && !thunderCards.includes('range'),
+check('얼음창 no longer offers 투사체 속도, and 낙뢰 offers 처치 시 재시전 (0.83)',
+  iceCards && !iceCards.includes('projectileSpeed') && thunderCards?.includes('recastChance') && !thunderCards.includes('range'),
   `얼음창 ${iceCards?.join(',')} / 낙뢰 ${thunderCards?.join(',')}`);
-check('얼음창 runs through at most five', pierce.cap === 5 && pierce.pierce === 5, JSON.stringify(pierce));
+check('관통 stops at five picks', pierce.pierce === pierce.want, JSON.stringify(pierce));
 
 // --- 3f. each card says where its stat is, where the pick takes it, and how far it can go ---
 await run(`
@@ -338,7 +474,7 @@ const cardValues = await cdp.evaluate(`(() => {
     taken: card.option.taken, max: card.option.maxPicks, values: card.values?.text ?? '', picks: card.picks?.text ?? '' }));
   const out = { cards, stats: { damage: st.damage, chainCount: st.chainCount },
     want: { damageNext: st.damage + base.damage * c.UPGRADE_PERCENT.damage, damageMax: c.UPGRADE_MAX_PICKS.damage,
-            chainMax: Math.ceil((c.UPGRADE_CAP.chainCount - base.chainCount) / c.UPGRADE_STEP.chainCount) } };
+            chainMax: c.UPGRADE_MAX_PICKS.chainCount } };
   up.payload.onPick(cards[0].id); up.scene.stop();
   return out;
 })()`);

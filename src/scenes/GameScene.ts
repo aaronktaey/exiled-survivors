@@ -14,7 +14,6 @@ import {
   orbsHeld,
   PAUSE_BUTTON,
   NO_BONES,
-  SHARD,
   boneBonusFor,
   type BoneBonus,
   type AltarOfferId,
@@ -221,10 +220,14 @@ export class GameScene extends Phaser.Scene {
   private readonly castLook = (targetX?: number): void => this.player.castLook(targetX);
   /** Skills whose 각성 has been celebrated this run. Public for tests. */
   public awakened = new Set<SkillId>();
+  /** The skills past their 2차 각성 (SKILL_MASTERY.second.level). Public for tests. */
+  public awakenedTwice = new Set<SkillId>();
   /** 전투 알림, top right. Public for tests. */
   public toasts!: Toasts;
   /** The last 각성 banner shown. Public for tests. */
   public masteryBanner?: Phaser.GameObjects.Text;
+  /** The line under it, cleared with it when the next banner comes. */
+  private masteryLine?: Phaser.GameObjects.Text;
 
   private elapsedMs = 0;
   private sinceSaveMs = 0;
@@ -281,6 +284,7 @@ export class GameScene extends Phaser.Scene {
     this.owned = new Set<SkillId>();
     this.mainSkill = null;
     this.awakened = new Set<SkillId>();
+    this.awakenedTwice = new Set<SkillId>();
 
     this.physics.world.setBounds(0, 0, WORLD.width, WORLD.height);
     this.cameras.main.setBounds(0, 0, WORLD.width, WORLD.height);
@@ -327,8 +331,6 @@ export class GameScene extends Phaser.Scene {
         onSkillCollected: (skill) => this.onSkillCollected(skill),
         rollGearDrop: (fromBoss, bonus) => this.rollGearDrop(fromBoss, bonus),
         onGearCollected: (found) => this.onGearCollected(found),
-        rollShardDrop: (fromBoss) => fromBoss && Math.random() < SHARD.chance,
-        onShardCollected: () => this.onShardCollected(),
         onOrbCollected: (id) => this.onOrbCollected(id),
         onBoneCollected: (id) => this.onBoneCollected(id),
         onAltarWoke: (offer, x, y) => this.onAltarWoke(offer, x, y),
@@ -338,6 +340,7 @@ export class GameScene extends Phaser.Scene {
           this.announce(fill(t().game.mangoEaten, { seconds: Math.round(MANGO.durationMs / 1000) })),
         onMagnetCollected: () => this.announce(t().game.magnetPulled),
         dropScale: () => this.boneBonus.dropScale,
+        luck: () => 1 + passives.bonus.luck,
         critMultiplier: () => critMultiplierFor(this.mods),
         clearOfTerrain: (x, y) => this.terrain?.clear(x, y, DROP_ROOM) ?? [x, y],
       },
@@ -351,8 +354,8 @@ export class GameScene extends Phaser.Scene {
     if (this.tunedRun) {
       this.announce(t().game.draftRun);
     }
-    // In the order they matter: a 우두머리 before a 신성한 조각, and both
-    // before a skill lying in the grass.
+    // In the order they matter: a 우두머리 before what lies on the ground,
+    // and that before a skill lying in the grass.
     this.edgeMarkers = new EdgeMarkers(this, [
       {
         group: this.spawner.group,
@@ -370,7 +373,6 @@ export class GameScene extends Phaser.Scene {
         arrowColor: COLORS.gold,
       },
       { group: this.combat.altars },
-      { group: this.combat.shardDrops },
       { group: this.combat.orbDrops },
       { group: this.combat.gearDrops },
       { group: this.combat.mangoDrops },
@@ -564,11 +566,14 @@ export class GameScene extends Phaser.Scene {
         projectileSpeed: stats.projectileSpeed,
         chainCount: stats.chainCount,
         orbitSpeed: stats.orbitSpeed,
+        blastRadius: stats.blastRadius,
+        recastChance: stats.recastChance,
         pierceCount: stats.pierceCount,
         orbCount: stats.orbCount,
         extraProjectiles: this.gearBonus.extraProjectiles,
         hit: this.combat.hit,
-        mastered: this.progression.levelFor(id) >= SKILL_MASTERY.level,
+        mastered: this.masteryOf(id) >= 1,
+        masteredTwice: this.masteryOf(id) >= 2,
         enemyShots: this.combat.enemyShots,
         onCast: id === this.mainSkill ? this.castLook : undefined,
       });
@@ -600,10 +605,22 @@ export class GameScene extends Phaser.Scene {
     }
     for (const [id, stats] of Object.entries(run.skills) as [SkillId, SkillStats][]) {
       this.acquire(id);
-      Object.assign(this.progression.statsFor(id), stats);
+      // Never under today's base: a save from before 0.83 has 화염구 and
+      // 얼음창 at their old speed and reach, and 연쇄번개 at one chain — and
+      // none of the stats 0.83 added, which stay at their base.
+      const live = this.progression.statsFor(id) as Record<string, number>;
+      for (const [field, value] of Object.entries(stats)) {
+        if (typeof value === 'number' && Number.isFinite(value) && field in live) {
+          live[field] = Math.max(live[field]!, value);
+        }
+      }
       // Awakened before the save: already celebrated, not again.
-      if (this.progression.levelFor(id) >= SKILL_MASTERY.level) {
+      const tier = this.masteryOf(id);
+      if (tier >= 1) {
         this.awakened.add(id);
+      }
+      if (tier >= 2) {
+        this.awakenedTwice.add(id);
       }
     }
 
@@ -942,20 +959,6 @@ export class GameScene extends Phaser.Scene {
   }
 
   /**
-   * A 신성한 조각. Ten of them finish a 신성한 구슬, which is a point in
-   * the tree — and that is worth saying out loud when it happens.
-   */
-  private onShardCollected(): void {
-    const completed = passives.addShard();
-    const copy = t().game;
-    this.announce(
-      completed
-        ? copy.orbMade
-        : fill(copy.shardFound, { held: passives.value.shards, need: SHARD.perOrb }),
-    );
-  }
-
-  /**
    * A weapon goes straight into the stash, which outlives the run. Putting
    * it on is the title screen's business, so a run is never interrupted.
    */
@@ -1026,6 +1029,7 @@ export class GameScene extends Phaser.Scene {
         id,
         name: skillName(id),
         level: this.progression.levelFor(id),
+        mastery: this.masteryOf(id),
         dps: damage * perSecond * targets,
         breakdown: this.breakdownOf(id, damage, perSecond, targets),
       };
@@ -1289,10 +1293,27 @@ export class GameScene extends Phaser.Scene {
   private onUpgradePicked(skill: SkillId, upgrade: UpgradeId): void {
     this.progression.apply(skill, upgrade);
     this.afterChoice();
-    if (!this.awakened.has(skill) && this.progression.levelFor(skill) >= SKILL_MASTERY.level) {
+    const tier = this.masteryOf(skill);
+    if (tier >= 1 && !this.awakened.has(skill)) {
       this.awakened.add(skill);
-      this.celebrateMastery(skill);
+      this.celebrateMastery(skill, 1);
+    } else if (tier >= 2 && !this.awakenedTwice.has(skill)) {
+      this.awakenedTwice.add(skill);
+      this.celebrateMastery(skill, 2);
     }
+  }
+
+  /**
+   * How far a skill is awakened: 0, 1 at SKILL_MASTERY.level, 2 at
+   * SKILL_MASTERY.second.level — the main skill only (0.83, the user's ask).
+   * Public for tests.
+   */
+  public masteryOf(skill: SkillId): 0 | 1 | 2 {
+    if (skill !== this.mainSkill) {
+      return 0;
+    }
+    const level = this.progression.levelFor(skill);
+    return level >= SKILL_MASTERY.second.level ? 2 : level >= SKILL_MASTERY.level ? 1 : 0;
   }
 
   /**
@@ -1336,7 +1357,7 @@ export class GameScene extends Phaser.Scene {
    * and sparks bursting off the survivor. It holds nothing up; the run goes
    * on underneath.
    */
-  public celebrateMastery(skill: SkillId): void {
+  public celebrateMastery(skill: SkillId, tier: 1 | 2 = 1): void {
     const camera = this.cameras.main;
     const { width, height } = camera;
     const depth = DEPTH.ui + 30;
@@ -1351,7 +1372,7 @@ export class GameScene extends Phaser.Scene {
     camera.shake(220, 0.006);
 
     const title = this.add
-      .text(width / 2, height * 0.26, fill(t().mastery.title, { skill: skillName(skill) }), {
+      .text(width / 2, height * 0.26, fill(tier === 2 ? t().mastery.title2 : t().mastery.title, { skill: skillName(skill) }), {
         fontFamily: 'system-ui, sans-serif',
         fontSize: TEXT.size.screen,
         fontStyle: 'bold',
@@ -1367,7 +1388,7 @@ export class GameScene extends Phaser.Scene {
     const settled = title.scale;
     title.setScale(settled * 0.3);
     const line = this.add
-      .text(width / 2, height * 0.26 + 40, masteryText(skill), {
+      .text(width / 2, height * 0.26 + 40, masteryText(skill, tier), {
         fontFamily: 'system-ui, sans-serif',
         fontSize: TEXT.size.body,
         color: COLORS.text,
@@ -1380,7 +1401,15 @@ export class GameScene extends Phaser.Scene {
       .setScrollFactor(0)
       .setDepth(depth + 2)
       .setAlpha(0);
+    // A banner still up gives way to the new one, so two never sit on each other.
+    for (const old of [this.masteryBanner, this.masteryLine]) {
+      if (old?.active) {
+        this.tweens.killTweensOf(old);
+        old.destroy();
+      }
+    }
     this.masteryBanner = title;
+    this.masteryLine = line;
     this.tweens.add({ targets: title, scale: settled, duration: 420, ease: 'Back.easeOut' });
     this.tweens.add({ targets: line, alpha: 1, delay: 250, duration: 300 });
     this.tweens.add({

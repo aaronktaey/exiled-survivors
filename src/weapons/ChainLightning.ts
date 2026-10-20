@@ -42,7 +42,19 @@ export class ChainLightning implements Weapon {
 
     this.sinceCastMs = 0;
     context.onCast?.(first.x);
-    this.strike(context, first);
+    this.struck.clear();
+    const paths = [this.strike(context, first)];
+    // 2차 각성: more arcs, each from the nearest enemy none has touched yet.
+    const forks = context.masteredTwice ? SKILL_MASTERY.second.chainForks : 1;
+    for (let fork = 1; fork < forks; fork++) {
+      const start = findNearestEnemy(context.origin.x, context.origin.y, context.enemies, context.range, this.struck);
+      if (!start) {
+        break;
+      }
+      paths.push(this.strike(context, start));
+    }
+    this.showBolt(paths);
+    sfx.playSkill(this.scene, this.definition.id);
   }
 
   /**
@@ -50,10 +62,9 @@ export class ChainLightning implements Weapon {
    * jump starts from where the last victim stood, so the chain spreads
    * outward rather than fanning out from the player.
    */
-  private strike(context: WeaponContext, first: Enemy): void {
+  private strike(context: WeaponContext, first: Enemy): number[] {
     // Flat x, y pairs: the player, then each enemy the arc reaches.
     const path = [context.origin.x, context.origin.y];
-    this.struck.clear();
 
     // chainCount is how many *extra* enemies the arc reaches after the first.
     const links = 1 + Math.max(0, Math.round(context.chainCount));
@@ -72,14 +83,16 @@ export class ChainLightning implements Weapon {
       target = findNearestEnemy(x, y, context.enemies, LIGHTNING.chainRadius, this.struck);
     }
 
-    this.showBolt(path);
-    sfx.playSkill(this.scene, this.definition.id);
+    return path;
   }
 
-  private showBolt(path: readonly number[]): void {
+  /** Every arc of the cast, drawn together. */
+  private showBolt(paths: readonly (readonly number[])[]): void {
     this.bolt.clear();
-    for (let i = 0; i + 3 < path.length; i += 2) {
-      drawBolt(this.bolt, path[i]!, path[i + 1]!, path[i + 2]!, path[i + 3]!);
+    for (const path of paths) {
+      for (let i = 0; i + 3 < path.length; i += 2) {
+        drawBolt(this.bolt, path[i]!, path[i + 1]!, path[i + 2]!, path[i + 3]!);
+      }
     }
 
     this.scene.tweens.killTweensOf(this.bolt);

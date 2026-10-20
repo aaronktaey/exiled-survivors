@@ -118,8 +118,24 @@ export function skillName(id: SkillId): string {
   return t().names?.skills?.[id] ?? SKILLS[id].name;
 }
 
-/** What a skill's 각성 does, its numbers read off SKILL_MASTERY. */
-export function masteryText(id: SkillId): string {
+/** What a skill's 각성 (or, `tier` 2, its 2차 각성) does, its numbers read off SKILL_MASTERY. */
+export function masteryText(id: SkillId, tier: 1 | 2 = 1): string {
+  const pct = (share: number): string => `${Math.round(share * 100)}%`;
+  if (tier === 2) {
+    const line = (t().mastery.effects2 as Record<string, string>)[id];
+    const { meleeArcDegrees, fireBlast, chainForks, iceChilledBonus, voidInner, thunderSplash } = SKILL_MASTERY.second;
+    return line
+      ? fill(line, {
+          arc: meleeArcDegrees,
+          delay: fireBlast.delayMs / 1000,
+          blastShare: pct(fireBlast.damageShare),
+          forks: chainForks,
+          chilled: pct(iceChilledBonus),
+          innerShare: pct(voidInner.damageShare),
+          splashShare: pct(thunderSplash.damageShare),
+        })
+      : '';
+  }
   const effects = t().mastery.effects as Record<string, string>;
   const line = effects[id];
   if (!line) {

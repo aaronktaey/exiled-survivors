@@ -22,7 +22,9 @@ export type UpgradeId =
   | 'orbitSpeed'
   | 'chainCount'
   | 'pierceCount'
-  | 'orbCount';
+  | 'orbCount'
+  | 'blastRadius'
+  | 'recastChance';
 
 export interface UpgradeOption {
   readonly id: UpgradeId;

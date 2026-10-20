@@ -61,7 +61,6 @@ const fought = await run(`
   s.combat.gems.getChildren().forEach(g => g.active && g.collect());
   s.combat.skillDrops.getChildren().forEach(d => d.active && d.collect());
   s.combat.gearDrops.getChildren().forEach(d => d.active && d.collect());
-  s.combat.shardDrops.getChildren().forEach(d => d.active && d.collect());
   s.spawner.clear();
   s.choosing = false;
   return { expected, bosses, damage: s.stats.damage, kills: s.stats.killCount,
@@ -126,7 +125,7 @@ check('nothing in the table runs off the screen',
   `) === true, 'every line inside the canvas');
 await shot('stats-01-summary');
 
-// --- 5. gold buys a 신성한 조각 ---
+// --- 5. the purse, on 패시브 — and no shop since the 신성한 조각 went (0.83) ---
 await ev(`(() => {
   const s = window.game.scene.getScene('GameOverScene');
   const i = s.menu.rows.findIndex(r => r.item.id === 'menu');
@@ -134,61 +133,20 @@ await ev(`(() => {
 })()`);
 await cdp.tap('Space', 32, ' ');
 await sleep(1800);
-await ev(`(() => window.game.scene.getScene('MenuScene').icons.press('passives'))()`);
+await ev(`(() => { window.game.scene.getScene('MenuScene').icons.press('passives'); return 1; })()`);
 await sleep(1000);
-
-const poor = await scene('PassiveScene', `
-  return { label: s.shopButton.label.text, enabled: s.shopOpen, gold: window.gold.value };
-`);
-console.log('shop, short of it:', JSON.stringify(poor));
-check('the shop sits under the tree on 패시브',
-  poor.label.includes(String(ECON.shardPrice)), poor.label);
-check('and it is closed while the purse is short',
-  poor.gold < ECON.shardPrice && poor.enabled === false, `${poor.gold} gold`);
-
-// Enough damage for two and a half shards, whatever a shard and a gold cost.
-await ev(`(() => { const e = window.config.ECONOMY;
-  window.gold.earn(e.damagePerGold * e.shardPrice * 2.5); return 1; })()`);
+await ev(`(() => { const e = window.config.ECONOMY; window.gold.earn(e.damagePerGold * 250); return 1; })()`);
 await ev(`(() => { window.game.scene.getScene('PassiveScene').scene.restart({ onClose: () => {} }); return 1; })()`);
 await sleep(900);
-const rich = await scene('PassiveScene', `
-  return { enabled: s.shopOpen, gold: window.gold.value, purse: s.purse.text };
+const purse = await scene('PassiveScene', `
+  return { gold: window.gold.value, purse: s.purse.text, shop: 'shopButton' in s && s.shopButton !== undefined,
+           buttons: s.children.list.filter((o) => o.type === 'Text' && /구매|조각/.test(o.text)).map((o) => o.text) };
 `);
-check('and opens once there is enough', rich.gold >= ECON.shardPrice && rich.enabled === true,
-  `${rich.gold} gold`);
-check('the purse is read out on the screen',
-  rich.purse.includes(`골드 ${rich.gold}`), rich.purse);
-
-await ev(`(() => {
-  const s = window.game.scene.getScene('PassiveScene');
-  s.shopButton.plate.emit('pointerdown'); return 1;
-})()`);
-await sleep(600);
-const bought = await scene('PassiveScene', `
-  return { gold: window.gold.value, purse: s.purse.text,
-           stored: JSON.parse(localStorage.getItem('exiled-survivors:passives:v1')) };
-`);
-console.log('bought:', JSON.stringify(bought));
-check('buying takes a hundred gold and leaves a shard',
-  bought.gold === rich.gold - ECON.shardPrice && bought.stored.shards === 1,
-  `${rich.gold} -> ${bought.gold} gold, ${bought.stored.shards} shard`);
-await shot('stats-02-shop');
-
-// Ten of them finish a 구슬, bought or found.
-const tenth = await ev(`(() => {
-  const s = window.game.scene.getScene('PassiveScene');
-  const e = window.config.ECONOMY;
-  window.gold.earn(e.damagePerGold * e.shardPrice * 10);
-  for (let i = 0; i < 9; i++) {
-    s.buy();
-  }
-  return { gold: window.gold.value,
-           stored: JSON.parse(localStorage.getItem('exiled-survivors:passives:v1')) };
-})()`);
-console.log('ten bought:', JSON.stringify(tenth));
-check('ten bought shards make a 구슬, the same as ten found ones',
-  tenth.stored.points === 1 && tenth.stored.shards === 0,
-  `${tenth.stored.points} point, ${tenth.stored.shards} shards left`);
+console.log('purse:', JSON.stringify(purse));
+check('the purse is read out on the screen', purse.purse.includes(`골드 ${purse.gold}`), purse.purse);
+check('and nothing on 패시브 sells a 신성한 조각 any more', !purse.shop && purse.buttons.length === 0, JSON.stringify(purse.buttons));
+await shot('stats-02-purse');
+const tenth = { gold: purse.gold };
 
 // --- 6. the purse outlives the page ---
 await cdp.send('Page.reload', {});

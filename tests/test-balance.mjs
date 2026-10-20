@@ -178,9 +178,10 @@ const four = await popup();
 console.log('popup:', JSON.stringify(four));
 check('repeat pickup opens the 화염구 popup', four.open === true && four.skill === 'fireball',
   `skill=${four.skill} subtitle=${four.subtitle}`);
-check('화염구 offers damage, rate and projectile speed — no 사거리 of its own',
+// 투사체 속도 went in 0.83 (its eight-pick state is the base); 폭발 범위 came.
+check('화염구 offers damage, rate and 폭발 범위 — no 투사체 속도 or 사거리 of its own',
   JSON.stringify(four.cards?.map(c => c.id)) ===
-    JSON.stringify(['damage', 'attackSpeed', 'projectileSpeed']),
+    JSON.stringify(['damage', 'attackSpeed', 'blastRadius']),
   `${four.cards?.map(c => c.label).join(' | ')}`);
 const fits = four.cards?.every(c => c.x - c.w / 2 >= 0 && c.x + c.w / 2 <= four.width);
 const gaps = four.cards?.slice(1).map((c, i) => Math.round(c.x - c.w / 2 - (four.cards[i].x + four.cards[i].w / 2)));
@@ -189,65 +190,33 @@ check('the cards fit on screen without overlapping',
   `width=${four.width}, cards ${four.cards?.map(c => c.w).join('/')}px, gaps ${gaps?.join('/')}px`);
 await shot('balance-01-four-options');
 
-// --- 8. 투사체 속도 is the third card, and the reach grows with it ---
+// --- 8. 폭발 범위 is the third card, and it widens the burst alone ---
 const rangeOf = `return { fire: s.progression.statsFor('fireball'), reach: s.progression.rangeFor('fireball'),
   melee: s.progression.statsFor('meleeStrike') };`;
-const beforeSpeed = await run(rangeOf);
+const beforeBlast = await run(rangeOf);
 await cdp.tap('ArrowRight', 39, 'ArrowRight');
 await sleep(200);
 const afterRightKey = await popup();
 check('an arrow moves the caret without confirming',
   afterRightKey.selected === 1 && afterRightKey.open === true,
   `selected=${afterRightKey.selected}, popup still open=${afterRightKey.open}`);
-check('투사체 속도 is the third card', afterRightKey.cards[2].id === 'projectileSpeed',
-  afterRightKey.cards[2].label);
+check('폭발 범위 is the third card', afterRightKey.cards[2]?.id === 'blastRadius',
+  afterRightKey.cards[2]?.label);
 await cdp.tap('Digit3', 51, '3');
 await sleep(600);
-const afterSpeed = await run(rangeOf);
+const afterBlast = await run(rangeOf);
 // An upgrade is a share of where the skill started, so the step is read
 // from the base rather than written down here.
-const speedBase = await run(`
+const blastBase = await run(`
   const b = window.config.SKILL_BASE.fireball;
-  return { speed: b.projectileSpeed, range: b.range, share: window.config.UPGRADE_PERCENT.projectileSpeed };
+  return { radius: b.blastRadius, share: window.config.UPGRADE_PERCENT.blastRadius };
 `);
-const speedGain = afterSpeed.fire.projectileSpeed - beforeSpeed.fire.projectileSpeed;
-check('투사체 속도 raises speed by a share of its base, and not damage',
-  Math.abs(speedGain / speedBase.speed - speedBase.share) < 0.001 &&
-  afterSpeed.fire.damage === beforeSpeed.fire.damage,
-  `${beforeSpeed.fire.projectileSpeed} -> ${afterSpeed.fire.projectileSpeed}px/s (+${speedGain})`);
-check('and the reach grows in the same proportion as the speed',
-  Math.abs(afterSpeed.reach / speedBase.range - afterSpeed.fire.projectileSpeed / speedBase.speed) < 0.001 &&
-  afterSpeed.reach > beforeSpeed.reach && afterSpeed.melee.range === beforeSpeed.melee.range,
-  `reach ${Math.round(beforeSpeed.reach)} -> ${Math.round(afterSpeed.reach)}px, melee still ${afterSpeed.melee.range}px`);
-
-// And it reaches in play: something just past the old range is now fired at.
-const longer = await run(`
-  const was = s.choosing;
-  s.choosing = true;
-  s.spawner.clear();
-  const w = s.weapons.find((x) => x.definition.id === 'fireball');
-  const p = s.player;
-  const st = s.progression.statsFor('fireball');
-  const shoot = (dist, range) => {
-    s.spawner.clear();
-    w.projectiles.getChildren().forEach((b) => b.active && b.despawn());
-    const e = s.spawner.group.get(p.x + dist, p.y); e.spawn(p.x + dist, p.y, p, 'brute');
-    w.sinceShotMs = 99999;
-    w.update(16, { origin: p, enemies: s.spawner.group, damage: 1, cooldownMs: 1, range,
-      projectileSpeed: st.projectileSpeed, chainCount: 0, pierceCount: 0, orbCount: 0, orbitSpeed: 0, hit: () => {} });
-    return w.projectiles.countActive(true);
-  };
-  const base = ${JSON.stringify(beforeSpeed.reach)};
-  const reach = s.progression.rangeFor('fireball');
-  const between = (base + reach) / 2;
-  const out = { atOld: shoot(between, base), atNew: shoot(between, reach), between };
-  s.spawner.clear();
-  w.projectiles.getChildren().forEach((b) => b.active && b.despawn());
-  s.choosing = was;
-  return out;
-`);
-check('and the longer reach is fired at in play, where the old one held off',
-  longer.atOld === 0 && longer.atNew === 1, `an enemy at ${Math.round(longer.between)}px: ${longer.atOld} -> ${longer.atNew} shots`);
+const blastGain = afterBlast.fire.blastRadius - beforeBlast.fire.blastRadius;
+check('폭발 범위 widens the burst by a share of its base, and nothing else',
+  Math.abs(blastGain / blastBase.radius - blastBase.share) < 0.001 &&
+  afterBlast.fire.damage === beforeBlast.fire.damage && afterBlast.fire.projectileSpeed === beforeBlast.fire.projectileSpeed &&
+  afterBlast.reach === beforeBlast.reach,
+  `${beforeBlast.fire.blastRadius} -> ${afterBlast.fire.blastRadius}px (+${blastGain})`);
 
 // --- 10. a level-up spends on a skill in hand ---
 // Which one is random; the roll is pinned to the first skill held (타격,
@@ -263,9 +232,10 @@ await sleep(600);
 const level = await popup();
 check('a level-up offers the picks of a skill in hand',
   level.open === true && held.includes(level.skill) && level.title === 'LEVEL UP' &&
-    level.skill === held[0] && level.cards.length === 2,
+    level.skill === held[0] && level.cards.length === 3,
   `skill=${level.skill} of ${held.join(', ')} cards=${level.cards?.map(c => c.label).join(' | ')}`);
-check('two cards stay at full width', level.cards?.every(c => c.w === 260),
+// 타격 has three picks since 0.83 (공격 범위): three cards, every one as wide as the next.
+check('its cards share one width, and fit', level.cards?.every(c => c.w === level.cards[0].w && c.w >= 200),
   `${level.cards?.map(c => c.w).join('/')}px`);
 await shot('balance-02-level-up');
 await cdp.tap('Space', 32, ' ');

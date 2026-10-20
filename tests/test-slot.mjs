@@ -161,7 +161,7 @@ const burst = await run(`
   s.spawner.clear();
   const crit = window.config.PLAYER.critChance;
   window.config.PLAYER.critChance = 0;
-  const r = window.config.FIREBALL.blastRadius;
+  const r = window.config.SKILL_BASE.fireball.blastRadius;
   const p = s.player;
   const at = (dx, dy) => { const e = s.spawner.group.get(p.x + dx, p.y + dy);
     e.spawn(p.x + dx, p.y + dy, p, 'brute'); return e; };
@@ -185,10 +185,12 @@ const shotBlast = await ev(`(() => {
   const g = window.game.scene.getScene('GameScene');
   const fire = g.weapons.find((w) => w.definition.id === 'fireball')
     ?? (g.acquire('fireball'), g.weapons.find((w) => w.definition.id === 'fireball'));
-  const spec = fire.specFor({ damage: 1, projectileSpeed: 1, range: 1 });
-  return { blast: spec.blastRadius, want: window.config.FIREBALL.blastRadius };
+  // The burst is the skill's own stat since 0.83, handed in with the rest.
+  const want = g.progression.statsFor('fireball').blastRadius;
+  const spec = fire.specFor({ damage: 1, projectileSpeed: 1, range: 1, blastRadius: want });
+  return { blast: spec.blastRadius, want, base: window.config.SKILL_BASE.fireball.blastRadius };
 })()`);
-check('and every 화염구 shot carries it', shotBlast.blast === shotBlast.want && shotBlast.want > 0,
+check('and every 화염구 shot carries it — its own blastRadius stat', shotBlast.blast === shotBlast.want && shotBlast.want >= shotBlast.base && shotBlast.base > 0,
   `${shotBlast.blast}px`);
 
 // --- 7. 낙뢰 ---
@@ -202,9 +204,11 @@ const thunder = await run(`
   const p = s.player;
   const crit = window.config.PLAYER.critChance;
   window.config.PLAYER.critChance = 0;
+  // The recast chance is the skill's own stat since 0.83 (SKILL_BASE.thunderStrike.recastChance).
+  let recast = st.recastChance;
   const ctx = (dmg) => ({ origin: p, enemies: s.spawner.group, damage: dmg, cooldownMs: 1,
     range: st.range, projectileSpeed: 0, chainCount: 0, pierceCount: 0, orbCount: 0,
-    orbitSpeed: 0, hit: s.combat.hit });
+    orbitSpeed: 0, recastChance: recast, hit: s.combat.hit });
   const ring = (n, dist) => [...Array(n)].map((_, i) => {
     const a = (i / n) * Math.PI * 2;
     const e = s.spawner.group.get(p.x, p.y);
@@ -236,19 +240,19 @@ const thunder = await run(`
   }
 
   // Kills with a certain recast chain on; kills with it off strike once.
-  const chance = window.config.THUNDER.recastChance;
-  window.config.THUNDER.recastChance = 1;
+  const chance = st.recastChance;
+  recast = 1;
   ring(6, st.range * 0.5);
   w.sinceCastMs = 99999;
   w.update(16, ctx(1e9));
   const chained = w.lastStrikes;
   s.spawner.clear();
-  window.config.THUNDER.recastChance = 0;
+  recast = 0;
   ring(6, st.range * 0.5);
   w.sinceCastMs = 99999;
   w.update(16, ctx(1e9));
   const single = w.lastStrikes;
-  window.config.THUNDER.recastChance = chance;
+  recast = chance;
   window.config.PLAYER.critChance = crit;
   s.spawner.clear();
   s.choosing = false;

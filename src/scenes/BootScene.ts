@@ -10,7 +10,6 @@ import {
   giantFrame,
   GEAR_DROP,
   ICONS,
-  SHARD,
   GEAR,
   SKILL_ICONS,
   gearTexture,
@@ -88,7 +87,6 @@ export class BootScene extends Phaser.Scene {
     }
     this.createSquareTexture(TEXTURES.enemyShot, 8, COLORS.enemyShot);
     this.createThornTexture();
-    this.createShardTexture();
     this.createVoidOrbTexture();
     this.createPotionTexture();
     this.createGearTexture();
@@ -377,37 +375,6 @@ export class BootScene extends Phaser.Scene {
   }
 
   /** The potion: a white cross on a crimson field, read at a glance. */
-  /** 신성한 조각: a pale four-pointed sliver, lit like a gem. */
-  private createShardTexture(): void {
-    const size = SHARD.size * 2;
-    const half = size / 2;
-    const graphics = this.add.graphics();
-
-    graphics.fillStyle(COLORS.shardEdge, 1);
-    graphics.fillPoints(
-      [
-        new Phaser.Math.Vector2(half, 0),
-        new Phaser.Math.Vector2(size, half),
-        new Phaser.Math.Vector2(half, size),
-        new Phaser.Math.Vector2(0, half),
-      ],
-      true,
-    );
-    graphics.fillStyle(COLORS.shard, 1);
-    graphics.fillPoints(
-      [
-        new Phaser.Math.Vector2(half, size * 0.18),
-        new Phaser.Math.Vector2(size * 0.82, half),
-        new Phaser.Math.Vector2(half, size * 0.82),
-        new Phaser.Math.Vector2(size * 0.18, half),
-      ],
-      true,
-    );
-
-    graphics.generateTexture(TEXTURES.shard, size, size);
-    graphics.destroy();
-  }
-
   /**
    * The 뼈다귀: a skull and a rib, drawn plainly enough to read at 18px.
    * Bone-coloured rather than tinted, because what tells them apart on the

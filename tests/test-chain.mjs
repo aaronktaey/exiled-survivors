@@ -249,8 +249,9 @@ check('a level-up offers the main skill, whatever the roll — not the one picke
     low.lv.skill === 'meleeStrike' && high.lv.skill === 'meleeStrike',
   `${low.lv.skill} / ${high.lv.skill} of ${low.held.join(', ')}`);
 check('and its picks are that skill’s own',
-  (low.lv.skill === 'meleeStrike' ? low.lv.cards.length === 2 : low.lv.cards.length === 3) &&
-    (high.lv.skill === 'chainLightning' ? high.lv.cards.length === 3 : high.lv.cards.length === 2),
+  // 타격 has three picks of its own since 0.83 (공격 범위), as 연쇄번개 has.
+  [low, high].every(({ lv }) => lv.cards?.map((c) => c.id).join(',') ===
+    (lv.skill === 'meleeStrike' ? 'damage,attackSpeed,range' : 'damage,attackSpeed,chainCount')),
   `${low.lv.cards?.length} and ${high.lv.cards?.length} cards`);
 
 // --- 13. live play with all three skills ---

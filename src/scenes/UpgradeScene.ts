@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 
-import { COLORS, DEPTH, SCRIM, SKILL_ICON_SIZE, SKILL_ICONS, TEXT } from '@/config';
+import { COLORS, DEPTH, SCRIM, SKILL_ICON_SIZE, SKILL_ICONS, TEXT, UPGRADE_SHOWN_AS_CHANCE } from '@/config';
 import { fill, t } from '@/i18n';
 import type { UpgradeId, UpgradeOption } from '@/systems/Progression';
 import { fitText } from '@/systems/Layout';
@@ -259,6 +259,9 @@ export class UpgradeScene extends Phaser.Scene {
   private static stat(id: UpgradeId, value: number): string {
     if (id === 'attackSpeed') {
       return value.toFixed(2);
+    }
+    if (UPGRADE_SHOWN_AS_CHANCE.includes(id)) {
+      return `${Math.round(value * 100)}%`;
     }
     return Number.isInteger(value) ? String(value) : value.toFixed(1);
   }

@@ -339,7 +339,7 @@ check('it keeps orbiting and killing in a real run',
   `kills=${live.kills} orbs=${live.orbs} weapons=${live.weapons}`);
 await shot('void-03-live');
 
-// --- the orbs stop at UPGRADE_CAP.orbCount, a weapon's extra one included ---
+// --- 구체 수 stops at UPGRADE_MAX_PICKS.orbCount picks; a weapon's extra orb comes on top (0.83) ---
 const capped = await run(`
   s.acquire('voidOrb');
   const st = s.progression.statsFor('voidOrb');
@@ -348,10 +348,11 @@ const capped = await run(`
   w.update(16, { origin: s.player, enemies: s.spawner.group, damage: 1, cooldownMs: 1000, range: st.range,
     projectileSpeed: 0, chainCount: 0, pierceCount: 0, orbCount: st.orbCount, orbitSpeed: st.orbitSpeed,
     extraProjectiles: 1, hit: () => false, mastered: false });
-  return { stat: st.orbCount, shown: w.active.length, cap: window.config.UPGRADE_CAP.orbCount };
+  const c = window.config;
+  return { stat: st.orbCount, shown: w.active.length, want: c.SKILL_BASE.voidOrb.orbCount + c.UPGRADE_MAX_PICKS.orbCount };
 `);
-check('공허구체 holds no more orbs than its cap, a weapon’s extra one included',
-  capped.cap === 8 && capped.stat === capped.cap && capped.shown === capped.cap, JSON.stringify(capped));
+check('구체 수 stops at its picks, and the weapon’s extra orb is added on top of that',
+  capped.stat === capped.want && capped.shown === capped.want + 1, JSON.stringify(capped));
 
 console.log('\n=== SUMMARY ===');
 const failed = results.filter((r) => !r.p);

@@ -990,15 +990,15 @@ export const MELEE = {
 
 /** 화염구 bursts where it lands, hurting everything around the first hit. */
 export const FIREBALL = {
-  /** Everything this close to the first hit takes the shot's damage too. */
-  blastRadius: 30,
   /** How long the burst stays on screen. */
   flashMs: 220,
 } as const;
 
 /**
- * ★ 스킬 각성 — what a skill does on top of itself once it reaches `level`.
- * Reaching it is announced with a burst of its own (GameScene.celebrateMastery).
+ * ★ 스킬 각성 — what the main skill does on top of itself once it reaches
+ * `level` (only the main skill since 0.83, the user's ask), and again at
+ * `second.level`. Reaching either is announced with a burst of its own
+ * (GameScene.celebrateMastery).
  */
 export const SKILL_MASTERY = {
   // 20 until 2026-10-16.
@@ -1018,17 +1018,37 @@ export const SKILL_MASTERY = {
    * survivor at this speed (px/s) — into the orbs' path, not onto an orb.
    */
   voidPull: { reach: 70, speed: 20 },
-  /** 낙뢰: a strike that kills strikes again this often (THUNDER.recastChance when not awakened). */
+  /** 낙뢰: a strike that kills strikes again this often (the skill's recastChance when not awakened). */
   thunderRecastChance: 1,
+  /** ★ 2차 각성 (0.83, the user's ask): the main skill's second effect, at `level`. */
+  second: {
+    level: 20,
+    /** 타격: the swing's full width, in degrees (MELEE.arcRadians before it). */
+    meleeArcDegrees: 180,
+    /**
+     * 화염구: in place of the burning ground, what it hits bursts again
+     * `delayMs` later — where it stands then, or where it fell — for this
+     * share of the shot's damage, as wide as the shot's own burst.
+     */
+    fireBlast: { delayMs: 1000, damageShare: 1 },
+    /** 연쇄번개: arcs each cast starts, each from its own nearest enemy. */
+    chainForks: 2,
+    /** 얼음창: a share more damage to an enemy already under 냉각. */
+    iceChilledBonus: 0.5,
+    /**
+     * 공허구체: a second ring as many orbs inside the first, `radiusShare` of
+     * its radius, turning the other way and hitting for `damageShare`.
+     */
+    voidInner: { radiusShare: 0.6, damageShare: 0.5 },
+    /** 낙뢰: every strike also hurts what stands within `radius` of it, for `damageShare`. */
+    thunderSplash: { radius: 60, damageShare: 0.5 },
+  },
 } as const;
 
 /** 낙뢰: a bolt out of the sky onto something near the survivor. */
 export const THUNDER = {
-  /**
-   * When a strike kills, the chance it strikes again at once. Each recast
-   * rolls its own, so a crowd of the nearly dead can take several in a row.
-   */
-  recastChance: 0.5,
+  // The chance a kill strikes again is the skill's own stat since 0.83
+  // (SKILL_BASE.thunderStrike.recastChance), a pick that raises it.
   /** A ceiling on recasts from one cast, so a lucky streak ends. */
   maxRecasts: 20,
   /** How far above its target the bolt starts, in px. */
@@ -1233,6 +1253,10 @@ export interface SkillBaseStats {
   readonly orbCount: number;
   /** How fast an orbit travels, in px per second. Only the skills that orbit. */
   readonly orbitSpeed: number;
+  /** How far a burst reaches round where it lands, in px. Only 화염구 bursts. */
+  readonly blastRadius: number;
+  /** The chance a strike that kills strikes again at once. Only 낙뢰 recasts. */
+  readonly recastChance: number;
 }
 
 /** Where every skill starts before a single upgrade is picked. */
@@ -1269,42 +1293,51 @@ export const SKILL_BASE: Record<SkillId, SkillBaseStats> = {
     pierceCount: 0,
     orbCount: 0,
     orbitSpeed: 0,
+    blastRadius: 0,
+    recastChance: 0,
   },
   fireball: {
     damage: 180,
     attackSpeed: 0.7,
-    // 100 and 230 until 2026-10-16, then a fifth further and faster.
-    range: 120,
-    projectileSpeed: 250,
+    // Speed and range are where eight picks of +15% 투사체 속도 took them
+    // (0.83, the user's ask: the pick was taken out) — 120 and 250 before.
+    range: 120 * 2.2,
+    projectileSpeed: 250 * 2.2,
     chainCount: 0,
     pierceCount: 0,
     orbCount: 0,
     orbitSpeed: 0,
+    // FIREBALL.blastRadius until 0.83, when it became a pick.
+    blastRadius: 30,
+    recastChance: 0,
   },
-  // Two enemies a cast. It was 0.8 casts a second — a third of an enemy per
-  // second — and is a fifth faster than that now.
+  // Four enemies a cast since 0.83 (two before).
   chainLightning: {
     damage: 90,
     attackSpeed: 0.96,
     range: 160,
     projectileSpeed: 0,
-    chainCount: 1,
+    chainCount: 3,
     pierceCount: 0,
     orbCount: 0,
     orbitSpeed: 0,
+    blastRadius: 0,
+    recastChance: 0,
   },
   // It stops at the first body now; what it leaves behind is the 냉각.
   iceSpear: {
     damage: 120,
     attackSpeed: 0.6,
-    // 180 until 2026-10-16, then a fifth shorter.
-    range: 144,
-    projectileSpeed: 290,
+    // Eight picks of +15% 투사체 속도 in (0.83), as for 화염구 — 144 and 290 before.
+    range: 144 * 2.2,
+    projectileSpeed: 290 * 2.2,
     chainCount: 0,
     /** Runs through two bodies before it is spent, and upgrades from there. */
     pierceCount: 2,
     orbCount: 0,
     orbitSpeed: 0,
+    blastRadius: 0,
+    recastChance: 0,
   },
   // A bolt out of the sky once a second onto something nearby.
   thunderStrike: {
@@ -1316,6 +1349,9 @@ export const SKILL_BASE: Record<SkillId, SkillBaseStats> = {
     pierceCount: 0,
     orbCount: 0,
     orbitSpeed: 0,
+    blastRadius: 0,
+    // THUNDER.recastChance until 0.83 (0.5), when it became a pick.
+    recastChance: 0.3,
   },
   // An orbit rather than a shot: range is how far out the orbs ride,
   // orbitSpeed how fast they travel around, and attackSpeed how often one
@@ -1329,6 +1365,8 @@ export const SKILL_BASE: Record<SkillId, SkillBaseStats> = {
     pierceCount: 0,
     orbCount: 3,
     orbitSpeed: 200,
+    blastRadius: 0,
+    recastChance: 0,
   },
 };
 
@@ -1348,9 +1386,12 @@ export const SKILL_BASE: Record<SkillId, SkillBaseStats> = {
 export const UPGRADE_PERCENT = {
   damage: 0.2,
   attackSpeed: 0.2,
-  range: 0.15,
+  // 타격's 공격 범위 (0.83); no other skill offers it.
+  range: 0.1,
   projectileSpeed: 0.15,
   orbitSpeed: 0.2,
+  // 화염구's 폭발 범위 (0.83).
+  blastRadius: 0.15,
 } as const;
 
 /**
@@ -1361,6 +1402,8 @@ export const UPGRADE_STEP = {
   chainCount: 1,
   pierceCount: 1,
   orbCount: 1,
+  // 낙뢰's 처치 시 재시전 확률: ten points a pick (0.83).
+  recastChance: 0.1,
 } as const;
 
 export type UpgradeKey =
@@ -1383,25 +1426,29 @@ export function upgradeStep(skill: SkillId, upgrade: UpgradeKey): number {
   return UPGRADE_STEP[upgrade];
 }
 
-/** The number the card shows: a percentage, or a count. */
+/** The steps that are a chance, and read as points out of a hundred (재시전 확률). */
+export const UPGRADE_SHOWN_AS_CHANCE: readonly UpgradeKey[] = ['recastChance'];
+
+/** The number the card shows: a percentage, a chance in points, or a count. */
 export function upgradeShown(skill: SkillId, upgrade: UpgradeKey): number {
-  return isPercentUpgrade(upgrade)
-    ? Math.round(UPGRADE_PERCENT[upgrade] * 100)
-    : upgradeStep(skill, upgrade);
+  if (isPercentUpgrade(upgrade)) {
+    return Math.round(UPGRADE_PERCENT[upgrade] * 100);
+  }
+  const step = upgradeStep(skill, upgrade);
+  return UPGRADE_SHOWN_AS_CHANCE.includes(upgrade) ? Math.round(step * 100) : step;
 }
 
-/** Ceilings on the upgrades that add structure rather than numbers. */
-export const UPGRADE_CAP: Partial<Record<UpgradeKey, number>> = {
-  chainCount: 7,
-  /** 얼음창 runs through at most this many. */
-  pierceCount: 5,
-  /** 공허구체 holds at most this many orbs — a weapon's extra one included. */
-  orbCount: 8,
-};
+/**
+ * Ceilings on what an upgrade can take a stat to. None since 0.83: every
+ * upgrade stops at its pick count (UPGRADE_MAX_PICKS), and what gear adds
+ * comes on top of it rather than counting against it (the user's ask).
+ */
+export const UPGRADE_CAP: Partial<Record<UpgradeKey, number>> = {};
 
 /** The orbs 공허구체 actually has up: its count and a weapon's extra one, never past the cap. */
+/** Orbs in the air: the skill's own and what the gear adds, which no ceiling cuts (0.83). */
 export function orbsHeld(orbCount: number, extra = 0): number {
-  return Math.min(UPGRADE_CAP.orbCount ?? Infinity, Math.max(1, Math.round(orbCount + extra)));
+  return Math.max(1, Math.round(orbCount + extra));
 }
 
 /**
@@ -1411,19 +1458,24 @@ export function orbsHeld(orbCount: number, extra = 0): number {
 export const UPGRADE_MAX_PICKS: Partial<Record<UpgradeKey, number>> = {
   damage: 20,
   attackSpeed: 20,
-  // These three had no ceiling at all until 2026-10-17.
-  range: 20,
   projectileSpeed: 20,
   orbitSpeed: 20,
+  // The ones that add structure, and the ones 0.83 added: five picks each.
+  chainCount: 5,
+  pierceCount: 5,
+  orbCount: 5,
+  range: 5,
+  blastRadius: 5,
+  recastChance: 5,
 };
 
 /**
  * ★ 골드 — what a run pays out, and what that buys.
  *
  * A run is paid for the damage it dealt rather than for how long it lasted,
- * so pushing into a crowd you cannot survive is still worth something. The
- * one thing to spend it on is a 신성한 조각, which is the slow, certain way
- * to a passive point when the 우두머리 rolls have not been kind.
+ * so pushing into a crowd you cannot survive is still worth something.
+ * Nothing spends it since the 신성한 조각 went (0.83); taking gold out
+ * too is on hold.
  */
 export const ECONOMY = {
   /**
@@ -1431,8 +1483,6 @@ export const ECONOMY = {
    * run pays what it paid before.
    */
   damagePerGold: 1000,
-  /** What one 신성한 조각 costs. */
-  shardPrice: 100,
 } as const;
 
 export const STATS = {

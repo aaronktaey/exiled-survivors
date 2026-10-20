@@ -22,7 +22,6 @@ import {
   RANKING,
   RARE,
   SAVE,
-  SHARD,
   SKILL_BASE,
   SKILL_DROP,
   SKILL_MASTERY,
@@ -59,6 +58,7 @@ import {
   passiveDetail,
   passiveName,
   skillName,
+  masteryText,
   skillSummary,
   t,
   tagName,
@@ -155,7 +155,6 @@ function values(): Record<string, string | number> {
     spawnStart: seconds(SPAWN.startIntervalMs),
     spawnMin: seconds(SPAWN.minIntervalMs),
     maxAlive: SPAWN.maxAlive,
-    shardChance: percent(SHARD.chance),
     bossBonus: `+${percent(BOSS.dropBonus)}`,
     dropBonus: `+${percent(RARE.dropBonusPerAffix)}`,
     rareChance: percent(RARE.chance),
@@ -186,8 +185,6 @@ function values(): Record<string, string | number> {
     altarOffers: (Object.keys(ALTAR_OFFERS) as AltarOfferId[])
       .map((id) => altarOfferText(id))
       .join(', '),
-    perOrb: SHARD.perOrb,
-    points: SHARD.pointsPerOrb,
     fromKillTiers: tierSpan(
       Object.values(GEAR)
         .filter((spec) => spec.fromKill !== undefined)
@@ -206,12 +203,9 @@ function values(): Record<string, string | number> {
     rankSize: RANKING.size,
     rankResetHour: RANKING.dailyReset.hour,
     masteryLevel: SKILL_MASTERY.level,
+    masteryLevel2: SKILL_MASTERY.second.level,
     sellBase: GEAR_SELL.perRank,
     sellAffix: percent(GEAR_SELL.perAffix),
-    fireZoneSecs: SKILL_MASTERY.fireZone.durationMs / 1000,
-    fireZoneShare: percent(SKILL_MASTERY.fireZone.damageShare),
-    freezeSecs: SKILL_MASTERY.freezeMs / 1000,
-    thunderRecast: percent(SKILL_MASTERY.thunderRecastChance),
   };
 }
 
@@ -327,7 +321,13 @@ function skillCard(id: (typeof ALL_SKILLS)[number]['id']): GuideCard {
         : fill(g.skillRange, { range: base.range }),
       ...(scale === 1 ? [] : [fill(g.skillScale, { scale: round(scale) })]),
     ],
-    lines: [skillSummary(skill.id), fill(g.skillUpgrades, { picks: picks.join(' / ') })],
+    lines: [
+      skillSummary(skill.id),
+      fill(g.skillUpgrades, { picks: picks.join(' / ') }),
+      // What its two awakenings add, as the HUD's card says it (main skill only).
+      fill(t().mastery.card, { effect: masteryText(skill.id) }),
+      fill(t().mastery.card2, { effect: masteryText(skill.id, 2) }),
+    ],
   };
 }
 
