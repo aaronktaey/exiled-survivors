@@ -49,6 +49,7 @@ export class ThunderStrike implements Weapon {
     this.sinceCastMs = 0;
     this.bolt.clear();
     this.lastStrikes = 0;
+    context.onCast?.(first.x);
     this.cast(context, first);
     this.scene.tweens.killTweensOf(this.bolt);
     this.bolt.setAlpha(1);

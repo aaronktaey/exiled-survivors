@@ -15,6 +15,32 @@ export interface PatchNote {
 
 export const PATCH_NOTES: readonly PatchNote[] = [
   {
+    version: '0.82',
+    date: '2026-10-20',
+    changes: {
+      ko: [
+        '생존자가 걸을 때 다리를 번갈아 내딛으며 걷습니다.',
+        '메인 스킬이 발동할 때마다 생존자가 들고 있는 것을 들어 올렸다가 대상 쪽으로 내지르고, 끝이 번쩍입니다. 공허구체는 구체가 한 바퀴 돌 때마다 구체를 들어 올립니다.',
+        '시작 스킬을 무작위 3개가 아니라 모든 스킬 중에서 고릅니다.',
+      ],
+      en: [
+        'The survivor now walks, one leg after the other.',
+        'Each time the main skill goes off, the survivor raises what it carries and thrusts it toward the target, with a flash at the tip. With Void Orb it raises its orb once every lap.',
+        'The first skill is chosen from every skill, not three at random.',
+      ],
+      ja: [
+        '生存者が歩くとき、足を交互に踏み出して歩きます。',
+        'メインスキルが発動するたびに、生存者が持っているものを振り上げて対象の方へ突き出し、先端が光ります。虚無球は球が一周するたびに球を掲げます。',
+        '開始スキルをランダムな3つではなく、すべてのスキルから選びます。',
+      ],
+      zh: [
+        '幸存者行走时会交替迈步。',
+        '主技能每次发动时，幸存者会举起手中之物并朝目标刺出，尖端闪光。虚空球则在球体每转一圈时举起球体。',
+        '开局技能改为从所有技能中选择，而不是随机3个。',
+      ],
+    },
+  },
+  {
     version: '0.81',
     date: '2026-10-20',
     changes: {

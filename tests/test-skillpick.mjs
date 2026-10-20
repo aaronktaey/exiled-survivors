@@ -49,14 +49,15 @@ const opened = await ev(`(() => {
     active: window.game.scene.isActive('SkillPickScene'),
     choosing: g.choosing, paused: g.physics.world.isPaused,
     options: p.payload.options, owned: [...g.owned],
-    want: window.config.SKILL_PICK.choices, all: Object.keys(window.config.SKILL_BASE),
+    all: Object.keys(window.config.SKILL_BASE),
   };
 })()`);
 console.log('opened:', JSON.stringify(opened));
 check('a fresh run opens on the cards, with the arena frozen and nothing in hand',
   opened.active && opened.choosing && opened.paused && opened.owned.length === 0);
-check('as many different skills as configured, each a real one',
-  opened.options.length === opened.want && new Set(opened.options).size === opened.want &&
+// Every skill there is, once each (0.82; three at random before).
+check('the first skill is chosen from every skill, each once',
+  opened.options.length === opened.all.length && new Set(opened.options).size === opened.all.length &&
     opened.options.every((id) => opened.all.includes(id)),
   opened.options.join(' / '));
 await shot('skillpick-01-start');
@@ -165,12 +166,50 @@ check('a card for a skill not yet held adds it, with no upgrade screen',
 // The survivor wears the main skill's look (0.76, kept in 0.80); one found later changes nothing.
 const look = await run(`
   const p = s.player, c = window.config;
-  return { main: s.mainSkill, look: p.look, texture: p.texture.key, want: c.lookTexture(s.mainSkill),
+  return { main: s.mainSkill, look: p.look, texture: p.texture.key, want: 'tex-look-' + s.mainSkill + '-',
            drawn: Math.round(p.displayWidth), size: Math.round(p.body.width), wantDrawn: c.PLAYER_LOOK.drawn, wantSize: c.PLAYER.size };
 `);
 check('the survivor is dressed for the main skill, drawn at PLAYER_LOOK.drawn with a PLAYER.size body',
-  look.look === look.main && look.texture === look.want && look.drawn === look.wantDrawn && look.size === look.wantSize,
+  look.look === look.main && look.texture.startsWith(look.want) && Math.abs(look.drawn - look.wantDrawn) <= 1 && look.size === look.wantSize,
   JSON.stringify(look));
+
+// It walks while it moves and stands when it stops (0.82).
+const walk = await run(`
+  const p = s.player, c = window.config;
+  p.casting = false;
+  p.heading.set(1, 0);
+  p.animateLook(true);
+  const walking = { anim: p.anims.currentAnim?.key, playing: p.anims.isPlaying, want: c.lookAnim(p.look, 'walk') };
+  p.animateLook(false);
+  return { walking, stood: { playing: p.anims.isPlaying, texture: p.texture.key, want: c.lookTexture(p.look) } };
+`);
+check('it plays its walk while it moves, and stands still in its idle look when it stops',
+  walk.walking.anim === walk.walking.want && walk.walking.playing && !walk.stood.playing && walk.stood.texture === walk.stood.want,
+  JSON.stringify(walk));
+
+// The main skill going off plays the cast, turned toward the target; another skill does not.
+const cast = await run(`
+  const p = s.player, c = window.config;
+  p.stop(); p.casting = false; p.setFlipX(false);
+  s.castLook(p.x - 200);
+  const during = { anim: p.anims.currentAnim?.key, casting: p.casting, flip: p.flipX, want: c.lookAnim(p.look, 'cast') };
+  return during;
+`);
+await sleep(600);
+const castDone = await run(`return { casting: s.player.casting };`);
+check('the main skill going off plays the cast, facing the enemy it went for, and then lets go',
+  cast.anim === cast.want && cast.casting && cast.flip === true && castDone.casting === false,
+  JSON.stringify({ cast, castDone }));
+const handedTo = await run(`
+  const seen = {};
+  const wrap = s.weapons.map((w) => { const real = w.update; w.update = function (dt, ctx) { seen[w.definition.id] = typeof ctx.onCast === 'function'; return real.call(this, dt, ctx); }; return [w, real]; });
+  s.choosing = false; s.update(0, 16);
+  wrap.forEach(([w, real]) => { w.update = real; });
+  return { seen, main: s.mainSkill };
+`);
+check('only the main skill is handed the cast',
+  handedTo.seen[handedTo.main] === true && Object.entries(handedTo.seen).every(([id, on]) => on === (id === handedTo.main)),
+  JSON.stringify(handedTo));
 
 // --- 5. kills leave one at the configured chance ---
 const rolls = await run(`

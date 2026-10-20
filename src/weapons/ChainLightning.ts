@@ -41,6 +41,7 @@ export class ChainLightning implements Weapon {
     }
 
     this.sinceCastMs = 0;
+    context.onCast?.(first.x);
     this.strike(context, first);
   }
 

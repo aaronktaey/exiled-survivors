@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 
 import { COLORS, DEPTH, SCENES, SCRIM, SKILL_ICON_SIZE, SKILL_ICONS, TEXT } from '@/config';
 import { fill, skillName, skillSummary, t, tagName } from '@/i18n';
+import { addBackButton } from '@/systems/BackButton';
 import { fitText } from '@/systems/Layout';
 import { prefersTouchControls } from '@/systems/VirtualJoystick';
 import { SKILLS, type SkillId } from '@/weapons/skills';
@@ -16,17 +17,35 @@ export interface SkillPickData {
   /** The level each owned one is at, for its card. */
   readonly levels?: Partial<Record<SkillId, number>>;
   readonly onPick: (skill: SkillId) => void;
+  /**
+   * A line of its own for a card, in place of the skill's summary — a 룬's
+   * pick says where it would go, `warn` (in red) when it would push one out.
+   */
+  readonly notes?: Partial<Record<SkillId, { readonly text: string; readonly warn?: boolean }>>;
+  /** Given, a back button (and Esc) leave the choice this way — the run's first skill goes back to the title. */
+  readonly onBack?: () => void;
+  /**
+   * Given, a button under the cards (and Esc, without `onBack`) takes none
+   * of them: a 룬 found is let go (0.79).
+   */
+  readonly discard?: { readonly label: string; readonly onDiscard: () => void };
 }
 
-const LEFT_CODES = ['KeyA', 'ArrowLeft', 'ArrowUp'];
-const RIGHT_CODES = ['KeyD', 'ArrowRight', 'ArrowDown'];
+const LEFT_CODES = ['KeyA', 'ArrowLeft'];
+const RIGHT_CODES = ['KeyD', 'ArrowRight'];
+const UP_CODES = ['KeyW', 'ArrowUp'];
+const DOWN_CODES = ['KeyS', 'ArrowDown'];
 const CONFIRM_CODES = ['Space', 'Enter', 'NumpadEnter'];
-const NUMBER_CODES = ['Digit1', 'Digit2', 'Digit3', 'Digit4'];
+const NUMBER_CODES = ['Digit1', 'Digit2', 'Digit3', 'Digit4', 'Digit5', 'Digit6', 'Digit7', 'Digit8', 'Digit9'];
 
 const CARD_MAX_WIDTH = 230;
 const CARD_HEIGHT = 210;
 const CARD_GAP = 18;
 const SIDE_MARGIN = 16;
+/** The 버리기 button's size, and the room it takes under the cards. */
+const DISCARD_W = 160;
+const DISCARD_H = 38;
+const DISCARD_ROOM = DISCARD_H + 16;
 
 interface CardView {
   readonly skill: SkillId;
@@ -37,13 +56,14 @@ interface CardView {
 }
 
 /**
- * 무작위 스킬: three skills on cards, one to take. A skill already in hand
- * says 강화 on its card and opens its upgrade choice when taken; one not yet
- * held is simply acquired. A run's first skill is chosen here too.
+ * Skills on cards, one to take: a run's first skill, out of every skill
+ * there is (0.74; three at random before), laid out in rows. With `onBack`
+ * a back button (and Esc) leave without taking one.
  *
  * It moves and confirms the way the upgrade picker does — arrows or hover
- * to move, Space, a tap or 1-3 to take — and is locked for a moment on
- * open, so a key held down from play cannot take a card for the player.
+ * to move, Space, a tap or a number key to take — and is locked for a
+ * moment on open, so a key held down from play cannot take a card for the
+ * player.
  */
 export class SkillPickScene extends Phaser.Scene {
   public static readonly KEY = SCENES.skillPick;
@@ -53,6 +73,10 @@ export class SkillPickScene extends Phaser.Scene {
   public payload!: SkillPickData;
   public cards: CardView[] = [];
   public selected = 0;
+  /** How many cards a row holds. Public for tests. */
+  public columns = 1;
+  /** The 버리기 button, when the choice offers one. Public for tests. */
+  public discardButton?: Phaser.GameObjects.Rectangle;
   private unlocked = false;
   private picked = false;
 
@@ -66,6 +90,7 @@ export class SkillPickScene extends Phaser.Scene {
     this.selected = 0;
     this.picked = false;
     this.unlocked = false;
+    this.discardButton = undefined;
   }
 
   public create(): void {
@@ -74,17 +99,27 @@ export class SkillPickScene extends Phaser.Scene {
     const copy = t().skillPick;
 
     this.add.rectangle(0, 0, width, height, 0x05070b, SCRIM.upgrade).setOrigin(0, 0).setDepth(DEPTH.ui);
+    const { onBack } = this.payload;
+    if (onBack) {
+      addBackButton(this, () => this.back());
+    }
 
-    // Three across when there is the width, stacked when there is not.
+    // As many across as fit at 150 wide (at most three, the way the cards
+    // read best), in as many rows as that takes; a card too short for its
+    // picture over its words lays them side by side instead.
     const count = this.payload.options.length;
     const usable = width - SIDE_MARGIN * 2;
-    const across = usable >= count * 150 + (count - 1) * CARD_GAP;
-    const cardWidth = across
-      ? Math.min(CARD_MAX_WIDTH, (usable - CARD_GAP * (count - 1)) / count)
-      : Math.min(320, usable);
-    const cardHeight = across ? CARD_HEIGHT : Math.min(CARD_HEIGHT * 0.62, (height - 220) / count - CARD_GAP);
-    const block = 90 + (across ? cardHeight : count * (cardHeight + CARD_GAP) - CARD_GAP) + 50;
-    const top = Math.max(16, (height - block) / 2);
+    const columns = Math.max(1, Math.min(3, count, Math.floor((usable + CARD_GAP) / (150 + CARD_GAP))));
+    const rows = Math.ceil(count / columns);
+    this.columns = columns;
+    const cardWidth = Math.min(columns === 1 ? 320 : CARD_MAX_WIDTH, (usable - CARD_GAP * (columns - 1)) / columns);
+    const margin = onBack ? 44 : 16;
+    const extra = this.payload.discard ? DISCARD_ROOM : 0;
+    const cardHeight = Math.min(CARD_HEIGHT, (height - margin - 16 - 90 - 40 - extra - CARD_GAP * (rows - 1)) / rows);
+    // A card under 200 high cannot hold its picture over its words: side by side then.
+    const compact = cardHeight < 200;
+    const block = 90 + rows * cardHeight + (rows - 1) * CARD_GAP + extra + 40;
+    const top = Math.max(margin, (height - block) / 2);
 
     fitText(
       this.add
@@ -111,14 +146,19 @@ export class SkillPickScene extends Phaser.Scene {
 
     const firstY = top + 90 + cardHeight / 2;
     this.cards = this.payload.options.map((skill, index) => {
-      const x = across ? centerX + (index - (count - 1) / 2) * (cardWidth + CARD_GAP) : centerX;
-      const y = across ? firstY : firstY + index * (cardHeight + CARD_GAP);
-      return this.buildCard(index, skill, x, y, cardWidth, cardHeight, !across);
+      const row = Math.floor(index / columns);
+      const inRow = Math.min(columns, count - row * columns);
+      const x = centerX + ((index % columns) - (inRow - 1) / 2) * (cardWidth + CARD_GAP);
+      const y = firstY + row * (cardHeight + CARD_GAP);
+      return this.buildCard(index, skill, x, y, cardWidth, cardHeight, compact);
     });
 
-    const lastBottom = this.cards.length
+    let lastBottom = this.cards.length
       ? this.cards[this.cards.length - 1]!.y + cardHeight / 2
       : firstY;
+    if (this.payload.discard) {
+      lastBottom = this.addDiscard(centerX, lastBottom + 12 + DISCARD_H / 2, this.payload.discard.label) + DISCARD_H / 2;
+    }
     fitText(
       this.add
         .text(centerX, Math.min(height - 16, lastBottom + 28), prefersTouchControls() ? copy.hintTouch : copy.hintKeyboard, {
@@ -137,6 +177,51 @@ export class SkillPickScene extends Phaser.Scene {
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       this.input.keyboard?.off('keydown', this.onKeyDown, this);
     });
+  }
+
+  /** Leaves without a card, where that is offered. Public so a test can. */
+  public back(): void {
+    const { onBack } = this.payload;
+    if (this.picked || !onBack) {
+      return;
+    }
+    this.picked = true;
+    this.scene.stop();
+    onBack();
+  }
+
+  /** Takes none of the cards, where that is offered. Public so a test can. */
+  public discard(): void {
+    const { discard } = this.payload;
+    if (this.picked || !this.unlocked || !discard) {
+      return;
+    }
+    this.picked = true;
+    this.scene.stop();
+    discard.onDiscard();
+  }
+
+  /** The 버리기 button under the cards; returns where its middle is. */
+  private addDiscard(x: number, y: number, label: string): number {
+    const plate = this.add
+      .rectangle(x, y, DISCARD_W, DISCARD_H, COLORS.panel, 1)
+      .setStrokeStyle(2, COLORS.panelEdge, 1)
+      .setDepth(DEPTH.ui)
+      .setInteractive({ useHandCursor: true });
+    const text = this.add
+      .text(x, y, prefersTouchControls() ? label : `${label}  (Esc)`, {
+        fontFamily: 'system-ui, sans-serif',
+        fontSize: TEXT.size.body,
+        color: COLORS.warnText,
+      })
+      .setOrigin(0.5)
+      .setDepth(DEPTH.ui + 1);
+    fitText(text, DISCARD_W - 10, 0);
+    plate.on(Phaser.Input.Events.GAMEOBJECT_POINTER_OVER, () => plate.setStrokeStyle(3, COLORS.accentFill, 1));
+    plate.on(Phaser.Input.Events.GAMEOBJECT_POINTER_OUT, () => plate.setStrokeStyle(2, COLORS.panelEdge, 1));
+    plate.on(Phaser.Input.Events.GAMEOBJECT_POINTER_DOWN, () => this.discard());
+    this.discardButton = plate;
+    return y;
   }
 
   /** Takes a card. Public so a test can take one without hunting for it. */
@@ -212,14 +297,16 @@ export class SkillPickScene extends Phaser.Scene {
       .setDepth(DEPTH.ui + 1);
     ty += meta.height + 6;
 
+    const note = this.payload.notes?.[skill];
     this.add
-      .text(textX, ty, skillSummary(skill), {
+      .text(textX, ty, note ? note.text : skillSummary(skill), {
         fontFamily: 'system-ui, sans-serif',
         fontSize: TEXT.size.hint,
-        color: COLORS.muted,
+        color: note?.warn ? COLORS.warnText : note ? COLORS.text : COLORS.muted,
         align: compact ? 'left' : 'center',
         wordWrap: { width: textWidth },
-        maxLines: compact ? 2 : 4,
+        // As many lines as the card has room left for.
+        maxLines: Math.max(1, Math.min(4, Math.floor((y + h / 2 - 8 - ty) / 17))),
       })
       .setOrigin(origin, 0)
       .setDepth(DEPTH.ui + 1);
@@ -255,14 +342,27 @@ export class SkillPickScene extends Phaser.Scene {
       this.pick(numbered);
       return;
     }
+    const last = this.cards.length - 1;
     if (LEFT_CODES.includes(event.code)) {
       this.selected = Math.max(0, this.selected - 1);
       this.refresh();
     } else if (RIGHT_CODES.includes(event.code)) {
-      this.selected = Math.min(this.cards.length - 1, this.selected + 1);
+      this.selected = Math.min(last, this.selected + 1);
+      this.refresh();
+    } else if (UP_CODES.includes(event.code)) {
+      this.selected = this.selected - this.columns >= 0 ? this.selected - this.columns : this.selected;
+      this.refresh();
+    } else if (DOWN_CODES.includes(event.code)) {
+      this.selected = Math.min(last, this.selected + this.columns);
       this.refresh();
     } else if (CONFIRM_CODES.includes(event.code)) {
       this.pick(this.selected);
+    } else if (event.code === 'Escape') {
+      if (this.payload.onBack) {
+        this.back();
+      } else {
+        this.discard();
+      }
     }
   }
 }

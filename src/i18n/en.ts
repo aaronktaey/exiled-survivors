@@ -390,7 +390,7 @@ export const en: Strings = {
     drop: 'Random skill',
     new: 'New',
     upgrade: 'Upgrade · Lv {level}',
-    hintKeyboard: '← → to move   Space to pick   (1-3 picks directly)',
+    hintKeyboard: 'Arrows to move   Space to choose   (1–6 to choose at once)',
     hintTouch: 'Tap the card you want',
   },
 

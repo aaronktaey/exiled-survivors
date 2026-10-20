@@ -217,6 +217,8 @@ export class GameScene extends Phaser.Scene {
    * upgraded by picking it up again, never by a level. Public for tests.
    */
   public mainSkill: SkillId | null = null;
+  /** What the main skill's weapon is handed as `onCast`: the survivor's cast. */
+  private readonly castLook = (targetX?: number): void => this.player.castLook(targetX);
   /** Skills whose 각성 has been celebrated this run. Public for tests. */
   public awakened = new Set<SkillId>();
   /** 전투 알림, top right. Public for tests. */
@@ -412,7 +414,8 @@ export class GameScene extends Phaser.Scene {
    * upgrade puts on it, and the title card waits until the skill is in hand.
    */
   private openStartPick(): void {
-    const options = this.randomSkills();
+    // Every skill there is (0.82, the user's ask; three at random before).
+    const options = DROPPABLE_SKILLS.map((skill) => skill.id);
     if (options.length === 0) {
       this.showIntro();
       return;
@@ -567,6 +570,7 @@ export class GameScene extends Phaser.Scene {
         hit: this.combat.hit,
         mastered: this.progression.levelFor(id) >= SKILL_MASTERY.level,
         enemyShots: this.combat.enemyShots,
+        onCast: id === this.mainSkill ? this.castLook : undefined,
       });
     }
     // 화염구's 각성: the ground it burst on keeps burning.

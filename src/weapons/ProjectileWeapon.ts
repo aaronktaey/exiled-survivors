@@ -43,6 +43,7 @@ export abstract class ProjectileWeapon implements Weapon {
     }
 
     this.sinceShotMs = 0;
+    context.onCast?.(target.x);
     this.fire(context, target);
   }
 

@@ -103,6 +103,8 @@ export const COLORS = {
   critText: '#ffb347',
   /** A run on the board the admin's review marks out of line. */
   suspectText: '#ff6b6b',
+  /** A warning on a card: what a choice would cost. */
+  warnText: '#ff6b6b',
 } as const;
 
 export const DEPTH = {
@@ -803,6 +805,13 @@ export const DAMAGE_NUMBERS = {
   critLifespanMs: 900,
 } as const;
 
+/**
+ * The square a look is drawn on: the 32-unit figure set `inset` in from
+ * each edge, so a prop thrust forward in a cast stays on the canvas.
+ * PLAYER_LOOK.drawn is the whole square's size on screen.
+ */
+export const LOOK_CANVAS = { size: 56, inset: 12 } as const;
+
 /** What a survivor carries in its look: drawn by BootScene.createLookTextures. */
 export type LookProp = 'none' | 'sword' | 'staff' | 'wand' | 'spear' | 'orb' | 'rod';
 
@@ -828,7 +837,9 @@ export const PLAYER_LOOK: {
   readonly base: PlayerLook;
   readonly bySkill: Readonly<Record<string, PlayerLook>>;
 } = {
-  drawn: 30,
+  // The whole LOOK_CANVAS square: 30 for the 32-unit figure before the
+  // canvas grew room for the cast (0.82), so the figure is drawn as large.
+  drawn: 30 * (LOOK_CANVAS.size / 32),
   base: { robe: 0x6a7385, trim: 0x3a4152, hood: 0x4a3a2a, prop: 'none', glow: 0xffffff },
   bySkill: {
     meleeStrike: { robe: 0x8a5a3c, trim: 0xc0c6d0, hood: 0x9aa3b0, prop: 'sword', glow: 0xe8edf7 },
@@ -840,5 +851,53 @@ export const PLAYER_LOOK: {
   },
 };
 
-/** A look's texture: one per skill in PLAYER_LOOK, and `base`. */
-export const lookTexture = (id: string): string => `tex-look-${id}`;
+
+/** One pose a look is drawn in (BootScene.drawLook). */
+export interface LookPose {
+  readonly key: string;
+  /** How far the front leg is ahead, px (the back one as far behind). */
+  readonly stride: number;
+  /** How far the body rises, px (negative is up). */
+  readonly bob: number;
+  /** Where the hand is, and the way what it holds points (degrees, 0 is forward, -90 up). */
+  readonly hand: readonly [number, number];
+  readonly angle: number;
+  /** How high an orb is raised above the hand. */
+  readonly lift: number;
+  /** The flash at the prop's tip: its radius, 0 for none. */
+  readonly flash: number;
+}
+
+/**
+ * ★ 외형 동작 (0.82, the user's ask): the survivor walks, and swings or
+ * thrusts what it carries each time the main skill goes off. `idle` is the
+ * look standing; `walk0`–`walk3` the walk; `windup` and `release` the cast.
+ */
+export const LOOK_POSES: readonly LookPose[] = [
+  { key: 'idle', stride: 0, bob: 0, hand: [25, 15], angle: -90, lift: 0, flash: 0 },
+  { key: 'walk0', stride: 3, bob: 0, hand: [25, 15], angle: -84, lift: 0, flash: 0 },
+  { key: 'walk1', stride: 0, bob: -1, hand: [25, 14], angle: -90, lift: 1, flash: 0 },
+  { key: 'walk2', stride: -3, bob: 0, hand: [25, 15], angle: -96, lift: 0, flash: 0 },
+  { key: 'walk3', stride: 0, bob: -1, hand: [25, 14], angle: -90, lift: 1, flash: 0 },
+  { key: 'windup', stride: 0, bob: 0, hand: [22, 10], angle: -125, lift: 3, flash: 0 },
+  { key: 'release', stride: 1, bob: 0, hand: [26, 16], angle: -25, lift: 5, flash: 3 },
+];
+
+/** How the poses are played: the walk's order and pace, the cast's poses and how long each is held. */
+export const LOOK_ANIM = {
+  walk: ['walk0', 'walk1', 'walk2', 'walk3'],
+  walkFps: 8,
+  cast: [
+    { pose: 'windup', ms: 70 },
+    { pose: 'release', ms: 150 },
+  ],
+} as const;
+
+/** One pose of one look: `id` a skill in PLAYER_LOOK.bySkill, or `base`. */
+export const lookFrame = (id: string, pose: string): string => `tex-look-${id}-${pose}`;
+
+/** A look's texture standing still. */
+export const lookTexture = (id: string): string => lookFrame(id, 'idle');
+
+/** A look's walk or cast animation. */
+export const lookAnim = (id: string, kind: 'walk' | 'cast'): string => `look-${id}-${kind}`;

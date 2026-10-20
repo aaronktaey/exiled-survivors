@@ -54,6 +54,7 @@ export class MeleeStrike implements Weapon {
     }
 
     this.sinceSwingMs = 0;
+    context.onCast?.(target.x);
     this.swing(context, target);
   }
 

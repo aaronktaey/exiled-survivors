@@ -418,7 +418,20 @@ Read `git log` for what changed and when. What is not in the log:
   `Player.wearLook`, `PLAYER_LOOK.bySkill` in visuals.ts, drawn by
   `BootScene.createLookTextures`; `GameScene.acquire` dresses it when the
   main skill is taken. The picture is `PLAYER_LOOK.drawn`, the body stays
-  `PLAYER.size`.
+  `PLAYER.size`. Since 0.82 it moves: every look is drawn in each of
+  `LOOK_POSES` (`lookFrame(id, pose)`, on a `LOOK_CANVAS` square with room
+  round the 32-unit figure for a thrust — keep it symmetric, or a flip
+  shifts the figure) and BootScene makes two animations a look
+  (`lookAnim(id, 'walk' | 'cast')`, `LOOK_ANIM`). `Player.animateLook`
+  walks while it moves; `Player.castLook(targetX)` plays the cast, turned
+  to the target. A weapon calls `WeaponContext.onCast` when it goes off,
+  and GameScene hands it only to the main skill's weapon (공허구체 calls it
+  once a lap). `tests/look-sheet.mjs` (not a suite) draws every look in
+  every pose to `shots/look-sheet.png` for a look by eye.
+- **The first skill is chosen from every skill (0.82).** `openStartPick`
+  offers `DROPPABLE_SKILLS` whole; `SkillPickScene` lays the cards in rows
+  of up to three (0.79's layout). The 무작위 스킬 drop still offers
+  `SKILL_PICK.choices`.
 - **The language choice is off until release (`LOCALE`, system.ts).** While
   `LOCALE.choosable` is false the game shows `LOCALE.fixed` (ko) whatever a
   browser stored (`Settings` keeps the stored choice, `shownLanguage` picks),

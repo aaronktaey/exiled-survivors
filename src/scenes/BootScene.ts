@@ -23,7 +23,12 @@ import {
   TERRAIN,
   TEXTURES,
   PLAYER_LOOK,
-  lookTexture,
+  LOOK_ANIM,
+  LOOK_CANVAS,
+  LOOK_POSES,
+  lookAnim,
+  lookFrame,
+  type LookPose,
   type PlayerLook,
   VOID_ORB,
 } from '@/config';
@@ -451,81 +456,140 @@ export class BootScene extends Phaser.Scene {
   }
 
   /**
-   * Every survivor look (PLAYER_LOOK): a small figure facing right — legs, a
-   * robe with its trim, a head under a hood, and what the skill carries in
-   * the right hand. Player flips it to face the way it walks.
+   * Every survivor look (PLAYER_LOOK), in every pose (LOOK_POSES), and the
+   * two animations Player plays with them: a walk that swings the legs and
+   * bobs the body, and a cast that raises the prop (`windup`) and thrusts
+   * it forward with a flash at its tip (`release`). The figure faces right
+   * on a LOOK_CANVAS square with room round it for the thrust; Player flips
+   * it to face the way it walks, or what it strikes.
    */
   private createLookTextures(): void {
-    const size = 32;
     const looks: [string, PlayerLook][] = [['base', PLAYER_LOOK.base], ...Object.entries(PLAYER_LOOK.bySkill)];
     for (const [id, look] of looks) {
-      const g = this.add.graphics();
-      // Legs and boots.
-      g.fillStyle(0x2a2420, 1);
-      g.fillRect(11, 25, 4, 6);
-      g.fillRect(17, 25, 4, 6);
-      // The robe, wider at the hem, and its trim.
-      g.fillStyle(look.robe, 1);
-      g.fillPoints([new Phaser.Math.Vector2(10, 12), new Phaser.Math.Vector2(22, 12), new Phaser.Math.Vector2(24, 27), new Phaser.Math.Vector2(8, 27)], true);
-      g.fillStyle(look.trim, 1);
-      g.fillRect(10, 18, 12, 2);
-      g.fillRect(8, 26, 16, 2);
-      // Head and hood.
-      g.fillStyle(0xf2c9a0, 1);
-      g.fillCircle(16, 8, 5);
-      g.fillStyle(look.hood, 1);
-      g.fillRect(10, 2, 12, 4);
-      g.fillRect(10, 2, 3, 9);
-      g.fillStyle(0x1a1a1a, 1);
-      g.fillRect(17, 7, 2, 2);
-      // The arm forward, and what it holds.
-      g.fillStyle(look.robe, 1);
-      g.fillRect(21, 14, 4, 3);
-      switch (look.prop) {
-        case 'sword':
-          g.fillStyle(0x6a4a2a, 1);
-          g.fillRect(24, 15, 2, 4);
-          g.fillStyle(look.glow, 1);
-          g.fillRect(24, 3, 2, 12);
-          g.fillStyle(look.trim, 1);
-          g.fillRect(22, 14, 6, 2);
-          break;
-        case 'staff':
-        case 'rod':
-          g.fillStyle(0x6a4a2a, 1);
-          g.fillRect(25, 6, 2, 22);
-          g.fillStyle(look.glow, 1);
-          if (look.prop === 'staff') {
-            g.fillCircle(26, 5, 3);
-          } else {
-            g.fillPoints([new Phaser.Math.Vector2(27, 0), new Phaser.Math.Vector2(23, 5), new Phaser.Math.Vector2(26, 5), new Phaser.Math.Vector2(24, 9), new Phaser.Math.Vector2(29, 3), new Phaser.Math.Vector2(26, 3)], true);
-          }
-          break;
-        case 'wand':
-          g.fillStyle(0x3a3a3a, 1);
-          g.fillRect(25, 9, 2, 8);
-          g.lineStyle(2, look.glow, 1);
-          g.lineBetween(26, 9, 28, 5);
-          g.lineBetween(28, 5, 25, 4);
-          g.lineBetween(25, 4, 29, 0);
-          break;
-        case 'spear':
-          g.fillStyle(look.trim, 1);
-          g.fillRect(25, 6, 2, 22);
-          g.fillStyle(look.glow, 1);
-          g.fillPoints([new Phaser.Math.Vector2(26, 0), new Phaser.Math.Vector2(29, 6), new Phaser.Math.Vector2(23, 6)], true);
-          break;
-        case 'orb':
-          g.fillStyle(look.glow, 0.45);
-          g.fillCircle(27, 12, 5);
-          g.fillStyle(look.glow, 1);
-          g.fillCircle(27, 12, 3);
-          break;
-        default:
-          break;
+      for (const pose of LOOK_POSES) {
+        const g = this.add.graphics();
+        this.drawLook(g, look, pose);
+        g.generateTexture(lookFrame(id, pose.key), LOOK_CANVAS.size, LOOK_CANVAS.size);
+        g.destroy();
       }
-      g.generateTexture(lookTexture(id), size, size);
-      g.destroy();
+      this.anims.create({
+        key: lookAnim(id, 'walk'),
+        frames: LOOK_ANIM.walk.map((pose) => ({ key: lookFrame(id, pose) })),
+        frameRate: LOOK_ANIM.walkFps,
+        repeat: -1,
+      });
+      this.anims.create({
+        key: lookAnim(id, 'cast'),
+        frames: LOOK_ANIM.cast.map(({ pose, ms }) => ({ key: lookFrame(id, pose), duration: ms })),
+        frameRate: 1000,
+        repeat: 0,
+      });
+    }
+  }
+
+  /** One pose of one look: the 32-unit figure, set LOOK_CANVAS.inset in from the edge. */
+  private drawLook(g: Phaser.GameObjects.Graphics, look: PlayerLook, pose: LookPose): void {
+    const o = LOOK_CANVAS.inset;
+    const V = (x: number, y: number): Phaser.Math.Vector2 => new Phaser.Math.Vector2(x + o, y + o);
+    const rect = (x: number, y: number, w: number, h: number): void => {
+      g.fillRect(x + o, y + o, w, h);
+    };
+    const circle = (x: number, y: number, r: number): void => {
+      g.fillCircle(x + o, y + o, r);
+    };
+    const stroke = (color: number, width: number, x1: number, y1: number, x2: number, y2: number): void => {
+      g.lineStyle(width, color, 1);
+      g.lineBetween(x1 + o, y1 + o, x2 + o, y2 + o);
+    };
+    const bob = pose.bob;
+
+    // Legs and boots: one forward, one back as it walks.
+    g.fillStyle(0x2a2420, 1);
+    rect(11 + pose.stride, 25, 4, 6);
+    rect(17 - pose.stride, 25, 4, 6);
+    // The robe, wider at the hem, and its trim.
+    g.fillStyle(look.robe, 1);
+    g.fillPoints([V(10, 12 + bob), V(22, 12 + bob), V(24, 27), V(8, 27)], true);
+    g.fillStyle(look.trim, 1);
+    rect(10, 18 + bob, 12, 2);
+    rect(8, 26, 16, 2);
+    // Head and hood.
+    g.fillStyle(0xf2c9a0, 1);
+    circle(16, 8 + bob, 5);
+    g.fillStyle(look.hood, 1);
+    rect(10, 2 + bob, 12, 4);
+    rect(10, 2 + bob, 3, 9);
+    g.fillStyle(0x1a1a1a, 1);
+    rect(17, 7 + bob, 2, 2);
+
+    // The arm out to the hand, and what it holds along the pose's angle.
+    const [hx, handY] = pose.hand;
+    const hy = handY + bob;
+    stroke(look.robe, 3, 21, 14 + bob, hx, hy);
+    const a = Phaser.Math.DegToRad(pose.angle);
+    const dx = Math.cos(a);
+    const dy = Math.sin(a);
+    const at = (t: number): [number, number] => [hx + dx * t, hy + dy * t];
+    const along = (color: number, width: number, from: number, to: number): void => {
+      const [x1, y1] = at(from);
+      const [x2, y2] = at(to);
+      stroke(color, width, x1, y1, x2, y2);
+    };
+    let tip: [number, number] = at(0);
+    switch (look.prop) {
+      case 'sword': {
+        along(0x6a4a2a, 2, -3, 1);
+        // The guard, across the blade.
+        const [gx, gy] = at(1);
+        stroke(look.trim, 2, gx - dy * 3, gy + dx * 3, gx + dy * 3, gy - dx * 3);
+        along(look.glow, 2, 1, 13);
+        tip = at(13);
+        break;
+      }
+      case 'staff':
+      case 'rod':
+        along(0x6a4a2a, 2, -10, 12);
+        tip = at(13);
+        g.fillStyle(look.glow, 1);
+        if (look.prop === 'staff') {
+          circle(tip[0], tip[1], 3);
+        } else {
+          g.fillTriangle(tip[0] + o, tip[1] - 3 + o, tip[0] - 2 + o, tip[1] + 2 + o, tip[0] + 2 + o, tip[1] + 1 + o);
+        }
+        break;
+      case 'spear': {
+        along(look.trim, 2, -10, 12);
+        tip = at(16);
+        const [bx, by] = at(12);
+        g.fillStyle(look.glow, 1);
+        g.fillTriangle(tip[0] + o, tip[1] + o, bx - dy * 3 + o, by + dx * 3 + o, bx + dy * 3 + o, by - dx * 3 + o);
+        break;
+      }
+      case 'wand': {
+        along(0x3a3a3a, 2, -1, 7);
+        tip = at(9);
+        const [wx, wy] = at(7);
+        stroke(look.glow, 2, wx, wy, tip[0] + 2, tip[1] - 1);
+        stroke(look.glow, 2, tip[0] + 2, tip[1] - 1, tip[0] - 1, tip[1] - 3);
+        break;
+      }
+      case 'orb':
+        // Held up in the open hand, a little above it — higher as it casts.
+        tip = [hx + 2, hy - 3 - pose.lift];
+        g.fillStyle(look.glow, 0.45);
+        circle(tip[0], tip[1], 5 + pose.lift / 2);
+        g.fillStyle(look.glow, 1);
+        circle(tip[0], tip[1], 3);
+        break;
+      default:
+        break;
+    }
+    // The release flashes at the tip (at the hand, with nothing in it).
+    if (pose.flash > 0) {
+      g.fillStyle(look.glow, 0.35);
+      circle(tip[0], tip[1], pose.flash + 2);
+      g.fillStyle(0xffffff, 0.8);
+      circle(tip[0], tip[1], Math.max(1, pose.flash - 2));
     }
   }
 

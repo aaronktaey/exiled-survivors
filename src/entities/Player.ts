@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 
-import { COLORS, DEPTH, ENEMY, HUD, MANGO, MANGO_RING, PLAYER, PLAYER_LOOK, WEB, lookTexture } from '@/config';
+import { COLORS, DEPTH, ENEMY, HUD, MANGO, MANGO_RING, PLAYER, PLAYER_LOOK, WEB, lookAnim, lookTexture } from '@/config';
 import { fill, t } from '@/i18n';
 import { NO_BONUS, type GearBonus } from '@/systems/Gear';
 import type { AnalogInput } from '@/systems/VirtualJoystick';
@@ -40,6 +40,8 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   private invulnerableUntil = 0;
   /** The look worn: a skill id from PLAYER_LOOK.bySkill, or `base`. Public for tests. */
   public look = 'base';
+  /** A cast is being played (castLook): the walk waits, and it faces what it struck. Public for tests. */
+  public casting = false;
 
   public constructor(scene: Phaser.Scene, x: number, y: number) {
     super(scene, x, y, lookTexture('base'));
@@ -50,6 +52,11 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     this.setDepth(DEPTH.player);
     this.setCollideWorldBounds(true);
     this.wearLook('base');
+    this.on(Phaser.Animations.Events.ANIMATION_COMPLETE, (anim: Phaser.Animations.Animation) => {
+      if (anim.key.endsWith('-cast')) {
+        this.casting = false;
+      }
+    });
 
     this.healthBar = scene.add.graphics().setDepth(DEPTH.healthBar);
     this.mangoRing = scene.add.graphics().setDepth(DEPTH.player + 1);
@@ -102,13 +109,43 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     }
 
     this.setVelocity(this.heading.x * speed, this.heading.y * speed);
-    // Faces the way it walks; standing still, it keeps the last way.
+    this.animateLook(speed > 0 && this.heading.lengthSq() > 0);
+    this.drawHealthBar();
+  }
+
+  /**
+   * The walk while it moves, standing still when it does not — unless a cast
+   * is playing, which runs out first. Faces the way it walks; standing still,
+   * it keeps the last way.
+   */
+  private animateLook(moving: boolean): void {
+    if (this.casting) {
+      return;
+    }
     if (this.heading.x < -0.01) {
       this.setFlipX(true);
     } else if (this.heading.x > 0.01) {
       this.setFlipX(false);
     }
-    this.drawHealthBar();
+    if (moving) {
+      this.play(lookAnim(this.look, 'walk'), true);
+    } else if (this.anims.isPlaying || this.texture.key !== lookTexture(this.look)) {
+      this.stop();
+      this.setTexture(lookTexture(this.look));
+    }
+  }
+
+  /**
+   * The main skill went off (0.82): the look raises what it carries and
+   * thrusts it, turned toward `targetX` when there is one. A cast that comes
+   * again before the last ran out starts over.
+   */
+  public castLook(targetX?: number): void {
+    if (targetX !== undefined && Math.abs(targetX - this.x) > 1) {
+      this.setFlipX(targetX < this.x);
+    }
+    this.casting = true;
+    this.play(lookAnim(this.look, 'cast'), false);
   }
 
   /**
@@ -118,6 +155,8 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   public wearLook(skill: string): void {
     const id = skill in PLAYER_LOOK.bySkill ? skill : 'base';
     this.look = id;
+    this.casting = false;
+    this.stop();
     this.setTexture(lookTexture(id));
     this.setDisplaySize(PLAYER_LOOK.drawn, PLAYER_LOOK.drawn);
     const body = this.body as Phaser.Physics.Arcade.Body | null;

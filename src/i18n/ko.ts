@@ -394,7 +394,7 @@ export const ko: Strings = {
     drop: '무작위 스킬',
     new: '새 스킬',
     upgrade: '강화 · Lv {level}',
-    hintKeyboard: '← → 이동   Space 선택   (1-3 로 바로 선택)',
+    hintKeyboard: '← → ↑ ↓ 이동   Space 선택   (1-6 으로 바로 선택)',
     hintTouch: '원하는 카드를 누르세요',
   },
 

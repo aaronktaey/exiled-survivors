@@ -38,6 +38,8 @@ export class VoidOrb implements Weapon {
 
   /** Where the first orb is on the circle, in radians. */
   private angle = 0;
+  /** How far round the orbs have come since the last lap was counted, in radians. */
+  private lap = 0;
   private elapsedMs = 0;
 
   public constructor(scene: Phaser.Scene) {
@@ -58,7 +60,14 @@ export class VoidOrb implements Weapon {
 
     // Screen y grows downward, so a growing angle sweeps clockwise.
     const angularSpeed = context.orbitSpeed / radius;
-    this.angle = Phaser.Math.Angle.Wrap(this.angle + angularSpeed * (delta / 1000));
+    const turned = angularSpeed * (delta / 1000);
+    this.angle = Phaser.Math.Angle.Wrap(this.angle + turned);
+    // Nothing is cast and nothing aimed: the survivor raises its orb once a lap.
+    this.lap += turned;
+    if (this.lap >= TAU) {
+      this.lap -= TAU;
+      context.onCast?.();
+    }
 
     const { x, y } = context.origin;
     for (let i = 0; i < count; i++) {

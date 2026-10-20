@@ -47,6 +47,11 @@ export interface WeaponContext {
   readonly mastered: boolean;
   /** The enemies' shots in the air, for a skill that can strike them down (타격). */
   readonly enemyShots: Phaser.Physics.Arcade.Group;
+  /**
+   * The skill went off, toward `targetX` when it has a target — the survivor
+   * plays its cast (0.82). Handed only to the main skill.
+   */
+  readonly onCast?: (targetX?: number) => void;
 }
 
 /**

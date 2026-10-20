@@ -390,7 +390,7 @@ export const ja: Strings = {
     drop: 'ランダムスキル',
     new: '新スキル',
     upgrade: '強化 · Lv {level}',
-    hintKeyboard: '← → 移動   Space 選択   (1-3 で直接選択)',
+    hintKeyboard: '← → ↑ ↓ 移動   Space 選択   （1-6 ですぐ選択）',
     hintTouch: '欲しいカードを押してください',
   },
 

@@ -390,7 +390,7 @@ export const zh: Strings = {
     drop: '随机技能',
     new: '新技能',
     upgrade: '强化 · Lv {level}',
-    hintKeyboard: '← → 移动   Space 选择   (1-3 直接选择)',
+    hintKeyboard: '← → ↑ ↓ 移动   Space 选择   （1-6 直接选择）',
     hintTouch: '点击想要的卡片',
   },
 
