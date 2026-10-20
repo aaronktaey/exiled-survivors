@@ -537,11 +537,6 @@ for (let i = 0; i < 6; i++) {
   await sleep(400);
 }
 const hurt = await run(`
-  // Whatever an earlier kill left open (a level-up, a 룬's cards) is closed
-  // first: a held run would stand the crowd still.
-  s.pendingChoices.length = 0;
-  for (const key of ['UpgradeScene', 'SkillPickScene', 'GearPickScene', 'RuneChiselScene', 'SlotScene']) window.game.scene.stop(key);
-  if (s.choosing) s.afterChoice();
   s.spawner.clear();
   window.__addXp = s.progression.addXp;
   s.progression.addXp = () => {};

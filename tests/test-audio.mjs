@@ -49,28 +49,28 @@ check('each one is served as audio, not as the index page',
   urls.every((u) => u.status === 200 && /audio|mpeg/.test(u.type ?? '') && u.bytes > 4000),
   urls.map((u) => `${u.file} ${u.status} ${u.type} ${u.bytes}B`).join(' / '));
 
-// --- 3. a plain sword lands on the ordinary clip, a 하얀 망고 on the rare one ---
+// --- 3. a skill and a 신성한 조각 land on the ordinary clip ---
 const plain = await run(`
   window.__plays = [];
   const mgr = s.sound;
   const orig = mgr.play.bind(mgr);
   mgr.play = (key, cfg) => { window.__plays.push({ key, cfg }); return orig(key, cfg); };
 
-  s.combat.dropGearAt(s.player.x + 300, s.player.y, { uid: 'audio', id: 'rustySword', prefixes: [], suffixes: [] });
-  s.combat.dropMangoAt(s.player.x + 320, s.player.y);
+  s.combat.dropSkillAt(s.player.x + 300, s.player.y,
+    { id: 'fireball', name: '화염구', tags: [] });
+  s.combat.dropShardAt(s.player.x + 320, s.player.y);
 
   const calls = window.__plays.slice();
   mgr.play = orig;
-  s.combat.mangoDrops.getChildren().forEach(d => d.active && d.collect());
-  s.combat.gearDrops.getChildren().forEach(d => d.active && d.collect());
+  s.combat.shardDrops.getChildren().forEach(d => d.active && d.collect());
   return { calls };
 `);
 console.log('plain drops:', JSON.stringify(plain.calls));
-check('a plain sword lands on the ordinary clip',
+check('a skill lands on the ordinary clip',
   plain.calls[0]?.key === 'sfx-drop-normal', `key=${plain.calls[0]?.key}`);
 // Its nameplate is the 희귀 one, so its sound is the 희귀 one: the ear and
 // the eye are told the same thing about the same object on the floor.
-check('a 하얀 망고 sounds as rare as it is labelled',
+check('a 신성한 조각 sounds as rare as it is labelled',
   plain.calls[1]?.key === 'sfx-drop-rare', `key=${plain.calls[1]?.key}`);
 check('at the configured volume', plain.calls[0]?.cfg?.volume === 0.55,
   `volume=${plain.calls[0]?.cfg?.volume}`);
@@ -114,15 +114,14 @@ check('and a rare drop is one clip rather than two played together',
   byRarity.out.every((o) => o.calls.length === 1),
   byRarity.out.map((o) => `${o.lines}:${o.calls.length}`).join(' '));
 
-// --- 5. picking a 룬 up must NOT play the drop sound again ---
+// --- 5. picking a skill up must NOT play it again ---
 const onPickup = await run(`
-  s.combat.dropRuneAt(s.player.x + 300, s.player.y, 'split');
   window.__plays = [];
   const mgr = s.sound;
   const orig = mgr.play.bind(mgr);
   mgr.play = (key, cfg) => { window.__plays.push({ key, cfg }); return orig(key, cfg); };
-  const drop = s.combat.runeDrops.getChildren().find(d => d.active);
-  if (drop) { s.combat.onRuneTouch(s.player, drop); }
+  const drop = s.combat.skillDrops.getChildren().find(d => d.active);
+  if (drop) { drop.collect(); s.onSkillCollected('fireball'); }
   const calls = window.__plays.slice();
   mgr.play = orig;
   return { calls: calls.length };
@@ -154,15 +153,6 @@ for (let i = 0; i < 20; i++) {
 }
 await sleep(600);
 const viaKill = await run(`
-  // Phaser rolls Math.random for a new Text: fill every pool a kill can draw
-  // from first, with the real roll, before it is pinned.
-  const c = s.combat, P = s.player;
-  c.dropRuneAt(P.x + 400, P.y, 'split'); c.dropChiselAt(P.x + 400, P.y); c.dropMangoAt(P.x + 400, P.y);
-  c.dropMagnetAt(P.x + 400, P.y); c.dropPotionAt(P.x + 400, P.y); c.dropOrbAt(P.x + 400, P.y, 'chaos');
-  c.dropBoneAt(P.x + 400, P.y, 'rib'); c.dropAltarAt(P.x + 400, P.y + 300, 'bosses');
-  c.dropGearAt(P.x + 400, P.y, { uid: 'warm', id: 'rustySword', prefixes: [], suffixes: [] });
-  [c.runeDrops, c.chiselDrops, c.mangoDrops, c.magnetDrops, c.potions, c.orbDrops, c.boneDrops, c.altars, c.gearDrops]
-    .forEach((g) => g.getChildren().forEach((d) => d.active && d.collect()));
   window.__plays = [];
   const mgr = s.sound;
   const orig = mgr.play.bind(mgr);
@@ -181,7 +171,7 @@ const viaKill = await run(`
   mgr.play = orig;
   return { calls, err };
 `);
-check('a killed enemy dropping things plays their sounds too',
+check('a killed enemy dropping a skill plays it too',
   (viaKill.calls ?? []).includes('sfx-drop-normal'),
   viaKill.err ?? `calls=${JSON.stringify(viaKill.calls)}`);
 

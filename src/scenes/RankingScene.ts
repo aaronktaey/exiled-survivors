@@ -1,8 +1,8 @@
 import Phaser from 'phaser';
 
 import { ACCOUNT, COLORS, DEPTH, RANKING, SCENES, SCRIM, TEXT, nextRankingReset, SKILL_ICONS, TEXTURES } from '@/config';
-import { affixName, boneName, enemyName, fill, gearName, runeName, skillName, t } from '@/i18n';
-import type { AffixId, BoneId, EnemyKind, GearId, RuneId } from '@/config';
+import { affixName, boneName, enemyName, fill, gearName, passiveName, skillName, t } from '@/i18n';
+import type { AffixId, BoneId, EnemyKind, GearId, PassiveId } from '@/config';
 import type { SkillId } from '@/weapons/skills';
 import { account, accountRequest } from '@/systems/Account';
 import { addBackButton, type BackButton } from '@/systems/BackButton';
@@ -642,8 +642,8 @@ export class RankingScene extends Phaser.Scene {
         : fill(copy.gear, { name: copy.none, lines: copy.none }),
     );
     out.push(fill(copy.skills, { list: list((d.skills ?? []).map((skill) => `${named<SkillId>(skill.id, skillName)} Lv ${skill.level}`)) }));
-    out.push(fill(copy.runes, {
-      list: list(Object.entries(d.runes ?? {}).filter(([, n]) => n > 0).map(([id, n]) => `${named<RuneId>(id, runeName)} ${n}`)),
+    out.push(fill(copy.passives, {
+      list: list(Object.entries(d.passives ?? {}).filter(([, n]) => n > 0).map(([id, n]) => `${named<PassiveId>(id, passiveName)} ${n}`)),
     }));
     return out;
   }

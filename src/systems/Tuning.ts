@@ -30,11 +30,10 @@ import {
   PLAYER,
   POTION,
   RARE,
-  RANDOM_SKILL,
-  RUNE_CHISEL,
-  RUNE_DROP,
   SCENES,
+  SHARD,
   SKILL_BASE,
+  SKILL_DROP,
   SKILL_PICK,
   SPAWN,
   TUNING,
@@ -48,7 +47,7 @@ type Listener = (path: string, was: number, now: number) => void;
 
 const ROOTS: Record<string, unknown> = {
   ALTAR, BALANCE, BONES, BOSS, DIFFICULTY, ENEMY_KINDS, GEAR, MAGNET, MANGO, ORBS, PLAYER, POTION, RARE,
-  RANDOM_SKILL, RUNE_CHISEL, RUNE_DROP, SKILL_BASE, SKILL_PICK, SPAWN, UPGRADE_PERCENT,
+  SHARD, SKILL_BASE, SKILL_DROP, SKILL_PICK, SPAWN, UPGRADE_PERCENT,
 };
 
 /** The object a path's value sits on, and its key there. */
@@ -127,26 +126,6 @@ class TuningStore {
     return { min, max, step };
   }
 
-  /**
-   * Adds a dial while the game runs, its balance.ts value captured as it is
-   * now. A test seam: the list is empty until the user asks for a dial, and
-   * test-tuning still has to drive the panel.
-   */
-  public addDial(dial: DialSpec): void {
-    if (DEFAULTS.has(dial.path)) {
-      return;
-    }
-    const spot = locate(dial.path);
-    if (!spot) {
-      return;
-    }
-    DEFAULTS.set(dial.path, spot.holder[spot.key]!);
-    (DIALS as DialSpec[]).push(dial);
-    (DIAL_PATHS as Set<string>).add(dial.path);
-    // A draft or a shared value already held for it takes effect now.
-    this.apply([dial.path]);
-  }
-
   /** Turns a dial on this game: the admin's draft, at once. */
   public set(path: string, value: number): void {
     if (!DEFAULTS.has(path)) {
@@ -204,9 +183,10 @@ class TuningStore {
   /** Makes the draft everyone's. */
   public async publish(): Promise<boolean> {
     const overrides = { ...this.shared, ...this.draft };
-    // A value turned back to where balance.ts has it needs no override.
+    // A value turned back to where balance.ts has it needs no override, and
+    // one for a path that is no dial now would have the server refuse the lot.
     for (const [path, value] of Object.entries(overrides)) {
-      if (Math.abs(value - this.defaultOf(path)) < 1e-12) {
+      if (!DIAL_PATHS.has(path) || Math.abs(value - this.defaultOf(path)) < 1e-12) {
         delete overrides[path];
       }
     }
@@ -237,8 +217,7 @@ class TuningStore {
     const useDraft = devToolsAllowed();
     for (const path of new Set(paths)) {
       // Only a dial is laid over: a value the server still holds for a path
-      // that is no dial now (the rows from before 0.71, folded into the
-      // tables) would otherwise put the old number back over the new one.
+      // that is no dial now (the 룬 rows from 0.71–0.79) changes nothing.
       const spot = DEFAULTS.has(path) ? locate(path) : null;
       if (!spot) {
         continue;

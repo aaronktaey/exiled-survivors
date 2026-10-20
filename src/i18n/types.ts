@@ -40,7 +40,7 @@ export type GuideTabId =
   | 'affixes'
   | 'orbs'
   | 'bones'
-  | 'runes'
+  | 'passives'
   | 'inventory'
   | 'ranking';
 
@@ -83,56 +83,32 @@ export interface Strings {
     };
   };
 
-  /** 룬 and their 강화 슬롯 (0.74): the pause menu's 룬 screen, the 룬 끌's choice, the pickups. */
-  readonly runes: {
+  readonly passives: {
     readonly title: string;
-    readonly pauseRow: string;
-    /** A skill's slots: {n} of {max}. */
-    readonly slots: string;
-    readonly held: string;
-    readonly none: string;
-    readonly empty: string;
-    readonly noSlots: string;
-    /** {rune} set in {skill}. */
-    readonly set: string;
-    readonly notFor: string;
-    readonly pickSlot: string;
-    /** Asked before a set 룬 is overwritten: {rune} goes. */
-    readonly overwrite: string;
-    /** A 룬 that does nothing for the skill cannot go in. */
-    readonly cantSet: string;
-    /** A 룬 just picked up asks for its skill: {rune}. */
-    readonly pickTitle: string;
-    readonly pickSubtitle: string;
-    /** On a skill's card: a slot is free, {n} of {max} used. */
-    readonly fitFree: string;
-    /** On a full skill's card: {rune}, set longest ago, goes. */
-    readonly fitReplace: string;
-    /** Toasts: {rune} set in {skill}; and {old} pushed out of {skill}. */
-    readonly fitted: string;
-    readonly fittedOver: string;
-    /** The 룬 pick's button that takes none of the skills. */
-    readonly discard: string;
-    readonly discarded: string;
-    /** Said of a `unique` 룬, after its other lines. */
-    readonly uniqueLine: string;
+    /** Points in hand, waiting to be spent. */
+    readonly points: string;
+    /** Progress towards the next one: {held} of {need} shards. */
+    readonly shards: string;
+    /** A line's rank, as "3 / 10". */
+    readonly rank: string;
+    readonly maxed: string;
+    readonly spend: string;
+    /** Shown when there is nothing to spend. */
+    readonly noPoints: string;
     readonly hintKeyboard: string;
     readonly hintTouch: string;
-    readonly chisel: string;
-    readonly chiselSubtitle: string;
-    readonly chiselFull: string;
-    /** {skill} gained a slot: {n} of {max}. */
-    readonly chiselAdded: string;
-    /** {rune} picked up. */
-    readonly found: string;
-    readonly chiselFound: string;
-    /** The skills a 룬 works on: {skills}. */
-    readonly worksOn: string;
-    readonly worksOnAll: string;
-    /** A stat limited to one tag: {tag} and {stat}. */
-    readonly taggedStat: string;
-    /** One modifier written out: {stat} {sign}{value}{unit}. */
-    readonly statLine: string;
+    /** What one 신성한 조각 is called, over it on the ground. */
+    readonly shardName: string;
+    /** The shop row: a shard for {price} gold. */
+    readonly buyShard: string;
+    /** Gold in the purse. */
+    readonly goldHeld: string;
+    /** Under the root of the tree, over the points in it. */
+    readonly root: string;
+    /** What one rank of a line is worth: {detail}. */
+    readonly perRank: string;
+    /** A shut line: it opens at {name} rank {rank}. */
+    readonly locked: string;
   };
 
   /** 아이템 필터: the switches for what drops, reached from the title. */
@@ -142,9 +118,9 @@ export interface Strings {
     readonly icon: string;
     readonly lead: string;
     readonly sections: { readonly supplies: string; readonly orbs: string; readonly bones: string; readonly rarity: string; readonly bases: string };
-    readonly items: { readonly potion: string; readonly randomSkill: string; readonly mango: string; readonly magnet: string; readonly rune: string; readonly chisel: string };
+    readonly items: { readonly potion: string; readonly skill: string; readonly randomSkill: string; readonly mango: string; readonly magnet: string; readonly shard: string };
     /** The same, short enough to sit under an icon. */
-    readonly itemsShort: { readonly potion: string; readonly randomSkill: string; readonly mango: string; readonly magnet: string; readonly rune: string; readonly chisel: string };
+    readonly itemsShort: { readonly potion: string; readonly skill: string; readonly randomSkill: string; readonly mango: string; readonly magnet: string; readonly shard: string };
     readonly rarity: { readonly normal: string; readonly magic: string; readonly rare: string };
     readonly shown: string;
     readonly hidden: string;
@@ -213,12 +189,14 @@ export interface Strings {
     /** Over the title while it reloads onto a new version. */
     readonly updating: string;
     readonly byline: string;
-    /** The rainbow notice on the title (TITLE_NOTICE), wrapped at spaces (never at a no-break space,  ). */
-    readonly notice: string;
     readonly start: string;
     readonly load: string;
     readonly noSave: string;
     readonly settings: string;
+    /** 0.80's gift, said once on the title: {gear} the pieces ("오니고로시 2개"), {orbs} how many of each 구슬. */
+    readonly gift: string;
+    /** One piece of {gear}: {name} and {count}. */
+    readonly giftGear: string;
     readonly gear: string;
     readonly guide: string;
     readonly patch: string;
@@ -248,33 +226,6 @@ export interface Strings {
   };
 
   /** 장비창, and the words a rolled weapon is described with. */
-  /** 장비 in a run: the pause screen's 장비, and the popup a piece picked up opens. */
-  readonly runGear: {
-    readonly title: string;
-    readonly slots: Record<'weapon' | 'armor' | 'accessory', string>;
-    /** An empty slot: {slot}. */
-    readonly emptySlot: string;
-    readonly equipped: string;
-    readonly orbs: string;
-    readonly noOrbs: string;
-    /** The 구슬 held: {list}. */
-    readonly orbsHeld: string;
-    readonly hintKeyboard: string;
-    readonly hintTouch: string;
-    readonly pickTitle: string;
-    readonly pickFound: string;
-    readonly pickWorn: string;
-    readonly pickNone: string;
-    readonly pickWear: string;
-    readonly pickDiscard: string;
-    readonly pickHintKeyboard: string;
-    readonly pickHintTouch: string;
-    /** Toasts: {gear}. */
-    readonly wore: string;
-    /** The pause menu's row. */
-    readonly pauseRow: string;
-  };
-
   readonly gear: {
     readonly title: string;
     /** The weapon in hand, above the list. */
@@ -393,6 +344,7 @@ export interface Strings {
     /** The table: what the run dealt, killed, earned, and was carrying. */
     readonly damageDealt: string;
     readonly killsDealt: string;
+    readonly goldEarned: string;
     /** One skill's line: "타격 Lv 3 · DPS 21". */
     readonly skillLine: string;
     readonly retry: string;
@@ -471,7 +423,7 @@ export interface Strings {
       readonly bones: string;
       readonly gear: string;
       readonly skills: string;
-      readonly runes: string;
+      readonly passives: string;
       readonly none: string;
       readonly tier: string;
       readonly remove: string;
@@ -547,6 +499,7 @@ export interface Strings {
     readonly device: string;
     readonly cloud: string;
     readonly swords: string;
+    readonly passives: string;
     readonly orbs: string;
     readonly bones: string;
     readonly savedRun: string;
@@ -569,6 +522,11 @@ export interface Strings {
     /** A run's first skill. */
     readonly startTitle: string;
     readonly startSubtitle: string;
+    /** A 무작위 스킬 walked over. */
+    readonly dropTitle: string;
+    readonly dropSubtitle: string;
+    /** Its name on the ground. */
+    readonly drop: string;
     /** On a card: not held yet, or held at {level}. */
     readonly new: string;
     readonly upgrade: string;
@@ -582,13 +540,6 @@ export interface Strings {
     readonly startTitle: string;
     readonly startSubtitle: string;
     readonly confirm: string;
-    /** A 무작위 스킬's spin: its title, the line under it, the two buttons once it lands ({n} spins left), the keys, and what was won. */
-    readonly dropTitle: string;
-    readonly dropSubtitle: string;
-    readonly take: string;
-    readonly reroll: string;
-    readonly hintReroll: string;
-    readonly subGained: string;
     readonly hintKeyboard: string;
     readonly hintTouch: string;
     /** Banner once the skill is in hand: {skill} is its name. */
@@ -600,10 +551,6 @@ export interface Strings {
     readonly level: string;
     readonly acquired: string;
     readonly enhanced: string;
-    /** A level-up with more than one skill held: which one it goes to. */
-    readonly pickSkill: string;
-    readonly main: string;
-    readonly sub: string;
     readonly hintKeyboard: string;
     readonly hintTouch: string;
     /** On a card: the stat {now} and {next} after the pick. */
@@ -643,10 +590,14 @@ export interface Strings {
     /** What each kind of effect is called, after its name on the card. */
     readonly effectKinds: {
       readonly gear: string;
+      readonly passive: string;
       readonly bone: string;
       readonly buff: string;
       readonly debuff: string;
     };
+    /** The passive icon's heading, and a line per line bought: {name} {rank} {detail}. */
+    readonly effectPassive: string;
+    readonly effectPassiveLine: string;
     /** 하얀 망고 while it lasts: {scale} {seconds}. */
     readonly effectMango: string;
     /** 거미줄's slow: its name, and {slow} percent. */
@@ -683,7 +634,10 @@ export interface Strings {
     /** 자석: its label on the ground, and the line when it is picked up. */
     readonly magnet: string;
     readonly magnetPulled: string;
+    /** 신성한 조각 picked up: {held} of {need} towards the next 구슬. */
+    readonly shardFound: string;
     /** ...and the one that completed it. */
+    readonly orbMade: string;
     readonly pickedUp: string;
     readonly enhancedPickup: string;
     /** The plate over a 제단: {enemies} is what it will call up. */
@@ -763,10 +717,8 @@ export interface Strings {
     readonly gear?: Record<string, string>;
     /** A base's 고정 속성, with {value} and {skill}. Korean reads the table. */
     readonly gearImplicits?: Record<string, string>;
-    readonly runes?: Record<string, string>;
-    /** A 룬's `detail`, with its {placeholders}. Korean reads the table. */
-    readonly runeDetails?: Record<string, string>;
-    readonly stats?: Record<string, string>;
+    readonly passives?: Record<string, string>;
+    readonly passiveDetails?: Record<string, string>;
   };
 
   /**
@@ -820,6 +772,8 @@ export interface Strings {
       readonly boneStack: string;
       readonly boneSingle: string;
       /** {detail} a rank, up to {max} ranks. */
+      readonly passiveRank: string;
+      readonly passiveNeeds: string;
     };
   };
 }

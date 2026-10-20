@@ -309,7 +309,29 @@ await sleep(600);
 const resumed = await cdp.evaluate(`({ pause: window.game.scene.isActive('PauseScene') })`);
 check('leaving the pause screen puts the list away', resumed.pause === false);
 
-// --- 7. a rare's affixes raise every ordinary drop (Enemy.dropBonus) ---
+// --- 7. affixes make a rare likelier to leave a skill ---
+const drops = await run(`
+  s.choosing = true;
+  s.spawner.clear();
+  const measure = (affixCount) => {
+    let drops = 0;
+    const N = 80000;
+    for (let i = 0; i < N; i++) if (s.rollSkillDrop(1 + affixCount * window.config.RARE.dropBonusPerAffix)) drops++;
+    return drops / N;
+  };
+  const out = { plain: measure(0), one: measure(1), two: measure(2),
+                want: window.config.SKILL_DROP.chance, per: window.config.RARE.dropBonusPerAffix };
+  s.choosing = false;
+  return out;
+`);
+console.log('drop rates:', JSON.stringify(drops));
+const near = (got, want) => Math.abs(got - want) < want * 0.15;
+check('an ordinary kill drops at the configured rate', near(drops.plain, drops.want),
+  `${(drops.plain * 100).toFixed(2)}%, configured ${(drops.want * 100).toFixed(2)}%`);
+check('each affix adds its share of that, and two add twice as much',
+  near(drops.one, drops.want * (1 + drops.per)) && near(drops.two, drops.want * (1 + 2 * drops.per)),
+  `1 affix ${(drops.one * 100).toFixed(2)}%, 2 affixes ${(drops.two * 100).toFixed(2)}%`);
+
 const bonus = await run(`
   s.spawner.clear();
   const rare = s.spawner.spawnRare();
@@ -346,7 +368,7 @@ const potions = await run(`
   }
   s.combat.dropPotionAt = orig;
   s.combat.gems.getChildren().forEach(g => g.active && g.collect());
-  s.combat.runeDrops.getChildren().forEach(d => d.active && d.collect());
+  s.combat.skillDrops.getChildren().forEach(d => d.active && d.collect());
   s.spawner.clear();
   s.choosing = false;
   return { kills: KILLS, potions, rate: potions / KILLS };

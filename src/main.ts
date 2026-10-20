@@ -6,17 +6,20 @@ import Phaser from 'phaser';
 import './style.css';
 
 import * as balance from '@/config';
-import { COLORS, RETIRED_STORAGE } from '@/config';
+import { COLORS } from '@/config';
 import { settings } from '@/systems/Settings';
 import { registerSharpText } from '@/systems/SharpText';
-import { gearBonusFor, orbApplied, rollGearItem } from '@/systems/Gear';
+import { gear, gearBonusFor, orbApplied } from '@/systems/Gear';
 import { ranking } from '@/systems/Ranking';
 import { liveUpdate } from '@/systems/LiveUpdate';
 import { personal } from '@/systems/PersonalBest';
 import { account } from '@/systems/Account';
 import { cloudSave } from '@/systems/CloudSave';
+import { gold } from '@/systems/Gold';
 import { critMultiplierFor } from '@/systems/Modifiers';
 import { bones as bonesStore } from '@/systems/Bones';
+import { orbs } from '@/systems/Orbs';
+import { passives } from '@/systems/Passives';
 import { openRecord, sealRecord } from '@/systems/Seal';
 import { itemFilter } from '@/systems/ItemFilter';
 import { tuning } from '@/systems/Tuning';
@@ -33,12 +36,10 @@ import {
   GameOverScene,
   GameScene,
   BoneScene,
-  RunGearScene,
-  GearPickScene,
+  InventoryScene,
   OrbScene,
-  RuneScene,
-  RuneChiselScene,
   InfoScene,
+  PassiveScene,
   MenuScene,
   PauseScene,
   SettingsScene,
@@ -49,16 +50,6 @@ import {
   SkillPickScene,
   PodiumScene,
 } from '@/scenes';
-
-// The equipment stash and the 구슬 drawer are gone (gear lives and dies with
-// a run now): what a browser still holds of them is cleared.
-for (const key of RETIRED_STORAGE) {
-  try {
-    window.localStorage.removeItem(key);
-  } catch {
-    // Storage blocked: there is nothing held to clear, then.
-  }
-}
 
 // Language first: every scene reads its text as it is built.
 settings.prime();
@@ -107,11 +98,9 @@ const config: Phaser.Types.Core.GameConfig = {
     InfoScene,
     ConfirmScene,
     GameOverScene,
-    RunGearScene,
-  GearPickScene,
+    InventoryScene,
   OrbScene,
-    RuneScene,
-    RuneChiselScene,
+    PassiveScene,
     BoneScene,
     AccountScene,
     ConflictScene,
@@ -142,10 +131,13 @@ if (import.meta.env.DEV) {
   const dev = window as Window & {
     game?: Phaser.Game;
     config?: typeof balance;
-    rollGearItem?: typeof rollGearItem;
+    gear?: typeof gear;
     gearBonusFor?: typeof gearBonusFor;
+    passives?: typeof passives;
     sealRecord?: typeof sealRecord;
     openRecord?: typeof openRecord;
+    gold?: typeof gold;
+    orbs?: typeof orbs;
     bones?: typeof bonesStore;
     orbApplied?: typeof orbApplied;
     critMultiplierFor?: typeof critMultiplierFor;
@@ -161,10 +153,13 @@ if (import.meta.env.DEV) {
   dev.game = game;
   // So a test can read a tuned number instead of carrying a copy of it.
   dev.config = balance;
-  dev.rollGearItem = rollGearItem;
+  dev.gear = gear;
   dev.gearBonusFor = gearBonusFor;
+  dev.passives = passives;
   dev.sealRecord = sealRecord;
   dev.openRecord = openRecord;
+  dev.gold = gold;
+  dev.orbs = orbs;
   dev.bones = bonesStore;
   dev.orbApplied = orbApplied;
   dev.critMultiplierFor = critMultiplierFor;

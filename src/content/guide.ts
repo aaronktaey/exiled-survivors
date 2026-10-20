@@ -2,10 +2,7 @@ import {
   AFFIXES,
   ALL_BONES,
   ALL_ORBS,
-  ALL_RUNES,
-  RUNE_CHISEL,
-  RUNE_DROP,
-  RUNE_SLOTS,
+  ALL_PASSIVES,
   ALTAR,
   ALTAR_OFFERS,
   BALANCE,
@@ -15,6 +12,7 @@ import {
   ENEMY_KINDS,
   FUGITIVE,
   GEAR,
+  GEAR_COMBINE,
   GEAR_DROP,
   GROUND_ITEM,
   INVENTORY,
@@ -24,8 +22,12 @@ import {
   RANKING,
   RARE,
   SAVE,
+  SHARD,
   SKILL_BASE,
+  SKILL_DROP,
   SKILL_MASTERY,
+  GEAR_SELL,
+  SKILL_PICK,
   SPAWN,
   SPAWN_TABLE,
   CHIMERA_RUSH,
@@ -54,9 +56,8 @@ import {
   gearName,
   orbDetail,
   orbName,
-  runeLines,
-  runeName,
-  runeWorksOn,
+  passiveDetail,
+  passiveName,
   skillName,
   skillSummary,
   t,
@@ -119,17 +120,6 @@ const tierSpan = (tiers: readonly number[]): string => {
   return low === high ? `${low}` : `${low}~${high}`;
 };
 
-/** Each 등급's share of the gear that drops, by GEAR_DROP.grades' weights. */
-const gradeShares = (): { normalShare: string; magicShare: string; rareShare: string } => {
-  const { normal, magic, rare } = GEAR_DROP.grades;
-  const total = normal.weight + magic.weight + rare.weight;
-  return {
-    normalShare: percent(normal.weight / total),
-    magicShare: percent(magic.weight / total),
-    rareShare: percent(rare.weight / total),
-  };
-};
-
 /** When a kind joins the spawn table, in seconds. */
 const unlockOf = (kind: EnemyKind): string =>
   seconds(SPAWN_TABLE.find((row) => row.kind === kind)?.unlockMs ?? 0);
@@ -145,6 +135,7 @@ function values(): Record<string, string | number> {
 
   return {
     hp: PLAYER.maxHp,
+    choices: SKILL_PICK.choices,
     bossFirst: seconds(BOSS.firstMs),
     bossEvery: seconds(BOSS.intervalMs),
     fugFirst: seconds(FUGITIVE.firstMs),
@@ -153,10 +144,8 @@ function values(): Record<string, string | number> {
     pickup: PLAYER.pickupRadius,
     maxPicks: Math.max(UPGRADE_MAX_PICKS.damage ?? 0, UPGRADE_MAX_PICKS.attackSpeed ?? 0),
     chainCap: UPGRADE_CAP.chainCount ?? 0,
-    runeChance: percent(RUNE_DROP.chance),
-    chiselChance: percent(RUNE_CHISEL.chance),
-    mainSlots: RUNE_SLOTS.main,
-    maxSlots: RUNE_SLOTS.max,
+    skillChance: percent(SKILL_DROP.chance),
+    randomSkillChance: percent(SKILL_PICK.dropChance),
     critChance: percent(PLAYER.critChance),
     critMulti: round(PLAYER.critMultiplier),
     critAffix: affixName('critical'),
@@ -166,6 +155,7 @@ function values(): Record<string, string | number> {
     spawnStart: seconds(SPAWN.startIntervalMs),
     spawnMin: seconds(SPAWN.minIntervalMs),
     maxAlive: SPAWN.maxAlive,
+    shardChance: percent(SHARD.chance),
     bossBonus: `+${percent(BOSS.dropBonus)}`,
     dropBonus: `+${percent(RARE.dropBonusPerAffix)}`,
     rareChance: percent(RARE.chance),
@@ -196,16 +186,17 @@ function values(): Record<string, string | number> {
     altarOffers: (Object.keys(ALTAR_OFFERS) as AltarOfferId[])
       .map((id) => altarOfferText(id))
       .join(', '),
+    perOrb: SHARD.perOrb,
+    points: SHARD.pointsPerOrb,
     fromKillTiers: tierSpan(
       Object.values(GEAR)
         .filter((spec) => spec.fromKill !== undefined)
         .map((spec) => spec.tier),
     ),
+    combineCount: GEAR_COMBINE.count,
+    combineChance: percent(GEAR_COMBINE.successChance),
     maxPrefix: GEAR_DROP.maxPrefixes,
-    normalLines: GEAR_DROP.grades.normal.lines,
-    magicLines: GEAR_DROP.grades.magic.lines,
-    rareLines: GEAR_DROP.grades.rare.lines,
-    ...gradeShares(),
+    affixChance: percent(GEAR_DROP.affixChance),
     tierCount: affixTierCount,
     maxBones: BONE_RUN.maxApplied,
     maxBosses: BONE_RUN.maxBosses,
@@ -215,6 +206,8 @@ function values(): Record<string, string | number> {
     rankSize: RANKING.size,
     rankResetHour: RANKING.dailyReset.hour,
     masteryLevel: SKILL_MASTERY.level,
+    sellBase: GEAR_SELL.perRank,
+    sellAffix: percent(GEAR_SELL.perAffix),
     fireZoneSecs: SKILL_MASTERY.fireZone.durationMs / 1000,
     fireZoneShare: percent(SKILL_MASTERY.fireZone.damageShare),
     freezeSecs: SKILL_MASTERY.freezeMs / 1000,
@@ -233,7 +226,7 @@ const PROSE_TONE: Partial<Record<GuideTabId, GuideTone>> = {
   affixes: 'rare',
   orbs: 'orb',
   bones: 'bone',
-  runes: 'passive',
+  passives: 'passive',
 };
 
 /** A tab's prose, filled. */
@@ -301,10 +294,10 @@ export function guideChapters(): readonly GuideChapter[] {
       tab('gear', [...prose('gear', numbers), ...gearCards()]),
       tab('affixes', [...prose('affixes', numbers), ...affixCards()]),
       tab('orbs', [...prose('orbs', numbers), ...orbCards()]),
-      tab('runes', [...prose('runes', numbers), ...runeCards()]),
       tab('bones', [...prose('bones', numbers), ...boneCards()]),
     ]),
     chapter('progress', [
+      tab('passives', [...prose('passives', numbers), ...passiveCards()]),
       tab('inventory', prose('inventory', numbers)),
       tab('ranking', prose('ranking', numbers)),
     ]),
@@ -512,14 +505,17 @@ function boneCards(): GuideCard[] {
   }));
 }
 
-function runeCards(): GuideCard[] {
+function passiveCards(): GuideCard[] {
   const g = t().guide.labels;
-  // Each 룬's own share of RUNE_DROP.chance, by its weight.
-  const total = ALL_RUNES.reduce((sum, rune) => sum + rune.weight, 0);
-  return ALL_RUNES.map((rune) => ({
-    title: runeName(rune.id),
+  return ALL_PASSIVES.map((passive) => ({
+    title: passiveName(passive.id),
     tone: 'passive' as const,
-    facts: [fill(g.chanceKill, { chance: percent((RUNE_DROP.chance * rune.weight) / total) }), runeWorksOn(rune.id)],
-    lines: runeLines(rune.id),
+    facts: [
+      fill(g.passiveRank, { detail: passiveDetail(passive.id), max: passive.maxRank }),
+      ...(passive.requires
+        ? [fill(g.passiveNeeds, { name: passiveName(passive.requires.id), rank: passive.requires.rank })]
+        : []),
+    ],
+    lines: [],
   }));
 }

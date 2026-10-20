@@ -7,9 +7,9 @@ import { DropLabel } from '@/systems/DropLabel';
 
 /**
  * 무작위 스킬 on the ground: the plain skill orb, with no skill of its own
- * yet. Walking over it spins the 슬롯머신 over the skills not held, and what
- * it lands on is a 보조 스킬 (0.76). Expiry and the warning blink come from
- * GroundItem.
+ * yet. Walking over it opens three skills to pick one from — which three
+ * is decided then, not when it fell. Expiry and the warning blink come
+ * from GroundItem.
  */
 export class RandomSkillDrop extends GroundItem {
   /** The name above it. Public so a test can read what it says. */
@@ -23,7 +23,8 @@ export class RandomSkillDrop extends GroundItem {
 
   public drop(x: number, y: number): void {
     this.begin(x, y, SKILL_ICON_SIZE.drop);
-    this.nameplate.show(t().slot.dropTitle, 'magic');
+    // A choice of three is worth more than one skill, and reads louder.
+    this.nameplate.show(t().skillPick.drop, 'magic');
     this.nameplate.place(x, y, SKILL_ICON_SIZE.drop);
     this.pop();
   }

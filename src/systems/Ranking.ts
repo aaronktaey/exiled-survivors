@@ -45,8 +45,8 @@ export interface RunDetail {
     readonly suffixes: readonly { readonly id: string; readonly tier: number }[];
   } | null;
   readonly skills: readonly { readonly id: string; readonly level: number }[];
-  /** The 룬 set in the run's skills, counted by kind (0.74; 패시브 ranks before). */
-  readonly runes: Readonly<Record<string, number>>;
+  /** 패시브 ranks. */
+  readonly passives: Readonly<Record<string, number>>;
   /** It was picked up again from a save. */
   readonly resumed: boolean;
   /** The run's second clock, in ms (systems/RunLedger.ts): the server weighs it against the shown one. */

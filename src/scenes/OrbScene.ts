@@ -16,22 +16,20 @@ import {
   type OrbSpec,
 } from '@/config';
 import { fill, gearTitle, orbDetail, orbName, orbShort, t } from '@/i18n';
+import { InventoryScene } from '@/scenes/InventoryScene';
 import { addBackButton, type BackButton } from '@/systems/BackButton';
-import { MAX_AFFIX_LINES, orbApplied, type GearItem } from '@/systems/Gear';
-import { describeGear, orbNote } from '@/systems/GearText';
-import type { RunKit } from '@/systems/RunKit';
+import { MAX_AFFIX_LINES, gear, orbApplied, type GearItem } from '@/systems/Gear';
 import { fitText } from '@/systems/Layout';
+import { orbs } from '@/systems/Orbs';
 import { prefersTouchControls } from '@/systems/VirtualJoystick';
 
 export interface OrbSceneData {
-  /** The run's kit: the piece and the 구슬 both come out of it. */
-  readonly kit: RunKit;
-  /** The piece the 구슬 go on. */
+  /** The weapon the 구슬 go on. */
   readonly uid: string;
   /** The 구슬 picked first; the row along the top switches it. */
   readonly orb: OrbId;
   /**
-   * Back to the 장비 screen: the piece's uid while it is still there (null once
+   * Back to the 인벤토리: the weapon's uid while it is still there (null once
    * a 구슬 destroyed it), and the line saying what the last 구슬 did.
    */
   readonly onClose: (result: { readonly uid: string | null; readonly note?: string }) => void;
@@ -52,14 +50,14 @@ const BUTTON_W = 150;
 const BUTTON_H = 36;
 
 /**
- * 구슬 사용 — the popup a 구슬 button opens over the 장비 screen.
+ * 구슬 사용 — the popup a 구슬 button opens over the 인벤토리.
  *
  * Along the top, every 구슬 with how many are held; under it, what the
  * picked one does, every rule of it spelt out, beside the weapon it would go
  * on as that weapon reads now. 사용 spends one and says what it did, and the
  * popup stays for the next — the lines it changed lit in its colour. A
  * weapon that does not survive turns the popup into the news of it, and its
- * 확인 goes back to the 장비 screen.
+ * 확인 goes back to the 인벤토리.
  */
 export class OrbScene extends Phaser.Scene {
   public static readonly KEY = SCENES.orb;
@@ -98,19 +96,19 @@ export class OrbScene extends Phaser.Scene {
 
   /** The weapon as the stash holds it now. Public for tests. */
   public get item(): GearItem | undefined {
-    return this.payload.kit.find(this.payload.uid)?.item;
+    return gear.items.find((held) => held.uid === this.payload.uid);
   }
 
   /** Whether the picked 구슬 would do anything to the weapon, and one is held. Public for tests. */
   public get usable(): boolean {
     const item = this.item;
-    return !this.destroyed && item !== undefined && this.payload.kit.count(this.orb) > 0 && orbApplied(item, ORBS[this.orb]) !== null;
+    return !this.destroyed && item !== undefined && orbs.count(this.orb) > 0 && orbApplied(item, ORBS[this.orb]) !== null;
   }
 
   public create(): void {
     this.backButton = addBackButton(this, () => this.close());
     const { width, height } = this.scale;
-    // Over the 장비 screen, and in its way: nothing under the popup takes a press.
+    // Over the 인벤토리, and in its way: nothing under the popup takes a press.
     this.add
       .rectangle(0, 0, width, height, 0x05070b, SCRIM.reading)
       .setOrigin(0, 0)
@@ -140,8 +138,9 @@ export class OrbScene extends Phaser.Scene {
   }
 
   /**
-   * Spends the picked 구슬 on the piece: the outcome is decided, the run's
-   * kit written, and then the popup shows it. Public so a test can.
+   * Spends the picked 구슬 on the weapon, the way the 인벤토리 always has:
+   * the outcome is decided, the stash and the drawer written, and then the
+   * popup shows it. Public so a test can.
    */
   public use(): void {
     const item = this.item;
@@ -150,20 +149,21 @@ export class OrbScene extends Phaser.Scene {
       return;
     }
     const outcome = orbApplied(item, spec);
-    if (!outcome || !this.payload.kit.spend(spec.id)) {
+    if (!outcome || !orbs.spend(spec.id)) {
       return;
     }
 
-    this.before = describeGear(item).split('\n');
+    this.before = InventoryScene.describe(item).split('\n');
     if (outcome.item) {
-      this.payload.kit.replace(outcome.item);
+      gear.replace(outcome.item);
     } else {
-      // The piece is gone, worn or kept: the run goes on without it.
-      this.payload.kit.remove(item.uid);
+      // The weapon is gone; the store puts a 녹슨 검 back if that leaves the
+      // survivor with nothing at all.
+      gear.discardAnyway(item.uid);
       this.destroyed = true;
     }
-    this.note = orbNote(spec.id, outcome);
-    const now = outcome.item ? describeGear(outcome.item).split('\n') : [];
+    this.note = InventoryScene.noteFor(spec.id, outcome);
+    const now = outcome.item ? InventoryScene.describe(outcome.item).split('\n') : [];
     const was = new Map<string, number>();
     this.before.forEach((line) => was.set(line, (was.get(line) ?? 0) + 1));
     this.changed = now.filter((line) => {
@@ -180,7 +180,7 @@ export class OrbScene extends Phaser.Scene {
     });
   }
 
-  /** Back to the 장비 screen, telling it where the weapon is and what happened. */
+  /** Back to the 인벤토리, telling it where the weapon is and what happened. */
   public close(): void {
     const { onClose, uid } = this.payload;
     this.scene.stop();
@@ -214,9 +214,9 @@ export class OrbScene extends Phaser.Scene {
       const on = tab.id === this.orb;
       tab.plate.setStrokeStyle(on ? 3 : 2, on ? ORBS[tab.id].color : COLORS.panelEdge, 1);
       tab.plate.setFillStyle(on ? COLORS.panelActive : COLORS.panel, 1);
-      tab.count.setText(`${orbShort(tab.id)} ${this.payload.kit.count(tab.id)}`);
+      tab.count.setText(`${orbShort(tab.id)} ${orbs.count(tab.id)}`);
       fitText(tab.count.setScale(1), TAB_W - 26, 0);
-      tab.count.setAlpha(this.payload.kit.count(tab.id) > 0 ? 1 : 0.45);
+      tab.count.setAlpha(orbs.count(tab.id) > 0 ? 1 : 0.45);
     });
 
     this.layer.removeAll(true);
@@ -244,7 +244,7 @@ export class OrbScene extends Phaser.Scene {
     const spec = ORBS[this.orb];
     const colour = `#${spec.color.toString(16).padStart(6, '0')}`;
     const name = this.add
-      .text(left, top, `${orbName(spec.id)}  ·  ${fill(t().orbUse.held, { count: this.payload.kit.count(spec.id) })}`, {
+      .text(left, top, `${orbName(spec.id)}  ·  ${fill(t().orbUse.held, { count: orbs.count(spec.id) })}`, {
         fontFamily: 'system-ui, sans-serif',
         fontSize: TEXT.size.body,
         color: colour,
@@ -316,7 +316,7 @@ export class OrbScene extends Phaser.Scene {
     this.layer.add([icon, title, state]);
 
     const tint = `#${ORBS[this.orb].color.toString(16).padStart(6, '0')}`;
-    const lines = describeGear(item).split('\n');
+    const lines = InventoryScene.describe(item).split('\n');
     const room = bottom - (iconY + 36);
     const pitch = Math.max(14, Math.min(20, room / Math.max(1, lines.length)));
     const fontSize = pitch >= 18 ? TEXT.size.small : TEXT.size.hint;
@@ -343,7 +343,7 @@ export class OrbScene extends Phaser.Scene {
   private drawFooter(width: number, height: number): void {
     const copy = t().orbUse;
     const item = this.item;
-    const why = !this.usable ? (this.payload.kit.count(this.orb) <= 0 ? copy.none : item ? copy.useless : '') : '';
+    const why = !this.usable ? (orbs.count(this.orb) <= 0 ? copy.none : item ? copy.useless : '') : '';
     const noteLine = this.add
       .text(width / 2, height - 92, this.note || why, {
         fontFamily: 'system-ui, sans-serif',
@@ -385,7 +385,7 @@ export class OrbScene extends Phaser.Scene {
     this.layer.add([plate, text]);
   }
 
-  /** The weapon did not survive: the news, what did it, and 확인 back to the 장비 screen. */
+  /** The weapon did not survive: the news, what did it, and 확인 back to the 인벤토리. */
   private drawDestroyed(): void {
     const { width, height } = this.scale;
     const copy = t().orbUse;

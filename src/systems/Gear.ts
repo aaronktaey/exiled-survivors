@@ -2,11 +2,14 @@ import {
   AFFIXES,
   AUDIO,
   GEAR,
+  GEAR_COMBINE,
   GEAR_DROP,
+  PREFIXES,
   STARTING_GEAR,
+  STORAGE,
+  SUFFIXES,
   LEGACY_AFFIX_TIER,
   ORBS,
-  affixPool,
   affixTier,
   attackForTier,
   rollAffixTier,
@@ -15,7 +18,6 @@ import {
   type GearAffixEffect,
   type AffixSpec,
   type GearId,
-  type GearSlot,
   type DropTier,
   type GearSpec,
   type OrbSpec,
@@ -23,9 +25,9 @@ import {
 import type { SkillId } from '@/weapons/skills';
 
 /**
- * One piece of gear, as it was rolled. Two 강철 검 can both be found and be
- * worth different things, so an item carries its own id rather than being
- * its base.
+ * One weapon, as it was rolled. Two 강철 검 can both be held and be worth
+ * different things, so an item carries its own id rather than being its
+ * base.
  */
 export interface GearItem {
   readonly uid: string;
@@ -36,9 +38,16 @@ export interface GearItem {
   readonly mango?: boolean;
 }
 
-/** Everything what is worn is worth to whoever is wearing it. */
+/** What the stash holds, as it is written to localStorage. */
+export interface GearState {
+  readonly items: readonly GearItem[];
+  /** The uid of the weapon in hand. */
+  readonly equipped: string;
+}
+
+/** Everything a weapon is worth to whoever is holding it. */
 export interface GearBonus {
-  /** Flat damage added to every skill's hit (the weapon's). */
+  /** Flat damage added to every skill's hit. */
   readonly attack: number;
   readonly attackSpeedScale: number;
   readonly maxHpScale: number;
@@ -46,7 +55,7 @@ export interface GearBonus {
   readonly pickupScale: number;
   readonly invulnerableScale: number;
   /**
-   * The 치명 lines and 고정 속성, summed: they raise the base chance by that
+   * The weapon's 치명 lines, summed: they raise the base chance by that
    * share of itself (two of +50% double it), rather than adding to it.
    */
   readonly critChanceIncrease: number;
@@ -63,10 +72,6 @@ export interface GearBonus {
   readonly projectileBlock: number;
   /** More shots from a skill that throws, more orbs on one that orbits. */
   readonly extraProjectiles: number;
-  /** Every hit the survivor takes, multiplied (below 1 is less). */
-  readonly damageTakenScale: number;
-  readonly xpGainScale: number;
-  readonly itemFindScale: number;
 }
 
 export const NO_BONUS: GearBonus = {
@@ -82,33 +87,25 @@ export const NO_BONUS: GearBonus = {
   skillAttackSpeed: {},
   projectileBlock: 0,
   extraProjectiles: 0,
-  damageTakenScale: 1,
-  xpGainScale: 1,
-  itemFindScale: 1,
 };
+
+const STARTER_UID = 'starter';
+
+const DEFAULTS: GearState = {
+  items: [{ uid: STARTER_UID, id: STARTING_GEAR, prefixes: [], suffixes: [] }],
+  equipped: STARTER_UID,
+};
+
+type Listener = (state: GearState) => void;
 
 let nextUid = 1;
 
-/** A fresh uid for an item made now. */
-const newUid = (): string => {
-  nextUid += 1;
-  return `g${Date.now().toString(36)}${nextUid}`;
-};
-
-/** A piece straight off its base: no 속성. Every run starts on the 녹슨 검 this way. */
-export function bareItem(id: GearId = STARTING_GEAR): GearItem {
-  return { uid: newUid(), id, prefixes: [], suffixes: [] };
-}
-
-/** The slot a piece is worn in. */
-export const slotOf = (item: { readonly id: GearId }): GearSlot => GEAR[item.id]?.slot ?? 'weapon';
-
-/** One 속성 on a piece: which it is, which rung, and what that rung does. */
+/** One 속성 on a weapon: which it is, which rung, and what that rung does. */
 export interface RolledAffix {
   readonly line: AffixLine;
   readonly spec: AffixSpec;
   readonly effect: GearAffixEffect;
-  /** What this rung reads as on gear. */
+  /** What this rung reads as on a weapon. */
   readonly detail: string;
 }
 
@@ -126,95 +123,63 @@ export function affixesOf(item: GearItem): readonly RolledAffix[] {
 }
 
 /**
- * What everything worn is worth together. Lines add up across all of it
- * (two 강력 of +15% are +30%, a 거대 on the sword and one on the armour
- * likewise), each base's 고정 속성 one more line in the same sum; only the
- * weapon carries attack.
+ * What an item is worth. Its lines add up (two 강력 of +15% are +30%), and
+ * the crit chance they raise stops at certain.
  */
-export function gearBonusFor(worn: GearItem | null | readonly (GearItem | null)[]): GearBonus {
-  const list: readonly (GearItem | null)[] = Array.isArray(worn) ? worn : [worn as GearItem | null];
-  const items = list.filter(
-    (item): item is GearItem => item !== null && item !== undefined && GEAR[item.id] !== undefined,
-  );
-  if (items.length === 0) {
+export function gearBonusFor(item: GearItem | null): GearBonus {
+  if (!item || !GEAR[item.id]) {
     return NO_BONUS;
   }
 
-  const sum = {
-    damage: 0,
-    attackSpeed: 0,
-    maxHp: 0,
-    moveSpeed: 0,
-    pickup: 0,
-    invulnerable: 0,
-    critChance: 0,
-    critMultiplier: 0,
-    damageTaken: 0,
-    xpGain: 0,
-    itemFind: 0,
-  };
-  let attack = 0;
-  let projectileBlock = 0;
-  let extraProjectiles = 0;
-  const skillAttackSpeed: Partial<Record<SkillId, number>> = {};
-  const add = (effect: GearAffixEffect | GearSpec['implicit']): void => {
-    if (!effect) {
-      return;
-    }
-    sum.damage += (effect.damageScale ?? 1) - 1;
-    sum.attackSpeed += (effect.attackSpeedScale ?? 1) - 1;
-    sum.maxHp += (effect.maxHpScale ?? 1) - 1;
-    sum.moveSpeed += ('moveSpeedScale' in effect ? (effect.moveSpeedScale ?? 1) : 1) - 1;
-    sum.pickup += (effect.pickupScale ?? 1) - 1;
-    sum.invulnerable += (effect.invulnerableScale ?? 1) - 1;
-    sum.critChance += effect.critChance ?? 0;
-    sum.critMultiplier += 'critMultiplierBonus' in effect ? (effect.critMultiplierBonus ?? 0) : 0;
-    sum.damageTaken += (effect.damageTakenScale ?? 1) - 1;
-    sum.xpGain += (effect.xpGainScale ?? 1) - 1;
-    sum.itemFind += (effect.itemFindScale ?? 1) - 1;
-  };
+  // Within one weapon its lines add up: two 거대 of +50% are +100% of the
+  // survivor's health, not ×1.5 twice. The base's own 고정 속성 is one more
+  // line in the same sum.
+  let attackSpeed = 0;
+  let maxHp = 0;
+  let moveSpeed = 0;
+  let pickup = 0;
+  let invulnerable = 0;
+  let critChanceIncrease = 0;
+  let critMultiplierBonus = 0;
 
-  for (const item of items) {
-    const spec = GEAR[item.id];
-    if (spec.slot === 'weapon') {
-      attack += attackForTier(spec.tier);
-    }
-    const implicit = spec.implicit;
-    add(implicit);
-    projectileBlock += implicit?.projectileBlock ?? 0;
-    extraProjectiles += implicit?.extraProjectiles ?? 0;
-    if (implicit?.skillAttackSpeed) {
-      const { skill, scale } = implicit.skillAttackSpeed;
-      skillAttackSpeed[skill] = (skillAttackSpeed[skill] ?? 1) * scale;
-    }
-    for (const { effect } of affixesOf(item)) {
-      add(effect);
-    }
+  const implicit = GEAR[item.id].implicit;
+  attackSpeed += (implicit?.attackSpeedScale ?? 1) - 1;
+  let damage = (implicit?.damageScale ?? 1) - 1;
+  const skillAttackSpeed: Partial<Record<SkillId, number>> = implicit?.skillAttackSpeed
+    ? { [implicit.skillAttackSpeed.skill]: implicit.skillAttackSpeed.scale }
+    : {};
+
+  for (const { effect } of affixesOf(item)) {
+    damage += (effect.damageScale ?? 1) - 1;
+    attackSpeed += (effect.attackSpeedScale ?? 1) - 1;
+    maxHp += (effect.maxHpScale ?? 1) - 1;
+    moveSpeed += (effect.moveSpeedScale ?? 1) - 1;
+    pickup += (effect.pickupScale ?? 1) - 1;
+    invulnerable += (effect.invulnerableScale ?? 1) - 1;
+    critChanceIncrease += effect.critChance ?? 0;
+    critMultiplierBonus += effect.critMultiplierBonus ?? 0;
   }
 
   return {
-    attack,
-    attackSpeedScale: 1 + sum.attackSpeed,
-    maxHpScale: 1 + sum.maxHp,
-    moveSpeedScale: 1 + sum.moveSpeed,
-    pickupScale: 1 + sum.pickup,
-    invulnerableScale: Math.max(0, 1 + sum.invulnerable),
-    critChanceIncrease: sum.critChance,
-    critMultiplierBonus: sum.critMultiplier,
-    damageScale: 1 + sum.damage,
+    attack: attackForTier(GEAR[item.id].tier),
+    attackSpeedScale: 1 + attackSpeed,
+    maxHpScale: 1 + maxHp,
+    moveSpeedScale: 1 + moveSpeed,
+    pickupScale: 1 + pickup,
+    invulnerableScale: Math.max(0, 1 + invulnerable),
+    critChanceIncrease,
+    critMultiplierBonus,
+    damageScale: 1 + damage,
     skillAttackSpeed,
-    projectileBlock: Math.min(1, projectileBlock),
-    extraProjectiles,
-    damageTakenScale: Math.max(0.1, 1 + sum.damageTaken),
-    xpGainScale: 1 + sum.xpGain,
-    itemFindScale: 1 + sum.itemFind,
+    projectileBlock: implicit?.projectileBlock ?? 0,
+    extraProjectiles: implicit?.extraProjectiles ?? 0,
   };
 }
 
 /**
- * How rare a piece came out, which is both how it is labelled on the ground
- * and what it sounds like when it lands. Up to two 속성 is ordinary, three or
- * four is magic, five or six is rare.
+ * How rare a weapon came out, which is both how it is labelled on the
+ * ground and what it sounds like when it lands. Up to two 속성 is ordinary,
+ * three or four is magic, five or six is rare.
  */
 export function dropTierFor(item: GearItem): DropTier {
   return tierForLines(item.prefixes.length + item.suffixes.length);
@@ -229,59 +194,52 @@ export function tierForLines(lines: number): DropTier {
   return lines >= AUDIO.dropTiers.magicFrom ? 'magic' : 'normal';
 }
 
-/** One 속성 for `slot`, from whichever side still has room, or null when both are full. */
-function rollLine(slot: GearSlot, prefixes: readonly AffixLine[], suffixes: readonly AffixLine[]): {
-  readonly line: AffixLine;
-  readonly prefix: boolean;
-} | null {
-  const prefixPool = affixPool('prefix', slot);
-  const suffixPool = affixPool('suffix', slot);
-  const canPrefix = prefixes.length < GEAR_DROP.maxPrefixes && prefixPool.length > 0;
-  const canSuffix = suffixes.length < GEAR_DROP.maxSuffixes && suffixPool.length > 0;
-  if (!canPrefix && !canSuffix) {
-    return null;
-  }
-  const prefix = canPrefix && (!canSuffix || Math.random() < 0.5);
-  const pool = prefix ? prefixPool : suffixPool;
-  const picked = pool[Math.floor(Math.random() * pool.length)];
-  return picked ? { line: { id: picked.id, tier: rollAffixTier(picked.id) }, prefix } : null;
-}
-
 /**
- * `count` affix lines for `slot`, drawn with room on both sides. Prefixes and
- * suffixes are picked at random between whichever side still has space, so
- * asking for four does not quietly become three prefixes and a dead roll.
+ * `count` affix lines, drawn with room on both sides. Prefixes and suffixes
+ * are picked at random between whichever side still has space, so asking for
+ * four does not quietly become three prefixes and a dead roll.
  */
-export function rollAffixLines(count: number, slot: GearSlot = 'weapon'): {
+export function rollAffixLines(count: number): {
   prefixes: AffixLine[];
   suffixes: AffixLine[];
 } {
   const prefixes: AffixLine[] = [];
   const suffixes: AffixLine[] = [];
+
   for (let i = 0; i < count; i++) {
-    const rolled = rollLine(slot, prefixes, suffixes);
-    if (!rolled) {
+    const canPrefix = prefixes.length < GEAR_DROP.maxPrefixes && PREFIXES.length > 0;
+    const canSuffix = suffixes.length < GEAR_DROP.maxSuffixes && SUFFIXES.length > 0;
+    if (!canPrefix && !canSuffix) {
       break;
     }
-    (rolled.prefix ? prefixes : suffixes).push(rolled.line);
+
+    const takePrefix = canPrefix && (!canSuffix || Math.random() < 0.5);
+    const pool = takePrefix ? PREFIXES : SUFFIXES;
+    const picked = pool[Math.floor(Math.random() * pool.length)];
+    if (!picked) {
+      break;
+    }
+
+    (takePrefix ? prefixes : suffixes).push({ id: picked.id, tier: rollAffixTier(picked.id) });
   }
+
   return { prefixes, suffixes };
 }
 
-/** The most lines any one piece can carry. */
+/** The most lines any one weapon can carry. */
 export const MAX_AFFIX_LINES = GEAR_DROP.maxPrefixes + GEAR_DROP.maxSuffixes;
 
 /**
  * What one 구슬 did. The screen reads this back out afterwards: a reroll that
- * came up short and a piece that did not survive a 폭발의 구슬 are both
+ * came up short and a weapon that did not survive a 폭발의 구슬 are both
  * things the player has to be told rather than left to work out.
  */
 export interface OrbOutcome {
-  /** The piece after it, or null when the 구슬 destroyed it. */
+  /** The weapon after it, or null when the 구슬 destroyed it. */
   readonly item: GearItem | null;
   /**
    * `ward`: put in 망고 상태. `saved`: would have been destroyed, and the 망고
-   * took it instead. `swap`: a 폭발의 구슬 on a piece all of tier 1 — one
+   * took it instead. `swap`: a 폭발의 구슬 on a weapon all of tier 1 — one
    * line traded for a different tier-1 one.
    */
   readonly kind: 'reroll' | 'add' | 'upgrade' | 'swap' | 'destroyed' | 'ward' | 'saved';
@@ -289,20 +247,19 @@ export interface OrbOutcome {
   readonly line?: AffixLine;
   /** And the one it replaced, for an upgrade. */
   readonly from?: AffixLine;
-  /** The piece's 망고 상태 went with it: a 폭발의 구슬 spends it whatever it rolls. */
+  /** The weapon's 망고 상태 went with it: a 폭발의 구슬 spends it whatever it rolls. */
   readonly wardSpent?: boolean;
 }
 
 /**
- * What a 구슬 does to a piece, or null when it would do nothing — a
- * 각성의 구슬 on one already carrying six, which must not be spent.
+ * What a 구슬 does to a weapon, or null when it would do nothing — a
+ * 각성의 구슬 on a weapon already carrying six, which must not be spent.
  *
  * A reroll throws away everything that was on it, which is the whole bargain:
- * a 혼돈의 구슬 can turn a four-line piece into two, and that is why it is
+ * a 혼돈의 구슬 can turn a four-line weapon into two, and that is why it is
  * worth hesitating over.
  */
 export function orbApplied(item: GearItem, orb: OrbSpec): OrbOutcome | null {
-  const slot = slotOf(item);
   if (orb.ward) {
     // One 망고 at a time: a second would be a 구슬 spent on nothing.
     return item.mango ? null : { item: { ...item, mango: true }, kind: 'ward' };
@@ -311,7 +268,7 @@ export function orbApplied(item: GearItem, orb: OrbSpec): OrbOutcome | null {
   if (orb.reroll) {
     const span = orb.reroll.max - orb.reroll.min + 1;
     const count = orb.reroll.min + Math.floor(Math.random() * span);
-    const rolled = rollAffixLines(Math.min(count, MAX_AFFIX_LINES), slot);
+    const rolled = rollAffixLines(Math.min(count, MAX_AFFIX_LINES));
     return {
       item: { ...item, prefixes: rolled.prefixes, suffixes: rolled.suffixes },
       kind: 'reroll',
@@ -331,23 +288,39 @@ export function orbApplied(item: GearItem, orb: OrbSpec): OrbOutcome | null {
   const suffixes: AffixLine[] = [...item.suffixes];
   let added: AffixLine | undefined;
   for (let i = 0; i < orb.add; i++) {
-    const rolled = rollLine(slot, prefixes, suffixes);
-    if (!rolled) {
+    const canPrefix = prefixes.length < GEAR_DROP.maxPrefixes && PREFIXES.length > 0;
+    const canSuffix = suffixes.length < GEAR_DROP.maxSuffixes && SUFFIXES.length > 0;
+    if (!canPrefix && !canSuffix) {
       break;
     }
-    (rolled.prefix ? prefixes : suffixes).push(rolled.line);
-    added = rolled.line;
+
+    const takePrefix = canPrefix && (!canSuffix || Math.random() < 0.5);
+    const pool = takePrefix ? PREFIXES : SUFFIXES;
+    const picked = pool[Math.floor(Math.random() * pool.length)];
+    if (!picked) {
+      break;
+    }
+
+    const line = { id: picked.id, tier: rollAffixTier(picked.id) };
+    (takePrefix ? prefixes : suffixes).push(line);
+    added = line;
   }
 
   return { item: { ...item, prefixes, suffixes }, kind: 'add', line: added };
 }
 
 /**
- * A 폭발의 구슬 on a piece whose every line is a 1티어: one line, picked at
- * random, becomes a different 속성 of its kind (that the slot allows) at
- * 1티어 — one the piece does not already carry. The destroy roll and the
- * 망고 work as they do for a climb. Null when no other 속성 has a 1티어 rung
- * to trade for.
+ * 폭발의 구슬: one 속성 already on the weapon is thrown away, a different one
+ * of the same kind rolled in its place, and that one comes out a rung better
+ * than the one it replaced. A fifth of the time the weapon does not survive
+ * it — which is the whole reason it is worth hesitating over, and why the
+ * screen asks before spending one.
+ */
+/**
+ * A 폭발의 구슬 on a weapon whose every line is a 1티어: one line, picked at
+ * random, becomes a different 속성 of its kind at 1티어 — one the weapon
+ * does not already carry. The destroy roll and the 망고 work as they do for
+ * a climb. Null when no other 속성 has a 1티어 rung to trade for.
  */
 function swapTopLine(item: GearItem, destroyChance: number): OrbOutcome | null {
   const lines = [...item.prefixes, ...item.suffixes];
@@ -355,7 +328,7 @@ function swapTopLine(item: GearItem, destroyChance: number): OrbOutcome | null {
   const index = Math.floor(Math.random() * lines.length);
   const from = lines[index]!;
   const fromPrefix = index < item.prefixes.length;
-  const pool = affixPool(fromPrefix ? 'prefix' : 'suffix', slotOf(item)).filter(
+  const pool = (fromPrefix ? PREFIXES : SUFFIXES).filter(
     (affix) => !held.has(affix.id) && affix.gearTiers?.some((rung) => rung.tier === 1),
   );
   if (pool.length === 0) {
@@ -385,20 +358,13 @@ function swapTopLine(item: GearItem, destroyChance: number): OrbOutcome | null {
   };
 }
 
-/**
- * 폭발의 구슬: one 속성 already on the piece is thrown away, a different one
- * of the same kind rolled in its place, and that one comes out a rung better
- * than the one it replaced. Some of the time the piece does not survive it —
- * which is the whole reason it is worth hesitating over, and why the screen
- * asks before spending one.
- */
 function explode(
   item: GearItem,
   upgrade: { readonly steps: number; readonly destroyChance: number },
 ): OrbOutcome | null {
   // A line with somewhere to climb. When every line is a 1티어 already, one
-  // of them is traded for a different 1티어 instead; a piece with no line at
-  // all has nothing for it to work on.
+  // of them is traded for a different 1티어 instead; a weapon with no line
+  // at all has nothing for it to work on.
   const lines = [...item.prefixes, ...item.suffixes];
   if (lines.length === 0) {
     return null;
@@ -411,7 +377,7 @@ function explode(
   // 망고 상태 lasts one 폭발의 구슬, whatever it rolls: it is spent here either way.
   const { mango: warded, ...unwarded } = item;
   if (Math.random() < upgrade.destroyChance) {
-    // The 망고 takes the blow: the piece is left as it was, without its 망고.
+    // The 망고 takes the blow: the weapon is left as it was, without its 망고.
     if (warded) {
       return { item: unwarded, kind: 'saved' };
     }
@@ -424,7 +390,7 @@ function explode(
   // replacement is drawn only from 속성 that have that rung, so it always
   // comes out above the line it replaced.
   const target = Math.max(1, from.tier - upgrade.steps);
-  const pool = affixPool(fromPrefix ? 'prefix' : 'suffix', slotOf(item)).filter((affix) =>
+  const pool = (fromPrefix ? PREFIXES : SUFFIXES).filter((affix) =>
     affix.gearTiers?.some((rung) => rung.tier === target),
   );
   const picked = pool[Math.floor(Math.random() * pool.length)];
@@ -451,8 +417,8 @@ function explode(
 }
 
 /**
- * Rolls for a 구슬 off one kill. `scale` is what the run's 뼈다귀 (and its
- * 아이템 발견) do to every drop chance. Returns the one that dropped, if any.
+ * Rolls for a 구슬 off one kill. `scale` is what the run's 뼈다귀 do to every
+ * drop chance. Returns the one that dropped, if any.
  */
 export function rollOrbDrop(scale = 1, fromBoss = false, bonus = 1): OrbSpec | null {
   for (const orb of Object.values(ORBS)) {
@@ -470,7 +436,7 @@ export function rollOrbDrop(scale = 1, fromBoss = false, bonus = 1): OrbSpec | n
   return null;
 }
 
-/** A base from the whole roster, every slot, by weight — the way a 우두머리 picks one. */
+/** A base from the whole roster by weight, the way a 우두머리 picks one. */
 function rollGearBase(): GearSpec {
   const total = Object.values(GEAR).reduce((sum, spec) => sum + spec.weight, 0);
   let roll = Math.random() * total;
@@ -485,7 +451,7 @@ function rollGearBase(): GearSpec {
 }
 
 /**
- * The piece an ordinary kill leaves, if any: only a base with `fromKill`
+ * The weapon an ordinary kill leaves, if any: only a base with `fromKill`
  * set can, each on its own roll raised by the kill's `bonus`.
  */
 export function rollGearFromKill(bonus = 1): GearItem | null {
@@ -498,66 +464,315 @@ export function rollGearFromKill(bonus = 1): GearItem | null {
   return null;
 }
 
-/** A 등급 by GEAR_DROP.grades' weights. */
-export function rollGrade(): DropTier {
-  const grades = Object.entries(GEAR_DROP.grades) as [DropTier, { readonly weight: number }][];
-  const total = grades.reduce((sum, [, grade]) => sum + grade.weight, 0);
-  let roll = Math.random() * total;
-  for (const [grade, { weight }] of grades) {
-    roll -= weight;
-    if (roll < 0) {
-      return grade;
+/**
+ * A weapon as it drops: a base — `base`, or one from the roster by weight —
+ * then affix lines that each have to win their own roll. Repeats are allowed,
+ * the way a rare enemy can be born doubly 거대 — there are fewer affixes than
+ * the ceiling, and a second 강력 is a fine way to say "much harder".
+ */
+export function rollGearItem(base: GearSpec = rollGearBase()): GearItem {
+
+  const prefixes: AffixLine[] = [];
+  const suffixes: AffixLine[] = [];
+  const room = () =>
+    (prefixes.length < GEAR_DROP.maxPrefixes ? PREFIXES.length : 0) +
+    (suffixes.length < GEAR_DROP.maxSuffixes ? SUFFIXES.length : 0);
+
+  while (room() > 0 && Math.random() < GEAR_DROP.affixChance) {
+    // Pick among whichever side still has room, so a full set of prefixes
+    // does not stop the suffixes from rolling.
+    const canPrefix = prefixes.length < GEAR_DROP.maxPrefixes && PREFIXES.length > 0;
+    const canSuffix = suffixes.length < GEAR_DROP.maxSuffixes && SUFFIXES.length > 0;
+    const takePrefix = canPrefix && (!canSuffix || Math.random() < 0.5);
+    const pool = takePrefix ? PREFIXES : SUFFIXES;
+    const picked = pool[Math.floor(Math.random() * pool.length)];
+    if (!picked) {
+      break;
     }
+
+    (takePrefix ? prefixes : suffixes).push({ id: picked.id, tier: rollAffixTier(picked.id) });
   }
-  return 'normal';
+
+  nextUid += 1;
+  return { uid: `g${Date.now().toString(36)}${nextUid}`, id: base.id, prefixes, suffixes };
 }
 
 /**
- * A piece as it drops: a base — `base`, or one from the roster by weight —
- * then a 등급 (`grade`, or one by weight) and exactly that 등급's count of
- * affix lines its slot allows. Repeats are allowed, the way a rare enemy can
- * be born doubly 거대.
+ * The sword one tier better than `id`, or null for the best there is. With
+ * more than one sword on that tier, the same weights a 우두머리 uses pick it.
  */
-export function rollGearItem(base: GearSpec = rollGearBase(), grade: DropTier = rollGrade()): GearItem {
-  const { prefixes, suffixes } = rollAffixLines(GEAR_DROP.grades[grade].lines, base.slot);
-  return { uid: newUid(), id: base.id, prefixes, suffixes };
-}
-
-/**
- * Reads a stored list of 속성, in either shape (a saved run's gear). Before
- * tiers a line was just an id; those come back at the middle rung. A line
- * the slot no longer allows falls off.
- */
-export function readLines(
-  raw: readonly (AffixLine | AffixId)[] | undefined,
-  kind: 'prefix' | 'suffix',
-  slot: GearSlot,
-): AffixLine[] {
-  const out: AffixLine[] = [];
-  for (const entry of raw ?? []) {
-    const id = (typeof entry === 'string' ? entry : entry?.id) as AffixId;
-    const spec = AFFIXES[id];
-    if (spec?.kind !== kind || spec.gearTiers === undefined || !(spec.slots ?? ['weapon']).includes(slot)) {
-      continue;
-    }
-    const tier = typeof entry === 'string' ? LEGACY_AFFIX_TIER : Number(entry?.tier);
-    out.push({ id, tier: affixTier(id, tier)?.tier ?? LEGACY_AFFIX_TIER });
-  }
-  return out;
-}
-
-/** A stored item read back, or null when it is not one any more. */
-export function readItem(raw: unknown): GearItem | null {
-  const item = raw as Partial<GearItem> | null;
-  if (!item || typeof item.uid !== 'string' || !item.id || !GEAR[item.id]) {
+export function combineTargetFor(id: GearId): GearSpec | null {
+  const from = GEAR[id];
+  if (!from) {
     return null;
   }
-  const slot = GEAR[item.id].slot;
-  return {
-    uid: item.uid,
-    id: item.id,
-    prefixes: readLines(item.prefixes, 'prefix', slot),
-    suffixes: readLines(item.suffixes, 'suffix', slot),
-    ...(item.mango === true ? { mango: true } : {}),
-  };
+
+  const above = Object.values(GEAR).filter((spec) => spec.tier === from.tier - 1);
+  if (above.length === 0) {
+    return null;
+  }
+
+  const total = above.reduce((sum, spec) => sum + spec.weight, 0);
+  let roll = Math.random() * total;
+  for (const spec of above) {
+    roll -= spec.weight;
+    if (roll <= 0) {
+      return spec;
+    }
+  }
+  return above[above.length - 1] ?? null;
 }
+
+/** What a 합성 came to: whether it took, and the sword it made if it did. */
+export interface CombineOutcome {
+  readonly success: boolean;
+  readonly item: GearItem | null;
+}
+
+/** A sword straight off its base: no 속성, a fresh uid. */
+export function bareItem(base: GearSpec): GearItem {
+  nextUid += 1;
+  return { uid: `g${Date.now().toString(36)}${nextUid}`, id: base.id, prefixes: [], suffixes: [] };
+}
+
+/**
+ * The equipment stash: what has been found, and what is being carried.
+ *
+ * It sits beside the settings rather than inside a save, because it outlives
+ * a run on purpose — a weapon a 우두머리 left in a run that ended badly is
+ * still yours, and the title screen is where it goes on. Storage is allowed
+ * to fail: a blocked localStorage just means the stash lasts as long as the
+ * tab does.
+ */
+class GearStore {
+  private current: GearState = { ...DEFAULTS };
+  private readonly listeners = new Set<Listener>();
+  private loaded = false;
+
+  public get value(): GearState {
+    if (!this.loaded) {
+      this.load();
+    }
+    return this.current;
+  }
+
+  /** Everything held, best first, so the list reads as a ladder. */
+  public get items(): readonly GearItem[] {
+    return [...this.value.items].sort((a, b) => {
+      // Tier 1 is the best, so the lower number goes first.
+      const tier = (GEAR[a.id]?.tier ?? Infinity) - (GEAR[b.id]?.tier ?? Infinity);
+      return tier !== 0 ? tier : affixesOf(b).length - affixesOf(a).length;
+    });
+  }
+
+  public get equipped(): GearItem {
+    return this.value.items.find((item) => item.uid === this.value.equipped) ?? DEFAULTS.items[0];
+  }
+
+  public get equippedSpec(): GearSpec {
+    return GEAR[this.equipped.id] ?? GEAR[STARTING_GEAR];
+  }
+
+  /** What the survivor is getting out of what they are holding. */
+  public get bonus(): GearBonus {
+    return gearBonusFor(this.equipped);
+  }
+
+  /** Adds a weapon to the stash. It is not put on; that is done on the title. */
+  public add(item: GearItem): GearItem {
+    this.commit({ ...this.value, items: [...this.value.items, item] });
+    return item;
+  }
+
+  /**
+   * Throws one away for good. Whatever is being carried stays: put something
+   * else on first, which is also what keeps the stash from ever emptying.
+   */
+  public discard(uid: string): boolean {
+    if (uid === this.value.equipped || !this.value.items.some((item) => item.uid === uid)) {
+      return false;
+    }
+
+    this.commit({ ...this.value, items: this.value.items.filter((item) => item.uid !== uid) });
+    return true;
+  }
+
+  /**
+   * Swaps one weapon for a changed copy of itself, keeping its place in the
+   * stash and whether it is being carried. This is what a 구슬 does: the
+   * same weapon, different lines.
+   */
+  public replace(item: GearItem): boolean {
+    if (!this.value.items.some((held) => held.uid === item.uid)) {
+      return false;
+    }
+
+    this.commit({
+      ...this.value,
+      items: this.value.items.map((held) => (held.uid === item.uid ? item : held)),
+    });
+    return true;
+  }
+
+  /**
+   * Takes one out whether or not it is being carried. Only a 폭발의 구슬
+   * does this: what was in hand is gone, and `sanitise` hands back a
+   * 녹슨 검 rather than leaving the survivor with nothing.
+   */
+  public discardAnyway(uid: string): boolean {
+    if (!this.value.items.some((item) => item.uid === uid)) {
+      return false;
+    }
+
+    this.commit({ ...this.value, items: this.value.items.filter((item) => item.uid !== uid) });
+    return true;
+  }
+
+  /**
+   * Why these swords cannot be combined, or null when they can: exactly
+   * GEAR_COMBINE.count different ones of the same sword, none of them the
+   * one in hand, and a better tier above them to reach for.
+   */
+  public combineProblem(uids: readonly string[]): 'count' | 'mixed' | 'equipped' | 'top' | null {
+    const picked = [...new Set(uids)]
+      .map((uid) => this.value.items.find((item) => item.uid === uid))
+      .filter((item): item is GearItem => item !== undefined);
+    if (picked.length !== GEAR_COMBINE.count) {
+      return 'count';
+    }
+    if (picked.some((item) => item.id !== picked[0]?.id)) {
+      return 'mixed';
+    }
+    if (picked.some((item) => item.uid === this.value.equipped)) {
+      return 'equipped';
+    }
+    const id = picked[0]?.id;
+    if (!id || !Object.values(GEAR).some((spec) => spec.tier === GEAR[id].tier - 1)) {
+      return 'top';
+    }
+    return null;
+  }
+
+  /**
+   * 합성: spends the swords and, GEAR_COMBINE.successChance of the time,
+   * puts a bare sword one tier up in their place. Decided and written down
+   * in one go, before any of it is shown — so leaving the screen half way
+   * through the light cannot take a failure back.
+   */
+  public combine(uids: readonly string[]): CombineOutcome | null {
+    if (this.combineProblem(uids) !== null) {
+      return null;
+    }
+
+    const spent = new Set(uids);
+    const id = this.value.items.find((item) => spent.has(item.uid))?.id;
+    const target = id ? combineTargetFor(id) : null;
+    if (!target) {
+      return null;
+    }
+
+    const success = Math.random() < GEAR_COMBINE.successChance;
+    const made = success ? bareItem(target) : null;
+    const items = this.value.items.filter((item) => !spent.has(item.uid));
+    this.commit({ ...this.value, items: made ? [...items, made] : items });
+    return { success, item: made };
+  }
+
+  /** Puts a weapon on. Only something already in the stash can be carried. */
+  public equip(uid: string): boolean {
+    if (!this.value.items.some((item) => item.uid === uid) || this.value.equipped === uid) {
+      return false;
+    }
+
+    this.commit({ ...this.value, equipped: uid });
+    return true;
+  }
+
+  public reset(): GearState {
+    this.commit({ items: [...DEFAULTS.items], equipped: DEFAULTS.equipped });
+    return this.current;
+  }
+
+  public onChange(listener: Listener): () => void {
+    this.listeners.add(listener);
+    return () => this.listeners.delete(listener);
+  }
+
+  private commit(next: GearState): void {
+    this.current = this.sanitise(next);
+    this.save();
+    this.listeners.forEach((listener) => listener(this.current));
+  }
+
+  private load(): void {
+    this.loaded = true;
+    try {
+      const raw = window.localStorage.getItem(STORAGE.gear);
+      this.current = raw
+        ? this.sanitise({ ...DEFAULTS, ...(JSON.parse(raw) as Partial<GearState>) })
+        : { ...DEFAULTS };
+    } catch {
+      this.current = { ...DEFAULTS };
+    }
+  }
+
+  private save(): void {
+    try {
+      window.localStorage.setItem(STORAGE.gear, JSON.stringify(this.current));
+    } catch {
+      // The stash lasts as long as the tab, then.
+    }
+  }
+
+  /**
+   * Reads a stored list of 속성, in either shape. Before tiers a line was
+   * just an id; those come back at the middle rung, which is about what they
+   * were worth when they were written.
+   */
+  private static lines(
+    raw: readonly (AffixLine | AffixId)[] | undefined,
+    kind: 'prefix' | 'suffix',
+  ): AffixLine[] {
+    const out: AffixLine[] = [];
+    for (const entry of raw ?? []) {
+      const id = (typeof entry === 'string' ? entry : entry?.id) as AffixId;
+      if (AFFIXES[id]?.kind !== kind || AFFIXES[id]?.gearTiers === undefined) {
+        continue;
+      }
+
+      const tier = typeof entry === 'string' ? LEGACY_AFFIX_TIER : Number(entry?.tier);
+      out.push({ id, tier: affixTier(id, tier)?.tier ?? LEGACY_AFFIX_TIER });
+    }
+    return out;
+  }
+
+  /** A hand-edited or stale payload cannot leave the survivor empty-handed. */
+  private sanitise(raw: GearState): GearState {
+    const items: GearItem[] = (Array.isArray(raw.items) ? raw.items : [])
+      .filter(
+        (item: GearItem) =>
+          item && GEAR[item.id] !== undefined && typeof item.uid === 'string',
+      )
+      .map((item: GearItem) => ({
+        uid: item.uid,
+        id: item.id,
+        prefixes: GearStore.lines(item.prefixes, 'prefix'),
+        suffixes: GearStore.lines(item.suffixes, 'suffix'),
+        ...(item.mango === true ? { mango: true } : {}),
+      }));
+
+    // Empty-handed is the one state that cannot stand, so the 녹슨 검 comes
+    // back then and only then. Throwing it away once there is something
+    // better is allowed, and it stays thrown away.
+    if (items.length === 0) {
+      items.push({ ...DEFAULTS.items[0]! });
+    }
+
+    const equipped = items.some((item) => item.uid === raw.equipped)
+      ? raw.equipped
+      : items[0]!.uid;
+    return { items, equipped };
+  }
+}
+
+export const gear = new GearStore();

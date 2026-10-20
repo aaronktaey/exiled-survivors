@@ -92,29 +92,29 @@ check('it wears a gold ring', stats.ring === true && stats.ringColour === 'ffd34
   `#${stats.ringColour}`);
 check('it is not a rare', stats.rare === false);
 
-// --- 3. killing one always leaves a 룬 (a skill until 0.74) ---
+// --- 3. killing one always leaves a skill ---
 const drops = await run(`
   s.choosing = true;
   s.spawner.clear();
-  s.combat.runeDrops.getChildren().forEach(d => d.active && d.collect());
+  s.combat.skillDrops.getChildren().forEach(d => d.active && d.collect());
   let dropped = 0;
   const N = 40;
   for (let i = 0; i < N; i++) {
     const boss = s.spawner.spawnBoss();
-    const before = s.combat.runeDrops.countActive(true);
+    const before = s.combat.skillDrops.countActive(true);
     s.combat.hit(boss, 999999);
-    if (s.combat.runeDrops.countActive(true) > before) dropped++;
-    s.combat.runeDrops.getChildren().forEach(d => d.active && d.collect());
+    if (s.combat.skillDrops.countActive(true) > before) dropped++;
+    s.combat.skillDrops.getChildren().forEach(d => d.active && d.collect());
   }
   // And an ordinary kill still has to roll for it.
   let ordinary = 0;
   for (let i = 0; i < 400; i++) {
     const e = s.spawner.group.get(600, 600);
     e.spawn(600, 600, s.player, 'grunt');
-    const before = s.combat.runeDrops.countActive(true);
+    const before = s.combat.skillDrops.countActive(true);
     s.combat.hit(e, 999999);
-    if (s.combat.runeDrops.countActive(true) > before) ordinary++;
-    s.combat.runeDrops.getChildren().forEach(d => d.active && d.collect());
+    if (s.combat.skillDrops.countActive(true) > before) ordinary++;
+    s.combat.skillDrops.getChildren().forEach(d => d.active && d.collect());
   }
   s.combat.gems.getChildren().forEach(g => g.active && g.collect());
   s.spawner.clear();
@@ -122,10 +122,10 @@ const drops = await run(`
   return { N, dropped, ordinary };
 `);
 console.log('drops:', JSON.stringify(drops));
-check('every 우두머리 kill leaves a 룬', drops.dropped === drops.N,
+check('every 우두머리 kill leaves a skill', drops.dropped === drops.N,
   `${drops.dropped} of ${drops.N} kills`);
 check('an ordinary kill still has to roll', drops.ordinary < 40,
-  `${drops.ordinary} 룬 from 400 ordinary kills`);
+  `${drops.ordinary} skills from 400 ordinary kills`);
 
 // --- 4. it announces itself with the horn, and a toast in the corner ---
 // A banner across the middle used to cover the field at the one moment it

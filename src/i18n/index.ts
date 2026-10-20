@@ -6,9 +6,7 @@ import {
   GEAR,
   ORBS,
   affixTier,
-  RUNES,
-  TURRET,
-  STAT_SPECS,
+  PASSIVES,
   type AffixId,
   type AffixKind,
   type AltarOfferId,
@@ -16,9 +14,7 @@ import {
   type BoneId,
   type GearId,
   type OrbId,
-  type Modifier,
-  type RuneId,
-  type StatId,
+  type PassiveId,
   SKILL_MASTERY,
 } from '@/config';
 import { en } from '@/i18n/en';
@@ -231,22 +227,18 @@ export function gearImplicitText(id: GearId): string {
   }
 
   const pct = (fraction: number): string => `${Number((fraction * 100).toFixed(2))}%`;
-  // The one effect a base has, as the player reads it: a share, or a count.
-  const raised = (scale?: number) => (scale === undefined ? undefined : pct(scale - 1));
   const value =
-    (implicit.projectileBlock !== undefined ? pct(implicit.projectileBlock) : undefined) ??
-    (implicit.extraProjectiles !== undefined ? String(implicit.extraProjectiles) : undefined) ??
-    raised(implicit.damageScale) ??
-    raised(implicit.attackSpeedScale) ??
-    (implicit.skillAttackSpeed ? pct(implicit.skillAttackSpeed.scale - 1) : undefined) ??
-    raised(implicit.maxHpScale) ??
-    raised(implicit.invulnerableScale) ??
-    (implicit.damageTakenScale !== undefined ? pct(1 - implicit.damageTakenScale) : undefined) ??
-    raised(implicit.pickupScale) ??
-    raised(implicit.xpGainScale) ??
-    raised(implicit.itemFindScale) ??
-    (implicit.critChance !== undefined ? pct(implicit.critChance) : undefined) ??
-    '';
+    implicit.projectileBlock !== undefined
+      ? pct(implicit.projectileBlock)
+      : implicit.extraProjectiles !== undefined
+        ? String(implicit.extraProjectiles)
+        : implicit.damageScale !== undefined
+          ? pct(implicit.damageScale - 1)
+          : implicit.attackSpeedScale !== undefined
+            ? pct(implicit.attackSpeedScale - 1)
+            : implicit.skillAttackSpeed
+              ? pct(implicit.skillAttackSpeed.scale - 1)
+              : '';
   const skill = implicit.skillAttackSpeed ? skillName(implicit.skillAttackSpeed.skill) : '';
   const template = t().names?.gearImplicits?.[id] ?? implicit.detail;
   return fill(template, { value, skill });
@@ -262,58 +254,12 @@ export function gearLabel(item: {
   return count > 0 ? `${gearName(item.id)}+${count}` : gearName(item.id);
 }
 
-export function statName(stat: StatId): string {
-  return t().names?.stats?.[stat] ?? STAT_SPECS[stat].name;
+export function passiveName(id: PassiveId): string {
+  return t().names?.passives?.[id] ?? PASSIVES[id].name;
 }
 
-/** "화염 스킬 피해" — what a modifier raises, without how much. */
-export function modifierSubject(mod: Modifier): string {
-  const stat = statName(mod.stat);
-  return mod.tag ? fill(t().runes.taggedStat, { tag: tagName(mod.tag), stat }) : stat;
-}
-
-/** "화염 스킬 피해 +6%" — a modifier written out, its first letter raised for the languages that have one. */
-export function modifierLine(mod: Modifier): string {
-  const spec = STAT_SPECS[mod.stat];
-  // A modifier that takes away (a 룬's price) turns its sign round.
-  const flip = mod.value < 0;
-  const sign = flip ? (spec.sign === '+' ? '-' : '+') : spec.sign;
-  const line = fill(t().runes.statLine, {
-    stat: modifierSubject(mod),
-    sign,
-    value: Number(Math.abs(mod.value).toFixed(2)),
-    unit: spec.unit,
-  });
-  return line.charAt(0).toUpperCase() + line.slice(1);
-}
-
-/** A 룬's name: Korean from the table, a locale's own where it has one. */
-export function runeName(id: RuneId): string {
-  return t().names?.runes?.[id] ?? RUNES[id]?.name ?? id;
-}
-
-/** What a 룬 does, a line per modifier. */
-export function runeLines(id: RuneId): string[] {
-  const spec = RUNES[id];
-  if (!spec) {
-    return [];
-  }
-  const value = (stat: string) => spec.mods.find((mod) => mod.stat === stat)?.value ?? 0;
-  const numbers = {
-    casts: 1 + value('repeatCount'),
-    decay: `${value('pierceDecay')}%`,
-    every: TURRET.everyMs / 1000,
-    life: TURRET.lifeMs / 1000,
-  };
-  const detail = spec.detail ? [fill(t().names?.runeDetails?.[id] ?? spec.detail, numbers)] : [];
-  const unique = spec.unique ? [t().runes.uniqueLine] : [];
-  return [...detail, ...spec.mods.filter((mod) => !STAT_SPECS[mod.stat].hidden).map(modifierLine), ...unique];
-}
-
-/** Which skills a 룬 works on, as one line. */
-export function runeWorksOn(id: RuneId): string {
-  const skills = RUNES[id]?.skills;
-  return skills ? fill(t().runes.worksOn, { skills: skills.map((skill) => skillName(skill)).join(' · ') }) : t().runes.worksOnAll;
+export function passiveDetail(id: PassiveId): string {
+  return t().names?.passiveDetails?.[id] ?? PASSIVES[id].detail;
 }
 
 /**

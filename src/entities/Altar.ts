@@ -54,7 +54,7 @@ export class Altar extends GroundItem {
   /** How loudly it reads: a 우두머리 offer (or one that always leaves skills) loudest, a rare pack next. */
   public static tierFor(offer: AltarOfferId): DropTier {
     const spec = ALTAR_OFFERS[offer];
-    if (spec?.kind === 'boss' || (spec && ENEMY_KINDS[spec.kind]?.guaranteedRune)) {
+    if (spec?.kind === 'boss' || (spec && ENEMY_KINDS[spec.kind]?.guaranteedSkill)) {
       return 'rare';
     }
 

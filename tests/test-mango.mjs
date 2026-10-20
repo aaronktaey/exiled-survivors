@@ -39,7 +39,7 @@ await run(`s.choosing = false; return 1;`);
 await sleep(300);
 await shot('mango-01-ground');
 
-// --- 2. eaten: twice as quick, and in colour — and no longer untouchable (0.71) ---
+// --- 2. eaten: untouchable, twice as quick, and in colour ---
 const eaten = await run(`
   s.choosing = true;
   const p = s.player;
@@ -52,7 +52,7 @@ const eaten = await run(`
   // Its clock, as a ring round the survivor: drawn once it starts to run.
   p.tickBuffs(1);
   during.ring = p.mangoRing.commandBuffer.length;
-  // A body and a bolt both still hurt.
+  // Nothing gets through: not a body, not a bolt.
   const e = s.spawner.group.get(p.x, p.y); e.spawn(p.x, p.y, p, 'brute');
   s.combat.onEnemyTouch(p, e);
   p.takeDamage(50);
@@ -65,7 +65,7 @@ const eaten = await run(`
 console.log('eaten:', JSON.stringify(eaten));
 check('eating it takes it off the ground and starts its clock',
   eaten.during.gone && eaten.during.active && eaten.during.left === ground.cfg.durationMs);
-check('it is no shield: a body and a bolt still hurt while it lasts', eaten.hp < eaten.max, `${eaten.hp}/${eaten.max}`);
+check('nothing hurts while it lasts — no body, no bolt', eaten.hp === eaten.max);
 check('move speed is multiplied by the configured amount',
   Math.abs(eaten.during.speed - eaten.before.speed * ground.cfg.moveSpeedScale) < 1e-6,
   `${eaten.before.speed} -> ${eaten.during.speed}`);
@@ -93,7 +93,7 @@ const ended = await run(`
   const p = s.player;
   for (let t = 0; t < window.config.MANGO.durationMs + 100; t += 50) p.tickBuffs(50);
   const out = { active: p.mangoActive, tint: p.isTinted, speed: p.moveSpeed, ring: p.mangoRing.commandBuffer.length,
-                base: window.config.PLAYER.speed * s.mods.gear.moveSpeedScale };
+                base: window.config.PLAYER.speed * s.mods.passive.moveSpeedScale * s.mods.gear.moveSpeedScale };
   p.invulnerableUntil = 0;
   const hp = p.hp; p.takeDamage(5); out.hurt = hp - p.hp; p.hp = p.maxHp;
   s.choosing = false;
@@ -112,13 +112,13 @@ const rule = await run(`
   // kill can draw from is filled once first, with the real roll — the
   // pinned kills below then only reuse what is there.
   const P = s.player, cmb = s.combat;
-  cmb.dropPotionAt(P.x, P.y); cmb.dropMangoAt(P.x, P.y); cmb.dropMagnetAt(P.x, P.y);
-  cmb.dropOrbAt(P.x, P.y, 'chaos'); cmb.dropBoneAt(P.x, P.y, 'rib'); cmb.dropRuneAt(P.x, P.y, 'split');
+  cmb.dropPotionAt(P.x, P.y); cmb.dropMangoAt(P.x, P.y); cmb.dropMagnetAt(P.x, P.y); cmb.dropShardAt(P.x, P.y);
+  cmb.dropOrbAt(P.x, P.y, 'chaos'); cmb.dropBoneAt(P.x, P.y, 'rib'); cmb.dropRandomSkillAt(P.x, P.y);
   cmb.dropAltarAt(P.x, P.y + 300, 'bosses');
-  cmb.dropChiselAt(P.x, P.y);
+  cmb.dropSkillAt(P.x, P.y, { id: 'fireball' });
   cmb.dropGearAt(P.x, P.y, { uid: 'warm', id: 'rustySword', prefixes: [], suffixes: [] });
-  [cmb.potions, cmb.mangoDrops, cmb.magnetDrops, cmb.orbDrops, cmb.boneDrops, cmb.runeDrops,
-   cmb.altars, cmb.chiselDrops, cmb.gearDrops].forEach((g) => g.getChildren().forEach((d) => d.active && d.collect()));
+  [cmb.potions, cmb.mangoDrops, cmb.magnetDrops, cmb.shardDrops, cmb.orbDrops, cmb.boneDrops, cmb.randomSkillDrops,
+   cmb.altars, cmb.skillDrops, cmb.gearDrops].forEach((g) => g.getChildren().forEach((d) => d.active && d.collect()));
   const c = window.config;
   const was = { potion: c.POTION.chance, mango: c.MANGO.chance };
   const roll = Math.random;
@@ -252,8 +252,8 @@ const magnetRate = await run(`
     c.MAGNET.chance = was;
   }
   s.combat.magnetDrops.getChildren().forEach((d) => d.active && d.collect());
-  [s.combat.gems, s.combat.runeDrops, s.combat.potions, s.combat.gearDrops, s.combat.orbDrops,
-   s.combat.boneDrops, s.combat.chiselDrops, s.combat.mangoDrops, s.combat.altars]
+  [s.combat.gems, s.combat.skillDrops, s.combat.potions, s.combat.gearDrops, s.combat.shardDrops, s.combat.orbDrops,
+   s.combat.boneDrops, s.combat.randomSkillDrops, s.combat.mangoDrops, s.combat.altars]
     .forEach((g) => g.getChildren().forEach((d) => d.active && d.collect()));
   s.choosing = false;
   return out;
@@ -278,7 +278,7 @@ const magnet = await run(`
   const need = s.progression.xpToNext;
   for (let i = 0; i < 6; i++) { const g = c.gems.get(); const q = at(i); g.drop(q.x, q.y, Math.ceil(need / 3), p); }
   let q = at(0); c.dropOrbAt(q.x, q.y, 'chaos');
-  q = at(1); c.dropBoneAt(q.x, q.y, 'rib');
+  q = at(1); c.dropShardAt(q.x, q.y);
   q = at(2); c.dropGearAt(q.x, q.y, { uid: 'pulled', id: 'rustySword', prefixes: [], suffixes: [] });
   // What a survivor might be keeping for later: it stays put.
   q = at(3); c.dropPotionAt(q.x, q.y);
@@ -287,20 +287,16 @@ const magnet = await run(`
   q = at(1); c.dropAltarAt(q.x, q.y + 120, 'bosses');
   c.dropMagnetAt(p.x + 60, p.y);
   const before = {
-    gems: c.gems.countActive(true), orbs: s.kit.count('chaos'), ribs: window.bones.count('rib'),
-    gear: s.kit.find('pulled') !== null || s.pendingChoices.some((r) => r.kind === 'gear' && r.item.uid === 'pulled') ||
-      s.gearOnOffer?.uid === 'pulled',
-    level: s.progression.level,
+    gems: c.gems.countActive(true), orbs: window.orbs.count('chaos'), shards: window.passives.value.shards,
+    gear: window.gear.items.some((i) => i.uid === 'pulled'), level: s.progression.level,
     label: c.magnetDrops.getChildren().find((d) => d.active && Math.abs(d.x - p.x - 60) < 2)?.nameplate.text ?? null,
   };
   const picked = c.magnetDrops.getChildren().find((d) => d.active && Math.abs(d.x - p.x - 60) < 2);
   c.onMagnetTouch(p, picked);
   // The very same moment: everything is already taken.
   const after = {
-    gems: c.gems.countActive(true), orbs: s.kit.count('chaos'), ribs: window.bones.count('rib'),
-    gear: s.kit.find('pulled') !== null || s.pendingChoices.some((r) => r.kind === 'gear' && r.item.uid === 'pulled') ||
-      s.gearOnOffer?.uid === 'pulled',
-    level: s.progression.level,
+    gems: c.gems.countActive(true), orbs: window.orbs.count('chaos'), shards: window.passives.value.shards,
+    gear: window.gear.items.some((i) => i.uid === 'pulled'), level: s.progression.level,
     potions: c.potions.countActive(true), mangos: c.mangoDrops.countActive(true),
     magnets: c.magnetDrops.countActive(true), altars: c.altars.countActive(true),
     toast: s.toasts.lines.some((l) => /자석/.test(l)),
@@ -316,8 +312,6 @@ const later = await run(`
   // Tidy: close any popup the level-ups opened, and clear the ground.
   const up = window.game.scene.getScene('UpgradeScene');
   if (window.game.scene.isActive('UpgradeScene')) { up.payload.onPick(up.payload.options[0].id); up.scene.stop(); }
-  const pick = window.game.scene.getScene('GearPickScene');
-  if (window.game.scene.isActive('GearPickScene')) { pick.choose('keep'); }
   s.pendingChoices.length = 0;
   [c.potions, c.mangoDrops, c.magnetDrops, c.altars].forEach((g) => g.getChildren().forEach((d) => d.active && d.collect()));
   s.player.setInvulnerable(false);
@@ -325,9 +319,9 @@ const later = await run(`
 `);
 console.log('magnet:', JSON.stringify({ magnet, later }));
 check('자석 lies on the ground under its name', magnet.before.label === '자석', `${magnet.before.label}`);
-check('picked up, every gem and item on the map is taken at that instant — the XP, the 구슬, the 뼈다귀, the sword',
+check('picked up, every gem and item on the map is taken at that instant — the XP, the 구슬, the 조각, the sword',
   magnet.after.gems === 0 && magnet.after.level > magnet.before.level &&
-    magnet.after.orbs === magnet.before.orbs + 1 && magnet.after.ribs === magnet.before.ribs + 1 &&
+    magnet.after.orbs === magnet.before.orbs + 1 && magnet.after.shards === magnet.before.shards + 1 &&
     magnet.after.gear === true && magnet.after.toast,
   JSON.stringify(magnet.after));
 check('but what might be kept for later stays: the 포션, the 하얀 망고, the other 자석 and the 제단',

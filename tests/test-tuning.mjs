@@ -43,41 +43,33 @@ await cdp.send('Page.navigate', { url: 'about:blank' });
 await cdp.send('Page.navigate', { url: 'http://localhost:5173/' });
 await sleep(2500);
 await ev(standIn);
-// A dial ships only when the user asks for it (2026-10-19); the skill ones
-// are added here for the test, beside what ships (0.77: enemy health, drops).
-const addDials = `(() => {
-  window.tuning.addDial({ path: 'SKILL_BASE.meleeStrike.damage', kind: 'number', tab: 'skills', skill: 'meleeStrike' });
-  window.tuning.addDial({ path: 'BALANCE.damageScale.meleeStrike', kind: 'scale', tab: 'skills', skill: 'meleeStrike' });
-  window.tuning.addDial({ path: 'POTION.chance', kind: 'chance', tab: 'drops', max: 0.3 });
-  return 1;
-})()`;
-// What ships: enemy health — overall, a minute, every tier of it — and
-// every drop off a kill, read off the tables so a new one without its dial fails.
+
+// What ships (0.80, kept as it stood at 0.79): every skill stat it has at
+// all and its 피해 배율, enemy health (overall, a minute, each tier) and every
+// drop off a kill — read off the tables, so a new one without its dial fails.
 const shipped = await ev(`(() => {
   const c = window.config;
   const paths = new Set(c.DIALS.map((d) => d.path));
   const want = ['BALANCE.enemyHpScale', 'DIFFICULTY.hpScalePerMinute',
     ...c.DIFFICULTY.hpStepTiers.flatMap((_, i) => ['DIFFICULTY.hpStepTiers.' + i + '.afterMinute', 'DIFFICULTY.hpStepTiers.' + i + '.multiplier']),
-    'RUNE_DROP.chance', 'RUNE_CHISEL.chance', 'RANDOM_SKILL.chance', 'POTION.chance', 'MANGO.chance', 'MAGNET.chance', 'ALTAR.fromKill',
+    'SKILL_DROP.chance', 'SKILL_PICK.dropChance', 'POTION.chance', 'MANGO.chance', 'MAGNET.chance', 'ALTAR.fromKill', 'ALTAR.fromBoss', 'SHARD.chance',
     ...Object.keys(c.ORBS).filter((id) => !c.ORBS[id].fromBossOnly).map((id) => 'ORBS.' + id + '.chance'),
     ...Object.keys(c.BONES).filter((id) => c.BONES[id].fromKill > 0).map((id) => 'BONES.' + id + '.fromKill'),
     ...Object.keys(c.GEAR).filter((id) => c.GEAR[id].fromKill !== undefined).map((id) => 'GEAR.' + id + '.fromKill'),
-    // Every skill's stats (0.79): each one it has at all, and its 피해 배율.
     ...Object.keys(c.SKILL_BASE).flatMap((id) => [
       ...Object.keys(c.SKILL_BASE[id]).filter((stat) => c.SKILL_BASE[id][stat] > 0).map((stat) => 'SKILL_BASE.' + id + '.' + stat),
       'BALANCE.damageScale.' + id])];
   const value = (path) => path.split('.').reduce((o, k) => (o == null ? undefined : o[k]), c);
   return { missing: want.filter((p) => !paths.has(p)), loose: [...paths].filter((p) => typeof value(p) !== 'number'),
-           tabs: [...new Set(c.DIALS.map((d) => d.tab))] };
+           extra: [...paths].filter((p) => !want.includes(p)) };
 })()`);
-await ev(addDials);
+check('it ships with a dial for every skill stat, enemy health and each tier, and every drop — and nothing else',
+  shipped.missing.length === 0 && shipped.loose.length === 0 && shipped.extra.length === 0, JSON.stringify(shipped));
 
 // --- 1. the panel, from the title ---
 await scene('MenuScene', `s.icons.press('tuning'); return 1;`);
 await sleep(700);
 const panel = await scene('TuningScene', `return { active: s.scene.isActive(), knobs: s.knobs.map((k) => k.dial.path), back: !!s.backButton };`);
-check('it ships with a dial for every skill stat, enemy health, a minute and each tier, and every drop off a kill',
-  shipped.missing.length === 0 && shipped.loose.length === 0, JSON.stringify(shipped));
 check('the title’s 밸런스 icon opens the dials, a page a skill',
   panel.active && panel.back && panel.knobs.includes('SKILL_BASE.meleeStrike.damage') && panel.knobs.includes('BALANCE.damageScale.meleeStrike'),
   panel.knobs.join(' '));
@@ -90,7 +82,6 @@ for (const [w, h, shape] of [[0, 0, 'landscape'], [420, 860, 'upright']]) {
     await cdp.send('Page.navigate', { url: 'about:blank' });
     await cdp.send('Page.navigate', { url: 'http://localhost:5173/' });
     await sleep(2500);
-    await ev(addDials);
     await scene('MenuScene', `s.icons.press('tuning'); return 1;`);
     await sleep(600);
   }
@@ -102,14 +93,13 @@ for (const [w, h, shape] of [[0, 0, 'landscape'], [420, 860, 'upright']]) {
              right: Math.max(...s.knobs.map((k) => k.x)), width: s.scale.width };
   `);
   check(`${shape}: every 드랍 dial fits above the buttons`,
-    fit.count >= 1 && fit.bottom < fit.status && fit.right < fit.width, JSON.stringify(fit));
+    fit.count >= 15 && fit.bottom < fit.status && fit.right < fit.width, JSON.stringify(fit));
   await shot(`tuning-03-drops-${shape}`);
 }
 await cdp.send('Emulation.clearDeviceMetricsOverride', {});
 await cdp.send('Page.navigate', { url: 'about:blank' });
 await cdp.send('Page.navigate', { url: 'http://localhost:5173/' });
 await sleep(2500);
-await ev(addDials);
 await ev(standIn);
 await sleep(300);
 
@@ -205,11 +195,9 @@ check('전체 적용 hands the draft to the server and it becomes everyone’s v
 await cdp.send('Page.navigate', { url: 'about:blank' });
 await cdp.send('Page.navigate', { url: 'http://localhost:5173/' });
 await sleep(2500);
-await ev(addDials);
 await ev(`(() => { window.config.DEBUG.gatedInDev = true; return 1; })()`);
 await ev(standIn);
-await ev(`(() => { window.__balanceStandIn.overrides = { 'POTION.chance': 0.25, 'SPAWN.maxAlive': 5 }; window.__balanceStandIn.updatedAt = 1;
-  window.__chaosWas = window.config.SPAWN.maxAlive; return 1; })()`);
+await ev(`(() => { window.__balanceStandIn.overrides = { 'POTION.chance': 0.25 }; window.__balanceStandIn.updatedAt = 1; return 1; })()`);
 const player = await cdp.send('Runtime.evaluate', { awaitPromise: true, returnByValue: true, expression: `(async () => {
   window.tuning.draft = { 'POTION.chance': 0.9 };
   await window.tuning.load(window.game);
@@ -218,12 +206,11 @@ const player = await cdp.send('Runtime.evaluate', { awaitPromise: true, returnBy
   window.game.scene.getScene('MenuScene').scene.restart();
   await new Promise((r) => setTimeout(r, 800));
   const icons = window.game.scene.getScene('MenuScene').icons.views.map((v) => v.button.id);
-  return { potion: window.config.POTION.chance, icons, chaos: window.config.SPAWN.maxAlive, chaosWas: window.__chaosWas };
+  return { potion: window.config.POTION.chance, icons };
 })()` });
 const pl = player.result?.result?.value ?? {};
 check('a player who is not the admin plays on everyone’s values, never a draft, and has no 밸런스 icon',
   pl.potion === 0.25 && !pl.icons?.includes('tuning'), JSON.stringify(pl));
-check('a value the server still holds for a path that is no dial changes nothing', pl.chaos === pl.chaosWas, JSON.stringify(pl));
 await ev(`(() => { window.config.DEBUG.gatedInDev = false; window.tuning.draft = {}; localStorage.removeItem('exiled-survivors:tuning-draft:v1'); return 1; })()`);
 
 console.log('\n=== SUMMARY ===');

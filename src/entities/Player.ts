@@ -27,6 +27,8 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   private level = 1;
   /** What the carried weapon is worth to this survivor. */
   private gear: GearBonus = NO_BONUS;
+  /** The tree's 이동속도, layered under the weapon's 신속. */
+  private passiveSpeed = 1;
   /** Left of a 하얀 망고, in ms. Public for tests. */
   public mangoLeftMs = 0;
   /** The ring that shows how much of it is left. Public for tests. */
@@ -133,8 +135,8 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     return this.gear.projectileBlock;
   }
 
-  /** The survivor's crit chance before any skill's 룬: the base, raised by the gear's 치명 as a share of itself. */
   public get critChance(): number {
+    // The weapon's 치명 raises the base by a share of itself, its lines summed.
     return Math.min(1, PLAYER.critChance * (1 + this.gear.critChanceIncrease));
   }
 
@@ -143,39 +145,15 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     return PLAYER.pickupRadius * this.gear.pickupScale;
   }
 
-  /** The window after a hit, and a body's wait between hurts: the gear's 회피. */
-  public get invulnerableScale(): number {
-    return this.gear.invulnerableScale;
-  }
-
-  /** What every hit is multiplied by before it lands: the gear's. */
-  public get damageTakenScale(): number {
-    return this.gear.damageTakenScale;
-  }
-
-  /** What a potion's healing is multiplied by (nothing raises it since the tree went, 0.74). */
-  public get potionHealScale(): number {
-    return 1;
-  }
-
   /**
    * Reads the carried weapon into the survivor. Health is rescaled rather
    * than topped up, so a weapon with 거대 on it starts the run at the fuller
    * bar it earns.
    */
-  public applyGear(bonus: GearBonus, keepHp = false): void {
+  public applyGear(bonus: GearBonus): void {
     this.gear = bonus;
-    this.refit(keepHp);
-  }
-
-  /**
-   * Full health from what is worn. At the start of a run the bar
-   * is filled to it; a piece put on mid-run keeps the health there is, only
-   * held under the new full bar.
-   */
-  private refit(keepHp = false): void {
-    this.maxHpValue = Math.max(1, Math.round(PLAYER.maxHp * this.gear.maxHpScale));
-    this.hp = keepHp ? Math.min(this.hp, this.maxHpValue) : this.maxHpValue;
+    this.maxHpValue = Math.max(1, Math.round(PLAYER.maxHp * bonus.maxHpScale));
+    this.hp = this.maxHpValue;
     this.drawHealthBar();
   }
 
@@ -185,11 +163,16 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     this.drawHealthBar();
   }
 
+  /** What the passive tree does to the survivor's own body. */
+  public applyPassives(bonus: { readonly moveSpeedScale: number }): void {
+    this.passiveSpeed = bonus.moveSpeedScale;
+  }
+
   /** Move speed right now, before a stick's tilt. Public for tests. */
   public get moveSpeed(): number {
     const mango = this.mangoActive ? MANGO.moveSpeedScale : 1;
     const web = this.webbed ? 1 - WEB.slow : 1;
-    return PLAYER.speed * this.gear.moveSpeedScale * mango * web;
+    return PLAYER.speed * this.passiveSpeed * this.gear.moveSpeedScale * mango * web;
   }
 
   /** True while a 하얀 망고 is working. */
@@ -197,10 +180,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     return this.mangoLeftMs > 0;
   }
 
-  /**
-   * Eats a 하얀 망고: quicker to swing and to move for MANGO.durationMs.
-   * It made the survivor untouchable too until 0.71 (the user's call).
-   */
+  /** Eats a 하얀 망고: untouchable and twice as quick for MANGO.durationMs. */
   public eatMango(): void {
     this.mangoLeftMs = MANGO.durationMs;
     // A hit's blink would fight the rainbow; the rainbow wins.
@@ -273,9 +253,9 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
    * survivor's own invulnerable window, so a volley landing at once is one
    * hit rather than eighteen.
    */
-  /** Whether a thrown thing landing now would hurt: alive and outside the window. */
+  /** Whether a thrown thing landing now would hurt: alive, outside the window, no 망고. */
   public get wouldTakeShot(): boolean {
-    return this.isAlive && this.scene.time.now >= this.invulnerableUntil;
+    return this.isAlive && this.scene.time.now >= this.invulnerableUntil && !this.mangoActive;
   }
 
   public takeDamage(amount: number): void {
@@ -284,7 +264,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
       return;
     }
 
-    this.invulnerableUntil = now + PLAYER.invulnerableMs * this.invulnerableScale;
+    this.invulnerableUntil = now + PLAYER.invulnerableMs * this.gear.invulnerableScale;
     this.hurt(amount);
   }
 
@@ -296,7 +276,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
    * Only the debug switch holds it off.
    */
   public takeContact(amount: number): void {
-    if (!this.isAlive || this.shielded) {
+    if (!this.isAlive || this.shielded || this.mangoActive) {
       return;
     }
 
@@ -305,7 +285,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
 
   /** How long one enemy waits before its body can hurt again. 회피 lengthens it. */
   public get contactCooldownMs(): number {
-    return ENEMY.contactCooldownMs * this.invulnerableScale;
+    return ENEMY.contactCooldownMs * this.gear.invulnerableScale;
   }
 
   /** True while the debug switch holds every hit off. */
@@ -313,9 +293,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     return this.invulnerableUntil === Number.MAX_SAFE_INTEGER;
   }
 
-  private hurt(raw: number): void {
-    // Whatever lowers it, a hit that would hurt still takes one.
-    const amount = raw > 0 ? Math.max(1, Math.round(raw * this.damageTakenScale)) : 0;
+  private hurt(amount: number): void {
     this.hp = Math.max(0, this.hp - amount);
 
     // A short blink, restarted rather than stacked when hits come together.
@@ -324,7 +302,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     this.scene.tweens.add({
       targets: this,
       alpha: 0.25,
-      duration: (PLAYER.invulnerableMs * this.invulnerableScale) / 6,
+      duration: (PLAYER.invulnerableMs * this.gear.invulnerableScale) / 6,
       yoyo: true,
       repeat: 2,
       onComplete: () => this.setAlpha(1),

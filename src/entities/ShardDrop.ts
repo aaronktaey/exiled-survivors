@@ -1,26 +1,34 @@
 import Phaser from 'phaser';
 
-import { RUNE_CHISEL, TEXTURES } from '@/config';
+import { COLORS, SHARD, TEXTURES } from '@/config';
 import { GroundItem } from '@/entities/GroundItem';
 import { t } from '@/i18n';
 import { DropLabel } from '@/systems/DropLabel';
 
-/** A 룬 끌 on the ground: walked over, it asks which skill gets one more 강화 슬롯. */
-export class ChiselDrop extends GroundItem {
+/**
+ * 신성한 조각, left by a 우두머리 half the time. Ten of them make a
+ * 신성한 구슬, which is one point in the passive tree.
+ *
+ * It is the rarest thing a run puts on the ground — a point in the tree is
+ * worth more than any one weapon — so it wears the loudest label.
+ */
+export class ShardDrop extends GroundItem {
   /** The name above it. Public so a test can read what it says. */
   public readonly nameplate: DropLabel;
 
   public constructor(scene: Phaser.Scene, x: number, y: number) {
-    super(scene, x, y, TEXTURES.runeChisel, RUNE_CHISEL.color);
-    this.setDisplaySize(RUNE_CHISEL.size, RUNE_CHISEL.size);
+    super(scene, x, y, TEXTURES.shard, COLORS.shardGlow);
+    this.setDisplaySize(SHARD.size, SHARD.size);
+
     this.nameplate = new DropLabel(scene, x, y);
   }
 
   public drop(x: number, y: number): void {
-    this.begin(x, y, RUNE_CHISEL.size);
-    this.setDisplaySize(RUNE_CHISEL.size, RUNE_CHISEL.size);
-    this.nameplate.show(t().runes.chisel, 'rare');
-    this.nameplate.place(x, y, RUNE_CHISEL.size);
+    this.begin(x, y, SHARD.size);
+
+    this.nameplate.show(t().passives.shardName, 'rare');
+    this.nameplate.place(x, y, SHARD.size);
+
     this.pop();
   }
 

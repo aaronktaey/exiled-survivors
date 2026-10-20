@@ -70,15 +70,7 @@ const arrive = async (url = BASE) => {
   await sleep(3800);
 };
 const user = { id: 'u1', provider: 'google', name: 'Alice', rank: { name: '', emoji: '', flag: '' } };
-// A record this browser keeps, marked so each change can be told apart: the
-// tree's account experience (the equipment stash was the marker until gear
-// stopped outliving a run).
-// Each set of records is told apart by how many 고대 두개골 its drawer holds.
-const XP = { mine: 1, later: 2, fromOther: 3, localOnly: 4, remoteOnly: 5 };
-const BONES_KEY = 'exiled-survivors:bones:v1';
-const mark = (name) => `window.bones.reset(); window.bones.add('skull', ${XP[name]});`;
-const tree = (name) => JSON.stringify({ skull: XP[name] });
-const holds = (data, name) => { try { return JSON.parse(data?.[BONES_KEY] ?? '{}').skull === XP[name]; } catch { return false; } };
+const sword = (uid) => ({ uid, id: 'runedSword', prefixes: [], suffixes: [] });
 
 try {
   // --- 1. signed out: the corner icon, and the ways in ---
@@ -97,12 +89,10 @@ try {
   await shot('account-01-signed-out');
 
   // --- 2. back from the provider, with records here and none on the account ---
-  await ev(`(() => { ${mark('mine')} return 1; })()`);
+  await ev(`(() => { window.gear.add(${JSON.stringify(sword('mine'))}); return 1; })()`);
   await fake(`s.user = ${JSON.stringify(user)}`);
   await arrive(`${BASE}#login=ok`);
   await sleep(800);
-  // Under load the first upload can still be on its way: wait for it, a while.
-  for (let i = 0; i < 20 && (await ev(`window.cloudSave.status`)) === 'syncing'; i++) await sleep(250);
   const first = await ev(`(() => { const s = window.__fake.load(); return {
     hash: location.hash, uploaded: Object.keys(s.save.data || {}), at: s.save.updatedAt,
     note: JSON.parse(localStorage.getItem('exiled-survivors:sync:v1') || 'null'),
@@ -111,30 +101,30 @@ try {
   check('coming back signed in takes the fragment off and shows as signed in',
     first.hash === '' && first.icon === '계정', JSON.stringify({ hash: first.hash, icon: first.icon }));
   check('a first sign-in with an empty account uploads this browser’s records',
-    first.uploaded.includes(BONES_KEY) && !first.uploaded.includes('exiled-survivors:sync:v1') &&
+    first.uploaded.includes('exiled-survivors:gear:v2') && !first.uploaded.includes('exiled-survivors:sync:v1') &&
       first.at > 0 && first.note?.at === first.at && first.status === 'synced',
     JSON.stringify(first));
 
   // --- 3. a change here goes up on the next sync ---
-  await ev(`(() => { ${mark('later')} return 1; })()`);
+  await ev(`(() => { window.gear.add(${JSON.stringify(sword('later'))}); return 1; })()`);
   await ev(`window.cloudSave.flush().then(() => 1)`);
   await sleep(500);
   const flushed = await fake(`0`);
   check('a change made here is uploaded on the next sync',
-    holds(flushed.save.data, 'later') && flushed.save.updatedAt > first.at);
+    (flushed.save.data?.['exiled-survivors:gear:v2'] ?? '').includes('later') && flushed.save.updatedAt > first.at);
 
   // --- 4. another device moved the account on; this browser did not change ---
-  const other = { [BONES_KEY]: tree('fromOther') };
+  const other = { 'exiled-survivors:gear:v2': JSON.stringify({ items: [sword('fromOther')], equipped: 'fromOther' }) };
   await fake(`s.save = { data: ${JSON.stringify(other)}, updatedAt: s.save.updatedAt + 1000 }`);
   await arrive();
   await sleep(2500);
-  const took = await ev(`({ xp: window.bones.count('skull'), conflict: window.cloudSave.conflict !== null })`);
+  const took = await ev(`({ gear: window.gear.items.map(i => i.uid), conflict: window.cloudSave.conflict !== null })`);
   check('when only the account changed, its records are taken and the game starts on them',
-    took.xp === XP.fromOther && !took.conflict, JSON.stringify(took));
+    took.gear.includes('fromOther') && !took.gear.includes('later') && !took.conflict, JSON.stringify(took));
 
   // --- 5. both changed: the player is asked ---
-  await ev(`(() => { ${mark('localOnly')} return 1; })()`);
-  await fake(`s.save = { data: { '${BONES_KEY}': ${JSON.stringify(tree('remoteOnly'))} }, updatedAt: s.save.updatedAt + 1000 }`);
+  await ev(`(() => { window.gear.add(${JSON.stringify(sword('localOnly'))}); return 1; })()`);
+  await fake(`s.save = { data: { 'exiled-survivors:gear:v2': ${JSON.stringify(JSON.stringify({ items: [sword('remoteOnly')], equipped: 'remoteOnly' }))} }, updatedAt: s.save.updatedAt + 1000 }`);
   await arrive();
   await sleep(1500);
   const texts = `s.children.list.filter((o) => o.type === 'Text').map((o) => o.text)`;
@@ -156,13 +146,14 @@ try {
   const untouched = await fake(`0`);
   check('and 취소 closes it, keeping nothing',
     backedOff.asking === null && !backedOff.popup && backedOff.active &&
-      !holds(untouched.save.data, 'localOnly'));
+      !(untouched.save.data?.['exiled-survivors:gear:v2'] ?? '').includes('localOnly'));
   await scene('ConflictScene', `s.ask('local'); void s.confirm(); return 1;`);
   await sleep(800);
   const kept = await fake(`0`);
   check('keeping this device’s writes it over the account’s copy',
-    holds(kept.save.data, 'localOnly') && !holds(kept.save.data, 'remoteOnly'),
-    (kept.save.data?.[BONES_KEY] ?? '').slice(0, 120));
+    (kept.save.data?.['exiled-survivors:gear:v2'] ?? '').includes('localOnly') &&
+      !(kept.save.data?.['exiled-survivors:gear:v2'] ?? '').includes('remoteOnly'),
+    (kept.save.data?.['exiled-survivors:gear:v2'] ?? '').slice(0, 120));
 
   // --- 6. the ranking: entering goes by way of signing in ---
   await scene('MenuScene', `
@@ -208,10 +199,10 @@ try {
   await scene('AccountScene', `s.menu.items.find(i => i.id === 'delete').onSelect(); return 1;`);
   await sleep(1200);
   const gone = await ev(`(() => ({ deleted: !!window.__fake.load().deleted, user: window.account.user,
-    note: localStorage.getItem('exiled-survivors:sync:v1'), xp: window.bones.count('skull'),
+    note: localStorage.getItem('exiled-survivors:sync:v1'), gear: window.gear.items.length,
     rows: window.game.scene.getScene('AccountScene').menu?.items.map(i => i.id) }))()`);
   check('the second press deletes the account; this browser keeps its records but no longer syncs',
-    gone.deleted && gone.user === null && gone.note === null && gone.xp > 0 && gone.rows?.[0] === 'login:google',
+    gone.deleted && gone.user === null && gone.note === null && gone.gear > 0 && gone.rows?.[0] === 'login:google',
     JSON.stringify(gone));
 } catch (error) {
   check('the suite ran to the end', false, String(error?.stack ?? error));

@@ -37,7 +37,7 @@ export interface DialSpec {
 
 const SKILL_IDS = ['meleeStrike', 'fireball', 'chainLightning', 'iceSpear', 'voidOrb', 'thunderStrike'] as const;
 
-/** What each skill's page holds beyond damage, attack speed and reach: the stats it has at all. */
+/** What each skill's page holds, beyond damage, speed and reach. */
 const SKILL_EXTRAS: Record<(typeof SKILL_IDS)[number], readonly string[]> = {
   meleeStrike: [],
   fireball: ['projectileSpeed'],
@@ -47,7 +47,6 @@ const SKILL_EXTRAS: Record<(typeof SKILL_IDS)[number], readonly string[]> = {
   thunderStrike: [],
 };
 
-/** A page per skill (0.79, the user's ask): its SKILL_BASE line and its 피해 배율. */
 const skillDials: DialSpec[] = SKILL_IDS.flatMap((skill) => [
   { path: `SKILL_BASE.${skill}.damage`, kind: 'number' as const, tab: 'skills' as const, skill, min: 1 },
   { path: `SKILL_BASE.${skill}.attackSpeed`, kind: 'number' as const, tab: 'skills' as const, skill, min: 0.05 },
@@ -63,12 +62,12 @@ const skillDials: DialSpec[] = SKILL_IDS.flatMap((skill) => [
 ]);
 
 /**
- * Every dial was taken off on the user's word (2026-10-19), and a dial comes
- * back only when the user asks for that one. Back since (0.77): enemy health
- * (the overall multiplier, the step a minute and each tier of it) and every
- * drop rate; (0.79) every skill's stats. A new 구슬, 뼈다귀 or gear base that
- * drops off kills needs its line here, a new skill its id in SKILL_IDS; the
- * panel names them from the tables.
+ * The dials as they stood when the game went back to 0.67's (0.80, the
+ * user's word: gameplay back, everything else kept): a page a skill (its
+ * SKILL_BASE stats and 피해 배율), enemy health (overall, a minute and each
+ * tier) and every drop rate. The rest of 0.70's dials (spawn pace, the
+ * common page, the 기행종, 키메라 러시, drop bonuses) stay off — a dial
+ * comes back only when the user asks for that one.
  */
 export const DIALS: readonly DialSpec[] = [
   ...skillDials,
@@ -83,14 +82,14 @@ export const DIALS: readonly DialSpec[] = [
   { path: 'DIFFICULTY.hpStepTiers.1.multiplier', kind: 'scale', tab: 'enemies', min: 0, max: 20 },
 
   // What falls, as a share of kills (before a rare's or a 우두머리's bonus).
-  { path: 'RUNE_DROP.chance', kind: 'chance', tab: 'drops', max: 0.2 },
-  { path: 'RUNE_CHISEL.chance', kind: 'chance', tab: 'drops', max: 0.05 },
-  { path: 'RANDOM_SKILL.chance', kind: 'chance', tab: 'drops', max: 0.05 },
+  { path: 'SKILL_DROP.chance', kind: 'chance', tab: 'drops', max: 0.2 },
+  { path: 'SKILL_PICK.dropChance', kind: 'chance', tab: 'drops', max: 0.2 },
   { path: 'POTION.chance', kind: 'chance', tab: 'drops', max: 0.3 },
   { path: 'MANGO.chance', kind: 'chance', tab: 'drops', max: 0.05 },
   { path: 'MAGNET.chance', kind: 'chance', tab: 'drops', max: 0.05 },
   { path: 'ALTAR.fromKill', kind: 'chance', tab: 'drops', max: 0.2 },
   { path: 'ALTAR.fromBoss', kind: 'chance', tab: 'drops', max: 1 },
+  { path: 'SHARD.chance', kind: 'chance', tab: 'drops', max: 1 },
   { path: 'ORBS.transmute.chance', kind: 'chance', tab: 'drops', max: 0.1 },
   { path: 'ORBS.chaos.chance', kind: 'chance', tab: 'drops', max: 0.05 },
   { path: 'ORBS.awaken.chance', kind: 'chance', tab: 'drops', max: 0.05 },
@@ -99,15 +98,9 @@ export const DIALS: readonly DialSpec[] = [
   { path: 'BONES.skull.fromKill', kind: 'chance', tab: 'drops', max: 0.05 },
   { path: 'BONES.rib.fromKill', kind: 'chance', tab: 'drops', max: 0.05 },
   { path: 'BONES.spine.fromKill', kind: 'chance', tab: 'drops', max: 0.05 },
-  { path: 'GEAR.steelSword.fromKill', kind: 'chance', tab: 'drops', max: 0.05 },
-  { path: 'GEAR.ironSword.fromKill', kind: 'chance', tab: 'drops', max: 0.05 },
   { path: 'GEAR.rustySword.fromKill', kind: 'chance', tab: 'drops', max: 0.05 },
-  { path: 'GEAR.chainArmor.fromKill', kind: 'chance', tab: 'drops', max: 0.05 },
-  { path: 'GEAR.leatherArmor.fromKill', kind: 'chance', tab: 'drops', max: 0.05 },
-  { path: 'GEAR.clothArmor.fromKill', kind: 'chance', tab: 'drops', max: 0.05 },
-  { path: 'GEAR.jadeAmulet.fromKill', kind: 'chance', tab: 'drops', max: 0.05 },
-  { path: 'GEAR.silverRing.fromKill', kind: 'chance', tab: 'drops', max: 0.05 },
-  { path: 'GEAR.copperRing.fromKill', kind: 'chance', tab: 'drops', max: 0.05 },
+  { path: 'GEAR.ironSword.fromKill', kind: 'chance', tab: 'drops', max: 0.05 },
+  { path: 'GEAR.steelSword.fromKill', kind: 'chance', tab: 'drops', max: 0.05 },
 ];
 
 /** Every path the panel may set — what the Worker accepts and nothing else. */

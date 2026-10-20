@@ -20,7 +20,7 @@ export interface LoadoutEntry {
 }
 
 /** What kind of thing is acting on the survivor. */
-export type EffectKind = 'gear' | 'bone' | 'buff' | 'debuff';
+export type EffectKind = 'gear' | 'passive' | 'bone' | 'buff' | 'debuff';
 
 /** One thing acting on the survivor: an icon left of the skills, and its card. */
 export interface EffectEntry {

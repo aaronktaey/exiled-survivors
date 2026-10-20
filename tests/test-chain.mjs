@@ -101,7 +101,7 @@ const grant = await run(`
 `);
 console.log('granted:', JSON.stringify(grant));
 check('연쇄번개 is 주문·번개·연쇄', grant.name === '연쇄번개' &&
-  ['주문', '번개', '연쇄'].every((tag) => grant.tags.includes(tag)), `${grant.tags}`);
+  JSON.stringify(grant.tags) === JSON.stringify(['주문', '번개', '연쇄']), `${grant.tags}`);
 check('it is granted at its configured base line',
   JSON.stringify(grant.stats) === JSON.stringify(grant.base) && grant.stats.chainCount >= 1 &&
   grant.stats.range === 160,
@@ -162,26 +162,25 @@ console.log('popup:', JSON.stringify(choice));
 check('repeat pickup opens the 연쇄번개 choice',
   choice.open === true && choice.skill === 'chainLightning' && choice.title === '연쇄번개',
   `title=${choice.title} subtitle=${choice.subtitle}`);
-// Since 0.76 a level-up offers only LEVEL_UP.upgrades; chainCount is applied directly below.
-const levelUps = await run(`return window.config.LEVEL_UP.upgrades;`);
-check('it offers only the level-up upgrades',
-  JSON.stringify(choice.cards?.map(c => c.id)) === JSON.stringify(levelUps),
+check('it offers 피해량, 공격속도, 연쇄 횟수',
+  JSON.stringify(choice.cards?.map(c => c.id)) ===
+    JSON.stringify(['damage', 'attackSpeed', 'chainCount']),
   `${choice.cards?.map(c => c.label).join(' | ')}`);
 check('no 사정거리 or 투사체 속도 card on a non-projectile skill',
   choice.cards?.every(c => c.id !== 'range' && c.id !== 'projectileSpeed') === true);
 await shot('chain-01-choice');
 
 // --- 8. picking 연쇄 횟수 adds one jump, and only that ---
+const before = await run(`return { chain: s.progression.statsFor('chainLightning'), fire: s.progression.statsFor('fireball') };`);
 await cdp.tap('ArrowRight', 39, 'ArrowRight');
 await sleep(180);
 const onChain = await popup();
 check('an arrow moves the caret without confirming',
   onChain.selected === 1 && onChain.open === true,
   `selected=${onChain.selected}, popup still open=${onChain.open}`);
-await cdp.tap('Digit2', 50, '2');
+check('연쇄 횟수 is the third card', onChain.cards[2].id === 'chainCount', onChain.cards[2].label);
+await cdp.tap('Digit3', 51, '3');
 await sleep(600);
-const before = await run(`return { chain: s.progression.statsFor('chainLightning'), fire: s.progression.statsFor('fireball') };`);
-await run(`s.progression.apply('chainLightning', 'chainCount'); return 1;`);
 const after = await run(`return { chain: s.progression.statsFor('chainLightning'), fire: s.progression.statsFor('fireball') };`);
 check('연쇄 횟수 +1 touches nothing else',
   after.chain.chainCount === before.chain.chainCount + 1 &&
@@ -196,29 +195,63 @@ check('one more chain reaches one more enemy',
   struck(longer, longer.chainCount) && longer.chainCount === line.chainCount + 1,
   `hp along the row: ${longer.hp.join(' / ')} at chainCount ${longer.chainCount}`);
 
-// --- 12. a level-up asks which skill, then gives that skill its picks ---
-// (0.76) With 연쇄번개 picked up later, the level goes to whichever skill is
-// chosen — the main skill or the 보조 스킬 — with LEVEL_UP.upgrades for it.
-const levelUp = async (skill) => {
-  await run(`s.progression.addXp(s.progression.xpToNext); return 1;`);
+// --- 10. both skills share the one 3% roll ---
+const rate = await run(`
+  const seen = { fireball: 0, chainLightning: 0 };
+  const N = 90000;
+  let drops = 0;
+  for (let i = 0; i < N; i++) {
+    const d = s.rollSkillDrop();
+    if (d) { drops++; seen[d.id]++; }
+  }
+  return { rate: drops / N, seen, want: window.config.SKILL_DROP.chance };
+`);
+console.log('drop roll:', JSON.stringify(rate));
+check('total drop chance is the configured one', Math.abs(rate.rate - rate.want) < rate.want * 0.15,
+  `measured ${(rate.rate * 100).toFixed(2)}%, configured ${(rate.want * 100).toFixed(2)}%`);
+check('the two droppables split it evenly',
+  Math.abs(rate.seen.fireball - rate.seen.chainLightning) < rate.seen.fireball * 0.25,
+  `화염구 ${rate.seen.fireball} vs 연쇄번개 ${rate.seen.chainLightning}`);
+
+// --- 11. it drops with its own ground label ---
+const drop = await run(`
+  s.combat.dropSkillAt(s.player.x + 300, s.player.y, { id: 'chainLightning', name: '연쇄번개',
+    tags: ['주문','번개','연쇄'] });
+  const d = s.combat.skillDrops.getChildren().find(x => x.active);
+  return { skillId: d.skillId, label: d.nameplate.text, style: d.nameplate.style };
+`);
+console.log('drop:', JSON.stringify(drop));
+check('its ground label reads 연쇄번개, in the ordinary dress',
+  drop.label === '연쇄번개' && drop.style.plateAlpha === 0,
+  `"${drop.label}" in ${drop.style.colour}`);
+
+// --- 12. a level-up spends on the run's main skill ---
+// Whatever the roll: 연쇄번개 was picked up later, so the level goes to the
+// skill the run started on, with that skill's own picks.
+const levelUp = async (roll) => {
+  const held = await run(`
+    const r = Math.random;
+    Math.random = () => ${roll};
+    s.progression.addXp(s.progression.xpToNext);
+    Math.random = r;
+    return [...s.owned];
+  `);
   await sleep(700);
-  const ask = await cdp.evaluate(`(() => { const g = window.game; if (!g.scene.isActive('SkillPickScene')) return null;
-    const p = g.scene.getScene('SkillPickScene'); const options = [...p.payload.options]; p.pick(options.indexOf('${skill}')); return options; })()`);
-  await sleep(600);
   const lv = await popup();
   await cdp.tap('Space', 32, ' ');
   await sleep(500);
-  return { ask, lv };
+  return { held, lv };
 };
-const toMain = await levelUp('meleeStrike');
-const toSub = await levelUp('chainLightning');
-check('a level-up asks which skill, the main skill and the one picked up later both offered',
-  toMain.ask?.includes('meleeStrike') && toMain.ask?.includes('chainLightning') &&
-    toMain.lv.open && toMain.lv.skill === 'meleeStrike' && toSub.lv.open && toSub.lv.skill === 'chainLightning',
-  `${JSON.stringify(toMain.ask)}: ${toMain.lv.skill} / ${toSub.lv.skill}`);
-check('and either way the picks are the level-up upgrades',
-  [toMain, toSub].every((x) => JSON.stringify(x.lv.cards?.map((c) => c.id)) === JSON.stringify(levelUps)),
-  `${toMain.lv.cards?.length} and ${toSub.lv.cards?.length} cards`);
+const low = await levelUp(0);
+const high = await levelUp(0.999);
+check('a level-up offers the main skill, whatever the roll — not the one picked up later',
+  low.lv.open && high.lv.open && low.held.includes('chainLightning') &&
+    low.lv.skill === 'meleeStrike' && high.lv.skill === 'meleeStrike',
+  `${low.lv.skill} / ${high.lv.skill} of ${low.held.join(', ')}`);
+check('and its picks are that skill’s own',
+  (low.lv.skill === 'meleeStrike' ? low.lv.cards.length === 2 : low.lv.cards.length === 3) &&
+    (high.lv.skill === 'chainLightning' ? high.lv.cards.length === 3 : high.lv.cards.length === 2),
+  `${low.lv.cards?.length} and ${high.lv.cards?.length} cards`);
 
 // --- 13. live play with all three skills ---
 await run(`

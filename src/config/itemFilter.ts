@@ -1,6 +1,5 @@
 import { ALL_BONES } from '@/config/bones';
 import { ALL_ORBS, GEAR, gearTexture } from '@/config/equipment';
-import { runeTexture } from '@/config/runes';
 import type { DropTier } from '@/config/system';
 import { TEXTURES } from '@/config/visuals';
 
@@ -29,7 +28,7 @@ export interface FilterSection {
 }
 
 /** The keys of the entries that are not read off a table. */
-export type FilterSupply = 'potion' | 'randomSkill' | 'mango' | 'magnet' | 'rune' | 'chisel';
+export type FilterSupply = 'potion' | 'mango' | 'magnet' | 'skill' | 'randomSkill' | 'shard';
 
 const TIERS: readonly DropTier[] = ['normal', 'magic', 'rare'];
 
@@ -38,11 +37,11 @@ export const ITEM_FILTER: readonly FilterSection[] = [
     id: 'supplies',
     entries: [
       { key: 'potion', texture: TEXTURES.potion, tier: 'normal' },
+      { key: 'skill', texture: TEXTURES.skillOrb, tier: 'normal' },
       { key: 'randomSkill', texture: TEXTURES.skillOrb, tier: 'magic' },
-      { key: 'rune', texture: runeTexture('split'), tier: 'magic' },
-      { key: 'chisel', texture: TEXTURES.runeChisel, tier: 'rare' },
       { key: 'mango', texture: TEXTURES.mango, tier: 'rare' },
       { key: 'magnet', texture: TEXTURES.magnet, tier: 'rare' },
+      { key: 'shard', texture: TEXTURES.shard, tier: 'rare' },
     ],
   },
   { id: 'orbs', entries: ALL_ORBS.map((orb) => ({ key: `orb:${orb.id}`, texture: orb.texture, tier: orb.tier })) },

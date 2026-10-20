@@ -21,10 +21,9 @@ interface HitRecord {
  * damage is in where the player stands.
  *
  * It reads the shared stats as an orbit: `range` is how far out the orbs
- * ride, and they travel round that circle at `orbitSpeed` × attacks a
- * second (0.79: attack speed is the spin — read back off the cooldown, so
- * every fold of it counts). One orb hits the same enemy at most once every
- * VOID_ORB.rehitMs. Tags: 공허 · 주문 · 투사체.
+ * ride, `orbitSpeed` how fast they travel around that circle, and the
+ * cooldown (from attack speed) how often one orb may hit the same enemy
+ * again. Tags: 공허 · 주문 · 투사체.
  */
 export class VoidOrb implements Weapon {
   public readonly definition = SKILLS.voidOrb;
@@ -39,17 +38,10 @@ export class VoidOrb implements Weapon {
 
   /** Where the first orb is on the circle, in radians. */
   private angle = 0;
-  /** How big each orb is now, its area grown by the tree. */
-  private orbRadius: number = VOID_ORB.radius;
   private elapsedMs = 0;
 
   public constructor(scene: Phaser.Scene) {
     this.scene = scene;
-  }
-
-  /** Hides the orbs while the survivor is not the one casting (포격의 룬) or the turret has gone. */
-  public rest(): void {
-    this.orbs.forEach((orb) => orb.setVisible(false));
   }
 
   /** The live orbs, for tests and debug readouts. */
@@ -62,11 +54,10 @@ export class VoidOrb implements Weapon {
 
     const count = orbsHeld(context.orbCount, context.extraProjectiles ?? 0);
     const radius = Math.max(1, context.range);
-    this.sync(count, context.areaScale ?? 1);
+    this.sync(count);
 
     // Screen y grows downward, so a growing angle sweeps clockwise.
-    const attacksPerSecond = 1000 / Math.max(1, context.cooldownMs);
-    const angularSpeed = (context.orbitSpeed * attacksPerSecond) / radius;
+    const angularSpeed = context.orbitSpeed / radius;
     this.angle = Phaser.Math.Angle.Wrap(this.angle + angularSpeed * (delta / 1000));
 
     const { x, y } = context.origin;
@@ -108,18 +99,20 @@ export class VoidOrb implements Weapon {
   }
 
   /** Grows or hides orbs so exactly `count` of them are in the air. */
-  private sync(count: number, area: number): void {
+  private sync(count: number): void {
     while (this.orbs.length < count) {
-      this.orbs.push(this.scene.add.image(0, 0, TEXTURES.voidOrb).setDepth(DEPTH.projectiles));
+      this.orbs.push(
+        this.scene.add
+          .image(0, 0, TEXTURES.voidOrb)
+          .setDepth(DEPTH.projectiles)
+          .setDisplaySize(VOID_ORB.radius * 2, VOID_ORB.radius * 2),
+      );
     }
-    // Area makes each orb bigger, and what it touches with it.
-    this.orbRadius = VOID_ORB.radius * area;
-    this.orbs.forEach((orb) => orb.setDisplaySize(this.orbRadius * 2, this.orbRadius * 2));
 
     this.orbs.forEach((orb, index) => orb.setVisible(index < count));
   }
 
-  /** Damages everything an orb is touching: each orb at most once per VOID_ORB.rehitMs on each enemy. */
+  /** Damages everything an orb is touching: each orb at most once per cooldown on each enemy. */
   private sweep(context: WeaponContext, count: number): void {
     // Copy first: a kill recycles the enemy and mutates the group's list.
     for (const child of [...context.enemies.getChildren()]) {
@@ -128,7 +121,7 @@ export class VoidOrb implements Weapon {
         continue;
       }
 
-      const reach = this.orbRadius + VOID_ORB.hitPadding + (ENEMY_KINDS[enemy.kind].size / 2);
+      const reach = VOID_ORB.radius + VOID_ORB.hitPadding + (ENEMY_KINDS[enemy.kind].size / 2);
       let records = this.hits.get(enemy);
       for (let i = 0; i < count && enemy.active; i++) {
         const orb = this.orbs[i];
@@ -143,7 +136,7 @@ export class VoidOrb implements Weapon {
           records = new Map();
           this.hits.set(enemy, records);
         }
-        records.set(i, { life: enemy.lives, readyAt: this.elapsedMs + VOID_ORB.rehitMs });
+        records.set(i, { life: enemy.lives, readyAt: this.elapsedMs + context.cooldownMs });
         context.hit(enemy, context.damage);
         // Held well apart by its own gap, or an orbit would drone.
         sfx.playSkill(this.scene, this.definition.id);

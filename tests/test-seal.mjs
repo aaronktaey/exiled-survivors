@@ -1,10 +1,10 @@
 import { connect, sleep } from './cdp-lib.mjs';
 
-// The seal on the record a player could gain by editing (systems/Seal.ts):
-// the saved run (the passive tree was sealed too until it went, 0.74). What
-// the game writes is sealed; one changed outside the game is not taken; one
-// from before the seal is taken while SEAL.graceUntil lasts, and not after;
-// what comes over from the old address is sealed as it lands.
+// The seal on the records a player could gain by editing (systems/Seal.ts):
+// the saved run and the passive tree. What the game writes is sealed; one
+// changed outside the game is not taken; one from before the seal is taken
+// and sealed while SEAL.graceUntil lasts, and not after; what comes over
+// from the old address is sealed as it lands.
 
 const cdp = await connect(9333);
 const results = [];
@@ -14,6 +14,7 @@ const check = (n, p, d = '') => {
 };
 const ev = (expr) => cdp.evaluate(expr);
 const SAVE = 'exiled-survivors:save:v1';
+const TREE = 'exiled-survivors:passives:v1';
 const reload = async () => {
   await cdp.send('Page.reload', {});
   await sleep(4200);
@@ -38,10 +39,14 @@ await sleep(1500);
 const written = await ev(`(() => {
   const s = window.game.scene.getScene('GameScene');
   s.writeSave();
-  const save = localStorage.getItem('${SAVE}');
-  return { save: JSON.parse(save)._s !== undefined, saveOpen: window.openRecord('${SAVE}', save).state };
+  window.passives.buyShard?.();
+  window.passives.addShard();
+  const save = localStorage.getItem('${SAVE}'), tree = localStorage.getItem('${TREE}');
+  return { save: JSON.parse(save)._s !== undefined, tree: JSON.parse(tree)._s !== undefined,
+           saveOpen: window.openRecord('${SAVE}', save).state, treeOpen: window.openRecord('${TREE}', tree).state };
 })()`);
-check('the saved run is written sealed', written.save && written.saveOpen === 'sealed', JSON.stringify(written));
+check('the saved run and the tree are written sealed', written.save && written.tree && written.saveOpen === 'sealed' && written.treeOpen === 'sealed',
+  JSON.stringify(written));
 
 // --- 2. a saved run changed outside the game is not offered, and goes ---
 await ev(`(() => { window.game.scene.getScene('GameScene').scene.start('MenuScene'); return 1; })()`);
@@ -57,15 +62,29 @@ await reload();
 const edited = { offered: await loadOffered(), kept: await ev(`(() => localStorage.getItem('${SAVE}'))()`) };
 check('one edited by hand is not offered, and is thrown away', edited.offered === false && edited.kept === null, JSON.stringify(edited));
 
-// --- 4. records from before the seal: taken and sealed in the grace, refused after ---
+// --- 3. the tree, edited by hand, starts over ---
 await ev(`(() => {
-  localStorage.setItem('${SAVE}', ${JSON.stringify(JSON.stringify(legacyRun))});
+  const raw = JSON.parse(localStorage.getItem('${TREE}'));
+  raw.points = 40;
+  localStorage.setItem('${TREE}', JSON.stringify(raw));
   return 1;
 })()`);
 await reload();
-const graced = await ev(`(() => ({ grace: window.config.SEAL.graceUntil > Date.now() }))()`);
+const tree = await ev(`(() => window.passives.value)()`);
+check('a tree edited by hand starts over', tree.points === 0 && tree.shards === 0, JSON.stringify(tree));
+
+// --- 4. records from before the seal: taken and sealed in the grace, refused after ---
+await ev(`(() => {
+  localStorage.setItem('${SAVE}', ${JSON.stringify(JSON.stringify(legacyRun))});
+  localStorage.setItem('${TREE}', JSON.stringify({ shards: 3, points: 2, ranks: { damage: 1 } }));
+  return 1;
+})()`);
+await reload();
+const graced = await ev(`(() => ({ points: window.passives.value.points, resealed: JSON.parse(localStorage.getItem('${TREE}'))._s !== undefined,
+  grace: window.config.SEAL.graceUntil > Date.now() }))()`);
 const graceOffered = await loadOffered();
-check('while the grace lasts, a save from before the seal is taken', graced.grace && graceOffered === true, JSON.stringify(graced));
+check('while the grace lasts, records from before the seal are taken', graced.grace && graced.points === 2 && graceOffered === true, JSON.stringify(graced));
+check('and the tree is written back sealed at once', graced.resealed === true);
 const after = await ev(`(() => {
   localStorage.setItem('${SAVE}', ${JSON.stringify(JSON.stringify(legacyRun))});
   const was = window.config.SEAL.graceUntil;
@@ -77,16 +96,15 @@ const after = await ev(`(() => {
 check('after it, a record with no seal is refused like an edited one', after === 'tampered', after);
 
 // --- 5. what comes over from the old address is sealed as it lands ---
-const items = { [SAVE]: JSON.stringify(legacyRun) };
+const items = { [TREE]: JSON.stringify({ shards: 1, points: 5, ranks: {} }) };
 const carry = Buffer.from(JSON.stringify({ v: 1, items }), 'utf8').toString('base64url');
 await ev(`(() => { localStorage.clear(); return 1; })()`);
 await cdp.send('Page.navigate', { url: 'about:blank' });
 await sleep(300);
 await cdp.send('Page.navigate', { url: `http://localhost:5173/#carry=${carry}` });
 await sleep(4200);
-const carried = await ev(`(() => ({ sealed: JSON.parse(localStorage.getItem('${SAVE}') || '{}')._s !== undefined,
-  state: window.openRecord('${SAVE}', localStorage.getItem('${SAVE}') || '{}').state }))()`);
-check('a save brought from the old address lands sealed', carried.sealed && carried.state === 'sealed', JSON.stringify(carried));
+const carried = await ev(`(() => ({ points: window.passives.value.points, sealed: JSON.parse(localStorage.getItem('${TREE}') || '{}')._s !== undefined }))()`);
+check('a tree brought from the old address lands sealed, and counts', carried.points === 5 && carried.sealed, JSON.stringify(carried));
 
 console.log('\n=== SUMMARY ===');
 const failed = results.filter((r) => !r.p);

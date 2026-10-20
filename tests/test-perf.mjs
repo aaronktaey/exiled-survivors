@@ -155,8 +155,8 @@ await cdp.tap('Space', 32, ' ');
 await sleep(500);
 
 await fkey('F5', 116);
-const dropped = await run(`return { drops: s.combat.runeDrops.countActive(true) };`);
-check('F5 drops a 룬 (and a 룬 끌)', dropped.drops >= 1, `drops=${dropped.drops}`);
+const dropped = await run(`return { drops: s.combat.skillDrops.countActive(true) };`);
+check('F5 drops a skill', dropped.drops >= 1, `drops=${dropped.drops}`);
 
 await fkey('F6', 117);
 const god = await run(`

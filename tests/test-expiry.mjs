@@ -18,28 +18,28 @@ const run = (body) => cdp.evaluate(`(() => { const s = window.game.scene.getScen
 await cdp.send('Page.reload', {});
 await sleep(4000);
 
-const DEF = `'split'`;
+const DEF = `{ id: 'fireball', name: '화염구', tags: [] }`;
 
 // --- 1. no cap any more ---
 const uncapped = await run(`
-  for (const d of [...s.combat.runeDrops.getChildren()]) d.collect();
+  for (const d of [...s.combat.skillDrops.getChildren()]) d.collect();
   let placed = 0;
   for (let i = 0; i < 80; i++) {
-    const d = s.combat.runeDrops.get();
+    const d = s.combat.skillDrops.get();
     if (!d) break;
     d.drop(3000 + (i % 20) * 25, 3000 + Math.floor(i / 20) * 25, ${DEF});
     placed++;
   }
-  const active = s.combat.runeDrops.countActive(true);
-  for (const d of [...s.combat.runeDrops.getChildren()]) d.collect();
-  return { placed, active, maxSize: s.combat.runeDrops.maxSize };
+  const active = s.combat.skillDrops.countActive(true);
+  for (const d of [...s.combat.skillDrops.getChildren()]) d.collect();
+  return { placed, active, maxSize: s.combat.skillDrops.maxSize };
 `);
 check('ground cap removed', uncapped.placed === 80 && uncapped.active === 80,
   `placed=${uncapped.placed} active=${uncapped.active} maxSize=${uncapped.maxSize}`);
 
 // --- 2. lifespan is 60s, and gems are exempt ---
 const fresh = await run(`
-  const d = s.combat.runeDrops.get();
+  const d = s.combat.skillDrops.get();
   d.drop(s.player.x + 400, s.player.y, ${DEF});
   window.__drop = d;
   const g = s.combat.gems.get();
@@ -47,7 +47,7 @@ const fresh = await run(`
   window.__gem = g;
   return { life: Math.round(d.timeLeftMs), gemHasTimer: 'timeLeftMs' in g };
 `);
-check('a 룬 on the ground starts with a 60s life', fresh.life === 60000, `${fresh.life}ms`);
+check('skill drop starts with a 60s life', fresh.life === 60000, `${fresh.life}ms`);
 check('xp gems have no expiry', fresh.gemHasTimer === false);
 
 // --- 3. no blink while there is plenty of time left ---
@@ -89,9 +89,9 @@ check('blink speeds up as time runs out',
 // --- 5. the halo is the drop's own colour ---
 const colour = await run(`
   const d = window.__drop;
-  return { glow: d.glow.fillColor, orb: window.config.RUNES.split.color };
+  return { glow: d.glow.fillColor, orb: 0xffc14d };
 `);
-check('halo is lit in the 룬’s own colour', colour.glow === colour.orb,
+check('halo is lit in the skill orb colour', colour.glow === colour.orb,
   `glow=#${colour.glow.toString(16).toUpperCase()}`);
 
 await run(`
@@ -124,10 +124,10 @@ check('the xp gem beside it is untouched', gone.gemStillThere === true);
 
 // --- 7. an expired slot gets reused by the next drop ---
 const reused = await run(`
-  const before = s.combat.runeDrops.getLength();
-  const d = s.combat.runeDrops.get();
+  const before = s.combat.skillDrops.getLength();
+  const d = s.combat.skillDrops.get();
   d.drop(s.player.x + 400, s.player.y, ${DEF});
-  const after = s.combat.runeDrops.getLength();
+  const after = s.combat.skillDrops.getLength();
   const life = Math.round(d.timeLeftMs);
   d.collect();
   return { before, after, life };

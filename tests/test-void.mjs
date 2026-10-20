@@ -109,20 +109,13 @@ const sweep = await run(`
   const toDeg = (r) => (r * 180) / Math.PI;
   const stepped = wrap(after - before);
   const expected = (st.orbitSpeed / st.range) * 0.25;
-  // Twice the attacks a second (0.79): twice the spin.
-  const fast = { ...ctx, cooldownMs: 500 };
-  const b2 = angleNow();
-  for (let i = 0; i < 10; i++) w.update(25, fast);
-  const fastDeg = toDeg(wrap(angleNow() - b2));
-  return { deg: Number(toDeg(stepped).toFixed(1)), expectedDeg: Number(toDeg(expected).toFixed(1)), fastDeg: Number(fastDeg.toFixed(1)) };
+  return { deg: Number(toDeg(stepped).toFixed(1)), expectedDeg: Number(toDeg(expected).toFixed(1)) };
 `);
 console.log('sweep:', JSON.stringify(sweep));
 // Screen y grows downward, so a growing angle is clockwise on screen.
 check('the orbs sweep clockwise', sweep.deg > 0, `${sweep.deg}° in 250ms`);
 check('at the speed its stats ask for', Math.abs(sweep.deg - sweep.expectedDeg) < 2,
   `${sweep.deg}° vs ${sweep.expectedDeg}° expected`);
-check('attack speed is the spin: twice the attacks a second, twice as fast round', Math.abs(sweep.fastDeg - 2 * sweep.deg) < 2,
-  `${sweep.deg}° at 1/s, ${sweep.fastDeg}° at 2/s`);
 
 // --- 4. they follow the player ---
 const followed = await run(`
@@ -158,10 +151,8 @@ const contact = await run(`
   const hpStart = e.hp;
   // Two seconds of orbiting, 16ms at a time.
   for (let i = 0; i < 125; i++) w.update(16, ctx);
-  // Orbs that sweep past one spot in 2s: the turn made, over the gap between orbs.
-  const passes = st.orbCount * (2 * st.orbitSpeed * (1000 / ctx.cooldownMs)) / (2 * Math.PI * st.range);
   const out = { hpStart, hp: e.active ? e.hp : 0, cooldownMs: Math.round(ctx.cooldownMs),
-                damage: ctx.damage, passes };
+                damage: ctx.damage };
   s.spawner.clear();
   s.choosing = false;
   return out;
@@ -170,8 +161,8 @@ console.log('contact:', JSON.stringify(contact));
 const hits = (contact.hpStart - contact.hp) / contact.damage;
 check('an orb hurts what it sweeps through', hits >= 1,
   `${hits} hits in 2s of orbiting`);
-check('a pass through costs a hit, not a hit per frame', hits <= Math.ceil(contact.passes) + 1,
-  `${hits} hits in 2s, ~${contact.passes.toFixed(1)} orbs passing (a per-frame hit would be ~125)`);
+check('a pass through costs a hit, not a hit per frame', hits <= 4,
+  `${hits} hits in 2s (a per-frame hit would be ~125)`);
 
 // --- 5b. parked on the enemy: now the cooldown is what is being measured ---
 const parked = await run(`
@@ -196,15 +187,15 @@ const parked = await run(`
   const before = e.hp;
   for (let i = 0; i < 125; i++) w.update(16, ctx);
   window.config.PLAYER.critChance = crit;
-  const out = { hits: (before - e.hp) / st.damage, rehitMs: window.config.VOID_ORB.rehitMs };
+  const out = { hits: (before - e.hp) / st.damage, cooldownMs: Math.round(ctx.cooldownMs) };
   s.spawner.clear();
   s.choosing = false;
   return out;
 `);
 console.log('parked:', JSON.stringify(parked));
-check('a parked orb re-hits every VOID_ORB.rehitMs',
-  Math.abs(parked.hits - 2000 / parked.rehitMs) <= 1,
-  `${parked.hits} hits in 2s at one per ${parked.rehitMs}ms`);
+check('a parked orb re-hits at its attack speed',
+  Math.abs(parked.hits - 2000 / parked.cooldownMs) <= 1,
+  `${parked.hits} hits in 2s at one per ${parked.cooldownMs}ms`);
 
 // --- 6. a recycled enemy does not inherit the old one's cooldown ---
 const recycled = await run(`
@@ -247,11 +238,8 @@ const choice = await popup();
 console.log('popup:', JSON.stringify(choice));
 check('a repeat pickup opens the 공허구체 choice',
   choice.open === true && choice.skill === 'voidOrb' && choice.title === '공허구체');
-// Since 0.76 every skill's level-up offers LEVEL_UP.upgrades — 공허구체's
-// 공격속도 (how often an orb hits again) included.
-const levelUps = await run(`return window.config.LEVEL_UP.upgrades;`);
-check('it offers the level-up upgrades',
-  JSON.stringify(choice.cards?.map(c => c.id)) === JSON.stringify(levelUps),
+check('it offers 공격력, 회전 속도, 구체 수',
+  JSON.stringify(choice.cards?.map(c => c.id)) === JSON.stringify(['damage', 'orbitSpeed', 'orbCount']),
   choice.cards?.map(c => c.label).join(' | '));
 
 // --- 8. the caret moves on the arrows, but they never confirm ---
@@ -260,14 +248,14 @@ await sleep(200);
 const movedRight = await popup();
 check('→ moves the caret', movedRight.open === true && movedRight.selected === 1,
   `selected=${movedRight.selected}`);
-await cdp.tap('KeyA', 65, 'a');
-await sleep(200);
-const movedA = await popup();
-check('A moves it back', movedA.open === true && movedA.selected === 0, `selected=${movedA.selected}`);
 await cdp.tap('KeyD', 68, 'd');
 await sleep(200);
 const movedD = await popup();
-check('D moves it on', movedD.open === true && movedD.selected === 1, `selected=${movedD.selected}`);
+check('D moves it too', movedD.open === true && movedD.selected === 2, `selected=${movedD.selected}`);
+await cdp.tap('KeyA', 65, 'a');
+await sleep(200);
+const movedA = await popup();
+check('A comes back', movedA.open === true && movedA.selected === 1, `selected=${movedA.selected}`);
 await cdp.tap('KeyW', 87, 'w');
 await cdp.tap('KeyS', 83, 's');
 await sleep(250);
@@ -275,17 +263,19 @@ const afterWS = await popup();
 check('W and S cannot confirm', afterWS.open === true, `popup still open=${afterWS.open}`);
 await shot('void-01-choice');
 
-// Space takes the highlighted card — 공격속도, at index 1.
+// Space takes the highlighted card — 회전 속도, at index 1.
 const beforePick = await run(`return s.progression.statsFor('voidOrb');`);
 await cdp.tap('Space', 32, ' ');
 await sleep(600);
 const afterPick = await run(`return s.progression.statsFor('voidOrb');`);
 check('Space takes the highlighted card',
-  afterPick.attackSpeed > beforePick.attackSpeed && afterPick.orbCount === beforePick.orbCount,
-  `attack speed ${beforePick.attackSpeed} -> ${afterPick.attackSpeed}`);
+  afterPick.orbitSpeed > beforePick.orbitSpeed && afterPick.orbCount === beforePick.orbCount,
+  `orbit ${beforePick.orbitSpeed} -> ${afterPick.orbitSpeed}`);
 
-// --- 9. 구체 수 +1 (no longer a card; a 룬's 투사체 or a tool) puts another orb in the air ---
-await run(`s.progression.apply('voidOrb', 'orbCount'); return 1;`);
+// --- 9. 구체 수 +1 puts another orb in the air ---
+await run(`s.onSkillCollected('voidOrb'); return 1;`);
+await sleep(600);
+await cdp.tap('Digit3', 51, '3');
 await sleep(700);
 const grown = await orbState();
 console.log('after 구체 수 +1:', JSON.stringify(grown));
@@ -297,6 +287,35 @@ check('and the orbs space themselves out again',
   spacing.every((gap) => Math.abs(gap - 360 / (BASE_ORBS + 1)) <= 3),
   `gaps ${spacing.join('° / ')}°`);
 await shot('void-02-orbs');
+
+// --- 10. it joins the drop roll, with its own ground label ---
+const rate = await run(`
+  const seen = {};
+  const N = 150000;
+  let drops = 0;
+  for (let i = 0; i < N; i++) {
+    const d = s.rollSkillDrop();
+    if (d) { drops++; seen[d.id] = (seen[d.id] ?? 0) + 1; }
+  }
+  return { rate: drops / N, seen, want: window.config.SKILL_DROP.chance };
+`);
+console.log('drop roll:', JSON.stringify(rate));
+check('the total drop chance is the configured one', Math.abs(rate.rate - rate.want) < rate.want * 0.15,
+  `measured ${(rate.rate * 100).toFixed(2)}%, configured ${(rate.want * 100).toFixed(2)}%`);
+const kinds = Object.keys(rate.seen).length;
+check('공허구체 joined the pool at an even share',
+  Math.abs(rate.seen.voidOrb / (rate.rate * 150000) - 1 / kinds) < 0.25 / kinds,
+  Object.entries(rate.seen).map(([k, n]) => `${k} ${n}`).join(' / '));
+
+const label = await run(`
+  s.combat.dropSkillAt(s.player.x + 220, s.player.y, {
+    id: 'voidOrb', name: '공허구체', tags: ['공허','주문','투사체'],
+    upgrades: ['damage','attackSpeed','orbCount'] });
+  const d = s.combat.skillDrops.getChildren().find(x => x.active);
+  return { label: d.nameplate.text, style: d.nameplate.style };
+`);
+check('its ground label reads 공허구체, in the ordinary dress',
+  label.label === '공허구체' && label.style.plateAlpha === 0, `"${label.label}"`);
 
 // --- 11. a real run with it ---
 await run(`

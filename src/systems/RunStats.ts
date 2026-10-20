@@ -15,6 +15,7 @@ export interface RunSummary {
   readonly skills: readonly RunSkillLine[];
   readonly survivedMs: number;
   readonly level: number;
+  readonly gold: number;
 }
 
 /**

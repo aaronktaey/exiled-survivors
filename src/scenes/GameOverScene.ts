@@ -253,6 +253,7 @@ export class GameOverScene extends Phaser.Scene {
 
     figure(copy.damageDealt, grouped(summary.damage));
     figure(copy.killsDealt, grouped(summary.kills));
+    figure(copy.goldEarned, `+${grouped(summary.gold)}`);
 
     y += GAME_OVER.wrapGap;
     wrapped(

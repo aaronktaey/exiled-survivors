@@ -178,45 +178,45 @@ check('its colour keeps changing, and it wears no ring',
   new Set(look.tints).size >= 3 && !look.ring && look.tex === 'tex-enemy-fugitive',
   look.tints.map((c) => c.toString(16)).join(' '));
 
-// --- 7. killed, it always leaves a 룬 (a skill until 0.74) ---
+// --- 7. killed, it always leaves a skill ---
 const killed = await run(`
   s.choosing = true;
-  s.combat.runeDrops.getChildren().forEach((d) => d.active && d.collect());
-  const was = window.config.RUNE_DROP.chance;
-  window.config.RUNE_DROP.chance = 0;
+  s.combat.skillDrops.getChildren().forEach((d) => d.active && d.collect());
+  const was = window.config.SKILL_DROP.chance;
+  window.config.SKILL_DROP.chance = 0;
   let drops = 0;
   for (let i = 0; i < 5; i++) {
     const f = s.spawner.spawnFugitive();
     s.combat.hit(f, 1e9);
   }
-  drops = s.combat.runeDrops.countActive(true);
-  window.config.RUNE_DROP.chance = was;
-  s.combat.runeDrops.getChildren().forEach((d) => d.active && d.collect());
+  drops = s.combat.skillDrops.countActive(true);
+  window.config.SKILL_DROP.chance = was;
+  s.combat.skillDrops.getChildren().forEach((d) => d.active && d.collect());
   s.choosing = false;
   return { drops };
 `);
-check('every 도망자 killed leaves a 룬, whatever the drop chance is', killed.drops === 5,
+check('every 도망자 killed leaves a skill, whatever the drop chance is', killed.drops === 5,
   `${killed.drops} of 5`);
 
 // --- 8. a minute later it is gone, and leaves nothing ---
 const gone = await run(`
   s.choosing = true;
   s.spawner.clear();
-  s.combat.runeDrops.getChildren().forEach((d) => d.active && d.collect());
+  s.combat.skillDrops.getChildren().forEach((d) => d.active && d.collect());
   const gems = s.combat.gems.countActive(true);
   const f = s.spawner.spawnFugitive();
   const life = f.lifeLeftMs;
   for (let t = 0; t < life - 1000; t += 50) f.update(0, 50);
   const late = f.active;
   for (let t = 0; t < 2000; t += 50) f.update(0, 50);
-  const out = { life, late, gone: !f.active, skills: s.combat.runeDrops.countActive(true),
+  const out = { life, late, gone: !f.active, skills: s.combat.skillDrops.countActive(true),
                 gems: s.combat.gems.countActive(true) - gems };
   s.choosing = false;
   return out;
 `);
 console.log('gone:', JSON.stringify(gone));
 check('it is still there just before its minute is up', gone.late === true);
-check('and gone after it, leaving no 룬 and no gem', gone.gone && gone.skills === 0 && gone.gems === 0);
+check('and gone after it, leaving no skill and no gem', gone.gone && gone.skills === 0 && gone.gems === 0);
 
 console.log('\n=== SUMMARY ===');
 const failed = results.filter((r) => !r.p);

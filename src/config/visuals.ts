@@ -81,6 +81,14 @@ export const COLORS = {
   /** 공허: a violet core inside a darker rim. */
   voidOrb: 0xb07cff,
   voidOrbCore: 0xefe4ff,
+  /** 신성한 조각: a pale shard, lit the way a gem is. */
+  shard: 0xd6ecff,
+  shardEdge: 0x7fb8e8,
+  shardGlow: 0xaad4ff,
+  shardText: '#d6ecff',
+  /** 패시브, on its icon and its screen. */
+  passive: 0x7ef0b0,
+  passiveEdge: 0xcdfbe2,
   /** 장비 on the ground: a brass crate, lit gold, named in gold. */
   gear: 0xc08a3e,
   gearEdge: 0xf2d08a,
@@ -95,8 +103,6 @@ export const COLORS = {
   critText: '#ffb347',
   /** A run on the board the admin's review marks out of line. */
   suspectText: '#ff6b6b',
-  /** A warning on a card: what a choice would cost (a 룬 pushed out of a full skill). */
-  warnText: '#ff6b6b',
 } as const;
 
 export const DEPTH = {
@@ -170,6 +176,7 @@ export const TEXTURES = {
   gem: "tex-gem",
   skillOrb: "tex-skill-orb",
   gear: "tex-gear",
+  shard: "tex-shard",
   boneSkull: "tex-bone-skull",
   boneRib: "tex-bone-rib",
   boneSpine: "tex-bone-spine",
@@ -181,10 +188,7 @@ export const TEXTURES = {
   orbAwaken: "tex-orb-awaken",
   orbExplode: "tex-orb-explode",
   orbMango: "tex-orb-mango",
-  /** 룬 끌 on the ground and on its choice. */
-  runeChisel: "tex-rune-chisel",
-  /** 포격의 룬's turret. */
-  turret: "tex-turret",
+  passive: "tex-passive",
   trophy: "tex-trophy",
   /** 거미줄's slow, as an icon among the survivor's effects. */
   webIcon: "tex-web-icon",
@@ -489,12 +493,6 @@ export const HUD = {
   effectEdge: { buff: 0x7ef0b0, debuff: 0xe0564a } as const,
   /** XP bar spans the full width along the very bottom edge. */
   xpBarHeight: 10,
-  /**
-   * The 구슬 held (systems/OrbTray.ts): bottom right, over the XP bar — an
-   * icon and its count per kind, the gap between two kinds, how high above
-   * the bar, and how faint a kind not held is.
-   */
-  orbTray: { icon: 18, gap: 10, bottom: 8, emptyAlpha: 0.35 },
   /** The level and health line that sits above that bar. */
   nameplateSize: TEXT.size.hint,
   nameplateGap: 4,
@@ -549,13 +547,6 @@ export const INVENTORY = {
   sideBySideFrom: 640,
 } as const;
 
-/** A piece of gear's name, by how rare it rolled: Path of Exile's white, blue and yellow. */
-export const GEAR_NAME_COLORS = {
-  normal: '#e8e4da',
-  magic: '#7fb2ff',
-  rare: '#ffd34d',
-} as const;
-
 export const SCRIM = {
   /** 게임 가이드 · 패치노트 · 설정 · 제작자 정보 · 확인 창. */
   reading: 1,
@@ -581,6 +572,36 @@ export const ICON_BAR = {
 } as const;
 
 /** Where the shell screens — title, settings, credits, pause — are tuned. */
+/** 패시브's tree: how its nodes are drawn. */
+export const PASSIVE_TREE = {
+  /** A node's radius at most; it shrinks to fit a short or narrow window. */
+  nodeRadius: 32,
+  /** The root is this much bigger than a node. */
+  rootScale: 1.2,
+  /** The ring that fills as ranks are bought. */
+  ringWidth: 5,
+  ringTrack: 0x2b3445,
+  ringFill: 0xffd34d,
+  /** The edge round a node a point can go into now. */
+  buyable: 0x7ef0b0,
+  /** Branches: one that has a rank in it, one that is open, one that is shut. */
+  edgeLit: 0xffd34d,
+  edgeOpen: 0x6b7385,
+  edgeShut: 0x2b3445,
+  edgeWidth: 3,
+  /** A shut node is drawn this faint. */
+  shutAlpha: 0.4,
+  /** The furthest apart two rows of the tree are drawn. */
+  maxLevelGap: 120,
+  /**
+   * The closest they are drawn, along the tree and across it. A tree that
+   * would need less runs off its window instead, and is dragged about.
+   */
+  minLevelGap: 96,
+  minLeafGap: 92,
+  /** How far past the tree's edge it can be dragged, in px. */
+  dragMargin: 24,
+} as const;
 
 export const MENU = {
   /** Wide enough that a row's name and its value never touch. */
@@ -618,32 +639,6 @@ export const MENU = {
   /** How far the logo drifts, and how long one full bob takes. */
   logoBobPx: 10,
   logoBobMs: 2600,
-} as const;
-
-/**
- * A notice in rainbow letters, in whatever room the title leaves: beside the
- * logo and the rows on a wide screen, under or over them on a tall one. Its
- * words are the locale's `menu.notice`; `enabled: false` takes it away.
- */
-export const TITLE_NOTICE = {
-  enabled: true,
-  fontSize: 20,
-  lineHeight: 1.35,
-  /** Never shrunk below this to fit; a screen with less room goes without. */
-  minScale: 0.65,
-  /** Narrowest side room it is put in, and the air kept round it. */
-  minSideWidth: 110,
-  margin: 14,
-  /** Beside the rows it leans, like a note stuck on. */
-  tiltDeg: -6,
-  /** One glyph to the next moves this far round the colour wheel; a whole turn takes cycleMs. */
-  hueStep: 0.07,
-  cycleMs: 2600,
-  saturation: 0.72,
-  /** Each glyph bobs this far, a beat (waveStep) after the one before it. */
-  waveAmp: 2.5,
-  waveMs: 1400,
-  waveStep: 0.45,
 } as const;
 
 /** 패치노트 and 게임 가이드: a long page that scrolls inside a window. */

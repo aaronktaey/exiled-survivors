@@ -54,8 +54,8 @@ const page = () => scene('InfoScene', `
     // The patch notes have outgrown what one evaluate can hand back whole,
     // and these checks only ever look for phrases in it — so the phrases are
     // looked for in the page and the answers sent, not every character.
-    shown: s.page.list.filter(o => o.type === 'Text').map(o => o.text).join(NL).slice(0, 6000),
-    text: all.slice(0, s.payload.topic === 'patch' ? 2000 : 16000),
+    shown: s.page.list.filter(o => o.type === 'Text').map(o => o.text).join(NL).slice(0, 16000),
+    text: all.slice(0, 16000),
     has: (() => {
       const whole = all + NL + s.page.list.filter(o => o.type === 'Text').map(o => o.text).join(NL);
       return { versions: whole.includes('v0.9'), rares: whole.includes('희귀 적') };
@@ -164,7 +164,7 @@ check('and each chapter opens on a row of its own tabs',
   guide.tab === 0 && guide.tabs.join('/') === '목표/조작/모바일/저장', guide.tabs.join(' / '));
 
 // 누락 검사: everything the tables hold is in the guide, read off the tables
-// themselves — a new enemy, 속성, 구슬, 뼈다귀, sword, 룬 or skill
+// themselves — a new enemy, 속성, 구슬, 뼈다귀, sword, 패시브 or skill
 // that the guide does not mention fails here.
 const coverage = await scene('InfoScene', `
   const c = window.config;
@@ -180,7 +180,7 @@ const coverage = await scene('InfoScene', `
     orbs: Object.values(c.ORBS).map(o => o.name),
     bones: Object.values(c.BONES).map(b => b.name),
     gear: Object.values(c.GEAR).map(g => g.name),
-    runes: Object.values(c.RUNES).map(r => r.name),
+    passives: Object.values(c.PASSIVES).map(p => p.name),
   };
   const missing = Object.fromEntries(Object.entries(names).map(([k, list]) => [k, list.filter(n => !titles.has(n))]));
   const skillChapter = s.chapters.find(ch => ch.id === 'skills');
@@ -192,12 +192,12 @@ const coverage = await scene('InfoScene', `
     unfilled: words.filter(w => /[{}]/.test(w)).slice(0, 5),
     broken: words.filter(w => /undefined|NaN/.test(w)).slice(0, 5),
     emptyTabs: s.chapters.flatMap(ch => ch.tabs.filter(tb => tb.cards.length === 0).map(tb => tb.id)),
-    has: ['하얀 망고', '룬 끌', '제단', '강화 슬롯', '치명타', '보관함', '랭킹', '고정']
+    has: ['하얀 망고', '무작위 스킬', '제단', '신성한 조각', '치명타', '인벤토리', '랭킹', '고정']
       .filter(w => !all.includes(w)),
   };
 `);
 console.log('coverage:', JSON.stringify(coverage));
-check('every enemy, 속성, 구슬, 뼈다귀, sword and 룬 has a card of its own',
+check('every enemy, 속성, 구슬, 뼈다귀, sword and 패시브 has a card of its own',
   Object.values(coverage.missing).every(list => list.length === 0), JSON.stringify(coverage.missing));
 check('every skill has a tab, opening on its own card',
   coverage.skillTabs === coverage.skills && coverage.skillCards,
@@ -211,7 +211,7 @@ check('no tab is empty, and no placeholder is left unfilled',
 const tuned = await ev(`(() => {
   const c = window.config;
   const pct = (n) => Number((n * 100).toFixed(2)) + '%';
-  return { rare: pct(c.RARE.chance), skill: pct(c.RUNE_DROP.chance), potion: pct(c.POTION.chance),
+  return { rare: pct(c.RARE.chance), skill: pct(c.SKILL_DROP.chance), potion: pct(c.POTION.chance),
            mango: pct(c.MANGO.chance), hp: String(c.ENEMY_KINDS.brute.maxHp) };
 })()`);
 check('the numbers come from the live config',

@@ -58,8 +58,7 @@ const start = await run(`return {
   owned: [...s.owned],
 };`);
 check('starts with melee only', start.weapons.length === 1 && start.weapons[0] === '타격', `${start.weapons}`);
-// The tree adds tags of its own (범위, 원소…); the three a 타격 is made of stay.
-check('melee tags include 물리·공격·근접', ['물리', '공격', '근접'].every((tag) => start.tags[0].split(',').includes(tag)), start.tags[0]);
+check('melee tags are 물리·공격·근접', start.tags[0] === '물리,공격,근접', start.tags[0]);
 
 // --- 2. melee auto-aims at the nearest enemy ---
 // Enemies are pooled now: take one from the group and spawn it, rather
@@ -133,10 +132,62 @@ check('level-up left fireball untouched',
   afterLevel.fire.dmg === beforeLevel.fire.dmg && afterLevel.fire.as === beforeLevel.fire.as,
   `fire dmg=${afterLevel.fire.dmg} as=${afterLevel.fire.as}`);
 
-// --- 4. a skill given in the run (no skill drops since 0.74; the F-keys and
-// the harness still give one) is granted, and offers no choice ---
-await run(`s.spawner.clear(); s.onSkillCollected('fireball'); return 1;`);
-await sleep(400);
+// --- 4. first pickup grants the skill and offers its own choice ---
+const dropShape = await run(`
+  const d = s.combat.skillDrops.get();
+  d.drop(s.player.x + 60, s.player.y, { id: 'fireball', name: '화염구', tags: [] });
+  const tm = s.textures;
+  const orb = tm.get('tex-skill-orb').getSourceImage();
+  const n = d.nameplate;
+  return {
+    orbTexture: d.texture.key, orbW: orb.width, orbH: orb.height, orbY: Math.round(d.y),
+    orbDrawnW: 0, orbDrawnH: 0,
+    gemDrawnW: (() => { const g = s.combat.gems.get(); g.drop(0, 0, 1, s.player); const w = Math.round(g.displayWidth); g.collect(); return w; })(),
+    plateY: Math.round(n.plate.y), labelY: Math.round(n.label.y),
+    labelText: n.text, labelSize: n.label.style.fontSize, labelColor: n.label.style.color,
+    labelW: Math.ceil(n.label.width), labelH: Math.ceil(n.label.height),
+    plateVisible: n.plate.visible, labelVisible: n.label.visible,
+    plateAlpha: n.plate.fillAlpha, stroke: n.label.style.strokeThickness,
+  };
+`);
+// The pop tween runs for 180ms; read the settled size once it is done.
+await sleep(350);
+const settled = await run(`
+  const d = s.combat.skillDrops.getChildren().find(x => x.active);
+  return { w: Math.round(d.displayWidth), h: Math.round(d.displayHeight) };
+`);
+dropShape.orbDrawnW = settled.w;
+dropShape.orbDrawnH = settled.h;
+console.log('drop shape:', JSON.stringify(dropShape));
+// The art is a 32x32 icon scaled down, so check what is drawn, not the source.
+check('a drop wears its own skill icon',
+  dropShape.orbTexture === 'tex-skill-fireball' && dropShape.orbDrawnW === 24 && dropShape.orbDrawnH === 24,
+  `${dropShape.orbTexture} source ${dropShape.orbW}x${dropShape.orbH}, drawn ${dropShape.orbDrawnW}x${dropShape.orbDrawnH}`);
+check('gem is drawn at its icon size', dropShape.gemDrawnW === 14, `${dropShape.gemDrawnW}px`);
+check('label sits above the orb', dropShape.plateY < dropShape.orbY && dropShape.labelY === dropShape.plateY,
+  `orbY=${dropShape.orbY} plateY=${dropShape.plateY} labelY=${dropShape.labelY}`);
+// A skill is an ordinary drop however good it is, so it wears the plainest
+// of the three labels: bare outlined text, no plate behind it.
+check('the words are shown without a plate behind them',
+  dropShape.labelVisible === true && dropShape.plateVisible === false &&
+    dropShape.plateAlpha === 0,
+  `label=${dropShape.labelVisible} plate=${dropShape.plateVisible}`);
+check('and they lean on a dark outline instead',
+  dropShape.stroke >= 2, `${dropShape.stroke}px outline`);
+check('the plate is still measured to the words plus their padding',
+  dropShape.plateY < dropShape.orbY,
+  `label ${dropShape.labelW}x${dropShape.labelH} at ${dropShape.labelSize}`);
+check('label name is 화염구, in the ordinary ink',
+  dropShape.labelText === '화염구' && dropShape.labelColor === '#e8edf7',
+  `"${dropShape.labelText}" ${dropShape.labelColor}`);
+await shot('skill-01-drop');
+// Walk into the drop and nothing else: an enemy dying along the way can roll
+// a skill of its own and be walked over too.
+await run(`s.spawner.clear(); return 1;`);
+await cdp.key('keyDown', 'KeyD', 68, 'd');
+await sleep(800);
+await cdp.key('keyUp', 'KeyD', 68, 'd');
+await sleep(600);
 
 const firstGrab = await run(`
   // A throwaway Progression gives the untouched base line to compare against,
@@ -154,22 +205,39 @@ check('first pickup opens no choice', firstGrab.open === false && firstGrab.pend
 check('first pickup leaves 화염구 at base spec',
   JSON.stringify(firstGrab.fire) === JSON.stringify(firstGrab.base),
   `granted ${JSON.stringify(firstGrab.fire)} vs base ${JSON.stringify(firstGrab.base)}`);
+await shot('skill-02-fireball-granted');
 
 const afterFire = await stats();
 check('pickup granted the skill', afterFire.owned.includes('fireball') && afterFire.weapons.length === 2,
   `weapons=${afterFire.weapons}`);
 
-// --- 6. a skill given again upgrades instead of granting ---
-await run(`s.onSkillCollected('fireball'); return 1;`);
-await sleep(700);
+// --- 5. it keeps dropping once owned ---
+const rate = await run(`
+  let drops = 0;
+  const N = 40000;
+  for (let i = 0; i < N; i++) if (s.rollSkillDrop()) drops++;
+  return { rate: drops / N, want: window.config.SKILL_DROP.chance };
+`);
+check('still drops at the configured rate after being owned',
+  Math.abs(rate.rate - rate.want) < rate.want * 0.2,
+  `measured=${(rate.rate * 100).toFixed(2)}%, configured ${(rate.want * 100).toFixed(2)}%`);
+
+// --- 6. a repeat pickup upgrades instead of granting ---
+await run(`
+  const d = s.combat.skillDrops.get();
+  d.drop(s.player.x + 60, s.player.y, { id: 'fireball', name: '화염구', tags: [] });
+  return 1;
+`);
+await cdp.key('keyDown', 'KeyD', 68, 'd');
+await sleep(800);
+await cdp.key('keyUp', 'KeyD', 68, 'd');
+await sleep(600);
 const repeatPopup = await popupInfo();
 check('repeat pickup is labelled 강화', repeatPopup.subtitle === '강화' && repeatPopup.skill === 'fireball',
   `subtitle=${repeatPopup.subtitle}`);
 check('repeat pickup names 화염구', repeatPopup.title === '화염구' && repeatPopup.details[1].startsWith('화염구'),
   `title=${repeatPopup.title} / ${repeatPopup.details[1]}`);
-// Since 0.76 every upgrade popup offers only LEVEL_UP.upgrades.
-const levelUps = await run(`return window.config.LEVEL_UP.upgrades.length;`);
-check('화염구 offers the level-up picks, 사거리 not among them', repeatPopup.labels.length === levelUps && !repeatPopup.labels.some(l => /사정거리/.test(l)), repeatPopup.labels.join(' | '));
+check('화염구 offers three picks, 사거리 not among them', repeatPopup.labels.length === 3 && !repeatPopup.labels.some(l => /사정거리/.test(l)), repeatPopup.labels.join(' | '));
 await shot('skill-02-fireball-choice');
 const beforeRepeat = await stats();
 await sleep(350);
@@ -183,8 +251,15 @@ check('melee still untouched by fireball upgrades',
   `melee dmg=${afterRepeat.melee.dmg} as=${afterRepeat.melee.as}`);
 
 // Another repeat, spent on rate this time: the two skills keep their own clocks.
-await run(`s.onSkillCollected('fireball'); return 1;`);
-await sleep(700);
+await run(`
+  const d = s.combat.skillDrops.get();
+  d.drop(s.player.x + 60, s.player.y, { id: 'fireball', name: '화염구', tags: [] });
+  return 1;
+`);
+await cdp.key('keyDown', 'KeyD', 68, 'd');
+await sleep(800);
+await cdp.key('keyUp', 'KeyD', 68, 'd');
+await sleep(600);
 const beforeRate = await stats();
 await sleep(350);
 await confirm('right'); // 공격속도 +1
@@ -255,14 +330,14 @@ const dials = await run(`
            fireStat: s.progression.statsFor('fireball').damage,
            meleeStat: s.progression.statsFor('meleeStrike').damage,
            sword: s.gearBonus.attack,
-           passive: 1 ,
+           passive: s.mods.passive.damageScale,
            fireBase: window.config.SKILL_BASE.fireball.damage,
            meleeBase: window.config.SKILL_BASE.meleeStrike.damage };
 `);
 console.log('dials:', JSON.stringify(dials));
 check('enemy hp follows enemyHpScale', dials.hp === dials.configured,
   `hp=${dials.hp} at enemyHpScale=1 (configured maxHp=${dials.configured})`);
-// At a dial of 1 the base (no 룬 set here), plus whatever the sword in
+// At a dial of 1 the base, lifted by the tree, plus whatever the sword in
 // hand adds — the same flat number on every skill — and then the run's own
 // picks over the lot (Modifiers.damageFor).
 const folded = (base, stat) => Math.round((base * dials.passive + dials.sword) * (stat / base));

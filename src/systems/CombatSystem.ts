@@ -8,13 +8,10 @@ import {
   COLORS,
   DEPTH,
   FIREBALL,
+  ORBS,
   MANGO,
   POTION,
-  RANDOM_SKILL,
-  RUNE_CHISEL,
-  RUNE_DROP,
-  SHOT_CHAIN,
-  type RuneId,
+  SKILL_PICK,
   WEAPON,
   WORLD,
   rollAltarOffer,
@@ -34,28 +31,36 @@ import { EnemyShot } from '@/entities/EnemyShot';
 import { GearDrop } from '@/entities/GearDrop';
 import { BoneDrop } from '@/entities/BoneDrop';
 import { OrbDrop } from '@/entities/OrbDrop';
-import { RuneDrop } from '@/entities/RuneDrop';
-import { ChiselDrop } from '@/entities/ChiselDrop';
 import { RandomSkillDrop } from '@/entities/RandomSkillDrop';
-import { rollRune } from '@/systems/Runes';
 import { MangoDrop } from '@/entities/MangoDrop';
 import { MagnetDrop } from '@/entities/MagnetDrop';
+import { ShardDrop } from '@/entities/ShardDrop';
 import { dropTierFor, rollOrbDrop, type GearItem } from '@/systems/Gear';
 import type { RunStats } from '@/systems/RunStats';
 import { HealthPotion } from '@/entities/HealthPotion';
 import type { GroundItem } from '@/entities/GroundItem';
 import { Player } from '@/entities/Player';
 import { Projectile } from '@/entities/Projectile';
+import { SkillDrop } from '@/entities/SkillDrop';
 import { XpGem } from '@/entities/XpGem';
 import type { DamageNumbers } from '@/systems/DamageNumbers';
 import type { Progression } from '@/systems/Progression';
-import type { SkillId } from '@/weapons/skills';
+import type { SkillDefinition, SkillId } from '@/weapons/skills';
 import { effectVolume, sfx } from '@/systems/Sfx';
 
 export interface CombatHooks {
+  /**
+   * Picks a skill to drop on a kill, or null to drop nothing. `bonus`
+   * multiplies the chance — a rare's affixes make it likelier — and
+   * `guaranteed` skips the roll, which is what a 우두머리 is worth.
+   */
+  readonly rollSkillDrop: (bonus: number, guaranteed: boolean) => SkillDefinition | null;
   /** A weapon to leave behind, or null when nothing is owed. */
   readonly rollGearDrop: (fromBoss: boolean, bonus: number) => GearItem | null;
   readonly onGearCollected: (item: GearItem) => void;
+  /** True when this kill also owes a 신성한 조각. */
+  readonly rollShardDrop: (fromBoss: boolean) => boolean;
+  readonly onShardCollected: () => void;
   /** Called when the player walks over a 구슬. */
   readonly onOrbCollected: (id: OrbId) => void;
   /** Called when the player walks over a 뼈다귀. */
@@ -65,29 +70,18 @@ export interface CombatHooks {
    * health it gives every enemy by making everything likelier to drop.
    */
   readonly dropScale: () => number;
-  /** One skill's crit chance, and what one of its crits is worth (the gear's and its 룬). */
-  readonly critChance: (skill: SkillId | undefined) => number;
-  readonly critMultiplier: (skill: SkillId | undefined) => number;
-  /** What every gem's experience is multiplied by. */
-  readonly xpScale?: () => number;
-  /** Called when the player walks over a 룬. */
-  readonly onRuneCollected: (id: RuneId) => void;
-  /** Whether some skill held can take this 룬 — the only ones a kill leaves (0.78). */
-  readonly runeFits: (id: RuneId) => boolean;
-  /** Called when the player walks over a 룬 끌. */
-  readonly onChiselCollected: () => void;
-  /** Whether a 룬 끌 would do anything now: some skill held still has room for a slot. */
-  readonly chiselWanted: () => boolean;
-  /** Called when the player walks over a 무작위 스킬: the 슬롯머신 for a 보조 스킬. */
-  readonly onRandomSkillCollected: () => void;
-  /** Whether a 무작위 스킬 would give anything now: room for a 보조 스킬, and a skill not held. */
-  readonly randomSkillWanted: () => boolean;
+  /** What one of the survivor's critical hits is worth. */
+  readonly critMultiplier: () => number;
+  /** Called when the player walks over a dropped skill. */
+  readonly onSkillCollected: (skill: SkillId) => void;
   /** A rare with the 거미 속성 died here: lay its web. */
   readonly onWeb: (x: number, y: number, stacks: number) => void;
   /** Called when the player walks over a 하얀 망고. */
   readonly onMangoCollected: () => void;
   /** A 자석 was picked up, and everything on the map is on its way. */
   readonly onMagnetCollected: () => void;
+  /** Called when the player walks over a 무작위 스킬: offer the cards. */
+  readonly onRandomSkillCollected: () => void;
   /** Called when the survivor walks up to a 제단: call up what it offered. */
   readonly onAltarWoke: (offer: AltarOfferId, x: number, y: number) => void;
   /** The nearest spot to (x, y) not on a 지형지물: nothing is dropped on a rock. */
@@ -115,15 +109,14 @@ function inWorld(x: number, y: number): [number, number] {
  */
 export class CombatSystem {
   public readonly gems: Phaser.Physics.Arcade.Group;
+  public readonly skillDrops: Phaser.Physics.Arcade.Group;
   /** Everything the shooting kinds have thrown at the player. */
   public readonly enemyShots: Phaser.Physics.Arcade.Group;
   public readonly potions: Phaser.Physics.Arcade.Group;
   public readonly gearDrops: Phaser.Physics.Arcade.Group;
+  public readonly shardDrops: Phaser.Physics.Arcade.Group;
   public readonly orbDrops: Phaser.Physics.Arcade.Group;
   public readonly boneDrops: Phaser.Physics.Arcade.Group;
-  /** 룬 and 룬 끌 lying on the ground. */
-  public readonly runeDrops: Phaser.Physics.Arcade.Group;
-  public readonly chiselDrops: Phaser.Physics.Arcade.Group;
   /** 무작위 스킬 lying on the ground. */
   public readonly randomSkillDrops: Phaser.Physics.Arcade.Group;
   /** 하얀 망고 lying on the ground. */
@@ -164,6 +157,12 @@ export class CombatSystem {
       runChildUpdate: true,
     });
 
+    // No cap: drops expire on their own timer instead of being refused.
+    this.skillDrops = scene.physics.add.group({
+      classType: SkillDrop,
+      runChildUpdate: true,
+    });
+
     this.enemyShots = scene.physics.add.group({
       classType: EnemyShot,
       maxSize: WEAPON.maxProjectiles,
@@ -172,10 +171,9 @@ export class CombatSystem {
 
     this.potions = scene.physics.add.group({ classType: HealthPotion, runChildUpdate: true });
     this.gearDrops = scene.physics.add.group({ classType: GearDrop, runChildUpdate: true });
+    this.shardDrops = scene.physics.add.group({ classType: ShardDrop, runChildUpdate: true });
     this.orbDrops = scene.physics.add.group({ classType: OrbDrop, runChildUpdate: true });
     this.boneDrops = scene.physics.add.group({ classType: BoneDrop, runChildUpdate: true });
-    this.runeDrops = scene.physics.add.group({ classType: RuneDrop, runChildUpdate: true });
-    this.chiselDrops = scene.physics.add.group({ classType: ChiselDrop, runChildUpdate: true });
     this.randomSkillDrops = scene.physics.add.group({ classType: RandomSkillDrop, runChildUpdate: true });
     this.mangoDrops = scene.physics.add.group({ classType: MangoDrop, runChildUpdate: true });
     this.magnetDrops = scene.physics.add.group({ classType: MagnetDrop, runChildUpdate: true });
@@ -186,11 +184,11 @@ export class CombatSystem {
     scene.physics.add.overlap(player, this.enemyShots, this.onEnemyShotHit, undefined, this);
     scene.physics.add.overlap(player, this.potions, this.onPotionTouch, undefined, this);
     scene.physics.add.overlap(player, this.gems, this.onGemTouch, undefined, this);
+    scene.physics.add.overlap(player, this.skillDrops, this.onSkillTouch, undefined, this);
     scene.physics.add.overlap(player, this.gearDrops, this.onGearTouch, undefined, this);
+    scene.physics.add.overlap(player, this.shardDrops, this.onShardTouch, undefined, this);
     scene.physics.add.overlap(player, this.orbDrops, this.onOrbTouch, undefined, this);
     scene.physics.add.overlap(player, this.boneDrops, this.onBoneTouch, undefined, this);
-    scene.physics.add.overlap(player, this.runeDrops, this.onRuneTouch, undefined, this);
-    scene.physics.add.overlap(player, this.chiselDrops, this.onChiselTouch, undefined, this);
     scene.physics.add.overlap(player, this.randomSkillDrops, this.onRandomSkillTouch, undefined, this);
     scene.physics.add.overlap(player, this.mangoDrops, this.onMangoTouch, undefined, this);
     scene.physics.add.overlap(player, this.magnetDrops, this.onMagnetTouch, undefined, this);
@@ -228,6 +226,20 @@ export class CombatSystem {
     this.land(potion, itemFilter.shows('potion'), null);
   }
 
+  /** Places a 신성한 조각 directly — used by the kill and by debug keys. */
+  public dropShardAt(x: number, y: number): void {
+    [x, y] = this.onGround(x, y);
+    const shard = this.shardDrops.get() as ShardDrop | null;
+    if (!shard) {
+      return;
+    }
+
+    shard.drop(x, y);
+    // Its nameplate is the 희귀 one, so its sound is too: one ladder, or the
+    // ear and the eye disagree about the same object on the floor.
+    this.land(shard, itemFilter.shows('shard'), 'rare');
+  }
+
   /** Places a 구슬 directly — used by the kill roll and by debug keys. */
   public dropOrbAt(x: number, y: number, id: OrbId): void {
     [x, y] = this.onGround(x, y);
@@ -236,9 +248,8 @@ export class CombatSystem {
       return;
     }
 
-    drop.drop(x, y, id, this.player);
-    // No sound of its own either: a run finds dozens, drawn in like gems.
-    this.land(drop, itemFilter.shows(`orb:${id}`), null);
+    drop.drop(x, y, id);
+    this.land(drop, itemFilter.shows(`orb:${id}`), ORBS[id]?.tier ?? 'normal');
   }
 
   /** Places a 뼈다귀 directly — used by the kill roll and by debug keys. */
@@ -305,11 +316,11 @@ export class CombatSystem {
       }
     };
     take(this.gems, this.onGemTouch);
+    take(this.skillDrops, this.onSkillTouch);
     take(this.gearDrops, this.onGearTouch);
+    take(this.shardDrops, this.onShardTouch);
     take(this.orbDrops, this.onOrbTouch);
     take(this.boneDrops, this.onBoneTouch);
-    take(this.runeDrops, this.onRuneTouch);
-    take(this.chiselDrops, this.onChiselTouch);
     take(this.randomSkillDrops, this.onRandomSkillTouch);
   }
 
@@ -331,26 +342,6 @@ export class CombatSystem {
     });
   }
 
-  /**
-   * Places a 룬 directly — one by weight among those a skill held can take
-   * when none is named (none at all if no skill can). Used by the kill roll,
-   * debug keys and tests.
-   */
-  public dropRuneAt(x: number, y: number, named?: RuneId): void {
-    const id = named ?? rollRune(this.hooks.runeFits);
-    if (!id) {
-      return;
-    }
-    [x, y] = this.onGround(x, y);
-    const drop = this.runeDrops.get() as RuneDrop | null;
-    if (!drop) {
-      return;
-    }
-
-    drop.drop(x, y, id);
-    this.land(drop, itemFilter.shows('rune'), 'magic');
-  }
-
   /** Places a 무작위 스킬 directly — used by the kill roll and by tests. */
   public dropRandomSkillAt(x: number, y: number): void {
     [x, y] = this.onGround(x, y);
@@ -361,18 +352,6 @@ export class CombatSystem {
 
     drop.drop(x, y);
     this.land(drop, itemFilter.shows('randomSkill'), 'magic');
-  }
-
-  /** Places a 룬 끌 directly — used by the kill roll, debug keys and tests. */
-  public dropChiselAt(x: number, y: number): void {
-    [x, y] = this.onGround(x, y);
-    const drop = this.chiselDrops.get() as ChiselDrop | null;
-    if (!drop) {
-      return;
-    }
-
-    drop.drop(x, y);
-    this.land(drop, itemFilter.shows('chisel'), 'rare');
   }
 
   /** Places a 제단 directly — used by the 우두머리 kill and by tests. */
@@ -400,6 +379,18 @@ export class CombatSystem {
 
     drop.drop(x, y, item);
     this.land(drop, itemFilter.showsGear(item), dropTierFor(item));
+  }
+
+  /** Places a drop directly — used by the spawner's roll and by debug keys. */
+  public dropSkillAt(x: number, y: number, skill: SkillDefinition): void {
+    [x, y] = this.onGround(x, y);
+    const drop = this.skillDrops.get() as SkillDrop | null;
+    if (!drop) {
+      return;
+    }
+
+    drop.drop(x, y, skill);
+    this.land(drop, itemFilter.shows('skill'));
   }
 
   /**
@@ -435,14 +426,13 @@ export class CombatSystem {
    * and so 치명 on the carried weapon lands on everything the survivor
    * throws, the same way a rare's 치명 lands on everything it throws.
    */
-  public hit = (enemy: Enemy, amount: number, skill?: SkillId): void => {
+  public hit = (enemy: Enemy, amount: number): void => {
     if (!enemy.active) {
       return;
     }
 
-    const chance = this.hooks.critChance(skill);
-    const crit = chance > 0 && Math.random() < chance;
-    const dealt = crit ? Math.round(amount * this.hooks.critMultiplier(skill)) : Math.max(1, Math.round(amount));
+    const crit = this.player.critChance > 0 && Math.random() < this.player.critChance;
+    const dealt = crit ? Math.round(amount * this.hooks.critMultiplier()) : amount;
 
     this.damageNumbers.spawn(
       enemy.x,
@@ -485,41 +475,18 @@ export class CombatSystem {
     // shot has to know whether it is done either way.
     const carriesOn = shot.consumePierce();
     const { x, y } = enemy;
-    this.hit(enemy, shot.damage, shot.skill);
+    this.hit(enemy, shot.damage);
 
     if (shot.blastRadius > 0) {
-      this.blast(x, y, shot.blastRadius, shot.damage, enemy, shot.skill);
+      this.blast(x, y, shot.blastRadius, shot.damage, enemy);
       if (shot.fireZoneDps > 0) {
-        this.burnGround(x, y, shot.blastRadius, shot.fireZoneDps, shot.fireZoneMs, shot.skill);
+        this.burnGround(x, y, shot.blastRadius, shot.fireZoneDps);
       }
     }
 
-    if (carriesOn) {
-      // 관통의 룬: every body passed through costs a share of what is left.
-      shot.damage *= shot.pierceKeep;
-      return;
+    if (!carriesOn) {
+      shot.despawn();
     }
-    // 연쇄: a shot that has used its pierce turns to the nearest enemy it has
-    // not hit yet, from where it struck.
-    if (shot.chainLeft > 0) {
-      let next: Enemy | undefined;
-      let best: number = SHOT_CHAIN.reach;
-      for (const child of this.enemies.getChildren()) {
-        const other = child as Enemy;
-        if (!other.active || other === enemy || shot.hasStruck(other)) {
-          continue;
-        }
-        const d = Phaser.Math.Distance.Between(x, y, other.x, other.y);
-        if (d < best) {
-          best = d;
-          next = other;
-        }
-      }
-      if (next && shot.chainTo(next.x, next.y, SHOT_CHAIN.reach)) {
-        return;
-      }
-    }
-    shot.despawn();
   };
 
   /**
@@ -528,15 +495,7 @@ export class CombatSystem {
    * victims are gathered before any of them is hit, because a kill recycles
    * a sprite and the pool could hand it straight back.
    */
-  public blast(
-    x: number,
-    y: number,
-    radius: number,
-    damage: number,
-    spared?: Enemy,
-    skill?: SkillId,
-    color: number = COLORS.fireBlast,
-  ): number {
+  public blast(x: number, y: number, radius: number, damage: number, spared?: Enemy): number {
     const caught: Enemy[] = [];
     for (const child of this.enemies.getChildren()) {
       const other = child as Enemy;
@@ -546,11 +505,11 @@ export class CombatSystem {
       }
     }
 
-    caught.forEach((other) => this.hit(other, damage, skill));
+    caught.forEach((other) => this.hit(other, damage));
 
     const flash = this.scene.add
-      .circle(x, y, radius, color, 0.35)
-      .setStrokeStyle(2, color, 0.9)
+      .circle(x, y, radius, COLORS.fireBlast, 0.35)
+      .setStrokeStyle(2, COLORS.fireBlast, 0.9)
       .setDepth(DEPTH.vfx)
       .setScale(0.4);
     this.scene.tweens.add({
@@ -566,32 +525,16 @@ export class CombatSystem {
   }
 
   /** 화염구 각성: the patches of ground still burning. Public for tests. */
-  public readonly fireZones: {
-    x: number;
-    y: number;
-    radius: number;
-    dps: number;
-    leftMs: number;
-    sinceTickMs: number;
-    skill?: SkillId;
-    view: Phaser.GameObjects.Arc;
-  }[] = [];
+  public readonly fireZones: { x: number; y: number; radius: number; dps: number; leftMs: number; sinceTickMs: number; view: Phaser.GameObjects.Arc }[] = [];
 
-  /** Leaves the ground at (x, y) burning, for SKILL_MASTERY.fireZone.durationMs unless told otherwise. */
-  public burnGround(
-    x: number,
-    y: number,
-    radius: number,
-    dps: number,
-    durationMs: number = SKILL_MASTERY.fireZone.durationMs,
-    skill?: SkillId,
-  ): void {
+  /** Leaves the ground at (x, y) burning for SKILL_MASTERY.fireZone.durationMs. */
+  public burnGround(x: number, y: number, radius: number, dps: number): void {
     const view = this.scene.add
       .circle(x, y, radius, COLORS.fireBlast, 0.18)
       .setStrokeStyle(2, COLORS.fireBlast, 0.5)
       .setDepth(DEPTH.pickups - 1);
     this.scene.tweens.add({ targets: view, alpha: 0.7, duration: 260, yoyo: true, repeat: -1 });
-    this.fireZones.push({ x, y, radius, dps, leftMs: durationMs || SKILL_MASTERY.fireZone.durationMs, sinceTickMs: 0, skill, view });
+    this.fireZones.push({ x, y, radius, dps, leftMs: SKILL_MASTERY.fireZone.durationMs, sinceTickMs: 0, view });
   }
 
   /** Burns whatever stands in a fire, once every SKILL_MASTERY.fireZone.tickMs. */
@@ -611,7 +554,7 @@ export class CombatSystem {
             caught.push(enemy);
           }
         }
-        caught.forEach((enemy) => this.hit(enemy, amount, zone.skill));
+        caught.forEach((enemy) => this.hit(enemy, amount));
       }
       if (zone.leftMs <= 0) {
         this.scene.tweens.killTweensOf(zone.view);
@@ -667,8 +610,7 @@ export class CombatSystem {
     }
 
     gem.collect();
-    const xp = gem.value * (this.hooks.xpScale?.() ?? 1);
-    this.progression.addXp(xp);
+    this.progression.addXp(gem.value);
   };
 
   private onPotionTouch: Phaser.Types.Physics.Arcade.ArcadePhysicsCallback = (_player, b) => {
@@ -683,41 +625,22 @@ export class CombatSystem {
     }
 
     potion.collect();
-    const healed = this.player.heal(HealthPotion.healingFor(this.player.maxHp, this.player.potionHealScale));
+    const healed = this.player.heal(HealthPotion.healingFor(this.player.maxHp));
     this.damageNumbers.spawn(this.player.x, this.player.y - 18, healed, {
       prefix: '+',
       color: COLORS.healText,
     });
   };
 
-  private onRuneTouch: Phaser.Types.Physics.Arcade.ArcadePhysicsCallback = (_player, b) => {
-    const drop = b as unknown as RuneDrop;
+  private onSkillTouch: Phaser.Types.Physics.Arcade.ArcadePhysicsCallback = (_player, b) => {
+    const drop = b as unknown as SkillDrop;
     if (!drop.active) {
       return;
     }
 
+    const { skillId } = drop;
     drop.collect();
-    this.hooks.onRuneCollected(drop.rune);
-  };
-
-  private onRandomSkillTouch: Phaser.Types.Physics.Arcade.ArcadePhysicsCallback = (_player, b) => {
-    const drop = b as unknown as RandomSkillDrop;
-    if (!drop.active) {
-      return;
-    }
-
-    drop.collect();
-    this.hooks.onRandomSkillCollected();
-  };
-
-  private onChiselTouch: Phaser.Types.Physics.Arcade.ArcadePhysicsCallback = (_player, b) => {
-    const drop = b as unknown as ChiselDrop;
-    if (!drop.active) {
-      return;
-    }
-
-    drop.collect();
-    this.hooks.onChiselCollected();
+    this.hooks.onSkillCollected(skillId);
   };
 
   private onGearTouch: Phaser.Types.Physics.Arcade.ArcadePhysicsCallback = (_player, b) => {
@@ -731,6 +654,16 @@ export class CombatSystem {
     if (item) {
       this.hooks.onGearCollected(item);
     }
+  };
+
+  private onShardTouch: Phaser.Types.Physics.Arcade.ArcadePhysicsCallback = (_player, b) => {
+    const shard = b as unknown as ShardDrop;
+    if (!shard.active) {
+      return;
+    }
+
+    shard.collect();
+    this.hooks.onShardCollected();
   };
 
   private onOrbTouch: Phaser.Types.Physics.Arcade.ArcadePhysicsCallback = (_player, object) => {
@@ -765,6 +698,16 @@ export class CombatSystem {
     this.hooks.onMagnetCollected();
   };
 
+  private onRandomSkillTouch: Phaser.Types.Physics.Arcade.ArcadePhysicsCallback = (_player, object) => {
+    const drop = object as RandomSkillDrop;
+    if (!drop.active) {
+      return;
+    }
+
+    drop.collect();
+    this.hooks.onRandomSkillCollected();
+  };
+
   private onBoneTouch: Phaser.Types.Physics.Arcade.ArcadePhysicsCallback = (_player, object) => {
     const drop = object as BoneDrop;
     if (!drop.active) {
@@ -783,7 +726,7 @@ export class CombatSystem {
     const worth = enemy.xpValue;
     const dropBonus = enemy.dropBonus;
     const wasBoss = enemy.isBoss;
-    const certainRune = enemy.alwaysDropsRune;
+    const certainSkill = enemy.alwaysDropsSkill;
     const webStacks = enemy.webStacks;
     const scale = this.hooks.dropScale();
     // Every ordinary drop below is raised by what this kill was: a rare's
@@ -800,20 +743,15 @@ export class CombatSystem {
       this.hooks.onWeb(x, y, webStacks);
     }
 
-    // A 룬: a 우두머리 and a 도망자 always leave one (they left a skill
-    // until 0.74); anything else at RUNE_DROP.chance.
-    if (certainRune || Math.random() < RUNE_DROP.chance * bonus) {
-      this.dropRuneAt(x + 18, y - 18);
+    // A 우두머리 and a 도망자 always leave one.
+    const skill = this.hooks.rollSkillDrop(dropBonus, certainSkill);
+    if (skill) {
+      this.dropSkillAt(x, y, skill);
     }
 
-    // A 무작위 스킬, while there is room for a 보조 스킬 and a skill to give.
-    if (this.hooks.randomSkillWanted() && Math.random() < RANDOM_SKILL.chance * bonus) {
-      this.dropRandomSkillAt(x - 18, y - 18);
-    }
-
-    // A 룬 끌, while some skill held still has room for a slot.
-    if (this.hooks.chiselWanted() && Math.random() < RUNE_CHISEL.chance * bonus) {
-      this.dropChiselAt(x - 18, y + 18);
+    // A 무작위 스킬 on its own roll: three cards to choose from, not one.
+    if (Math.random() < SKILL_PICK.dropChance * bonus) {
+      this.dropRandomSkillAt(x + 18, y - 18);
     }
 
     // 하얀 망고: the same off every kill — nothing raises it.
@@ -835,6 +773,11 @@ export class CombatSystem {
     const found = this.hooks.rollGearDrop(wasBoss, bonus);
     if (found) {
       this.dropGearAt(x, y, found);
+    }
+
+    // And half of them leave a 신성한 조각 beside it.
+    if (this.hooks.rollShardDrop(wasBoss)) {
+      this.dropShardAt(x + 18, y);
     }
 
     // And a 제단 — always off a 우두머리, now and then off anything else —

@@ -9,23 +9,22 @@ import {
   ENEMY_KINDS,
   giantFrame,
   GEAR_DROP,
-  PLAYER_LOOK,
-  lookTexture,
-  type PlayerLook,
-  ALL_RUNES,
-  RUNE_CHISEL,
-  runeTexture,
   ICONS,
+  SHARD,
   GEAR,
   SKILL_ICONS,
   gearTexture,
   SKILL_PICK,
   RANKING,
+  ROLLBACK_GIFT,
   PLAYER,
   POTION,
   SHOTS,
   TERRAIN,
   TEXTURES,
+  PLAYER_LOOK,
+  lookTexture,
+  type PlayerLook,
   VOID_ORB,
 } from '@/config';
 import { MENU, SCENES } from '@/config';
@@ -84,14 +83,12 @@ export class BootScene extends Phaser.Scene {
     }
     this.createSquareTexture(TEXTURES.enemyShot, 8, COLORS.enemyShot);
     this.createThornTexture();
+    this.createShardTexture();
     this.createVoidOrbTexture();
     this.createPotionTexture();
     this.createGearTexture();
     this.createDivineShardTexture();
-    this.createRuneTextures();
-    this.createChiselTexture();
-    this.createTurretTexture();
-    this.createLookTextures();
+    this.createPassiveTexture();
     this.createOrbTextures();
     this.createBoneTextures();
     this.createAltarTexture();
@@ -100,6 +97,7 @@ export class BootScene extends Phaser.Scene {
     this.createTrophyTexture();
     this.createWebIcon();
     this.createFlagTextures();
+    this.createLookTextures();
     this.createMangoTexture();
     this.createMagnetTexture();
     this.createLightPillarTexture();
@@ -133,6 +131,11 @@ export class BootScene extends Phaser.Scene {
       // test-account keeps it on (window.__sharedOn) behind one of its own.
       if (!(window as { __sharedOn?: boolean }).__sharedOn) {
         (RANKING.shared as { enabled: boolean }).enabled = false;
+      }
+      // And gives no 0.80 gift: it would fill every suite's stash. test-gift
+      // turns it on (window.__giftOn).
+      if (!(window as { __giftOn?: boolean }).__giftOn) {
+        ROLLBACK_GIFT.enabled = false;
       }
     }
     if (import.meta.env.DEV && (skipMenu || harness)) {
@@ -370,6 +373,36 @@ export class BootScene extends Phaser.Scene {
 
   /** The potion: a white cross on a crimson field, read at a glance. */
   /** 신성한 조각: a pale four-pointed sliver, lit like a gem. */
+  private createShardTexture(): void {
+    const size = SHARD.size * 2;
+    const half = size / 2;
+    const graphics = this.add.graphics();
+
+    graphics.fillStyle(COLORS.shardEdge, 1);
+    graphics.fillPoints(
+      [
+        new Phaser.Math.Vector2(half, 0),
+        new Phaser.Math.Vector2(size, half),
+        new Phaser.Math.Vector2(half, size),
+        new Phaser.Math.Vector2(0, half),
+      ],
+      true,
+    );
+    graphics.fillStyle(COLORS.shard, 1);
+    graphics.fillPoints(
+      [
+        new Phaser.Math.Vector2(half, size * 0.18),
+        new Phaser.Math.Vector2(size * 0.82, half),
+        new Phaser.Math.Vector2(half, size * 0.82),
+        new Phaser.Math.Vector2(size * 0.18, half),
+      ],
+      true,
+    );
+
+    graphics.generateTexture(TEXTURES.shard, size, size);
+    graphics.destroy();
+  }
+
   /**
    * The 뼈다귀: a skull and a rib, drawn plainly enough to read at 18px.
    * Bone-coloured rather than tinted, because what tells them apart on the
@@ -414,6 +447,85 @@ export class BootScene extends Phaser.Scene {
 
       graphics.generateTexture(bone.texture, size, size);
       graphics.destroy();
+    }
+  }
+
+  /**
+   * Every survivor look (PLAYER_LOOK): a small figure facing right — legs, a
+   * robe with its trim, a head under a hood, and what the skill carries in
+   * the right hand. Player flips it to face the way it walks.
+   */
+  private createLookTextures(): void {
+    const size = 32;
+    const looks: [string, PlayerLook][] = [['base', PLAYER_LOOK.base], ...Object.entries(PLAYER_LOOK.bySkill)];
+    for (const [id, look] of looks) {
+      const g = this.add.graphics();
+      // Legs and boots.
+      g.fillStyle(0x2a2420, 1);
+      g.fillRect(11, 25, 4, 6);
+      g.fillRect(17, 25, 4, 6);
+      // The robe, wider at the hem, and its trim.
+      g.fillStyle(look.robe, 1);
+      g.fillPoints([new Phaser.Math.Vector2(10, 12), new Phaser.Math.Vector2(22, 12), new Phaser.Math.Vector2(24, 27), new Phaser.Math.Vector2(8, 27)], true);
+      g.fillStyle(look.trim, 1);
+      g.fillRect(10, 18, 12, 2);
+      g.fillRect(8, 26, 16, 2);
+      // Head and hood.
+      g.fillStyle(0xf2c9a0, 1);
+      g.fillCircle(16, 8, 5);
+      g.fillStyle(look.hood, 1);
+      g.fillRect(10, 2, 12, 4);
+      g.fillRect(10, 2, 3, 9);
+      g.fillStyle(0x1a1a1a, 1);
+      g.fillRect(17, 7, 2, 2);
+      // The arm forward, and what it holds.
+      g.fillStyle(look.robe, 1);
+      g.fillRect(21, 14, 4, 3);
+      switch (look.prop) {
+        case 'sword':
+          g.fillStyle(0x6a4a2a, 1);
+          g.fillRect(24, 15, 2, 4);
+          g.fillStyle(look.glow, 1);
+          g.fillRect(24, 3, 2, 12);
+          g.fillStyle(look.trim, 1);
+          g.fillRect(22, 14, 6, 2);
+          break;
+        case 'staff':
+        case 'rod':
+          g.fillStyle(0x6a4a2a, 1);
+          g.fillRect(25, 6, 2, 22);
+          g.fillStyle(look.glow, 1);
+          if (look.prop === 'staff') {
+            g.fillCircle(26, 5, 3);
+          } else {
+            g.fillPoints([new Phaser.Math.Vector2(27, 0), new Phaser.Math.Vector2(23, 5), new Phaser.Math.Vector2(26, 5), new Phaser.Math.Vector2(24, 9), new Phaser.Math.Vector2(29, 3), new Phaser.Math.Vector2(26, 3)], true);
+          }
+          break;
+        case 'wand':
+          g.fillStyle(0x3a3a3a, 1);
+          g.fillRect(25, 9, 2, 8);
+          g.lineStyle(2, look.glow, 1);
+          g.lineBetween(26, 9, 28, 5);
+          g.lineBetween(28, 5, 25, 4);
+          g.lineBetween(25, 4, 29, 0);
+          break;
+        case 'spear':
+          g.fillStyle(look.trim, 1);
+          g.fillRect(25, 6, 2, 22);
+          g.fillStyle(look.glow, 1);
+          g.fillPoints([new Phaser.Math.Vector2(26, 0), new Phaser.Math.Vector2(29, 6), new Phaser.Math.Vector2(23, 6)], true);
+          break;
+        case 'orb':
+          g.fillStyle(look.glow, 0.45);
+          g.fillCircle(27, 12, 5);
+          g.fillStyle(look.glow, 1);
+          g.fillCircle(27, 12, 3);
+          break;
+        default:
+          break;
+      }
+      g.generateTexture(lookTexture(id), size, size);
+      g.destroy();
     }
   }
 
@@ -948,150 +1060,18 @@ export class BootScene extends Phaser.Scene {
     }
   }
 
-  /** Each 룬: a dark stone, its edge and its mark in the 룬's own colour (RuneSpec.glyph). */
-  private createRuneTextures(): void {
-    const size = 32;
-    for (const rune of ALL_RUNES) {
-      const graphics = this.add.graphics();
-      graphics.fillStyle(0x2b2f3a, 1);
-      graphics.fillRoundedRect(2, 2, size - 4, size - 4, 7);
-      graphics.lineStyle(2, rune.color, 0.9);
-      graphics.strokeRoundedRect(2, 2, size - 4, size - 4, 7);
-      graphics.lineStyle(3, rune.color, 1);
-      const pad = 7;
-      const span = size - pad * 2;
-      for (const [x1, y1, x2, y2] of rune.glyph) {
-        graphics.lineBetween(pad + x1 * span, pad + y1 * span, pad + x2 * span, pad + y2 * span);
-      }
-      graphics.generateTexture(runeTexture(rune.id), size, size);
-      graphics.destroy();
-    }
-  }
-
-  /**
-   * Every survivor look (PLAYER_LOOK): a small figure facing right — legs, a
-   * robe with its trim, a head under a hood, and what the skill carries in
-   * the right hand. Player flips it to face the way it walks.
-   */
-  private createLookTextures(): void {
-    const size = 32;
-    const looks: [string, PlayerLook][] = [['base', PLAYER_LOOK.base], ...Object.entries(PLAYER_LOOK.bySkill)];
-    for (const [id, look] of looks) {
-      const g = this.add.graphics();
-      // Legs and boots.
-      g.fillStyle(0x2a2420, 1);
-      g.fillRect(11, 25, 4, 6);
-      g.fillRect(17, 25, 4, 6);
-      // The robe, wider at the hem, and its trim.
-      g.fillStyle(look.robe, 1);
-      g.fillPoints([new Phaser.Math.Vector2(10, 12), new Phaser.Math.Vector2(22, 12), new Phaser.Math.Vector2(24, 27), new Phaser.Math.Vector2(8, 27)], true);
-      g.fillStyle(look.trim, 1);
-      g.fillRect(10, 18, 12, 2);
-      g.fillRect(8, 26, 16, 2);
-      // Head and hood.
-      g.fillStyle(0xf2c9a0, 1);
-      g.fillCircle(16, 8, 5);
-      g.fillStyle(look.hood, 1);
-      g.fillRect(10, 2, 12, 4);
-      g.fillRect(10, 2, 3, 9);
-      g.fillStyle(0x1a1a1a, 1);
-      g.fillRect(17, 7, 2, 2);
-      // The arm forward, and what it holds.
-      g.fillStyle(look.robe, 1);
-      g.fillRect(21, 14, 4, 3);
-      switch (look.prop) {
-        case 'sword':
-          g.fillStyle(0x6a4a2a, 1);
-          g.fillRect(24, 15, 2, 4);
-          g.fillStyle(look.glow, 1);
-          g.fillRect(24, 3, 2, 12);
-          g.fillStyle(look.trim, 1);
-          g.fillRect(22, 14, 6, 2);
-          break;
-        case 'staff':
-        case 'rod':
-          g.fillStyle(0x6a4a2a, 1);
-          g.fillRect(25, 6, 2, 22);
-          g.fillStyle(look.glow, 1);
-          if (look.prop === 'staff') {
-            g.fillCircle(26, 5, 3);
-          } else {
-            g.fillPoints([new Phaser.Math.Vector2(27, 0), new Phaser.Math.Vector2(23, 5), new Phaser.Math.Vector2(26, 5), new Phaser.Math.Vector2(24, 9), new Phaser.Math.Vector2(29, 3), new Phaser.Math.Vector2(26, 3)], true);
-          }
-          break;
-        case 'wand':
-          g.fillStyle(0x3a3a3a, 1);
-          g.fillRect(25, 9, 2, 8);
-          g.lineStyle(2, look.glow, 1);
-          g.lineBetween(26, 9, 28, 5);
-          g.lineBetween(28, 5, 25, 4);
-          g.lineBetween(25, 4, 29, 0);
-          break;
-        case 'spear':
-          g.fillStyle(look.trim, 1);
-          g.fillRect(25, 6, 2, 22);
-          g.fillStyle(look.glow, 1);
-          g.fillPoints([new Phaser.Math.Vector2(26, 0), new Phaser.Math.Vector2(29, 6), new Phaser.Math.Vector2(23, 6)], true);
-          break;
-        case 'orb':
-          g.fillStyle(look.glow, 0.45);
-          g.fillCircle(27, 12, 5);
-          g.fillStyle(look.glow, 1);
-          g.fillCircle(27, 12, 3);
-          break;
-        default:
-          break;
-      }
-      g.generateTexture(lookTexture(id), size, size);
-      g.destroy();
-    }
-  }
-
-  /** 포격의 룬's turret: a squat stone tower, its top lit. */
-  private createTurretTexture(): void {
-    const size = 32;
+  /** 패시브's icon: a lit node with a ring around it. */
+  private createPassiveTexture(): void {
+    const size = 48;
+    const half = size / 2;
     const graphics = this.add.graphics();
-    graphics.fillStyle(0x3a3f4c, 1);
-    graphics.fillRoundedRect(5, 12, 22, 18, 4);
-    graphics.fillStyle(0x555c6e, 1);
-    graphics.fillRect(3, 8, 26, 6);
-    graphics.fillStyle(0xd45f3a, 1);
-    graphics.fillRect(6, 4, 4, 5);
-    graphics.fillRect(14, 4, 4, 5);
-    graphics.fillRect(22, 4, 4, 5);
-    graphics.lineStyle(2, 0xd45f3a, 0.9);
-    graphics.strokeRoundedRect(5, 12, 22, 18, 4);
-    graphics.generateTexture(TEXTURES.turret, size, size);
-    graphics.destroy();
-  }
 
-  /** 룬 끌: a chisel, blade down and to the left, its handle wood. */
-  private createChiselTexture(): void {
-    const size = 32;
-    const graphics = this.add.graphics();
-    graphics.fillStyle(RUNE_CHISEL.color, 1);
-    graphics.fillPoints(
-      [
-        new Phaser.Math.Vector2(18, 4),
-        new Phaser.Math.Vector2(28, 14),
-        new Phaser.Math.Vector2(20, 22),
-        new Phaser.Math.Vector2(10, 12),
-      ],
-      true,
-    );
-    graphics.fillStyle(0xd8dde6, 1);
-    graphics.fillPoints(
-      [
-        new Phaser.Math.Vector2(10, 12),
-        new Phaser.Math.Vector2(20, 22),
-        new Phaser.Math.Vector2(8, 30),
-        new Phaser.Math.Vector2(2, 24),
-      ],
-      true,
-    );
-    graphics.lineStyle(2, 0x5a4630, 1);
-    graphics.lineBetween(14, 8, 24, 18);
-    graphics.generateTexture(TEXTURES.runeChisel, size, size);
+    graphics.lineStyle(Math.round(size * 0.1), COLORS.passiveEdge, 1);
+    graphics.strokeCircle(half, half, half - size * 0.1);
+    graphics.fillStyle(COLORS.passive, 1);
+    graphics.fillCircle(half, half, size * 0.24);
+
+    graphics.generateTexture(TEXTURES.passive, size, size);
     graphics.destroy();
   }
 

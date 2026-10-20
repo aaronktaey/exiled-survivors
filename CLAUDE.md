@@ -39,7 +39,7 @@ wrong shape.
 | `src/config/balance.ts` | ★ the tuning file. Enemies, skills, 속성 and their tier ladders, the difficulty ramp. The user edits this directly. |
 | `src/config/equipment.ts` | weapons (장비) and the 구슬 that change them |
 | `src/config/bones.ts` | 뼈다귀 — what is spent before a run to change that run |
-| `src/config/runes.ts` | 룬 (what a skill's 강화 슬롯 take), the slots, the 룬 끌 |
+| `src/config/passives.ts` | the passive tree, bought with 신성한 조각 |
 | `src/config/visuals.ts` | colours, depths, text sizes, texture keys, label tiers |
 | `src/config/system.ts` | scene keys, storage keys, separation, tilt, timing |
 | `src/entities/` | Player, Enemy, and everything that lies on the ground |
@@ -68,15 +68,14 @@ wrong shape.
   centre it (`src/systems/Layout.ts`); landscape is only ever ~540 tall, so a
   screen that fits upright can still overflow lying down. Check both.
 - **Everything the player keeps is in `localStorage`** behind `STORAGE.*`:
-  the 뼈다귀 drawer, the save slot and the
-  settings. Gear and 구슬 are not among them: they live in the run
-  (`RunKit`, carried by the save slot only). Stores cache: writing the key behind a
+  the stash, the passive tree, the purse, the 구슬 drawer, the 뼈다귀 drawer,
+  the save slot and the settings. Stores cache: writing the key behind a
   store's back does not change what the store already has in memory.
 
 ## The test harness
 
 `tests/` drives a real Chrome over CDP against the dev server and checks the
-running game, not units. 48 suites (46 in the run below), ~1200 checks. It is the only thing that has
+running game, not units. 47 suites (45 in the run below), ~1200 checks. It is the only thing that has
 caught most of what has gone wrong here, so run all of it before every commit.
 
 ```sh
@@ -85,12 +84,11 @@ cd tests
 node run-all.mjs test-full test-skills test-balance test-chain test-ice \
   test-void test-enemies test-rare test-boss test-potion test-sfx test-perf \
   test-hud test-expiry test-audio test-touch test-shell test-shell2 test-info \
-  test-gear test-runes test-responsive test-stats test-bones \
-  test-altar test-slot test-back test-fugitive \
+  test-gear test-passive test-responsive test-stats test-bones \
+  test-altar test-slot test-inventory test-back test-fugitive \
   test-ranking test-skillpick test-mango test-web test-loadout \
   test-carry test-api test-account test-live test-filter test-mastery \
-  test-tuning test-terrain test-chimera test-notice test-seal test-runloot \
-  test-subskill
+  test-tuning test-terrain test-chimera test-seal test-gift
 ```
 
 test-i18n and test-locale are left out until the official release (the
@@ -134,8 +132,8 @@ set takes about six minutes. One suite on its own: `node run-all.mjs test-gear`.
   everything on screen (the patch notes, every chapter of the guide) overflows
   it and the suite dies with `undefined`. Return the answer, not the corpus.
 - Dev-only handles the suites drive: `window.game`, `window.config`,
-  `window.bones`, `window.rollGearItem`,
-  `window.gearBonusFor`, `window.orbApplied`, `window.sealRecord`,
+  `window.gear`, `window.orbs`, `window.bones`, `window.passives`,
+  `window.gold`, `window.gearBonusFor`, `window.orbApplied`, `window.sealRecord`,
   `window.openRecord`,
   `window.critMultiplierFor`. They are behind `import.meta.env.DEV`, so the
   deployed build does not have them — a live check can only click and look.
@@ -183,46 +181,30 @@ Read `git log` for what changed and when. What is not in the log:
   `place`.
 - **No basic attack.** Every skill, 타격 included, is in `DROPPABLE_SKILLS`;
   a fresh run holds only what it picks off three cards (`SkillPickScene`,
-  `SKILL_PICK`; every skill since 0.74, with a back button to the title
-  that gives the 뼈다귀 put in back), and that first skill is the run's **main skill**
-  (`GameScene.mainSkill`, kept in the save as `main`), and the survivor
-  dresses for it (`Player.wearLook`, `PLAYER_LOOK.bySkill` in visuals.ts,
-  drawn by `BootScene.createLookTextures`; the picture is
-  `PLAYER_LOOK.drawn`, the body stays `PLAYER.size`). Since 0.76 a level-up
-  asks which skill first when more than one can still take an upgrade
-  (`levelPick`, SkillPickScene), then offers only `LEVEL_UP.upgrades`
-  (피해, 공격속도) for it (`GameScene.levelOptions`); with none open it heals
-  a 체력 포션's worth instead (`drinkForMaxedSkill`, said plainly: 포션
-  효과! and the health over the survivor, a green burst, a `heal` toast).
-  Every upgrade has a ceiling (`UPGRADE_MAX_PICKS` or `UPGRADE_CAP`). The
-  only skill that drops is the 무작위 스킬 (0.76, `RANDOM_SKILL.chance`,
-  while `slotSkills()` is not empty): it spins the 슬롯머신 over the skills
-  not held, `SKILL_SLOT.rerolls` more spins allowed, and what it lands on
-  is a 보조 스킬 (at most `SUB_SKILLS.max`), which starts with no 강화 슬롯.
-  A 우두머리 / 도망자 (`guaranteedRune`) leaves a 룬. `GameScene.onSkillCollected`
-  is kept as a seam — the F-keys and the harness give skills through it (a
-  new one acquired, a held one's upgrade queued). (Level-ups once went to a
-  random skill; the user read that as the main skill changing, and asked
-  for this.) With the choice off (`#run`, the harness) a run starts on
-  `UNSPUN_SKILL` (타격) so suites have something deterministic.
+  `SKILL_PICK`), and that first skill is the run's **main skill**
+  (`GameScene.mainSkill`, kept in the save as `main`): every level-up
+  upgrades it; once it has taken every upgrade, a level-up (or a repeat
+  pickup of any maxed skill) heals a 체력 포션's worth instead
+  (`drinkForMaxedSkill`, said plainly: 포션 효과! and the health over the
+  survivor, a green burst, a `heal` toast naming the skill) — it never moves
+  on to another skill. Every upgrade has a ceiling now (`UPGRADE_MAX_PICKS`
+  or `UPGRADE_CAP`), so every skill does get there. A skill found
+  later is upgraded by finding it again. (Level-ups once went to a random skill; the user read that as the
+  main skill changing, and asked for this.) With the
+  choice off (`#run`, the harness) a run starts on `UNSPUN_SKILL` (타격) so
+  suites have something deterministic. A 무작위 스킬 on the ground opens the
+  same three cards; taking one already held queues its upgrade next.
 - **The slot sound is one file in two parts** (`AUDIO.slot`: run / stop),
   levelled quiet on purpose — the user found the first mix far too loud.
   `tools/mix-slot.py` rebuilds `public/assets/slot.mp3` from
   `assets-src/slot` and prints the offsets to copy into config. The jackpot
   clips (in `assets-src/slot` and `public/assets`) are kept for later: do not
   use or delete them.
-- **The language choice is off until release (`LOCALE`, system.ts).** While
-  `LOCALE.choosable` is false the game shows `LOCALE.fixed` (ko) whatever a
-  browser stored (`Settings` keeps the stored choice, `shownLanguage` picks),
-  설정 has no Language row and the title says 설정, not "Settings". The code
-  stays built for every language: every word through `t()`, all four
-  locales kept in step with types.ts, patch notes in all four. Turning the
-  flag on is the whole of putting it back.
-- **Every other language is checked for Korean (at release).** Data tables
-  are written in Korean and a locale renames what it knows (`names.*`);
-  `test-locale` walks every screen in en/ja/zh and fails on any Hangul left
-  on it. A new name, line or button needs its entry in all three, and a
-  weapon tier line goes through `names.affixGearDetails` with `{value}`.
+- **Every other language is checked for Korean.** Data tables are written in
+  Korean and a locale renames what it knows (`names.*`); `test-locale` walks
+  every screen in en/ja/zh and fails on any Hangul left on it. A new name,
+  line or button needs its entry in all three, and a weapon tier line goes
+  through `names.affixGearDetails` with `{value}`.
 - **Back buttons.** Every screen but the title and the run calls
   `addBackButton` (top-left, arrow only below 600 wide) with the same exit
   Esc takes; `test-back` checks each one sits clear and goes where it
@@ -232,11 +214,10 @@ Read `git log` for what changed and when. What is not in the log:
   ordinary kills leave one at `ALTAR.fromKill`, and a 제단 can call up 우두머리, which leave 제단. It is opt-in — nothing
   happens until the survivor walks up — so it is not capped. An altar arms only
   after the survivor has been outside its radius once.
-- **The 슬롯머신 is generic.** `SlotScene` takes labels, icons, an
-  optional `choose()`, `rerolls` and an `onResult(index)`; `SlotReel` is
-  the reel on its own (`respin`). With a reroll left, a landing waits on
-  획득 / 다시 돌리기 (Space / R); the last landing closes by itself. The
-  무작위 스킬 is its only user (0.76). Phaser 4 has no
+- **The 슬롯머신 is generic, and unused for now.** `SlotScene` takes labels,
+  icons, an optional `choose()` and an `onResult(index)`; `SlotReel` is the
+  reel on its own. Runs no longer start on it (that is three cards now); it
+  is kept for the equipment work the user has in mind. Phaser 4 has no
   `setMask` under WebGL — the reel fades its edges instead of clipping them.
 - **What the harness switches off.** `cdp-lib` marks every page with
   `window.__harness`, and on the dev server that (or `#run`) turns off
@@ -245,32 +226,11 @@ Read `git log` for what changed and when. What is not in the log:
   ever writes to the real shared ranking. A suite that wants one of them
   turns it back on (`test-skillpick`, `test-ranking`, which also replaces
   `fetch` with an in-page stand-in for the shared board).
-- **Gear is the run's (0.71).** Three slots
-  (`GEAR_SLOTS`: 무기 · 방어구 · 장신구), five bases each, every base its
-  icon and 고정 속성; each 속성 names the `slots` it rolls on (`affixPool`).
-  A run's `RunKit` (systems/RunKit.ts) holds what is worn and the 구슬
-  picked up — no 보관함 since 0.78 (a save's `bag` is dropped on restore);
-  it starts on `STARTING_KIT`
-  worn bare (a 녹슨 검 and, since 0.72, a 천옷),
-  is carried by the save (`SavedRun.kit`; an older save's `gear` comes back
-  worn) and goes with the run. The title has no 인벤토리, there is no 판매,
-  and the old stash and 구슬 drawer keys (`RETIRED_STORAGE`) are
-  cleared on load — the user chose to delete them, not pay them out. A piece
-  picked up queues a `gear` choice: `GearPickScene` (0.78, the user's
-  layout) draws what is worn on the left, the piece found on the right
-  (stacked, worn on top, under 600 wide) and a gold arrow between
-  (`arrowAt`), and offers only 착용 (the old piece is let go) and 버리기
-  (Esc too); one the 아이템 필터 hides is let go without asking. The pause
-  menu's 장비 (`RunGearScene`) is for 구슬 only: the three worn slots and
-  구슬 사용, which opens `OrbScene` on the picked piece. 합성 went with the
-  보관함 (0.78). A drop's
-  line count is its 등급's (`GEAR_DROP.grades`: 일반 2 · 마법 4 · 희귀 6, by
-  weight, `rollGrade`); 구슬 can still leave any count, and the 등급 shown is
-  read off the count (`AUDIO.dropTiers`). (0.71 had an empty-slot rule —
-  a piece certain for a slot still bare within some kills; the user had it
-  taken out in 0.72 with every kill rate halved.) Every change refits the run at once (`GameScene.refitGear`, health
-  kept, only held under the new bar). `gearBonusFor` takes the worn list;
-  `describeGear`/`orbNote` (systems/GearText) are the read-outs.
+- **The 인벤토리 replaced the 장비창.** `InventoryScene` (tabs 장비 · 소모품)
+  draws every tab on `ItemGrid`, a 6×12 grid that keeps MenuList's handles
+  (`items`, `selected`, `selectedId`, `focus`, `step`, `refresh`) — which is
+  why most of test-gear survived the swap. A tap only picks a cell; acting is
+  the buttons beside it or Space. The title icon's id is still `gear`.
 - **Contact is per enemy.** A body hurts through `Player.takeContact` on its
   own `ENEMY.contactCooldownMs`, so a crowd all hurt at once; only thrown
   things (`takeDamage`) open the survivor's invulnerable window. The debug /
@@ -340,7 +300,7 @@ Read `git log` for what changed and when. What is not in the log:
   works too).
 - **랭킹 검토 (the admin's, 0.62).** Every run handed in carries a 판 내역
   (`RunDetail`, built by `GameScene.runDetail`: build, version, kills by
-  kind, 뼈다귀, weapon, skills, 룬 set (`runes`, 패시브 before 0.74), resumed), kept by the Worker in
+  kind, 뼈다귀, weapon, skills, 패시브, resumed), kept by the Worker in
   `entries.detail` after `cleanDetail` keeps only the known fields (migration
   0008). Nothing is held back: an outlier goes on the board like any run.
   `GET /api/ranking/review` (admin only) gives today's board with each
@@ -421,21 +381,56 @@ Read `git log` for what changed and when. What is not in the log:
   Worker secret `ADMIN_USERS` (comma separated; `/api/me` answers
   `admin: true`). A run any F-key changed (`DebugOverlay.used`, kept in the
   save as `devUsed`) goes on neither the ranking nor 내 기록.
-- **A dial ships only when asked for (0.71).** The user had every dial taken
-  off; a dial comes back only when they ask for that one (a line in
-  `config/tuning.ts`, its root in `Tuning.ts` ROOTS, and its label — 구슬,
-  뼈다귀 and gear are named from their tables). Back in 0.77: enemy health
-  (`BALANCE.enemyHpScale`, `hpScalePerMinute`, each `hpStepTiers` index's
-  minute and multiplier) and every drop off a kill; in 0.79 every skill's
-  `SKILL_BASE` stats that are above zero and its `BALANCE.damageScale`, a
-  page a skill (`SKILL_IDS`/`SKILL_EXTRAS` in tuning.ts). test-tuning reads
-  the tables and fails on a kill drop, a health tier or a skill stat with
-  no dial. The live overrides were copied into the
-  tables first (balance.ts, equipment.ts, and the passive tree's file) and the server's
-  `tuning` row cleared when 0.71 shipped. `Tuning.apply` lays a value over
-  only for a path that is a dial, so a stale row can never put an old
-  number back. `tuning.addDial` registers a dial at run time — the seam
-  test-tuning drives the panel through.
+- **Back to 0.67 (0.80, the user's word, 2026-10-20).** 0.71–0.79 (the
+  overhaul: passive graph then 룬, gear in the run, the slot machine, sub
+  skills) were rolled back: the tree is 0.70's (0a34a1e) with 0.68's rainbow
+  notice taken out, the live values the overhaul had folded into the tables
+  (1e10289) put back in them, and what was not gameplay kept from after
+  (the user's word: "게임 플레이 이외의 수정내용은 현재 상태를 유지"): the
+  dials as they stood at 0.79, the language choice off (`LOCALE`), the
+  second clock (below), the survivor's look by main skill, and the patch
+  note history (0.68 and 0.71–0.79 stay listed; 0.80 says what went). Of
+  the borderline pieces the user kept only the look — the rainbow notice,
+  the orb pickup line over the survivor and the in-run orb tray went. The
+  overhaul's code is in git (8b362c8 is 0.79) if any of it is wanted back.
+  What 0.71 cleared on load (its `RETIRED_STORAGE`: stash, 구슬 drawer,
+  gold, passive ranks) was gone for good — locally and in the cloud copies
+  — so `ROLLBACK_GIFT` (equipment.ts, `systems/Gift.ts`) hands everyone bare
+  오니고로시 and every 구슬 once on the title (`MenuScene.giveGift`, after
+  the account settles, `STORAGE.rollbackGift`, synced); the harness turns it
+  off unless `window.__giftOn` (test-gift). A saved run with a `kit` (0.71–
+  0.79's) is thrown away by `saveGame.read`. The server's `tuning` row
+  still holds `RUNE_*` paths: `Tuning.apply` lays over only dials and
+  `publish` sends only dials, so they do nothing.
+- **A second clock on every run (0.71, kept in 0.80).** `systems/RunLedger.ts`
+  adds up the real time between the frames that move `GameScene.elapsedMs`
+  (capped per frame, held while a card/popup/pause holds the run), in
+  module scope rather than on the scene; the save carries it sealed
+  (`SavedRun.wallMs`) and the run hands it in as `RunDetail.wall`. The
+  Worker refuses a run whose shown time is more than `RULES.paceAhead`
+  (+`paceAheadMs`) over it, or whose second clock is past `paceBehind` ×
+  the shown (+`paceBehindMs`), or that has none — as `refused`, saying
+  nothing (the user's ask).
+- **The survivor dresses for the main skill (0.76, kept in 0.80).**
+  `Player.wearLook`, `PLAYER_LOOK.bySkill` in visuals.ts, drawn by
+  `BootScene.createLookTextures`; `GameScene.acquire` dresses it when the
+  main skill is taken. The picture is `PLAYER_LOOK.drawn`, the body stays
+  `PLAYER.size`.
+- **The language choice is off until release (`LOCALE`, system.ts).** While
+  `LOCALE.choosable` is false the game shows `LOCALE.fixed` (ko) whatever a
+  browser stored (`Settings` keeps the stored choice, `shownLanguage` picks),
+  설정 has no Language row and the title says 설정, not "Settings". The code
+  stays built for every language: every word through `t()`, all four
+  locales kept in step with types.ts, patch notes in all four. Turning the
+  flag on is the whole of putting it back.
+- **A dial ships only when asked for.** The user had every dial taken off
+  in the overhaul and asked for them back one by one; 0.80 keeps that set:
+  a page a skill (every `SKILL_BASE` stat above zero and its
+  `BALANCE.damageScale`), enemy health (`enemyHpScale`, `hpScalePerMinute`,
+  each `hpStepTiers` index's minute and multiplier) and every drop rate. The
+  rest of 0.70's dials (spawn pace, the 공통 page, the 기행종, 키메라 러시,
+  drop bonuses) stay off until asked for. test-tuning reads the tables and
+  fails on a missing dial or an extra one.
 - **밸런스 다이얼.** `config/tuning.ts` lists every dial by path into the
   config tables (pure data — the Worker imports it to accept only those
   paths). `systems/Tuning.ts` lays three layers over the tables in place:
@@ -456,7 +451,7 @@ Read `git log` for what changed and when. What is not in the log:
   in-page stand-in for /api/balance; test-api covers the endpoint.
 - **아이템 필터.** `config/itemFilter.ts` builds a switch per kind of drop
   from the tables (구슬, 뼈다귀, swords by base and by rarity, plus potion,
-  룬, 룬 끌, 망고); `systems/ItemFilter.ts` keeps the ones
+  skill, 무작위 스킬, 망고, 조각); `systems/ItemFilter.ts` keeps the ones
   switched off (`STORAGE.itemFilter`, synced with the rest). A switched-off
   drop still lands and is still taken by touch or 자석 — it is only hidden
   (`GroundItem.conceal`: no sprite, name, pillar, halo, sound, edge marker
@@ -478,18 +473,23 @@ Read `git log` for what changed and when. What is not in the log:
   strike by `chainBonusPerJump` for every jump still to come (it never
   doubles back — that was the old awakening),
   얼음창 shots carry `freezeMs` for an enemy already chilled (`Enemy.freeze`),
-  공허구체 (attack speed is its spin since 0.79: it travels round at
-  `orbitSpeed` × attacks a second, read off `cooldownMs`; each orb hits an
-  enemy at most once every `VOID_ORB.rehitMs`, every orb on its own) pulls enemies near its orbit toward the survivor by moving x/y
+  공허구체 (whose hit timers are per orb: each orb hits an enemy once a
+  cooldown, every orb on its own) pulls enemies near its orbit toward the survivor by moving x/y
   the way Separation does, 낙뢰 casts
   `thunderRecastChance` — a kill always strikes again, up to `THUNDER.maxRecasts`). Reaching it calls `GameScene.celebrateMastery`
   once (`awakened`, rebuilt from a save without a show); the HUD slot goes
   gold and its card adds the line (`masteryText`). test-mastery covers it.
-- **A saved run carries its kit.** `SavedRun.kit` is the run's `RunKit`
-  state (worn, kept, 구슬); 불러오기 restores it, and `saveGame.describe`
-  names the weapon worn.
+- **A saved run carries its own weapon.** `SavedRun.gear` is a copy of the
+  item the run went out with (`GameScene.runGear`, written by every save);
+  a resumed run fights with that, so the 인벤토리 never locks — swapping,
+  구슬, 합성 and selling change only runs started afterwards. A save from
+  before this has no `gear` and takes the one in hand. It is said on screen
+  (0.63): `saveGame.describe` names the weapon, and the 인벤토리's 착용 중
+  line adds `savedRunGear` while the saved run's weapon is not the one in
+  hand — the user once reported the design itself as a swap that did not
+  take.
 - **What acts on the survivor is on the HUD.** `GameScene.effectsNow()`
-  hands `Hud.update` an `EffectEntry` list — 장비 (`runGear`), each
+  hands `Hud.update` an `EffectEntry` list — 장비 (`runGear`), 패시브, each
   뼈다귀 (built once a run), then 하얀 망고 and 거미줄 while they last — drawn
   as icons left of the skills (`HUD.effectSlot`, buff/debuff edges in
   `HUD.effectEdge`), or on a row under them when that would run into the
@@ -544,21 +544,19 @@ Read `git log` for what changed and when. What is not in the log:
   1 + `BOSS.dropBonus` for a 우두머리. The 하얀 망고 and the 자석 are the
   exceptions the user asked for: a flat `MANGO.chance` / `MAGNET.chance` off
   every kill. What only a 우두머리 leaves (its
-  certain piece of gear, a `fromBossOnly` 구슬, a 뼈다귀 with `fromKill: 0`)
+  certain weapon, shards, a `fromBossOnly` 구슬, a 뼈다귀 with `fromKill: 0`)
   and what is certain are not multiplied. A new drop should go through the
   same `bonus` in `CombatSystem.killEnemy`.
-- **Gear by tier — 1 is the best**, the same way round as an 속성's
+- **Weapons by tier — 1 is the best**, the same way round as an 속성's
   tier (the user corrected this once). `attackForTier` counts up from the
-  weakest weapon tier; only weapons carry attack. A 우두머리 always leaves
-  one piece, weighted over the whole `GEAR` roster (every slot). A base with
-  `fromKill` set (tiers 3–5 of each slot) can also come off any kill at that
-  chance × `bonus`; without it, 우두머리 only.
-- **Gear lines add, they do not compound.** `gearBonusFor` sums each
-  line's share (scale − 1) across every piece worn, with each base's 고정
-  속성, and returns 1 + the sum, so two +50% are +100%. 치명 is
-  `critChanceIncrease`: the summed share raises `PLAYER.critChance` by that
-  much of itself (`Player.critChance`), never points on top. (A rare
-  enemy's 속성 still multiply — that is the enemy.)
+  weakest tier. A 우두머리 always leaves one, weighted over the whole `GEAR`
+  roster. A sword with `fromKill` set (tiers 3–5 now) can also come off any
+  kill at that chance × `bonus`; without it, 우두머리 only.
+- **A weapon's lines add, they do not compound.** `gearBonusFor` sums each
+  line's share (scale − 1) with the 고정 속성's and returns 1 + the sum, so
+  two +50% are +100%. 치명 is `critChanceIncrease`: the summed share raises
+  `PLAYER.critChance` by that much of itself (`Player.critChance`), never
+  points on top. (A rare enemy's 속성 still multiply — that is the enemy.)
 - **강력 · 광포 · 치명 · 잔혹 are balanced as three lines together** (the
   user's ask, 2026-10-18, 0.60–0.61): 치명 and 잔혹 multiply each other, so
   matching them line by line made a 치명 + 잔혹 weapon twice as strong as
@@ -577,20 +575,36 @@ Read `git log` for what changed and when. What is not in the log:
   `CombatSystem.onEnemyShotHit`, only for a shot that would hurt; the extra
   projectile is `WeaponContext.extraProjectiles` (one more
   shot per cast, or one more orb).
-- **망고의 구슬 wards a piece.** An `OrbSpec` with `ward` sets
+- **장비 합성 is decided before it is shown.** `gear.combine(uids)` checks
+  (`combineProblem`), rolls `GEAR_COMBINE.successChance`, spends the swords
+  and adds the bare one tier up in one commit; `InventoryScene.playCombine`
+  then plays the light (`COMBINE_FX`) with `busy` set and restarts the scene
+  on the result. The 합성 button starts a pick, adds the cursor's sword, and
+  runs once `GEAR_COMBINE.count` are picked; Space toggles a cell, Esc backs
+  out. Its third button shares the row with 착용 · 버리기 so the pane is no
+  taller on a short phone.
+- **망고의 구슬 wards a weapon.** An `OrbSpec` with `ward` sets
   `GearItem.mango`; it lasts one 폭발의 구슬 whatever it rolls: a destroy
   roll comes back `saved` (weapon unchanged, `mango` gone) instead of
   `destroyed`, and a climb comes back `upgrade` with `wardSpent` (the note
-  says the 망고 went). Only 구슬 are warded against.
+  says the 망고 went). Only
+  구슬 are warded against — a failed 합성 still spends its swords. The
+  인벤토리 shows it on the cell (`GridItem.badge`) and in `stateLine` under
+  the name, not as a read-out line (that block is budgeted to the screen).
+- **Swords are sold, not thrown away.** The 인벤토리's second button (still
+  `discard`/`pressDiscard` in code) pays `sellPriceFor(item)` into
+  `gold` (`GEAR_SELL`: rank from the weakest tier × `perRank`, + `perAffix`
+  of that a 속성, added). The rank counts from the weakest, so the best sword
+  is the dearest — the user chose that over the literal tier number.
 - **전투 알림 are toasts.** `GameScene.announce` hands every in-run line to
   `systems/Toasts.ts`: top-right (under the HUD on a narrow screen),
   `TOAST.lifeMs` each, at most `TOAST.max`, oldest out first. A toast's text
   is inside its container, not in `scene.children`; read `toasts.lines`.
-- **Each base has its own picture.** `GEAR[id].icon` (a file under
-  `public/assets/icons/`, picked from the Raven Fantasy pack — the full pack
-  sits, git-ignored, in `public/assets/Free - Raven Fantasy Icons`; picks
-  are listed in icons/CREDITS.txt) is loaded as `gearTexture(id)`; the cards,
-  the cells, the drop on the ground and the 필터 all draw it.
+- **Each sword has its own picture.** `GEAR[id].icon` (a file under
+  `public/assets/icons/`, picked from the Raven Fantasy pack, listed in its
+  CREDITS.txt) is loaded as `gearTexture(id)`; the 인벤토리 grid, the drop on
+  the ground, the 합성 result and the 필터 all draw it. `TEXTURES.gear` is
+  left for the title's 인벤토리 icon and the 필터's rarity switches.
 - **Rare drops stand in a light pillar.** `DropLabel` draws it for the 희귀
   tier (`LIGHT_PILLAR`, `TEXTURES.lightPillar`); the 제단 opts out with
   `{ pillar: false }` since it is walked up to, not picked up.
@@ -598,7 +612,7 @@ Read `git log` for what changed and when. What is not in the log:
   `InfoScene`). Prose lives in each locale's `guide.cards[tab]` with
   `{placeholders}` that `values()` in guide.ts fills from config — a new
   number needs a key there, never a literal in the copy. Lists (skills,
-  enemies, 속성, 구슬, 룬, 뼈다귀, swords) are built from their tables,
+  enemies, 속성, 구슬, 뼈다귀, swords, 패시브) are built from their tables,
   so a new entry gets a card by itself; test-info's 누락 검사 fails if any
   table entry has no card or a placeholder is left unfilled. The page is
   drawn by a camera of its own (`pageCam`) whose viewport is the reading
@@ -620,89 +634,35 @@ Read `git log` for what changed and when. What is not in the log:
   pauses physics until the pointer moves off. A touch shows the same without
   the hold — on a phone that finger is steering. A popup that closes while
   something is being read leaves the arena paused (`held`).
-- **룬 (0.74, the user's ask) replaced the passive tree.** The tree, its
-  screen and its record are gone (`exiled-survivors:passives:v1` is in
-  `RETIRED_STORAGE`; the keystones went with it). Every lasting bonus is
-  still a `Modifier` (`config/stats.ts`: a `StatId`, a value, an optional
-  skill tag), summed by `systems/StatSheet`; the layer the tree had is now
-  each skill's own 룬: `RunModifiers.runes[skill]` (Modifiers.ts,
-  `runesOf`), rebuilt by `GameScene.runeSheets` whenever the kit changes.
-  It folds damage, attack speed, projectile speed (and so a thrown skill's
-  range), extra projectiles, pierce, chain, area (`WeaponContext.areaScale`,
-  a radius: √ of the area increase), duration (`durationScale`) and a
-  skill's own crits (`critChanceFor` / `critMultiplierFor`, through the
-  `critChance`/`critMultiplier` hooks CombatSystem rolls with). `RUNES`
-  (config/runes.ts) is the table: mods, the `skills` a 룬 does anything for
-  (`runeWorksFor`; since 0.76 one that does nothing cannot be set), weight, colour and a `glyph` BootScene draws. The main
-  skill gets `RUNE_SLOTS.main` slots when acquired (`RunKit.ensureSlots`),
-  any skill can reach `RUNE_SLOTS.max`. 룬 and 강화 슬롯 live in the
-  `RunKit` (held `runes`, per-skill `sockets`, carried by the save). A kill
-  leaves a 룬 at `RUNE_DROP.chance` × its bonus (`rollRune` by weight,
-  only among those `runeFits` — some skill held can take it) and a
-  룬 끌 at `RUNE_CHISEL.chance` while `chiselWanted` (some skill not full);
-  a 룬 끌 queues a `chisel` choice (`RuneChiselScene`). The pause menu's 룬
-  row opens `RuneScene` (a slot picked, then a held 룬 pressed or its
-  number key). A set 룬 never comes out (0.76, the user's ask): it is only
-  overwritten, asked twice, and the old one is gone (`RunKit.socket`;
-  `unsocket` is left for tools). Since 0.78 a 룬 is not held at all: picked
-  up it goes straight into a skill (`GameScene.onRuneCollected`,
-  `runeTargets`: held, a slot, the 룬 working there, and a `unique` 룬 not
-  set there already). Since 0.79 it always asks: a `rune` choice opens the
-  skill cards (`SkillPickScene` with `notes`, a full skill's in
-  `COLORS.warnText` naming the 룬 it would lose) and a 버리기 button
-  (`SkillPickData.discard`, Esc too). `RuneSpec.unique` (포격, 반복 — two
-  반복 would be −120% damage) is one per skill (`RunKit.canTake`, which
-  `fit`/`socket` and RuneScene honour); every other 룬 stacks, its mods
-  summed. A skill's sockets are packed oldest first
-  (`RunKit.fit`/`oldestIn`): a free slot first, then the oldest goes.
-  `RuneScene` is left for 룬 a save still holds. test-runes covers all of it.
-  0.75: 반복 (`repeatCount` → `WeaponContext.repeats`, a `RepeatQueue` in
-  each weapon that casts again `RUNE_REPEAT.gapMs` apart), 관통's price
-  (`pierceDecay` → `pierceKeep`, the shot's damage multiplied on each pass,
-  CombatSystem.onProjectileHit), 연쇄 on a thrown skill (`Projectile.chainTo`
-  the nearest unhit enemy within `SHOT_CHAIN.reach`, after its pierce), 지속
-  and 가속 lengthening a thrown skill's range (`GameScene.contextFor`), and
-  포격 (`turret` → `byTurretFor`: the survivor's weapon rests and
-  `GameScene.tickTurrets` sets a turret down every `TURRET.everyMs`, each
-  its own weapon instance, kept and reused, cast from the turret's body for
-  `TURRET.lifeMs`). Stats a 룬's `detail` says better are `hidden` in
-  STAT_SPECS. Extra projectiles fan out round the aim (`ProjectileWeapon.fire`).
+- **패시브 is a tree drawn from its table.** A `PASSIVES` entry with
+  `requires: { id, rank }` hangs from that line and opens once it holds the
+  ranks (`passives.isOpen`, checked inside `passives.spend`, so the rule is
+  the store's, not the screen's); without it, it hangs from the root. Ranks
+  bought before a line was gated are kept. `PassiveScene.layOut` places
+  whatever shape the table gives — root on top, or on its side
+  (`sideways`) on a wide window — so a new line is a table entry. The
+  spacing shrinks to fit only down to `PASSIVE_TREE.minLevelGap` /
+  `minLeafGap`; a bigger tree runs off its window and is dragged. The tree
+  lives in its own container, drawn only by `treeCam` (a camera whose
+  viewport is the framed window — no `setMask` under WebGL), so its
+  coordinates are the window's own; a node is picked on the release of a
+  press that did not travel `DRAG_FROM_PX`, and `pan`/`scrollTo` keep some
+  of the tree in view (`dragMargin`).
 - **폭발의 구슬 climbs, or swaps at the top.** It picks among lines below
   tier 1, and the replacement comes only from 속성 that have the rung above.
   On a weapon whose every line is tier 1 it trades one for a different
   tier-1 속성 the weapon does not carry (`swapTopLine`, outcome `swap`); the
   destroy roll and the 망고 work the same. Only a weapon with no lines
   refuses it.
-- **구슬 are spent in a popup.** `OrbScene` takes the run's kit and a piece
-  (`OrbSceneData.kit`, `uid`), opened from 장비: a tab per 구슬, the picked
-  one's rules, the piece's read-out. `use()` decides and writes at once and
-  draws on the next tick — a test that pins `Math.random` for the roll would
-  otherwise trip Phaser's Text. A destroyed piece leaves its slot empty (a
-  weapon slot too: no attack until another is worn).
-- **구슬 come like gems (0.71).** A run finds dozens (`ORBS[id].chance` is
-  `perRun(n)` over `ORB_DROP.runKills`, the user's 30/10/10/5/3 on trial),
-  so an `OrbDrop` has no name over it, no landing sound and no edge marker:
-  inside the survivor's `pickupRadius` it flies in the way an `XpGem` does,
-  and the pickup's toast names it — and so does a line over the survivor
-  in the 구슬's colour (`ORB_DROP.pickupText`, on `damageNumbers`, rows
-  stacking for pickups close together; 0.73). What is held is counted at the bottom
-  right through the run (`systems/OrbTray.ts`, `HUD.orbTray`: every kind's
-  icon and number, faint at none — 0.72).
-- **The opening is slower (0.71).** `SPAWN.opening`: every spawn gap is
-  `intervalScale` times as long until `untilMs`, easing back over `blendMs`
-  (`SpawnDirector.intervalMs`), so a survivor with no gear yet is not
-  buried. 하얀 망고 no longer makes the survivor untouchable (user's call);
-  its speed boosts stay.
-- **A second clock on every run (0.71).** `systems/RunLedger.ts` adds up
-  the real time between the frames that move `GameScene.elapsedMs`
-  (capped per frame, held while a card/popup/pause holds the run), in
-  module scope rather than on the scene; the save carries it sealed
-  (`SavedRun.wallMs`) and the run hands it in as `RunDetail.wall`. The
-  Worker refuses a run whose shown time is more than `RULES.paceAhead`
-  (+`paceAheadMs`) over it, or whose second clock is past `paceBehind` ×
-  the shown (+`paceBehindMs`), or that has none — as `refused`, saying
-  nothing (the user's ask). Honest play has the second clock at or a hair
-  under the shown one (the shown steps ≤ 50ms a frame).
+- **구슬 are spent in a popup.** A 구슬 button (or its digit key) opens
+  `OrbScene` over the paused 인벤토리, on the weapon under the cursor: a tab
+  per 구슬, the picked one's `orbDetail` plus `OrbScene.rules` (every rule,
+  numbers from the table), the weapon's read-out (`InventoryScene.describe`).
+  `use()` decides and writes at once and draws on the next tick — a test
+  that pins `Math.random` for the roll would otherwise trip Phaser's Text.
+  The popup stays after a use, lighting the changed lines (`changed`); a
+  destroyed weapon turns it into the notice and 확인. Closing hands the
+  인벤토리 the weapon's uid (or null) and the note, and it restarts on them.
 - **지형지물 (0.67).** `systems/Terrain.ts` lays `TERRAIN`
   (balance.ts) rocks per run from a seed (`SavedRun.terrainSeed`, so
   불러오기 finds the same field): each outline is one distance per angle
@@ -732,15 +692,6 @@ Read `git log` for what changed and when. What is not in the log:
   Enemy sounds are a table, `AUDIO.enemies[kind][appear|death|cast]`,
   played by `sfx.playEnemy` with a per-part rest; the 키메라's are cut from
   `assets-src/chimera/hydra.mp3` by `tools/make-chimera-sfx.py`.
-- **The title's rainbow notice (0.68).** `TITLE_NOTICE` (visuals.ts;
-  `enabled: false` takes it off) draws the locale's `menu.notice` with
-  `systems/RainbowText` — one white glyph per Text, tinted round the hue
-  wheel each frame (a tint, so nothing is redrawn), wrapped at spaces but
-  not at ` `. `MenuScene.addNotice` puts it in the first room that
-  holds it at `minScale`: beside the rows (tilted), under them, over the
-  logo, or left of the icons; with none, the title goes without. The user
-  asked for it while the game is being rebuilt — expect to be asked to
-  change or remove it. test-notice checks five window shapes for overlap.
 - **Tampering (0.70, 2026-10-20).** One account topped the board three
   days running with runs resumed from a save edited by hand (six skills in
   the hundreds at character level 20, 111 kills). Two halves now:
@@ -750,10 +701,9 @@ Read `git log` for what changed and when. What is not in the log:
     도망자, and against the clock; and a run with no 판 내역. It answers a
     bare `refused`, never why — the user's ask. Checked against every live
     run with a 판 내역 when it shipped: only that account's three were over.
-  - The saved run is sealed (systems/Seal.ts: a keyed hash in `_s`,
-    `SEAL.pepper`; the passive tree was too, until it went in 0.74). A
-    record that does not match is not taken (the save is thrown away).
-    Unsealed ones are taken —
+  - The saved run and the tree are sealed (systems/Seal.ts: a keyed hash in
+    `_s`, `SEAL.pepper`). A record that does not match is not taken (the
+    save is thrown away, the tree starts over). Unsealed ones are taken —
     and resealed — until `SEAL.graceUntil` (30 days), then refused. Tests
     write such records through `window.sealRecord`. CarryOver seals what
     it brings in. The key is in the bundle: this stops edits in the

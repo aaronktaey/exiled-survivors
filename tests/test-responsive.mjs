@@ -134,7 +134,7 @@ check('a small phone never goes below the layout floor',
 check('and is still drawn well above a half',
   small.fit > 0.75, `${small.fit}x`);
 
-// --- 5. upgrade picks fit a phone rather than turning into slivers ---
+// --- 5. four upgrade picks wrap rather than turning into slivers ---
 await cdp.send('Emulation.setDeviceMetricsOverride', {
   width: 390, height: 844, deviceScaleFactor: 2, mobile: true,
 });
@@ -160,10 +160,8 @@ const cards = await ev(`(() => {
   };
 })()`);
 console.log('cards:', JSON.stringify(cards));
-// A level-up offers LEVEL_UP.upgrades (two since 0.76); however many, a
-// phone holds them inside the screen, wrapping when a row would not.
-check('a skill’s picks on a phone sit inside the screen',
-  cards !== null && cards.count >= 2 && cards.xs.every((x) => x - cards.width / 2 >= 0 && x + cards.width / 2 <= cards.screen),
+check('a skill’s picks on a phone wrap onto more than one row',
+  cards !== null && cards.count >= 3 && cards.rows >= 2,
   cards ? `${cards.count} cards over ${cards.rows} rows at ${cards.width}px` : 'no popup');
 check('and each card is wide enough to read',
   cards !== null && cards.width >= 150, `${cards?.width}px on a ${cards?.screen}px screen`);

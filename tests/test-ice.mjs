@@ -111,7 +111,7 @@ const grant = await run(`
 `);
 console.log('granted:', JSON.stringify(grant));
 check('얼음창 is 주문·냉기·투사체',
-  grant.name === '얼음창' && ['주문', '냉기', '투사체'].every((tag) => grant.tags.includes(tag)),
+  grant.name === '얼음창' && JSON.stringify(grant.tags) === JSON.stringify(['주문', '냉기', '투사체']),
   `${grant.tags}`);
 check('it starts on its configured stat line',
   ['damage', 'attackSpeed', 'range', 'projectileSpeed', 'pierceCount']
@@ -244,24 +244,23 @@ console.log('popup:', JSON.stringify(choice));
 check('repeat pickup opens the 얼음창 choice',
   choice.open === true && choice.skill === 'iceSpear' && choice.title === '얼음창',
   `title=${choice.title} subtitle=${choice.subtitle}`);
-// Since 0.76 a level-up offers only LEVEL_UP.upgrades; pierceCount is applied directly below.
-const levelUps = await run(`return window.config.LEVEL_UP.upgrades;`);
-check('it offers only the level-up upgrades',
-  JSON.stringify(choice.cards?.map(c => c.id)) === JSON.stringify(levelUps),
+check('it offers 피해량, 공격속도, 투사체 속도, 관통 횟수',
+  JSON.stringify(choice.cards?.map(c => c.id)) ===
+    JSON.stringify(['damage', 'attackSpeed', 'projectileSpeed', 'pierceCount']),
   `${choice.cards?.map(c => c.label).join(' | ')}`);
 await shot('ice-01-choice');
 
 // --- 9. 관통 횟수 +1 sends the next spear one enemy further ---
+const before = await run(`return { ice: s.progression.statsFor('iceSpear'), fire: s.progression.statsFor('fireball') };`);
 await cdp.tap('ArrowRight', 39, 'ArrowRight');
 await sleep(180);
 const onPierce = await popup();
 check('an arrow moves the caret without confirming',
   onPierce.selected === 1 && onPierce.open === true,
   `selected=${onPierce.selected}, popup still open=${onPierce.open}`);
-await cdp.tap('Digit2', 50, '2');
+check('관통 횟수 is the fourth card', onPierce.cards[3].id === 'pierceCount', onPierce.cards[3].label);
+await cdp.tap('Digit4', 52, '4');
 await sleep(600);
-const before = await run(`return { ice: s.progression.statsFor('iceSpear'), fire: s.progression.statsFor('fireball') };`);
-await run(`s.progression.apply('iceSpear', 'pierceCount'); return 1;`);
 const after = await run(`return { ice: s.progression.statsFor('iceSpear'), fire: s.progression.statsFor('fireball') };`);
 check('관통 횟수 +1 touches nothing else',
   after.ice.pierceCount === before.ice.pierceCount + 1 &&
@@ -273,6 +272,39 @@ const deeper = await fireDownTheLine([60, 100, 140, 180]);
 console.log('row of 4 after the upgrade:', JSON.stringify(deeper));
 check('and the next spear reaches one enemy further', struck(deeper.hp, 3),
   `hp down the row: ${deeper.hp.join(' / ')}`);
+
+// --- 10. it joins the same drop roll as the rest ---
+const rate = await run(`
+  const seen = {};
+  const N = 150000;
+  let drops = 0;
+  for (let i = 0; i < N; i++) {
+    const d = s.rollSkillDrop();
+    if (d) { drops++; seen[d.id] = (seen[d.id] ?? 0) + 1; }
+  }
+  return { rate: drops / N, seen, want: window.config.SKILL_DROP.chance };
+`);
+console.log('drop roll:', JSON.stringify(rate));
+check('total drop chance is the configured one', Math.abs(rate.rate - rate.want) < rate.want * 0.15,
+  `measured ${(rate.rate * 100).toFixed(2)}%, configured ${(rate.want * 100).toFixed(2)}%`);
+const share = (rate.rate * 150000) / Object.keys(rate.seen).length;
+check('every droppable gets an even share of the roll, 얼음창 among them',
+  'iceSpear' in rate.seen && Object.values(rate.seen).every(n => Math.abs(n - share) < share * 0.25),
+  Object.entries(rate.seen).map(([k, n]) => `${k} ${n}`).join(' / '));
+
+// --- 11. its ground label ---
+const drop = await run(`
+  s.combat.dropSkillAt(s.player.x + 300, s.player.y, s.constructor === null ? null : (() => {
+    const all = Object.values(window.__skills || {});
+    return { id: 'iceSpear', name: '얼음창', tags: ['주문','냉기','관통','투사체'],
+             upgrades: ['damage','attackSpeed','pierceCount'] };
+  })());
+  const d = s.combat.skillDrops.getChildren().find(x => x.active);
+  return { label: d.nameplate.text, style: d.nameplate.style };
+`);
+check('its ground label reads 얼음창, in the ordinary dress',
+  drop.label === '얼음창' && drop.style.plateAlpha === 0,
+  `"${drop.label}" on ${drop.plate}`);
 
 // --- 12. all four skills run together ---
 await run(`

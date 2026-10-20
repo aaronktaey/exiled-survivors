@@ -151,7 +151,7 @@ export class DebugOverlay {
       `drops ${c.drops}   potions ${c.potions}   damage numbers ${c.damageNumbers}`,
       '',
       `F2 +${DEBUG.stressSpawnCount} enemies   F3 clear enemies   F4 level up`,
-      `F5 drop rune + chisel   F6 invulnerable: ${this.invulnerable ? 'ON' : 'OFF'}`,
+      `F5 drop skill   F6 invulnerable: ${this.invulnerable ? 'ON' : 'OFF'}`,
       `F7 one of each enemy   F8 drop potion   F9 rare   F10 boss`,
       'F1 close',
       this.lastNote,

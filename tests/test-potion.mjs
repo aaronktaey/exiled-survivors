@@ -62,7 +62,7 @@ const rate = await run(`
   }
   s.combat.dropPotionAt = orig;
   s.combat.gems.getChildren().forEach(g => g.active && g.collect());
-  s.combat.runeDrops.getChildren().forEach(d => d.active && d.collect());
+  s.combat.skillDrops.getChildren().forEach(d => d.active && d.collect());
   s.spawner.clear();
   s.choosing = false;
   return { kills: KILLS, potions, rate: potions / KILLS };

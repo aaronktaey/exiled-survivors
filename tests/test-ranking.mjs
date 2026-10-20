@@ -201,9 +201,7 @@ check('a run that would not make the board is not asked, and gets no row', !quie
 // opened and 게임 시작 fired with it, putting a run under the board.
 await ev(`(() => { window.game.scene.getScene('GameOverScene').toTitle(); return 1; })()`);
 await sleep(1200);
-// As many Tabs as it takes to land on the trophy, wherever it sits in the row.
-const trophyAt = await ev(`(() => window.game.scene.getScene('MenuScene').icons.views.findIndex((v) => v.button.id === 'ranking'))()`);
-for (let i = 0; i <= trophyAt; i++) { await cdp.tap('Tab', 9, 'Tab'); await sleep(150); }
+for (let i = 0; i < 3; i++) { await cdp.tap('Tab', 9, 'Tab'); await sleep(150); }
 await cdp.tap('Enter', 13, 'Enter');
 await sleep(900);
 const tabbed = await ev(`(() => ({ board: window.game.scene.isActive('RankingScene'),
@@ -382,7 +380,7 @@ const STAND_IN = `(() => {
   const at = (ago) => new Date(now - ago).toISOString();
   const detail = { build: 'abc123', version: '0.62', kills: { grunt: 1200, boss: 3 }, bones: ['skull'],
     gear: { id: 'onigoroshi', prefixes: [{ id: 'mighty', tier: 1 }], suffixes: [{ id: 'giant', tier: 2 }] },
-    skills: [{ id: 'fireball', level: 30 }], runes: { split: 2 }, resumed: true };
+    skills: [{ id: 'fireball', level: 30 }], passives: { damage: 10 }, resumed: true };
   const board = [
     { name: 'CHT', emoji: '', flag: 'KR', damage: 5000000, level: 20, survivedMs: 600000, at: at(3000), skill: 'fireball', wins: 0, seconds: 0, thirds: 0 },
     { name: 'FIN', emoji: '', flag: 'KR', damage: 90000, level: 12, survivedMs: 600000, at: at(2000), skill: 'iceSpear', wins: 0, seconds: 0, thirds: 0 },
@@ -446,11 +444,11 @@ const reviewOpen = await scene('RankingScene', `
   return { open: !!s.popup, who: s.reading?.name, text: s.popupText?.text ?? '' };
 `);
 console.log('popup:', JSON.stringify(reviewOpen));
-check('a row pressed opens what the run said about itself: how it stands, version, kills, 우두머리, 뼈다귀, weapon, skills, 룬',
+check('a row pressed opens what the run said about itself: how it stands, version, kills, 우두머리, 뼈다귀, weapon, skills, 패시브',
   reviewOpen.open && reviewOpen.who === 'CHT' && /이상치/.test(reviewOpen.text) && /58\.8배|59배/.test(reviewOpen.text) &&
     /0\.62/.test(reviewOpen.text) && /abc123/.test(reviewOpen.text) && /우두머리 처치 3/.test(reviewOpen.text) &&
     /이어서/.test(reviewOpen.text) && /뼈다귀:/.test(reviewOpen.text) && /장비:/.test(reviewOpen.text) && /1티어/.test(reviewOpen.text) &&
-    /Lv 30/.test(reviewOpen.text) && /룬: 분열의 룬 2/.test(reviewOpen.text),
+    /Lv 30/.test(reviewOpen.text) && /패시브:/.test(reviewOpen.text),
   reviewOpen.text.split('\n').join(' | '));
 await shot('ranking-05-detail');
 

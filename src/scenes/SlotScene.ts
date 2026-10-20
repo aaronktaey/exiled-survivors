@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 
 import { COLORS, DEPTH, SCENES, SCRIM, SKILL_ICON_SIZE, SLOT, TEXT } from '@/config';
-import { fill, t } from '@/i18n';
+import { t } from '@/i18n';
 import { fitText } from '@/systems/Layout';
 import { SlotReel, type SlotItem } from '@/systems/SlotReel';
 import { sfx } from '@/systems/Sfx';
@@ -20,11 +20,6 @@ export interface SlotData {
   readonly choose?: () => number;
   /** Called once the reel has stopped and the result has been shown. */
   readonly onResult: (index: number) => void;
-  /**
-   * Spins again allowed once it lands (a 무작위 스킬 has one): it then waits
-   * on 획득 or 다시 돌리기 instead of closing by itself.
-   */
-  readonly rerolls?: number;
 }
 
 /** Space is the press; Enter comes along for free. */
@@ -58,12 +53,6 @@ export class SlotScene extends Phaser.Scene {
   private unlocked = false;
   private pressed = false;
   private done = false;
-  /** Spins again still allowed, and what it landed on while waiting for 획득. Public for tests. */
-  public rerollsLeft = 0;
-  public landed: number | null = null;
-  private rerollButton?: Phaser.GameObjects.Rectangle;
-  private rerollLabel?: Phaser.GameObjects.Text;
-  private hint!: Phaser.GameObjects.Text;
   /** The spin's loop, while it plays. Public so a test can hear it. */
   public spin: Phaser.Sound.BaseSound | null = null;
 
@@ -76,10 +65,6 @@ export class SlotScene extends Phaser.Scene {
     this.pressed = false;
     this.done = false;
     this.unlocked = false;
-    this.rerollsLeft = data.rerolls ?? 0;
-    this.landed = null;
-    this.rerollButton = undefined;
-    this.rerollLabel = undefined;
   }
 
   public create(): void {
@@ -141,7 +126,7 @@ export class SlotScene extends Phaser.Scene {
       .setDepth(DEPTH.ui + 3);
     this.button.on(Phaser.Input.Events.GAMEOBJECT_POINTER_DOWN, () => this.press());
 
-    this.hint = this.add
+    this.add
       .text(
         centerX,
         buttonY + BUTTON_HEIGHT / 2 + 16,
@@ -207,15 +192,8 @@ export class SlotScene extends Phaser.Scene {
     }
   }
 
-  /**
-   * Holds the result up for a moment, then hands it back and closes — or,
-   * with a reroll left, waits on 획득 or 다시 돌리기.
-   */
+  /** Holds the result up for a moment, then hands it back and closes. */
   private land(index: number): void {
-    if (this.rerollsLeft > 0) {
-      this.offerReroll(index);
-      return;
-    }
     this.time.delayedCall(SLOT.holdMs, () => {
       if (this.done) {
         return;
@@ -228,75 +206,11 @@ export class SlotScene extends Phaser.Scene {
     });
   }
 
-  /** Landed with a spin left: the button becomes 획득, and 다시 돌리기 comes up beside it. */
-  private offerReroll(index: number): void {
-    this.landed = index;
-    const copy = t().slot;
-    const centre = this.scale.width / 2;
-    const y = this.button.y;
-    const half = BUTTON_WIDTH / 2 + 8;
-    this.button.setX(centre - half).setInteractive({ useHandCursor: true }).setFillStyle(COLORS.accentFill, 1);
-    this.buttonLabel.setX(centre - half).setText(copy.take).setColor(COLORS.text);
-    this.rerollButton = this.add
-      .rectangle(centre + half, y, BUTTON_WIDTH, BUTTON_HEIGHT, COLORS.panel, 1)
-      .setStrokeStyle(2, COLORS.accentFill, 1)
-      .setDepth(DEPTH.ui + 2)
-      .setInteractive({ useHandCursor: true });
-    this.rerollLabel = this.add
-      .text(centre + half, y, fill(copy.reroll, { n: this.rerollsLeft }), { fontFamily: 'system-ui, sans-serif', fontSize: TEXT.size.label, color: COLORS.text })
-      .setOrigin(0.5)
-      .setDepth(DEPTH.ui + 3);
-    fitText(this.rerollLabel, BUTTON_WIDTH - 12, 0);
-    this.rerollButton.on(Phaser.Input.Events.GAMEOBJECT_POINTER_DOWN, () => this.reroll());
-    this.hint.setText(copy.hintReroll);
-  }
-
-  /** 획득: takes what it landed on. Public so a test can. */
-  public take(): void {
-    if (this.done || this.landed === null) {
-      return;
-    }
-    this.done = true;
-    const { onResult } = this.payload;
-    const index = this.landed;
-    this.scene.stop();
-    onResult(index);
-  }
-
-  /** 다시 돌리기: spends a reroll and turns the reel again. Public so a test can. */
-  public reroll(): void {
-    if (this.done || this.landed === null || this.rerollsLeft <= 0) {
-      return;
-    }
-    this.rerollsLeft -= 1;
-    this.landed = null;
-    this.rerollButton?.destroy();
-    this.rerollLabel?.destroy();
-    this.rerollButton = undefined;
-    this.rerollLabel = undefined;
-    const centre = this.scale.width / 2;
-    this.button.setX(centre).setFillStyle(COLORS.accentFill, 1);
-    this.buttonLabel.setX(centre).setText(t().slot.confirm).setColor(COLORS.text);
-    this.hint.setText(prefersTouchControls() ? t().slot.hintTouch : t().slot.hintKeyboard);
-    this.pressed = false;
-    this.reel.respin();
-    this.spin = sfx.startSlotSpin(this);
-  }
-
   private onKeyDown(event: KeyboardEvent): void {
-    if (event.repeat) {
+    if (event.repeat || !CONFIRM_CODES.includes(event.code)) {
       return;
     }
-    if (this.landed !== null) {
-      if (CONFIRM_CODES.includes(event.code)) {
-        this.take();
-      } else if (event.code === 'KeyR') {
-        this.reroll();
-      }
-      return;
-    }
-    if (CONFIRM_CODES.includes(event.code)) {
-      this.press();
-    }
+
+    this.press();
   }
 }

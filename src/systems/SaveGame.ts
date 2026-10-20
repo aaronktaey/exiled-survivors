@@ -1,4 +1,3 @@
-import type { RunKitState } from '@/systems/RunKit';
 import { STORAGE, type BoneId } from '@/config';
 import { gearTitle } from '@/i18n';
 import { openRecord, sealRecord } from '@/systems/Seal';
@@ -31,10 +30,11 @@ export interface SavedRun {
   /** The developer tools changed this run, so it stays off both boards once resumed. */
   readonly devUsed?: boolean;
   /**
-   * What the run wears, keeps and holds (RunKit). A run saved before the kit
-   * carried only its weapon, in `gear`, which comes back worn.
+   * The weapon the run went out with, as it was then (null: none). A run
+   * resumes with this, whatever the 인벤토리 holds by then — so the weapon
+   * in hand can be swapped, or changed by a 구슬, while a run is saved.
+   * Absent on a save written before this, which takes the one in hand.
    */
-  readonly kit?: RunKitState;
   readonly gear?: GearItem | null;
   /**
    * What the run had dealt and killed by then, so they still count at its
@@ -77,6 +77,13 @@ export const saveGame = {
       if (parsed.version !== 1 || typeof parsed.elapsedMs !== 'number') {
         return null;
       }
+      // A run saved on 0.71–0.79 carries the run's own kit (gear worn in
+      // three slots, 룬): a game that is no more since 0.80 went back to
+      // 0.67's. It is thrown away.
+      if ('kit' in parsed) {
+        saveGame.clear();
+        return null;
+      }
       return parsed;
     } catch {
       return null;
@@ -99,8 +106,7 @@ export const saveGame = {
     const total = Math.floor(run.elapsedMs / 1000);
     const mm = String(Math.floor(total / 60)).padStart(2, '0');
     const ss = String(total % 60).padStart(2, '0');
-    const worn = run.kit?.equipped?.weapon ?? run.gear;
-    const weapon = worn && typeof worn.id === 'string' ? ` · ${gearTitle(worn)}` : '';
+    const weapon = run.gear && typeof run.gear.id === 'string' ? ` · ${gearTitle(run.gear)}` : '';
     return `Lv ${run.level} · ${mm}:${ss}${weapon}`;
   },
 };

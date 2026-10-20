@@ -15,6 +15,44 @@ export interface PatchNote {
 
 export const PATCH_NOTES: readonly PatchNote[] = [
   {
+    version: '0.80',
+    date: '2026-10-20',
+    changes: {
+      ko: [
+        '0.71~0.79의 게임 방식 변경을 되돌리고 0.67의 게임 방식으로 돌아갔습니다. 인벤토리·판매·합성과 패시브가 돌아오고, 장비는 다시 판 밖에서 보관하는 무기 하나이며, 룬·강화 슬롯·보조 스킬은 없어졌습니다. 수치도 0.70 때로 돌아갑니다.',
+        '0.69·0.70의 수정, 메인 스킬에 따라 달라지는 생존자 외형, 랭킹 기록 검증과 저장 데이터 보호는 그대로 유지됩니다.',
+        '0.71에서 정리된 보관함 장비·구슬·골드·패시브는 되돌릴 수 없습니다. 대신 모든 플레이어에게 속성 없는 오니고로시 2개와 모든 구슬 10개씩을 드립니다. 타이틀에 들어가면 한 번 받습니다.',
+        '0.71~0.79에서 저장한 이어하기 기록은 불러올 수 없어 삭제됩니다.',
+        '타이틀의 무지개 안내문을 없앴습니다.',
+        '언어 선택은 정식 출시 전까지 계속 빠져 있습니다.',
+      ],
+      en: [
+        'The gameplay changes of 0.71–0.79 are undone and the game plays as 0.67 did. The inventory, selling, combining and passives are back; gear is again one weapon kept outside the run; runes, rune slots and sub skills are gone. The numbers are back to 0.70\'s.',
+        'The fixes of 0.69 and 0.70, the survivor\'s look that follows the main skill, the ranking checks and the protected save data all stay.',
+        'The stash, orbs, gold and passives cleared in 0.71 cannot be brought back. Instead every player is given 2 Onigoroshi with no affixes and 10 of every orb, once, on the title screen.',
+        'Runs saved on 0.71–0.79 cannot be continued and are removed.',
+        'The rainbow notice on the title is gone.',
+        'Language choice stays out until the official release.',
+      ],
+      ja: [
+        '0.71〜0.79の遊び方の変更を取り消し、0.67の遊び方に戻りました。インベントリ・売却・合成とパッシブが戻り、装備は再びプレイの外で保管する武器1つになり、ルーン・強化スロット・補助スキルはなくなりました。数値も0.70の時に戻ります。',
+        '0.69・0.70の修正、メインスキルで変わる生存者の見た目、ランキング記録の検証と保存データの保護はそのままです。',
+        '0.71で整理された保管箱の装備・オーブ・ゴールド・パッシブは戻せません。代わりに全プレイヤーに属性なしの鬼殺し2本と全オーブ10個ずつを贈ります。タイトル画面で一度受け取ります。',
+        '0.71〜0.79で保存した続きのデータは読み込めないため削除されます。',
+        'タイトルの虹色のお知らせをなくしました。',
+        '言語選択は正式リリースまで引き続きありません。',
+      ],
+      zh: [
+        '撤销了0.71~0.79的玩法改动，回到0.67的玩法。背包、出售、合成和被动回归，装备重新是一把在对局外保管的武器，符文、强化槽和辅助技能已移除。数值也回到0.70时的状态。',
+        '0.69、0.70的修复，随主技能变化的幸存者外观，排行榜记录校验和存档数据保护均保持不变。',
+        '0.71时清理的储物箱装备、宝珠、金币和被动无法恢复。作为补偿，所有玩家将获得2把无属性的鬼杀和每种宝珠各10个，进入标题画面时领取一次。',
+        '在0.71~0.79保存的续玩存档无法读取，将被删除。',
+        '移除了标题画面的彩虹公告。',
+        '在正式发布前，语言选择仍然不可用。',
+      ],
+    },
+  },
+  {
     version: '0.79',
     date: '2026-10-20',
     changes: {

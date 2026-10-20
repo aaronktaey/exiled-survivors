@@ -131,8 +131,8 @@ export interface EnemyKindSpec {
   readonly flee?: EnemyFleeSpec;
   /** Gone after this long, kill or no kill, and leaving nothing behind. */
   readonly lifespanMs?: number;
-  /** Killing it always leaves a 룬, the way a 우두머리 does (a skill until 0.74). */
-  readonly guaranteedRune?: boolean;
+  /** Killing it always leaves a skill, the way a 우두머리 does. */
+  readonly guaranteedSkill?: boolean;
   /** Drawn to be seen: a colour that cycles, and a body that breathes. */
   readonly flashy?: boolean;
   /** Only a 기행종 has one: it does not walk, it hops (EnemyHopSpec). */
@@ -307,7 +307,7 @@ export const ENEMY_KINDS: Record<EnemyKind, EnemyKindSpec> = {
     contactDamage: 0,
     flee: { distance: 240, arc: Math.PI * 0.9 },
     lifespanMs: 60_000,
-    guaranteedRune: true,
+    guaranteedSkill: true,
     flashy: true,
   },
   /**
@@ -387,11 +387,7 @@ export type AffixId =
   | "evasive"
   | "magnetic"
   | "volleying"
-  | "spider"
-  | "stalwart"
-  | "hale"
-  | "fortunate"
-  | "learned";
+  | "spider";
 
 export type AffixKind = "prefix" | "suffix";
 
@@ -419,9 +415,6 @@ export interface EnemyAffixEffect {
 }
 
 /** What the same 속성 does for whoever is holding the weapon it is on. */
-/** Where a piece of gear is worn. */
-export type GearSlot = 'weapon' | 'armor' | 'accessory';
-
 export interface GearAffixEffect {
   /**
    * Multiplies every skill's damage, the weapon's attack included — added
@@ -442,12 +435,6 @@ export interface GearAffixEffect {
   readonly invulnerableScale?: number;
   /** Multiplies how far a gem has to be before it drifts over. */
   readonly pickupScale?: number;
-  /** Multiplies every hit the survivor takes (below 1 is less). */
-  readonly damageTakenScale?: number;
-  /** Multiplies every gem's experience. */
-  readonly xpGainScale?: number;
-  /** Multiplies every item drop's chance. */
-  readonly itemFindScale?: number;
 }
 
 /**
@@ -489,10 +476,8 @@ export interface AffixSpec {
    * nothing on something that walks up and hits you.
    */
   readonly rangedOnly?: boolean;
-  /** What it does on gear, rung by rung. Tier 1 first. */
+  /** What it does on a weapon, rung by rung. Tier 1 first. */
   readonly gearTiers?: readonly AffixTierSpec[];
-  /** The slots it rolls on. Only with `gearTiers`. */
-  readonly slots?: readonly GearSlot[];
 }
 
 /**
@@ -557,7 +542,6 @@ export const AFFIXES: Record<AffixId, AffixSpec> = {
   mighty: {
     id: "mighty",
     kind: "prefix",
-    slots: ['weapon'],
     name: "강력",
     detail: "피해 +50%",
     enemy: { damageScale: 1.5 },
@@ -571,7 +555,6 @@ export const AFFIXES: Record<AffixId, AffixSpec> = {
   critical: {
     id: "critical",
     kind: "prefix",
-    slots: ['weapon', 'accessory'],
     name: "치명",
     detail: "치명타 확률 20%",
     enemy: { critChance: 0.2 },
@@ -586,7 +569,6 @@ export const AFFIXES: Record<AffixId, AffixSpec> = {
   cruel: {
     id: "cruel",
     kind: "prefix",
-    slots: ['weapon', 'accessory'],
     name: "잔혹",
     detail: "치명타 피해 +50%",
     gearTiers: tiers(
@@ -598,7 +580,6 @@ export const AFFIXES: Record<AffixId, AffixSpec> = {
   frenzied: {
     id: "frenzied",
     kind: "prefix",
-    slots: ['weapon'],
     name: "광포",
     detail: "공격속도 +15%",
     gearTiers: tiers(
@@ -627,106 +608,47 @@ export const AFFIXES: Record<AffixId, AffixSpec> = {
   giant: {
     id: "giant",
     kind: "suffix",
-    slots: ['weapon', 'armor'],
     name: "거대",
     detail: "체력 +50%",
     enemy: { hpScale: 1.5 },
     gearTiers: tiers(
       (v) => `최대 체력 +${v}%`,
       (v) => ({ maxHpScale: 1 + v / 100 }),
-      [22.5, 19, 15, 11, 7.5],
-      // Half of [45, 38, 30, 22, 15] until 0.78 (the user's ask: every 접미어 on gear halved).
+      [45, 38, 30, 22, 15],
     ),
   },
   swift: {
     id: "swift",
     kind: "suffix",
-    slots: ['weapon', 'armor', 'accessory'],
     name: "신속",
     detail: "이동속도 +20%",
     enemy: { speedScale: 1.2 },
     gearTiers: tiers(
       (v) => `이동속도 +${v}%`,
       (v) => ({ moveSpeedScale: 1 + v / 100 }),
-      [18, 15, 12, 9, 6],
-      // Half of [36, 30, 24, 18, 12] until 0.78 (the user's ask: every 접미어 on gear halved).
+      [36, 30, 24, 18, 12],
     ),
   },
   evasive: {
     id: "evasive",
     kind: "suffix",
-    slots: ['weapon', 'armor'],
     name: "회피",
     detail: "피격 후 무적 시간 +30%",
     gearTiers: tiers(
       (v) => `무적 시간 +${v}%`,
       (v) => ({ invulnerableScale: 1 + v / 100 }),
-      [25, 21, 17, 13, 9],
-      // Half of [50, 42, 34, 26, 18] until 0.78 (the user's ask: every 접미어 on gear halved).
+      [50, 42, 34, 26, 18],
     ),
   },
   magnetic: {
     id: "magnetic",
     kind: "suffix",
-    slots: ['weapon', 'accessory'],
     name: "자력",
     detail: "획득 범위 +40%",
     gearTiers: tiers(
       (v) => `획득 범위 +${v}%`,
       (v) => ({ pickupScale: 1 + v / 100 }),
-      [40, 34, 28, 22, 16],
-      // Half of [80, 68, 56, 44, 32] until 0.78 (the user's ask: every 접미어 on gear halved).
-    ),
-  },
-
-  // --- 방어구 and 장신구 ---
-  stalwart: {
-    id: "stalwart",
-    kind: "prefix",
-    slots: ["armor"],
-    name: "견고",
-    detail: "받는 피해 감소",
-    gearTiers: tiers(
-      (v) => `받는 피해 -${v}%`,
-      (v) => ({ damageTakenScale: 1 - v / 100 }),
-      [12, 10, 8, 6, 4],
-    ),
-  },
-  hale: {
-    id: "hale",
-    kind: "prefix",
-    slots: ["armor"],
-    name: "강건",
-    detail: "최대 체력 증가",
-    gearTiers: tiers(
-      (v) => `최대 체력 +${v}%`,
-      (v) => ({ maxHpScale: 1 + v / 100 }),
-      [30, 25, 20, 15, 10],
-    ),
-  },
-  fortunate: {
-    id: "fortunate",
-    kind: "prefix",
-    slots: ["accessory"],
-    name: "행운",
-    detail: "아이템 발견 증가",
-    gearTiers: tiers(
-      (v) => `아이템 발견 +${v}%`,
-      (v) => ({ itemFindScale: 1 + v / 100 }),
-      [40, 32, 24, 16, 10],
-    ),
-  },
-  learned: {
-    id: "learned",
-    kind: "suffix",
-    slots: ["accessory"],
-    name: "학식",
-    detail: "경험치 증가",
-    gearTiers: tiers(
-      (v) => `경험치 +${v}%`,
-      (v) => ({ xpGainScale: 1 + v / 100 }),
-      [15, 12, 9, 6, 4],
-      // Half of [30, 24, 18, 12, 8] until 0.78 (the user's ask: every 접미어 on gear halved).
+      [80, 68, 56, 44, 32],
     ),
   },
 };
@@ -773,12 +695,6 @@ export const ENEMY_AFFIXES: readonly AffixSpec[] = Object.values(
 export const PREFIXES: readonly AffixSpec[] = Object.values(AFFIXES).filter(
   (affix) => affix.kind === "prefix" && affix.gearTiers !== undefined,
 );
-
-/** The 속성 of one kind that roll on one slot. */
-export const affixPool = (kind: AffixKind, slot: GearSlot): readonly AffixSpec[] =>
-  Object.values(AFFIXES).filter(
-    (affix) => affix.kind === kind && affix.gearTiers !== undefined && (affix.slots ?? ["weapon"]).includes(slot),
-  );
 
 export const SUFFIXES: readonly AffixSpec[] = Object.values(AFFIXES).filter(
   (affix) => affix.kind === "suffix" && affix.gearTiers !== undefined,
@@ -1032,13 +948,6 @@ export const SPAWN = {
   rampPerMinute: 0.55,
   maxAlive: 350,
   offscreenMargin: 80,
-  /**
-   * The opening, before the survivor has found any gear (0.71, the user's
-   * ask): every gap between spawns is `intervalScale` times as long until
-   * `untilMs`, then eases back to the usual ramp over `blendMs`. 1.6 is
-   * three in five of the enemies the first two minutes used to bring.
-   */
-  opening: { untilMs: 120_000, intervalScale: 1.6, blendMs: 30_000 },
 } as const;
 
 /**
@@ -1149,12 +1058,6 @@ export const VOID_ORB = {
   radius: 15,
   /** Forgiveness on the contact check, so a graze still counts. */
   hitPadding: 2,
-  /**
-   * How soon one orb may hit the same enemy again. Longer than a pass
-   * through an ordinary enemy takes, so each pass is one hit; an enemy as
-   * wide as a 우두머리 is hit again while an orb is still crossing it.
-   */
-  rehitMs: 500,
 } as const;
 
 /**
@@ -1222,34 +1125,25 @@ export const GROUND_ITEM = {
   glowAlpha: 0.65,
 } as const;
 
-/**
- * ★ 시작 스킬 — a run's first skill, chosen out of every skill there is
- * (0.74). There are no skill drops in a run any more: the 무작위 스킬 that
- * opened this choice in the field became a 룬 (config/runes.ts).
- */
-/**
- * ★ 무작위 스킬 (back in 0.76): picked up, a 슬롯머신 spins over the skills
- * not held yet, and what it lands on is a 보조 스킬 — `SKILL_SLOT.rerolls`
- * more spins allowed before taking it. None falls once `SUB_SKILLS.max` are
- * held, or every skill is.
- */
-export const RANDOM_SKILL = {
-  /** Share of kills that leave one, raised like any drop. */
-  chance: 0.0025,
+export const SKILL_DROP = {
+  /**
+   * Chance that killing an enemy drops a skill. Halved when every run began
+   * handing one out on the 슬롯머신, so the field is not where most of them
+   * come from any more.
+   */
+  chance: 0.013,
 } as const;
 
-export const SKILL_SLOT = { rerolls: 1 } as const;
-
-/** 보조 스킬: what a run can hold beside its main skill. */
-export const SUB_SKILLS = { max: 3 } as const;
-
 /**
- * ★ 레벨업 (0.76): the skill is picked first — the main skill or any 보조
- * 스킬 — then one of these upgrades for it.
+ * ★ 무작위 스킬 — three skills on cards, one to take. A run's first skill is
+ * chosen this way, and a 무작위 스킬 lying on the ground opens the same
+ * choice when it is walked over.
  */
-export const LEVEL_UP = { upgrades: ['damage', 'attackSpeed'] as readonly string[] } as const;
-
 export const SKILL_PICK = {
+  /** How many cards are offered. */
+  choices: 3,
+  /** Share of kills that leave a 무작위 스킬. A 갈비뼈 raises it. */
+  dropChance: 0.008,
   /**
    * Whether a fresh run opens on the choice at all. On the dev server the
    * test harness and `#run` turn it off, so they land in play holding
@@ -1423,20 +1317,17 @@ export const SKILL_BASE: Record<SkillId, SkillBaseStats> = {
     orbCount: 0,
     orbitSpeed: 0,
   },
-  // An orbit rather than a shot: range is how far out the orbs ride, and
-  // they travel round it at orbitSpeed × attacks a second (0.79, the user's
-  // ask: attack speed is how fast it spins) — so at 1 they go at orbitSpeed,
-  // and every attack speed upgrade, 룬 or piece of gear spins them faster.
-  // How often one orb may hit the same enemy again is VOID_ORB.rehitMs.
-  // 3 orbs and attackSpeed 1.5 (then the re-hit rate) until 0.79.
+  // An orbit rather than a shot: range is how far out the orbs ride,
+  // orbitSpeed how fast they travel around, and attackSpeed how often one
+  // orb may hit the same enemy again.
   voidOrb: {
     damage: 60,
-    attackSpeed: 1,
+    attackSpeed: 1.5,
     range: 90,
     projectileSpeed: 0,
     chainCount: 0,
     pierceCount: 0,
-    orbCount: 5,
+    orbCount: 3,
     orbitSpeed: 200,
   },
 };
@@ -1525,6 +1416,24 @@ export const UPGRADE_MAX_PICKS: Partial<Record<UpgradeKey, number>> = {
   projectileSpeed: 20,
   orbitSpeed: 20,
 };
+
+/**
+ * ★ 골드 — what a run pays out, and what that buys.
+ *
+ * A run is paid for the damage it dealt rather than for how long it lasted,
+ * so pushing into a crowd you cannot survive is still worth something. The
+ * one thing to spend it on is a 신성한 조각, which is the slow, certain way
+ * to a passive point when the 우두머리 rolls have not been kind.
+ */
+export const ECONOMY = {
+  /**
+   * Damage dealt per gold earned. Raised with the x10 damage scale, so a
+   * run pays what it paid before.
+   */
+  damagePerGold: 1000,
+  /** What one 신성한 조각 costs. */
+  shardPrice: 100,
+} as const;
 
 export const STATS = {
   /** Floor on the resulting cooldown, so attack speed cannot outrun the frame. */
