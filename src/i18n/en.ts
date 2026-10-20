@@ -136,6 +136,7 @@ export const en: Strings = {
     settings: 'Settings',
     gift: 'A gift for the rollback: {gear} and {orbs} of every orb',
     giftGear: '{count} × {name}',
+    giftPassives: 'A gift for the rollback: {points} passive points, enough to max every passive',
     gear: 'Inventory',
     guide: 'How to Play',
     patch: 'Patch Notes',

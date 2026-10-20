@@ -197,6 +197,8 @@ export interface Strings {
     readonly gift: string;
     /** One piece of {gear}: {name} and {count}. */
     readonly giftGear: string;
+    /** 0.81's gift: {points} passive points, enough to fill every line. */
+    readonly giftPassives: string;
     readonly gear: string;
     readonly guide: string;
     readonly patch: string;

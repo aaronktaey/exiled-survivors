@@ -178,6 +178,12 @@ export const ROLLBACK_GIFT = {
   enabled: true as boolean,
   gear: { onigoroshi: 2 } as Partial<Record<GearId, number>>,
   orbsEach: 10,
+  /**
+   * 0.81 (the user's word): passive points topped up, once, to what fills
+   * every line to its maxRank — what is held and what is spent counted —
+   * under its own mark (STORAGE.passiveGift).
+   */
+  passivesToMax: true as boolean,
 };
 
 /**

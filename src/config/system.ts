@@ -105,6 +105,8 @@ export const STORAGE = {
   sync: "exiled-survivors:sync:v1",
   /** That this browser (or account) has had 0.80's gift (ROLLBACK_GIFT). */
   rollbackGift: "exiled-survivors:gift-rollback:v1",
+  /** And 0.81's: every passive's points (ROLLBACK_GIFT.passivesToMax), given apart so 0.80's takers get it too. */
+  passiveGift: "exiled-survivors:gift-passives:v1",
   /** The board's day 어제의 랭킹 was last seen on, on this device. */
   podiumSeen: "exiled-survivors:podium-seen:v1",
   /**

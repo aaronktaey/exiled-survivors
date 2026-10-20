@@ -1,4 +1,4 @@
-import { ECONOMY, PASSIVES, SHARD, STORAGE, type PassiveId } from '@/config';
+import { ALL_PASSIVES, ECONOMY, PASSIVES, SHARD, STORAGE, type PassiveId } from '@/config';
 import { gold } from '@/systems/Gold';
 import { openRecord, sealRecord } from '@/systems/Seal';
 
@@ -122,6 +122,23 @@ class PassiveStore {
 
     this.addShard();
     return true;
+  }
+
+  /** The points that fill every line to its maxRank. */
+  public get maxPoints(): number {
+    return ALL_PASSIVES.reduce((sum, spec) => sum + spec.maxRank, 0);
+  }
+
+  /**
+   * Tops the points up so held and spent come to `maxPoints` (0.81's gift).
+   * Returns the points given — none when there is nothing left to fill.
+   */
+  public topUpToMax(): number {
+    const given = Math.max(0, this.maxPoints - this.spent - this.value.points);
+    if (given > 0) {
+      this.commit({ ...this.value, points: this.value.points + given });
+    }
+    return given;
   }
 
   /** Whether a line's branch is open: the line it hangs from holds enough ranks. */

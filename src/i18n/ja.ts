@@ -136,6 +136,7 @@ export const ja: Strings = {
     settings: '設定',
     gift: '復旧の補償：{gear}、すべてのオーブ {orbs}個ずつを受け取りました',
     giftGear: '{name} {count}個',
+    giftPassives: '復旧の補償：パッシブポイント {points}点を受け取りました — すべてのパッシブを最大にできます',
     gear: 'インベントリ',
     guide: '遊び方',
     patch: 'パッチノート',

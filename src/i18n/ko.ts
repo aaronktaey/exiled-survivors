@@ -140,6 +140,7 @@ export const ko: Strings = {
     settings: '설정',
     gift: '복구 보상: {gear}, 모든 구슬 {orbs}개씩을 받았습니다',
     giftGear: '{name} {count}개',
+    giftPassives: '복구 보상: 패시브 포인트 {points}점을 받았습니다 — 모든 패시브를 최대로 올릴 수 있습니다',
     gear: '인벤토리',
     guide: '게임 가이드',
     patch: '패치노트',

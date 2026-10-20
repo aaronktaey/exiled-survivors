@@ -1,6 +1,7 @@
 import { GEAR, ORBS, ROLLBACK_GIFT, STORAGE, type GearId, type OrbId } from '@/config';
 import { bareItem, gear } from '@/systems/Gear';
 import { orbs } from '@/systems/Orbs';
+import { passives } from '@/systems/Passives';
 
 /** What the gift came to, for the title to say. */
 export interface GiftGiven {
@@ -42,4 +43,26 @@ export function giveRollbackGift(): GiftGiven | null {
     orbs.add(id, ROLLBACK_GIFT.orbsEach);
   }
   return { gear: given, orbsEach: ROLLBACK_GIFT.orbsEach };
+}
+
+/**
+ * 0.81's gift (ROLLBACK_GIFT.passivesToMax): passive points topped up to
+ * what fills every line, once, under STORAGE.passiveGift — apart from 0.80's
+ * mark, so a player who had that gift gets this one too. The points given,
+ * or null when it was given before, is off, or there was nothing to fill.
+ */
+export function givePassivePoints(): number | null {
+  if (!ROLLBACK_GIFT.enabled || !ROLLBACK_GIFT.passivesToMax) {
+    return null;
+  }
+  try {
+    if (localStorage.getItem(STORAGE.passiveGift)) {
+      return null;
+    }
+    localStorage.setItem(STORAGE.passiveGift, String(Date.now()));
+  } catch {
+    return null;
+  }
+  const given = passives.topUpToMax();
+  return given > 0 ? given : null;
 }

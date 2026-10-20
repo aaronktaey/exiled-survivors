@@ -398,7 +398,10 @@ Read `git log` for what changed and when. What is not in the log:
   — so `ROLLBACK_GIFT` (equipment.ts, `systems/Gift.ts`) hands everyone bare
   오니고로시 and every 구슬 once on the title (`MenuScene.giveGift`, after
   the account settles, `STORAGE.rollbackGift`, synced); the harness turns it
-  off unless `window.__giftOn` (test-gift). A saved run with a `kit` (0.71–
+  off unless `window.__giftOn` (test-gift). 0.81 added passive points to
+  it (`passivesToMax`: `passives.topUpToMax` fills held + spent up to
+  `maxPoints`), under a mark of its own (`STORAGE.passiveGift`) so those
+  who had 0.80's gift got it too. A saved run with a `kit` (0.71–
   0.79's) is thrown away by `saveGame.read`. The server's `tuning` row
   still holds `RUNE_*` paths: `Tuning.apply` lays over only dials and
   `publish` sends only dials, so they do nothing.

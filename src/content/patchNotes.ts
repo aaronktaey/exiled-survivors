@@ -15,6 +15,24 @@ export interface PatchNote {
 
 export const PATCH_NOTES: readonly PatchNote[] = [
   {
+    version: '0.81',
+    date: '2026-10-20',
+    changes: {
+      ko: [
+        '모든 플레이어에게 패시브를 모두 최대로 올릴 수 있는 만큼의 패시브 포인트(이미 찍은 것을 포함해 총 40점)를 한 번 드립니다. 타이틀에 들어가면 받으며, 0.80 보상을 이미 받은 분도 받습니다.',
+      ],
+      en: [
+        'Every player is given enough passive points to max every passive (40 in all, counting ranks already bought), once, on the title screen — including those who already had the 0.80 gift.',
+      ],
+      ja: [
+        '全プレイヤーに、すべてのパッシブを最大にできるだけのパッシブポイント（取得済みを含めて計40点）を一度贈ります。タイトル画面で受け取れ、0.80の補償を受け取った方も対象です。',
+      ],
+      zh: [
+        '所有玩家将获得一次足以将所有被动升到满级的被动点数（含已加点共40点），进入标题画面时领取，已领取0.80补偿的玩家也可领取。',
+      ],
+    },
+  },
+  {
     version: '0.80',
     date: '2026-10-20',
     changes: {

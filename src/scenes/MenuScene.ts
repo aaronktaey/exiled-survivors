@@ -33,7 +33,7 @@ import { liveUpdate } from '@/systems/LiveUpdate';
 import { devToolsAllowed } from '@/systems/DevAccess';
 import { tuning } from '@/systems/Tuning';
 import { podium } from '@/systems/Podium';
-import { giveRollbackGift } from '@/systems/Gift';
+import { givePassivePoints, giveRollbackGift } from '@/systems/Gift';
 
 /** Syncing starts once per page, the first time the title finds someone signed in. */
 let syncStarted = false;
@@ -612,13 +612,20 @@ export class MenuScene extends Phaser.Scene {
     if (!this.scene.isActive() || cloudSave.conflict) {
       return;
     }
-    const given = giveRollbackGift();
-    if (!given) {
-      return;
-    }
     const copy = t().menu;
-    const pieces = given.gear.map(({ id, count }) => fill(copy.giftGear, { name: gearName(id), count })).join(', ');
-    this.toast(fill(copy.gift, { gear: pieces, orbs: given.orbsEach }));
+    const lines: string[] = [];
+    const given = giveRollbackGift();
+    if (given) {
+      const pieces = given.gear.map(({ id, count }) => fill(copy.giftGear, { name: gearName(id), count })).join(', ');
+      lines.push(fill(copy.gift, { gear: pieces, orbs: given.orbsEach }));
+    }
+    const points = givePassivePoints();
+    if (points) {
+      lines.push(fill(copy.giftPassives, { points }));
+    }
+    if (lines.length > 0) {
+      this.toast(lines.join('\n'));
+    }
   }
 
   /** A line that rises over the hint and fades — how the title says something happened. */

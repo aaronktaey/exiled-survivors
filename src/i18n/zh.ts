@@ -136,6 +136,7 @@ export const zh: Strings = {
     settings: '设置',
     gift: '回滚补偿：已获得{gear}，每种宝珠各 {orbs} 个',
     giftGear: '{name} {count} 个',
+    giftPassives: '回滚补偿：已获得被动点数 {points} 点，足以将所有被动升到满级',
     gear: '背包',
     guide: '游戏指南',
     patch: '更新日志',
