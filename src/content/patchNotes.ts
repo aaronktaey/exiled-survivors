@@ -15,6 +15,40 @@ export interface PatchNote {
 
 export const PATCH_NOTES: readonly PatchNote[] = [
   {
+    version: '0.76',
+    date: '2026-10-20',
+    changes: {
+      ko: [
+        '무작위 스킬이 다시 떨어집니다(처치의 0.25%). 주우면 슬롯머신이 아직 없는 스킬 중 하나를 고르고, 한 번 다시 돌릴 수 있습니다. 얻은 스킬은 보조 스킬이 되며, 보조 스킬은 3개까지 가질 수 있습니다.',
+        '보조 스킬도 룬 끌로 강화 슬롯을 받아 룬을 장착할 수 있습니다.',
+        '레벨업하면 메인 스킬과 보조 스킬 중 하나를 고른 뒤, 그 스킬의 공격력 또는 공격속도를 올립니다.',
+        '스킬에 효과가 없는 룬은 장착할 수 없습니다. 장착한 룬은 뺄 수 없고 다른 룬으로 덮어씌우기만 할 수 있으며, 덮어씌운 룬은 사라집니다(두 번 눌러 확인).',
+        '생존자에게 외형이 생겼습니다. 고른 메인 스킬에 따라 옷차림과 손에 든 무기가 달라집니다.',
+      ],
+      en: [
+        'Random Skills drop again (0.25% of kills). Picked up, a slot machine picks one of the skills you don’t have, and you may spin it once more. The skill gained is a sub skill; you can hold up to 3.',
+        'Sub skills can take rune slots from a Rune Chisel and wear runes too.',
+        'On a level-up, pick the main skill or a sub skill, then raise its damage or its attack speed.',
+        'A rune that does nothing for a skill can’t be set in it. A rune once set can’t be taken out, only overwritten by another — and the one overwritten is gone (press twice to confirm).',
+        'The survivor now has a look: its clothes and what it holds follow the main skill chosen.',
+      ],
+      ja: [
+        'ランダムスキルが再び落ちるようになりました（撃破の0.25%）。拾うとスロットマシンがまだ持っていないスキルから1つを選び、1回だけ回し直せます。得たスキルはサブスキルになり、サブスキルは3つまで持てます。',
+        'サブスキルもルーンのノミで強化スロットを得て、ルーンを装着できます。',
+        'レベルアップすると、メインスキルとサブスキルから1つを選び、そのスキルの攻撃力か攻撃速度を上げます。',
+        'スキルに効果のないルーンは装着できません。装着したルーンは外せず、別のルーンで上書きするだけで、上書きされたルーンは消えます（2回押して確定）。',
+        '生存者に外見が付きました。選んだメインスキルによって服装と手に持つ武器が変わります。',
+      ],
+      zh: [
+        '随机技能重新掉落（击杀的 0.25%）。拾取后老虎机会从尚未拥有的技能中选出一个，可以重转一次。获得的技能成为副技能，副技能最多 3 个。',
+        '副技能也可以用符文凿获得强化槽并装备符文。',
+        '升级时先从主技能和副技能中选一个，再提升该技能的攻击力或攻击速度。',
+        '对技能无效的符文无法装备。已装备的符文不能取下，只能用其他符文覆盖，被覆盖的符文会消失（按两次确认）。',
+        '幸存者有了外观：服装和手中的武器随所选的主技能而变化。',
+      ],
+    },
+  },
+  {
     version: '0.75',
     date: '2026-10-20',
     changes: {

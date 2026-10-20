@@ -238,8 +238,11 @@ const choice = await popup();
 console.log('popup:', JSON.stringify(choice));
 check('a repeat pickup opens the 공허구체 choice',
   choice.open === true && choice.skill === 'voidOrb' && choice.title === '공허구체');
-check('it offers 공격력, 회전 속도, 구체 수',
-  JSON.stringify(choice.cards?.map(c => c.id)) === JSON.stringify(['damage', 'orbitSpeed', 'orbCount']),
+// Since 0.76 every skill's level-up offers LEVEL_UP.upgrades — 공허구체's
+// 공격속도 (how often an orb hits again) included.
+const levelUps = await run(`return window.config.LEVEL_UP.upgrades;`);
+check('it offers the level-up upgrades',
+  JSON.stringify(choice.cards?.map(c => c.id)) === JSON.stringify(levelUps),
   choice.cards?.map(c => c.label).join(' | '));
 
 // --- 8. the caret moves on the arrows, but they never confirm ---
@@ -248,14 +251,14 @@ await sleep(200);
 const movedRight = await popup();
 check('→ moves the caret', movedRight.open === true && movedRight.selected === 1,
   `selected=${movedRight.selected}`);
-await cdp.tap('KeyD', 68, 'd');
-await sleep(200);
-const movedD = await popup();
-check('D moves it too', movedD.open === true && movedD.selected === 2, `selected=${movedD.selected}`);
 await cdp.tap('KeyA', 65, 'a');
 await sleep(200);
 const movedA = await popup();
-check('A comes back', movedA.open === true && movedA.selected === 1, `selected=${movedA.selected}`);
+check('A moves it back', movedA.open === true && movedA.selected === 0, `selected=${movedA.selected}`);
+await cdp.tap('KeyD', 68, 'd');
+await sleep(200);
+const movedD = await popup();
+check('D moves it on', movedD.open === true && movedD.selected === 1, `selected=${movedD.selected}`);
 await cdp.tap('KeyW', 87, 'w');
 await cdp.tap('KeyS', 83, 's');
 await sleep(250);
@@ -263,19 +266,17 @@ const afterWS = await popup();
 check('W and S cannot confirm', afterWS.open === true, `popup still open=${afterWS.open}`);
 await shot('void-01-choice');
 
-// Space takes the highlighted card — 회전 속도, at index 1.
+// Space takes the highlighted card — 공격속도, at index 1.
 const beforePick = await run(`return s.progression.statsFor('voidOrb');`);
 await cdp.tap('Space', 32, ' ');
 await sleep(600);
 const afterPick = await run(`return s.progression.statsFor('voidOrb');`);
 check('Space takes the highlighted card',
-  afterPick.orbitSpeed > beforePick.orbitSpeed && afterPick.orbCount === beforePick.orbCount,
-  `orbit ${beforePick.orbitSpeed} -> ${afterPick.orbitSpeed}`);
+  afterPick.attackSpeed > beforePick.attackSpeed && afterPick.orbCount === beforePick.orbCount,
+  `attack speed ${beforePick.attackSpeed} -> ${afterPick.attackSpeed}`);
 
-// --- 9. 구체 수 +1 puts another orb in the air ---
-await run(`s.onSkillCollected('voidOrb'); return 1;`);
-await sleep(600);
-await cdp.tap('Digit3', 51, '3');
+// --- 9. 구체 수 +1 (no longer a card; a 룬's 투사체 or a tool) puts another orb in the air ---
+await run(`s.progression.apply('voidOrb', 'orbCount'); return 1;`);
 await sleep(700);
 const grown = await orbState();
 console.log('after 구체 수 +1:', JSON.stringify(grown));

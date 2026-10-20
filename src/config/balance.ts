@@ -1216,6 +1216,28 @@ export const GROUND_ITEM = {
  * (0.74). There are no skill drops in a run any more: the 무작위 스킬 that
  * opened this choice in the field became a 룬 (config/runes.ts).
  */
+/**
+ * ★ 무작위 스킬 (back in 0.76): picked up, a 슬롯머신 spins over the skills
+ * not held yet, and what it lands on is a 보조 스킬 — `SKILL_SLOT.rerolls`
+ * more spins allowed before taking it. None falls once `SUB_SKILLS.max` are
+ * held, or every skill is.
+ */
+export const RANDOM_SKILL = {
+  /** Share of kills that leave one, raised like any drop. */
+  chance: 0.0025,
+} as const;
+
+export const SKILL_SLOT = { rerolls: 1 } as const;
+
+/** 보조 스킬: what a run can hold beside its main skill. */
+export const SUB_SKILLS = { max: 3 } as const;
+
+/**
+ * ★ 레벨업 (0.76): the skill is picked first — the main skill or any 보조
+ * 스킬 — then one of these upgrades for it.
+ */
+export const LEVEL_UP = { upgrades: ['damage', 'attackSpeed'] as readonly string[] } as const;
+
 export const SKILL_PICK = {
   /**
    * Whether a fresh run opens on the choice at all. On the dev server the

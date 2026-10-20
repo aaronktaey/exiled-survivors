@@ -90,13 +90,13 @@ check('위력 · 신속 · 정밀 · 잔혹 are gone; 반복 and 포격 are ther
 const boss = await run(`
   const before = s.combat.runeDrops.countActive(true);
   const b = s.spawner.spawnBoss(); s.combat.hit(b, 1e9);
-  const out = { runes: s.combat.runeDrops.countActive(true) - before, skillGroups: 'skillDrops' in s.combat || 'randomSkillDrops' in s.combat };
+  const out = { runes: s.combat.runeDrops.countActive(true) - before, skillGroups: 'skillDrops' in s.combat };
   for (const g of [s.combat.runeDrops, s.combat.chiselDrops, s.combat.gearDrops, s.combat.gems, s.combat.orbDrops, s.combat.altars, s.combat.boneDrops])
     g.getChildren().forEach((d) => d.active && d.collect());
   s.pendingChoices.length = 0;
   return out;
 `);
-check('nothing drops a skill any more, and a 우두머리 always leaves a 룬', boss.runes >= 1 && boss.skillGroups === false, JSON.stringify(boss));
+check('no particular skill drops (a 무작위 스킬 is the only way to one), and a 우두머리 always leaves a 룬', boss.runes >= 1 && boss.skillGroups === false, JSON.stringify(boss));
 
 // --- 5. setting it in the main skill's slot ---
 const before = await run(`return { damage: s.damageOf('fireball'), sheet: s.mods.runes.fireball ?? null, shots: s.projectilesOf('fireball').shots };`);
@@ -118,11 +118,23 @@ const after = await run(`
 check('and the skill takes it at once: 분열 throws one more, for less damage each',
   before.sheet === null && after.shots === before.shots + after.more && Math.abs(after.scale - after.want) < 1e-9 && after.damage < before.damage,
   `${before.shots} -> ${after.shots} shots, ${before.damage} -> ${after.damage} (×${after.scale})`);
-const out = await scene('RuneScene', `
-  const ok = s.takeOut();
-  return { ok, held: s.payload.kit.runeCount('split'), slot: s.payload.kit.socketsOf('fireball')[0], note: s.status.text };
+const over = await scene('RuneScene', `
+  const k = s.payload.kit;
+  k.addRune('linger');
+  const first = s.setRune('linger');
+  const asked = s.status.text;
+  const still = k.socketsOf('fireball')[0];
+  const second = s.setRune('linger');
+  return { first, asked, still, second, slot: k.socketsOf('fireball')[0], split: k.runeCount('split'), linger: k.runeCount('linger'),
+           takeOut: typeof s.takeOut };
 `);
-check('빼기 takes it back out, among the 룬 held', out.ok && out.held === 1 && out.slot === null, JSON.stringify(out));
+check('a 룬 set cannot be taken out — there is no 빼기 any more', over.takeOut === 'undefined', JSON.stringify(over));
+check('overwriting is asked once, then done, and the 룬 it replaced is gone',
+  over.first === false && /사라집니다/.test(over.asked) && over.still === 'split' && over.second === true && over.slot === 'linger' &&
+    over.split === 0 && over.linger === 0, JSON.stringify(over));
+// Put it back as the later checks expect: the slot empty (a tool-only way out).
+await scene('RuneScene', `s.payload.kit.unsocket('fireball', 0); s.payload.kit.runeBag.linger = 0; return 1;`);
+
 const wrong = await scene('RuneScene', `
   s.payload.kit.addRune('bombard');
   s.payload.kit.addRune('chain');

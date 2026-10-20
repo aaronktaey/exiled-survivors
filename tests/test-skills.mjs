@@ -167,7 +167,9 @@ check('repeat pickup is labelled 강화', repeatPopup.subtitle === '강화' && r
   `subtitle=${repeatPopup.subtitle}`);
 check('repeat pickup names 화염구', repeatPopup.title === '화염구' && repeatPopup.details[1].startsWith('화염구'),
   `title=${repeatPopup.title} / ${repeatPopup.details[1]}`);
-check('화염구 offers three picks, 사거리 not among them', repeatPopup.labels.length === 3 && !repeatPopup.labels.some(l => /사정거리/.test(l)), repeatPopup.labels.join(' | '));
+// Since 0.76 every upgrade popup offers only LEVEL_UP.upgrades.
+const levelUps = await run(`return window.config.LEVEL_UP.upgrades.length;`);
+check('화염구 offers the level-up picks, 사거리 not among them', repeatPopup.labels.length === levelUps && !repeatPopup.labels.some(l => /사정거리/.test(l)), repeatPopup.labels.join(' | '));
 await shot('skill-02-fireball-choice');
 const beforeRepeat = await stats();
 await sleep(350);

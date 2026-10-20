@@ -22,14 +22,14 @@ await cdp.send('Page.navigate', { url: 'http://localhost:5173/#run' });
 await sleep(3000);
 await run(`s.player.setInvulnerable(true); return 1;`);
 
-// --- 1. level-ups go to the main skill, whatever else is picked up ---
+// --- 1. the main skill stays; with another held, each level-up asks which (0.76) ---
 const levels = await run(`
   s.choosing = true;
   s.onSkillCollected('fireball');
   s.pendingChoices.length = 0;
   const seen = [];
   const queue = s.queueChoice;
-  s.queueChoice = (request) => seen.push(request.skill);
+  s.queueChoice = (request) => seen.push(request.kind);
   for (let i = 0; i < 12; i++) s.onLevelUp(2 + i);
   s.queueChoice = queue;
   s.writeSave();
@@ -40,8 +40,8 @@ const levels = await run(`
 console.log('levels:', JSON.stringify(levels));
 check('the first skill is the main one, and a skill picked up later does not take its place',
   levels.main === 'meleeStrike' && levels.owned.includes('fireball'), JSON.stringify(levels.owned));
-check('every level-up goes to the main skill',
-  levels.seen.length === 12 && levels.seen.every((id) => id === 'meleeStrike'), levels.seen.join(','));
+check('every level-up asks which skill it goes to',
+  levels.seen.length === 12 && levels.seen.every((kind) => kind === 'levelPick'), levels.seen.join(','));
 check('and the save remembers which it is', levels.savedMain === 'meleeStrike');
 
 // --- 2. reaching the level awakens it, loudly ---
@@ -219,7 +219,7 @@ const maxed = await run(`
   while (guard++ < 500) {
     const left = (() => { const q = []; const was = s.queueChoice; s.queueChoice = (r) => q.push(r); s.onLevelUp(2); s.queueChoice = was; return q; })();
     if (left.length === 0) break;
-    for (const id of ['damage', 'attackSpeed', 'range']) s.progression.apply('meleeStrike', id);
+    for (const skill of s.skillsHeld) for (const id of window.config.LEVEL_UP.upgrades) s.progression.apply(skill, id);
   }
   s.player.hp = 10;
   const queued = [];
@@ -231,7 +231,7 @@ const maxed = await run(`
   return { hp: s.player.hp, queued: queued.length, want: Math.min(s.player.maxHp, 10 + Math.max(1, Math.round(s.player.maxHp * window.config.POTION.healFraction))) };
 `);
 console.log('maxed:', JSON.stringify(maxed));
-check('a level-up for a main skill with nothing left to take heals a potion’s worth instead',
+check('a level-up with nothing left to take on any skill heals a potion’s worth instead',
   maxed.queued === 0 && maxed.hp === maxed.want, JSON.stringify(maxed));
 
 // --- 3c. 기행종: far hops; at you when you are within one, anywhere otherwise ---
@@ -292,10 +292,14 @@ check('toasts stack up to the limit, the oldest going first',
   toastRun.lines.join(' | '));
 check('and each is gone once its time is up', toastLater.lines.length === 0, toastLater.lines.join(' | '));
 
-// --- 3e. the upgrade lists: 얼음창 offers shot speed, 낙뢰 no range, 관통 stops at five ---
+// --- 3e. the level-up lists: LEVEL_UP.upgrades and nothing else; 관통 stops at five ---
 // What a popup offers is read off its own payload (private in TypeScript only).
+// Kills in the background would level the survivor up, and with several
+// skills held that opens the skill pick in front of these cards: held off here.
+await run(`window.__emit = s.progression.emit; s.progression.emit = () => true; s.spawner.clear(); return 1;`);
 const cardsFor = async (id) => {
-  await run(`s.choosing = false; s.pendingChoices.length = 0; s.acquire('${id}'); s.onSkillCollected('${id}'); return 1;`);
+  // Fresh: 3b took every upgrade of every skill held then.
+  await run(`s.choosing = false; s.pendingChoices.length = 0; s.owned.delete('${id}'); s.weapons = s.weapons.filter((w) => w.definition.id !== '${id}'); s.progression.stats.delete('${id}'); s.acquire('${id}'); s.onSkillCollected('${id}'); return 1;`);
   await sleep(500);
   const ids = await cdp.evaluate(`(() => {
     const up = window.game.scene.getScene('UpgradeScene');
@@ -313,14 +317,16 @@ const pierce = await run(`
   for (let i = 0; i < 20; i++) s.progression.apply('iceSpear', 'pierceCount');
   return { pierce: st.pierceCount, cap: window.config.UPGRADE_CAP.pierceCount };
 `);
-check('얼음창 offers 투사체 속도, and 낙뢰 no longer offers 사거리',
-  iceCards?.includes('projectileSpeed') && thunderCards && !thunderCards.includes('range'),
+const levelUps = await run(`return window.config.LEVEL_UP.upgrades;`);
+check('얼음창 and 낙뢰 both offer the level-up upgrades, no 사거리',
+  JSON.stringify(iceCards) === JSON.stringify(levelUps) && JSON.stringify(thunderCards) === JSON.stringify(levelUps),
   `얼음창 ${iceCards?.join(',')} / 낙뢰 ${thunderCards?.join(',')}`);
 check('얼음창 runs through at most five', pierce.cap === 5 && pierce.pierce === 5, JSON.stringify(pierce));
 
 // --- 3f. each card says where its stat is, where the pick takes it, and how far it can go ---
 await run(`
   s.choosing = false; s.pendingChoices.length = 0;
+  s.owned.delete('chainLightning'); s.weapons = s.weapons.filter((w) => w.definition.id !== 'chainLightning'); s.progression.stats.delete('chainLightning'); 
   s.acquire('chainLightning');
   s.progression.apply('chainLightning', 'damage');
   s.progression.apply('chainLightning', 'chainCount');
@@ -351,9 +357,10 @@ check('a card shows its stat now and after the pick',
     /현재/.test(dmg.values) && /강화 후/.test(dmg.values),
   dmg?.values);
 check('and how many times it has been taken of how many it can be',
-  dmg && dmg.taken === 1 && dmg.max === cardValues.want.damageMax && dmg.picks.includes(`1/${cardValues.want.damageMax}`) &&
-    chain && chain.taken === 1 && chain.max === cardValues.want.chainMax && chain.picks.includes(`1/${cardValues.want.chainMax}`),
+  dmg && dmg.taken === 1 && dmg.max === cardValues.want.damageMax && dmg.picks.includes(`1/${cardValues.want.damageMax}`) && !chain,
   `${dmg?.picks} · ${chain?.picks}`);
+
+await run(`s.progression.emit = window.__emit; return 1;`);
 
 // --- 3g. every upgrade has a ceiling, and a skill past all of them heals, saying so ---
 const ceilings = await cdp.evaluate(`(() => {
@@ -368,10 +375,9 @@ const potion = await run(`
   const p = s.player;
   p.setInvulnerable(true);
   const id = s.mainSkill;
-  // Take every upgrade the main skill has, to its ceiling.
+  // Take every level-up upgrade of every skill held, to its ceiling.
   for (let i = 0; i < 200; i++) {
-    const opts = window.game.scene.getScene('GameScene').progression;
-    for (const up of ['damage', 'attackSpeed', 'range', 'projectileSpeed', 'orbitSpeed', 'chainCount', 'pierceCount', 'orbCount']) opts.apply(id, up);
+    for (const skill of s.skillsHeld) for (const up of window.config.LEVEL_UP.upgrades) s.progression.apply(skill, up);
   }
   p.hp = Math.max(1, p.maxHp - 50);
   const hp = p.hp;

@@ -29,7 +29,7 @@ export interface FilterSection {
 }
 
 /** The keys of the entries that are not read off a table. */
-export type FilterSupply = 'potion' | 'mango' | 'magnet' | 'rune' | 'chisel';
+export type FilterSupply = 'potion' | 'randomSkill' | 'mango' | 'magnet' | 'rune' | 'chisel';
 
 const TIERS: readonly DropTier[] = ['normal', 'magic', 'rare'];
 
@@ -38,6 +38,7 @@ export const ITEM_FILTER: readonly FilterSection[] = [
     id: 'supplies',
     entries: [
       { key: 'potion', texture: TEXTURES.potion, tier: 'normal' },
+      { key: 'randomSkill', texture: TEXTURES.skillOrb, tier: 'magic' },
       { key: 'rune', texture: runeTexture('split'), tier: 'magic' },
       { key: 'chisel', texture: TEXTURES.runeChisel, tier: 'rare' },
       { key: 'mango', texture: TEXTURES.mango, tier: 'rare' },

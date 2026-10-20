@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 
-import { COLORS, DEPTH, ENEMY, HUD, MANGO, MANGO_RING, PLAYER, TEXTURES, WEB } from '@/config';
+import { COLORS, DEPTH, ENEMY, HUD, MANGO, MANGO_RING, PLAYER, PLAYER_LOOK, WEB, lookTexture } from '@/config';
 import { fill, t } from '@/i18n';
 import { NO_BONUS, type GearBonus } from '@/systems/Gear';
 import type { AnalogInput } from '@/systems/VirtualJoystick';
@@ -36,15 +36,18 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   private maxHpValue: number = PLAYER.maxHp;
   private analog?: AnalogInput;
   private invulnerableUntil = 0;
+  /** The look worn: a skill id from PLAYER_LOOK.bySkill, or `base`. Public for tests. */
+  public look = 'base';
 
   public constructor(scene: Phaser.Scene, x: number, y: number) {
-    super(scene, x, y, TEXTURES.player);
+    super(scene, x, y, lookTexture('base'));
 
     scene.add.existing(this);
     scene.physics.add.existing(this);
 
     this.setDepth(DEPTH.player);
     this.setCollideWorldBounds(true);
+    this.wearLook('base');
 
     this.healthBar = scene.add.graphics().setDepth(DEPTH.healthBar);
     this.mangoRing = scene.add.graphics().setDepth(DEPTH.player + 1);
@@ -97,7 +100,26 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     }
 
     this.setVelocity(this.heading.x * speed, this.heading.y * speed);
+    // Faces the way it walks; standing still, it keeps the last way.
+    if (this.heading.x < -0.01) {
+      this.setFlipX(true);
+    } else if (this.heading.x > 0.01) {
+      this.setFlipX(false);
+    }
     this.drawHealthBar();
+  }
+
+  /**
+   * Dresses the survivor for a skill (PLAYER_LOOK.bySkill; `base` for none).
+   * Drawn at PLAYER_LOOK.drawn, while the body that is hit stays PLAYER.size.
+   */
+  public wearLook(skill: string): void {
+    const id = skill in PLAYER_LOOK.bySkill ? skill : 'base';
+    this.look = id;
+    this.setTexture(lookTexture(id));
+    this.setDisplaySize(PLAYER_LOOK.drawn, PLAYER_LOOK.drawn);
+    const body = this.body as Phaser.Physics.Arcade.Body | null;
+    body?.setSize(PLAYER.size / this.scaleX, PLAYER.size / this.scaleY, true);
   }
 
   /** Full health: what balance.ts tunes, after the carried weapon. */

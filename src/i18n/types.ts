@@ -95,11 +95,12 @@ export interface Strings {
     readonly noSlots: string;
     /** {rune} set in {skill}. */
     readonly set: string;
-    /** {rune} taken out. */
-    readonly removed: string;
     readonly notFor: string;
     readonly pickSlot: string;
-    readonly take: string;
+    /** Asked before a set 룬 is overwritten: {rune} goes. */
+    readonly overwrite: string;
+    /** A 룬 that does nothing for the skill cannot go in. */
+    readonly cantSet: string;
     readonly hintKeyboard: string;
     readonly hintTouch: string;
     readonly chisel: string;
@@ -126,9 +127,9 @@ export interface Strings {
     readonly icon: string;
     readonly lead: string;
     readonly sections: { readonly supplies: string; readonly orbs: string; readonly bones: string; readonly rarity: string; readonly bases: string };
-    readonly items: { readonly potion: string; readonly mango: string; readonly magnet: string; readonly rune: string; readonly chisel: string };
+    readonly items: { readonly potion: string; readonly randomSkill: string; readonly mango: string; readonly magnet: string; readonly rune: string; readonly chisel: string };
     /** The same, short enough to sit under an icon. */
-    readonly itemsShort: { readonly potion: string; readonly mango: string; readonly magnet: string; readonly rune: string; readonly chisel: string };
+    readonly itemsShort: { readonly potion: string; readonly randomSkill: string; readonly mango: string; readonly magnet: string; readonly rune: string; readonly chisel: string };
     readonly rarity: { readonly normal: string; readonly magic: string; readonly rare: string };
     readonly shown: string;
     readonly hidden: string;
@@ -585,6 +586,13 @@ export interface Strings {
     readonly startTitle: string;
     readonly startSubtitle: string;
     readonly confirm: string;
+    /** A 무작위 스킬's spin: its title, the line under it, the two buttons once it lands ({n} spins left), the keys, and what was won. */
+    readonly dropTitle: string;
+    readonly dropSubtitle: string;
+    readonly take: string;
+    readonly reroll: string;
+    readonly hintReroll: string;
+    readonly subGained: string;
     readonly hintKeyboard: string;
     readonly hintTouch: string;
     /** Banner once the skill is in hand: {skill} is its name. */
@@ -596,6 +604,10 @@ export interface Strings {
     readonly level: string;
     readonly acquired: string;
     readonly enhanced: string;
+    /** A level-up with more than one skill held: which one it goes to. */
+    readonly pickSkill: string;
+    readonly main: string;
+    readonly sub: string;
     readonly hintKeyboard: string;
     readonly hintTouch: string;
     /** On a card: the stat {now} and {next} after the pick. */

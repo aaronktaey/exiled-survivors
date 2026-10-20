@@ -339,26 +339,22 @@ export class RunKit {
   }
 
   /**
-   * Sets a held 룬 in a skill's slot. What was there goes back among the
-   * 룬 held. False when the slot or the 룬 is not there to use.
+   * Sets a held 룬 in a skill's slot. What was there is overwritten — gone,
+   * not given back (0.76). False when the slot or the 룬 is not there to use.
    */
   public socket(skill: SkillId, slot: number, rune: RuneId): boolean {
     const list = [...this.socketsOf(skill)];
     if (slot < 0 || slot >= list.length || this.runeCount(rune) <= 0) {
       return false;
     }
-    const was = list[slot];
     this.runeBag[rune] = this.runeCount(rune) - 1;
-    if (was) {
-      this.runeBag[was] = this.runeCount(was) + 1;
-    }
     list[slot] = rune;
     this.socketed[skill] = list;
     this.changed();
     return true;
   }
 
-  /** Takes a 룬 out of a slot and back among those held. */
+  /** Takes a 룬 out of a slot and back among those held. The 룬 screen offers no way to (0.76); kept for tests and tools. */
   public unsocket(skill: SkillId, slot: number): boolean {
     const list = [...this.socketsOf(skill)];
     const was = list[slot];

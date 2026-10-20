@@ -9,6 +9,9 @@ import {
   ENEMY_KINDS,
   giantFrame,
   GEAR_DROP,
+  PLAYER_LOOK,
+  lookTexture,
+  type PlayerLook,
   ALL_RUNES,
   RUNE_CHISEL,
   runeTexture,
@@ -88,6 +91,7 @@ export class BootScene extends Phaser.Scene {
     this.createRuneTextures();
     this.createChiselTexture();
     this.createTurretTexture();
+    this.createLookTextures();
     this.createOrbTextures();
     this.createBoneTextures();
     this.createAltarTexture();
@@ -961,6 +965,85 @@ export class BootScene extends Phaser.Scene {
       }
       graphics.generateTexture(runeTexture(rune.id), size, size);
       graphics.destroy();
+    }
+  }
+
+  /**
+   * Every survivor look (PLAYER_LOOK): a small figure facing right — legs, a
+   * robe with its trim, a head under a hood, and what the skill carries in
+   * the right hand. Player flips it to face the way it walks.
+   */
+  private createLookTextures(): void {
+    const size = 32;
+    const looks: [string, PlayerLook][] = [['base', PLAYER_LOOK.base], ...Object.entries(PLAYER_LOOK.bySkill)];
+    for (const [id, look] of looks) {
+      const g = this.add.graphics();
+      // Legs and boots.
+      g.fillStyle(0x2a2420, 1);
+      g.fillRect(11, 25, 4, 6);
+      g.fillRect(17, 25, 4, 6);
+      // The robe, wider at the hem, and its trim.
+      g.fillStyle(look.robe, 1);
+      g.fillPoints([new Phaser.Math.Vector2(10, 12), new Phaser.Math.Vector2(22, 12), new Phaser.Math.Vector2(24, 27), new Phaser.Math.Vector2(8, 27)], true);
+      g.fillStyle(look.trim, 1);
+      g.fillRect(10, 18, 12, 2);
+      g.fillRect(8, 26, 16, 2);
+      // Head and hood.
+      g.fillStyle(0xf2c9a0, 1);
+      g.fillCircle(16, 8, 5);
+      g.fillStyle(look.hood, 1);
+      g.fillRect(10, 2, 12, 4);
+      g.fillRect(10, 2, 3, 9);
+      g.fillStyle(0x1a1a1a, 1);
+      g.fillRect(17, 7, 2, 2);
+      // The arm forward, and what it holds.
+      g.fillStyle(look.robe, 1);
+      g.fillRect(21, 14, 4, 3);
+      switch (look.prop) {
+        case 'sword':
+          g.fillStyle(0x6a4a2a, 1);
+          g.fillRect(24, 15, 2, 4);
+          g.fillStyle(look.glow, 1);
+          g.fillRect(24, 3, 2, 12);
+          g.fillStyle(look.trim, 1);
+          g.fillRect(22, 14, 6, 2);
+          break;
+        case 'staff':
+        case 'rod':
+          g.fillStyle(0x6a4a2a, 1);
+          g.fillRect(25, 6, 2, 22);
+          g.fillStyle(look.glow, 1);
+          if (look.prop === 'staff') {
+            g.fillCircle(26, 5, 3);
+          } else {
+            g.fillPoints([new Phaser.Math.Vector2(27, 0), new Phaser.Math.Vector2(23, 5), new Phaser.Math.Vector2(26, 5), new Phaser.Math.Vector2(24, 9), new Phaser.Math.Vector2(29, 3), new Phaser.Math.Vector2(26, 3)], true);
+          }
+          break;
+        case 'wand':
+          g.fillStyle(0x3a3a3a, 1);
+          g.fillRect(25, 9, 2, 8);
+          g.lineStyle(2, look.glow, 1);
+          g.lineBetween(26, 9, 28, 5);
+          g.lineBetween(28, 5, 25, 4);
+          g.lineBetween(25, 4, 29, 0);
+          break;
+        case 'spear':
+          g.fillStyle(look.trim, 1);
+          g.fillRect(25, 6, 2, 22);
+          g.fillStyle(look.glow, 1);
+          g.fillPoints([new Phaser.Math.Vector2(26, 0), new Phaser.Math.Vector2(29, 6), new Phaser.Math.Vector2(23, 6)], true);
+          break;
+        case 'orb':
+          g.fillStyle(look.glow, 0.45);
+          g.fillCircle(27, 12, 5);
+          g.fillStyle(look.glow, 1);
+          g.fillCircle(27, 12, 3);
+          break;
+        default:
+          break;
+      }
+      g.generateTexture(lookTexture(id), size, size);
+      g.destroy();
     }
   }
 

@@ -31,9 +31,10 @@ const RUNE_CELL = 52;
 /**
  * 룬 — the run's skills and their 강화 슬롯, and the 룬 held, opened from the
  * pause menu. A slot is picked (a tap, or the arrows); a 룬 below is then
- * pressed (a tap, or its number key) to set it there — what was in the slot
- * goes back among those held — and 빼기 (or Del) takes one out. Every change
- * reaches the run at once: GameScene listens to the kit.
+ * pressed (a tap, or its number key) to set it there. Since 0.76 (the user's
+ * ask) a 룬 that does nothing for the skill cannot go in, and one set cannot
+ * come out: it can only be overwritten, which destroys it — so that is asked
+ * twice. Every change reaches the run at once: GameScene listens to the kit.
  */
 export class RuneScene extends Phaser.Scene {
   public static readonly KEY = SCENES.runes;
@@ -47,6 +48,8 @@ export class RuneScene extends Phaser.Scene {
   private payload!: RuneSceneData;
   private layer!: Phaser.GameObjects.Container;
   private note = '';
+  /** An overwrite pressed once, waiting for the second press. */
+  private armed: { skill: SkillId; slot: number; rune: RuneId } | null = null;
 
   public constructor() {
     super(RuneScene.KEY);
@@ -57,6 +60,7 @@ export class RuneScene extends Phaser.Scene {
     this.selected = null;
     this.heldOrder = [];
     this.note = '';
+    this.armed = null;
   }
 
   private get kit(): RunKit {
@@ -102,34 +106,39 @@ export class RuneScene extends Phaser.Scene {
     if (slot >= 0 && slot < this.kit.socketsOf(skill).length) {
       this.selected = { skill, slot };
       this.note = '';
+      this.armed = null;
       this.redraw();
     }
   }
 
-  /** Sets a held 룬 in the slot under the cursor. Public so a test can. */
+  /**
+   * Sets a held 룬 in the slot under the cursor — not one that does nothing
+   * for that skill. A slot already holding one is overwritten only on the
+   * second press, the old 룬 destroyed. Public so a test can.
+   */
   public setRune(rune: RuneId): boolean {
     const at = this.selected;
+    const copy = t().runes;
     if (!at) {
-      this.say(t().runes.pickSlot);
+      this.say(copy.pickSlot);
       return false;
     }
+    if (!runeWorksFor(rune, at.skill)) {
+      this.say(copy.cantSet);
+      return false;
+    }
+    const there = this.kit.socketsOf(at.skill)[at.slot] ?? null;
+    const confirmed = this.armed?.skill === at.skill && this.armed.slot === at.slot && this.armed.rune === rune;
+    if (there && !confirmed) {
+      this.armed = { skill: at.skill, slot: at.slot, rune };
+      this.say(fill(copy.overwrite, { rune: runeName(there) }));
+      return false;
+    }
+    this.armed = null;
     if (!this.kit.socket(at.skill, at.slot, rune)) {
       return false;
     }
-    const copy = t().runes;
-    const warn = runeWorksFor(rune, at.skill) ? '' : `  ·  ${copy.notFor}`;
-    this.say(fill(copy.set, { rune: runeName(rune), skill: skillName(at.skill) }) + warn);
-    return true;
-  }
-
-  /** Takes the 룬 out of the slot under the cursor. Public so a test can. */
-  public takeOut(): boolean {
-    const at = this.selected;
-    const rune = at ? this.kit.socketsOf(at.skill)[at.slot] : null;
-    if (!at || !rune || !this.kit.unsocket(at.skill, at.slot)) {
-      return false;
-    }
-    this.say(fill(t().runes.removed, { rune: runeName(rune) }));
+    this.say(fill(copy.set, { rune: runeName(rune), skill: skillName(at.skill) }));
     return true;
   }
 
@@ -202,10 +211,7 @@ export class RuneScene extends Phaser.Scene {
       fitText(t1, blockW, 0);
     });
     y += detail.length * 20 + 6;
-    const take = add(this.add.rectangle(width / 2, y + 14, 120, 30, COLORS.panel, 1).setStrokeStyle(2, inSlot ? COLORS.textFill : COLORS.panelEdge, 1));
-    text(width / 2, y + 14, copy.take, TEXT.size.hint, COLORS.text, 0.5).setAlpha(inSlot ? 1 : 0.45);
-    take.setInteractive({ useHandCursor: true }).on(Phaser.Input.Events.GAMEOBJECT_POINTER_DOWN, () => this.takeOut());
-    y += 44;
+    y += 8;
 
     // The 룬 held: a button each, numbered for the keyboard.
     text(left, y, copy.held, TEXT.size.hint, COLORS.muted);
@@ -283,10 +289,6 @@ export class RuneScene extends Phaser.Scene {
         case 'ArrowDown':
         case 'KeyS':
           move(1, 0);
-          break;
-        case 'Delete':
-        case 'Backspace':
-          this.takeOut();
           break;
         case 'Escape':
           this.close();

@@ -244,23 +244,24 @@ console.log('popup:', JSON.stringify(choice));
 check('repeat pickup opens the 얼음창 choice',
   choice.open === true && choice.skill === 'iceSpear' && choice.title === '얼음창',
   `title=${choice.title} subtitle=${choice.subtitle}`);
-check('it offers 피해량, 공격속도, 투사체 속도, 관통 횟수',
-  JSON.stringify(choice.cards?.map(c => c.id)) ===
-    JSON.stringify(['damage', 'attackSpeed', 'projectileSpeed', 'pierceCount']),
+// Since 0.76 a level-up offers only LEVEL_UP.upgrades; pierceCount is applied directly below.
+const levelUps = await run(`return window.config.LEVEL_UP.upgrades;`);
+check('it offers only the level-up upgrades',
+  JSON.stringify(choice.cards?.map(c => c.id)) === JSON.stringify(levelUps),
   `${choice.cards?.map(c => c.label).join(' | ')}`);
 await shot('ice-01-choice');
 
 // --- 9. 관통 횟수 +1 sends the next spear one enemy further ---
-const before = await run(`return { ice: s.progression.statsFor('iceSpear'), fire: s.progression.statsFor('fireball') };`);
 await cdp.tap('ArrowRight', 39, 'ArrowRight');
 await sleep(180);
 const onPierce = await popup();
 check('an arrow moves the caret without confirming',
   onPierce.selected === 1 && onPierce.open === true,
   `selected=${onPierce.selected}, popup still open=${onPierce.open}`);
-check('관통 횟수 is the fourth card', onPierce.cards[3].id === 'pierceCount', onPierce.cards[3].label);
-await cdp.tap('Digit4', 52, '4');
+await cdp.tap('Digit2', 50, '2');
 await sleep(600);
+const before = await run(`return { ice: s.progression.statsFor('iceSpear'), fire: s.progression.statsFor('fireball') };`);
+await run(`s.progression.apply('iceSpear', 'pierceCount'); return 1;`);
 const after = await run(`return { ice: s.progression.statsFor('iceSpear'), fire: s.progression.statsFor('fireball') };`);
 check('관통 횟수 +1 touches nothing else',
   after.ice.pierceCount === before.ice.pierceCount + 1 &&

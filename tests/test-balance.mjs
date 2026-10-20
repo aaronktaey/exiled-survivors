@@ -183,9 +183,10 @@ const four = await popup();
 console.log('popup:', JSON.stringify(four));
 check('repeat pickup opens the 화염구 popup', four.open === true && four.skill === 'fireball',
   `skill=${four.skill} subtitle=${four.subtitle}`);
-check('화염구 offers damage, rate and projectile speed — no 사거리 of its own',
-  JSON.stringify(four.cards?.map(c => c.id)) ===
-    JSON.stringify(['damage', 'attackSpeed', 'projectileSpeed']),
+// Since 0.76 a level-up offers only LEVEL_UP.upgrades (피해, 공격속도).
+const levelUps = await run(`return window.config.LEVEL_UP.upgrades;`);
+check('화염구 offers only the level-up upgrades — no 사거리 of its own',
+  JSON.stringify(four.cards?.map(c => c.id)) === JSON.stringify(levelUps),
   `${four.cards?.map(c => c.label).join(' | ')}`);
 const fits = four.cards?.every(c => c.x - c.w / 2 >= 0 && c.x + c.w / 2 <= four.width);
 const gaps = four.cards?.slice(1).map((c, i) => Math.round(c.x - c.w / 2 - (four.cards[i].x + four.cards[i].w / 2)));
@@ -194,7 +195,7 @@ check('the cards fit on screen without overlapping',
   `width=${four.width}, cards ${four.cards?.map(c => c.w).join('/')}px, gaps ${gaps?.join('/')}px`);
 await shot('balance-01-four-options');
 
-// --- 8. 투사체 속도 is the third card, and the reach grows with it ---
+// --- 8. 투사체 속도 (no longer a card, applied directly) grows the reach ---
 const rangeOf = `return { fire: s.progression.statsFor('fireball'), reach: s.progression.rangeFor('fireball'),
   melee: s.progression.statsFor('meleeStrike') };`;
 const beforeSpeed = await run(rangeOf);
@@ -204,10 +205,10 @@ const afterRightKey = await popup();
 check('an arrow moves the caret without confirming',
   afterRightKey.selected === 1 && afterRightKey.open === true,
   `selected=${afterRightKey.selected}, popup still open=${afterRightKey.open}`);
-check('투사체 속도 is the third card', afterRightKey.cards[2].id === 'projectileSpeed',
-  afterRightKey.cards[2].label);
-await cdp.tap('Digit3', 51, '3');
+await cdp.tap('Digit2', 50, '2');
 await sleep(600);
+await run(`s.progression.apply('fireball', 'projectileSpeed'); return 1;`);
+await sleep(100);
 const afterSpeed = await run(rangeOf);
 // An upgrade is a share of where the skill started, so the step is read
 // from the base rather than written down here.
@@ -264,6 +265,10 @@ const held = await run(`
   Math.random = roll;
   return [...s.owned];
 `);
+await sleep(600);
+// More than one skill held (0.76): the level-up asks which first.
+await cdp.evaluate(`(() => { const g = window.game; if (!g.scene.isActive('SkillPickScene')) return 0;
+  const p = g.scene.getScene('SkillPickScene'); p.pick(p.payload.options.indexOf('${held[0]}')); return 1; })()`);
 await sleep(600);
 const level = await popup();
 check('a level-up offers the picks of a skill in hand',

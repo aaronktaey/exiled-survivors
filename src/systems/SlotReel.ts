@@ -182,6 +182,17 @@ export class SlotReel {
     this.state = 'stopping';
   }
 
+  /** Turns again from where it stopped, for another `stop` (a 무작위 스킬's reroll). */
+  public respin(): void {
+    if (this.state !== 'stopped') {
+      return;
+    }
+    this.landingRow = undefined;
+    this.onStopped = undefined;
+    this.state = 'spinning';
+    this.layout();
+  }
+
   public update(delta: number): void {
     if (this.state === 'spinning') {
       this.pos += (this.speed * delta) / 1000;

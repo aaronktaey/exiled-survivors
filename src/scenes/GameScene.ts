@@ -6,6 +6,9 @@ import {
   RUNES,
   RUNE_SLOTS,
   TURRET,
+  LEVEL_UP,
+  SKILL_SLOT,
+  SUB_SKILLS,
   SKILL_ICONS,
   type RuneId,
   BALANCE,
@@ -62,6 +65,8 @@ import {
 import { GameOverScene, type GameOverData } from '@/scenes/GameOverScene';
 import { SkillPickScene, type SkillPickData } from '@/scenes/SkillPickScene';
 import { UpgradeScene, type UpgradeChoiceData } from '@/scenes/UpgradeScene';
+import type { SlotData } from '@/scenes/SlotScene';
+import type { UpgradeOption } from '@/systems/Progression';
 import {
   CombatSystem,
   upgradeOptionsFor,
@@ -184,6 +189,10 @@ export interface GameSceneData {
  */
 type ChoiceRequest =
   | { readonly kind: 'upgrade'; readonly title: string; readonly subtitle: string; readonly skill: SkillId }
+  /** A level-up with more than one skill that can take it: which skill, first. */
+  | { readonly kind: 'levelPick'; readonly level: number }
+  /** A 무작위 스킬: the 슬롯머신 for a 보조 스킬. */
+  | { readonly kind: 'slot' }
   | { readonly kind: 'chisel' }
   | { readonly kind: 'gear'; readonly item: GearItem };
 
@@ -378,6 +387,8 @@ export class GameScene extends Phaser.Scene {
         onRuneCollected: (id) => this.onRuneCollected(id),
         onChiselCollected: () => this.queueChoice({ kind: 'chisel' }),
         chiselWanted: () => [...this.owned].some((skill) => this.kit.canAddSlot(skill)),
+        onRandomSkillCollected: () => this.queueChoice({ kind: 'slot' }),
+        randomSkillWanted: () => this.slotSkills().length > 0,
         rollGearDrop: (fromBoss, bonus) => this.rollGearDrop(fromBoss, bonus),
         onGearCollected: (found) => this.onGearCollected(found),
         onOrbCollected: (id) => this.onOrbCollected(id),
@@ -430,6 +441,7 @@ export class GameScene extends Phaser.Scene {
       { group: this.combat.mangoDrops },
       { group: this.combat.magnetDrops },
       { group: this.combat.runeDrops },
+      { group: this.combat.randomSkillDrops },
       { group: this.combat.chiselDrops },
       { group: this.combat.potions },
     ]);
@@ -896,9 +908,11 @@ export class GameScene extends Phaser.Scene {
     }
     this.owned.add(skill);
     this.mainSkill ??= skill;
-    // The main skill comes with its 강화 슬롯; a save already holds them.
+    // The main skill comes with its 강화 슬롯 (a save already holds them),
+    // and the survivor dresses for it.
     if (this.mainSkill === skill) {
       this.kit.ensureSlots(skill, RUNE_SLOTS.main);
+      this.player.wearLook(skill);
     }
 
     const weapon = WEAPONS[skill](this);
@@ -1408,28 +1422,105 @@ export class GameScene extends Phaser.Scene {
   }
 
   /**
-   * A level-up upgrades the run's main skill — the first one it held. Once
-   * that has taken every upgrade there is, the level is a 체력 포션 instead
-   * (drinkForMaxedSkill), said plainly so it does not look lost.
+   * A level-up (0.76): the skill first — the main skill or a 보조 스킬, any
+   * that can still take an upgrade — then 피해 or 공격속도 for it
+   * (LEVEL_UP.upgrades). With one skill to choose from, straight to its
+   * upgrade; with none, the level is a 체력 포션 instead (drinkForMaxedSkill).
    */
   private onLevelUp(level: number): void {
     this.player.setLevel(level);
-    const skill = this.mainSkill;
-    if (!skill) {
+    const main = this.mainSkill;
+    if (!main) {
       return;
     }
-    // Nothing left to take: the level is a potion instead.
-    if (upgradeOptionsFor(SKILLS[skill], this.progression.statsFor(skill)).length === 0) {
-      this.drinkForMaxedSkill(skill);
+    const open = this.skillsHeld.filter((skill) => this.levelOptions(skill).length > 0);
+    if (open.length === 0) {
+      this.drinkForMaxedSkill(main);
       return;
     }
+    if (open.length > 1) {
+      this.queueChoice({ kind: 'levelPick', level });
+      return;
+    }
+    this.queueLevelUpgrade(open[0]!, level);
+  }
 
-    this.queueChoice({
+  /** The upgrades a level-up can give a skill: LEVEL_UP.upgrades, while under their ceilings. */
+  private levelOptions(skill: SkillId): UpgradeOption[] {
+    // Every skill is offered these, whether or not its own list names them:
+    // 공허구체 has an 공격속도 (how often an orb hits again) but never had the card.
+    const upgrades = LEVEL_UP.upgrades as readonly UpgradeId[];
+    return [...upgradeOptionsFor({ ...SKILLS[skill], upgrades }, this.progression.statsFor(skill))];
+  }
+
+  private queueLevelUpgrade(skill: SkillId, level: number, first = false): void {
+    const role = skill === this.mainSkill ? t().upgrade.main : t().upgrade.sub;
+    const request: ChoiceRequest = {
       kind: 'upgrade',
       title: t().upgrade.levelUp,
-      subtitle: `${fill(t().upgrade.level, { level })} · ${skillName(skill)}`,
+      subtitle: `${fill(t().upgrade.level, { level })} · ${skillName(skill)} (${role})`,
       skill,
-    });
+    };
+    if (first) {
+      this.pendingChoices.unshift(request);
+      return;
+    }
+    this.queueChoice(request);
+  }
+
+  /** Which skill a level-up goes to: the cards of every skill that can take one. */
+  private openLevelPick(level: number): void {
+    const options = this.skillsHeld.filter((skill) => this.levelOptions(skill).length > 0);
+    const data: SkillPickData = {
+      title: t().upgrade.levelUp,
+      subtitle: `${fill(t().upgrade.level, { level })} · ${t().upgrade.pickSkill}`,
+      options,
+      owned: options,
+      levels: Object.fromEntries(options.map((id) => [id, this.progression.levelFor(id)])),
+      onPick: (skill) => {
+        this.queueLevelUpgrade(skill, level, true);
+        this.afterChoice();
+      },
+    };
+    this.scene.bringToTop(SkillPickScene.KEY);
+    this.scene.launch(SkillPickScene.KEY, data);
+  }
+
+  /** The skills a 무작위 스킬 can give: not held, while there is room for a 보조 스킬. */
+  private slotSkills(): SkillId[] {
+    if (this.skillsHeld.length - 1 >= SUB_SKILLS.max) {
+      return [];
+    }
+    return DROPPABLE_SKILLS.map((skill) => skill.id).filter((id) => !this.owned.has(id));
+  }
+
+  /**
+   * A 무작위 스킬: the 슬롯머신 spins over the skills not held, with
+   * SKILL_SLOT.rerolls more spins allowed; what it lands on is a 보조 스킬.
+   */
+  private openSkillSlot(): void {
+    const skills = this.slotSkills();
+    if (skills.length === 0) {
+      this.afterChoice();
+      return;
+    }
+    const copy = t().slot;
+    const data: SlotData = {
+      title: copy.dropTitle,
+      subtitle: copy.dropSubtitle,
+      items: skills.map((id) => ({ label: skillName(id), icon: SKILL_ICONS[id]?.key })),
+      rerolls: SKILL_SLOT.rerolls,
+      onResult: (index) => {
+        const skill = skills[index];
+        if (skill) {
+          this.acquire(skill);
+          this.announce(fill(copy.subGained, { skill: skillName(skill) }));
+        }
+        this.afterChoice();
+      },
+    };
+    this.scene.bringToTop(SCENES.slot);
+    this.scene.launch(SCENES.slot, data);
   }
 
   private queueChoice(request: ChoiceRequest): void {
@@ -1455,6 +1546,14 @@ export class GameScene extends Phaser.Scene {
       this.openChiselPick();
       return;
     }
+    if (request.kind === 'slot') {
+      this.openSkillSlot();
+      return;
+    }
+    if (request.kind === 'levelPick') {
+      this.openLevelPick(request.level);
+      return;
+    }
     if (request.kind === 'gear') {
       this.openGearPick(request.item);
       return;
@@ -1463,7 +1562,7 @@ export class GameScene extends Phaser.Scene {
     // Worked out here, where the live stats are, so an upgrade that has hit
     // its ceiling is simply not offered — and a skill with none left gets no
     // popup at all.
-    const options = upgradeOptionsFor(SKILLS[request.skill], this.progression.statsFor(request.skill));
+    const options = this.levelOptions(request.skill);
     if (options.length === 0) {
       // A skill with every upgrade taken: what would have been one is a potion.
       this.drinkForMaxedSkill(request.skill);
@@ -1489,10 +1588,6 @@ export class GameScene extends Phaser.Scene {
     }
   }
 
-  /**
-   * What a level-up or a repeat pickup gives a skill that has taken every
-   * upgrade there is: a 체력 포션's worth of health, said over the survivor.
-   */
   /**
    * A skill with every upgrade taken: the level-up (or the repeat pickup)
    * that would have gone into it is a 체력 포션 instead. Said three ways, so

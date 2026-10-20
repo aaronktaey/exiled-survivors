@@ -805,3 +805,43 @@ export const DAMAGE_NUMBERS = {
   /** A crit hangs about longer than an ordinary hit. */
   critLifespanMs: 900,
 } as const;
+
+/** What a survivor carries in its look: drawn by BootScene.createLookTextures. */
+export type LookProp = 'none' | 'sword' | 'staff' | 'wand' | 'spear' | 'orb' | 'rod';
+
+export interface PlayerLook {
+  /** The robe or tunic, its trim (belt, cuffs, hem), and the hood or hair. */
+  readonly robe: number;
+  readonly trim: number;
+  readonly hood: number;
+  readonly prop: LookProp;
+  /** What the prop glows with (a staff's ember, a wand's spark). */
+  readonly glow: number;
+}
+
+/**
+ * ★ 외형 (0.76, the user's ask): the survivor is drawn as a figure, dressed
+ * for the run's main skill — the look changes the moment it is taken. Before
+ * that (and for a skill not listed) it wears `base`. A new skill gets a look
+ * by a line here; BootScene draws every one.
+ */
+export const PLAYER_LOOK: {
+  /** Drawn size, px; the body for hits stays PLAYER.size. */
+  readonly drawn: number;
+  readonly base: PlayerLook;
+  readonly bySkill: Readonly<Record<string, PlayerLook>>;
+} = {
+  drawn: 30,
+  base: { robe: 0x6a7385, trim: 0x3a4152, hood: 0x4a3a2a, prop: 'none', glow: 0xffffff },
+  bySkill: {
+    meleeStrike: { robe: 0x8a5a3c, trim: 0xc0c6d0, hood: 0x9aa3b0, prop: 'sword', glow: 0xe8edf7 },
+    fireball: { robe: 0xb3322a, trim: 0xf0a040, hood: 0x7a1e18, prop: 'staff', glow: 0xff8a3d },
+    chainLightning: { robe: 0x2f5fb3, trim: 0x9bd3ff, hood: 0x1f3f7a, prop: 'wand', glow: 0x9bd3ff },
+    iceSpear: { robe: 0xbfe3ff, trim: 0x5aa0e0, hood: 0x7fb8e8, prop: 'spear', glow: 0xd6f2ff },
+    voidOrb: { robe: 0x4b2a7a, trim: 0xb07cff, hood: 0x2a1748, prop: 'orb', glow: 0xb07cff },
+    thunderStrike: { robe: 0x2a2f55, trim: 0xf0d050, hood: 0x1a1d38, prop: 'rod', glow: 0xf0d050 },
+  },
+};
+
+/** A look's texture: one per skill in PLAYER_LOOK, and `base`. */
+export const lookTexture = (id: string): string => `tex-look-${id}`;

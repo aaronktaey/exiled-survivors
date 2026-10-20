@@ -76,7 +76,7 @@ wrong shape.
 ## The test harness
 
 `tests/` drives a real Chrome over CDP against the dev server and checks the
-running game, not units. 47 suites, ~1200 checks. It is the only thing that has
+running game, not units. 48 suites, ~1200 checks. It is the only thing that has
 caught most of what has gone wrong here, so run all of it before every commit.
 
 ```sh
@@ -89,7 +89,8 @@ node run-all.mjs test-full test-skills test-balance test-chain test-ice \
   test-altar test-slot test-locale test-back test-fugitive \
   test-ranking test-skillpick test-mango test-web test-loadout \
   test-carry test-api test-account test-live test-filter test-mastery \
-  test-tuning test-terrain test-chimera test-notice test-seal test-runloot
+  test-tuning test-terrain test-chimera test-notice test-seal test-runloot \
+  test-subskill
 ```
 
 `run-all.mjs` runs the suites three at a time (`WORKERS=n` to change it):
@@ -179,15 +180,21 @@ Read `git log` for what changed and when. What is not in the log:
   a fresh run holds only what it picks off three cards (`SkillPickScene`,
   `SKILL_PICK`; every skill since 0.74, with a back button to the title
   that gives the 뼈다귀 put in back), and that first skill is the run's **main skill**
-  (`GameScene.mainSkill`, kept in the save as `main`): every level-up
-  upgrades it; once it has taken every upgrade, a level-up (or a repeat
-  pickup of any maxed skill) heals a 체력 포션's worth instead
-  (`drinkForMaxedSkill`, said plainly: 포션 효과! and the health over the
-  survivor, a green burst, a `heal` toast naming the skill) — it never moves
-  on to another skill. Every upgrade has a ceiling now (`UPGRADE_MAX_PICKS`
-  or `UPGRADE_CAP`), so every skill does get there. Nothing drops a skill
-  in a run any more (0.74): the 무작위 스킬 became a 룬, and a 우두머리 /
-  도망자 (`guaranteedRune`) leaves a 룬 instead. `GameScene.onSkillCollected`
+  (`GameScene.mainSkill`, kept in the save as `main`), and the survivor
+  dresses for it (`Player.wearLook`, `PLAYER_LOOK.bySkill` in visuals.ts,
+  drawn by `BootScene.createLookTextures`; the picture is
+  `PLAYER_LOOK.drawn`, the body stays `PLAYER.size`). Since 0.76 a level-up
+  asks which skill first when more than one can still take an upgrade
+  (`levelPick`, SkillPickScene), then offers only `LEVEL_UP.upgrades`
+  (피해, 공격속도) for it (`GameScene.levelOptions`); with none open it heals
+  a 체력 포션's worth instead (`drinkForMaxedSkill`, said plainly: 포션
+  효과! and the health over the survivor, a green burst, a `heal` toast).
+  Every upgrade has a ceiling (`UPGRADE_MAX_PICKS` or `UPGRADE_CAP`). The
+  only skill that drops is the 무작위 스킬 (0.76, `RANDOM_SKILL.chance`,
+  while `slotSkills()` is not empty): it spins the 슬롯머신 over the skills
+  not held, `SKILL_SLOT.rerolls` more spins allowed, and what it lands on
+  is a 보조 스킬 (at most `SUB_SKILLS.max`), which starts with no 강화 슬롯.
+  A 우두머리 / 도망자 (`guaranteedRune`) leaves a 룬. `GameScene.onSkillCollected`
   is kept as a seam — the F-keys and the harness give skills through it (a
   new one acquired, a held one's upgrade queued). (Level-ups once went to a
   random skill; the user read that as the main skill changing, and asked
@@ -213,10 +220,11 @@ Read `git log` for what changed and when. What is not in the log:
   ordinary kills leave one at `ALTAR.fromKill`, and a 제단 can call up 우두머리, which leave 제단. It is opt-in — nothing
   happens until the survivor walks up — so it is not capped. An altar arms only
   after the survivor has been outside its radius once.
-- **The 슬롯머신 is generic, and unused for now.** `SlotScene` takes labels,
-  icons, an optional `choose()` and an `onResult(index)`; `SlotReel` is the
-  reel on its own. Runs no longer start on it (that is three cards now); it
-  is kept for the equipment work the user has in mind. Phaser 4 has no
+- **The 슬롯머신 is generic.** `SlotScene` takes labels, icons, an
+  optional `choose()`, `rerolls` and an `onResult(index)`; `SlotReel` is
+  the reel on its own (`respin`). With a reroll left, a landing waits on
+  획득 / 다시 돌리기 (Space / R); the last landing closes by itself. The
+  무작위 스킬 is its only user (0.76). Phaser 4 has no
   `setMask` under WebGL — the reel fades its edges instead of clipping them.
 - **What the harness switches off.** `cdp-lib` marks every page with
   `window.__harness`, and on the dev server that (or `#run`) turns off
@@ -607,8 +615,7 @@ Read `git log` for what changed and when. What is not in the log:
   skill's own crits (`critChanceFor` / `critMultiplierFor`, through the
   `critChance`/`critMultiplier` hooks CombatSystem rolls with). `RUNES`
   (config/runes.ts) is the table: mods, the `skills` a 룬 does anything for
-  (`runeWorksFor`; it can still be set elsewhere, and the screen says it
-  does nothing), weight, colour and a `glyph` BootScene draws. The main
+  (`runeWorksFor`; since 0.76 one that does nothing cannot be set), weight, colour and a `glyph` BootScene draws. The main
   skill gets `RUNE_SLOTS.main` slots when acquired (`RunKit.ensureSlots`),
   any skill can reach `RUNE_SLOTS.max`. 룬 and 강화 슬롯 live in the
   `RunKit` (held `runes`, per-skill `sockets`, carried by the save). A kill
@@ -616,7 +623,9 @@ Read `git log` for what changed and when. What is not in the log:
   룬 끌 at `RUNE_CHISEL.chance` while `chiselWanted` (some skill not full);
   a 룬 끌 queues a `chisel` choice (`RuneChiselScene`). The pause menu's 룬
   row opens `RuneScene` (a slot picked, then a held 룬 pressed or its
-  number key; 빼기/Del takes one out). test-runes covers all of it.
+  number key). A set 룬 never comes out (0.76, the user's ask): it is only
+  overwritten, asked twice, and the old one is gone (`RunKit.socket`;
+  `unsocket` is left for tools). test-runes covers all of it.
   0.75: 반복 (`repeatCount` → `WeaponContext.repeats`, a `RepeatQueue` in
   each weapon that casts again `RUNE_REPEAT.gapMs` apart), 관통's price
   (`pierceDecay` → `pierceKeep`, the shot's damage multiplied on each pass,

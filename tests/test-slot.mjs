@@ -120,21 +120,20 @@ const quiet = await ev(`(() => {
 })()`);
 check('and the spin sound is gone once it has', quiet.spin === true);
 
-// --- 3b. a level-up upgrades the main skill, not one picked up later ---
+// --- 3b. with a skill picked up later, a level-up asks which (0.76) ---
 const levels = await run(`
   s.choosing = false;
   s.acquire('fireball');
   const seen = {};
   const was = s.queueChoice;
-  s.queueChoice = (req) => { seen[req.skill] = (seen[req.skill] ?? 0) + 1; };
+  s.queueChoice = (req) => { seen[req.kind] = (seen[req.kind] ?? 0) + 1; };
   for (let i = 0; i < 200; i++) s.onLevelUp(s.progression.level);
   s.queueChoice = was;
   return { seen, owned: [...s.owned] };
 `);
 console.log('level-ups:', JSON.stringify(levels));
-check('a level-up offers the main skill every time, not the one picked up later',
-  levels.owned.includes('fireball') && Object.keys(levels.seen).length === 1 &&
-    (levels.seen[levels.owned[0]] ?? 0) === 200,
+check('a level-up asks which skill every time, never picks one itself',
+  levels.owned.includes('fireball') && Object.keys(levels.seen).length === 1 && levels.seen.levelPick === 200,
   Object.entries(levels.seen).map(([k, n]) => `${k} ${n}`).join(' / '));
 
 // --- 4. its odds are the caller's ---

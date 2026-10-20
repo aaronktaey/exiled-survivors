@@ -10,6 +10,7 @@ import {
   FIREBALL,
   MANGO,
   POTION,
+  RANDOM_SKILL,
   RUNE_CHISEL,
   RUNE_DROP,
   SHOT_CHAIN,
@@ -35,6 +36,7 @@ import { BoneDrop } from '@/entities/BoneDrop';
 import { OrbDrop } from '@/entities/OrbDrop';
 import { RuneDrop } from '@/entities/RuneDrop';
 import { ChiselDrop } from '@/entities/ChiselDrop';
+import { RandomSkillDrop } from '@/entities/RandomSkillDrop';
 import { rollRune } from '@/systems/Runes';
 import { MangoDrop } from '@/entities/MangoDrop';
 import { MagnetDrop } from '@/entities/MagnetDrop';
@@ -74,6 +76,10 @@ export interface CombatHooks {
   readonly onChiselCollected: () => void;
   /** Whether a 룬 끌 would do anything now: some skill held still has room for a slot. */
   readonly chiselWanted: () => boolean;
+  /** Called when the player walks over a 무작위 스킬: the 슬롯머신 for a 보조 스킬. */
+  readonly onRandomSkillCollected: () => void;
+  /** Whether a 무작위 스킬 would give anything now: room for a 보조 스킬, and a skill not held. */
+  readonly randomSkillWanted: () => boolean;
   /** A rare with the 거미 속성 died here: lay its web. */
   readonly onWeb: (x: number, y: number, stacks: number) => void;
   /** Called when the player walks over a 하얀 망고. */
@@ -116,6 +122,8 @@ export class CombatSystem {
   /** 룬 and 룬 끌 lying on the ground. */
   public readonly runeDrops: Phaser.Physics.Arcade.Group;
   public readonly chiselDrops: Phaser.Physics.Arcade.Group;
+  /** 무작위 스킬 lying on the ground. */
+  public readonly randomSkillDrops: Phaser.Physics.Arcade.Group;
   /** 하얀 망고 lying on the ground. */
   public readonly mangoDrops: Phaser.Physics.Arcade.Group;
   /** 자석 lying on the ground. */
@@ -166,6 +174,7 @@ export class CombatSystem {
     this.boneDrops = scene.physics.add.group({ classType: BoneDrop, runChildUpdate: true });
     this.runeDrops = scene.physics.add.group({ classType: RuneDrop, runChildUpdate: true });
     this.chiselDrops = scene.physics.add.group({ classType: ChiselDrop, runChildUpdate: true });
+    this.randomSkillDrops = scene.physics.add.group({ classType: RandomSkillDrop, runChildUpdate: true });
     this.mangoDrops = scene.physics.add.group({ classType: MangoDrop, runChildUpdate: true });
     this.magnetDrops = scene.physics.add.group({ classType: MagnetDrop, runChildUpdate: true });
     // No overlap: an altar is woken by distance, in its own update.
@@ -180,6 +189,7 @@ export class CombatSystem {
     scene.physics.add.overlap(player, this.boneDrops, this.onBoneTouch, undefined, this);
     scene.physics.add.overlap(player, this.runeDrops, this.onRuneTouch, undefined, this);
     scene.physics.add.overlap(player, this.chiselDrops, this.onChiselTouch, undefined, this);
+    scene.physics.add.overlap(player, this.randomSkillDrops, this.onRandomSkillTouch, undefined, this);
     scene.physics.add.overlap(player, this.mangoDrops, this.onMangoTouch, undefined, this);
     scene.physics.add.overlap(player, this.magnetDrops, this.onMagnetTouch, undefined, this);
   }
@@ -298,6 +308,7 @@ export class CombatSystem {
     take(this.boneDrops, this.onBoneTouch);
     take(this.runeDrops, this.onRuneTouch);
     take(this.chiselDrops, this.onChiselTouch);
+    take(this.randomSkillDrops, this.onRandomSkillTouch);
   }
 
   /** A copy of something just taken, flying from where it lay into the survivor. */
@@ -328,6 +339,18 @@ export class CombatSystem {
 
     drop.drop(x, y, id);
     this.land(drop, itemFilter.shows('rune'), 'magic');
+  }
+
+  /** Places a 무작위 스킬 directly — used by the kill roll and by tests. */
+  public dropRandomSkillAt(x: number, y: number): void {
+    [x, y] = this.onGround(x, y);
+    const drop = this.randomSkillDrops.get() as RandomSkillDrop | null;
+    if (!drop) {
+      return;
+    }
+
+    drop.drop(x, y);
+    this.land(drop, itemFilter.shows('randomSkill'), 'magic');
   }
 
   /** Places a 룬 끌 directly — used by the kill roll, debug keys and tests. */
@@ -667,6 +690,16 @@ export class CombatSystem {
     this.hooks.onRuneCollected(drop.rune);
   };
 
+  private onRandomSkillTouch: Phaser.Types.Physics.Arcade.ArcadePhysicsCallback = (_player, b) => {
+    const drop = b as unknown as RandomSkillDrop;
+    if (!drop.active) {
+      return;
+    }
+
+    drop.collect();
+    this.hooks.onRandomSkillCollected();
+  };
+
   private onChiselTouch: Phaser.Types.Physics.Arcade.ArcadePhysicsCallback = (_player, b) => {
     const drop = b as unknown as ChiselDrop;
     if (!drop.active) {
@@ -761,6 +794,11 @@ export class CombatSystem {
     // until 0.74); anything else at RUNE_DROP.chance.
     if (certainRune || Math.random() < RUNE_DROP.chance * bonus) {
       this.dropRuneAt(x + 18, y - 18);
+    }
+
+    // A 무작위 스킬, while there is room for a 보조 스킬 and a skill to give.
+    if (this.hooks.randomSkillWanted() && Math.random() < RANDOM_SKILL.chance * bonus) {
+      this.dropRandomSkillAt(x - 18, y - 18);
     }
 
     // A 룬 끌, while some skill held still has room for a slot.

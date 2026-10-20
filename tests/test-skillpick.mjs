@@ -106,7 +106,7 @@ const rolls = await run(`
   window.config.RUNE_DROP.chance = was;
   s.combat.runeDrops.getChildren().forEach((d) => d.active && d.collect());
   s.choosing = false;
-  return { none, all, was, groups: ['skillDrops', 'randomSkillDrops'].filter((k) => k in s.combat) };
+  return { none, all, was, groups: ['skillDrops'].filter((k) => k in s.combat) };
 `);
 check('a kill leaves a 룬 at its own chance — none at 0%, every time at 100% — and no skill',
   rolls.none === 0 && rolls.all === 5 && rolls.was > 0 && rolls.groups.length === 0, JSON.stringify(rolls));
