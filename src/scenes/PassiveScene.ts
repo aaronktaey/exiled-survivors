@@ -4,11 +4,10 @@ import {
   ALL_PASSIVE_NODES,
   COLORS,
   DEPTH,
-  ECONOMY,
   PASSIVE_NODES,
-  PASSIVE_RESPEC,
   PASSIVE_START,
   PASSIVE_TREE,
+  TREE_SHAPE,
   SCENES,
   SCRIM,
   TEXT,
@@ -17,7 +16,6 @@ import {
 } from '@/config';
 import { fill, passiveLines, passiveName, t } from '@/i18n';
 import { addBackButton, type BackButton } from '@/systems/BackButton';
-import { gold } from '@/systems/Gold';
 import { fitText } from '@/systems/Layout';
 import { passives } from '@/systems/Passives';
 import { prefersTouchControls } from '@/systems/VirtualJoystick';
@@ -56,8 +54,9 @@ const LIVE_TAGS = new Set(Object.values(SKILLS).flatMap((skill) => skill.tags));
 /**
  * 패시브 — the graph tree (config/passives.ts), seen through a window that
  * can be dragged and zoomed. A tap picks a node and says what it does and
- * whether it can be taken; the buttons under it take it, take it back for a
- * 신성한 조각, or buy a shard with gold.
+ * whether it can be taken; the buttons under it take it or take it back.
+ * Every link runs straight across or up and down, so an arrow key walks to
+ * the node linked that way (0.72).
  *
  * The tree is drawn by a camera of its own (`treeCam`) whose viewport is
  * the window, and which zooms — `setMask` does nothing under WebGL in
@@ -67,7 +66,7 @@ const LIVE_TAGS = new Set(Object.values(SKILLS).flatMap((skill) => skill.tags));
 export class PassiveScene extends Phaser.Scene {
   public static readonly KEY = SCENES.passives;
   public backButton?: BackButton;
-  /** Account level, points, shards and gold. Public for tests. */
+  /** The points left. Public for tests. */
   public purse!: Phaser.GameObjects.Text;
   /** Every node, by id. Public so a test can read and press one. */
   public nodes = new Map<PassiveId, DrawnNode>();
@@ -78,7 +77,6 @@ export class PassiveScene extends Phaser.Scene {
   public selected: PassiveId = PASSIVE_START;
   public takeButton!: PassiveButton;
   public refundButton!: PassiveButton;
-  public shopButton!: PassiveButton;
   /** The camera the tree is seen through. Public for tests. */
   public treeCam!: Phaser.Cameras.Scene2D.Camera;
 
@@ -144,23 +142,10 @@ export class PassiveScene extends Phaser.Scene {
     this.status = text(width / 2, below + BELOW - 58, '', TEXT.size.hint, COLORS.muted);
 
     const buttonY = below + BELOW - 24;
-    const buttonW = Math.min(200, Math.floor((width - 40) / 3));
+    const buttonW = Math.min(200, Math.floor((width - 40) / 2));
     const gap = 8;
-    this.takeButton = this.button(width / 2 - buttonW - gap, buttonY, buttonW, copy.allocate, () => this.allocate());
-    this.refundButton = this.button(
-      width / 2,
-      buttonY,
-      buttonW,
-      fill(copy.refund, { cost: PASSIVE_RESPEC.shardCost }),
-      () => this.refund(),
-    );
-    this.shopButton = this.button(
-      width / 2 + buttonW + gap,
-      buttonY,
-      buttonW,
-      fill(copy.buyShard, { price: ECONOMY.shardPrice }),
-      () => this.buy(),
-    );
+    this.takeButton = this.button(width / 2 - buttonW / 2 - gap / 2, buttonY, buttonW, copy.allocate, () => this.allocate());
+    this.refundButton = this.button(width / 2 + buttonW / 2 + gap / 2, buttonY, buttonW, copy.refund, () => this.refund());
     this.zoomButtons();
 
     fitText(
@@ -172,7 +157,7 @@ export class PassiveScene extends Phaser.Scene {
     this.cameras.main.ignore(this.layer);
     this.treeCam = this.cameras.add(this.view.x, this.view.y, this.view.width, this.view.height);
     this.treeCam.ignore(this.children.list.filter((child) => child !== this.layer));
-    const first = this.view.height / (2 * PASSIVE_TREE.firstRings * 92);
+    const first = this.view.height / (2 * PASSIVE_TREE.firstRings * TREE_SHAPE.cell);
     this.treeCam.setZoom(Phaser.Math.Clamp(first, PASSIVE_TREE.minZoom, PASSIVE_TREE.maxZoom));
     this.treeCam.centerOn(0, 0);
 
@@ -197,18 +182,12 @@ export class PassiveScene extends Phaser.Scene {
     return done;
   }
 
-  /** Takes it back, for a shard. Public so a test can. */
+  /** Takes it back. Public so a test can. */
   public refund(id: PassiveId = this.selected): boolean {
     this.selected = id;
     const done = passives.refund(id);
     this.refresh();
     return done;
-  }
-
-  /** Gold for a shard. Public so a test can. */
-  public buy(): void {
-    passives.buyShard();
-    this.refresh();
   }
 
   /** Moves the tree under its window by this much on screen, as a drag would. Public so a test can. */
@@ -357,15 +336,8 @@ export class PassiveScene extends Phaser.Scene {
     );
   }
 
-  /** Whether the shop can sell a shard now. Public for tests. */
-  public get shopOpen(): boolean {
-    return gold.value >= ECONOMY.shardPrice;
-  }
-
   private refresh(): void {
     const copy = t().passives;
-    const { shards } = passives.value;
-    const account = passives.account;
 
     // Lines first, under the nodes.
     const e = this.edges.clear();
@@ -438,9 +410,7 @@ export class PassiveScene extends Phaser.Scene {
         ? ''
         : taken
           ? passives.isLeaf(spec.id)
-            ? shards >= PASSIVE_RESPEC.shardCost
-              ? copy.taken
-              : fill(copy.noShards, { cost: PASSIVE_RESPEC.shardCost })
+            ? copy.taken
             : copy.cutsOff
           : !passives.isReachable(spec.id)
             ? copy.needsLink
@@ -450,14 +420,7 @@ export class PassiveScene extends Phaser.Scene {
     this.status.setScale(1).setText(status);
     fitText(this.status, this.scale.width - 24, 0);
 
-    const parts = [
-      fill(copy.level, { level: account.level }),
-      fill(copy.xp, { into: account.into, need: account.need }),
-      fill(copy.points, { points: passives.freePoints }),
-      fill(copy.shards, { shards }),
-      fill(copy.goldHeld, { gold: gold.value }),
-    ];
-    this.purse.setScale(1).setText(parts.join('   ·   '));
+    this.purse.setScale(1).setText(fill(copy.points, { points: passives.freePoints, total: passives.totalPoints }));
     fitText(this.purse, this.scale.width - 40);
 
     const paint = (button: PassiveButton, on: boolean) => {
@@ -466,7 +429,25 @@ export class PassiveScene extends Phaser.Scene {
     };
     paint(this.takeButton, passives.canAllocate(spec.id));
     paint(this.refundButton, passives.canRefund(spec.id));
-    paint(this.shopButton, this.shopOpen);
+  }
+
+  /**
+   * The node linked to `id` straight that way, or null: every link runs
+   * across or up and down, at most one each way (config/passives.ts).
+   * Public for tests.
+   */
+  public static linkedToward(id: PassiveId, dx: number, dy: number): PassiveId | null {
+    const here = PASSIVE_NODES[id];
+    if (!here) {
+      return null;
+    }
+    for (const link of here.links) {
+      const there = PASSIVE_NODES[link]!;
+      if (Math.sign(there.x - here.x) === dx && Math.sign(there.y - here.y) === dy) {
+        return link;
+      }
+    }
+    return null;
   }
 
   private static diamond(x: number, y: number, r: number): Phaser.Math.Vector2[] {
@@ -478,28 +459,14 @@ export class PassiveScene extends Phaser.Scene {
     ];
   }
 
-  /** Arrows walk to the nearest node that way; Space takes, R gives back, +/− zoom, Esc out. */
+  /** Arrows walk along the link that way; Space takes, R gives back, +/− zoom, Esc out. */
   private armKeys(): void {
     const keyboard = this.input.keyboard;
     if (!keyboard) {
       return;
     }
     const step = (dx: number, dy: number): void => {
-      const here = PASSIVE_NODES[this.selected]!;
-      let best: PassiveId | null = null;
-      let bestScore = Infinity;
-      for (const spec of ALL_PASSIVE_NODES) {
-        const along = (spec.x - here.x) * dx + (spec.y - here.y) * dy;
-        const across = Math.abs((spec.x - here.x) * dy) + Math.abs((spec.y - here.y) * dx);
-        if (spec.id === here.id || along <= 4) {
-          continue;
-        }
-        const score = along + across * 2;
-        if (score < bestScore) {
-          bestScore = score;
-          best = spec.id;
-        }
-      }
+      const best = PassiveScene.linkedToward(this.selected, dx, dy);
       if (best) {
         this.select(best);
         this.showNode(best);

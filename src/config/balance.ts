@@ -1503,24 +1503,6 @@ export const UPGRADE_MAX_PICKS: Partial<Record<UpgradeKey, number>> = {
   orbitSpeed: 20,
 };
 
-/**
- * ★ 골드 — what a run pays out, and what that buys.
- *
- * A run is paid for the damage it dealt rather than for how long it lasted,
- * so pushing into a crowd you cannot survive is still worth something. The
- * one thing to spend it on is a 신성한 조각, which is the slow, certain way
- * to a passive point when the 우두머리 rolls have not been kind.
- */
-export const ECONOMY = {
-  /**
-   * Damage dealt per gold earned. Raised with the x10 damage scale, so a
-   * run pays what it paid before.
-   */
-  damagePerGold: 1000,
-  /** What one 신성한 조각 costs. */
-  shardPrice: 100,
-} as const;
-
 export const STATS = {
   /** Floor on the resulting cooldown, so attack speed cannot outrun the frame. */
   minCooldownMs: 50,

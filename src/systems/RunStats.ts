@@ -15,10 +15,6 @@ export interface RunSummary {
   readonly skills: readonly RunSkillLine[];
   readonly survivedMs: number;
   readonly level: number;
-  readonly gold: number;
-  /** Account experience the run brought in, and the account level it left. */
-  readonly accountXp?: number;
-  readonly accountLevel?: number;
 }
 
 /**

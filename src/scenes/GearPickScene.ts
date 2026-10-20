@@ -31,8 +31,10 @@ const BUTTON_H = 40;
 
 /**
  * 장비 획득 — a piece picked up in a run, beside what is worn in its slot, and
- * the choice: 착용 (what was worn goes into the 보관함) or 보관. The run is
- * held while it is open, the way a level-up's cards hold it.
+ * the choice, always all three (0.72): 착용 (what was worn goes into the
+ * 보관함), 보관, or 버리기. With the 보관함 full, 보관 is shown dimmed and
+ * cannot be pressed. The run is held while it is open, the way a level-up's
+ * cards hold it.
  */
 export class GearPickScene extends Phaser.Scene {
   public static readonly KEY = SCENES.gearPick;
@@ -101,20 +103,25 @@ export class GearPickScene extends Phaser.Scene {
 
     const choices: { choice: GearPickChoice; label: string }[] = [
       { choice: 'wear', label: copy.pickWear },
-      this.payload.bagFull ? { choice: 'drop', label: copy.pickDiscard } : { choice: 'keep', label: copy.pickKeep },
+      { choice: 'keep', label: copy.pickKeep },
+      { choice: 'drop', label: copy.pickDiscard },
     ];
     const y = Math.min(height - 60, bottom + 34);
+    const buttonW = Math.min(BUTTON_W, (width - 40) / choices.length);
     choices.forEach(({ choice, label }, index) => {
-      const x = width / 2 + (index === 0 ? -1 : 1) * (BUTTON_W / 2 + 8);
+      const x = width / 2 + (index - (choices.length - 1) / 2) * (buttonW + 8);
+      const shut = choice === 'keep' && this.payload.bagFull;
       const plate = this.add
-        .rectangle(x, y, BUTTON_W, BUTTON_H, COLORS.panel, 1)
+        .rectangle(x, y, buttonW, BUTTON_H, COLORS.panel, 1)
         .setStrokeStyle(2, COLORS.panelEdge, 1)
         .setDepth(DEPTH.ui + 1)
-        .setInteractive({ useHandCursor: true });
+        .setInteractive({ useHandCursor: !shut });
       const text = this.add
         .text(x, y, label, { fontFamily: 'system-ui, sans-serif', fontSize: TEXT.size.body, color: COLORS.text })
         .setOrigin(0.5)
-        .setDepth(DEPTH.ui + 2);
+        .setDepth(DEPTH.ui + 2)
+        .setAlpha(shut ? 0.4 : 1);
+      fitText(text, buttonW - 10, 0);
       plate.on(Phaser.Input.Events.GAMEOBJECT_POINTER_OVER, () => this.focus(index));
       plate.on(Phaser.Input.Events.GAMEOBJECT_POINTER_DOWN, () => this.choose(choice));
       this.buttons.push({ choice, plate, label: text });
@@ -136,9 +143,9 @@ export class GearPickScene extends Phaser.Scene {
     this.armKeys();
   }
 
-  /** Takes a choice and closes. Public so a test can. */
+  /** Takes a choice and closes — never 보관 with the 보관함 full. Public so a test can. */
   public choose(choice: GearPickChoice): void {
-    if (this.done) {
+    if (this.done || (choice === 'keep' && this.payload.bagFull)) {
       return;
     }
     this.done = true;
@@ -163,10 +170,12 @@ export class GearPickScene extends Phaser.Scene {
     const onKey = (event: KeyboardEvent): void => {
       switch (event.code) {
         case 'ArrowLeft':
-        case 'ArrowRight':
         case 'KeyA':
+          this.focus((this.focused + this.buttons.length - 1) % this.buttons.length);
+          break;
+        case 'ArrowRight':
         case 'KeyD':
-          this.focus(this.focused === 0 ? 1 : 0);
+          this.focus((this.focused + 1) % this.buttons.length);
           break;
         case 'Space':
         case 'Enter':
@@ -174,11 +183,15 @@ export class GearPickScene extends Phaser.Scene {
           this.choose(this.buttons[this.focused]!.choice);
           break;
         case 'KeyK':
-          this.choose(this.buttons[1]!.choice);
+          this.choose('keep');
+          break;
+        case 'KeyX':
+        case 'Delete':
+          this.choose('drop');
           break;
         case 'Escape':
           // Backing out keeps it, or lets it go when there is no room: never wears it.
-          this.choose(this.buttons[1]!.choice);
+          this.choose(this.payload.bagFull ? 'drop' : 'keep');
           break;
         default:
           return;

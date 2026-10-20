@@ -39,8 +39,8 @@ await sleep(1500);
 const written = await ev(`(() => {
   const s = window.game.scene.getScene('GameScene');
   s.writeSave();
-  window.passives.buyShard?.();
-  window.passives.addShard();
+  window.passives.reset();
+  window.passives.allocate('warrior.s1');
   const save = localStorage.getItem('${SAVE}'), tree = localStorage.getItem('${TREE}');
   return { save: JSON.parse(save)._s !== undefined, tree: JSON.parse(tree)._s !== undefined,
            saveOpen: window.openRecord('${SAVE}', save).state, treeOpen: window.openRecord('${TREE}', tree).state };
@@ -65,22 +65,22 @@ check('one edited by hand is not offered, and is thrown away', edited.offered ==
 // --- 3. the tree, edited by hand, starts over ---
 await ev(`(() => {
   const raw = JSON.parse(localStorage.getItem('${TREE}'));
-  raw.bonusPoints = 40;
+  raw.allocated = ['warrior.s1', 'warrior.s2', 'warrior.s3'];
   localStorage.setItem('${TREE}', JSON.stringify(raw));
   return 1;
 })()`);
 await reload();
 const tree = await ev(`(() => window.passives.value)()`);
-check('a tree edited by hand starts over', tree.bonusPoints === 0 && tree.shards === 0, JSON.stringify(tree));
+check('a tree edited by hand starts over', tree.allocated.length === 0, JSON.stringify(tree));
 
 // --- 4. records from before the seal: taken and sealed in the grace, refused after ---
 await ev(`(() => {
   localStorage.setItem('${SAVE}', ${JSON.stringify(JSON.stringify(legacyRun))});
-  localStorage.setItem('${TREE}', JSON.stringify({ version: 2, shards: 3, xp: 0, bonusPoints: 2, allocated: [] }));
+  localStorage.setItem('${TREE}', JSON.stringify({ version: 3, allocated: ['warrior.s1', 'warrior.s2'] }));
   return 1;
 })()`);
 await reload();
-const graced = await ev(`(() => ({ points: window.passives.value.bonusPoints, resealed: JSON.parse(localStorage.getItem('${TREE}'))._s !== undefined,
+const graced = await ev(`(() => ({ points: window.passives.value.allocated.length, resealed: JSON.parse(localStorage.getItem('${TREE}'))._s !== undefined,
   grace: window.config.SEAL.graceUntil > Date.now() }))()`);
 const graceOffered = await loadOffered();
 check('while the grace lasts, records from before the seal are taken', graced.grace && graced.points === 2 && graceOffered === true, JSON.stringify(graced));
@@ -96,14 +96,14 @@ const after = await ev(`(() => {
 check('after it, a record with no seal is refused like an edited one', after === 'tampered', after);
 
 // --- 5. what comes over from the old address is sealed as it lands ---
-const items = { [TREE]: JSON.stringify({ version: 2, shards: 1, xp: 0, bonusPoints: 5, allocated: [] }) };
+const items = { [TREE]: JSON.stringify({ version: 3, allocated: ['warrior.s1', 'warrior.s2', 'warrior.s3', 'warrior.s4', 'warrior.s5'] }) };
 const carry = Buffer.from(JSON.stringify({ v: 1, items }), 'utf8').toString('base64url');
 await ev(`(() => { localStorage.clear(); return 1; })()`);
 await cdp.send('Page.navigate', { url: 'about:blank' });
 await sleep(300);
 await cdp.send('Page.navigate', { url: `http://localhost:5173/#carry=${carry}` });
 await sleep(4200);
-const carried = await ev(`(() => ({ points: window.passives.value.bonusPoints, sealed: JSON.parse(localStorage.getItem('${TREE}') || '{}')._s !== undefined }))()`);
+const carried = await ev(`(() => ({ points: window.passives.value.allocated.length, sealed: JSON.parse(localStorage.getItem('${TREE}') || '{}')._s !== undefined }))()`);
 check('a tree brought from the old address lands sealed, and counts', carried.points === 5 && carried.sealed, JSON.stringify(carried));
 
 console.log('\n=== SUMMARY ===');

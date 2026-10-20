@@ -39,7 +39,7 @@ wrong shape.
 | `src/config/balance.ts` | ★ the tuning file. Enemies, skills, 속성 and their tier ladders, the difficulty ramp. The user edits this directly. |
 | `src/config/equipment.ts` | weapons (장비) and the 구슬 that change them |
 | `src/config/bones.ts` | 뼈다귀 — what is spent before a run to change that run |
-| `src/config/passives.ts` | the passive tree, bought with 신성한 조각 |
+| `src/config/passives.ts` | the passive tree on its grid, and the points everyone has |
 | `src/config/visuals.ts` | colours, depths, text sizes, texture keys, label tiers |
 | `src/config/system.ts` | scene keys, storage keys, separation, tilt, timing |
 | `src/entities/` | Player, Enemy, and everything that lies on the ground |
@@ -68,7 +68,7 @@ wrong shape.
   centre it (`src/systems/Layout.ts`); landscape is only ever ~540 tall, so a
   screen that fits upright can still overflow lying down. Check both.
 - **Everything the player keeps is in `localStorage`** behind `STORAGE.*`:
-  the passive tree, the purse, the 뼈다귀 drawer, the save slot and the
+  the passive tree, the 뼈다귀 drawer, the save slot and the
   settings. Gear and 구슬 are not among them: they live in the run
   (`RunKit`, carried by the save slot only). Stores cache: writing the key behind a
   store's back does not change what the store already has in memory.
@@ -129,7 +129,7 @@ set takes about six minutes. One suite on its own: `node run-all.mjs test-gear`.
   it and the suite dies with `undefined`. Return the answer, not the corpus.
 - Dev-only handles the suites drive: `window.game`, `window.config`,
   `window.bones`, `window.passives`, `window.rollGearItem`,
-  `window.gold`, `window.gearBonusFor`, `window.orbApplied`, `window.sealRecord`,
+  `window.gearBonusFor`, `window.orbApplied`, `window.sealRecord`,
   `window.openRecord`,
   `window.critMultiplierFor`. They are behind `import.meta.env.DEV`, so the
   deployed build does not have them — a live check can only click and look.
@@ -226,14 +226,16 @@ Read `git log` for what changed and when. What is not in the log:
   (`GEAR_SLOTS`: 무기 · 방어구 · 장신구), five bases each, every base its
   icon and 고정 속성; each 속성 names the `slots` it rolls on (`affixPool`).
   A run's `RunKit` (systems/RunKit.ts) holds what is worn, the 보관함
-  (`RUN_BAG.capacity`) and the 구슬 picked up; it starts on a bare 녹슨 검,
+  (`RUN_BAG.capacity`) and the 구슬 picked up; it starts on `STARTING_KIT`
+  worn bare (a 녹슨 검 and, since 0.72, a 천옷),
   is carried by the save (`SavedRun.kit`; an older save's `gear` comes back
   worn) and goes with the run. The title has no 인벤토리, there is no 판매,
   and the old stash and 구슬 drawer keys (`RETIRED_STORAGE`) are
   cleared on load — the user chose to delete them, not pay them out. A piece
   picked up queues a `gear` choice: `GearPickScene` shows it beside what is
-  worn (`drawGearCard`) and offers 착용 (the old piece goes to the 보관함) or
-  보관 — 버리기 instead when the 보관함 is full; one the 아이템 필터 hides goes
+  worn (`drawGearCard`) and always offers all three (0.72): 착용 (the old
+  piece goes to the 보관함), 보관 (dimmed and dead while the 보관함 is full)
+  and 버리기; one the 아이템 필터 hides goes
   into the 보관함 without asking. The pause menu's 장비 (`RunGearScene`)
   wears, combines and drops (both asked twice) and opens `OrbScene` on any
   piece, worn or kept. 합성 (`RunKit.combineSet`/`combine`,
@@ -243,14 +245,9 @@ Read `git log` for what changed and when. What is not in the log:
   (tier 1 is a 우두머리's only, so a tier-2 piece cannot go in). A drop's
   line count is its 등급's (`GEAR_DROP.grades`: 일반 2 · 마법 4 · 희귀 6, by
   weight, `rollGrade`); 구슬 can still leave any count, and the 등급 shown is
-  read off the count (`AUDIO.dropTiers`). An empty slot (nothing worn, or
-  the 녹슨 검 still bare; nothing of it kept or lying on the ground —
-  `GameScene.emptySlots`) gets a piece off a kill at
-  `GEAR_DROP.emptySlot.chance`, certain after `pityKills` dry kills
-  (`rollEmptySlotGear`, `rollGearForSlot` over the `fromKill` bases): the
-  user wanted all three filled inside two minutes. The harness turns that
-  rule off (a suite would walk into 장비 획득) unless a page sets
-  `window.__emptySlotOn` (test-runloot does). Every change refits the run at once (`GameScene.refitGear`, health
+  read off the count (`AUDIO.dropTiers`). (0.71 had an empty-slot rule —
+  a piece certain for a slot still bare within some kills; the user had it
+  taken out in 0.72 with every kill rate halved.) Every change refits the run at once (`GameScene.refitGear`, health
   kept, only held under the new bar). `gearBonusFor` takes the worn list;
   `describeGear`/`orbNote` (systems/GearText) are the read-outs.
 - **Contact is per enemy.** A body hurts through `Player.takeContact` on its
@@ -431,7 +428,7 @@ Read `git log` for what changed and when. What is not in the log:
   in-page stand-in for /api/balance; test-api covers the endpoint.
 - **아이템 필터.** `config/itemFilter.ts` builds a switch per kind of drop
   from the tables (구슬, 뼈다귀, swords by base and by rarity, plus potion,
-  skill, 무작위 스킬, 망고, 조각); `systems/ItemFilter.ts` keeps the ones
+  skill, 무작위 스킬, 망고); `systems/ItemFilter.ts` keeps the ones
   switched off (`STORAGE.itemFilter`, synced with the rest). A switched-off
   drop still lands and is still taken by touch or 자석 — it is only hidden
   (`GroundItem.conceal`: no sprite, name, pillar, halo, sound, edge marker
@@ -518,7 +515,7 @@ Read `git log` for what changed and when. What is not in the log:
   1 + `BOSS.dropBonus` for a 우두머리. The 하얀 망고 and the 자석 are the
   exceptions the user asked for: a flat `MANGO.chance` / `MAGNET.chance` off
   every kill. What only a 우두머리 leaves (its
-  certain weapon, shards, a `fromBossOnly` 구슬, a 뼈다귀 with `fromKill: 0`)
+  certain piece of gear, a `fromBossOnly` 구슬, a 뼈다귀 with `fromKill: 0`)
   and what is certain are not multiplied. A new drop should go through the
   same `bonus` in `CombatSystem.killEnemy`.
 - **Gear by tier — 1 is the best**, the same way round as an 속성's
@@ -598,18 +595,25 @@ Read `git log` for what changed and when. What is not in the log:
   lasting bonus is a `Modifier` (`config/stats.ts`: a `StatId`, a value, an
   optional skill tag); `systems/StatSheet` sums them (a tagged one counts
   only for a skill carrying the tag). `config/passives.ts` builds
-  `PASSIVE_NODES` from six branch drafts (spine of seven rings, two arms, a
-  utility node between branches, arm ends cross-linked): a small node is
+  `PASSIVE_NODES` from six branch drafts (spine of seven rings, two arms,
+  arm ends cross-linked) laid on a grid (`TREE_SHAPE`, 0.72): every link
+  runs straight across or up and down, at most one each way from a node,
+  and none over another node — so an arrow key walks the link that way
+  (`PassiveScene.linkedToward`), and test-passive checks all of it. Three
+  branches climb and three go down from three columns: the middle one off
+  the start, the side ones off a junction (`util.1`/`util.3`) the start
+  reaches in one long step, with a utility node past each. A small node is
   paid `NODE_VALUES[stat][ringTier(ring)]`, a 핵심 has its own mods, a
   키스톤 a `KEYSTONES` entry whose numbers the code reads (학살자 in
   `GameScene.onKilledBy`, 원소 과부하 via `onCrit`/`overloadOf`, 철인 in
   `Player.takeDamage`/`hurt`, 암살자의 표식 via `nonCritScale` and
-  `Player.critChance`, 일점사/영원의 계약 in `Modifiers`). Points are the
-  account level (`ACCOUNT_LEVEL`; every gem's XP is gathered in
-  `GameScene.pendingAccountXp` and handed over by `flushAccountXp` on each
-  save and at death) plus `bonusPoints` (an old ranks tree, refunded on
-  load). 신성한 조각 are now only the refund cost (`PASSIVE_RESPEC`). The
-  store keeps `allocated` joined to the start (`isLeaf` for refunds).
+  `Player.critChance`, 일점사/영원의 계약 in `Modifiers`). Every player has
+  `PASSIVE_POINTS` (15) and takes a node back for nothing (0.72, the
+  user's ask: no account level, no 신성한 조각, no gold — the purse key is
+  in `RETIRED_STORAGE`); a stored tree from before (version 2) starts
+  empty. The store keeps `allocated` joined to the start (`isLeaf` for
+  refunds) and no longer than the points. Fifteen points hold two branches
+  at most, so test-passive tries the 키스톤 two branches at a time.
   `Modifiers.ts` folds the sheet per skill: damage, attack speed,
   projectile speed (and so a thrown skill's range), extra projectiles,
   pierce, chain, area (`WeaponContext.areaScale`, a radius: √ of the area
@@ -637,7 +641,9 @@ Read `git log` for what changed and when. What is not in the log:
   `perRun(n)` over `ORB_DROP.runKills`, the user's 30/10/10/5/3 on trial),
   so an `OrbDrop` has no name over it, no landing sound and no edge marker:
   inside the survivor's `pickupRadius` it flies in the way an `XpGem` does,
-  and the pickup's toast names it.
+  and the pickup's toast names it. What is held is counted at the bottom
+  right through the run (`systems/OrbTray.ts`, `HUD.orbTray`: every kind's
+  icon and number, faint at none — 0.72).
 - **The opening is slower (0.71).** `SPAWN.opening`: every spawn gap is
   `intervalScale` times as long until `untilMs`, easing back over `blendMs`
   (`SpawnDirector.intervalMs`), so a survivor with no gear yet is not

@@ -3,7 +3,7 @@ import {
   ALL_BONES,
   ALL_ORBS,
   ALL_PASSIVE_NODES,
-  PASSIVE_RESPEC,
+  PASSIVE_POINTS,
   ALTAR,
   ALTAR_OFFERS,
   BALANCE,
@@ -22,7 +22,6 @@ import {
   RANKING,
   RARE,
   SAVE,
-  SHARD,
   SKILL_BASE,
   SKILL_DROP,
   SKILL_MASTERY,
@@ -166,7 +165,6 @@ function values(): Record<string, string | number> {
     spawnStart: seconds(SPAWN.startIntervalMs),
     spawnMin: seconds(SPAWN.minIntervalMs),
     maxAlive: SPAWN.maxAlive,
-    shardChance: percent(SHARD.chance),
     bossBonus: `+${percent(BOSS.dropBonus)}`,
     dropBonus: `+${percent(RARE.dropBonusPerAffix)}`,
     rareChance: percent(RARE.chance),
@@ -197,7 +195,7 @@ function values(): Record<string, string | number> {
     altarOffers: (Object.keys(ALTAR_OFFERS) as AltarOfferId[])
       .map((id) => altarOfferText(id))
       .join(', '),
-    respecCost: PASSIVE_RESPEC.shardCost,
+    passivePoints: PASSIVE_POINTS,
     fromKillTiers: tierSpan(
       Object.values(GEAR)
         .filter((spec) => spec.fromKill !== undefined)

@@ -33,7 +33,6 @@ import { OrbDrop } from '@/entities/OrbDrop';
 import { RandomSkillDrop } from '@/entities/RandomSkillDrop';
 import { MangoDrop } from '@/entities/MangoDrop';
 import { MagnetDrop } from '@/entities/MagnetDrop';
-import { ShardDrop } from '@/entities/ShardDrop';
 import { dropTierFor, rollOrbDrop, type GearItem } from '@/systems/Gear';
 import type { RunStats } from '@/systems/RunStats';
 import { HealthPotion } from '@/entities/HealthPotion';
@@ -58,8 +57,6 @@ export interface CombatHooks {
   readonly rollGearDrop: (fromBoss: boolean, bonus: number) => GearItem | null;
   readonly onGearCollected: (item: GearItem) => void;
   /** True when this kill also owes a 신성한 조각. */
-  readonly rollShardDrop: (fromBoss: boolean) => boolean;
-  readonly onShardCollected: () => void;
   /** Called when the player walks over a 구슬. */
   readonly onOrbCollected: (id: OrbId) => void;
   /** Called when the player walks over a 뼈다귀. */
@@ -77,9 +74,8 @@ export interface CombatHooks {
   readonly onCrit?: (skill: SkillId | undefined) => void;
   /** A kill, and the skill that made it (학살자 listens): the dead enemy's place and full health. */
   readonly onKill?: (skill: SkillId | undefined, x: number, y: number, maxHp: number) => void;
-  /** What every gem's experience is multiplied by, and where it goes besides the run (the account). */
+  /** What every gem's experience is multiplied by. */
   readonly xpScale?: () => number;
-  readonly onXp?: (amount: number) => void;
   /** Called when the player walks over a dropped skill. */
   readonly onSkillCollected: (skill: SkillId) => void;
   /** A rare with the 거미 속성 died here: lay its web. */
@@ -122,7 +118,6 @@ export class CombatSystem {
   public readonly enemyShots: Phaser.Physics.Arcade.Group;
   public readonly potions: Phaser.Physics.Arcade.Group;
   public readonly gearDrops: Phaser.Physics.Arcade.Group;
-  public readonly shardDrops: Phaser.Physics.Arcade.Group;
   public readonly orbDrops: Phaser.Physics.Arcade.Group;
   public readonly boneDrops: Phaser.Physics.Arcade.Group;
   /** 무작위 스킬 lying on the ground. */
@@ -179,7 +174,6 @@ export class CombatSystem {
 
     this.potions = scene.physics.add.group({ classType: HealthPotion, runChildUpdate: true });
     this.gearDrops = scene.physics.add.group({ classType: GearDrop, runChildUpdate: true });
-    this.shardDrops = scene.physics.add.group({ classType: ShardDrop, runChildUpdate: true });
     this.orbDrops = scene.physics.add.group({ classType: OrbDrop, runChildUpdate: true });
     this.boneDrops = scene.physics.add.group({ classType: BoneDrop, runChildUpdate: true });
     this.randomSkillDrops = scene.physics.add.group({ classType: RandomSkillDrop, runChildUpdate: true });
@@ -194,7 +188,6 @@ export class CombatSystem {
     scene.physics.add.overlap(player, this.gems, this.onGemTouch, undefined, this);
     scene.physics.add.overlap(player, this.skillDrops, this.onSkillTouch, undefined, this);
     scene.physics.add.overlap(player, this.gearDrops, this.onGearTouch, undefined, this);
-    scene.physics.add.overlap(player, this.shardDrops, this.onShardTouch, undefined, this);
     scene.physics.add.overlap(player, this.orbDrops, this.onOrbTouch, undefined, this);
     scene.physics.add.overlap(player, this.boneDrops, this.onBoneTouch, undefined, this);
     scene.physics.add.overlap(player, this.randomSkillDrops, this.onRandomSkillTouch, undefined, this);
@@ -232,20 +225,6 @@ export class CombatSystem {
 
     potion.drop(x, y);
     this.land(potion, itemFilter.shows('potion'), null);
-  }
-
-  /** Places a 신성한 조각 directly — used by the kill and by debug keys. */
-  public dropShardAt(x: number, y: number): void {
-    [x, y] = this.onGround(x, y);
-    const shard = this.shardDrops.get() as ShardDrop | null;
-    if (!shard) {
-      return;
-    }
-
-    shard.drop(x, y);
-    // Its nameplate is the 희귀 one, so its sound is too: one ladder, or the
-    // ear and the eye disagree about the same object on the floor.
-    this.land(shard, itemFilter.shows('shard'), 'rare');
   }
 
   /** Places a 구슬 directly — used by the kill roll and by debug keys. */
@@ -327,7 +306,6 @@ export class CombatSystem {
     take(this.gems, this.onGemTouch);
     take(this.skillDrops, this.onSkillTouch);
     take(this.gearDrops, this.onGearTouch);
-    take(this.shardDrops, this.onShardTouch);
     take(this.orbDrops, this.onOrbTouch);
     take(this.boneDrops, this.onBoneTouch);
     take(this.randomSkillDrops, this.onRandomSkillTouch);
@@ -652,7 +630,6 @@ export class CombatSystem {
     gem.collect();
     const xp = gem.value * (this.hooks.xpScale?.() ?? 1);
     this.progression.addXp(xp);
-    this.hooks.onXp?.(xp);
   };
 
   private onPotionTouch: Phaser.Types.Physics.Arcade.ArcadePhysicsCallback = (_player, b) => {
@@ -696,16 +673,6 @@ export class CombatSystem {
     if (item) {
       this.hooks.onGearCollected(item);
     }
-  };
-
-  private onShardTouch: Phaser.Types.Physics.Arcade.ArcadePhysicsCallback = (_player, b) => {
-    const shard = b as unknown as ShardDrop;
-    if (!shard.active) {
-      return;
-    }
-
-    shard.collect();
-    this.hooks.onShardCollected();
   };
 
   private onOrbTouch: Phaser.Types.Physics.Arcade.ArcadePhysicsCallback = (_player, object) => {
@@ -815,11 +782,6 @@ export class CombatSystem {
     const found = this.hooks.rollGearDrop(wasBoss, bonus);
     if (found) {
       this.dropGearAt(x, y, found);
-    }
-
-    // And half of them leave a 신성한 조각 beside it.
-    if (this.hooks.rollShardDrop(wasBoss)) {
-      this.dropShardAt(x + 18, y);
     }
 
     // And a 제단 — always off a 우두머리, now and then off anything else —

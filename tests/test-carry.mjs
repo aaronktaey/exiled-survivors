@@ -22,9 +22,10 @@ const BASE = 'http://localhost:5173/';
 const encode = (items) =>
   Buffer.from(JSON.stringify({ v: 1, items }), 'utf8').toString('base64url');
 // The tree, marked by its account experience: what a player keeps between runs.
-const MOVED_XP = 7007;
+// The tree that comes over is told by how many nodes it has taken.
+const MOVED_XP = 3;
 const items = {
-  'exiled-survivors:passives:v1': JSON.stringify({ version: 2, shards: 3, xp: MOVED_XP, bonusPoints: 0, allocated: [] }),
+  'exiled-survivors:passives:v1': JSON.stringify({ version: 3, allocated: ['warrior.s1', 'warrior.s2', 'warrior.s3'] }),
   // The equipment stash an old browser still holds: gear no longer outlives a
   // run, so it comes over and is cleared at once.
   'exiled-survivors:gear:v2': JSON.stringify({ items: [{ uid: 'moved', id: 'runedSword', prefixes: [], suffixes: [] }], equipped: 'moved' }),
@@ -58,7 +59,7 @@ try {
   await arrive(`${BASE}#carry=${encode(items)}`);
   const fresh = await ev(`(() => ({
     hash: location.hash,
-    xp: window.passives.value.xp,
+    xp: window.passives.value.allocated.length,
     stash: localStorage.getItem('exiled-survivors:gear:v2'),
     bones: window.bones.count('rib'),
     foreign: localStorage.getItem('someone-else:key'),
@@ -85,14 +86,14 @@ try {
   // --- 3. a browser that already has records here is asked first ---
   await ev(`(() => { localStorage.setItem('__answer', 'no'); return 1; })()`);
   await arrive(`${BASE}#carry=${encode(items)}`);
-  const declined = await ev(`(() => ({ asked: window.__asked ?? null, xp: window.passives.value.xp, hash: location.hash }))()`);
+  const declined = await ev(`(() => ({ asked: window.__asked ?? null, xp: window.passives.value.allocated.length, hash: location.hash }))()`);
   check('a browser with records here is asked, and keeps its own when it says no',
     typeof declined.asked === 'string' && declined.asked.length > 0 && declined.xp !== undefined && declined.hash === '',
     JSON.stringify(declined));
 
   await ev(`(() => { localStorage.setItem('__answer', 'yes'); window.passives.reset(); return 1; })()`);
   await arrive(`${BASE}#carry=${encode(items)}`);
-  const accepted = await ev(`(() => ({ asked: window.__asked ?? null, xp: window.passives.value.xp }))()`);
+  const accepted = await ev(`(() => ({ asked: window.__asked ?? null, xp: window.passives.value.allocated.length }))()`);
   check('and takes them when it says yes', typeof accepted.asked === 'string' && accepted.xp === MOVED_XP,
     JSON.stringify(accepted));
 

@@ -49,7 +49,7 @@ check('each one is served as audio, not as the index page',
   urls.every((u) => u.status === 200 && /audio|mpeg/.test(u.type ?? '') && u.bytes > 4000),
   urls.map((u) => `${u.file} ${u.status} ${u.type} ${u.bytes}B`).join(' / '));
 
-// --- 3. a skill and a 신성한 조각 land on the ordinary clip ---
+// --- 3. a skill lands on the ordinary clip, a 하얀 망고 on the rare one ---
 const plain = await run(`
   window.__plays = [];
   const mgr = s.sound;
@@ -58,11 +58,11 @@ const plain = await run(`
 
   s.combat.dropSkillAt(s.player.x + 300, s.player.y,
     { id: 'fireball', name: '화염구', tags: [] });
-  s.combat.dropShardAt(s.player.x + 320, s.player.y);
+  s.combat.dropMangoAt(s.player.x + 320, s.player.y);
 
   const calls = window.__plays.slice();
   mgr.play = orig;
-  s.combat.shardDrops.getChildren().forEach(d => d.active && d.collect());
+  s.combat.mangoDrops.getChildren().forEach(d => d.active && d.collect());
   return { calls };
 `);
 console.log('plain drops:', JSON.stringify(plain.calls));
@@ -70,7 +70,7 @@ check('a skill lands on the ordinary clip',
   plain.calls[0]?.key === 'sfx-drop-normal', `key=${plain.calls[0]?.key}`);
 // Its nameplate is the 희귀 one, so its sound is the 희귀 one: the ear and
 // the eye are told the same thing about the same object on the floor.
-check('a 신성한 조각 sounds as rare as it is labelled',
+check('a 하얀 망고 sounds as rare as it is labelled',
   plain.calls[1]?.key === 'sfx-drop-rare', `key=${plain.calls[1]?.key}`);
 check('at the configured volume', plain.calls[0]?.cfg?.volume === 0.55,
   `volume=${plain.calls[0]?.cfg?.volume}`);

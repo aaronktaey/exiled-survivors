@@ -6,26 +6,37 @@ import type { SkillTag } from '@/weapons/skills';
  * small. The start sits in the middle; six branches leave it, each its own
  * way to build, and a node can be taken once it touches one already taken.
  *
- *   북   전사 — 근접 · 물리 · 출혈          → 학살자
- *   북동 사냥꾼 — 투사체 · 관통 · 연쇄      → 일점사
- *   남동 원소술사 — 화염 · 냉기 · 번개      → 원소 과부하
- *   남   공허술사 — 공허 · 오라 · 지속      → 영원의 계약
- *   남서 수호자 — 체력 · 무적 · 포션        → 철인
- *   북서 암살자 — 치명타 · 공격속도 · 이동  → 암살자의 표식
+ * Every node sits on a grid and every link runs straight across or straight
+ * up and down (0.72, the user's ask), so the arrow keys walk the tree link
+ * by link. Three branches climb, three go down, from three columns: the
+ * middle one off the start itself, the side ones off a junction the start
+ * reaches in one long step either way.
+ *
+ *         암살자        전사        사냥꾼
+ *            │           │            │
+ *   ─ 유틸 ─ 갈림길 ─── 시작 ─── 갈림길 ─ 유틸
+ *            │           │            │
+ *         수호자      공허술사     원소술사
+ *
+ *   전사 — 근접 · 물리 · 출혈          → 학살자
+ *   사냥꾼 — 투사체 · 관통 · 연쇄      → 일점사
+ *   원소술사 — 화염 · 냉기 · 번개      → 원소 과부하
+ *   공허술사 — 공허 · 오라 · 지속      → 영원의 계약
+ *   수호자 — 체력 · 무적 · 포션        → 철인
+ *   암살자 — 치명타 · 공격속도 · 이동  → 암살자의 표식
  *
  * Each branch is a spine of seven rings (small, small, 핵심, small, small,
- * 핵심, 키스톤) with an arm off each side whose end is a 핵심 too; the end of
- * one branch's right arm reaches the next branch's left arm, so a build can
- * cross over. Between the branches by the start, a utility node.
+ * 핵심, 키스톤) with an arm off each side — one step across, then on the
+ * spine's way — whose end is a 핵심 too; neighbouring arm ends on the same
+ * side of the start meet, so a build can cross over.
  *
  * Further out is better: a small node is worth NODE_VALUES at its ring's
  * tier, and a 핵심 is two to three small nodes in one. A 키스톤 changes a
  * rule and asks something back (KEYSTONES). Numbers are first guesses, to be
  * balanced by play.
  *
- * Points come from the account level (ACCOUNT_LEVEL), which every run's
- * experience feeds. A node taken back costs PASSIVE_RESPEC.shardCost 신성한
- * 조각 — the shard is the tree's eraser now, not its currency.
+ * Every player has PASSIVE_POINTS to spend, and takes a node back for
+ * nothing (0.72: no account level, 신성한 조각 or gold any more).
  */
 
 export type PassiveNodeKind = 'start' | 'small' | 'notable' | 'keystone';
@@ -43,7 +54,7 @@ export interface PassiveNodeSpec {
   /** Korean name of a 핵심 or 키스톤; a locale renames it through `names.passives`. Small nodes are named by what they give. */
   readonly name?: string;
   readonly branch?: PassiveBranchId;
-  /** Where it is drawn, in the tree's own px, the start at 0, 0. */
+  /** Where it is drawn, in the tree's own px, the start at 0, 0 — always on the grid (TREE_SHAPE.cell). */
   readonly x: number;
   readonly y: number;
   /** The nodes it touches, both ways. */
@@ -130,37 +141,14 @@ export const KEYSTONES = {
 const KEYSTONE_CHECK: Record<KeystoneId, { readonly detail: string }> = KEYSTONES;
 void KEYSTONE_CHECK;
 
-/** How far apart the rings are drawn, and how far an arm leans off its spine. */
+/** The grid: one cell's side in the tree's px, and how far either side of the start the side columns stand, in cells. */
 export const TREE_SHAPE = {
-  ringGap: 92,
-  armDegrees: 14,
-  /** Where the utility nodes sit between two branches, in rings. */
-  utilityRing: 1.75,
+  cell: 92,
+  sideColumn: 4,
 } as const;
 
-/**
- * ★ 계정 레벨 — every run's experience (the gems it picked up) goes into one
- * pot that outlives runs; each level is one point for the tree. Leaving
- * level n costs `base × n^power`: a first good run is a handful of levels,
- * the twentieth level about twenty good runs.
- */
-export const ACCOUNT_LEVEL = {
-  base: 300,
-  power: 1.5,
-  maxLevel: 100,
-} as const;
-
-/** What it costs to take one node back: it must not cut anything off the start. */
-export const PASSIVE_RESPEC = {
-  shardCost: 1,
-} as const;
-
-export const SHARD = {
-  /** Share of 우두머리 kills that leave one. */
-  chance: 0.195,
-  /** How big it is drawn on the ground. */
-  size: 16,
-} as const;
+/** ★ 패시브 포인트: what every player has to spend on the tree, the same for all. */
+export const PASSIVE_POINTS = 15;
 
 // --- The tree, as data -------------------------------------------------------
 
@@ -311,14 +299,30 @@ const BRANCHES: readonly BranchDraft[] = [
   },
 ];
 
-/** Between each branch and the next round, by the start: a little of everything. */
-const UTILITIES: readonly Modifier[] = [
-  mod('xpGain', 4),
-  mod('itemFind', 4),
-  mod('damage', 3),
-  mod('pickup', 10),
-  mod('moveSpeed', 2),
-  mod('attackSpeed', 2),
+/**
+ * Where each branch stands: its column (in cells, the start's at 0) and
+ * which way it runs (-1 up, 1 down). Left to right the climbing ones are
+ * 암살자, 전사, 사냥꾼; under them 수호자, 공허술사, 원소술사 — the order
+ * the neighbouring arm ends meet in.
+ */
+const PLACES: Record<PassiveBranchId, { readonly column: number; readonly way: -1 | 1 }> = {
+  assassin: { column: -1, way: -1 },
+  warrior: { column: 0, way: -1 },
+  hunter: { column: 1, way: -1 },
+  guardian: { column: -1, way: 1 },
+  voidcaller: { column: 0, way: 1 },
+  elementalist: { column: 1, way: 1 },
+};
+
+/**
+ * The junctions the side branches leave from (left and right of the start),
+ * and a utility node further out past each: a little of everything.
+ */
+const UTILITIES: readonly { readonly id: PassiveId; readonly cells: number; readonly mod: Modifier }[] = [
+  { id: 'util.1', cells: 1, mod: mod('damage', 3) },
+  { id: 'util.2', cells: 2, mod: mod('pickup', 10) },
+  { id: 'util.3', cells: -1, mod: mod('attackSpeed', 2) },
+  { id: 'util.4', cells: -2, mod: mod('itemFind', 4) },
 ];
 
 /** Where the arms leave their spine, and the rings they reach. */
@@ -327,17 +331,15 @@ const RIGHT_FROM = 3;
 
 function buildTree(): Record<PassiveId, PassiveNodeSpec> {
   const nodes: Record<PassiveId, { -readonly [K in keyof PassiveNodeSpec]: PassiveNodeSpec[K] } & { links: PassiveId[] }> = {};
-  const at = (ring: number, degrees: number) => {
-    const r = ring * TREE_SHAPE.ringGap;
-    const a = (degrees * Math.PI) / 180;
-    return { x: Math.round(Math.cos(a) * r), y: Math.round(Math.sin(a) * r) };
-  };
+  const { cell, sideColumn } = TREE_SHAPE;
+  // A side column's own x, in cells: a junction's, and the side branches' spines.
+  const columnX = (column: number) => column * sideColumn;
+  const at = (cx: number, cy: number) => ({ x: cx * cell, y: cy * cell });
   const link = (a: PassiveId, b: PassiveId) => {
     nodes[a]!.links.push(b);
     nodes[b]!.links.push(a);
   };
-  const place = (id: PassiveId, draft: NodeDraft, ring: number, degrees: number, branch: PassiveBranchId) => {
-    const where = at(ring, degrees);
+  const place = (id: PassiveId, draft: NodeDraft, ring: number, cx: number, cy: number, branch: PassiveBranchId) => {
     const mods =
       draft.kind === 'small'
         ? [mod(draft.stat, NODE_VALUES[draft.stat][ringTier(ring)], draft.tag)]
@@ -350,7 +352,7 @@ function buildTree(): Record<PassiveId, PassiveNodeSpec> {
       ...(draft.kind === 'small' ? {} : { name: draft.name }),
       ...(draft.kind === 'keystone' ? { keystone: draft.keystone } : {}),
       branch,
-      ...where,
+      ...at(cx, cy),
       links: [],
       mods,
     };
@@ -358,37 +360,54 @@ function buildTree(): Record<PassiveId, PassiveNodeSpec> {
 
   nodes.start = { id: 'start', kind: 'start', x: 0, y: 0, links: [], mods: [] };
 
+  // The junctions either side, one long step from the start, and a utility past each.
+  for (const util of UTILITIES) {
+    const side = Math.sign(util.cells);
+    const cx = columnX(side) + (Math.abs(util.cells) - 1) * side;
+    nodes[util.id] = { id: util.id, kind: 'small', ...at(cx, 0), links: [], mods: [util.mod] };
+  }
+  link('start', 'util.1');
+  link('util.1', 'util.2');
+  link('start', 'util.3');
+  link('util.3', 'util.4');
+  const rootOf = (column: number): PassiveId => (column === 0 ? 'start' : column > 0 ? 'util.1' : 'util.3');
+
   for (const branch of BRANCHES) {
+    const { column, way } = PLACES[branch.id];
+    const cx = columnX(column);
     branch.spine.forEach((draft, i) => {
       const id = `${branch.id}.s${i + 1}`;
-      place(id, draft, i + 1, branch.angle, branch.id);
-      link(id, i === 0 ? 'start' : `${branch.id}.s${i}`);
+      place(id, draft, i + 1, cx, way * (i + 1), branch.id);
+      link(id, i === 0 ? rootOf(column) : `${branch.id}.s${i}`);
     });
+    // An arm: one cell across from its spine ring, then on the spine's way.
     branch.left.forEach((draft, i) => {
       const ring = LEFT_FROM + 1 + i;
       const id = `${branch.id}.l${ring}`;
-      place(id, draft, ring, branch.angle - TREE_SHAPE.armDegrees, branch.id);
+      place(id, draft, ring, cx - 1, way * (LEFT_FROM + i), branch.id);
       link(id, i === 0 ? `${branch.id}.s${LEFT_FROM}` : `${branch.id}.l${ring - 1}`);
     });
     branch.right.forEach((draft, i) => {
       const ring = RIGHT_FROM + 1 + i;
       const id = `${branch.id}.r${ring}`;
-      place(id, draft, ring, branch.angle + TREE_SHAPE.armDegrees, branch.id);
+      place(id, draft, ring, cx + 1, way * (RIGHT_FROM + i), branch.id);
       link(id, i === 0 ? `${branch.id}.s${RIGHT_FROM}` : `${branch.id}.r${ring - 1}`);
     });
   }
 
-  BRANCHES.forEach((branch, i) => {
-    const next = BRANCHES[(i + 1) % BRANCHES.length]!;
-    // The far ends of two neighbouring arms meet.
-    link(`${branch.id}.r${RIGHT_FROM + branch.right.length}`, `${next.id}.l${LEFT_FROM + next.left.length}`);
-    // And a utility node sits between their first rings.
-    const id = `util.${i + 1}`;
-    const between = (branch.angle + next.angle + (next.angle < branch.angle ? 360 : 0)) / 2;
-    nodes[id] = { id, kind: 'small', ...at(TREE_SHAPE.utilityRing, between), links: [], mods: [UTILITIES[i]!] };
-    link(id, `${branch.id}.s1`);
-    link(id, `${next.id}.s1`);
-  });
+  // Neighbouring arm ends meet across the gap between their columns — on
+  // the same row, so the link runs straight across.
+  const rows: readonly (readonly PassiveBranchId[])[] = [
+    ['assassin', 'warrior', 'hunter'],
+    ['guardian', 'voidcaller', 'elementalist'],
+  ];
+  for (const row of rows) {
+    for (let i = 0; i + 1 < row.length; i++) {
+      const a = BRANCHES.find((b) => b.id === row[i])!;
+      const b = BRANCHES.find((d) => d.id === row[i + 1])!;
+      link(`${a.id}.r${RIGHT_FROM + a.right.length}`, `${b.id}.l${LEFT_FROM + b.left.length}`);
+    }
+  }
 
   return nodes;
 }

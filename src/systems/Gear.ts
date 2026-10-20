@@ -534,20 +534,6 @@ export function rollGrade(): DropTier {
   return 'normal';
 }
 
-/** A piece for `slot` from the bases an ordinary kill can leave, by weight (GEAR_DROP.emptySlot). */
-export function rollGearForSlot(slot: GearSlot): GearItem | null {
-  const bases = Object.values(GEAR).filter((spec) => spec.slot === slot && spec.fromKill !== undefined);
-  const total = bases.reduce((sum, spec) => sum + spec.weight, 0);
-  let roll = Math.random() * total;
-  for (const spec of bases) {
-    roll -= spec.weight;
-    if (roll <= 0) {
-      return rollGearItem(spec);
-    }
-  }
-  return bases.length > 0 ? rollGearItem(bases[bases.length - 1]) : null;
-}
-
 /**
  * A piece as it drops: a base — `base`, or one from the roster by weight —
  * then a 등급 (`grade`, or one by weight) and exactly that 등급's count of

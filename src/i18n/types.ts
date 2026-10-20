@@ -85,28 +85,17 @@ export interface Strings {
 
   readonly passives: {
     readonly title: string;
-    /** The account level, over the tree: {level}. */
-    readonly level: string;
-    /** Experience into the next account level: {into} of {need}. */
-    readonly xp: string;
-    /** Points free to spend: {points}. */
+    /** Points free to spend: {points} of {total}. */
     readonly points: string;
-    /** 신성한 조각 held: {shards}. */
-    readonly shards: string;
-    readonly goldHeld: string;
     /** The button that takes the picked node. */
     readonly allocate: string;
-    /** The one that takes it back, for {cost} shards. */
+    /** The one that takes it back. */
     readonly refund: string;
-    /** The shop: a shard for {price} gold. */
-    readonly buyShard: string;
     readonly taken: string;
     readonly canTake: string;
     readonly needsLink: string;
     readonly noPoints: string;
     readonly cutsOff: string;
-    /** Taking back needs {cost} shards. */
-    readonly noShards: string;
     readonly startNode: string;
     /** Under a line whose tag no skill carries yet. */
     readonly noSkillYet: string;
@@ -118,8 +107,6 @@ export interface Strings {
     readonly statLine: string;
     readonly hintKeyboard: string;
     readonly hintTouch: string;
-    /** What one 신성한 조각 is called, over it on the ground. */
-    readonly shardName: string;
   };
 
   /** 아이템 필터: the switches for what drops, reached from the title. */
@@ -129,9 +116,9 @@ export interface Strings {
     readonly icon: string;
     readonly lead: string;
     readonly sections: { readonly supplies: string; readonly orbs: string; readonly bones: string; readonly rarity: string; readonly bases: string };
-    readonly items: { readonly potion: string; readonly skill: string; readonly randomSkill: string; readonly mango: string; readonly magnet: string; readonly shard: string };
+    readonly items: { readonly potion: string; readonly skill: string; readonly randomSkill: string; readonly mango: string; readonly magnet: string };
     /** The same, short enough to sit under an icon. */
-    readonly itemsShort: { readonly potion: string; readonly skill: string; readonly randomSkill: string; readonly mango: string; readonly magnet: string; readonly shard: string };
+    readonly itemsShort: { readonly potion: string; readonly skill: string; readonly randomSkill: string; readonly mango: string; readonly magnet: string };
     readonly rarity: { readonly normal: string; readonly magic: string; readonly rare: string };
     readonly shown: string;
     readonly hidden: string;
@@ -399,11 +386,6 @@ export interface Strings {
     /** The table: what the run dealt, killed, earned, and was carrying. */
     readonly damageDealt: string;
     readonly killsDealt: string;
-    readonly goldEarned: string;
-    /** Account experience the run brought in. */
-    readonly accountXp: string;
-    /** Its figure: +{xp} · Lv {level}. */
-    readonly accountXpValue: string;
     /** One skill's line: "타격 Lv 3 · DPS 21". */
     readonly skillLine: string;
     readonly retry: string;
@@ -694,11 +676,7 @@ export interface Strings {
     /** 자석: its label on the ground, and the line when it is picked up. */
     readonly magnet: string;
     readonly magnetPulled: string;
-    /** 신성한 조각 picked up: {held} of {need} towards the next 구슬. */
-    readonly shardFound: string;
     /** ...and the one that completed it. */
-    /** The account went up a level mid-run: {level}, {points} points. */
-    readonly accountLevelUp: string;
     readonly pickedUp: string;
     readonly enhancedPickup: string;
     /** The plate over a 제단: {enemies} is what it will call up. */

@@ -15,7 +15,6 @@ import {
   orbsHeld,
   PAUSE_BUTTON,
   NO_BONES,
-  SHARD,
   boneBonusFor,
   type BoneBonus,
   type AltarOfferId,
@@ -36,9 +35,6 @@ import {
   AUDIO,
   TERRAIN,
   GEAR_SLOTS,
-  GEAR_DROP,
-  STARTING_GEAR,
-  type GearSlot,
   CHIMERA_RUSH,
   UPGRADE_PERCENT,
 } from '@/config';
@@ -71,7 +67,6 @@ import {
   type EffectEntry,
   Progression,
   RunStats,
-  gold,
   type LoadoutEntry,
   Separation,
   SpawnDirector,
@@ -92,7 +87,6 @@ import { HealthPotion } from '@/entities/HealthPotion';
 import type { EnemyShot } from '@/entities/EnemyShot';
 import {
   NO_BONUS,
-  rollGearForSlot,
   rollGearFromKill,
   rollGearItem,
   slotOf,
@@ -101,6 +95,7 @@ import {
 } from '@/systems/Gear';
 import { RunKit } from '@/systems/RunKit';
 import { runLedger } from '@/systems/RunLedger';
+import { OrbTray } from '@/systems/OrbTray';
 import { itemFilter } from '@/systems/ItemFilter';
 import { GearPickScene, type GearPickChoice, type GearPickData } from '@/scenes/GearPickScene';
 import {
@@ -213,8 +208,8 @@ export class GameScene extends Phaser.Scene {
   private gearBonus: GearBonus = NO_BONUS;
   /** The effects that last the whole run (장비, 패시브, 뼈다귀), built on the first look. */
   private lastingEffects?: EffectEntry[];
-  /** Kills since GEAR_DROP.emptySlot last left a piece, for its pity. */
-  private emptySlotDry = 0;
+  /** The 구슬 held, bottom right. Public for tests. */
+  public orbTray?: OrbTray;
   /** The weapon this run went out with, as it was then; what the save carries. Public for tests. */
   /** What this run wears, keeps and holds (2026-10-19: gear lives and dies with the run). */
   public kit: RunKit = RunKit.fresh();
@@ -254,8 +249,6 @@ export class GameScene extends Phaser.Scene {
   /** The admin's 밸런스 draft was on during this run. */
   private tunedRun = false;
   /** Account experience picked up since it was last handed to the tree's store, and in the whole of this sitting. */
-  private pendingAccountXp = 0;
-  private runAccountXp = 0;
   /** 원소 과부하: until when (scene clock) the elements are charged. */
   private overloadUntil = 0;
   /** Each weapon's hit, booked to its skill, made once a weapon. */
@@ -293,7 +286,6 @@ export class GameScene extends Phaser.Scene {
     // The scene outlives a run: what the last one wore, spent and bought is
     // not this one's (the icons left of the skills once showed it).
     this.lastingEffects = undefined;
-    this.emptySlotDry = 0;
     this.elapsedMs = 0;
     runLedger.begin(0);
     // Back from the pause menu: the wait there is not play.
@@ -301,8 +293,6 @@ export class GameScene extends Phaser.Scene {
     this.events.on(Phaser.Scenes.Events.RESUME, runLedger.hold);
     this.sinceSaveMs = 0;
     this.pendingChoices = [];
-    this.pendingAccountXp = 0;
-    this.runAccountXp = 0;
     this.overloadUntil = 0;
     this.hitters = new Map();
     this.choosing = false;
@@ -366,8 +356,6 @@ export class GameScene extends Phaser.Scene {
         onSkillCollected: (skill) => this.onSkillCollected(skill),
         rollGearDrop: (fromBoss, bonus) => this.rollGearDrop(fromBoss, bonus),
         onGearCollected: (found) => this.onGearCollected(found),
-        rollShardDrop: (fromBoss) => fromBoss && Math.random() < SHARD.chance,
-        onShardCollected: () => this.onShardCollected(),
         onOrbCollected: (id) => this.onOrbCollected(id),
         onBoneCollected: (id) => this.onBoneCollected(id),
         onAltarWoke: (offer, x, y) => this.onAltarWoke(offer, x, y),
@@ -387,15 +375,13 @@ export class GameScene extends Phaser.Scene {
         },
         onKill: (skill, x, y, maxHp) => this.onKilledBy(skill, x, y, maxHp),
         xpScale: () => this.mods.passive.scale('xpGain') * this.gearBonus.xpGainScale,
-        onXp: (amount) => {
-          this.pendingAccountXp += amount;
-          this.runAccountXp += amount;
-        },
         clearOfTerrain: (x, y) => this.terrain?.clear(x, y, DROP_ROOM) ?? [x, y],
       },
     );
     this.hud = new Hud(this, this.progression, (hold) => this.setInspecting('skill', hold));
     this.toasts = new Toasts(this);
+    this.orbTray = new OrbTray(this, this.kit);
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.orbTray?.destroy());
     this.debug = new DebugOverlay(this, this.debugActions());
     this.rareTooltip = new RareTooltip(this, this.spawner.group);
     // A 밸런스 experiment on this device keeps the run off both boards: said
@@ -422,7 +408,6 @@ export class GameScene extends Phaser.Scene {
         arrowColor: COLORS.gold,
       },
       { group: this.combat.altars },
-      { group: this.combat.shardDrops },
       { group: this.combat.gearDrops },
       { group: this.combat.mangoDrops },
       { group: this.combat.magnetDrops },
@@ -732,7 +717,6 @@ export class GameScene extends Phaser.Scene {
     if (this.over) {
       return;
     }
-    this.flushAccountXp();
 
     const skills: Partial<Record<SkillId, SkillStats>> = {};
     for (const id of this.owned) {
@@ -969,51 +953,7 @@ export class GameScene extends Phaser.Scene {
    * business.
    */
   private rollGearDrop(fromBoss: boolean, bonus = 1): GearItem | null {
-    return (fromBoss ? rollGearItem() : rollGearFromKill(bonus)) ?? this.rollEmptySlotGear();
-  }
-
-  /**
-   * The slots with nothing in them (GEAR_DROP.emptySlot): nothing worn — or
-   * the 녹슨 검 still bare in hand — nothing for it in the 보관함, and
-   * nothing for it lying on the ground. Public for tests.
-   */
-  public get emptySlots(): GearSlot[] {
-    const lying = new Set(
-      this.combat.gearDrops.getChildren()
-        .filter((drop) => drop.active)
-        .map((drop) => slotOf((drop as unknown as { item: GearItem }).item)),
-    );
-    const kept = new Set(this.kit.bag.map(slotOf));
-    return GEAR_SLOTS.filter((slot) => {
-      const worn = this.kit.equipped[slot];
-      const bare = !worn || (worn.id === STARTING_GEAR && worn.prefixes.length + worn.suffixes.length === 0);
-      return bare && !kept.has(slot) && !lying.has(slot);
-    });
-  }
-
-  /** A piece for an empty slot, at GEAR_DROP.emptySlot's chance — certain after its pity. */
-  private rollEmptySlotGear(): GearItem | null {
-    const open = this.emptySlots;
-    if (open.length === 0) {
-      this.emptySlotDry = 0;
-      return null;
-    }
-    this.emptySlotDry += 1;
-    const { chance, pityKills } = GEAR_DROP.emptySlot;
-    if (this.emptySlotDry < pityKills && Math.random() >= chance) {
-      return null;
-    }
-    this.emptySlotDry = 0;
-    return rollGearForSlot(open[Math.floor(Math.random() * open.length)]!);
-  }
-
-  /**
-   * A 신성한 조각. Ten of them finish a 신성한 구슬, which is a point in
-   * the tree — and that is worth saying out loud when it happens.
-   */
-  private onShardCollected(): void {
-    passives.addShard();
-    this.announce(fill(t().game.shardFound, { held: passives.value.shards }));
+    return fromBoss ? rollGearItem() : rollGearFromKill(bonus);
   }
 
   /**
@@ -1142,21 +1082,6 @@ export class GameScene extends Phaser.Scene {
     }
     const { burstShare, burstRadius } = KEYSTONES.slaughter;
     this.combat.blast(x, y, burstRadius, Math.max(1, Math.round(maxHp * burstShare)), undefined, undefined, COLORS.slaughterBurst);
-  }
-
-  /**
-   * Hands the experience picked up since last time to the account, and says
-   * so when that took it up a level. On every save and at the end of a run.
-   */
-  private flushAccountXp(): void {
-    if (this.pendingAccountXp <= 0) {
-      return;
-    }
-    const { before, after } = passives.addXp(this.pendingAccountXp);
-    this.pendingAccountXp = 0;
-    if (after > before) {
-      this.announce(fill(t().game.accountLevelUp, { level: after, points: after - before }));
-    }
   }
 
   /** The same fold, for how often that skill goes off. */
@@ -1651,13 +1576,7 @@ export class GameScene extends Phaser.Scene {
     this.physics.pause();
     // A save is somewhere to come back from, not a way to undo a death.
     saveGame.clear();
-    // What the run picked up goes into the account before the screen reads it.
-    this.flushAccountXp();
-
-    // The run is paid for the damage it dealt, so one that ended badly still
-    // moved the tree forward. Paid once, here, before the screen reads it.
     const damage = this.stats.damage;
-    const earned = gold.earn(damage);
     // Every run goes on 내 기록, entered on the shared board or not — but
     // not one the developer tools played a part in.
     if (!this.devRun) {
@@ -1680,9 +1599,6 @@ export class GameScene extends Phaser.Scene {
         })),
         survivedMs: this.elapsedMs,
         level: this.progression.level,
-        gold: earned,
-        accountXp: this.runAccountXp,
-        accountLevel: passives.account.level,
       },
       level: this.progression.level,
       survivedMs: this.elapsedMs,

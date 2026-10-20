@@ -1,53 +1,15 @@
-import {
-  ACCOUNT_LEVEL,
-  ECONOMY,
-  PASSIVE_NODES,
-  PASSIVE_RESPEC,
-  PASSIVE_START,
-  STORAGE,
-  type KeystoneId,
-  type PassiveId,
-} from '@/config';
-import { gold } from '@/systems/Gold';
+import { PASSIVE_NODES, PASSIVE_POINTS, PASSIVE_START, STORAGE, type KeystoneId, type PassiveId } from '@/config';
 import { StatSheet } from '@/systems/StatSheet';
 import { openRecord, sealRecord } from '@/systems/Seal';
 
-/** The tree and what feeds it, kept between runs. */
+/** The tree, kept between runs: the nodes taken. */
 export interface PassiveState {
-  readonly version: 2;
-  /** 신성한 조각 held: what taking a node back costs. */
-  readonly shards: number;
-  /** Account experience: every run's gems, added up. */
-  readonly xp: number;
-  /** Points owed from before the graph tree (the old ranks, given back), on top of the level's. */
-  readonly bonusPoints: number;
+  readonly version: 3;
   /** Nodes taken, the start not counted. */
   readonly allocated: readonly PassiveId[];
 }
 
-/** Where an account level stands: the level, and the experience into and needed for the next. */
-export interface AccountLevel {
-  readonly level: number;
-  readonly into: number;
-  readonly need: number;
-}
-
-/** Experience to leave account level `level`. */
-export const accountXpToLeave = (level: number): number =>
-  Math.round(ACCOUNT_LEVEL.base * Math.pow(level, ACCOUNT_LEVEL.power));
-
-/** The account level a pot of experience reaches. */
-export function accountLevelFor(xp: number): AccountLevel {
-  let level = 1;
-  let left = Math.max(0, Math.floor(xp));
-  while (level < ACCOUNT_LEVEL.maxLevel && left >= accountXpToLeave(level)) {
-    left -= accountXpToLeave(level);
-    level += 1;
-  }
-  return { level, into: left, need: level >= ACCOUNT_LEVEL.maxLevel ? 0 : accountXpToLeave(level) };
-}
-
-const DEFAULTS: PassiveState = { version: 2, shards: 0, xp: 0, bonusPoints: 0, allocated: [] };
+const DEFAULTS: PassiveState = { version: 3, allocated: [] };
 
 type Listener = (state: PassiveState) => void;
 
@@ -61,12 +23,11 @@ export function passiveSheetFor(allocated: readonly PassiveId[]): StatSheet {
 }
 
 /**
- * The passive tree's own state, kept beside the equipment stash: both
- * outlive a run on purpose, and both are spent on the title screen.
+ * The passive tree's own state: it outlives a run, and is spent on the title.
  *
- * A node can be taken while a point is free and it touches one already
- * taken (or the start); taken back for a 신성한 조각 while nothing else is
- * cut off from the start by it.
+ * A node can be taken while a point is free (PASSIVE_POINTS, the same for
+ * every player) and it touches one already taken (or the start); taken back,
+ * for nothing, while nothing else is cut off from the start by it.
  */
 class PassiveStore {
   private current: PassiveState = { ...DEFAULTS };
@@ -87,13 +48,9 @@ class PassiveStore {
     return this.cachedSheet;
   }
 
-  public get account(): AccountLevel {
-    return accountLevelFor(this.value.xp);
-  }
-
-  /** Every point the account has: one a level past the first, and the old tree's. */
+  /** Every point there is to spend. */
   public get totalPoints(): number {
-    return this.account.level - 1 + this.value.bonusPoints;
+    return PASSIVE_POINTS;
   }
 
   public get freePoints(): number {
@@ -142,44 +99,16 @@ class PassiveStore {
   }
 
   public canRefund(id: PassiveId): boolean {
-    return this.isLeaf(id) && this.value.shards >= PASSIVE_RESPEC.shardCost;
+    return this.isLeaf(id);
   }
 
-  /** Takes a node back for a 신성한 조각; its point is free again. */
+  /** Takes a node back; its point is free again. */
   public refund(id: PassiveId): boolean {
     if (!this.canRefund(id)) {
       return false;
     }
-    this.commit({
-      ...this.value,
-      shards: this.value.shards - PASSIVE_RESPEC.shardCost,
-      allocated: this.value.allocated.filter((other) => other !== id),
-    });
+    this.commit({ ...this.value, allocated: this.value.allocated.filter((other) => other !== id) });
     return true;
-  }
-
-  /** One 신성한 조각, as a 우두머리 left it. */
-  public addShard(): void {
-    this.commit({ ...this.value, shards: this.value.shards + 1 });
-  }
-
-  /** Buys one 신성한 조각 with gold. */
-  public buyShard(): boolean {
-    if (!gold.spend(ECONOMY.shardPrice)) {
-      return false;
-    }
-    this.addShard();
-    return true;
-  }
-
-  /** A run's experience, into the account. Returns the levels before and after. */
-  public addXp(amount: number): { before: number; after: number } {
-    const before = this.account.level;
-    const gained = Math.max(0, Math.floor(amount));
-    if (gained > 0) {
-      this.commit({ ...this.value, xp: this.value.xp + gained });
-    }
-    return { before, after: this.account.level };
   }
 
   public reset(): PassiveState {
@@ -226,14 +155,13 @@ class PassiveStore {
 
   /**
    * A hand-edited payload cannot take a node that does not exist or is not
-   * joined to the start; one from before the graph tree (ranks and points)
-   * comes back as points to spend again, its shards kept.
+   * joined to the start, nor more than PASSIVE_POINTS. A tree from before
+   * 0.72 (the account-level one, or the ranks before it) starts empty: the
+   * grid moved every node, and every player has the same points now.
    */
-  private static sanitise(raw: Partial<PassiveState> & { ranks?: Record<string, number>; points?: number }): PassiveState {
-    const whole = (value: unknown) => Math.max(0, Math.floor(Number(value) || 0));
-    if (raw.version !== 2) {
-      const ranks = Object.values(raw.ranks ?? {}).reduce((sum, rank) => sum + whole(rank), 0);
-      return { ...DEFAULTS, shards: whole(raw.shards), bonusPoints: whole(raw.points) + ranks };
+  private static sanitise(raw: Partial<Omit<PassiveState, 'version'>> & { version?: number }): PassiveState {
+    if (raw.version !== 3) {
+      return { ...DEFAULTS };
     }
 
     // Kept in the order taken, and only while joined to what came before.
@@ -254,16 +182,8 @@ class PassiveStore {
       });
     }
 
-    const state: PassiveState = {
-      version: 2,
-      shards: whole(raw.shards),
-      xp: whole(raw.xp),
-      bonusPoints: whole(raw.bonusPoints),
-      allocated,
-    };
     // Never more nodes than points: the last taken go first.
-    const points = accountLevelFor(state.xp).level - 1 + state.bonusPoints;
-    return allocated.length > points ? { ...state, allocated: allocated.slice(0, points) } : state;
+    return { version: 3, allocated: allocated.slice(0, PASSIVE_POINTS) };
   }
 }
 

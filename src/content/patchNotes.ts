@@ -15,6 +15,48 @@ export interface PatchNote {
 
 export const PATCH_NOTES: readonly PatchNote[] = [
   {
+    version: '0.72',
+    date: '2026-10-20',
+    changes: {
+      ko: [
+        '패시브 트리의 노드가 가로·세로로만 이어지도록 다시 배치했습니다. 방향키로 이어진 노드를 따라 움직일 수 있습니다.',
+        '모든 플레이어가 패시브 포인트 15점을 가집니다. 계정 레벨·신성한 조각·골드는 없어졌고, 찍은 노드는 언제든 무료로 되돌릴 수 있습니다. 트리가 바뀌어 찍어 둔 노드는 초기화되었습니다.',
+        '매 판 녹슨 검과 천옷을 입고 시작합니다.',
+        '장비를 주우면 항상 착용·보관·버리기 세 버튼이 나옵니다. 보관함이 가득 차면 보관은 누를 수 없습니다.',
+        '적이 장비를 떨어뜨릴 확률을 절반으로 줄였습니다(우두머리는 지금처럼 하나씩 남깁니다). 빈 장비 칸에 장비가 더 잘 나오던 보정은 없앴습니다.',
+        '떨어진 장비가 마법·희귀 등급일 확률을 10% 낮췄습니다(마법 12.6%, 희귀 7.2%).',
+        '전투 중 화면 오른쪽 아래에 가진 구슬의 개수가 종류별로 표시됩니다.',
+      ],
+      en: [
+        'The passive tree’s nodes are laid out again so every link runs straight across or up and down; the arrow keys walk from node to linked node.',
+        'Every player has 15 passive points. Account levels, Divine Shards and gold are gone, and a taken node can be taken back at any time for free. The tree changed, so taken nodes have been reset.',
+        'Every run starts wearing a Rusty Sword and a Cloth Robe.',
+        'Picking up gear always offers all three: wear, stash and drop. With the stash full, stash cannot be pressed.',
+        'Enemies drop gear half as often (bosses still leave one each), and the boost for empty gear slots is gone.',
+        'Dropped gear is Magic or Rare 10% less often (Magic 12.6%, Rare 7.2%).',
+        'During a run, the orbs you hold are counted by kind at the bottom right of the screen.',
+      ],
+      ja: [
+        'パッシブツリーのノードを、縦横にだけつながるように並べ直しました。矢印キーでつながったノードへ移動できます。',
+        'すべてのプレイヤーがパッシブポイントを15点持ちます。アカウントレベル・神聖な欠片・ゴールドはなくなり、習得したノードはいつでも無料で取り消せます。ツリーが変わったため、習得済みのノードはリセットされました。',
+        '毎回、錆びた剣と布の服を装備して始まります。',
+        '装備を拾うと、いつも装備・保管・捨てるの3つのボタンが出ます。保管箱がいっぱいのときは保管を押せません。',
+        '敵が装備を落とす確率を半分にしました（ボスはこれまで通り1つずつ落とします）。空いた装備枠に装備が出やすくなる補正はなくしました。',
+        '落ちた装備がマジック・レアになる確率を10%下げました（マジック12.6%、レア7.2%）。',
+        '戦闘中、画面右下に持っているオーブの数が種類ごとに表示されます。',
+      ],
+      zh: [
+        '重新排列了被动树的节点，所有连接都只沿横竖方向；可以用方向键沿连接移动到相邻节点。',
+        '所有玩家都拥有 15 点被动点数。账号等级、神圣碎片和金币已移除，已点亮的节点可以随时免费撤回。由于被动树改变，已点亮的节点已重置。',
+        '每局都穿着生锈的剑和布衣开始。',
+        '拾取装备时总会出现装备·保管·丢弃三个按钮。储物箱已满时无法点击保管。',
+        '敌人掉落装备的几率减半（首领仍然各掉落一件），并移除了空装备栏更容易掉落装备的加成。',
+        '掉落装备成为魔法、稀有等级的几率降低 10%（魔法 12.6%，稀有 7.2%）。',
+        '战斗中，屏幕右下角会按种类显示持有的宝珠数量。',
+      ],
+    },
+  },
+  {
     version: '0.71',
     date: '2026-10-20',
     changes: {

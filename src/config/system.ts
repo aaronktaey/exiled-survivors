@@ -58,11 +58,16 @@ export const SCENES = {
 } as const;
 
 /**
- * Keys that held what no longer outlives a run: the equipment stash and the
- * 구슬 drawer (2026-10-19, gear lives and dies with the run). Cleared on
- * load; listed so nothing ever writes them again.
+ * Keys that held what is gone: the equipment stash and the 구슬 drawer
+ * (2026-10-19, gear lives and dies with the run), and the gold purse (0.72,
+ * nothing is bought any more). Cleared on load; listed so nothing ever
+ * writes them again.
  */
-export const RETIRED_STORAGE: readonly string[] = ['exiled-survivors:gear:v2', 'exiled-survivors:orbs:v1'];
+export const RETIRED_STORAGE: readonly string[] = [
+  'exiled-survivors:gear:v2',
+  'exiled-survivors:orbs:v1',
+  'exiled-survivors:gold:v1',
+];
 
 /**
  * The seal on the records a player could gain by editing (systems/Seal.ts).
@@ -81,8 +86,6 @@ export const STORAGE = {
   save: "exiled-survivors:save:v1",
   /** The passive tree, which outlives it too. */
   passives: "exiled-survivors:passives:v1",
-  /** And the purse a run pays into. */
-  gold: "exiled-survivors:gold:v1",
   /** And the 뼈다귀 drawer, spent one run at a time. */
   bones: "exiled-survivors:bones:v1",
   /** The local ranking, until there is a shared one. */

@@ -15,7 +15,6 @@ import { liveUpdate } from '@/systems/LiveUpdate';
 import { personal } from '@/systems/PersonalBest';
 import { account } from '@/systems/Account';
 import { cloudSave } from '@/systems/CloudSave';
-import { gold } from '@/systems/Gold';
 import { critMultiplierFor } from '@/systems/Modifiers';
 import { bones as bonesStore } from '@/systems/Bones';
 import { passives } from '@/systems/Passives';
@@ -147,7 +146,6 @@ if (import.meta.env.DEV) {
     passives?: typeof passives;
     sealRecord?: typeof sealRecord;
     openRecord?: typeof openRecord;
-    gold?: typeof gold;
     bones?: typeof bonesStore;
     orbApplied?: typeof orbApplied;
     critMultiplierFor?: typeof critMultiplierFor;
@@ -168,7 +166,6 @@ if (import.meta.env.DEV) {
   dev.passives = passives;
   dev.sealRecord = sealRecord;
   dev.openRecord = openRecord;
-  dev.gold = gold;
   dev.bones = bonesStore;
   dev.orbApplied = orbApplied;
   dev.critMultiplierFor = critMultiplierFor;

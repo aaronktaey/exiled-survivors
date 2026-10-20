@@ -219,7 +219,7 @@ const rim = await run(`
   s.spawner.clear();
   s.player.setInvulnerable(true);
   s.combat.gearDrops.getChildren().forEach(d => d.active && d.collect());
-  s.combat.shardDrops.getChildren().forEach(d => d.active && d.collect());
+  s.combat.mangoDrops.getChildren().forEach(d => d.active && d.collect());
   s.combat.orbDrops.getChildren().forEach(d => d.active && d.collect());
   s.combat.skillDrops.getChildren().forEach(d => d.active && d.collect());
   s.combat.potions.getChildren().forEach(d => d.active && d.collect());
@@ -228,7 +228,7 @@ const rim = await run(`
   const at = (a, r) => ({ x: p.x + Math.cos(a) * r, y: p.y + Math.sin(a) * r });
   let put = at(0.4, 700);
   s.combat.dropGearAt(put.x, put.y, { uid: 'far', id: 'runedSword', prefixes: [], suffixes: [] });
-  put = at(1.9, 620); s.combat.dropShardAt(put.x, put.y);
+  put = at(1.9, 620); s.combat.dropMangoAt(put.x, put.y);
   put = at(3.1, 560); s.combat.dropOrbAt(put.x, put.y, 'chaos');
   put = at(5.6, 760);
   s.combat.dropSkillAt(put.x, put.y, { id: 'fireball', name: '화염구', tags: [] });
@@ -252,7 +252,7 @@ check('one marker per thing off the screen, none for what is on it, and none for
   rim.count === 4 && !rim.shown.some((m) => m.texture.startsWith('tex-orb')),
   `${rim.count} markers: ${rim.shown.map((m) => m.texture.replace('tex-', '')).join(' ')}`);
 check('each wears the sprite of the thing it points at',
-  ['tex-enemy-boss', 'tex-shard', 'tex-gear-runedSword', 'tex-skill-fireball']
+  ['tex-enemy-boss', 'tex-mango', 'tex-gear-runedSword', 'tex-skill-fireball']
     .every((key) => rim.shown.some((m) => m.texture === key)),
   rim.shown.map((m) => m.texture.replace('tex-', '')).join(' / '));
 check('and sits inside the edge it points through',
@@ -279,7 +279,7 @@ check('a marker lies on the line out to the thing it marks',
 
 const rimCleared = await run(`
   s.combat.gearDrops.getChildren().forEach(d => d.active && d.collect());
-  s.combat.shardDrops.getChildren().forEach(d => d.active && d.collect());
+  s.combat.mangoDrops.getChildren().forEach(d => d.active && d.collect());
   s.combat.orbDrops.getChildren().forEach(d => d.active && d.collect());
   s.combat.skillDrops.getChildren().forEach(d => d.active && d.collect());
   s.spawner.clear();

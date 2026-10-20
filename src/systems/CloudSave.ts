@@ -20,7 +20,6 @@
  */
 import { ACCOUNT, STORAGE } from '@/config';
 import { account, accountRequest } from '@/systems/Account';
-import { accountLevelFor } from '@/systems/Passives';
 
 const PREFIX = 'exiled-survivors:';
 
@@ -44,7 +43,6 @@ export interface Conflict {
 /** What a set of records amounts to, for the choice between two of them. */
 export interface SaveSummary {
   readonly passiveNodes: number;
-  readonly accountLevel: number;
   readonly bones: number;
   readonly savedRun: boolean;
 }
@@ -94,11 +92,10 @@ function parse<T>(text: string | undefined, fallback: T): T {
 export function summarize(data: SaveData): SaveSummary {
   const sum = (record: Record<string, unknown>): number =>
     Object.values(record).reduce<number>((total, value) => total + (Number(value) || 0), 0);
-  // The graph tree's nodes; a copy from before it counts its old ranks instead.
-  const tree = parse<{ allocated?: unknown[]; xp?: number; ranks?: Record<string, number> }>(data[STORAGE.passives], {});
+  // The tree's nodes; a copy from before the graph counts its old ranks instead.
+  const tree = parse<{ allocated?: unknown[]; ranks?: Record<string, number> }>(data[STORAGE.passives], {});
   return {
     passiveNodes: Array.isArray(tree.allocated) ? tree.allocated.length : sum(tree.ranks ?? {}),
-    accountLevel: accountLevelFor(Number(tree.xp) || 0).level,
     bones: sum(parse<Record<string, number>>(data[STORAGE.bones], {})),
     savedRun: Boolean(data[STORAGE.save]),
   };

@@ -156,7 +156,7 @@ export const GEAR: Record<GearId, GearSpec> = {
     tier: 3,
     name: '강철 검',
     weight: 2,
-    fromKill: 0.0016,
+    fromKill: 0.0008,
     implicit: { detail: '피해 +{value}', damageScale: 1.1 },
   },
   ironSword: {
@@ -166,7 +166,7 @@ export const GEAR: Record<GearId, GearSpec> = {
     tier: 4,
     name: '무쇠 검',
     weight: 3,
-    fromKill: 0.0025,
+    fromKill: 0.00125,
     implicit: { detail: '공격속도 +{value}', attackSpeedScale: 1.1 },
   },
   rustySword: {
@@ -176,7 +176,7 @@ export const GEAR: Record<GearId, GearSpec> = {
     tier: 5,
     name: '녹슨 검',
     weight: 4,
-    fromKill: 0.0036,
+    fromKill: 0.0018,
     implicit: {
       detail: '{skill}의 공격속도 +{value}',
       skillAttackSpeed: { skill: 'meleeStrike', scale: 1.2 },
@@ -209,7 +209,7 @@ export const GEAR: Record<GearId, GearSpec> = {
     tier: 3,
     name: '사슬 갑옷',
     weight: 2,
-    fromKill: 0.0016,
+    fromKill: 0.0008,
     implicit: { detail: '받는 피해 -{value}', damageTakenScale: 0.94 },
   },
   leatherArmor: {
@@ -219,7 +219,7 @@ export const GEAR: Record<GearId, GearSpec> = {
     tier: 4,
     name: '가죽 외투',
     weight: 3,
-    fromKill: 0.0025,
+    fromKill: 0.00125,
     implicit: { detail: '무적 시간 +{value}', invulnerableScale: 1.2 },
   },
   clothArmor: {
@@ -229,7 +229,7 @@ export const GEAR: Record<GearId, GearSpec> = {
     tier: 5,
     name: '천옷',
     weight: 4,
-    fromKill: 0.0036,
+    fromKill: 0.0018,
     implicit: { detail: '최대 체력 +{value}', maxHpScale: 1.1 },
   },
   // 장신구: a ring or an amulet, for what is neither attack nor defence.
@@ -258,7 +258,7 @@ export const GEAR: Record<GearId, GearSpec> = {
     tier: 3,
     name: '비취 목걸이',
     weight: 2,
-    fromKill: 0.0016,
+    fromKill: 0.0008,
     implicit: { detail: '경험치 +{value}', xpGainScale: 1.1 },
   },
   silverRing: {
@@ -268,7 +268,7 @@ export const GEAR: Record<GearId, GearSpec> = {
     tier: 4,
     name: '은 반지',
     weight: 3,
-    fromKill: 0.0025,
+    fromKill: 0.00125,
     implicit: { detail: '아이템 발견 +{value}', itemFindScale: 1.15 },
   },
   copperRing: {
@@ -278,7 +278,7 @@ export const GEAR: Record<GearId, GearSpec> = {
     tier: 5,
     name: '구리 반지',
     weight: 4,
-    fromKill: 0.0036,
+    fromKill: 0.0018,
     implicit: { detail: '획득 범위 +{value}', pickupScale: 1.25 },
   },
 };
@@ -294,7 +294,10 @@ export const attackForTier = (tier: number): number =>
 
 export const ALL_GEAR: readonly GearSpec[] = Object.values(GEAR);
 
-/** What every survivor starts out holding. */
+/** What every survivor starts a run wearing, bare: a 녹슨 검 and, since 0.72, a 천옷. */
+export const STARTING_KIT: Partial<Record<GearSlot, GearId>> = { weapon: 'rustySword', armor: 'clothArmor' };
+
+/** The weapon of it: what a run with no weapon to read back falls back on. */
 export const STARTING_GEAR: GearId = 'rustySword';
 
 /**
@@ -313,26 +316,16 @@ export const GEAR_COMBINE = {
 export const GEAR_DROP = {
   /**
    * A piece's 등급 decides how many 속성 it drops with: 일반 2, 마법 4, 희귀 6
-   * (the user's ask, 0.71). Which 등급 is by weight; these keep the share
-   * each had under the old roll of a line at a time (78 · 14 · 8 in 100).
+   * (the user's ask, 0.71). Which 등급 is by weight, out of 100: 마법 and
+   * 희귀 a tenth rarer in 0.72 (they were 14 and 8, the share each had under
+   * the old roll of a line at a time).
    * The 구슬 can still leave a piece at any count; the 등급 it shows is then
    * read off that count (AUDIO.dropTiers).
    */
-  /**
-   * A slot with nothing in it — no armour, no accessory, the 녹슨 검 still
-   * bare in hand — and nothing for it in the 보관함 or on the ground: each
-   * kill has `chance` to leave a piece for one such slot (of the bases with
-   * `fromKill`, by weight), and `pityKills` kills without one make the next
-   * one certain. Set so all three slots are filled inside the first two
-   * minutes (0.71, the user's ask): a run of the slowed opening kills about
-   * 125 by then, three pieces take some 65 kills on average, and three
-   * pities are 105.
-   */
-  emptySlot: { chance: 0.03, pityKills: 35 },
   grades: {
-    normal: { lines: 2, weight: 78 },
-    magic: { lines: 4, weight: 14 },
-    rare: { lines: 6, weight: 8 },
+    normal: { lines: 2, weight: 80.2 },
+    magic: { lines: 4, weight: 12.6 },
+    rare: { lines: 6, weight: 7.2 },
   },
   /** Path of Exile's ceiling for a rare: three of each. */
   maxPrefixes: 3,

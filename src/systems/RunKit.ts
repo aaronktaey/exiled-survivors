@@ -1,4 +1,4 @@
-import { GEAR, GEAR_COMBINE, GEAR_SLOTS, ORBS, RUN_BAG, type GearSlot, type OrbId } from '@/config';
+import { GEAR, GEAR_COMBINE, GEAR_SLOTS, ORBS, RUN_BAG, STARTING_KIT, type GearSlot, type OrbId } from '@/config';
 import {
   bareItem,
   combineTargetFor,
@@ -37,10 +37,13 @@ export class RunKit {
   private readonly held: Partial<Record<OrbId, number>> = {};
   private readonly listeners = new Set<Listener>();
 
-  /** A fresh run's: the 녹슨 검 in hand. */
+  /** A fresh run's: STARTING_KIT worn, bare. */
   public static fresh(): RunKit {
     const kit = new RunKit();
-    kit.worn.weapon = bareItem();
+    for (const slot of GEAR_SLOTS) {
+      const id = STARTING_KIT[slot];
+      kit.worn[slot] = id && GEAR[id]?.slot === slot ? bareItem(id) : null;
+    }
     return kit;
   }
 

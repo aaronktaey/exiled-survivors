@@ -1,10 +1,11 @@
 import { connect, sleep } from './cdp-lib.mjs';
 import { writeFileSync } from 'node:fs';
 
-// What a run finds and how (0.71): the opening's slower spawns, gear for an
-// empty slot, a piece's 등급 deciding its line count, a 합성 that always
-// works and stops short of tier 1, 구슬 drawn in like gems with no name over
-// them, and the run's second clock that the ranking weighs the shown one by.
+// What a run finds and how (0.71–0.72): the opening's slower spawns, a
+// piece's 등급 deciding its line count, a 합성 that always works and stops
+// short of tier 1, 구슬 drawn in like gems with no name over them and
+// counted at the bottom right, and the run's second clock that the ranking
+// weighs the shown one by.
 
 const cdp = await connect(9333);
 const SP = process.argv[2] ?? '.';
@@ -21,7 +22,6 @@ const ev = (expr) => cdp.evaluate(expr);
 const run = (body) => cdp.evaluate(`(() => { const s = window.game.scene.getScene('GameScene'); ${body} })()`);
 const scene = (key, body) => cdp.evaluate(`(() => { const s = window.game.scene.getScene('${key}'); ${body} })()`);
 
-await cdp.send('Page.addScriptToEvaluateOnNewDocument', { source: 'window.__emptySlotOn = true;' });
 await cdp.send('Emulation.clearDeviceMetricsOverride', {});
 await cdp.send('Page.navigate', { url: 'http://localhost:5173/#run' });
 await sleep(800);
@@ -44,45 +44,6 @@ const open = await run(`
 `);
 check('through the opening every gap between spawns is stretched', open.start === open.scale && open.end === open.scale, JSON.stringify(open));
 check('and after it eases back to the usual ramp', open.blend < open.scale && open.blend > 1 && open.after === 1, JSON.stringify(open));
-
-// --- 2. gear for an empty slot ---
-const empty = await run(`
-  const c = window.config, kept = {};
-  for (const g of Object.values(c.GEAR)) { kept[g.id] = g.fromKill; if (g.fromKill !== undefined) g.fromKill = 0; }
-  const rule = c.GEAR_DROP.emptySlot, was = { ...rule };
-  const open = s.emptySlots;
-  rule.chance = 0;
-  const rolls = [];
-  for (let i = 0; i < rule.pityKills; i++) rolls.push(s.rollGearDrop(false, 1));
-  const last = rolls[rolls.length - 1];
-  const out = { open, early: rolls.slice(0, -1).filter(Boolean).length, last: last && { id: last.id, slot: c.GEAR[last.id].slot,
-    lines: last.prefixes.length + last.suffixes.length, fromKill: kept[last.id] !== undefined } };
-  // A piece of a slot lying on the ground, or kept, fills it for this rule.
-  s.combat.dropGearAt(s.player.x + 700, s.player.y, window.rollGearItem(c.GEAR.clothArmor));
-  out.lying = s.emptySlots;
-  s.combat.gearDrops.getChildren().forEach((d) => d.active && d.collect());
-  s.kit.store(window.rollGearItem(c.GEAR.copperRing));
-  out.kept = s.emptySlots;
-  // Everything worn, the 녹슨 검 with lines on it: nothing is empty, nothing comes.
-  s.kit.remove(s.kit.bag[0].uid);
-  s.kit.equip(window.rollGearItem(c.GEAR.clothArmor));
-  s.kit.equip(window.rollGearItem(c.GEAR.copperRing));
-  s.kit.equip(window.rollGearItem(c.GEAR[c.STARTING_GEAR]));
-  out.full = s.emptySlots;
-  rule.chance = 1;
-  out.whenFull = 0;
-  for (let i = 0; i < 50; i++) if (s.rollGearDrop(false, 1)) out.whenFull += 1;
-  Object.assign(rule, was);
-  for (const g of Object.values(c.GEAR)) if (kept[g.id] !== undefined) g.fromKill = kept[g.id];
-  out.slots = c.GEAR_SLOTS;
-  return out;
-`);
-check('a fresh run has every slot empty — the 녹슨 검 bare in hand counts', JSON.stringify(empty.open) === JSON.stringify(empty.slots), JSON.stringify(empty.open));
-check('with no luck at all, the pity still leaves a piece for an empty slot', empty.early === 0 && empty.last && empty.open.includes(empty.last.slot) &&
-  empty.last.fromKill, JSON.stringify(empty.last));
-check('a piece lying on the ground or kept fills its slot for the rule', !empty.lying.includes('armor') && !empty.kept.includes('accessory'),
-  `${empty.lying} / ${empty.kept}`);
-check('with every slot filled it leaves nothing, whatever its chance', empty.full.length === 0 && empty.whenFull === 0, JSON.stringify(empty));
 
 // --- 3. a piece's 등급 decides how many lines it drops with ---
 const grades = await ev(`(() => {
@@ -176,6 +137,24 @@ const pulled = await run(`
 check('one inside the pickup radius is drawn in and taken, like a gem', pulled.held === orb.held + 1, JSON.stringify(pulled));
 check('and its toast says so', pulled.lines.length > 0, JSON.stringify(pulled.lines));
 check('one outside it lies where it fell', pulled.farMoved === 0, `${pulled.farMoved}`);
+const tray = await run(`
+  const t = s.orbTray;
+  const ids = t.entries.map((e) => e.orb);
+  const held = Object.fromEntries(ids.map((id) => [id, s.kit.count(id)]));
+  const faint = t.entries.filter((e) => s.kit.count(e.orb) === 0).every((e) => e.icon.alpha < 1);
+  const lit = t.entries.filter((e) => s.kit.count(e.orb) > 0).every((e) => e.icon.alpha === 1);
+  const h = s.scale.height, w = s.scale.width;
+  const inside = t.entries.every((e) => e.icon.x > w / 2 && e.count.x <= w && e.icon.y > h - 60 && e.icon.y < h);
+  s.kit.addOrb('mango');
+  const after = t.counts.mango;
+  s.kit.spend('mango');
+  return { ids, held, counts: t.counts, faint, lit, inside, after, want: Object.keys(window.config.ORBS) };
+`);
+check('the 구슬 held are shown at the bottom right, every kind as its icon and count',
+  JSON.stringify(tray.ids) === JSON.stringify(tray.want) && JSON.stringify(tray.counts) === JSON.stringify(tray.held) && tray.inside,
+  JSON.stringify(tray));
+check('a kind not held is faint, and the count follows the run at once', tray.faint && tray.lit && tray.after === (tray.held.mango ?? 0) + 1,
+  JSON.stringify(tray));
 await shot('runloot-03-orbs');
 
 // --- 6. the second clock ---

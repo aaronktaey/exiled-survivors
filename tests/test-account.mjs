@@ -73,10 +73,12 @@ const user = { id: 'u1', provider: 'google', name: 'Alice', rank: { name: '', em
 // A record this browser keeps, marked so each change can be told apart: the
 // tree's account experience (the equipment stash was the marker until gear
 // stopped outliving a run).
-const XP = { mine: 1001, later: 2002, fromOther: 3003, localOnly: 4004, remoteOnly: 5005 };
-const mark = (name) => `window.passives.reset(); window.passives.addXp(${XP[name]});`;
-const tree = (name) => JSON.stringify({ version: 2, shards: 0, xp: XP[name], bonusPoints: 0, allocated: [] });
-const holds = (data, name) => (data?.['exiled-survivors:passives:v1'] ?? '').includes(`"xp":${XP[name]}`);
+// Each tree is told apart by how far up the 전사 spine it has gone.
+const XP = { mine: 1, later: 2, fromOther: 3, localOnly: 4, remoteOnly: 5 };
+const spine = (n) => Array.from({ length: n }, (_, i) => `warrior.s${i + 1}`);
+const mark = (name) => `window.passives.reset(); ${JSON.stringify(spine(XP[name]))}.forEach((id) => window.passives.allocate(id));`;
+const tree = (name) => JSON.stringify({ version: 3, allocated: spine(XP[name]) });
+const holds = (data, name) => { try { return JSON.parse(data?.['exiled-survivors:passives:v1'] ?? '{}').allocated?.length === XP[name]; } catch { return false; } };
 
 try {
   // --- 1. signed out: the corner icon, and the ways in ---
@@ -124,7 +126,7 @@ try {
   await fake(`s.save = { data: ${JSON.stringify(other)}, updatedAt: s.save.updatedAt + 1000 }`);
   await arrive();
   await sleep(2500);
-  const took = await ev(`({ xp: window.passives.value.xp, conflict: window.cloudSave.conflict !== null })`);
+  const took = await ev(`({ xp: window.passives.value.allocated.length, conflict: window.cloudSave.conflict !== null })`);
   check('when only the account changed, its records are taken and the game starts on them',
     took.xp === XP.fromOther && !took.conflict, JSON.stringify(took));
 
@@ -204,7 +206,7 @@ try {
   await scene('AccountScene', `s.menu.items.find(i => i.id === 'delete').onSelect(); return 1;`);
   await sleep(1200);
   const gone = await ev(`(() => ({ deleted: !!window.__fake.load().deleted, user: window.account.user,
-    note: localStorage.getItem('exiled-survivors:sync:v1'), xp: window.passives.value.xp,
+    note: localStorage.getItem('exiled-survivors:sync:v1'), xp: window.passives.value.allocated.length,
     rows: window.game.scene.getScene('AccountScene').menu?.items.map(i => i.id) }))()`);
   check('the second press deletes the account; this browser keeps its records but no longer syncs',
     gone.deleted && gone.user === null && gone.note === null && gone.xp > 0 && gone.rows?.[0] === 'login:google',

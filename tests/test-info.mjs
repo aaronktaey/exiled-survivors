@@ -54,8 +54,8 @@ const page = () => scene('InfoScene', `
     // The patch notes have outgrown what one evaluate can hand back whole,
     // and these checks only ever look for phrases in it — so the phrases are
     // looked for in the page and the answers sent, not every character.
-    shown: s.page.list.filter(o => o.type === 'Text').map(o => o.text).join(NL).slice(0, 16000),
-    text: all.slice(0, 16000),
+    shown: s.page.list.filter(o => o.type === 'Text').map(o => o.text).join(NL).slice(0, 6000),
+    text: all.slice(0, s.payload.topic === 'patch' ? 2000 : 16000),
     has: (() => {
       const whole = all + NL + s.page.list.filter(o => o.type === 'Text').map(o => o.text).join(NL);
       return { versions: whole.includes('v0.9'), rares: whole.includes('희귀 적') };
@@ -192,7 +192,7 @@ const coverage = await scene('InfoScene', `
     unfilled: words.filter(w => /[{}]/.test(w)).slice(0, 5),
     broken: words.filter(w => /undefined|NaN/.test(w)).slice(0, 5),
     emptyTabs: s.chapters.flatMap(ch => ch.tabs.filter(tb => tb.cards.length === 0).map(tb => tb.id)),
-    has: ['하얀 망고', '무작위 스킬', '제단', '신성한 조각', '치명타', '보관함', '랭킹', '고정']
+    has: ['하얀 망고', '무작위 스킬', '제단', '패시브 포인트', '치명타', '보관함', '랭킹', '고정']
       .filter(w => !all.includes(w)),
   };
 `);

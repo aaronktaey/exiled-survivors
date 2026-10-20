@@ -28,7 +28,7 @@ export interface FilterSection {
 }
 
 /** The keys of the entries that are not read off a table. */
-export type FilterSupply = 'potion' | 'mango' | 'magnet' | 'skill' | 'randomSkill' | 'shard';
+export type FilterSupply = 'potion' | 'mango' | 'magnet' | 'skill' | 'randomSkill';
 
 const TIERS: readonly DropTier[] = ['normal', 'magic', 'rare'];
 
@@ -41,7 +41,6 @@ export const ITEM_FILTER: readonly FilterSection[] = [
       { key: 'randomSkill', texture: TEXTURES.skillOrb, tier: 'magic' },
       { key: 'mango', texture: TEXTURES.mango, tier: 'rare' },
       { key: 'magnet', texture: TEXTURES.magnet, tier: 'rare' },
-      { key: 'shard', texture: TEXTURES.shard, tier: 'rare' },
     ],
   },
   { id: 'orbs', entries: ALL_ORBS.map((orb) => ({ key: `orb:${orb.id}`, texture: orb.texture, tier: orb.tier })) },

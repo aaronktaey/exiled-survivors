@@ -28,13 +28,11 @@ await sleep(4500);
 
 // --- 1. a fresh run starts from nothing ---
 const fresh = await run(`
-  return { damage: s.stats.damage, kills: s.stats.killCount, byKind: s.stats.byKind,
-           gold: window.gold.value };
+  return { damage: s.stats.damage, kills: s.stats.killCount, byKind: s.stats.byKind };
 `);
 check('a run starts with nothing counted',
   fresh.damage === 0 && fresh.kills === 0 && fresh.byKind.length === 0,
   `${fresh.damage} damage, ${fresh.kills} kills`);
-check('and an empty purse the first time', fresh.gold === 0, `${fresh.gold} gold`);
 
 // --- 2. what it dealt, and to what ---
 const KINDS = { grunt: 120, brute: 8, runner: 15, shooter: 9 };
@@ -61,7 +59,6 @@ const fought = await run(`
   s.combat.gems.getChildren().forEach(g => g.active && g.collect());
   s.combat.skillDrops.getChildren().forEach(d => d.active && d.collect());
   s.combat.gearDrops.getChildren().forEach(d => d.active && d.collect());
-  s.combat.shardDrops.getChildren().forEach(d => d.active && d.collect());
   s.spawner.clear();
   s.choosing = false;
   return { expected, bosses, damage: s.stats.damage, kills: s.stats.killCount,
@@ -76,13 +73,12 @@ check('and counted under the kind it was',
     fought.byKind.find((k) => k.kind === 'boss')?.count === fought.bosses,
   fought.byKind.map((k) => `${k.kind} ${k.count}`).join(' / '));
 // A hit that kills something with two health left is worth two, not whatever
-// the weapon rolled: overkill would otherwise pay out as gold.
+// the weapon rolled: overkill would otherwise count on the board.
 check('damage is what the enemies actually absorbed, overkill aside',
   fought.damage === fought.expected,
   `${fought.damage} against ${fought.expected} of enemy health`);
 
-// --- 3. the run is paid for it ---
-const ECON = await ev(`(() => ({ ...window.config.ECONOMY }))()`);
+// --- 3. the end screen is handed it ---
 const died = await run(`
   s.player.invulnerableUntil = 0;
   s.player.takeDamage(99999);
@@ -91,22 +87,20 @@ const died = await run(`
 await sleep(1400);
 const over = await scene('GameOverScene', `
   return { summary: s.payload.summary,
-           lines: s.table.list.map(o => o.text),
-           gold: window.gold.value };
+           lines: s.table.list.map(o => o.text) };
 `);
 console.log('summary:', JSON.stringify({ ...over.summary, skills: over.summary.skills.length }));
 check('the end-of-run screen is handed the run it just played',
   over.summary.damage === died.damage && over.summary.kills === planned,
   `${over.summary.damage} damage, ${over.summary.kills} kills`);
-check('gold is the damage over the configured rate, rounded down',
-  over.summary.gold === Math.floor(died.damage / ECON.damagePerGold) && over.gold === over.summary.gold,
-  `${died.damage} damage -> ${over.summary.gold} gold`);
+check('and pays out no gold: there is none any more (0.72)', !('gold' in over.summary) && !('accountXp' in over.summary),
+  JSON.stringify(Object.keys(over.summary)));
 
 // --- 4. and reads it out ---
 const table = over.lines.join(' | ');
 console.log('table:', table);
-check('the table shows what was dealt, killed and earned',
-  /가한 피해/.test(table) && /처치/.test(table) && /획득 골드/.test(table) &&
+check('the table shows what was dealt and killed, and no gold',
+  /가한 피해/.test(table) && /처치/.test(table) && !/골드/.test(table) &&
     table.includes(over.summary.damage.toLocaleString('en-US')),
   table);
 check('it breaks the kills down by kind',
@@ -126,7 +120,7 @@ check('nothing in the table runs off the screen',
   `) === true, 'every line inside the canvas');
 await shot('stats-01-summary');
 
-// --- 5. gold buys a 신성한 조각 ---
+// --- 5. nothing to buy: no shop on 패시브, no purse kept ---
 await ev(`(() => {
   const s = window.game.scene.getScene('GameOverScene');
   const i = s.menu.rows.findIndex(r => r.item.id === 'menu');
@@ -136,65 +130,14 @@ await cdp.tap('Space', 32, ' ');
 await sleep(1800);
 await ev(`(() => window.game.scene.getScene('MenuScene').icons.press('passives'))()`);
 await sleep(1000);
-
-const poor = await scene('PassiveScene', `
-  return { label: s.shopButton.label.text, enabled: s.shopOpen, gold: window.gold.value };
+const shopless = await scene('PassiveScene', `
+  return { shop: 'shopButton' in s, purse: s.purse.text, gold: localStorage.getItem('exiled-survivors:gold:v1'),
+           handle: 'gold' in window };
 `);
-console.log('shop, short of it:', JSON.stringify(poor));
-check('the shop sits under the tree on 패시브',
-  poor.label.includes(String(ECON.shardPrice)), poor.label);
-check('and it is closed while the purse is short',
-  poor.gold < ECON.shardPrice && poor.enabled === false, `${poor.gold} gold`);
-
-// Enough damage for two and a half shards, whatever a shard and a gold cost.
-await ev(`(() => { const e = window.config.ECONOMY;
-  window.gold.earn(e.damagePerGold * e.shardPrice * 2.5); return 1; })()`);
-await ev(`(() => { window.game.scene.getScene('PassiveScene').scene.restart({ onClose: () => {} }); return 1; })()`);
-await sleep(900);
-const rich = await scene('PassiveScene', `
-  return { enabled: s.shopOpen, gold: window.gold.value, purse: s.purse.text };
-`);
-check('and opens once there is enough', rich.gold >= ECON.shardPrice && rich.enabled === true,
-  `${rich.gold} gold`);
-check('the purse is read out on the screen',
-  rich.purse.includes(`골드 ${rich.gold}`), rich.purse);
-
-await ev(`(() => {
-  const s = window.game.scene.getScene('PassiveScene');
-  s.shopButton.plate.emit('pointerdown'); return 1;
-})()`);
-await sleep(600);
-const bought = await scene('PassiveScene', `
-  return { gold: window.gold.value, purse: s.purse.text,
-           stored: JSON.parse(localStorage.getItem('exiled-survivors:passives:v1')) };
-`);
-console.log('bought:', JSON.stringify(bought));
-check('buying takes a hundred gold and leaves a shard',
-  bought.gold === rich.gold - ECON.shardPrice && bought.stored.shards === 1,
-  `${rich.gold} -> ${bought.gold} gold, ${bought.stored.shards} shard`);
-await shot('stats-02-shop');
-
-// Bought shards are held like found ones: the tree's eraser, not its points.
-const tenth = await ev(`(() => {
-  const s = window.game.scene.getScene('PassiveScene');
-  const e = window.config.ECONOMY;
-  window.gold.earn(e.damagePerGold * e.shardPrice * 10);
-  for (let i = 0; i < 9; i++) {
-    s.buy();
-  }
-  return { gold: window.gold.value,
-           stored: JSON.parse(localStorage.getItem('exiled-survivors:passives:v1')) };
-})()`);
-console.log('ten bought:', JSON.stringify(tenth));
-check('ten bought shards are ten held, and no point',
-  tenth.stored.shards === 10 && tenth.stored.bonusPoints === 0,
-  `${tenth.stored.shards} shards, ${tenth.stored.bonusPoints} points`);
-
-// --- 6. the purse outlives the page ---
+check('패시브 has no shop, and reads out only its points', shopless.shop === false && !/골드|조각/.test(shopless.purse), JSON.stringify(shopless));
+check('and no purse is kept', shopless.gold === null && shopless.handle === false, JSON.stringify(shopless));
 await cdp.send('Page.reload', {});
 await sleep(4200);
-const survived = await ev(`(() => ({ gold: window.gold.value }))()`);
-check('the purse outlives the page', survived.gold === tenth.gold, `${survived.gold} gold`);
 
 // --- 7. and a new run starts its own count ---
 await ev(`(() => { window.game.scene.getScene('MenuScene')?.scene.start('GameScene', { save: null }); return 1; })()`);

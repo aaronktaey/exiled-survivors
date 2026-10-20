@@ -253,10 +253,6 @@ export class GameOverScene extends Phaser.Scene {
 
     figure(copy.damageDealt, grouped(summary.damage));
     figure(copy.killsDealt, grouped(summary.kills));
-    figure(copy.goldEarned, `+${grouped(summary.gold)}`);
-    if (summary.accountXp !== undefined && summary.accountLevel !== undefined) {
-      figure(copy.accountXp, fill(copy.accountXpValue, { xp: grouped(summary.accountXp), level: summary.accountLevel }));
-    }
 
     y += GAME_OVER.wrapGap;
     wrapped(
