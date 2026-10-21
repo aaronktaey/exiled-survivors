@@ -15,6 +15,44 @@ export interface PatchNote {
 
 export const PATCH_NOTES: readonly PatchNote[] = [
   {
+    version: '0.85',
+    date: '2026-10-21',
+    changes: {
+      ko: [
+        '14분 키메라 러시가 없어졌습니다. 대신 10분부터 1분마다 키메라가 1마리씩, 우두머리처럼 화면 밖에서 나타나고, 다른 적도 계속 나옵니다.',
+        '키메라를 잡으면 스킬을 반드시 떨어뜨립니다.',
+        '제단이 키메라 1마리를 불러낼 수도 있습니다.',
+        '제단은 붉은 빛기둥이 먼저 내려오고 1초 뒤 그 자리에 나타납니다.',
+        '화염구 각성과 2차 각성의 폭발 범위 증가가 각각 2배에서 1.5배로 바뀌었습니다(모두 받으면 2.25배).',
+        '스폰 간격, 최대 적 수, 희귀 적 확률, 적 종류별 등장 시점을 서버에서 바로 조정할 수 있게 했습니다. 바뀐 값은 다음 판부터 적용됩니다.',
+      ],
+      en: [
+        'The Chimera rush at 14 minutes is gone. Instead, from 10 minutes one Chimera comes every minute, off screen like a Boss, while other enemies keep coming.',
+        'A Chimera always leaves a skill.',
+        'An altar can call up one Chimera.',
+        'An altar now arrives under a red pillar of light, standing there a second after it comes down.',
+        'Fireball’s awakening and second awakening each widen its burst 1.5× instead of 2× (2.25× with both).',
+        'Spawn pace, the enemy cap, the rare chance and when each kind first appears can now be tuned from the server. Changes apply from the next run.',
+      ],
+      ja: [
+        '14分のキメララッシュがなくなりました。代わりに10分から1分ごとにキメラが1体ずつ、ボスのように画面の外から現れ、他の敵も出続けます。',
+        'キメラを倒すと必ずスキルを落とします。',
+        '祭壇がキメラ1体を呼び出すこともあります。',
+        '祭壇は赤い光の柱が先に降りてきて、1秒後にその場所に現れます。',
+        '火球の覚醒と第二覚醒の爆発範囲がそれぞれ2倍から1.5倍になりました（両方で2.25倍）。',
+        'スポーン間隔、最大敵数、レア敵確率、敵の種類ごとの出現時点をサーバーから直接調整できるようにしました。変更は次のプレイから適用されます。',
+      ],
+      zh: [
+        '移除了14分钟的奇美拉潮。改为从10分钟起每分钟出现一只奇美拉，像首领一样从画面外出现，其他敌人也会继续出现。',
+        '击败奇美拉必定掉落技能。',
+        '祭坛也可能召唤一只奇美拉。',
+        '祭坛会先降下一道红色光柱，1秒后在原地出现。',
+        '火球觉醒和二次觉醒的爆炸范围增幅各从2倍改为1.5倍（两者共2.25倍）。',
+        '现在可以在服务器上直接调整生成间隔、最大敌人数、稀有敌人几率和各类敌人的出现时间，改动从下一局开始生效。',
+      ],
+    },
+  },
+  {
     version: '0.84',
     date: '2026-10-21',
     changes: {

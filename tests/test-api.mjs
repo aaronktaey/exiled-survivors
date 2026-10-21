@@ -171,7 +171,7 @@ try {
     `${tunedStray.status} ${JSON.stringify(tunedStray.body)} / ${tunedHuge.status}`);
   // A dial ships only when the user asks for it (2026-10-19): a path that
   // was one and is not now is refused; one that is (0.77: drops) is taken.
-  const tunedOld = await read(await boss.send('/api/balance', 'PUT', { overrides: { 'SPAWN.maxAlive': 300 } }));
+  const tunedOld = await read(await boss.send('/api/balance', 'PUT', { overrides: { 'BOSS.intervalMs': 60000 } }));
   check('a path that is no dial now is refused, even from the admin', tunedOld.status === 400, JSON.stringify(tunedOld.body));
   const tunedDial = await read(await boss.send('/api/balance', 'PUT', { overrides: { 'POTION.chance': 0.05, 'DIFFICULTY.hpStepTiers.1.multiplier': 4 } }));
   check('a dial that ships is taken from the admin', tunedDial.status === 200 && tunedDial.body?.overrides?.['POTION.chance'] === 0.05,

@@ -171,6 +171,8 @@ export interface Strings {
     readonly tabs: { readonly skills: string; readonly enemies: string; readonly drops: string };
     /** The page that holds the dials for every skill at once. */
     readonly common: string;
+    /** A kind's 등장 시점 dial (SPAWN_TABLE): {kind}. */
+    readonly unlockAt: string;
     readonly fields: {
       readonly damage: string;
       readonly attackSpeed: string;
@@ -642,7 +644,8 @@ export interface Strings {
     /** A toast as a 우두머리 walks in. */
     readonly bossArrived: string;
     /** 키메라 러시 begins: the field cleared, the ground shaking. */
-    readonly chimeraRush: string;
+    /** A 키메라 came on its clock. */
+    readonly chimeraArrived: string;
     readonly intro: string;
     readonly introHintKeyboard: string;
     readonly introHintTouch: string;

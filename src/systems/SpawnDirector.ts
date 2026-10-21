@@ -5,7 +5,7 @@ import {
   ALTAR_OFFERS,
   BONE_RUN,
   BOSS,
-  CHIMERA_RUSH,
+  CHIMERA,
   FUGITIVE,
   ENEMY_KINDS,
   SPAWN,
@@ -43,10 +43,8 @@ export class SpawnDirector {
   private untilBossMs: number = BOSS.firstMs;
   /** Counts down to the next 도망자. */
   private untilFugitiveMs: number = FUGITIVE.firstMs;
-  /** True once 키메라 러시 has begun; from then on only 키메라 come. */
-  private rushing = false;
-  /** Counts down to the next 키메라. */
-  private untilChimeraMs = 0;
+  /** Counts down to the next 키메라 (CHIMERA's clock). */
+  private untilChimeraMs: number = CHIMERA.firstMs;
 
   public constructor(
     scene: Phaser.Scene,
@@ -94,15 +92,9 @@ export class SpawnDirector {
     this.untilBossMs =
       elapsedMs < BOSS.firstMs ? BOSS.firstMs - elapsedMs : BOSS.intervalMs;
     this.untilFugitiveMs = FUGITIVE.firstMs;
-    // Saved during the rush: back into it, with nothing left to clear and
-    // no shake — the first 키메라 at once.
-    this.rushing = elapsedMs >= CHIMERA_RUSH.atMs;
-    this.untilChimeraMs = 0;
-  }
-
-  /** True once 키메라 러시 has begun. */
-  public get inRush(): boolean {
-    return this.rushing;
+    // The same for the 키메라.
+    this.untilChimeraMs =
+      elapsedMs < CHIMERA.firstMs ? CHIMERA.firstMs - elapsedMs : CHIMERA.intervalMs;
   }
 
   /** Total sprites held by the pool, alive or waiting. */
@@ -149,10 +141,6 @@ export class SpawnDirector {
 
   public update(delta: number): void {
     this.elapsedMs += delta;
-    if (this.elapsedMs >= CHIMERA_RUSH.atMs) {
-      this.rush(delta);
-      return;
-    }
     this.sinceSpawnMs += delta;
     this.untilBossMs -= delta;
 
@@ -160,6 +148,13 @@ export class SpawnDirector {
     while (this.untilBossMs <= 0) {
       this.untilBossMs += BOSS.intervalMs;
       this.spawnBoss();
+    }
+
+    // A 키메라 on its own clock, outside the cap like a 우두머리 (0.85).
+    this.untilChimeraMs -= delta;
+    while (this.untilChimeraMs <= 0) {
+      this.untilChimeraMs += CHIMERA.intervalMs;
+      this.spawnChimera();
     }
 
     // A 도망자 on its own clock too, and only ever one on the field.
@@ -181,34 +176,24 @@ export class SpawnDirector {
     }
   }
 
-  /**
-   * 키메라 러시: the first frame past `atMs` clears the field (no kill, no
-   * drop) and says so; every frame after sends a 키메라 out of the middle of
-   * the world each `intervalMs`, the first at once, under the usual cap.
-   */
-  private rush(delta: number): void {
-    if (!this.rushing) {
-      this.rushing = true;
-      this.untilChimeraMs = 0;
-      this.clear();
-      this.hooks.onChimeraRush?.();
-    }
-    this.untilChimeraMs -= delta;
-    while (this.untilChimeraMs <= 0) {
-      this.untilChimeraMs += CHIMERA_RUSH.intervalMs;
-      if (this.alive < SPAWN.maxAlive) {
-        this.spawnChimera();
-      }
-    }
-  }
-
-  /** One 키메라, in the middle of the world. */
+  /** One 키메라, off screen as a 우두머리 comes, and said so (0.85). */
   public spawnChimera(): Enemy | null {
-    const x = WORLD.width / 2;
-    const y = WORLD.height / 2;
+    const camera = this.scene.cameras.main;
+    const radius = Math.hypot(camera.width, camera.height) / 2 + SPAWN.offscreenMargin + BOSS.extraDistance;
+    const angle = Phaser.Math.FloatBetween(0, Math.PI * 2);
+    const x = Phaser.Math.Clamp(this.target.x + Math.cos(angle) * radius, 40, WORLD.width - 40);
+    const y = Phaser.Math.Clamp(this.target.y + Math.sin(angle) * radius, 40, WORLD.height - 40);
     const enemy = this.group.get(x, y) as Enemy | null;
     enemy?.spawn(x, y, this.target, 'chimera', this.hooks, false, this.hpScale);
+    if (enemy) {
+      this.hooks.onChimeraSpawned?.();
+    }
     return enemy;
+  }
+
+  /** Milliseconds until the next 키메라. Public for tests. */
+  public get nextChimeraMs(): number {
+    return Math.max(0, this.untilChimeraMs);
   }
 
   /** Milliseconds until the next 우두머리. */

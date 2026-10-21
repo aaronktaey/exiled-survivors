@@ -177,6 +177,8 @@ const edges = await run(`
     const b = s.spawner.group.get(x, y); b.spawn(x, y, s.player, 'boss');
     b.setPosition(x, y);
     s.combat.hit(b, 1e12);
+    // Summoned (0.85): it stands there once the delay is stepped out.
+    s.combat.update(window.config.ALTAR.summonDelayMs + 1);
     const a = s.combat.altars.getChildren().find((q) => q.active);
     out.push({ kill: [x, y], at: a ? [Math.round(a.x), Math.round(a.y)] : null,
                apart: a ? Math.round(Math.hypot(a.x - x, a.y - y)) : 0 });
@@ -257,6 +259,8 @@ const magnetRate = await run(`
     c.MAGNET.chance = was;
   }
   s.combat.magnetDrops.getChildren().forEach((d) => d.active && d.collect());
+  // 제단 still being summoned from the kills above: let them arrive, then clear them with the rest.
+  s.combat.update(1e9);
   [s.combat.gems, s.combat.skillDrops, s.combat.potions, s.combat.gearDrops, s.combat.orbDrops,
    s.combat.boneDrops, s.combat.randomSkillDrops, s.combat.mangoDrops, s.combat.altars]
     .forEach((g) => g.getChildren().forEach((d) => d.active && d.collect()));

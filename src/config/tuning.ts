@@ -81,6 +81,23 @@ export const DIALS: readonly DialSpec[] = [
   { path: 'DIFFICULTY.hpStepTiers.1.afterMinute', kind: 'count', tab: 'enemies', min: 0, max: 60 },
   { path: 'DIFFICULTY.hpStepTiers.1.multiplier', kind: 'scale', tab: 'enemies', min: 0, max: 20 },
 
+  // How fast they come and how many (0.85, the user's ask): the gap between
+  // spawns, how it shrinks, the cap; how often one is rare; when each kind
+  // first appears (SPAWN_TABLE, by index).
+  { path: 'SPAWN.startIntervalMs', kind: 'ms', tab: 'enemies', min: 50, max: 5000 },
+  { path: 'SPAWN.minIntervalMs', kind: 'ms', tab: 'enemies', min: 20, max: 2000 },
+  { path: 'SPAWN.rampPerMinute', kind: 'chance', tab: 'enemies', max: 0.95 },
+  { path: 'SPAWN.maxAlive', kind: 'count', tab: 'enemies', min: 10, max: 800 },
+  { path: 'RARE.chance', kind: 'chance', tab: 'enemies', max: 1 },
+  { path: 'DIFFICULTY.rareChancePerMinute', kind: 'chance', tab: 'enemies', max: 0.2 },
+  { path: 'DIFFICULTY.lateFromMinute', kind: 'count', tab: 'enemies', min: 0, max: 60 },
+  { path: 'DIFFICULTY.lateMultiplier', kind: 'scale', tab: 'enemies', min: 0, max: 20 },
+  { path: 'SPAWN_TABLE.0.unlockMs', kind: 'ms', tab: 'enemies', max: 1_200_000 },
+  { path: 'SPAWN_TABLE.1.unlockMs', kind: 'ms', tab: 'enemies', max: 1_200_000 },
+  { path: 'SPAWN_TABLE.2.unlockMs', kind: 'ms', tab: 'enemies', max: 1_200_000 },
+  { path: 'SPAWN_TABLE.3.unlockMs', kind: 'ms', tab: 'enemies', max: 1_200_000 },
+  { path: 'SPAWN_TABLE.4.unlockMs', kind: 'ms', tab: 'enemies', max: 1_200_000 },
+
   // What falls, as a share of kills (before a rare's or a 우두머리's bonus).
   { path: 'SKILL_DROP.chance', kind: 'chance', tab: 'drops', max: 0.2 },
   { path: 'SKILL_PICK.dropChance', kind: 'chance', tab: 'drops', max: 0.2 },

@@ -36,7 +36,6 @@ import {
   heldBonusFor,
   AUDIO,
   TERRAIN,
-  CHIMERA_RUSH,
   UPGRADE_PERCENT,
 } from '@/config';
 import type { Enemy } from '@/entities/Enemy';
@@ -88,7 +87,6 @@ import { tuning } from '@/systems/Tuning';
 import { dropTierFor } from '@/systems/Gear';
 import { Toasts, type ToastTone } from '@/systems/Toasts';
 import { HealthPotion } from '@/entities/HealthPotion';
-import type { EnemyShot } from '@/entities/EnemyShot';
 import {
   NO_BONUS,
   gear,
@@ -314,7 +312,7 @@ export class GameScene extends Phaser.Scene {
     this.spawner = new SpawnDirector(this, this.player, () => this.boneBonus, {
       fireShot: (x, y, angle, spec) => this.combat.fireEnemyShot(x, y, angle, spec),
       onBossSpawned: () => this.announceBoss(),
-      onChimeraRush: () => this.startChimeraRush(),
+      onChimeraSpawned: () => this.announce(t().game.chimeraArrived, 'warning'),
     });
     this.separation = new Separation(this.spawner.group, this.player);
     // A resumed run lays the rocks it had; a new one rolls a field of its own.
@@ -591,6 +589,9 @@ export class GameScene extends Phaser.Scene {
         onCast: id === this.mainSkill ? this.castLook : undefined,
       });
     }
+
+    // What waits on the run's clock: a 제단 being summoned.
+    this.combat.update(dt);
 
     this.damageNumbers.update(dt);
     this.edgeMarkers.update();
@@ -1146,23 +1147,6 @@ export class GameScene extends Phaser.Scene {
   private announceBoss(): void {
     sfx.playBossAlert(this);
     this.announce(t().game.bossArrived, 'warning');
-  }
-
-  /**
-   * 키메라 러시 begins: the field is already empty of enemies (the spawner
-   * cleared it); their shots in the air go too, the screen shakes, the horn
-   * goes, and the run says what is coming.
-   */
-  private startChimeraRush(): void {
-    for (const child of this.combat.enemyShots.getChildren()) {
-      const shot = child as EnemyShot;
-      if (shot.active) {
-        shot.despawn();
-      }
-    }
-    this.cameras.main.shake(CHIMERA_RUSH.shakeMs, CHIMERA_RUSH.shakeIntensity);
-    sfx.playBossAlert(this);
-    this.announce(t().game.chimeraRush, 'warning');
   }
 
   /** A line for the player — a pickup, a 우두머리 — as a toast in the top-right corner. */

@@ -129,55 +129,58 @@ check('it is heard walking in, throwing its ring and dying',
   ['appear', 'cast', 'death'].every((part) => heard.some((k) => k.startsWith('sfx-enemy-chimera-' + part))),
   heard.join(', '));
 
-// --- 3. 키메라 러시 ---
-const before = await run(`
+// --- 3. 키메라 on their own clock (0.85; a 14-minute rush before) ---
+// The scene's own loop is held (choosing), and the spawner stepped by hand.
+const clock = await run(`
+  s.choosing = true;
+  s.player.setInvulnerable(true);
   s.spawner.clear();
-  delete s.spawner.update;
-  const R = window.config.CHIMERA_RUSH;
-  s.spawner.elapsedMs = R.atMs - 400;
-  s.elapsedMs = R.atMs - 400;
-  s.spawner.spawnBurst(12);
-  return { alive: s.spawner.alive, inRush: s.spawner.inRush, choosing: s.choosing };
+  const C = window.config.CHIMERA;
+  const step = (ms) => { for (let t = 0; t < ms; t += 50) s.spawner.update(50); };
+  const chimeras = () => s.spawner.group.getChildren().filter((e) => e.active && e.kind === 'chimera');
+  s.spawner.seed(C.firstMs - 400);
+  step(300);
+  const before = { chimeras: chimeras().length, alive: s.spawner.alive };
+  step(200);
+  const first = chimeras();
+  const cam = s.cameras.main, p = s.player;
+  const offscreen = first.every((e) => Math.hypot(e.x - p.x, e.y - p.y) > Math.hypot(cam.width, cam.height) / 2 - 40);
+  const toast = s.toasts.lines.some((l) => /키메라 등장/.test(l));
+  step(C.intervalMs);
+  const second = chimeras().length;
+  const others = Object.entries(s.spawner.aliveByKind).filter(([k, n]) => k !== 'chimera' && n > 0).length;
+  s.spawner.seed(C.firstMs + 30_000);
+  const resumedNext = s.spawner.nextChimeraMs;
+  s.spawner.seed(C.firstMs - 60_000);
+  const earlyNext = s.spawner.nextChimeraMs;
+  return { C, before, first: first.length, offscreen, toast, second, others, resumedNext, earlyNext };
 `);
-await sleep(900);
-const rushed = await run(`
-  const kinds = Object.entries(s.spawner.aliveByKind).filter(([, n]) => n > 0);
-  const W = window.config.WORLD;
-  const chimeras = s.spawner.group.getChildren().filter((e) => e.active && e.kind === 'chimera');
-  return { inRush: s.spawner.inRush, kinds, shaking: s.cameras.main.shakeEffect.isRunning,
-           toast: s.toasts.lines.some((l) => l.includes(window.__i18nRush ?? '')),
-           nearMiddle: chimeras.every((e) => Math.hypot(e.x - W.width / 2, e.y - W.height / 2) < 400),
-           chimeras: chimeras.length };
-`);
-console.log('rush:', JSON.stringify({ before, rushed }));
-check('just before the minute, the field is as it was', before.alive >= 12 && before.inRush === false && !before.choosing);
-check('at the minute everything else is gone, and a 키메라 is out', rushed.inRush &&
-  rushed.kinds.length === 1 && rushed.kinds[0][0] === 'chimera' && rushed.chimeras === 1,
-  JSON.stringify(rushed.kinds));
-check('the screen shakes', rushed.shaking === true);
-check('it comes out of the middle of the world', rushed.nearMiddle);
-await shot('chimera-rush');
+console.log('clock:', JSON.stringify(clock));
+check('no 키메라 before CHIMERA.firstMs', clock.before.chimeras === 0, JSON.stringify(clock.before));
+check('at it one comes, off screen like a 우두머리, and it is said', clock.first === 1 && clock.offscreen && clock.toast, JSON.stringify(clock));
+check('one more every CHIMERA.intervalMs, while everything else goes on spawning', clock.second === 2 && clock.others > 0,
+  `${clock.second} 키메라, ${clock.others} other kinds alive`);
+check('a run resumed past it waits a full interval; one resumed before waits out the rest',
+  clock.resumedNext === clock.C.intervalMs && clock.earlyNext === 60_000, JSON.stringify({ r: clock.resumedNext, e: clock.earlyNext }));
+check('the 키메라 러시 is gone', await run(`return !('CHIMERA_RUSH' in window.config) && !('inRush' in s.spawner);`));
+await shot('chimera-clock');
 
-const later = await run(`
-  window.__killedBefore = s.stats.killsByKind?.chimera ?? 0;
-  return window.config.CHIMERA_RUSH.intervalMs;
-`);
-await sleep(later + 800);
-const after = await run(`
-  const kinds = Object.entries(s.spawner.aliveByKind).filter(([, n]) => n > 0).map(([k]) => k);
-  return { kinds, chimeras: s.spawner.aliveByKind.chimera };
-`);
-check('one more every interval, and nothing else', after.chimeras >= 2 && after.kinds.length === 1,
-  `${after.chimeras} 키메라 after ${later}ms; kinds ${after.kinds.join(',')}`);
-
-// A run saved during the rush resumes in it, with no shake.
-const resumed = await run(`
+// --- 4. it always leaves a skill, and a 제단 can call one up ---
+const prize = await run(`
   s.spawner.clear();
-  const R = window.config.CHIMERA_RUSH;
-  s.spawner.seed(R.atMs + 60_000);
-  return { inRush: s.spawner.inRush };
+  s.combat.skillDrops.getChildren().forEach((d) => d.active && d.collect());
+  const p = s.player;
+  const e = s.spawner.group.get(p.x + 300, p.y);
+  e.spawn(p.x + 300, p.y, p, 'chimera');
+  s.combat.hit(e, 1e12);
+  const dropped = s.combat.skillDrops.countActive(true);
+  s.combat.skillDrops.getChildren().forEach((d) => d.active && d.collect());
+  s.combat.gems.getChildren().forEach((g) => g.active && g.collect());
+  const offer = window.config.ALTAR_OFFERS.chimera;
+  return { dropped, guaranteed: window.config.ENEMY_KINDS.chimera.guaranteedSkill, offer };
 `);
-check('a run resumed past the minute is back in the rush', resumed.inRush === true);
+check('a 키메라 killed always leaves a skill', prize.dropped >= 1 && prize.guaranteed === true, JSON.stringify(prize));
+check('a 제단 can offer one 키메라', prize.offer?.kind === 'chimera' && prize.offer.count === 1 && prize.offer.weight > 0, JSON.stringify(prize.offer));
 
 console.log('\n=== SUMMARY ===');
 const failed = results.filter((r) => !r.p);

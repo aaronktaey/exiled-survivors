@@ -313,7 +313,7 @@ export const ENEMY_KINDS: Record<EnemyKind, EnemyKindSpec> = {
   /**
    * 키메라. Hops like a 기행종 (the 기행종's live hop, 2026-10-19), throws the
    * 우두머리's ring as white thorns, has the 우두머리's health, and nothing
-   * freezes it. Not in the spawn table: it comes only with CHIMERA_RUSH.
+   * freezes it. Not in the spawn table: it comes on CHIMERA's clock (and off a 제단).
    */
   chimera: {
     id: "chimera",
@@ -337,6 +337,8 @@ export const ENEMY_KINDS: Record<EnemyKind, EnemyKindSpec> = {
       texture: TEXTURES.thorn,
     },
     unstoppable: true,
+    // Always leaves a skill (0.85), as a 도망자 does.
+    guaranteedSkill: true,
   },
   shooter: {
     id: "shooter",
@@ -861,7 +863,8 @@ export type AltarOfferId =
   | "rareGrunts"
   | "runnerSwarm"
   | "erraticSwarm"
-  | "fugitives";
+  | "fugitives"
+  | "chimera";
 
 export const ALTAR_OFFERS: Record<AltarOfferId, AltarOfferSpec> = {
   bosses: { kind: "boss", count: 3, rare: false, weight: 1 },
@@ -873,6 +876,8 @@ export const ALTAR_OFFERS: Record<AltarOfferId, AltarOfferSpec> = {
   erraticSwarm: { kind: "erratic", count: 20, rare: false, weight: 2 },
   // Each one always leaves a skill, as a 도망자 does — a prize worth the chase.
   fugitives: { kind: "fugitive", count: 3, rare: false, weight: 1 },
+  // One 키메라 (0.85, the user's ask); its weight is a first guess.
+  chimera: { kind: "chimera", count: 1, rare: false, weight: 1 },
 };
 
 export const ALTAR = {
@@ -895,6 +900,11 @@ export const ALTAR = {
   summonRadius: 200,
   /** How big it is drawn. */
   size: 28,
+  /**
+   * A 제단 is not dropped but summoned (0.85, the user's ask): a red pillar
+   * comes down where it will stand, and it is there this long after.
+   */
+  summonDelayMs: 1000,
 } as const;
 
 /** One offer, drawn by weight. */
@@ -929,17 +939,14 @@ export const SPAWN_TABLE: readonly {
 ];
 
 /**
- * 키메라 러시: at `atMs` the screen shakes, every enemy on the field is gone
- * (no kill, no drop), and from then on nothing comes but a 키메라 out of
- * the middle of the world every `intervalMs` — no spawn table, no
- * 우두머리, no 도망자. A 제단 still calls up what it offers.
+ * ★ 키메라 (0.85, the user's ask; 0.67–0.84 had a 키메라 러시 at 14 minutes
+ * that cleared the field and sent only 키메라 after). From `firstMs` one
+ * 키메라 comes every `intervalMs`, off screen like a 우두머리 and outside the
+ * usual cap, while everything else goes on spawning as before.
  */
-export const CHIMERA_RUSH = {
-  atMs: 14 * 60_000,
-  intervalMs: 5_000,
-  shakeMs: 1_200,
-  /** Share of the view the camera is thrown about by. */
-  shakeIntensity: 0.014,
+export const CHIMERA = {
+  firstMs: 10 * 60_000,
+  intervalMs: 60_000,
 } as const;
 
 export const SPAWN = {
@@ -1004,8 +1011,8 @@ export const SKILL_MASTERY = {
   // 20 until 2026-10-16.
   level: 10,
   /** 타격: an enemy's shot inside the swing is struck out of the air. */
-  /** 화염구: its burst is this many times as wide (0.84; it left burning ground before). */
-  fireBlastScale: 2,
+  /** 화염구: its burst is this many times as wide (0.84; it left burning ground before; 2 in 0.84). */
+  fireBlastScale: 1.5,
   /**
    * 연쇄번개: each strike is amplified by this share for every jump still to
    * come after it — the first of a seven-jump arc by 7×, the last not at all.
@@ -1030,8 +1037,8 @@ export const SKILL_MASTERY = {
     level: 20,
     /** 타격: the swing's full width, in degrees (MELEE.arcRadians before it). */
     meleeArcDegrees: 180,
-    /** 화염구: its burst this many times wider again — 4× in all with the first (0.84). */
-    fireBlastScale: 2,
+    /** 화염구: its burst this many times wider again — 2.25× in all with the first (0.85; 2 in 0.84). */
+    fireBlastScale: 1.5,
     /** 연쇄번개: arcs each cast starts, each from its own nearest enemy. */
     chainForks: 2,
     /**

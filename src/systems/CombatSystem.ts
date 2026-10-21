@@ -2,6 +2,8 @@ import Phaser from 'phaser';
 
 import {
   ALTAR,
+  ALTAR_SUMMON_FX,
+  TEXTURES,
   AUDIO,
   BONES,
   CHILL,
@@ -345,6 +347,48 @@ export class CombatSystem {
   }
 
   /** Places a 제단 directly — used by the 우두머리 kill and by tests. */
+  /** 제단 on their way (summonAltarAt): the pillar, where, what, and how long to go. Public for tests. */
+  public readonly summoning: { x: number; y: number; offer: AltarOfferId; leftMs: number; pillar: Phaser.GameObjects.Image }[] = [];
+
+  /**
+   * A 제단 summoned (0.85, the user's ask): a red pillar comes down on the
+   * spot, and ALTAR.summonDelayMs later the 제단 stands there. Stepped by
+   * `update`, so a pause holds it.
+   */
+  public summonAltarAt(x: number, y: number, offer: AltarOfferId): void {
+    [x, y] = this.onGround(x, y);
+    const fx = ALTAR_SUMMON_FX;
+    const pillar = this.scene.add
+      .image(x, y + ALTAR.size / 2, TEXTURES.lightPillar)
+      .setOrigin(0.5, 1)
+      .setDisplaySize(fx.width, fx.height)
+      .setTint(fx.tint)
+      .setBlendMode(Phaser.BlendModes.ADD)
+      .setAlpha(fx.alpha)
+      .setDepth(DEPTH.pickups + 1);
+    // It comes down from above: grown from nothing at its top to its full length.
+    const full = pillar.scaleY;
+    pillar.setScale(pillar.scaleX, 0).setY(y + ALTAR.size / 2 - fx.height);
+    this.scene.tweens.add({ targets: pillar, scaleY: full, y: y + ALTAR.size / 2, duration: fx.dropMs, ease: 'Quad.easeIn' });
+    this.summoning.push({ x, y, offer, leftMs: ALTAR.summonDelayMs, pillar });
+  }
+
+  /** Steps what waits on the run's clock: the 제단 on their way. */
+  public update(delta: number): void {
+    for (let i = this.summoning.length - 1; i >= 0; i--) {
+      const pending = this.summoning[i]!;
+      pending.leftMs -= delta;
+      if (pending.leftMs > 0) {
+        continue;
+      }
+      this.summoning.splice(i, 1);
+      this.dropAltarAt(pending.x, pending.y, pending.offer);
+      const { pillar } = pending;
+      this.scene.tweens.killTweensOf(pillar);
+      this.scene.tweens.add({ targets: pillar, alpha: 0, duration: ALTAR_SUMMON_FX.fadeMs, onComplete: () => pillar.destroy() });
+    }
+  }
+
   public dropAltarAt(x: number, y: number, offer: AltarOfferId): Altar | null {
     [x, y] = this.onGround(x, y);
     const altar = this.altars.get() as Altar | null;
@@ -753,7 +797,7 @@ export class CombatSystem {
       // back either way, so picking the loot up does not wake it.
       const above = y - ALTAR.dropOffset;
       const altarY = above >= DROP_MARGIN ? above : y + ALTAR.dropOffset;
-      this.dropAltarAt(x, altarY, rollAltarOffer());
+      this.summonAltarAt(x, altarY, rollAltarOffer());
     }
 
     // A 구슬 rolls off any kill at all, which is what gives the hundredth

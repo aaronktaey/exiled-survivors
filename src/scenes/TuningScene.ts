@@ -5,6 +5,7 @@ import {
   COLORS,
   DEPTH,
   DIALS,
+  SPAWN_TABLE,
   SKILL_BASE,
   SCENES,
   SCRIM,
@@ -17,7 +18,7 @@ import {
   type GearId,
   type OrbId,
 } from '@/config';
-import { boneShort, fill, gearName, orbShort, skillName, t } from '@/i18n';
+import { boneShort, enemyName, fill, gearName, orbShort, skillName, t } from '@/i18n';
 import { addBackButton, type BackButton } from '@/systems/BackButton';
 import { fitText } from '@/systems/Layout';
 import { dpsFromStats } from '@/systems/Progression';
@@ -410,6 +411,10 @@ export class TuningScene extends Phaser.Scene {
     }
     if (root === 'BALANCE' && a === 'damageScale') {
       return copy.fields.damageScale;
+    }
+    if (root === 'SPAWN_TABLE') {
+      const row = SPAWN_TABLE[Number(a)];
+      return row ? fill(copy.unlockAt, { kind: enemyName(row.kind) }) : dial.path;
     }
     if (root === 'ORBS') {
       return orbShort(a as OrbId);

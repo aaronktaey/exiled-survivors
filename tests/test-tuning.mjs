@@ -52,6 +52,10 @@ const shipped = await ev(`(() => {
   const paths = new Set(c.DIALS.map((d) => d.path));
   const want = ['BALANCE.enemyHpScale', 'DIFFICULTY.hpScalePerMinute',
     ...c.DIFFICULTY.hpStepTiers.flatMap((_, i) => ['DIFFICULTY.hpStepTiers.' + i + '.afterMinute', 'DIFFICULTY.hpStepTiers.' + i + '.multiplier']),
+    // Spawn pace, the cap, the rare chance and each kind's arrival (0.85).
+    'SPAWN.startIntervalMs', 'SPAWN.minIntervalMs', 'SPAWN.rampPerMinute', 'SPAWN.maxAlive',
+    'RARE.chance', 'DIFFICULTY.rareChancePerMinute', 'DIFFICULTY.lateFromMinute', 'DIFFICULTY.lateMultiplier',
+    ...c.SPAWN_TABLE.map((_, i) => 'SPAWN_TABLE.' + i + '.unlockMs'),
     'SKILL_DROP.chance', 'SKILL_PICK.dropChance', 'POTION.chance', 'MANGO.chance', 'MAGNET.chance', 'ALTAR.fromKill', 'ALTAR.fromBoss',
     ...Object.keys(c.ORBS).filter((id) => !c.ORBS[id].fromBossOnly).map((id) => 'ORBS.' + id + '.chance'),
     ...Object.keys(c.BONES).filter((id) => c.BONES[id].fromKill > 0).map((id) => 'BONES.' + id + '.fromKill'),

@@ -29,7 +29,7 @@ import {
   SKILL_PICK,
   SPAWN,
   SPAWN_TABLE,
-  CHIMERA_RUSH,
+  CHIMERA,
   STATS,
   UPGRADE_CAP,
   UPGRADE_MAX_PICKS,
@@ -401,8 +401,8 @@ function chimeraCard(): GuideCard {
     ],
     lines: [
       fill(g.enemyNotes.chimera ?? '', {
-        minute: round(CHIMERA_RUSH.atMs / 60_000),
-        every: seconds(CHIMERA_RUSH.intervalMs),
+        minute: round(CHIMERA.firstMs / 60_000),
+        every: round(CHIMERA.intervalMs / 60_000),
       }),
     ],
   };

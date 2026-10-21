@@ -922,3 +922,14 @@ export const VOID_VORTEX_FX = {
   /** How solid it is at its fullest: the field under it still shows. */
   alpha: 0.7,
 } as const;
+
+/** A 제단 being summoned: a red pillar (the light pillar's picture, tinted) comes down on the spot. */
+export const ALTAR_SUMMON_FX = {
+  tint: 0xff2a2a,
+  width: 46,
+  height: 300,
+  alpha: 0.85,
+  /** How long it takes to reach the ground, and how long it fades once the 제단 is there. */
+  dropMs: 260,
+  fadeMs: 420,
+} as const;

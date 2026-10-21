@@ -76,8 +76,8 @@ export interface EnemyHooks {
   readonly fireShot: (x: number, y: number, angle: number, spec: EnemyShotSpec) => void;
   /** Announces a 우두머리, so the run can say something about it. */
   readonly onBossSpawned?: () => void;
-  /** 키메라 러시 has begun: the field was just cleared for it. */
-  readonly onChimeraRush?: () => void;
+  /** A 키메라 came on its clock (SpawnDirector.spawnChimera). */
+  readonly onChimeraSpawned?: () => void;
 }
 
 /**

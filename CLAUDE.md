@@ -217,6 +217,11 @@ Read `git log` for what changed and when. What is not in the log:
   `addBackButton` (top-left, arrow only below 600 wide) with the same exit
   Esc takes; `test-back` checks each one sits clear and goes where it
   should. A new screen should do the same.
+- **A 제단 is summoned (0.85).** A kill's 제단 goes through
+  `CombatSystem.summonAltarAt`: a red pillar (`ALTAR_SUMMON_FX`, the light
+  pillar tinted) comes down, and `ALTAR.summonDelayMs` later `dropAltarAt`
+  puts it there — stepped by `combat.update(dt)` from GameScene, so a pause
+  holds it. `dropAltarAt` itself is still immediate (debug keys, tests).
 - **제단 chain on purpose.** A 우두머리 leaves a 제단 at `ALTAR.fromBoss` (a
   tenth since 2026-10-18 — at every one, a 고대 두개골 run drowned in them),
   ordinary kills leave one at `ALTAR.fromKill`, and a 제단 can call up 우두머리, which leave 제단. It is opt-in — nothing
@@ -467,8 +472,12 @@ Read `git log` for what changed and when. What is not in the log:
   a page a skill (every `SKILL_BASE` stat above zero and its
   `BALANCE.damageScale`), enemy health (`enemyHpScale`, `hpScalePerMinute`,
   each `hpStepTiers` index's minute and multiplier) and every drop rate. The
-  rest of 0.70's dials (spawn pace, the 공통 page, the 기행종, 키메라 러시,
-  drop bonuses) stay off until asked for. test-tuning reads the tables and
+  rest of 0.70's dials (the 공통 page, the 기행종, the 우두머리 clock,
+  drop bonuses) stay off until asked for. 0.85 added (asked for) the spawn
+  pace (`SPAWN.startIntervalMs`, `minIntervalMs`, `rampPerMinute`), the cap
+  (`maxAlive`), the rare chance (`RARE.chance`,
+  `DIFFICULTY.rareChancePerMinute`, `lateFromMinute`, `lateMultiplier`) and
+  each kind's arrival (`SPAWN_TABLE.<i>.unlockMs`, labelled by the kind). test-tuning reads the tables and
   fails on a missing dial or an extra one.
 - **밸런스 다이얼.** `config/tuning.ts` lists every dial by path into the
   config tables (pure data — the Worker imports it to accept only those
@@ -737,19 +746,19 @@ Read `git log` for what changed and when. What is not in the log:
   the user to try first — they asked for that once. The harness turns rocks off
   (they would move hand-placed enemies) unless a page sets
   `window.__terrainOn` (test-terrain does).
-- **키메라 and 키메라 러시 (0.67).** `ENEMY_KINDS.chimera` is a 기행종's
+- **키메라 (0.67) on its own clock (0.85).** `ENEMY_KINDS.chimera` is a 기행종's
   `hop` (copied from the erratic's *live* values when it was made) plus the
   우두머리's `volley` with `texture: TEXTURES.thorn` (an `EnemyShotSpec`
   with a texture is drawn at its own size and turned along its flight;
   without one it is the plain square, as before), the 우두머리's `maxHp`,
-  and `unstoppable` (`Enemy.freeze` ignores it). The volley now runs before
-  the hop branch in `Enemy.update`, so a hopper can throw. It is not in
-  `SPAWN_TABLE`: `CHIMERA_RUSH` (balance.ts) is the only way in —
-  `SpawnDirector.rush` takes over `update` once the clock passes `atMs`:
-  clears the field (no kill, no drop), calls `onChimeraRush` (GameScene
-  shakes the camera, drops enemy shots, horn, toast), then a 키메라 at the
-  world's centre every `intervalMs` under `SPAWN.maxAlive`; nothing else
-  spawns but what a 제단 calls. `seed()` past `atMs` resumes in the rush.
+  `unstoppable` (`Enemy.freeze` ignores it) and, since 0.85,
+  `guaranteedSkill`. The volley runs before the hop branch in
+  `Enemy.update`, so a hopper can throw. It is not in `SPAWN_TABLE`: from
+  `CHIMERA.firstMs` (10 min) one comes every `CHIMERA.intervalMs`
+  (`SpawnDirector.spawnChimera`, off screen like a 우두머리, outside the cap,
+  `onChimeraSpawned` → a toast), and a 제단 can offer one
+  (`ALTAR_OFFERS.chimera`). The 14-minute 키메라 러시 (0.67–0.84) that
+  cleared the field was taken out on the user's word.
   Enemy sounds are a table, `AUDIO.enemies[kind][appear|death|cast]`,
   played by `sfx.playEnemy` with a per-part rest; the 키메라's are cut from
   `assets-src/chimera/hydra.mp3` by `tools/make-chimera-sfx.py`.

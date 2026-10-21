@@ -82,6 +82,8 @@ const fromKills = await run(`
     const e = s.spawner.group.getChildren().find(x => x.active && x.kind === kind);
     const at = { x: e.x, y: e.y };
     s.combat.hit(e, 1e9);
+    // A 제단 is summoned (0.85): it stands there once the delay is stepped out.
+    s.combat.update(window.config.ALTAR.summonDelayMs + 1);
     const fresh = s.combat.altars.getChildren().filter(a => a.active);
     const made = s.combat.altars.countActive(true) - before;
     const last = fresh[fresh.length - 1];
@@ -99,6 +101,7 @@ const fromKills = await run(`
     s.combat.altars.getChildren().forEach((a) => a.active && a.collect());
     const b = s.spawner.spawnBoss();
     s.combat.hit(b, 1e12);
+    s.combat.update(window.config.ALTAR.summonDelayMs + 1);
     bossAltars += s.combat.altars.countActive(true);
   }
   [s.combat.gearDrops, s.combat.skillDrops, s.combat.orbDrops, s.combat.gems, s.combat.potions,
@@ -119,6 +122,29 @@ const fromKills = await run(`
   return out;
 `);
 console.log('altars from kills:', JSON.stringify(fromKills));
+// --- 3a. it is summoned: a red pillar first, the 제단 ALTAR.summonDelayMs later (0.85) ---
+const summoned = await run(`
+  ${FREEZE}
+  s.combat.altars.getChildren().forEach((a) => a.active && a.collect());
+  const A = window.config.ALTAR;
+  s.combat.summonAltarAt(s.player.x + 260, s.player.y, 'rareGrunts');
+  const pending = s.combat.summoning[0];
+  const pillar = pending ? { tint: pending.pillar.tintTopLeft, visible: pending.pillar.visible } : null;
+  s.combat.update(A.summonDelayMs - 100);
+  const early = s.combat.altars.countActive(true);
+  s.combat.update(150);
+  const late = s.combat.altars.countActive(true);
+  const altar = s.combat.altars.getChildren().find((a) => a.active);
+  const out = { pillar, early, late, left: s.combat.summoning.length, at: altar ? { x: Math.round(altar.x - s.player.x), y: Math.round(altar.y - s.player.y) } : null,
+                want: window.config.ALTAR_SUMMON_FX.tint };
+  s.combat.altars.getChildren().forEach((a) => a.active && a.collect());
+  s.choosing = false;
+  return out;
+`);
+check('a 제단 is summoned: a red pillar comes down, and the 제단 stands there only after the delay',
+  summoned.pillar?.visible === true && summoned.pillar.tint === summoned.want && summoned.early === 0 && summoned.late === 1 &&
+    summoned.left === 0 && summoned.at?.x === 260, JSON.stringify(summoned));
+
 check('a 우두머리 kill leaves a 제단 at its own chance',
   Math.abs(fromKills.bossRate - fromKills.was) < Math.max(0.03, 4 * Math.sqrt((fromKills.was * (1 - fromKills.was)) / fromKills.N)),
   `${(fromKills.bossRate * 100).toFixed(1)}% of ${fromKills.N} (want ${(fromKills.was * 100).toFixed(1)}%)`);
