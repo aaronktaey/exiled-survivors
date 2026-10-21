@@ -503,7 +503,15 @@ Read `git log` for what changed and when. What is not in the log:
   starts (`game.draftRun`) and a red line on the end screen
   (`GameOverData.devReason`, `devRunNote`), the same for an F-key run. The
   admin once set a record with a draft left on and was never asked for a
-  name; the draft stays in `TUNING.draftKey` until 실험 취소 or 전체 적용. test-tuning drives it with an
+  name; the draft stays in `TUNING.draftKey` until 실험 취소 or 전체 적용.
+  Pressing a knob (or Enter) opens it magnified (`TuningScene.openZoom`,
+  2026-10-21): what it does — `tuning.fieldDetails` by stat, `details` by
+  path, templates for 피해 배율 · 등장 시점 · 구슬 · 뼈다귀 · 검; a new dial
+  needs its line, test-tuning fails on a blank — and a big dial reading
+  0–100 across `tuning.range` (`zoomPosition`, kept so a coarse dial still
+  steps by one), turned by pointing, wheel, ±1/±10, ↑↓ (Shift ×10), with
+  전체 값으로 and 닫기. Shipped with no patch note, on the user's word: it
+  is the admin's screen. test-tuning drives it with an
   in-page stand-in for /api/balance; test-api covers the endpoint.
 - **아이템 필터.** `config/itemFilter.ts` builds a switch per kind of drop
   from the tables (구슬, 뼈다귀, swords by base and by rarity, plus potion,

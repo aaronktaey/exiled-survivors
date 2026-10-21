@@ -204,6 +204,25 @@ export interface Strings {
     readonly sharedAt: string;
     readonly never: string;
     readonly hint: string;
+    /** What a skill's stat does, by field — {skill}. Shown on the magnified dial. */
+    readonly fieldDetails: Readonly<Record<string, string>>;
+    /** What the other dials do, by path. */
+    readonly details: Readonly<Record<string, string>>;
+    /** A skill's 피해 배율 — {skill}. */
+    readonly detailDamageScale: string;
+    /** An 등장 시점 (SPAWN_TABLE) — {kind}. */
+    readonly detailUnlock: string;
+    /** A 구슬's, a 뼈다귀's and a sword's drop rate — {name}. */
+    readonly detailOrb: string;
+    readonly detailBone: string;
+    readonly detailGear: string;
+    /** The magnified dial (0.89). */
+    readonly zoom: {
+      /** {shared} everyone's value, {base} balance.ts's, {min}–{max} the range. */
+      readonly facts: string;
+      readonly reset: string;
+      readonly close: string;
+    };
   };
   readonly menu: {
     /** Over the title while it reloads onto a new version. */

@@ -99,6 +99,20 @@ for (const [w, h, shape] of [[0, 0, 'landscape'], [420, 860, 'upright']]) {
   check(`${shape}: every 드랍 dial fits above the buttons`,
     fit.count >= 15 && fit.bottom < fit.status && fit.right < fit.width, JSON.stringify(fit));
   await shot(`tuning-03-drops-${shape}`);
+  // The magnified dial (0.89): everything on it inside the window, nothing overlapping.
+  const zoomFit = await scene('TuningScene', `
+    s.openZoom(s.knobs[0].dial);
+    const { width, height } = s.scale;
+    const parts = s.zoom.root.list.slice(1).filter((o) => typeof o.getBounds === 'function').map((o) => o.getBounds());
+    const inside = parts.every((r) => r.left >= -1 && r.top >= -1 && r.right <= width + 1 && r.bottom <= height + 1);
+    const dialBottom = s.zoom.y + s.zoom.r + 26;
+    const facts = s.zoom.facts.getBounds();
+    const r = s.zoom.r;
+    s.closeZoom();
+    return { inside, dialBottom: Math.round(dialBottom), factsTop: Math.round(facts.top), r, width, height };
+  `);
+  check(`${shape}: the magnified dial and its buttons all sit inside the window, the dial clear of the lines under it`,
+    zoomFit.inside && zoomFit.dialBottom <= zoomFit.factsTop + 4, JSON.stringify(zoomFit));
 }
 await cdp.send('Emulation.clearDeviceMetricsOverride', {});
 await cdp.send('Page.navigate', { url: 'about:blank' });
@@ -106,6 +120,80 @@ await cdp.send('Page.navigate', { url: 'http://localhost:5173/' });
 await sleep(2500);
 await ev(standIn);
 await sleep(300);
+
+// --- 1b. the magnified dial (0.89) ---
+await scene('MenuScene', `s.icons.press('tuning'); return 1;`);
+await sleep(700);
+const zoom = await scene('TuningScene', `
+  const c = window.config;
+  // Every dial says what it does.
+  const blank = c.DIALS.filter((d) => !(s.detailOf(d) ?? '').trim() || /\{\w+\}/.test(s.detailOf(d))).map((d) => d.path);
+  // A press on a knob opens it magnified.
+  const knob = s.knobs.find((k) => k.dial.path === 'SKILL_BASE.meleeStrike.damage');
+  knob.hit.emit('pointerdown');
+  const opened = s.zoom?.dial.path ?? null;
+  const shown = s.zoom ? { position: s.zoom.position.text, value: s.zoom.value.text, facts: s.zoom.facts.text } : null;
+  const { min, max } = window.tuning.range(knob.dial);
+  s.setZoomPosition(0);
+  const atZero = window.tuning.valueOf(knob.dial.path);
+  s.setZoomPosition(100);
+  const atTop = window.tuning.valueOf(knob.dial.path);
+  s.setZoomPosition(150);
+  const clamped = s.zoomPosition;
+  return { blank, opened, shown, min, max, atZero, atTop, clamped, shared: window.tuning.sharedOf(knob.dial.path) };
+`);
+console.log('zoom:', JSON.stringify(zoom));
+check('every dial has a description of what it does, nothing left unfilled', zoom.blank.length === 0, zoom.blank.join(' '));
+check('pressing a knob opens it magnified, its position, value and range written out',
+  zoom.opened === 'SKILL_BASE.meleeStrike.damage' && /^\d+$/.test(zoom.shown?.position ?? '') && zoom.shown.value !== '' && zoom.shown.facts.includes('~'),
+  JSON.stringify(zoom.shown));
+check('the magnified dial reads 0 to 100 across the dial’s whole range, and stops at 100',
+  Math.abs(zoom.atZero - zoom.min) < 1e-9 && Math.abs(zoom.atTop - zoom.max) < 1e-6 && zoom.clamped === 100,
+  `0 → ${zoom.atZero} (min ${zoom.min}), 100 → ${zoom.atTop} (max ${zoom.max})`);
+const zoomKeys = await scene('TuningScene', `
+  const press = (code, shiftKey = false) => s.input.keyboard.emit('keydown', { code, shiftKey, preventDefault() {} });
+  // A coarse dial (a count over a short range) still steps one position at a time.
+  const coarse = window.config.DIALS.find((d) => d.kind === 'count' && d.tab === 'skills');
+  s.openZoom(coarse);
+  s.setZoomPosition(50);
+  press('ArrowUp');
+  const one = s.zoomPosition;
+  press('ArrowUp', true);
+  const ten = s.zoomPosition;
+  press('ArrowDown');
+  const back = s.zoomPosition;
+  s.turn(coarse.path, window.tuning.sharedOf(coarse.path));
+  const resetValue = window.tuning.valueOf(coarse.path);
+  press('Escape');
+  const closed = s.zoom === null;
+  const stillOpen = s.scene.isActive();
+  return { one, ten, back, resetValue, shared: window.tuning.sharedOf(coarse.path), closed, stillOpen, path: coarse.path };
+`);
+console.log('zoom keys:', JSON.stringify(zoomKeys));
+check('↑ steps the magnified dial by one, Shift by ten, ↓ back by one — even on a coarse dial',
+  zoomKeys.one === 51 && zoomKeys.ten === 61 && zoomKeys.back === 60, JSON.stringify(zoomKeys));
+check('Esc closes the magnified dial and leaves the panel open', zoomKeys.closed && zoomKeys.stillOpen);
+const resetButton = await scene('TuningScene', `
+  const dial = s.knobs[0].dial;
+  s.openZoom(dial);
+  s.setZoomPosition(90);
+  const turned = window.tuning.valueOf(dial.path);
+  const buttons = s.zoom.root.list.filter((o) => o.type === 'Container');
+  // The last two are 전체 값으로 and 닫기.
+  const reset = buttons[buttons.length - 2];
+  reset.list[0].emit('pointerdown');
+  const after = window.tuning.valueOf(dial.path);
+  const position = s.zoomPosition;
+  const close = buttons[buttons.length - 1];
+  close.list[0].emit('pointerdown');
+  return { turned, after, shared: window.tuning.sharedOf(dial.path), position, closed: s.zoom === null, drafted: dial.path in window.tuning.draft };
+`);
+console.log('reset:', JSON.stringify(resetButton));
+check('전체 값으로 sets the dial back to everyone’s value, and 닫기 closes it',
+  resetButton.turned !== resetButton.shared && Math.abs(resetButton.after - resetButton.shared) < 1e-9 && !resetButton.drafted && resetButton.closed,
+  JSON.stringify(resetButton));
+await scene('TuningScene', `window.tuning.clearDraft(); s.close(); return 1;`);
+await sleep(400);
 
 // --- 2. turned mid-run: this game at once, picks kept ---
 await ev(`(() => { window.game.scene.getScene('MenuScene').scene.start('GameScene', { save: null }); return 1; })()`);
