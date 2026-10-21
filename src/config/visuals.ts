@@ -94,6 +94,8 @@ export const COLORS = {
   potionCross: 0xfff2f2,
   potionGlow: 0xff8fa0,
   healText: '#7ef0b0',
+  /** 알수없는 룬: the line over the survivor as one is picked up. */
+  runeText: '#e6c4ff',
   /** A 치명 hit of the survivor's own, so it reads apart from an ordinary one. */
   critText: '#ffb347',
   /** A run on the board the admin's review marks out of line. */
@@ -937,3 +939,26 @@ export const ALTAR_SUMMON_FX = {
 /** A posed enemy's picture for a pose (EnemyKindSpec.poses): the kind's texture, or that with the pose's name. */
 export type EnemyPose = 'stand' | 'leap' | 'cast';
 export const enemyPose = (texture: string, pose: EnemyPose): string => (pose === 'stand' ? texture : `${texture}-${pose}`);
+
+/**
+ * 알수없는 룬's looks (0.89): the 룬 stones of 0.71–0.79, as they were drawn
+ * then — 반복, 분열, 관통, 연쇄, 확장, 지속, 가속, 포격 — a dark stone with
+ * its edge and its mark in its colour. Each drop wears one at random. The
+ * mark is strokes from (x1, y1) to (x2, y2) on a 0–1 square.
+ */
+export const UNKNOWN_RUNE_LOOKS: readonly {
+  readonly color: number;
+  readonly glyph: readonly (readonly [number, number, number, number])[];
+}[] = [
+  { color: 0xf0d050, glyph: [[0.2, 0.3, 0.8, 0.3], [0.2, 0.5, 0.8, 0.5], [0.2, 0.7, 0.8, 0.7]] },
+  { color: 0x5cb85c, glyph: [[0.5, 0.85, 0.5, 0.5], [0.5, 0.5, 0.2, 0.15], [0.5, 0.5, 0.8, 0.15]] },
+  { color: 0x7fb8e8, glyph: [[0.15, 0.5, 0.85, 0.5], [0.6, 0.3, 0.85, 0.5], [0.6, 0.7, 0.85, 0.5], [0.35, 0.25, 0.35, 0.75]] },
+  { color: 0x9bd3ff, glyph: [[0.2, 0.2, 0.45, 0.45], [0.45, 0.45, 0.3, 0.6], [0.3, 0.6, 0.8, 0.8], [0.55, 0.2, 0.8, 0.45]] },
+  { color: 0xf0ad4e, glyph: [[0.5, 0.15, 0.5, 0.85], [0.15, 0.5, 0.85, 0.5], [0.25, 0.25, 0.75, 0.75], [0.75, 0.25, 0.25, 0.75]] },
+  { color: 0x9b6bff, glyph: [[0.25, 0.2, 0.75, 0.2], [0.25, 0.8, 0.75, 0.8], [0.3, 0.2, 0.7, 0.8], [0.7, 0.2, 0.3, 0.8]] },
+  { color: 0x6aa9ff, glyph: [[0.15, 0.35, 0.6, 0.35], [0.15, 0.65, 0.6, 0.65], [0.6, 0.2, 0.85, 0.5], [0.85, 0.5, 0.6, 0.8]] },
+  { color: 0xd45f3a, glyph: [[0.3, 0.85, 0.7, 0.85], [0.35, 0.85, 0.35, 0.45], [0.65, 0.85, 0.65, 0.45], [0.35, 0.45, 0.65, 0.45], [0.5, 0.45, 0.8, 0.15]] },
+];
+
+/** The picture of one of those looks. */
+export const unknownRuneTexture = (look: number): string => `tex-unknown-rune-${look}`;

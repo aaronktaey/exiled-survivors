@@ -1,7 +1,7 @@
 import { ALL_BONES } from '@/config/bones';
 import { ALL_ORBS, GEAR, gearTexture } from '@/config/equipment';
 import type { DropTier } from '@/config/system';
-import { TEXTURES } from '@/config/visuals';
+import { TEXTURES, unknownRuneTexture } from '@/config/visuals';
 
 /**
  * ★ 아이템 필터 — what the player has asked not to see. A drop whose entry is
@@ -28,7 +28,7 @@ export interface FilterSection {
 }
 
 /** The keys of the entries that are not read off a table. */
-export type FilterSupply = 'potion' | 'mango' | 'magnet' | 'skill' | 'randomSkill';
+export type FilterSupply = 'potion' | 'mango' | 'magnet' | 'skill' | 'randomSkill' | 'unknownRune';
 
 const TIERS: readonly DropTier[] = ['normal', 'magic', 'rare'];
 
@@ -41,6 +41,7 @@ export const ITEM_FILTER: readonly FilterSection[] = [
       { key: 'randomSkill', texture: TEXTURES.skillOrb, tier: 'magic' },
       { key: 'mango', texture: TEXTURES.mango, tier: 'rare' },
       { key: 'magnet', texture: TEXTURES.magnet, tier: 'rare' },
+      { key: 'unknownRune', texture: unknownRuneTexture(0), tier: 'rare' },
     ],
   },
   { id: 'orbs', entries: ALL_ORBS.map((orb) => ({ key: `orb:${orb.id}`, texture: orb.texture, tier: orb.tier })) },

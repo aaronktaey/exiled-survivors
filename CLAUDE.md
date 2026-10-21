@@ -629,6 +629,15 @@ Read `git log` for what changed and when. What is not in the log:
   same `bonus` in `CombatSystem.killEnemy`. 행운 (the passive, 0.83) is
   folded into `dropBonus` there (`hooks.luck`, 1 + `passives.bonus.luck`), so
   it raises exactly what a rare's 속성 raise — the user's scope.
+- **알수없는 룬 (0.89, the user's ask).** `UNKNOWN_RUNE` (balance.ts): a
+  kill of `from` (the 키메라) leaves one at a flat `chance`, nothing raising
+  it. Picked up it does nothing yet — `GameScene.feelUnknownRune` shows
+  `game.unknownRuneFelt` over the survivor and a violet glow; the user means
+  it to strengthen the main skill later, so it is not stored anywhere.
+  Its looks are 0.79's eight 룬 stones (`UNKNOWN_RUNE_LOOKS`, visuals.ts,
+  drawn by `BootScene.createUnknownRuneTextures`), one at random a drop.
+  The 자석 takes it, the 필터 has a switch (`unknownRune`), and it has an
+  edge marker.
 - **No 신성한 조각 since 0.83.** The drop, its entity, its 필터 switch and
   dial, the passive screen's gold shop and the shard copy all went (the
   user's ask). Gold stays — still earned and shown — though nothing spends

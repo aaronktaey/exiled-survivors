@@ -112,9 +112,9 @@ export interface Strings {
     readonly icon: string;
     readonly lead: string;
     readonly sections: { readonly supplies: string; readonly orbs: string; readonly bones: string; readonly rarity: string; readonly bases: string };
-    readonly items: { readonly potion: string; readonly skill: string; readonly randomSkill: string; readonly mango: string; readonly magnet: string };
+    readonly items: { readonly potion: string; readonly skill: string; readonly randomSkill: string; readonly mango: string; readonly magnet: string; readonly unknownRune: string };
     /** The same, short enough to sit under an icon. */
-    readonly itemsShort: { readonly potion: string; readonly skill: string; readonly randomSkill: string; readonly mango: string; readonly magnet: string };
+    readonly itemsShort: { readonly potion: string; readonly skill: string; readonly randomSkill: string; readonly mango: string; readonly magnet: string; readonly unknownRune: string };
     readonly rarity: { readonly normal: string; readonly magic: string; readonly rare: string };
     readonly shown: string;
     readonly hidden: string;
@@ -677,6 +677,9 @@ export interface Strings {
     /** 하얀 망고: its name on the ground, and what is shouted when eaten. */
     readonly mango: string;
     readonly mangoEaten: string;
+    /** 알수없는 룬's name on the ground, and the line over the survivor as it is picked up. */
+    readonly unknownRune: string;
+    readonly unknownRuneFelt: string;
     /** 자석: its label on the ground, and the line when it is picked up. */
     readonly magnet: string;
     readonly magnetPulled: string;

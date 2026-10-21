@@ -25,6 +25,8 @@ import {
   type OrbId,
   SKILL_MASTERY,
   MAGNET,
+  UNKNOWN_RUNE,
+  UNKNOWN_RUNE_LOOKS,
 } from '@/config';
 import { t } from '@/i18n';
 import { itemFilter } from '@/systems/ItemFilter';
@@ -37,6 +39,7 @@ import { OrbDrop } from '@/entities/OrbDrop';
 import { RandomSkillDrop } from '@/entities/RandomSkillDrop';
 import { MangoDrop } from '@/entities/MangoDrop';
 import { MagnetDrop } from '@/entities/MagnetDrop';
+import { UnknownRuneDrop } from '@/entities/UnknownRuneDrop';
 import { dropTierFor, rollOrbDrop, type GearItem } from '@/systems/Gear';
 import type { RunStats } from '@/systems/RunStats';
 import { HealthPotion } from '@/entities/HealthPotion';
@@ -90,6 +93,8 @@ export interface CombatHooks {
   readonly onMangoCollected: () => void;
   /** A 자석 was picked up, and everything on the map is on its way. */
   readonly onMagnetCollected: () => void;
+  /** An 알수없는 룬 was picked up. */
+  readonly onUnknownRuneCollected: () => void;
   /** Called when the player walks over a 무작위 스킬: offer the cards. */
   readonly onRandomSkillCollected: () => void;
   /** Called when the survivor walks up to a 제단: call up what it offered. */
@@ -132,6 +137,8 @@ export class CombatSystem {
   public readonly mangoDrops: Phaser.Physics.Arcade.Group;
   /** 자석 lying on the ground. */
   public readonly magnetDrops: Phaser.Physics.Arcade.Group;
+  /** 알수없는 룬 lying on the ground. */
+  public readonly unknownRuneDrops: Phaser.Physics.Arcade.Group;
   /** The 제단 a 우두머리 left. Never picked up; they wake instead. */
   public readonly altars: Phaser.Physics.Arcade.Group;
 
@@ -185,6 +192,7 @@ export class CombatSystem {
     this.randomSkillDrops = scene.physics.add.group({ classType: RandomSkillDrop, runChildUpdate: true });
     this.mangoDrops = scene.physics.add.group({ classType: MangoDrop, runChildUpdate: true });
     this.magnetDrops = scene.physics.add.group({ classType: MagnetDrop, runChildUpdate: true });
+    this.unknownRuneDrops = scene.physics.add.group({ classType: UnknownRuneDrop, runChildUpdate: true });
     // No overlap: an altar is woken by distance, in its own update.
     this.altars = scene.physics.add.group({ classType: Altar, runChildUpdate: true });
 
@@ -199,6 +207,7 @@ export class CombatSystem {
     scene.physics.add.overlap(player, this.randomSkillDrops, this.onRandomSkillTouch, undefined, this);
     scene.physics.add.overlap(player, this.mangoDrops, this.onMangoTouch, undefined, this);
     scene.physics.add.overlap(player, this.magnetDrops, this.onMagnetTouch, undefined, this);
+    scene.physics.add.overlap(player, this.unknownRuneDrops, this.onUnknownRuneTouch, undefined, this);
   }
 
   /** Where a drop meant for (x, y) lands: inside the world and off any rock. */
@@ -269,6 +278,21 @@ export class CombatSystem {
     this.land(drop, itemFilter.shows('mango'), 'rare');
   }
 
+  /**
+   * Places an 알수없는 룬 directly — used by the kill roll and by tests —
+   * in one of its looks, at random unless one is named.
+   */
+  public dropUnknownRuneAt(x: number, y: number, look = Math.floor(Math.random() * UNKNOWN_RUNE_LOOKS.length)): void {
+    [x, y] = this.onGround(x, y);
+    const drop = this.unknownRuneDrops.get() as UnknownRuneDrop | null;
+    if (!drop) {
+      return;
+    }
+
+    drop.drop(x, y, look);
+    this.land(drop, itemFilter.shows('unknownRune'), 'rare');
+  }
+
   /** Places a 자석 directly — used by the kill roll and by tests. */
   public dropMagnetAt(x: number, y: number): void {
     [x, y] = this.onGround(x, y);
@@ -314,6 +338,7 @@ export class CombatSystem {
     take(this.orbDrops, this.onOrbTouch);
     take(this.boneDrops, this.onBoneTouch);
     take(this.randomSkillDrops, this.onRandomSkillTouch);
+    take(this.unknownRuneDrops, this.onUnknownRuneTouch);
   }
 
   /** A copy of something just taken, flying from where it lay into the survivor. */
@@ -693,6 +718,16 @@ export class CombatSystem {
     this.hooks.onMangoCollected();
   };
 
+  private onUnknownRuneTouch: Phaser.Types.Physics.Arcade.ArcadePhysicsCallback = (_player, object) => {
+    const drop = object as UnknownRuneDrop;
+    if (!drop.active) {
+      return;
+    }
+
+    drop.collect();
+    this.hooks.onUnknownRuneCollected();
+  };
+
   private onMagnetTouch: Phaser.Types.Physics.Arcade.ArcadePhysicsCallback = (_player, object) => {
     const drop = object as MagnetDrop;
     if (!drop.active) {
@@ -733,6 +768,7 @@ export class CombatSystem {
     // 행운 rides on the same bonus a rare's 속성 raise (0.83).
     const dropBonus = enemy.dropBonus * this.hooks.luck();
     const wasBoss = enemy.isBoss;
+    const kind = enemy.kind;
     const certainSkill = enemy.alwaysDropsSkill;
     const webStacks = enemy.webStacks;
     const diedChilled = enemy.isChilled;
@@ -770,6 +806,11 @@ export class CombatSystem {
     // 하얀 망고: the same off every kill — nothing raises it.
     if (Math.random() < MANGO.chance) {
       this.dropMangoAt(x - 18, y - 18);
+    }
+
+    // 알수없는 룬: only off its kind (the 키메라), and as flat as the 망고.
+    if (kind === UNKNOWN_RUNE.from && Math.random() < UNKNOWN_RUNE.chance) {
+      this.dropUnknownRuneAt(x, y - 36);
     }
 
     // 자석: as rare as the 망고, and as flat.

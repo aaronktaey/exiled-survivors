@@ -15,6 +15,28 @@ export interface PatchNote {
 
 export const PATCH_NOTES: readonly PatchNote[] = [
   {
+    version: '0.89',
+    date: '2026-10-21',
+    changes: {
+      ko: [
+        '키메라를 처치하면 5% 확률로 ‘알수없는 룬’이 떨어집니다. 아직은 주워도 아무 일도 일어나지 않지만… 엄청난 힘이 느껴집니다.',
+        '아이템 필터에 알수없는 룬 항목이 생겼습니다.',
+      ],
+      en: [
+        'A Chimera now has a 5% chance to drop an Unknown Rune. Picking one up does nothing yet… but an immense power stirs.',
+        'The item filter has a switch for the Unknown Rune.',
+      ],
+      ja: [
+        'キメラを倒すと5%の確率で「謎のルーン」を落とします。今は拾っても何も起きませんが…とてつもない力を感じます。',
+        'アイテムフィルターに謎のルーンの項目ができました。',
+      ],
+      zh: [
+        '击杀奇美拉有5%几率掉落"未知符文"。现在拾取后还不会发生任何事……但能感受到一股强大的力量。',
+        '物品过滤器新增了未知符文选项。',
+      ],
+    },
+  },
+  {
     version: '0.88',
     date: '2026-10-21',
     changes: {

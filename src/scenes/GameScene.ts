@@ -348,6 +348,7 @@ export class GameScene extends Phaser.Scene {
         onMangoCollected: () =>
           this.announce(fill(t().game.mangoEaten, { seconds: Math.round(MANGO.durationMs / 1000) })),
         onMagnetCollected: () => this.announce(t().game.magnetPulled),
+        onUnknownRuneCollected: () => this.feelUnknownRune(),
         dropScale: () => this.boneBonus.dropScale,
         shatter: () =>
           this.mainSkill === 'iceSpear' && this.masteryOf('iceSpear') >= 2
@@ -390,6 +391,7 @@ export class GameScene extends Phaser.Scene {
       { group: this.combat.gearDrops },
       { group: this.combat.mangoDrops },
       { group: this.combat.magnetDrops },
+      { group: this.combat.unknownRuneDrops },
       { group: this.combat.randomSkillDrops },
       { group: this.combat.skillDrops },
       { group: this.combat.potions },
@@ -1368,6 +1370,29 @@ export class GameScene extends Phaser.Scene {
     if (healed > 0) {
       this.damageNumbers.spawn(this.player.x, this.player.y - 46, healed, { prefix: '+', color: COLORS.healText });
     }
+  }
+
+  /**
+   * 알수없는 룬 (0.89): it does nothing yet — only the line over the
+   * survivor and a violet glow say a great power is felt.
+   */
+  private feelUnknownRune(): void {
+    const { x, y } = this.player;
+    this.damageNumbers.spawn(x, y - 70, 0, { text: t().game.unknownRuneFelt, color: COLORS.runeText, crit: true });
+    const glow = this.add
+      .image(x, y, TEXTURES.glow)
+      .setDisplaySize(70, 70)
+      .setTint(0xb07cff)
+      .setBlendMode(Phaser.BlendModes.ADD)
+      .setDepth(DEPTH.player + 1);
+    this.tweens.add({
+      targets: glow,
+      alpha: 0,
+      scale: glow.scale * 2.4,
+      duration: 700,
+      ease: 'Quad.easeOut',
+      onComplete: () => glow.destroy(),
+    });
   }
 
   private drinkForMaxedSkill(skill: SkillId, why: 'maxed' | 'full' = 'maxed'): void {

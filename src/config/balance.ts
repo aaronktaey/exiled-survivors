@@ -1392,6 +1392,20 @@ export const MAGNET = {
   size: 22,
 } as const;
 
+/**
+ * ★ 알수없는 룬 (0.89, the user's ask): a kill of `from` leaves one at
+ * `chance` — flat, no rare's 속성 or 우두머리 bonus raises it. Picked up it
+ * only says that a great power is felt; what it will do (strengthen the
+ * main skill) is still to come. It wears one of the 룬 stones of 0.71–0.79
+ * at random (UNKNOWN_RUNE_LOOKS in visuals.ts).
+ */
+export const UNKNOWN_RUNE: { readonly from: EnemyKind; readonly chance: number; readonly size: number } = {
+  from: 'chimera',
+  chance: 0.05,
+  /** How big it is drawn on the ground. */
+  size: 22,
+};
+
 /** Health potions, rolled separately from the skill drop. */
 export const POTION = {
   /** Chance that killing an enemy drops one. */

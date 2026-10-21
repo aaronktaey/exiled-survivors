@@ -257,6 +257,64 @@ check('a 키메라 is hit and drawn at a 우두머리’s size', posed.body === 
 check('it is drawn leaping mid-hop, standing at rest', posed.leap === true && posed.stand === true, JSON.stringify(posed));
 check('it rears to cast as it throws its ring, and stands again after', posed.cast === true && posed.back === true, JSON.stringify(posed));
 
+// --- 8. 알수없는 룬 (0.89): off a 키메라 only, at its chance; picked up, a line and nothing else ---
+const rune = await run(`
+  s.spawner.clear();
+  const C = window.config, R = C.UNKNOWN_RUNE, was = R.chance;
+  const p = s.player;
+  const groundRunes = () => s.combat.unknownRuneDrops.getChildren().filter((d) => d.active);
+  const killOne = (kind, dx) => {
+    const e = s.spawner.group.get(p.x + dx, p.y + 300);
+    e.spawn(p.x + dx, p.y + 300, p, kind, s.spawner.hooks, false, 1);
+    s.combat.hit(e, 1e12);
+  };
+  groundRunes().forEach((d) => d.collect());
+  const out = { from: R.from, chance: was };
+  try {
+    R.chance = 1;
+    killOne('chimera', 0);
+    out.fromChimera = groundRunes().length;
+    groundRunes().forEach((d) => d.collect());
+    killOne('grunt', 80);
+    killOne('boss', 160);
+    out.fromOthers = groundRunes().length;
+    R.chance = 0;
+    killOne('chimera', 240);
+    out.atZero = groundRunes().length;
+  } finally {
+    R.chance = was;
+  }
+  // Each drop wears one of the old 룬 looks.
+  s.combat.dropUnknownRuneAt(p.x + 300, p.y, 5);
+  const one = groundRunes()[0];
+  out.look = { look: one.look, texture: one.texture.key, want: C.unknownRuneTexture(5), name: one.nameplate.text?.text ?? one.nameplate.label?.text ?? null };
+  out.looks = C.UNKNOWN_RUNE_LOOKS.length;
+  // Picked up: the line over the survivor, and nothing about the survivor changes.
+  const before = { hp: p.hp, max: p.maxHp, speed: p.moveSpeed ?? null, dmg: s.damageOf('meleeStrike'), cd: s.cooldownOf('meleeStrike'), owned: [...s.owned] };
+  const said = [];
+  const spawn = s.damageNumbers.spawn.bind(s.damageNumbers);
+  s.damageNumbers.spawn = (x, y, a, st) => { if (st?.text) said.push(st.text); return spawn(x, y, a, st); };
+  s.combat.onUnknownRuneTouch(p, one);
+  s.damageNumbers.spawn = spawn;
+  const after = { hp: p.hp, max: p.maxHp, speed: p.moveSpeed ?? null, dmg: s.damageOf('meleeStrike'), cd: s.cooldownOf('meleeStrike'), owned: [...s.owned] };
+  out.said = said;
+  out.unchanged = JSON.stringify(before) === JSON.stringify(after);
+  out.taken = !one.active;
+  // A 자석 takes it like any other loot.
+  s.combat.dropUnknownRuneAt(p.x + 400, p.y);
+  s.combat.collectEverything();
+  out.magnet = groundRunes().length;
+  return out;
+`);
+console.log('rune:', JSON.stringify(rune));
+check('a 키메라 kill leaves an 알수없는 룬 at UNKNOWN_RUNE.chance, and nothing else does',
+  rune.from === 'chimera' && rune.fromChimera === 1 && rune.fromOthers === 0 && rune.atZero === 0, JSON.stringify(rune));
+check('it wears one of the old 룬 looks', rune.looks === 8 && rune.look.texture === rune.look.want, JSON.stringify(rune.look));
+check('picked up, it says a great power is felt — and changes nothing', rune.taken && rune.said.length === 1 && rune.unchanged, JSON.stringify(rune.said));
+check('a 자석 takes it with the rest', rune.magnet === 0);
+const runeFilter = await cdp.evaluate(`window.config.ITEM_FILTER.find((s) => s.id === 'supplies').entries.some((e) => e.key === 'unknownRune')`);
+check('the 아이템 필터 has a switch for it', runeFilter === true);
+
 console.log('\n=== SUMMARY ===');
 const failed = results.filter((r) => !r.p);
 console.log(`${results.length - failed.length}/${results.length} passed`);

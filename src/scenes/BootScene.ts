@@ -23,7 +23,9 @@ import {
   TEXTURES,
   PLAYER_LOOK,
   VOID_VORTEX_FX,
+  UNKNOWN_RUNE_LOOKS,
   enemyPose,
+  unknownRuneTexture,
   LOOK_ANIM,
   LOOK_CANVAS,
   LOOK_POSES,
@@ -106,6 +108,7 @@ export class BootScene extends Phaser.Scene {
     this.createVortexTexture();
     this.createMangoTexture();
     this.createMagnetTexture();
+    this.createUnknownRuneTextures();
     this.createLightPillarTexture();
     this.createGlowTexture();
     this.createAccountTexture();
@@ -804,6 +807,26 @@ export class BootScene extends Phaser.Scene {
     g.lineBetween(28, 6, 26, 1);
     g.generateTexture(TEXTURES.magnet, size, size);
     g.destroy();
+  }
+
+  /** 알수없는 룬, in each of its looks: a dark stone, its edge and its mark in its colour (as 0.79 drew its 룬). */
+  private createUnknownRuneTextures(): void {
+    const size = 32;
+    UNKNOWN_RUNE_LOOKS.forEach((look, i) => {
+      const graphics = this.add.graphics();
+      graphics.fillStyle(0x2b2f3a, 1);
+      graphics.fillRoundedRect(2, 2, size - 4, size - 4, 7);
+      graphics.lineStyle(2, look.color, 0.9);
+      graphics.strokeRoundedRect(2, 2, size - 4, size - 4, 7);
+      graphics.lineStyle(3, look.color, 1);
+      const pad = 7;
+      const span = size - pad * 2;
+      for (const [x1, y1, x2, y2] of look.glyph) {
+        graphics.lineBetween(pad + x1 * span, pad + y1 * span, pad + x2 * span, pad + y2 * span);
+      }
+      graphics.generateTexture(unknownRuneTexture(i), size, size);
+      graphics.destroy();
+    });
   }
 
   private createMangoTexture(): void {
