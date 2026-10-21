@@ -170,7 +170,8 @@ export class SpawnDirector {
     // Catch up if a long frame swallowed several spawn windows.
     while (this.sinceSpawnMs >= interval) {
       this.sinceSpawnMs -= interval;
-      if (this.alive < SPAWN.maxAlive) {
+      // At the cap the weakest makes room (0.86); with no one to give way, none comes.
+      if (this.alive < SPAWN.maxAlive || this.makeRoom()) {
         this.spawnOne();
       }
     }
@@ -189,6 +190,23 @@ export class SpawnDirector {
       this.hooks.onChimeraSpawned?.();
     }
     return enemy;
+  }
+
+  /**
+   * The field is full: the enemy with the least health left goes — not one
+   * that always leaves a skill (우두머리, 키메라, 도망자). Taken off without a
+   * kill: no gem, no drop. False when there is no one to take. Public for tests.
+   */
+  public makeRoom(): boolean {
+    let weakest: Enemy | undefined;
+    for (const child of this.group.getChildren()) {
+      const enemy = child as Enemy;
+      if (enemy.active && !enemy.alwaysDropsSkill && (!weakest || enemy.hp < weakest.hp)) {
+        weakest = enemy;
+      }
+    }
+    weakest?.recycle();
+    return weakest !== undefined;
   }
 
   /** Milliseconds until the next 키메라. Public for tests. */
@@ -389,6 +407,9 @@ export class SpawnDirector {
       }
 
       enemy.spawn(ex, ey, this.target, offer.kind, this.hooks, offer.kind !== 'boss' && offer.rare, this.hpScale);
+      if (offer.castOnArrival) {
+        enemy.castVolleyNow();
+      }
       spawned += 1;
     }
 

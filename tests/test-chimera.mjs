@@ -71,13 +71,14 @@ const moving = await run(`
   // the arena (reading a rare), and the loop would never get to it.
   e.volleyCooldownMs = 0;
   e.update(0, 16);
+  // Counted in the same breath it is thrown: a frame later a shot that met
+  // the survivor is already gone.
+  const shots = s.combat.enemyShots.getChildren().filter((x) => x.active);
+  window.__ring = { count: shots.length, textures: [...new Set(shots.map((x) => x.texture.key))],
+           wanted: window.config.ENEMY_KINDS.chimera.volley.count, thorn: window.config.TEXTURES.thorn };
   return { hops: window.__hops, alive: e.active };
 `);
-const ring = await run(`
-  const shots = s.combat.enemyShots.getChildren().filter((x) => x.active);
-  return { count: shots.length, textures: [...new Set(shots.map((x) => x.texture.key))],
-           wanted: window.config.ENEMY_KINDS.chimera.volley.count, thorn: window.config.TEXTURES.thorn };
-`);
+const ring = await run(`return window.__ring;`);
 await shot('chimera-ring');
 check('it hops about', moving.alive && moving.hops > 5, `${moving.hops} frames in the air`);
 check('it throws the full ring, as white thorns', ring.count >= ring.wanted && ring.textures.length === 1 &&
@@ -181,6 +182,49 @@ const prize = await run(`
 `);
 check('a 키메라 killed always leaves a skill', prize.dropped >= 1 && prize.guaranteed === true, JSON.stringify(prize));
 check('a 제단 can offer one 키메라', prize.offer?.kind === 'chimera' && prize.offer.count === 1 && prize.offer.weight > 0, JSON.stringify(prize.offer));
+
+// --- 5. a 제단's 키메라 arrives throwing its ring (0.86) ---
+const arrival = await run(`
+  s.spawner.clear();
+  s.combat.enemyShots.getChildren().forEach((x) => x.active && x.despawn());
+  const p = s.player;
+  const came = s.spawner.summon(p.x + 400, p.y, 'chimera');
+  const shots = s.combat.enemyShots.countActive(true);
+  const out = { came, shots, want: window.config.ENEMY_KINDS.chimera.volley.count, flag: window.config.ALTAR_OFFERS.chimera.castOnArrival };
+  s.combat.enemyShots.getChildren().forEach((x) => x.active && x.despawn());
+  s.spawner.clear();
+  return out;
+`);
+check('a 제단’s 키메라 arrives throwing its whole ring', arrival.came === 1 && arrival.flag === true && arrival.shots >= arrival.want, JSON.stringify(arrival));
+
+// --- 6. at the cap the weakest makes room, but never one that always leaves a skill (0.86) ---
+const cap = await run(`
+  s.spawner.clear();
+  const S = window.config.SPAWN, was = S.maxAlive;
+  const p = s.player;
+  const put = (kind, hp, dx) => { const e = s.spawner.group.get(p.x + dx, p.y + 500); e.spawn(p.x + dx, p.y + 500, p, kind); e.hp = hp; return e; };
+  // The 우두머리 has the least health of all, and still stays.
+  const boss = put('boss', 1, 0);
+  const weak = put('grunt', 5, 40), mid = put('grunt', 50, 80), strong = put('grunt', 500, 120);
+  S.maxAlive = s.spawner.alive;
+  const before = s.spawner.alive;
+  // The pool may hand the sprite just taken straight back as the newcomer:
+  // each one's life count says whether it is still the same enemy.
+  const lives = [boss, weak, mid, strong].map((e) => e.lives);
+  const same = (e, i) => e.active && e.lives === lives[i];
+  try {
+    s.spawner.sinceSpawnMs = 0;
+    s.spawner.update(s.spawner.intervalMs + 1);
+  } finally {
+    S.maxAlive = was;
+  }
+  const out = { before, after: s.spawner.alive, boss: same(boss, 0), weak: same(weak, 1), mid: same(mid, 2), strong: same(strong, 3) };
+  s.spawner.clear();
+  return out;
+`);
+check('a spawn at the cap takes the weakest ordinary enemy off and comes in — the count holds',
+  cap.after === cap.before && cap.weak === false && cap.mid === true && cap.strong === true, JSON.stringify(cap));
+check('a 우두머리 is never the one taken, however low its health', cap.boss === true, JSON.stringify(cap));
 
 console.log('\n=== SUMMARY ===');
 const failed = results.filter((r) => !r.p);

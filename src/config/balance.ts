@@ -854,6 +854,8 @@ export interface AltarOfferSpec {
   readonly rare: boolean;
   /** How often this one is what the altar offers, against the others. */
   readonly weight: number;
+  /** They arrive throwing their ring (Enemy.castVolleyNow) — 0.86, the user's ask for the 키메라. */
+  readonly castOnArrival?: boolean;
 }
 
 export type AltarOfferId =
@@ -877,7 +879,7 @@ export const ALTAR_OFFERS: Record<AltarOfferId, AltarOfferSpec> = {
   // Each one always leaves a skill, as a 도망자 does — a prize worth the chase.
   fugitives: { kind: "fugitive", count: 3, rare: false, weight: 1 },
   // One 키메라 (0.85, the user's ask); its weight is a first guess.
-  chimera: { kind: "chimera", count: 1, rare: false, weight: 1 },
+  chimera: { kind: "chimera", count: 1, rare: false, weight: 1, castOnArrival: true },
 };
 
 export const ALTAR = {
@@ -953,6 +955,12 @@ export const SPAWN = {
   startIntervalMs: 900,
   minIntervalMs: 180,
   rampPerMinute: 0.55,
+  /**
+   * The cap on ordinary spawns. At it, the weakest enemy on the field — the
+   * least health left, not a 우두머리, 키메라 or 도망자 (anything that always
+   * leaves a skill) — is taken off without a kill and the new one comes in
+   * (0.86, the user's ask; until then the field just stopped filling).
+   */
   maxAlive: 350,
   offscreenMargin: 80,
 } as const;

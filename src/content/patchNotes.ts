@@ -15,6 +15,28 @@ export interface PatchNote {
 
 export const PATCH_NOTES: readonly PatchNote[] = [
   {
+    version: '0.86',
+    date: '2026-10-21',
+    changes: {
+      ko: [
+        '제단이 불러낸 키메라는 나타나자마자 가시를 사방으로 던집니다.',
+        '적 수가 상한에 도달하면 체력이 가장 낮은 적이 사라지고 새로운 적이 나타납니다. 사라진 적은 경험치와 아이템을 남기지 않으며, 우두머리·키메라·도망자는 사라지지 않습니다.',
+      ],
+      en: [
+        'A Chimera called up by an altar arrives throwing its thorns all around.',
+        'When the enemy count is at its limit, the enemy with the least health left vanishes and a new one comes in. A vanished enemy leaves no experience or items, and Bosses, Chimeras and Fugitives never vanish.',
+      ],
+      ja: [
+        '祭壇が呼び出したキメラは現れた瞬間に棘を四方に放ちます。',
+        '敵の数が上限に達すると、体力が最も低い敵が消えて新しい敵が現れます。消えた敵は経験値やアイテムを残さず、ボス・キメラ・逃亡者は消えません。',
+      ],
+      zh: [
+        '祭坛召唤的奇美拉一出现就会向四周射出尖刺。',
+        '敌人数量达到上限时，剩余生命最低的敌人会消失，新的敌人随之出现。消失的敌人不会留下经验和物品，首领、奇美拉和逃亡者不会消失。',
+      ],
+    },
+  },
+  {
     version: '0.85',
     date: '2026-10-21',
     changes: {

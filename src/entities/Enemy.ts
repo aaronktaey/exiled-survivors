@@ -748,6 +748,15 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
    * goes off wherever the 우두머리 is and whatever it is doing, so standing
    * beside one is a decision rather than a default.
    */
+  /** Throws its ring at once, whatever its clock says (a 제단's 키메라 arriving). */
+  public castVolleyNow(): void {
+    const volley = this.spec.volley;
+    if (this.active && volley) {
+      this.volleyCooldownMs = 0;
+      this.throwRing(0, volley);
+    }
+  }
+
   private throwRing(delta: number, volley: EnemyVolleySpec): void {
     this.volleyCooldownMs -= delta;
     if (this.volleyCooldownMs > 0 || volley.count <= 0) {

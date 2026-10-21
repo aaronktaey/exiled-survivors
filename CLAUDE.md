@@ -217,6 +217,14 @@ Read `git log` for what changed and when. What is not in the log:
   `addBackButton` (top-left, arrow only below 600 wide) with the same exit
   Esc takes; `test-back` checks each one sits clear and goes where it
   should. A new screen should do the same.
+- **At the cap the weakest gives way (0.86).** A spawn due with
+  `SPAWN.maxAlive` reached calls `SpawnDirector.makeRoom`: the active enemy
+  with the least health left that does not `alwaysDropsSkill` (so never a
+  우두머리, 키메라 or 도망자) is recycled — no kill, no gem, no drop — and the
+  newcomer takes its place. The pool often hands that very sprite back:
+  compare `Enemy.lives`, not `active`, to tell. An `ALTAR_OFFERS` entry with
+  `castOnArrival` (the 키메라's) throws its ring as it lands
+  (`Enemy.castVolleyNow`).
 - **A 제단 is summoned (0.85).** A kill's 제단 goes through
   `CombatSystem.summonAltarAt`: a red pillar (`ALTAR_SUMMON_FX`, the light
   pillar tinted) comes down, and `ALTAR.summonDelayMs` later `dropAltarAt`
