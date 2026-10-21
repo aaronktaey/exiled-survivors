@@ -90,7 +90,7 @@ export const ko: Strings = {
       meleeStrike: '휘두르기가 {arc}°로 넓어집니다',
       fireball: '폭발 범위가 다시 {blastScale}배로 넓어집니다',
       chainLightning: '번개가 {forks}갈래로 시작합니다',
-      iceSpear: '빙결된 적이 죽으면 주변 {shatter}px 안의 적도 얼어붙습니다',
+      iceSpear: '냉각된 적이 죽으면 주변 {shatter}px 안의 적도 냉각됩니다',
       voidOrb: '안쪽에 반대로 도는 구체 고리가 하나 더 생깁니다 (피해 {innerShare})',
       thunderStrike: '떨어진 자리 주변의 적에게도 피해의 {splashShare}를 줍니다',
     },

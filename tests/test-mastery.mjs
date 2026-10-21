@@ -282,18 +282,18 @@ const second = await run(`
   out.forksWant = S2.chainForks * 2;
   s.spawner.clear();
 
-  // 얼음창 (0.84): an enemy that dies frozen freezes what stands within the shatter's reach.
+  // 얼음창 (0.87): an enemy that dies under 냉각 chills what stands within the shatter's reach.
   // It is the main skill's 2차 각성: 얼음창 is made the main one, awakened twice, for the probe.
   const mainWas = s.mainSkill;
   s.acquire('iceSpear');
   s.mainSkill = 'iceSpear';
   while (s.progression.levelFor('iceSpear') < S2.level) s.progression.apply('iceSpear', 'damage');
   const doomed = put(300, 0, 1), close = put(300 + S2.iceShatter.radius - 15, 0), away = put(300 + S2.iceShatter.radius + 60, 0);
-  doomed.freeze(1000);
+  doomed.chill(2000);
   c.hit(doomed, 1e6);
-  out.shatter = { close: close.isFrozen, away: away.isFrozen };
+  out.shatter = { close: close.isChilled, away: away.isChilled };
   s.mainSkill = mainWas;
-  out.shatterOff = (() => { const d2 = put(-300, 0, 1), c2 = put(-300 + 20, 0); d2.freeze(1000); c.hit(d2, 1e6); return c2.isFrozen; })();
+  out.shatterOff = (() => { const d2 = put(-300, 0, 1), c2 = put(-300 + 20, 0); d2.chill(2000); c.hit(d2, 1e6); return c2.isChilled; })();
   s.spawner.clear();
 
   // 공허구체: an inner ring as many orbs, turning the other way.
@@ -327,7 +327,7 @@ console.log('second:', JSON.stringify(second));
 check('2차 각성 타격: the swing opens to 180°, cutting what stood beside the target',
   second.sidePlain === 0 && second.sideTwice > 0, JSON.stringify(second));
 check('2차 각성 연쇄번개: one cast runs down more arcs', second.forks === second.forksWant, `${second.forks} strikes, want ${second.forksWant}`);
-check('2차 각성 얼음창: an enemy that dies frozen freezes those close by, not those further — and only as the main skill’s',
+check('2차 각성 얼음창: an enemy that dies under 냉각 chills those close by, not those further — and only as the main skill’s',
   second.shatter.close === true && second.shatter.away === false && second.shatterOff === false,
   JSON.stringify({ shatter: second.shatter, off: second.shatterOff }));
 check('2차 각성 공허구체: an inner ring as many orbs, at its share of the radius',

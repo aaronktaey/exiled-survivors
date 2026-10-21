@@ -86,7 +86,7 @@ export const ja: Strings = {
       meleeStrike: '振りの範囲が {arc}° に広がります',
       fireball: '爆発範囲がさらに {blastScale} 倍に広がります',
       chainLightning: '稲妻が {forks} 本に分かれて始まります',
-      iceSpear: '凍った敵が倒れると周囲 {shatter}px の敵も凍りつきます',
+      iceSpear: '冷却された敵が倒れると周囲 {shatter}px の敵も冷却されます',
       voidOrb: '内側に逆回りの球の輪がもう一つできます（ダメージ {innerShare}）',
       thunderStrike: '落ちた場所の周りの敵にもダメージの {splashShare} を与えます',
     },

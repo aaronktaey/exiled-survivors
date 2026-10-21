@@ -15,6 +15,32 @@ export interface PatchNote {
 
 export const PATCH_NOTES: readonly PatchNote[] = [
   {
+    version: '0.87',
+    date: '2026-10-21',
+    changes: {
+      ko: [
+        '키메라가 우두머리만큼 커졌습니다. 맞는 판정도 우두머리와 같습니다.',
+        '키메라가 뛰어오를 때와 가시를 던질 때 자세가 바뀌고, 가는 쪽을 바라봅니다.',
+        '얼음창 2차 각성: 냉각된 적이 죽으면 주변 60px 안의 적이 냉각됩니다. 그 적이 죽으면 다시 주변으로 번집니다.',
+      ],
+      en: [
+        'Chimeras are now as big as Bosses, and are hit at the same size.',
+        'A Chimera now changes its pose as it leaps and as it throws its thorns, and faces the way it is going.',
+        'Ice Spear’s second awakening: a chilled enemy that dies chills the enemies within 60px of it, and those spread it again when they die.',
+      ],
+      ja: [
+        'キメラがボスと同じ大きさになり、当たり判定もボスと同じになりました。',
+        'キメラは跳びかかる時と棘を放つ時に姿勢が変わり、進む方向を向きます。',
+        '氷槍の第二覚醒：冷却された敵が倒れると周囲60px内の敵が冷却されます。その敵が倒れると、さらに周りへ広がります。',
+      ],
+      zh: [
+        '奇美拉变得和首领一样大，受击范围也与首领相同。',
+        '奇美拉在跳跃和射出尖刺时会改变姿势，并朝向前进的方向。',
+        '冰枪二次觉醒：冰冷状态的敌人死亡时，周围60px内的敌人会被冰冷；这些敌人死亡时会继续向周围扩散。',
+      ],
+    },
+  },
+  {
     version: '0.86',
     date: '2026-10-21',
     changes: {

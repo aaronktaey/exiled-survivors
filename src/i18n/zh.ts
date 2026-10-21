@@ -86,7 +86,7 @@ export const zh: Strings = {
       meleeStrike: '挥击范围扩大到 {arc}°',
       fireball: '爆炸范围再扩大到 {blastScale} 倍',
       chainLightning: '闪电同时分 {forks} 路开始',
-      iceSpear: '冻结的敌人死亡时，周围 {shatter}px 内的敌人也会被冻结',
+      iceSpear: '冰冷状态的敌人死亡时，周围 {shatter}px 内的敌人也会被冰冷',
       voidOrb: '内侧多出一圈反向旋转的球体（伤害 {innerShare}）',
       thunderStrike: '落点周围的敌人也受到 {splashShare} 的伤害',
     },

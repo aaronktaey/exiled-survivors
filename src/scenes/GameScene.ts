@@ -346,7 +346,7 @@ export class GameScene extends Phaser.Scene {
         dropScale: () => this.boneBonus.dropScale,
         shatter: () =>
           this.mainSkill === 'iceSpear' && this.masteryOf('iceSpear') >= 2
-            ? { radius: SKILL_MASTERY.second.iceShatter.radius * this.heldBonus.areaScale, freezeMs: SKILL_MASTERY.freezeMs }
+            ? { radius: SKILL_MASTERY.second.iceShatter.radius * this.heldBonus.areaScale }
             : null,
         luck: () => 1 + passives.bonus.luck,
         critMultiplier: () => critMultiplierFor(this.mods),

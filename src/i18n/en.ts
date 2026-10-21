@@ -86,7 +86,7 @@ export const en: Strings = {
       meleeStrike: 'The swing widens to {arc}°',
       fireball: 'Its burst is {blastScale}× as wide again',
       chainLightning: 'Lightning starts down {forks} paths at once',
-      iceSpear: 'A frozen enemy that dies freezes the enemies within {shatter}px of it',
+      iceSpear: 'A chilled enemy that dies chills the enemies within {shatter}px of it',
       voidOrb: 'A second ring of orbs turns the other way inside the first ({innerShare} damage)',
       thunderStrike: 'Enemies around the strike take {splashShare} of its damage too',
     },

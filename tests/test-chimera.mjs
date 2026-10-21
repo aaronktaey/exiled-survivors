@@ -226,6 +226,37 @@ check('a spawn at the cap takes the weakest ordinary enemy off and comes in — 
   cap.after === cap.before && cap.weak === false && cap.mid === true && cap.strong === true, JSON.stringify(cap));
 check('a 우두머리 is never the one taken, however low its health', cap.boss === true, JSON.stringify(cap));
 
+// --- 7. as big as a 우두머리, and posed: leaping mid-hop, casting as it throws (0.87) ---
+const posed = await run(`
+  s.spawner.clear();
+  s.combat.enemyShots.getChildren().forEach((x) => x.active && x.despawn());
+  const C = window.config, k = C.ENEMY_KINDS.chimera, b = C.ENEMY_KINDS.boss;
+  const p = s.player;
+  const e = s.spawner.group.get(p.x + 300, p.y);
+  e.spawn(p.x + 300, p.y, p, 'chimera', s.spawner.hooks, false, 1);
+  const out = { body: e.body.width, bossBody: b.size, shown: e.shownRadius * 2, bossShown: b.giant.drawn,
+                picture: e.displayWidth };
+  const tex = (pose) => C.enemyPose(k.texture, pose);
+  e.volleyCooldownMs = 1e9;
+  e.hopping = true; e.hopLeftMs = 1e6; e.castPoseMs = 0;
+  e.update(0, 16);
+  out.leap = e.texture.key === tex('leap');
+  e.hopping = false; e.hopLeftMs = 1e6;
+  e.update(0, 16);
+  out.stand = e.texture.key === tex('stand');
+  e.volleyCooldownMs = 0;
+  e.update(0, 16);
+  out.cast = e.texture.key === tex('cast');
+  for (let i = 0; i < Math.ceil(k.poses.castMs / 40) + 2; i++) { e.volleyCooldownMs = 1e9; e.update(0, 40); }
+  out.back = e.texture.key === tex('stand');
+  s.combat.enemyShots.getChildren().forEach((x) => x.active && x.despawn());
+  s.spawner.clear();
+  return out;
+`);
+check('a 키메라 is hit and drawn at a 우두머리’s size', posed.body === posed.bossBody && posed.shown === posed.bossShown && posed.picture === posed.bossShown, JSON.stringify(posed));
+check('it is drawn leaping mid-hop, standing at rest', posed.leap === true && posed.stand === true, JSON.stringify(posed));
+check('it rears to cast as it throws its ring, and stands again after', posed.cast === true && posed.back === true, JSON.stringify(posed));
+
 console.log('\n=== SUMMARY ===');
 const failed = results.filter((r) => !r.p);
 console.log(`${results.length - failed.length}/${results.length} passed`);

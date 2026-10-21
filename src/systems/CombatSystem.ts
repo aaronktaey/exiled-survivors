@@ -79,7 +79,7 @@ export interface CombatHooks {
    * 얼음창 2차 각성 (0.84): how far an enemy that dies frozen spreads the
    * freeze, and for how long — null while it is not the main skill's.
    */
-  readonly shatter: () => { readonly radius: number; readonly freezeMs: number } | null;
+  readonly shatter: () => { readonly radius: number } | null;
   /** What one of the survivor's critical hits is worth. */
   readonly critMultiplier: () => number;
   /** Called when the player walks over a dropped skill. */
@@ -487,9 +487,8 @@ export class CombatSystem {
   };
 
   /**
-   * 얼음창 2차 각성: every enemy within the shatter's reach of (x, y) is
-   * frozen — a ring of frost says where. One of them dying frozen in turn
-   * does the same, through killEnemy.
+   * 얼음창 2차 각성: every enemy within the shatter's reach of (x, y) is put
+   * under 냉각 — a ring of frost says where. One of them dying spreads it on.
    */
   private shatterAt(x: number, y: number): void {
     const shatter = this.hooks.shatter();
@@ -499,7 +498,7 @@ export class CombatSystem {
     for (const child of this.enemies.getChildren()) {
       const other = child as Enemy;
       if (other.active && Phaser.Math.Distance.Between(x, y, other.x, other.y) <= shatter.radius) {
-        other.freeze(shatter.freezeMs);
+        other.chill(CHILL.durationMs);
       }
     }
     const ring = this.scene.add
@@ -736,7 +735,7 @@ export class CombatSystem {
     const wasBoss = enemy.isBoss;
     const certainSkill = enemy.alwaysDropsSkill;
     const webStacks = enemy.webStacks;
-    const diedFrozen = enemy.isFrozen;
+    const diedChilled = enemy.isChilled;
     const scale = this.hooks.dropScale();
     // Every ordinary drop below is raised by what this kill was: a rare's
     // 속성, a 우두머리. What only a 우두머리 leaves, and what is certain, is not.
@@ -747,8 +746,8 @@ export class CombatSystem {
     const gem = this.gems.get() as XpGem | null;
     gem?.drop(x, y, worth, this.player);
 
-    // 얼음창 2차 각성: dying frozen, it freezes what stands round it.
-    if (diedFrozen) {
+    // 얼음창 2차 각성: dying under 냉각, it freezes what stands round it.
+    if (diedChilled) {
       this.shatterAt(x, y);
     }
 

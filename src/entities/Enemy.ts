@@ -6,6 +6,7 @@ import {
   CHILL,
   COLORS,
   SHOCK_FX,
+  enemyPose,
   DEPTH,
   ENEMY,
   ENEMY_KINDS,
@@ -121,6 +122,8 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
   private chillMs = 0;
   /** Frozen solid (얼음창 각성): it neither moves nor shoots. */
   private frozenMs = 0;
+  /** A posed kind (EnemyKindSpec.poses): how long its cast pose has left. */
+  private castPoseMs = 0;
   /** 감전 (낙뢰 각성): every hit on it lands harder while this lasts. */
   private shockMs = 0;
   /** The crackle round a 감전 enemy, redrawn every SHOCK_FX.redrawMs. */
@@ -219,7 +222,7 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
    * seen is a swing that lands (MeleeStrike).
    */
   public get shownRadius(): number {
-    return (this.spec.giant?.drawn ?? this.spec.size) / 2;
+    return (this.spec.giant?.drawn ?? this.spec.drawn ?? this.spec.size) / 2;
   }
 
   /** XP its gem is worth, from its own stat line and its affixes. */
@@ -290,6 +293,7 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
     this.chillMs = 0;
     this.frozenMs = 0;
     this.shockMs = 0;
+    this.castPoseMs = 0;
     this.shockFx?.clear();
     this.hopLeftMs = 0;
     this.hopping = false;
@@ -442,6 +446,7 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
     this.chillMs = 0;
     this.frozenMs = 0;
     this.shockMs = 0;
+    this.castPoseMs = 0;
     this.shockFx?.clear();
     this.hopLeftMs = 0;
     this.hopping = false;
@@ -625,6 +630,7 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
 
     if (this.spec.hop) {
       this.hopAbout(dt, this.spec.hop);
+      this.strikePose(dt);
       return;
     }
 
@@ -663,6 +669,24 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
   }
 
   /** Every frame asks; only a change of picture swaps it. */
+  /**
+   * A posed kind (EnemyKindSpec.poses) shows what it is doing: its cast for a
+   * moment after it throws, its leap while a hop carries it, standing
+   * otherwise — and faces the way it is going.
+   */
+  private strikePose(dt: number): void {
+    if (!this.spec.poses) {
+      return;
+    }
+    this.castPoseMs = Math.max(0, this.castPoseMs - dt);
+    const pose = this.castPoseMs > 0 ? 'cast' : this.hopping ? 'leap' : 'stand';
+    this.showFrame(enemyPose(this.spec.texture, pose));
+    const vx = (this.body as Phaser.Physics.Arcade.Body | null)?.velocity.x ?? 0;
+    if (Math.abs(vx) > 1) {
+      this.setFlipX(vx < 0);
+    }
+  }
+
   private showFrame(key: string): void {
     if (this.texture.key !== key) {
       this.setTexture(key);
@@ -765,6 +789,9 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
 
     this.volleyCooldownMs = volley.cooldownMs;
     sfx.playEnemy(this.scene, this.kind, 'cast');
+    if (this.spec.poses) {
+      this.castPoseMs = this.spec.poses.castMs;
+    }
 
     const step = (Math.PI * 2) / volley.count;
     // A different starting angle each time, or the gaps are always in the

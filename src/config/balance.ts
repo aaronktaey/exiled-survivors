@@ -139,6 +139,18 @@ export interface EnemyKindSpec {
   readonly hop?: EnemyHopSpec;
   /** Drawn as a fat giant that strides and spins rather than as a square (EnemyGiantSpec). */
   readonly giant?: EnemyGiantSpec;
+  /**
+   * How big its picture is drawn, when not `size` (the body hit stays
+   * `size`, centred under it) — the 키메라's, as big as a 우두머리's (0.87).
+   */
+  readonly drawn?: number;
+  /**
+   * Drawn in poses (0.87, the 키메라): `leap` while a hop carries it, `cast`
+   * for `castMs` after it throws its ring, standing otherwise — the pictures
+   * `enemyPose(texture, pose)` that BootScene draws for it. It faces the way
+   * it is going.
+   */
+  readonly poses?: { readonly castMs: number };
   /** Nothing stops it where it stands: 얼음창's 각성 freeze does not take. */
   readonly unstoppable?: boolean;
 }
@@ -319,7 +331,10 @@ export const ENEMY_KINDS: Record<EnemyKind, EnemyKindSpec> = {
     id: "chimera",
     name: "키메라",
     texture: TEXTURES.enemyChimera,
-    size: 30,
+    // A 우두머리's body and picture (0.87, the user's ask; 30 and 30 before).
+    size: 44,
+    drawn: 72,
+    poses: { castMs: 450 },
     color: COLORS.enemyChimera,
     maxHp: 5000,
     speed: 355,
@@ -1050,9 +1065,9 @@ export const SKILL_MASTERY = {
     /** 연쇄번개: arcs each cast starts, each from its own nearest enemy. */
     chainForks: 2,
     /**
-     * 얼음창 (0.84): an enemy that dies frozen freezes every enemy within
-     * `radius` of it, for SKILL_MASTERY.freezeMs — and one of those dying
-     * frozen does the same.
+     * 얼음창: an enemy that dies under 냉각 leaves every enemy within
+     * `radius` of it under 냉각 too (CHILL.durationMs) — and one of those
+     * dying does the same. 0.87, the user's ask (0.84: dying frozen froze them).
      */
     iceShatter: { radius: 60 },
     /**

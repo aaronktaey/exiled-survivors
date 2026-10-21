@@ -23,6 +23,7 @@ import {
   TEXTURES,
   PLAYER_LOOK,
   VOID_VORTEX_FX,
+  enemyPose,
   LOOK_ANIM,
   LOOK_CANVAS,
   LOOK_POSES,
@@ -81,7 +82,7 @@ export class BootScene extends Phaser.Scene {
       } else if (kind.giant) {
         this.createGiantTextures(kind.texture, kind.giant.drawn, kind.color);
       } else if (kind.id === 'chimera') {
-        this.createChimeraTexture(kind.texture, kind.size);
+        this.createChimeraTexture(kind.texture, kind.drawn ?? kind.size);
       } else {
         this.createSquareTexture(kind.texture, kind.size, kind.color);
       }
@@ -293,43 +294,101 @@ export class BootScene extends Phaser.Scene {
    * 키메라, facing right: a lion's body and maned head, a goat's horns on
    * top, and a serpent for a tail coiling up behind.
    */
+  /**
+   * A 키메라 in each pose (EnemyKindSpec.poses), facing right on a square
+   * `size` across: standing; mid-leap — body up, legs tucked, tail streaming,
+   * a shadow left on the ground under it; and casting — reared, mane bristling
+   * with thorns, jaws open. Drawn in 30 units, set in a 36-unit square, scaled.
+   */
   private createChimeraTexture(key: string, size: number): void {
-    const k = size / 30;
-    const g = this.add.graphics();
-    // The serpent tail, behind everything else.
+    for (const pose of ['stand', 'leap', 'cast'] as const) {
+      const g = this.add.graphics();
+      // The 30-unit figure with room round it (horns up in a leap, thorns out in a cast).
+      const k = size / 36;
+      g.translateCanvas(3 * k, 5 * k);
+      this.drawChimera(g, k, pose);
+      g.generateTexture(enemyPose(key, pose), size, size);
+      g.destroy();
+    }
+  }
+
+  private drawChimera(g: Phaser.GameObjects.Graphics, k: number, pose: 'stand' | 'leap' | 'cast'): void {
+    const leap = pose === 'leap';
+    const cast = pose === 'cast';
+    const lift = leap ? 5 : 0;
+    const rear = cast ? 3 : 0;
+    // A shadow on the ground while it is in the air.
+    if (leap) {
+      g.fillStyle(0x000000, 0.35);
+      g.fillEllipse(15 * k, 28 * k, 16 * k, 3.5 * k);
+    }
+    // The serpent tail, behind everything else — streaming back in a leap, raised in a cast.
     g.lineStyle(3.2 * k, COLORS.chimeraTail, 1);
     g.beginPath();
-    g.moveTo(7 * k, 19 * k);
-    g.lineTo(3 * k, 15 * k);
-    g.lineTo(3.5 * k, 9 * k);
-    g.lineTo(6.5 * k, 6 * k);
+    g.moveTo(7 * k, (19 - lift) * k);
+    if (leap) {
+      g.lineTo(2 * k, (16 - lift) * k);
+      g.lineTo(0.5 * k, (12 - lift) * k);
+      g.lineTo(2.5 * k, (9 - lift) * k);
+    } else {
+      g.lineTo(3 * k, (15 - rear) * k);
+      g.lineTo(3.5 * k, (9 - rear * 1.5) * k);
+      g.lineTo(6.5 * k, (6 - rear * 1.5) * k);
+    }
     g.strokePath();
+    const tailHead = leap ? [3.5, 8 - lift] : [8, 5.5 - rear * 1.5];
     g.fillStyle(COLORS.chimeraTail, 1);
-    g.fillEllipse(8 * k, 5.5 * k, 5.5 * k, 4 * k);
+    g.fillEllipse(tailHead[0]! * k, tailHead[1]! * k, 5.5 * k, 4 * k);
     g.fillStyle(0xffe066, 1);
-    g.fillCircle(9 * k, 5 * k, 0.8 * k);
-    // Legs, then the body over them.
+    g.fillCircle((tailHead[0]! + 1) * k, (tailHead[1]! - 0.5) * k, 0.8 * k);
+    // Legs — tucked under in a leap, braced in a cast — then the body over them.
     const legs = Phaser.Display.Color.ValueToColor(COLORS.enemyChimera).darken(30).color;
     g.fillStyle(legs, 1);
     for (const x of [8, 12, 18, 22]) {
-      g.fillRoundedRect((x - 1.6) * k, 20 * k, 3.2 * k, 8 * k, 1.2 * k);
+      if (leap) {
+        const back = x < 15;
+        g.fillRoundedRect((x - 1.6 + (back ? -1.5 : 1.5)) * k, (20 - lift) * k, 3.2 * k, 4.5 * k, 1.2 * k);
+      } else {
+        const brace = cast && x > 15 ? 1.2 : 0;
+        g.fillRoundedRect((x - 1.6 + brace) * k, 20 * k, 3.2 * k, 8 * k, 1.2 * k);
+      }
     }
     g.fillStyle(COLORS.enemyChimera, 1);
-    g.fillEllipse(15 * k, 19 * k, 20 * k, 11 * k);
+    g.fillEllipse(15 * k, (19 - lift - rear * 0.5) * k, 20 * k, 11 * k);
     // The mane, the head in it, and the horns over both.
+    const hx = 21.5 + (leap ? 1 : 0);
+    const hy = 12.5 - lift - rear;
+    if (cast) {
+      // Bristling: thorns out of the mane all round.
+      g.fillStyle(COLORS.thorn, 1);
+      for (let i = 0; i < 9; i++) {
+        const a = (i / 9) * Math.PI * 2;
+        const r1 = 6.5;
+        const r2 = 11;
+        g.fillTriangle(
+          (hx + Math.cos(a - 0.18) * r1) * k, (hy + Math.sin(a - 0.18) * r1) * k,
+          (hx + Math.cos(a + 0.18) * r1) * k, (hy + Math.sin(a + 0.18) * r1) * k,
+          (hx + Math.cos(a) * r2) * k, (hy + Math.sin(a) * r2) * k,
+        );
+      }
+    }
     g.fillStyle(COLORS.chimeraMane, 1);
-    g.fillCircle(21.5 * k, 12.5 * k, 7.5 * k);
+    g.fillCircle(hx * k, hy * k, (cast ? 8.3 : 7.5) * k);
     g.fillStyle(COLORS.enemyChimera, 1);
-    g.fillCircle(23 * k, 13 * k, 4.6 * k);
+    g.fillCircle((hx + 1.5) * k, (hy + 0.5) * k, 4.6 * k);
     g.fillStyle(COLORS.thorn, 1);
-    g.fillTriangle(17.5 * k, 7 * k, 20 * k, 6 * k, 15.5 * k, 1 * k);
-    g.fillTriangle(22 * k, 6 * k, 24.5 * k, 7 * k, 25.5 * k, 0.5 * k);
+    g.fillTriangle((hx - 4) * k, (hy - 5.5) * k, (hx - 1.5) * k, (hy - 6.5) * k, (hx - 6) * k, (hy - 11.5) * k);
+    g.fillTriangle((hx + 0.5) * k, (hy - 6.5) * k, (hx + 3) * k, (hy - 5.5) * k, (hx + 4) * k, (hy - 12) * k);
     g.fillStyle(0xd23b2a, 1);
-    g.fillCircle(25 * k, 12 * k, 1 * k);
-    g.fillStyle(COLORS.chimeraMane, 1);
-    g.fillTriangle(26 * k, 15 * k, 28.5 * k, 14 * k, 26.5 * k, 16.5 * k);
-    g.generateTexture(key, size, size);
-    g.destroy();
+    g.fillCircle((hx + 3.5) * k, (hy - 0.5) * k, 1 * k);
+    if (cast) {
+      // Jaws open, roaring.
+      g.fillStyle(0x3a0d0d, 1);
+      g.fillTriangle((hx + 3.5) * k, (hy + 1.5) * k, (hx + 7.5) * k, (hy + 0.5) * k, (hx + 7) * k, (hy + 4.5) * k);
+    } else {
+      g.fillStyle(COLORS.chimeraMane, 1);
+      g.fillTriangle((hx + 4.5) * k, (hy + 2.5) * k, (hx + 7) * k, (hy + 1.5) * k, (hx + 5) * k, (hy + 4) * k);
+    }
   }
 
   /** A 키메라's thorn: a white spike, its point to the right (the way it flies). */

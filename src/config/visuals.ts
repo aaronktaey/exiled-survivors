@@ -933,3 +933,7 @@ export const ALTAR_SUMMON_FX = {
   dropMs: 260,
   fadeMs: 420,
 } as const;
+
+/** A posed enemy's picture for a pose (EnemyKindSpec.poses): the kind's texture, or that with the pose's name. */
+export type EnemyPose = 'stand' | 'leap' | 'cast';
+export const enemyPose = (texture: string, pose: EnemyPose): string => (pose === 'stand' ? texture : `${texture}-${pose}`);

@@ -543,9 +543,9 @@ Read `git log` for what changed and when. What is not in the log:
   the 2차 각성 (0.83, the user's designs) adds `masteredTwice`: 타격's swing
   opens to `meleeArcDegrees` (180), 화염구's burst widens `fireBlastScale`
   again (4× in all, 0.84), 연쇄번개 starts
-  `chainForks` arcs, 얼음창 shatters: an enemy that dies frozen freezes what
-  stands within `iceShatter.radius` (`CombatSystem.shatterAt`, through the
-  `shatter` hook, chaining),
+  `chainForks` arcs, 얼음창 shatters: an enemy that dies under 냉각 chills
+  what stands within `iceShatter.radius` (`CombatSystem.shatterAt`, through
+  the `shatter` hook, chaining; 0.87 — it was frozen → frozen before),
   공허구체 gets an inner ring turning the other way (`VoidOrb.inner`,
   `voidInner`), 낙뢰 splashes `thunderSplash`. It has its own banner
   (`celebrateMastery(skill, 2)`, `awakenedTwice`), a thicker gold edge and a
@@ -767,6 +767,12 @@ Read `git log` for what changed and when. What is not in the log:
   `onChimeraSpawned` → a toast), and a 제단 can offer one
   (`ALTAR_OFFERS.chimera`). The 14-minute 키메라 러시 (0.67–0.84) that
   cleared the field was taken out on the user's word.
+  Since 0.87 it is a 우두머리's size: `size` 44 for the body, and `drawn`
+  (an `EnemyKindSpec` field: the picture's size when not `size`, also what
+  `Enemy.shownRadius` reads) 72. It has `poses` — BootScene draws it
+  standing, leaping and casting (`enemyPose(texture, pose)` in visuals.ts),
+  and `Enemy.strikePose` shows the leap while `hopping`, the cast for
+  `poses.castMs` after `throwRing`, and flips it to face its way.
   Enemy sounds are a table, `AUDIO.enemies[kind][appear|death|cast]`,
   played by `sfx.playEnemy` with a per-part rest; the 키메라's are cut from
   `assets-src/chimera/hydra.mp3` by `tools/make-chimera-sfx.py`.
