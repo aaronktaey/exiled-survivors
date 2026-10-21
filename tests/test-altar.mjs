@@ -45,15 +45,17 @@ const affixes = await ev(`(() => {
     ids,
     rolledEffects: Object.values(window.config.AFFIXES)
       .flatMap(a => (a.gearTiers ?? []).flatMap(t => Object.keys(t.gear))),
+    regenFrom: Object.values(window.config.AFFIXES)
+      .filter(a => (a.gearTiers ?? []).some(t => 'regen' in t.gear)).map(a => a.id),
     bonusKeys: Object.keys(window.gearBonusFor(window.gear.equipped)),
   };
 })()`);
 check('예리 and 재생 are no longer 속성 at all',
   !affixes.ids.includes('honed') && !affixes.ids.includes('regrowth'),
   affixes.ids.join(' / '));
-check('nothing a weapon can roll gives flat attack or life over time',
-  !affixes.rolledEffects.includes('attackBonus') && !affixes.rolledEffects.includes('regen') &&
-    !affixes.bonusKeys.includes('regen'),
+check('nothing a weapon can roll gives flat attack, and life over time only through 활력 (0.88)',
+  !affixes.rolledEffects.includes('attackBonus') &&
+    JSON.stringify(affixes.regenFrom) === JSON.stringify(['vital']),
   [...new Set(affixes.rolledEffects)].join(' / '));
 
 // --- 2. the table ---

@@ -5,7 +5,7 @@ import type { Enemy } from '@/entities/Enemy';
 import { sfx } from '@/systems/Sfx';
 import { drawBolt } from '@/weapons/bolt';
 import { SKILLS } from '@/weapons/skills';
-import { findNearestEnemy, type Weapon, type WeaponContext } from '@/weapons/Weapon';
+import { CastRepeat, findNearestEnemy, type Weapon, type WeaponContext } from '@/weapons/Weapon';
 
 /**
  * Drop-only skill: an instant arc that strikes the nearest enemy and then
@@ -19,6 +19,8 @@ export class ChainLightning implements Weapon {
   private readonly scene: Phaser.Scene;
   private readonly bolt: Phaser.GameObjects.Graphics;
   private sinceCastMs = 0;
+  /** 반복: whether this cast goes off once more. */
+  private readonly repeat = new CastRepeat();
   /** Victims of the current cast, so the arc cannot double back. */
   private readonly struck = new Set<Enemy>();
 
@@ -40,7 +42,7 @@ export class ChainLightning implements Weapon {
       return;
     }
 
-    this.sinceCastMs = 0;
+    this.sinceCastMs = this.repeat.restart(context);
     context.onCast?.(first.x);
     this.struck.clear();
     const paths = [this.strike(context, first)];

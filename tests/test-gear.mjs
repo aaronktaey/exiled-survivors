@@ -205,20 +205,23 @@ const rolled = await run(`
     item.prefixes.forEach(line => { prefixes.add(line.id); tiers.add(line.tier); });
     item.suffixes.forEach(line => { suffixes.add(line.id); tiers.add(line.tier); });
   }
+  const c = window.config;
   return { prefixes: [...prefixes].sort(), suffixes: [...suffixes].sort(),
-           tiers: [...tiers].sort() };
+           tiers: [...tiers].sort((a, b) => a - b),
+           wantPrefixes: c.PREFIXES.map((a) => a.id).sort(), wantSuffixes: c.SUFFIXES.map((a) => a.id).sort(),
+           wantTiers: Array.from({ length: c.AFFIX_RUNGS }, (_, i) => i + 1) };
 `);
 console.log('split:', JSON.stringify(rolled));
 check('the offensive 속성 roll as 접두어',
-  JSON.stringify(rolled.prefixes) ===
-    JSON.stringify(['critical', 'cruel', 'frenzied', 'mighty']),
+  JSON.stringify(rolled.prefixes) === JSON.stringify(rolled.wantPrefixes) &&
+    ['critical', 'cruel', 'frenzied', 'mighty'].every((id) => rolled.prefixes.includes(id)),
   rolled.prefixes.join(' / '));
 check('the defensive and utility ones roll as 접미어',
-  JSON.stringify(rolled.suffixes) ===
-    JSON.stringify(['evasive', 'giant', 'magnetic', 'swift']),
+  JSON.stringify(rolled.suffixes) === JSON.stringify(rolled.wantSuffixes) &&
+    ['evasive', 'giant', 'magnetic', 'swift'].every((id) => rolled.suffixes.includes(id)),
   rolled.suffixes.join(' / '));
-check('and every line comes out at one of the five rungs',
-  JSON.stringify(rolled.tiers) === JSON.stringify([1, 2, 3, 4, 5]),
+check('and every line comes out at one of the rungs, every rung turning up',
+  JSON.stringify(rolled.tiers) === JSON.stringify(rolled.wantTiers),
   rolled.tiers.join(' / '));
 check('and neither side leaks into the other',
   rolled.prefixes.every((id) => !rolled.suffixes.includes(id)),
@@ -326,7 +329,7 @@ check('and its 신속 is on the survivor, not just on paper',
 // --- 8. 거대 raises the bar it starts on ---
 await ev(`(() => {
   const raw = JSON.parse(localStorage.getItem('exiled-survivors:gear:v2'));
-  raw.items.push({ uid: 'huge', id: 'rustySword', prefixes: [], suffixes: [{ id: 'giant', tier: 3 }] });
+  raw.items.push({ uid: 'huge', id: 'rustySword', prefixes: [], suffixes: [{ id: 'giant', tier: 3 }], rungs: window.config.AFFIX_RUNGS });
   raw.equipped = 'huge';
   localStorage.setItem('exiled-survivors:gear:v2', JSON.stringify(raw));
   return 1;
@@ -471,7 +474,7 @@ const LOADED = [
 ];
 await ev(`(() => {
   localStorage.setItem('exiled-survivors:gear:v2', JSON.stringify(
-    { items: ${JSON.stringify(LOADED)}, equipped: 'starter' }));
+    { items: ${JSON.stringify(LOADED)}.map((i) => ({ ...i, rungs: window.config.AFFIX_RUNGS })), equipped: 'starter' }));
   return 1;
 })()`);
 await cdp.send('Page.reload', {});
@@ -501,8 +504,8 @@ check('the read-out is the base (attack and 고정 속성), then a 접두어 blo
 check('every 속성 fills a slot with its rung, its name and what it does',
   /1티어\s+강력\s+피해 \+\d+%/.test(block) &&
     /2티어\s+치명\s+기본 치명타 확률 \+\d+%/.test(block) &&
-    /1티어\s+거대\s+최대 체력 \+45%/.test(block) &&
-    /5티어\s+신속\s+이동속도 \+12%/.test(block) &&
+    /1티어\s+거대\s+최대 체력 \+[\d.]+%/.test(block) &&
+    /5티어\s+신속\s+이동속도 \+[\d.]+%/.test(block) &&
     /3티어\s+자력\s+획득 범위 \+\d+%/.test(block),
   block);
 check('and a slot with nothing in it is drawn as a rule',
@@ -1498,6 +1501,88 @@ check('an ordinary drop has none, and a picked-up one takes its pillar with it',
   pillars.plain === false && pillars.gone === false, JSON.stringify({ plain: pillars.plain, gone: pillars.gone }));
 check('an altar, which is not picked up, stands in none', pillars.altar === true);
 await shot('gear-pillar');
+
+// --- 0.88: 기교 · 반복 · 활력, and weapons from before the seven rungs ---
+const added = await run(`
+  const c = window.config, A = c.AFFIXES;
+  const at = (id, t) => A[id].gearTiers.find((r) => r.tier === t);
+  // 기교 adds to the base's own block (오니고로시's 고정 속성), as lines add.
+  const oni = { uid: 'o', id: 'onigoroshi', prefixes: [], suffixes: [{ id: 'deft', tier: 1 }] };
+  const block = window.gearBonusFor(oni).projectileBlock;
+  const wantBlock = c.GEAR.onigoroshi.implicit.projectileBlock + at('deft', 1).gear.projectileBlock;
+  // 반복: a cast clock comes round soon once, then starts over — never twice running.
+  const w = s.weapons.find((x) => x.definition.id === 'meleeStrike');
+  const keep = Math.random;
+  Math.random = () => 0;
+  let r1, r2, r3, short;
+  try {
+    r1 = w.repeat.restart({ repeatChance: 0.5, cooldownMs: 1000 });
+    r2 = w.repeat.restart({ repeatChance: 0.5, cooldownMs: 1000 });
+    short = w.repeat.restart({ repeatChance: 0.5, cooldownMs: 200 });
+    w.repeat.restart({ repeatChance: 0.5, cooldownMs: 200 });
+    r3 = w.repeat.restart({ repeatChance: 0, cooldownMs: 1000 });
+  } finally {
+    Math.random = keep;
+  }
+  // 활력: health back every AFFIX_TIMING.regenEveryMs of the run's clock.
+  const wasBonus = s.gearBonus;
+  s.gearBonus = window.gearBonusFor({ uid: 'v', id: 'rustySword', prefixes: [], suffixes: [{ id: 'vital', tier: 1 }] });
+  const every = c.AFFIX_TIMING.regenEveryMs;
+  s.player.hp = 10;
+  s.regenMs = 0;
+  for (let t = 0; t < every - 50; t += 50) s.regenerate(50);
+  const early = s.player.hp;
+  s.regenerate(50);
+  const healed = s.player.hp;
+  s.player.hp = s.player.maxHp;
+  // And the scene hands the weapon's 반복 to its skills.
+  s.gearBonus = window.gearBonusFor({ uid: 'e', id: 'rustySword', prefixes: [{ id: 'echoing', tier: 1 }], suffixes: [] });
+  window.__echoSeen = undefined;
+  const update = w.update;
+  w.update = function (d, ctx) { window.__echoSeen = ctx.repeatChance; return update.call(this, d, ctx); };
+  // The section before left the run held; let it tick for this.
+  const wasChoosing = s.choosing;
+  s.choosing = false;
+  window.__echoUndo = () => { w.update = update; s.gearBonus = wasBonus; s.choosing = wasChoosing; };
+  return { block, wantBlock, r1, r2, r3, short, delay: c.AFFIX_TIMING.repeatDelayMs,
+           early, healed, regen: at('vital', 1).gear.regen, wantEcho: at('echoing', 1).gear.repeatChance };
+`);
+await sleep(400);
+const echoSeen = await ev(`(() => { const v = window.__echoSeen; window.__echoUndo(); return v; })()`);
+console.log('0.88 속성:', JSON.stringify({ ...added, echoSeen }));
+check('기교 adds its chance to the base’s own projectile block',
+  Math.abs(added.block - added.wantBlock) < 1e-9, `${added.block} vs ${added.wantBlock}`);
+check('반복: a cast that wins the roll goes off again AFFIX_TIMING.repeatDelayMs later, and the repeat does not repeat',
+  added.r1 === 1000 - added.delay && added.r2 === 0 && added.r3 === 0, JSON.stringify(added));
+check('on a short cooldown the repeat comes at half of it', added.short === 100, String(added.short));
+check('the weapon’s 반복 chance reaches the skills', echoSeen === added.wantEcho, `${echoSeen} vs ${added.wantEcho}`);
+check('활력 gives its health back once the interval is up, not before',
+  added.early === 10 && added.healed === 10 + added.regen, JSON.stringify(added));
+
+// A weapon from before 0.88 (no rungs on it) has each line moved down two:
+// its tier 1 is read as tier 3, the number it always had.
+await ev(`(() => {
+  const raw = JSON.parse(localStorage.getItem('exiled-survivors:gear:v2'));
+  raw.items.push({ uid: 'old', id: 'steelSword', prefixes: [{ id: 'mighty', tier: 1 }], suffixes: [{ id: 'giant', tier: 5 }] });
+  localStorage.setItem('exiled-survivors:gear:v2', JSON.stringify(raw));
+  return 1;
+})()`);
+await cdp.send('Page.reload', {});
+await sleep(4300);
+const laddered = await run(`
+  const c = window.config;
+  const it = window.gear.items.find((i) => i.uid === 'old');
+  const fresh = window.gear.items.find((i) => i.uid !== 'old' && i.rungs === c.AFFIX_RUNGS);
+  const saved = s.constructor.gearFor({ gear: { uid: 'r', id: 'steelSword', prefixes: [{ id: 'mighty', tier: 2 }], suffixes: [] } });
+  return { lines: it && [...it.prefixes, ...it.suffixes].map((l) => l.tier), rungs: it?.rungs, want: c.AFFIX_RUNGS,
+           before: c.AFFIX_RUNGS_BEFORE, others: !!fresh, saved: saved.prefixes[0].tier, savedRungs: saved.rungs };
+`);
+console.log('ladder:', JSON.stringify(laddered));
+const rungShift = laddered.want - laddered.before;
+check('a stashed weapon from before 0.88 has its lines laddered down onto the seven rungs',
+  JSON.stringify(laddered.lines) === JSON.stringify([1 + rungShift, 5 + rungShift]) && laddered.rungs === laddered.want, JSON.stringify(laddered));
+check('a saved run’s weapon from before is laddered the same way as it resumes',
+  laddered.saved === 2 + rungShift && laddered.savedRungs === laddered.want, JSON.stringify(laddered));
 
 console.log('\n=== SUMMARY ===');
 const failed = results.filter((r) => !r.p);

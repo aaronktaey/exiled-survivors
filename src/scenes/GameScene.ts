@@ -5,6 +5,7 @@ import {
   ALL_PASSIVES,
   BALANCE,
   BONES,
+  AFFIX_TIMING,
   COLORS,
   GEAR,
   WEB,
@@ -91,6 +92,7 @@ import {
   NO_BONUS,
   gear,
   gearBonusFor,
+  onCurrentLadder,
   rollGearFromKill,
   rollGearItem,
   type GearBonus,
@@ -250,6 +252,8 @@ export class GameScene extends Phaser.Scene {
   private inspecting = { skill: false, rare: false };
   private over = false;
   private invulnerable = false;
+  /** 활력: run time since the weapon last gave health back. */
+  private regenMs = 0;
   /** Round-robin cursor for the debug drop key. */
   private nextDebugDrop = 0;
 
@@ -283,6 +287,7 @@ export class GameScene extends Phaser.Scene {
     this.inspecting = { skill: false, rare: false };
     this.over = false;
     this.invulnerable = false;
+    this.regenMs = 0;
     this.weapons = [];
     this.owned = new Set<SkillId>();
     this.mainSkill = null;
@@ -559,6 +564,7 @@ export class GameScene extends Phaser.Scene {
     this.player.webbed = this.webs.update(dt, this.player.x, this.player.y);
     this.player.update();
     this.player.tickBuffs(dt);
+    this.regenerate(dt);
     this.spawner.update(dt);
     this.separation.update();
 
@@ -587,6 +593,7 @@ export class GameScene extends Phaser.Scene {
         masteredTwice: this.masteryOf(id) >= 2,
         enemyShots: this.combat.enemyShots,
         onCast: id === this.mainSkill ? this.castLook : undefined,
+        repeatChance: this.gearBonus.repeatChance,
       });
     }
 
@@ -661,7 +668,8 @@ export class GameScene extends Phaser.Scene {
     if (saved === null || typeof saved.id !== 'string' || !Array.isArray(saved.prefixes) || !Array.isArray(saved.suffixes)) {
       return null;
     }
-    return saved;
+    // Rolled before 0.88's seven rungs, its lines move down onto them.
+    return onCurrentLadder(saved);
   }
 
   /**
@@ -1339,6 +1347,27 @@ export class GameScene extends Phaser.Scene {
   /** Every 보조 스킬 slot taken (SUB_SKILLS.max besides the main skill): no other skill can come in. */
   public get subSkillsFull(): boolean {
     return [...this.owned].filter((id) => id !== this.mainSkill).length >= SUB_SKILLS.max;
+  }
+
+  /**
+   * 활력 (a weapon 속성, 0.88): every AFFIX_TIMING.regenEveryMs of the run's
+   * own clock the survivor gets the weapon's health back, shown in green
+   * over them when it filled anything.
+   */
+  private regenerate(dt: number): void {
+    const amount = this.gearBonus.regen;
+    if (amount <= 0) {
+      return;
+    }
+    this.regenMs += dt;
+    if (this.regenMs < AFFIX_TIMING.regenEveryMs) {
+      return;
+    }
+    this.regenMs -= AFFIX_TIMING.regenEveryMs;
+    const healed = this.player.heal(amount);
+    if (healed > 0) {
+      this.damageNumbers.spawn(this.player.x, this.player.y - 46, healed, { prefix: '+', color: COLORS.healText });
+    }
   }
 
   private drinkForMaxedSkill(skill: SkillId, why: 'maxed' | 'full' = 'maxed'): void {

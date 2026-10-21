@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 
-import { DEPTH, ENEMY_KINDS, SKILL_MASTERY, TEXTURES, VOID_ORB, VOID_VORTEX_FX, orbsHeld } from '@/config';
+import { AFFIX_TIMING, DEPTH, ENEMY_KINDS, SKILL_MASTERY, TEXTURES, VOID_ORB, VOID_VORTEX_FX, orbsHeld } from '@/config';
 import type { Enemy } from '@/entities/Enemy';
 import { sfx } from '@/systems/Sfx';
 import { SKILLS } from '@/weapons/skills';
@@ -13,6 +13,8 @@ const TAU = Math.PI * 2;
 interface HitRecord {
   life: number;
   readyAt: number;
+  /** This hit was a 반복's, so the next waits out the whole cooldown. */
+  repeated?: boolean;
 }
 
 /**
@@ -193,7 +195,10 @@ export class VoidOrb implements Weapon {
           records = new Map();
           this.hits.set(enemy, records);
         }
-        records.set(key + i, { life: enemy.lives, readyAt: this.elapsedMs + context.cooldownMs });
+        // 반복: at its chance this orb hits the same enemy once more, soon.
+        const again = !(record?.life === enemy.lives && record.repeated) && Math.random() < (context.repeatChance ?? 0);
+        const wait = again ? Math.min(AFFIX_TIMING.repeatDelayMs, context.cooldownMs / 2) : context.cooldownMs;
+        records.set(key + i, { life: enemy.lives, readyAt: this.elapsedMs + wait, repeated: again });
         context.hit(enemy, damage);
         // Held well apart by its own gap, or an orbit would drone.
         sfx.playSkill(this.scene, this.definition.id);

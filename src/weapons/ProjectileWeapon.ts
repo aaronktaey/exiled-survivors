@@ -4,7 +4,7 @@ import { WEAPON } from '@/config';
 import { Projectile, type LaunchSpec } from '@/entities/Projectile';
 import { sfx } from '@/systems/Sfx';
 import type { Enemy } from '@/entities/Enemy';
-import { findNearest, findNearestEnemy, type Weapon, type WeaponContext } from '@/weapons/Weapon';
+import { CastRepeat, findNearest, findNearestEnemy, type Weapon, type WeaponContext } from '@/weapons/Weapon';
 import type { SkillDefinition } from '@/weapons/skills';
 
 /**
@@ -18,6 +18,8 @@ export abstract class ProjectileWeapon implements Weapon {
   public readonly projectiles: Phaser.Physics.Arcade.Group;
 
   protected sinceShotMs = 0;
+  /** 반복: whether this cast goes off once more. */
+  private readonly repeat = new CastRepeat();
   private readonly scene: Phaser.Scene;
 
   public constructor(scene: Phaser.Scene) {
@@ -42,7 +44,7 @@ export abstract class ProjectileWeapon implements Weapon {
       return;
     }
 
-    this.sinceShotMs = 0;
+    this.sinceShotMs = this.repeat.restart(context);
     context.onCast?.(target.x);
     this.fire(context, target);
   }

@@ -4,7 +4,7 @@ import { COLORS, DEPTH, MELEE, SKILL_MASTERY } from '@/config';
 import type { Enemy } from '@/entities/Enemy';
 import { sfx } from '@/systems/Sfx';
 import { SKILLS } from '@/weapons/skills';
-import type { Weapon, WeaponContext } from '@/weapons/Weapon';
+import { CastRepeat, type Weapon, type WeaponContext } from '@/weapons/Weapon';
 
 /**
  * How far the swing has to reach to touch an enemy as it is drawn, and how
@@ -32,6 +32,8 @@ export class MeleeStrike implements Weapon {
   private readonly scene: Phaser.Scene;
   private readonly flash: Phaser.GameObjects.Graphics;
   private sinceSwingMs = 0;
+  /** 반복: whether this cast goes off once more. */
+  private readonly repeat = new CastRepeat();
   /** Enemy shots struck down by the 각성 swing. Public for tests. */
   public strikes = 0;
 
@@ -53,7 +55,7 @@ export class MeleeStrike implements Weapon {
       return;
     }
 
-    this.sinceSwingMs = 0;
+    this.sinceSwingMs = this.repeat.restart(context);
     context.onCast?.(target.x);
     this.swing(context, target);
   }

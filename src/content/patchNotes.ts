@@ -15,6 +15,44 @@ export interface PatchNote {
 
 export const PATCH_NOTES: readonly PatchNote[] = [
   {
+    version: '0.88',
+    date: '2026-10-21',
+    changes: {
+      ko: [
+        '장비 속성이 7단계가 되었습니다. 지금까지의 1~5티어는 3~7티어가 되고, 그 위에 훨씬 드문 1·2티어가 생겼습니다. 가지고 있던 무기의 속성은 수치 그대로 새 단계로 옮겨집니다.',
+        '단계가 오를수록 오르는 폭이 줄어들도록 수치를 다시 맞췄습니다(7티어~1티어): 강력·광포 +5~27%, 치명·잔혹 +24~110%, 회피 +18~60%. 중간 단계의 수치가 조금 올랐습니다.',
+        '거대·신속·자력의 수치가 절반이 되었습니다: 거대 +7.5~27%, 신속 +6~21.5%, 자력 +16~47%.',
+        '새 속성 반복(접두어): 5~11.5% 확률로 스킬이 한 번 더 나갑니다. 공허구체는 구체가 같은 적을 곧바로 한 번 더 때립니다.',
+        '새 속성 활력(접미어): 5초마다 체력을 5~18 회복합니다.',
+        '새 속성 기교(접미어): 5~18% 확률로 적의 투사체를 막아냅니다. 오니고로시의 고정 속성과 더해집니다.',
+      ],
+      en: [
+        'Weapon affixes now have seven tiers. The old tiers 1–5 are tiers 3–7, with far rarer tiers 1 and 2 above them. Affixes on weapons you already have move to the new tiers with the same numbers.',
+        'Each tier up now adds a little less than the one below it (tier 7 to tier 1): Mighty and Frenzied +5–27%, Deadly and Cruel +24–110%, Evasive +18–60%. The middle tiers came up a little.',
+        'Giant, Swift and Magnetic are halved: Giant +7.5–27%, Swift +6–21.5%, Magnetic +16–47%.',
+        'New affix Echoing (prefix): a 5–11.5% chance for a skill to go off once more. Void Orb’s orbs strike the same enemy again straight away.',
+        'New affix Vital (suffix): restores 5–18 health every 5 seconds.',
+        'New affix Deft (suffix): a 5–18% chance to block an enemy projectile, added to the Onigoroshi’s own.',
+      ],
+      ja: [
+        '装備の属性が7段階になりました。これまでの1〜5ティアは3〜7ティアになり、その上にずっと珍しい1・2ティアができました。持っている武器の属性は数値そのままで新しい段階に移ります。',
+        '段階が上がるほど上がり幅が小さくなるよう数値を調整しました（7ティア〜1ティア）：剛力・狂乱 +5〜27%、致命・残酷 +24〜110%、回避 +18〜60%。中間の段階は少し上がりました。',
+        '巨大・俊敏・磁力の数値が半分になりました：巨大 +7.5〜27%、俊敏 +6〜21.5%、磁力 +16〜47%。',
+        '新しい属性 反復（接頭辞）：5〜11.5%の確率でスキルがもう一度出ます。虚無球は球が同じ敵をすぐにもう一度叩きます。',
+        '新しい属性 活力（接尾辞）：5秒ごとに体力を5〜18回復します。',
+        '新しい属性 技巧（接尾辞）：5〜18%の確率で敵の投射物を防ぎます。鬼殺しの固定属性と合算されます。',
+      ],
+      zh: [
+        '装备属性变为7个等级。原来的1~5级变为3~7级，其上新增了更加稀有的1、2级。已有武器上的属性会以相同数值移到新的等级。',
+        '重新调整了数值，等级越高提升幅度越小（7级~1级）：强力、狂乱 +5~27%，致命、残酷 +24~110%，闪避 +18~60%。中间等级的数值略有提高。',
+        '巨大、迅捷、磁力的数值减半：巨大 +7.5~27%，迅捷 +6~21.5%，磁力 +16~47%。',
+        '新属性 反复（前缀）：5~11.5%几率让技能再发动一次。虚空球的球体会立刻再击中同一个敌人一次。',
+        '新属性 活力（后缀）：每5秒恢复5~18生命。',
+        '新属性 技巧（后缀）：5~18%几率格挡敌人的投射物，与鬼杀的固定属性相加。',
+      ],
+    },
+  },
+  {
     version: '0.87',
     date: '2026-10-21',
     changes: {

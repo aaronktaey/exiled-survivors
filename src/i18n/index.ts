@@ -1,5 +1,6 @@
 import {
   AFFIXES,
+  AFFIX_TIMING,
   ALTAR_OFFERS,
   BONES,
   ENEMY_KINDS,
@@ -209,7 +210,7 @@ export function affixGearDetail(id: AffixId, tier: number): string {
   }
 
   const template = t().names?.affixGearDetails?.[id];
-  return template ? fill(template, { value: rung.value }) : rung.detail;
+  return template ? fill(template, { value: rung.value, every: AFFIX_TIMING.regenEveryMs / 1000 }) : rung.detail;
 }
 
 /**

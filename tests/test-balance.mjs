@@ -446,7 +446,7 @@ const parity = await run(`
   const plain = [['mighty', 'mighty', 'frenzied'], ['frenzied', 'frenzied', 'mighty'], ['mighty', 'mighty', 'mighty'], ['frenzied', 'frenzied', 'frenzied']];
   const crit = [['critical', 'critical', 'cruel'], ['critical', 'cruel', 'cruel'], ['critical', 'cruel', 'mighty'], ['critical', 'cruel', 'frenzied']];
   const pct = (x) => +((x - 1) * 100).toFixed(1);
-  return [1, 2, 3, 4, 5].map((tier) => ({
+  return Array.from({ length: c.AFFIX_RUNGS }, (_, i) => i + 1).map((tier) => ({
     tier,
     plain: pct(Math.max(...plain.map((l) => worth(l, tier)))),
     crit: pct(Math.max(...crit.map((l) => worth(l, tier)))),
@@ -528,7 +528,7 @@ const rungs = await cdp.evaluate(`(() => {
   const out = {};
   for (const [id, affix] of Object.entries(window.config.AFFIXES)) {
     if (!affix.gearTiers) continue;
-    out[id] = affix.gearTiers.map(t => ({ tier: t.tier, weight: t.weight, detail: t.detail }));
+    out[id] = affix.gearTiers.map(t => ({ tier: t.tier, weight: t.weight, detail: t.detail, value: t.value }));
   }
   const N = 40000;
   const seen = {};
@@ -536,25 +536,38 @@ const rungs = await cdp.evaluate(`(() => {
     const tier = window.config.rollAffixTier('mighty');
     seen[tier] = (seen[tier] ?? 0) + 1;
   }
-  return { out, seen, N, weights: window.config.AFFIX_TIER_WEIGHTS };
+  return { out, seen, N, weights: window.config.AFFIX_TIER_WEIGHTS, rungs: window.config.AFFIX_RUNGS };
 })()`);
 console.log('rungs:', JSON.stringify(rungs.seen), JSON.stringify(rungs.out.mighty));
-check('every weapon 속성 has five rungs, tier 1 first',
-  Object.values(rungs.out).every((ladder) =>
-    ladder.length === 5 && ladder[0].tier === 1 && ladder[4].tier === 5),
-  `${Object.keys(rungs.out).length} 속성, five rungs each`);
+check('every weapon 속성 has the same rungs (seven since 0.88), tier 1 first',
+  rungs.rungs === 7 && Object.values(rungs.out).every((ladder) =>
+    ladder.length === rungs.rungs && ladder.every((rung, i) => rung.tier === i + 1)),
+  `${Object.keys(rungs.out).length} 속성, ${rungs.rungs} rungs each`);
 check('tier 1 is the best of them',
-  parseFloat(rungs.out.mighty[0].detail.match(/\d+/)[0]) >
-    parseFloat(rungs.out.mighty[4].detail.match(/\d+/)[0]),
-  `${rungs.out.mighty[0].detail} against ${rungs.out.mighty[4].detail}`);
+  parseFloat(rungs.out.mighty[0].detail.match(/[\d.]+/)[0]) >
+    parseFloat(rungs.out.mighty[rungs.rungs - 1].detail.match(/[\d.]+/)[0]),
+  `${rungs.out.mighty[0].detail} against ${rungs.out.mighty[rungs.rungs - 1].detail}`);
 check('and the weak rungs are the ones that keep turning up',
-  rungs.seen[5] > rungs.seen[4] && rungs.seen[4] > rungs.seen[3] &&
-    rungs.seen[3] > rungs.seen[2] && rungs.seen[2] > rungs.seen[1],
+  Array.from({ length: rungs.rungs - 1 }, (_, i) => i + 1).every((t) => (rungs.seen[t + 1] ?? 0) > (rungs.seen[t] ?? 0)),
   Object.entries(rungs.seen)
     .map(([t, n]) => `T${t} ${(n / rungs.N * 100).toFixed(1)}%`).join(' '));
-check('the best rung is roughly one roll in thirty',
-  Math.abs(rungs.seen[1] / rungs.N - 1 / 35) < 0.01,
-  `${(rungs.seen[1] / rungs.N * 100).toFixed(2)}% came out tier 1`);
+{
+  const total = rungs.weights.reduce((a, b) => a + b, 0);
+  const want = rungs.weights[0] / total;
+  check('the best rung comes out at its weight’s share — rarest of all',
+    Math.abs((rungs.seen[1] ?? 0) / rungs.N - want) < 0.005 && rungs.weights[0] === Math.min(...rungs.weights),
+    `${((rungs.seen[1] ?? 0) / rungs.N * 100).toFixed(2)}% came out tier 1, wanted ${(want * 100).toFixed(2)}%`);
+}
+// Each ladder bends (0.88): a step up is never worth more than the step below it.
+check('every ladder bends — each step up adds no more than the one below it',
+  Object.entries(rungs.out).every(([, ladder]) => {
+    const v = ladder.map((r) => r.value);
+    for (let i = 0; i + 2 < v.length; i++) {
+      if (v[i] - v[i + 1] > v[i + 1] - v[i + 2] + 1e-9) return false;
+    }
+    return v.every((x, i) => i === 0 || v[i - 1] > x);
+  }),
+  Object.entries(rungs.out).map(([id, l]) => `${id} ${l.map((r) => r.value).join('/')}`).join(' · '));
 
 console.log('\n=== SUMMARY ===');
 const failed = results.filter((r) => !r.p);

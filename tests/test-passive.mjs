@@ -228,7 +228,7 @@ await ev(`(() => {
   localStorage.setItem('exiled-survivors:gear:v2', JSON.stringify({
     items: [
       { uid: 'starter', id: 'rustySword', prefixes: [], suffixes: [] },
-      { uid: 'loaded', id: 'steelSword', prefixes: [{ id: 'mighty', tier: 3 }, { id: 'honed', tier: 3 }], suffixes: [{ id: 'giant', tier: 3 }, { id: 'regrowth', tier: 3 }] },
+      { uid: 'loaded', id: 'steelSword', prefixes: [{ id: 'mighty', tier: 3 }, { id: 'honed', tier: 3 }], suffixes: [{ id: 'giant', tier: 3 }, { id: 'regrowth', tier: 3 }], rungs: window.config.AFFIX_RUNGS },
     ],
     equipped: 'loaded',
   }));
@@ -312,16 +312,16 @@ check('and the layers multiply with each other',
   stacked.after === Math.round((stacked.base * stacked.passive + stacked.gear) * stacked.gearScale * 2),
   `(${stacked.base} x ${stacked.passive.toFixed(2)} + ${stacked.gear}) x ${stacked.gearScale} x 2 = ${stacked.after}`);
 
-// --- 6. life does not come back over time from anywhere ---
-// 재생 was taken off weapons, and the tree never had it: health comes back
-// from potions only.
+// --- 6. life over time comes only from a weapon's 활력 (0.88) ---
+// 재생 was taken off weapons and the tree never had it; 활력 is the one line
+// that gives health back, so a weapon without it gives none.
 const regen = await run(`
-  return { gearKeys: Object.keys(s.mods.gear), hasRegenerate: typeof s.regenerate,
+  return { gearKeys: Object.keys(s.mods.gear), regen: s.mods.gear.regen,
            offered: window.config.ALL_PASSIVES.map(p => p.id) };
 `);
 console.log('regen:', JSON.stringify(regen));
-check('neither the weapon nor the run regenerates anything',
-  !regen.gearKeys.includes('regen') && regen.hasRegenerate === 'undefined',
+check('a weapon without 활력 gives no health back over time',
+  regen.regen === 0,
   regen.gearKeys.join(' / '));
 check('and the tree has no line of its own for it',
   !regen.offered.includes('regen'),

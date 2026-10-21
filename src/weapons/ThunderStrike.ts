@@ -5,7 +5,7 @@ import type { Enemy } from '@/entities/Enemy';
 import { sfx } from '@/systems/Sfx';
 import { drawBolt } from '@/weapons/bolt';
 import { SKILLS } from '@/weapons/skills';
-import { findNearestEnemy, type Weapon, type WeaponContext } from '@/weapons/Weapon';
+import { CastRepeat, findNearestEnemy, type Weapon, type WeaponContext } from '@/weapons/Weapon';
 
 /**
  * Drop-only skill: a bolt out of the sky onto the enemy nearest the
@@ -25,6 +25,8 @@ export class ThunderStrike implements Weapon {
   private readonly scene: Phaser.Scene;
   private readonly bolt: Phaser.GameObjects.Graphics;
   private sinceCastMs = 0;
+  /** 반복: whether this cast goes off once more. */
+  private readonly repeat = new CastRepeat();
   /** How many strikes the last cast came to. Public for tests. */
   public lastStrikes = 0;
 
@@ -46,7 +48,7 @@ export class ThunderStrike implements Weapon {
       return;
     }
 
-    this.sinceCastMs = 0;
+    this.sinceCastMs = this.repeat.restart(context);
     this.bolt.clear();
     this.lastStrikes = 0;
     context.onCast?.(first.x);

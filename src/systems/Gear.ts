@@ -1,5 +1,7 @@
 import {
   AFFIXES,
+  AFFIX_RUNGS,
+  AFFIX_RUNGS_BEFORE,
   AUDIO,
   GEAR,
   GEAR_COMBINE,
@@ -36,6 +38,11 @@ export interface GearItem {
   readonly suffixes: readonly AffixLine[];
   /** 망고 상태 (망고의 구슬): the next 구슬 that would destroy it does not. */
   readonly mango?: boolean;
+  /**
+   * How many rungs its ladders had when its lines were rolled (AFFIX_RUNGS).
+   * Missing means before 0.88 — `onCurrentLadder` moves such lines down.
+   */
+  readonly rungs?: number;
 }
 
 /** What the stash holds, as it is written to localStorage. */
@@ -72,6 +79,10 @@ export interface GearBonus {
   readonly projectileBlock: number;
   /** More shots from a skill that throws, more orbs on one that orbits. */
   readonly extraProjectiles: number;
+  /** 활력: health given back every AFFIX_TIMING.regenEveryMs. */
+  readonly regen: number;
+  /** 반복: the chance a cast goes off once more. */
+  readonly repeatChance: number;
 }
 
 export const NO_BONUS: GearBonus = {
@@ -87,6 +98,8 @@ export const NO_BONUS: GearBonus = {
   skillAttackSpeed: {},
   projectileBlock: 0,
   extraProjectiles: 0,
+  regen: 0,
+  repeatChance: 0,
 };
 
 const STARTER_UID = 'starter';
@@ -141,10 +154,13 @@ export function gearBonusFor(item: GearItem | null): GearBonus {
   let invulnerable = 0;
   let critChanceIncrease = 0;
   let critMultiplierBonus = 0;
+  let regen = 0;
+  let repeatChance = 0;
 
   const implicit = GEAR[item.id].implicit;
   attackSpeed += (implicit?.attackSpeedScale ?? 1) - 1;
   let damage = (implicit?.damageScale ?? 1) - 1;
+  let projectileBlock = implicit?.projectileBlock ?? 0;
   const skillAttackSpeed: Partial<Record<SkillId, number>> = implicit?.skillAttackSpeed
     ? { [implicit.skillAttackSpeed.skill]: implicit.skillAttackSpeed.scale }
     : {};
@@ -158,6 +174,9 @@ export function gearBonusFor(item: GearItem | null): GearBonus {
     invulnerable += (effect.invulnerableScale ?? 1) - 1;
     critChanceIncrease += effect.critChance ?? 0;
     critMultiplierBonus += effect.critMultiplierBonus ?? 0;
+    regen += effect.regen ?? 0;
+    repeatChance += effect.repeatChance ?? 0;
+    projectileBlock += effect.projectileBlock ?? 0;
   }
 
   return {
@@ -171,9 +190,30 @@ export function gearBonusFor(item: GearItem | null): GearBonus {
     critMultiplierBonus,
     damageScale: 1 + damage,
     skillAttackSpeed,
-    projectileBlock: implicit?.projectileBlock ?? 0,
+    projectileBlock: Math.min(1, projectileBlock),
     extraProjectiles: implicit?.extraProjectiles ?? 0,
+    regen,
+    repeatChance: Math.min(1, repeatChance),
   };
+}
+
+/**
+ * A weapon on today's ladders. One rolled before 0.88 (no `rungs`) had five
+ * rungs where there are seven: each of its lines moves down by the two new
+ * ones, so its tier 1 is read as tier 3 — the same number it always had.
+ * The stash does this as it is read; a saved run's weapon as it resumes.
+ */
+export function onCurrentLadder<T extends GearItem>(item: T): T {
+  const shift = AFFIX_RUNGS - (item.rungs ?? AFFIX_RUNGS_BEFORE);
+  if (shift <= 0) {
+    return item;
+  }
+  // A line saved before tiers (a bare id) has no rung to move.
+  const move = (lines: readonly AffixLine[] | undefined): AffixLine[] =>
+    (lines ?? []).map((line) =>
+      line && typeof line === 'object' ? { ...line, tier: Number(line.tier) + shift } : line,
+    );
+  return { ...item, prefixes: move(item.prefixes), suffixes: move(item.suffixes), rungs: AFFIX_RUNGS };
 }
 
 /**
@@ -709,7 +749,7 @@ class GearStore {
     try {
       const raw = window.localStorage.getItem(STORAGE.gear);
       this.current = raw
-        ? this.sanitise({ ...DEFAULTS, ...(JSON.parse(raw) as Partial<GearState>) })
+        ? this.sanitise({ ...DEFAULTS, ...(JSON.parse(raw) as Partial<GearState>) }, true)
         : { ...DEFAULTS };
     } catch {
       this.current = { ...DEFAULTS };
@@ -746,20 +786,28 @@ class GearStore {
     return out;
   }
 
-  /** A hand-edited or stale payload cannot leave the survivor empty-handed. */
-  private sanitise(raw: GearState): GearState {
+  /**
+   * A hand-edited or stale payload cannot leave the survivor empty-handed.
+   * What is read from storage may be from before 0.88's seven rungs and is
+   * moved onto them; what the game itself hands in is already on them.
+   */
+  private sanitise(raw: GearState, fromStorage = false): GearState {
     const items: GearItem[] = (Array.isArray(raw.items) ? raw.items : [])
       .filter(
         (item: GearItem) =>
           item && GEAR[item.id] !== undefined && typeof item.uid === 'string',
       )
-      .map((item: GearItem) => ({
-        uid: item.uid,
-        id: item.id,
-        prefixes: GearStore.lines(item.prefixes, 'prefix'),
-        suffixes: GearStore.lines(item.suffixes, 'suffix'),
-        ...(item.mango === true ? { mango: true } : {}),
-      }));
+      .map((stored: GearItem) => {
+        const item = fromStorage ? onCurrentLadder(stored) : stored;
+        return {
+          uid: item.uid,
+          id: item.id,
+          prefixes: GearStore.lines(item.prefixes, 'prefix'),
+          suffixes: GearStore.lines(item.suffixes, 'suffix'),
+          ...(item.mango === true ? { mango: true } : {}),
+          rungs: AFFIX_RUNGS,
+        };
+      });
 
     // Empty-handed is the one state that cannot stand, so the 녹슨 검 comes
     // back then and only then. Throwing it away once there is something

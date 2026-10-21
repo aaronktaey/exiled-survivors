@@ -403,6 +403,9 @@ export type AffixId =
   | "frenzied"
   | "evasive"
   | "magnetic"
+  | "echoing"
+  | "vital"
+  | "deft"
   | "volleying"
   | "spider";
 
@@ -452,6 +455,12 @@ export interface GearAffixEffect {
   readonly invulnerableScale?: number;
   /** Multiplies how far a gem has to be before it drifts over. */
   readonly pickupScale?: number;
+  /** 반복: the chance a skill's cast goes off once more (AFFIX_TIMING.repeatDelayMs later). */
+  readonly repeatChance?: number;
+  /** 활력: health given back every AFFIX_TIMING.regenEveryMs. */
+  readonly regen?: number;
+  /** 기교: the chance an enemy's shot that reaches the survivor is stopped — added to the base's own. */
+  readonly projectileBlock?: number;
 }
 
 /**
@@ -498,20 +507,43 @@ export interface AffixSpec {
 }
 
 /**
- * How often each rung turns up, from tier 1 down. The best is roughly one
- * roll in thirty, which is what makes a 구슬 worth spending on a weapon that
- * already has the right 속성 on it at the wrong rung.
+ * How often each rung turns up, from tier 1 down. Seven rungs since 0.88
+ * (the user's ask): what were tiers 1–5 are 3–7 and keep the odds they
+ * had, and the two new rungs on top are rarer still — tier 3 is still
+ * about one roll in thirty-five, tier 1 one in a hundred and fifty. A 구슬
+ * is how a weapon climbs there.
  */
-export const AFFIX_TIER_WEIGHTS: readonly number[] = [1, 3, 6, 10, 15];
+export const AFFIX_TIER_WEIGHTS: readonly number[] = [0.25, 0.5, 1, 3, 6, 10, 15];
+
+/** How many rungs every ladder has. */
+export const AFFIX_RUNGS = AFFIX_TIER_WEIGHTS.length;
+
+/**
+ * The rungs a weapon written before 0.88 was rolled on. Such a weapon (no
+ * `rungs` on it, in the stash or in a saved run) has each line moved down
+ * by the difference — its tier 1 is today's tier 3, the same number.
+ */
+export const AFFIX_RUNGS_BEFORE = 5;
 
 /** The rung an 속성 saved before tiers existed comes back at. */
-export const LEGACY_AFFIX_TIER = 3;
+export const LEGACY_AFFIX_TIER = 5;
+
+/** The clocks behind two weapon 속성 (0.88). */
+export const AFFIX_TIMING = {
+  /** 활력 gives its health back this often. */
+  regenEveryMs: 5000,
+  /**
+   * A 반복 goes off this long after the cast it repeats (or half the
+   * skill's cooldown, if that is sooner), at the nearest enemy then.
+   */
+  repeatDelayMs: 150,
+} as const;
 
 /** Builds a tier ladder from one value per rung, best first. */
 function tiers(
   detail: (value: number) => string,
   effect: (value: number) => GearAffixEffect,
-  values: readonly [number, number, number, number, number],
+  values: readonly [number, number, number, number, number, number, number],
 ): readonly AffixTierSpec[] {
   return values.map((value, index) => ({
     tier: index + 1,
@@ -534,9 +566,13 @@ function tiers(
  * had to go.
  *
  * 예리 (flat attack power) and 재생 (life over time) used to be here too.
- * Flat attack now comes only from the sword's own tier, and life comes back
- * only from potions. A weapon saved with either line loses that line the
- * next time the stash is read.
+ * Flat attack now comes only from the sword's own tier. A weapon saved with
+ * either line loses that line the next time the stash is read. 활력 (0.88,
+ * the user's ask) brings life over time back as a line of its own.
+ *
+ * Seven rungs (0.88): the old tier 5 is tier 7, the old tier 1 tier 3, and
+ * each ladder bends — every step up is worth a little less than the one
+ * below it, so the two new rungs on top are a reach, not a wall.
  */
 //
 // 강력, 광포, 치명 and 잔혹 are balanced as a weapon's three 접두어 together,
@@ -544,12 +580,13 @@ function tiers(
 // pair of them is worth far more than either alone. With c =
 // PLAYER.critChance and m = PLAYER.critMultiplier − 1 the average hit is
 // 1 + c × m; 치명 +s% makes it 1 + c(1 + s)(m + b) with 잔혹 +b%.
-//   - 치명 and 잔혹 alone: each rung adds +15/12/9/6/4% (s = b = 6 × that,
-//     at 0.2 and ×2, where m = 1 makes the two the same).
+//   - 치명 and 잔혹 alone: each rung adds a sixth of its number (at 0.2 and
+//     ×2, where m = 1 makes the two the same) — +18% at tier 1, +4% at 7.
 //   - 강력 and 광포 are set so their best three (two of one, one of the
-//     other) come to what 치명 ×2 + 잔혹 does at the same rung: +72% at
-//     tier 1. A single 강력 is then worth more than a single 치명 (21 to 15),
-//     and a 치명 build pays only once it has both halves.
+//     other) come to what 치명 ×2 + 잔혹 does at the same rung: about +95%
+//     at tier 1, +72% at tier 3. A single 강력 is then worth more than a
+//     single 치명 (27 to 18 at tier 1), and a 치명 build pays only once it
+//     has both halves.
 // Retune the four together (test-balance checks the three-line parity).
 // Until 2026-10-18 it was 강력 [75..25] of the weapon's attack only,
 // 광포 [30..10], 치명 [50..10], 잔혹 [100..20], crits 3% for ×1.3 —
@@ -566,7 +603,7 @@ export const AFFIXES: Record<AffixId, AffixSpec> = {
       // Every skill's damage, not the weapon's attack alone.
       (v) => `피해 +${v}%`,
       (v) => ({ damageScale: 1 + v / 100 }),
-      [21, 16, 11, 7, 5],
+      [27, 24, 21, 17, 13, 9, 5],
     ),
   },
   critical: {
@@ -580,7 +617,7 @@ export const AFFIXES: Record<AffixId, AffixSpec> = {
       // it: two of +50% double it. What a rung is worth is set by the base.
       (v) => `기본 치명타 확률 +${v}%`,
       (v) => ({ critChance: v / 100 }),
-      [90, 72, 54, 36, 24],
+      [110, 101, 90, 77, 62, 45, 24],
     ),
   },
   cruel: {
@@ -591,7 +628,7 @@ export const AFFIXES: Record<AffixId, AffixSpec> = {
     gearTiers: tiers(
       (v) => `치명타 피해 +${v}%`,
       (v) => ({ critMultiplierBonus: v / 100 }),
-      [90, 72, 54, 36, 24],
+      [110, 101, 90, 77, 62, 45, 24],
     ),
   },
   frenzied: {
@@ -602,7 +639,19 @@ export const AFFIXES: Record<AffixId, AffixSpec> = {
     gearTiers: tiers(
       (v) => `공격속도 +${v}%`,
       (v) => ({ attackSpeedScale: 1 + v / 100 }),
-      [21, 16, 11, 7, 5],
+      [27, 24, 21, 17, 13, 9, 5],
+    ),
+  },
+  echoing: {
+    id: "echoing",
+    kind: "prefix",
+    name: "반복",
+    detail: "공격이 한 번 더 나갈 확률",
+    gearTiers: tiers(
+      // Every skill's cast; 공허구체's orbs strike an enemy again instead.
+      (v) => `${v}% 확률로 공격 반복`,
+      (v) => ({ repeatChance: v / 100 }),
+      [11.5, 11, 10, 9, 8, 6.5, 5],
     ),
   },
   volleying: {
@@ -630,8 +679,9 @@ export const AFFIXES: Record<AffixId, AffixSpec> = {
     enemy: { hpScale: 1.5 },
     gearTiers: tiers(
       (v) => `최대 체력 +${v}%`,
+      // Half of what it was until 0.88, the user's ask.
       (v) => ({ maxHpScale: 1 + v / 100 }),
-      [45, 38, 30, 22, 15],
+      [27, 25, 22.5, 19.5, 16, 12, 7.5],
     ),
   },
   swift: {
@@ -642,8 +692,9 @@ export const AFFIXES: Record<AffixId, AffixSpec> = {
     enemy: { speedScale: 1.2 },
     gearTiers: tiers(
       (v) => `이동속도 +${v}%`,
+      // Half of what it was until 0.88, the user's ask.
       (v) => ({ moveSpeedScale: 1 + v / 100 }),
-      [36, 30, 24, 18, 12],
+      [21.5, 20, 18, 15.5, 13, 10, 6],
     ),
   },
   evasive: {
@@ -654,7 +705,7 @@ export const AFFIXES: Record<AffixId, AffixSpec> = {
     gearTiers: tiers(
       (v) => `무적 시간 +${v}%`,
       (v) => ({ invulnerableScale: 1 + v / 100 }),
-      [50, 42, 34, 26, 18],
+      [60, 55, 50, 44, 37, 28, 18],
     ),
   },
   magnetic: {
@@ -664,8 +715,32 @@ export const AFFIXES: Record<AffixId, AffixSpec> = {
     detail: "획득 범위 +40%",
     gearTiers: tiers(
       (v) => `획득 범위 +${v}%`,
+      // Half of what it was until 0.88, the user's ask.
       (v) => ({ pickupScale: 1 + v / 100 }),
-      [80, 68, 56, 44, 32],
+      [47, 44, 40, 35.5, 30, 23.5, 16],
+    ),
+  },
+  vital: {
+    id: "vital",
+    kind: "suffix",
+    name: "활력",
+    detail: "일정 시간마다 체력 회복",
+    gearTiers: tiers(
+      (v) => `${AFFIX_TIMING.regenEveryMs / 1000}초마다 체력 +${v} 회복`,
+      (v) => ({ regen: v }),
+      [18, 17, 15, 13, 11, 8, 5],
+    ),
+  },
+  deft: {
+    id: "deft",
+    kind: "suffix",
+    name: "기교",
+    detail: "적의 투사체를 막아냄",
+    gearTiers: tiers(
+      // Added to the base's own 고정 속성 (오니고로시's), as every line adds.
+      (v) => `${v}% 확률로 적의 투사체를 막아냄`,
+      (v) => ({ projectileBlock: v / 100 }),
+      [18, 17, 15, 13, 11, 8, 5],
     ),
   },
 };

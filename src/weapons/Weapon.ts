@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 
+import { AFFIX_TIMING } from '@/config';
 import type { Enemy } from '@/entities/Enemy';
 import type { SkillDefinition } from '@/weapons/skills';
 
@@ -63,6 +64,28 @@ export interface WeaponContext {
    * plays its cast (0.82). Handed only to the main skill.
    */
   readonly onCast?: (targetX?: number) => void;
+  /** The weapon's 반복: the chance a cast goes off once more (0.88). 0 when absent. */
+  readonly repeatChance?: number;
+}
+
+/**
+ * 반복 (a weapon 속성, 0.88). After a cast, `restart` is what the weapon's
+ * cast clock goes back to: 0 as ever — or, at the context's repeatChance,
+ * close enough to the cooldown that the skill goes off again
+ * AFFIX_TIMING.repeatDelayMs later (half the cooldown if that is sooner),
+ * at whatever is nearest then. A repeat never rolls to repeat itself.
+ */
+export class CastRepeat {
+  private repeating = false;
+
+  public restart(context: WeaponContext): number {
+    if (!this.repeating && Math.random() < (context.repeatChance ?? 0)) {
+      this.repeating = true;
+      return context.cooldownMs - Math.min(AFFIX_TIMING.repeatDelayMs, context.cooldownMs / 2);
+    }
+    this.repeating = false;
+    return 0;
+  }
 }
 
 /**

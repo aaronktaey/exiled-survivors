@@ -630,6 +630,21 @@ Read `git log` for what changed and when. What is not in the log:
   weakest tier. A 우두머리 always leaves one, weighted over the whole `GEAR`
   roster. A sword with `fromKill` set (tiers 3–5 now) can also come off any
   kill at that chance × `bonus`; without it, 우두머리 only.
+- **Seven rungs on every 속성 ladder (0.88).** `AFFIX_TIER_WEIGHTS` has
+  seven; the old tiers 1–5 are 3–7 (same odds), 1–2 are the rare new top.
+  Each ladder bends: a step up adds no more than the step below it
+  (test-balance checks it). A weapon written before carries no `rungs`, and
+  `onCurrentLadder` moves its lines down by `AFFIX_RUNGS` −
+  `AFFIX_RUNGS_BEFORE` — as the stash is read (`GearStore.load`, never on a
+  commit: what the game hands in is already on the new ladder) and as a
+  saved run's weapon resumes (`GameScene.gearFor`). Every item the stash
+  writes carries `rungs`; a test that writes the stash by hand must too.
+  0.88 also halved 거대 · 신속 · 자력 and added 반복 (prefix,
+  `repeatChance`: `CastRepeat` in Weapon.ts sets a weapon's cast clock so
+  it goes off again `AFFIX_TIMING.repeatDelayMs` later, never twice
+  running; 공허구체 re-arms the orb's hit on that enemy instead), 활력
+  (suffix, `regen` every `AFFIX_TIMING.regenEveryMs`, `GameScene.regenerate`)
+  and 기교 (suffix, `projectileBlock` added to the base's own).
 - **A weapon's lines add, they do not compound.** `gearBonusFor` sums each
   line's share (scale − 1) with the 고정 속성's and returns 1 + the sum, so
   two +50% are +100%. 치명 is `critChanceIncrease`: the summed share raises
