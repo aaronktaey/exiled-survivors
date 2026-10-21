@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 
-import { DEPTH, ENEMY_KINDS, SKILL_MASTERY, TEXTURES, VOID_ORB, orbsHeld } from '@/config';
+import { DEPTH, ENEMY_KINDS, SKILL_MASTERY, TEXTURES, VOID_ORB, VOID_VORTEX_FX, orbsHeld } from '@/config';
 import type { Enemy } from '@/entities/Enemy';
 import { sfx } from '@/systems/Sfx';
 import { SKILLS } from '@/weapons/skills';
@@ -40,6 +40,11 @@ export class VoidOrb implements Weapon {
 
   /** Where the first orb is on the circle, in radians. */
   private angle = 0;
+  /** 각성's 공허: the ones open now, and the time since the last opened. Public for tests. */
+  public readonly vortices: { view: Phaser.GameObjects.Image; leftMs: number; reach: number }[] = [];
+  private sinceVortexMs = 0;
+  /** What an orb's radius is now, after the held 효과범위. */
+  private orbRadius: number = VOID_ORB.radius;
   /** How far round the orbs have come since the last lap was counted, in radians. */
   private lap = 0;
   private elapsedMs = 0;
@@ -59,6 +64,7 @@ export class VoidOrb implements Weapon {
     const count = orbsHeld(context.orbCount, context.extraProjectiles ?? 0);
     const radius = Math.max(1, context.range);
     const innerCount = context.masteredTwice ? count : 0;
+    this.orbRadius = VOID_ORB.radius * (context.areaScale ?? 1);
     this.sync(this.orbs, count);
     this.sync(this.inner, innerCount);
 
@@ -86,9 +92,7 @@ export class VoidOrb implements Weapon {
       this.inner[i]?.setPosition(x + Math.cos(orbAngle) * radius * radiusShare, y + Math.sin(orbAngle) * radius * radiusShare);
     }
 
-    if (context.mastered) {
-      this.pull(context, count, delta);
-    }
+    this.tickVortices(context, delta);
     this.sweep(context, this.orbs, count, 0, context.damage);
     if (innerCount > 0) {
       // Keys past the outer ring's, so the two rings keep their own timers.
@@ -97,27 +101,57 @@ export class VoidOrb implements Weapon {
   }
 
   /**
-   * 각성: every enemy within reach of the orbit is drawn slowly toward the
-   * survivor — through the orbs' path. `count` is unused: the pull is the
-   * survivor's, however many orbs ride round them.
+   * 각성 (0.84): every SKILL_MASTERY.voidVortex.everyMs a 공허 opens at a
+   * random spot within `spreadShare` × the orbit's radius of the survivor,
+   * and for `lifeMs` draws every enemy within its reach toward its middle —
+   * moving x/y the way Separation does. Stepped by the run, so a pause holds it.
    */
-  private pull(context: WeaponContext, _count: number, delta: number): void {
-    const { reach, speed } = SKILL_MASTERY.voidPull;
-    const { x, y } = context.origin;
-    const limit = Math.max(1, context.range) + reach;
-    const step = (speed * delta) / 1000;
-    for (const child of context.enemies.getChildren()) {
-      const enemy = child as Enemy;
-      if (!enemy.active) {
+  private tickVortices(context: WeaponContext, delta: number): void {
+    const { everyMs, lifeMs, spreadShare, reach, pullSpeed } = SKILL_MASTERY.voidVortex;
+    const area = context.areaScale ?? 1;
+    const step = (pullSpeed * delta) / 1000;
+    for (let i = this.vortices.length - 1; i >= 0; i--) {
+      const vortex = this.vortices[i]!;
+      vortex.leftMs -= delta;
+      const { x, y } = vortex.view;
+      // It turns, fades in, and fades out at the end of its life.
+      vortex.view.rotation -= (delta / 1000) * VOID_VORTEX_FX.spinPerSecond;
+      vortex.view.setAlpha(VOID_VORTEX_FX.alpha * Math.min(1, (lifeMs - vortex.leftMs) / VOID_VORTEX_FX.fadeMs, vortex.leftMs / VOID_VORTEX_FX.fadeMs));
+      if (vortex.leftMs <= 0) {
+        vortex.view.destroy();
+        this.vortices.splice(i, 1);
         continue;
       }
-      const d = Phaser.Math.Distance.Between(x, y, enemy.x, enemy.y);
-      if (d > limit || d <= 1) {
-        continue;
+      for (const child of context.enemies.getChildren()) {
+        const enemy = child as Enemy;
+        if (!enemy.active) {
+          continue;
+        }
+        const dist = Phaser.Math.Distance.Between(x, y, enemy.x, enemy.y);
+        if (dist > vortex.reach || dist <= 1) {
+          continue;
+        }
+        const move = Math.min(step, dist);
+        enemy.x += ((x - enemy.x) / dist) * move;
+        enemy.y += ((y - enemy.y) / dist) * move;
       }
-      const move = Math.min(step, d);
-      enemy.x += ((x - enemy.x) / d) * move;
-      enemy.y += ((y - enemy.y) / d) * move;
+    }
+    // A new one opens after the rest have aged: it does not lose this frame.
+    if (context.mastered) {
+      this.sinceVortexMs += delta;
+      if (this.sinceVortexMs >= everyMs) {
+        // One at a time, however long it was since the last.
+        this.sinceVortexMs = 0;
+        const spread = Math.max(1, context.range) * spreadShare;
+        const a = Math.random() * Math.PI * 2;
+        const d = Math.sqrt(Math.random()) * spread;
+        const view = this.scene.add
+          .image(context.origin.x + Math.cos(a) * d, context.origin.y + Math.sin(a) * d, TEXTURES.voidVortex)
+          .setDepth(DEPTH.pickups - 1)
+          .setDisplaySize(reach * area * 2, reach * area * 2)
+          .setAlpha(0);
+        this.vortices.push({ view, leftMs: lifeMs, reach: reach * area });
+      }
     }
   }
 
@@ -128,11 +162,11 @@ export class VoidOrb implements Weapon {
         this.scene.add
           .image(0, 0, TEXTURES.voidOrb)
           .setDepth(DEPTH.projectiles)
-          .setDisplaySize(VOID_ORB.radius * 2, VOID_ORB.radius * 2),
+          .setDisplaySize(this.orbRadius * 2, this.orbRadius * 2),
       );
     }
 
-    orbs.forEach((orb, index) => orb.setVisible(index < count));
+    orbs.forEach((orb, index) => orb.setVisible(index < count).setDisplaySize(this.orbRadius * 2, this.orbRadius * 2));
   }
 
   /** Damages everything an orb is touching: each orb at most once per cooldown on each enemy. */
@@ -144,7 +178,7 @@ export class VoidOrb implements Weapon {
         continue;
       }
 
-      const reach = VOID_ORB.radius + VOID_ORB.hitPadding + (ENEMY_KINDS[enemy.kind].size / 2);
+      const reach = this.orbRadius + VOID_ORB.hitPadding + (ENEMY_KINDS[enemy.kind].size / 2);
       let records = this.hits.get(enemy);
       for (let i = 0; i < count && enemy.active; i++) {
         const orb = orbs[i];

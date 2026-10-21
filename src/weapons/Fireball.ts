@@ -20,10 +20,12 @@ export class Fireball extends ProjectileWeapon {
       range: context.range,
       pierce: 0,
       chillMs: 0,
-      blastRadius: context.blastRadius,
-      // 2차 각성 turns the burning ground into a second burst a moment later.
-      fireZoneDps: context.mastered && !context.masteredTwice ? context.damage * SKILL_MASTERY.fireZone.damageShare : 0,
-      delayedBlast: context.masteredTwice ? context.damage * SKILL_MASTERY.second.fireBlast.damageShare : 0,
+      // 각성 widens the burst, and 2차 각성 again (4× in all); the held 효과범위 on top.
+      blastRadius:
+        context.blastRadius *
+        (context.mastered ? SKILL_MASTERY.fireBlastScale : 1) *
+        (context.masteredTwice ? SKILL_MASTERY.second.fireBlastScale : 1) *
+        (context.areaScale ?? 1),
       ...SHOTS.fireball,
     };
   }

@@ -337,7 +337,8 @@ const bigger = await run(`
   // Read what 거대 is tuned to rather than carrying a copy of it: both the
   // rung's value and the survivor's own bar move in balance.ts.
   const rung = window.config.AFFIXES.giant.gearTiers.find(t => t.tier === 3);
-  const want = Math.round(window.config.PLAYER.maxHp * rung.gear.maxHpScale);
+  // The held skills' 보유 효과 multiplies the bar too (0.84: 타격 is held).
+  const want = Math.round(window.config.PLAYER.maxHp * rung.gear.maxHpScale * s.heldBonus.maxHpScale);
   return { max: s.player.maxHp, hp: s.player.hp, plate: s.player.nameplate.text,
            scale: s.gearBonus.maxHpScale, wantScale: rung.gear.maxHpScale, want };
 `);

@@ -58,6 +58,7 @@ import {
   passiveDetail,
   passiveName,
   skillName,
+  heldBonusText,
   masteryText,
   skillSummary,
   t,
@@ -325,6 +326,8 @@ function skillCard(id: (typeof ALL_SKILLS)[number]['id']): GuideCard {
       skillSummary(skill.id),
       fill(g.skillUpgrades, { picks: picks.join(' / ') }),
       // What its two awakenings add, as the HUD's card says it (main skill only).
+      // What holding it gives every skill (0.84).
+      heldBonusText(skill.id),
       fill(t().mastery.card, { effect: masteryText(skill.id) }),
       fill(t().mastery.card2, { effect: masteryText(skill.id, 2) }),
     ],

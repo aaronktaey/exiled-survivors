@@ -75,7 +75,7 @@ wrong shape.
 ## The test harness
 
 `tests/` drives a real Chrome over CDP against the dev server and checks the
-running game, not units. 47 suites (45 in the run below), ~1200 checks. It is the only thing that has
+running game, not units. 48 suites (46 in the run below), ~1200 checks. It is the only thing that has
 caught most of what has gone wrong here, so run all of it before every commit.
 
 ```sh
@@ -88,7 +88,7 @@ node run-all.mjs test-full test-skills test-balance test-chain test-ice \
   test-altar test-slot test-inventory test-back test-fugitive \
   test-ranking test-skillpick test-mango test-web test-loadout \
   test-carry test-api test-account test-live test-filter test-mastery \
-  test-tuning test-terrain test-chimera test-seal test-gift
+  test-tuning test-terrain test-chimera test-seal test-gift test-held
 ```
 
 test-i18n and test-locale are left out until the official release (the
@@ -440,6 +440,21 @@ Read `git log` for what changed and when. What is not in the log:
   offers `DROPPABLE_SKILLS` whole; `SkillPickScene` lays the cards in rows
   of up to three (0.79's layout). The 무작위 스킬 drop still offers
   `SKILL_PICK.choices`.
+- **보유 효과 (0.84, the user's ask).** Holding a skill — main or found —
+  gives every skill (itself included) and the survivor its line in
+  `SKILL_HELD_BONUS` (balance.ts): 낙뢰 crit points on the base, 화염구
+  `areaScale` (every radius: the burst, 타격's swing reach, orb size, 공허,
+  splash, shatter — `WeaponContext.areaScale`), 얼음창 damage ×, 연쇄번개
+  pace ×, 공허구체 move speed, 타격 max health. `heldBonusFor(owned)` folds
+  them into `GameScene.heldBonus` on every `acquire`; damageOf/cooldownOf
+  multiply, `Player.applyHeld` takes the survivor's three (a bar that
+  grows mid-run gives the health it gained). `heldBonusText` writes the
+  line for the HUD card, the guide's skill card and the pick cards.
+- **보조 스킬 stop at `SUB_SKILLS.max` (0.84).** Besides the main skill, at
+  most three: once full (`GameScene.subSkillsFull`) `rollSkillDrop` and
+  `randomSkills` offer only skills held, and a skill picked up that was
+  not (it dropped before the slots filled, or a debug key) is a potion
+  instead (`drinkForMaxedSkill(skill, 'full')`, `game.subSkillsFullHeal`).
 - **The language choice is off until release (`LOCALE`, system.ts).** While
   `LOCALE.choosable` is false the game shows `LOCALE.fixed` (ko) whatever a
   browser stored (`Settings` keeps the stored choice, `shownLanguage` picks),
@@ -493,22 +508,27 @@ Read `git log` for what changed and when. What is not in the log:
 - **스킬 각성.** `SKILL_MASTERY` (balance.ts): only the main skill awakens
   (0.83, `GameScene.masteryOf`: 0, 1 or 2 — a skill found later never does).
   At `level` it gets one more effect — `WeaponContext.mastered` is true and each weapon does its own
-  (타격 strikes `enemyShots` in the swing, 화염구 shots carry `fireZoneDps`
-  into `CombatSystem.burnGround`/`tickFireZones`, 연쇄번개 amplifies each
+  (타격 strikes `enemyShots` in the swing, 화염구's burst is `fireBlastScale`
+  wider (0.84), 연쇄번개 amplifies each
   strike by `chainBonusPerJump` for every jump still to come (it never
   doubles back — that was the old awakening),
-  얼음창 shots carry `freezeMs` for an enemy already chilled (`Enemy.freeze`),
+  얼음창 shots carry `freezeMs` (0.2s) for an enemy already chilled (`Enemy.freeze`),
   공허구체 (whose hit timers are per orb: each orb hits an enemy once a
-  cooldown, every orb on its own) pulls enemies near its orbit toward the survivor by moving x/y
-  the way Separation does, 낙뢰 casts
-  `thunderRecastChance` — a kill always strikes again, up to `THUNDER.maxRecasts`). Reaching it calls `GameScene.celebrateMastery`
+  cooldown, every orb on its own) opens a 공허 every `voidVortex.everyMs`
+  somewhere within `spreadShare` × its orbit radius that draws enemies in
+  by moving x/y the way Separation does (`VoidOrb.vortices`, the purple
+  `TEXTURES.voidVortex`; its card says only 공허 생성 — the user's word),
+  낙뢰 leaves what it hits 감전 (`Enemy.shock`, `thunderShock`: every hit on
+  it × 1 + `amplify` in `CombatSystem.hit`, sparks drawn by
+  `Enemy.drawShock` from `SHOCK_FX`). Reaching it calls `GameScene.celebrateMastery`
   once (`awakened`, rebuilt from a save without a show); the HUD slot goes
   gold and its card adds the line (`masteryText`). At `second.level` (20)
   the 2차 각성 (0.83, the user's designs) adds `masteredTwice`: 타격's swing
-  opens to `meleeArcDegrees` (180), 화염구 drops the burning ground and arms
-  a second burst on what it hit (`CombatSystem.armBlast`, ticked with the
-  fire zones, `fireBlast.delayMs` later at `damageShare`), 연쇄번개 starts
-  `chainForks` arcs, 얼음창 deals `iceChilledBonus` more to a chilled enemy,
+  opens to `meleeArcDegrees` (180), 화염구's burst widens `fireBlastScale`
+  again (4× in all, 0.84), 연쇄번개 starts
+  `chainForks` arcs, 얼음창 shatters: an enemy that dies frozen freezes what
+  stands within `iceShatter.radius` (`CombatSystem.shatterAt`, through the
+  `shatter` hook, chaining),
   공허구체 gets an inner ring turning the other way (`VoidOrb.inner`,
   `voidInner`), 낙뢰 splashes `thunderSplash`. It has its own banner
   (`celebrateMastery(skill, 2)`, `awakenedTwice`), a thicker gold edge and a

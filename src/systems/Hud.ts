@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 
 import { COLORS, DEPTH, HUD, SKILL_ICONS, TEXT, TEXTURES } from '@/config';
-import { fill, masteryText, t } from '@/i18n';
+import { fill, heldBonusText, masteryText, t } from '@/i18n';
 import type { Progression } from '@/systems/Progression';
 import { SKILLS, type SkillId } from '@/weapons/skills';
 
@@ -439,6 +439,7 @@ export class Hud {
     this.cardText.setText([
       `${entry.name}  ${fill(copy.level, { level: entry.level })}`,
       ...entry.breakdown,
+      heldBonusText(entry.id),
       ...(entry.mastery >= 1 ? [fill(t().mastery.card, { effect: masteryText(entry.id) })] : []),
       ...(entry.mastery >= 2 ? [fill(t().mastery.card2, { effect: masteryText(entry.id, 2) })] : []),
     ]);

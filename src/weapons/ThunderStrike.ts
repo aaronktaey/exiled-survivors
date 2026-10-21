@@ -65,9 +65,7 @@ export class ThunderStrike implements Weapon {
     while (target && strikes <= THUNDER.maxRecasts) {
       const killed = this.strike(context, target);
       strikes += 1;
-      // 각성: a kill always strikes again.
-      const recast = context.mastered ? SKILL_MASTERY.thunderRecastChance : context.recastChance;
-      if (!killed || Math.random() >= recast) {
+      if (!killed || Math.random() >= context.recastChance) {
         break;
       }
       target = this.pick(context);
@@ -85,21 +83,36 @@ export class ThunderStrike implements Weapon {
     // 2차 각성: what stands round it takes a share too — gathered before any
     // hit, since a kill recycles a sprite.
     const splash = context.masteredTwice ? SKILL_MASTERY.second.thunderSplash : null;
+    const splashRadius = splash ? splash.radius * (context.areaScale ?? 1) : 0;
     const around: Enemy[] = [];
     if (splash) {
       for (const child of context.enemies.getChildren()) {
         const other = child as Enemy;
-        if (other.active && other !== target && Phaser.Math.Distance.Between(x, y, other.x, other.y) <= splash.radius) {
+        if (other.active && other !== target && Phaser.Math.Distance.Between(x, y, other.x, other.y) <= splashRadius) {
           around.push(other);
         }
       }
     }
     context.hit(target, context.damage);
     const killed = !target.active || target.lives !== lives;
+    // 각성 (0.84): what it hits — and, awakened twice, what the splash hits — is 감전.
+    const shockMs = context.mastered ? SKILL_MASTERY.thunderShock.durationMs : 0;
+    if (shockMs > 0 && !killed) {
+      target.shock(shockMs);
+    }
     if (splash) {
-      around.forEach((other) => other.active && context.hit(other, context.damage * splash.damageShare));
+      around.forEach((other) => {
+        if (!other.active) {
+          return;
+        }
+        const was = other.lives;
+        context.hit(other, context.damage * splash.damageShare);
+        if (shockMs > 0 && other.active && other.lives === was) {
+          other.shock(shockMs);
+        }
+      });
       this.bolt.lineStyle(2, 0xf0d050, 0.8);
-      this.bolt.strokeCircle(x, y, splash.radius);
+      this.bolt.strokeCircle(x, y, splashRadius);
     }
     return killed;
   }

@@ -126,12 +126,22 @@ export interface Strings {
     readonly hintTouch: string;
   };
   /** 스킬 각성: what a skill does on top once it reaches SKILL_MASTERY.level. */
+  /** 보유 효과 (SKILL_HELD_BONUS): the line, and each kind of bonus in it ({n}). */
+  readonly heldBonus: {
+    readonly line: string;
+    readonly critChance: string;
+    readonly areaScale: string;
+    readonly damageScale: string;
+    readonly attackSpeedScale: string;
+    readonly moveSpeedScale: string;
+    readonly maxHpScale: string;
+  };
   readonly mastery: {
     /** The banner when it happens: {skill}. */
     readonly title: string;
     /** On the skill's card: "각성 — {effect}". */
     readonly card: string;
-    /** One line a skill. {seconds} {share} {freeze} {bolts} filled from SKILL_MASTERY. */
+    /** One line a skill. {bonus} {blastScale} {freeze} {shockSecs} {shockAmp} filled from SKILL_MASTERY. */
     readonly effects: {
       readonly meleeStrike: string;
       readonly fireball: string;
@@ -143,7 +153,7 @@ export interface Strings {
     /** 2차 각성 (SKILL_MASTERY.second): its banner, its card line, and one line a skill. */
     readonly title2: string;
     readonly card2: string;
-    /** {arc} {delay} {blastShare} {forks} {chilled} {innerShare} {splashShare} filled from SKILL_MASTERY.second. */
+    /** {arc} {blastScale} {forks} {shatter} {innerShare} {splashShare} filled from SKILL_MASTERY.second. */
     readonly effects2: {
       readonly meleeStrike: string;
       readonly fireball: string;
@@ -587,6 +597,8 @@ export interface Strings {
     readonly formulaScale: string;
     /** Appended to the damage line when the weapon's 고정 속성 scales damage. */
     readonly formulaGearScale: string;
+    /** The held skills' 보유 효과 on a damage or pace line: {scale}. */
+    readonly formulaHeld: string;
     /** A line of its own when the cooldown floor holds the rate down. */
     readonly formulaCap: string;
     readonly formulaTargets: string;
@@ -623,6 +635,8 @@ export interface Strings {
     /** A level-up or pickup for a skill with every upgrade taken heals instead. */
     /** A level-up a fully upgraded {skill} turned into a potion: {heal} health back. */
     readonly maxedHeal: string;
+    /** A skill picked up with every 보조 스킬 slot taken: {skill}, {heal}. */
+    readonly subSkillsFullHeal: string;
     /** Over the survivor when that happens. */
     readonly potionEffect: string;
     /** A toast as a 우두머리 walks in. */

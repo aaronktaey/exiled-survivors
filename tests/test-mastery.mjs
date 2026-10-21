@@ -146,28 +146,19 @@ const effects = await run(`
   out.chainBonus = window.config.SKILL_MASTERY.chainBonusPerJump;
   s.spawner.clear();
 
-  // 화염구: the burst leaves fire that keeps burning. Crits off for the count.
+  // 화염구 (0.84): the burst is SKILL_MASTERY.fireBlastScale as wide, and twice again at the second.
+  const fire = weapon('fireball');
+  const radiusOf = (over) => fire.specFor(ctx({ blastRadius: 30, areaScale: 1, ...over })).blastRadius;
+  out.blast = { plain: radiusOf({ mastered: false, masteredTwice: false }), once: radiusOf({ masteredTwice: false }),
+                twice: radiusOf({ masteredTwice: true }), area: radiusOf({ mastered: false, masteredTwice: false, areaScale: 1.2 }),
+                k1: window.config.SKILL_MASTERY.fireBlastScale, k2: window.config.SKILL_MASTERY.second.fireBlastScale };
   const critWas = window.config.PLAYER.critChance;
   window.config.PLAYER.critChance = 0;
-  const burnt = put(300, 0);
-  const hp0 = burnt.hp;
-  const fake = { active: true, damage: 10, chillMs: 0, freezeMs: 0, blastRadius: 30, fireZoneDps: 40,
-    registerHit: () => true, consumePierce: () => false, despawn() { this.active = false; } };
-  c.onProjectileHit(fake, burnt);
-  out.zones = c.fireZones.length;
-  const hp1 = burnt.hp;
-  for (let t = 0; t < 1000; t += 50) c.tickFireZones(50);
-  out.burnt = hp1 - burnt.hp;
-  out.wantBurn = 40;
-  for (let t = 0; t < 6000; t += 50) c.tickFireZones(50);
-  out.zonesLater = c.fireZones.length;
-  window.config.PLAYER.critChance = critWas;
-  s.spawner.clear();
 
   // 얼음창: a chilled enemy struck again is frozen; an unchilled one is not.
   const cold = put(300, 0), warm = put(-300, 0);
   cold.chill(2000);
-  const spear = () => ({ active: true, damage: 1, chillMs: 2000, freezeMs: 100, blastRadius: 0, fireZoneDps: 0,
+  const spear = () => ({ active: true, damage: 1, chillMs: 2000, freezeMs: window.config.SKILL_MASTERY.freezeMs, blastRadius: 0,
     registerHit: () => true, consumePierce: () => true, despawn() {} });
   c.onProjectileHit(spear(), cold);
   c.onProjectileHit(spear(), warm);
@@ -175,30 +166,41 @@ const effects = await run(`
   out.warmFrozen = warm.isFrozen;
   s.spawner.clear();
 
-  // 공허구체: an enemy just past the orbit is drawn toward the survivor; one far off is not.
+  // 공허구체 (0.84): every voidVortex.everyMs a 공허 opens near the survivor and draws enemies in.
   const orb = weapon('voidOrb');
-  const pullReach = window.config.SKILL_MASTERY.voidPull.reach;
-  const near = put(120 + pullReach - 10, 0), far = put(-(120 + pullReach + 80), 0);
-  const d0 = Math.hypot(near.x - p.x, near.y - p.y), f0 = Math.hypot(far.x - p.x, far.y - p.y);
-  orb.pull(ctx({ range: 120 }), 1, 1000);
-  out.pulled = d0 - Math.hypot(near.x - p.x, near.y - p.y);
-  out.farPulled = f0 - Math.hypot(far.x - p.x, far.y - p.y);
-  out.pullWant = window.config.SKILL_MASTERY.voidPull.speed;
+  const V = window.config.SKILL_MASTERY.voidVortex;
+  orb.update(V.everyMs - 50, ctx({ range: 120, mastered: false }));
+  out.vortexPlain = orb.vortices.length;
+  orb.update(V.everyMs, ctx({ range: 120 }));
+  const vortex = orb.vortices[0];
+  out.vortexOpen = orb.vortices.length;
+  out.vortexNear = vortex ? Math.hypot(vortex.view.x - p.x, vortex.view.y - p.y) <= 120 * V.spreadShare + 1 : false;
+  if (vortex) {
+    const near = put(vortex.view.x - p.x + V.reach - 10, vortex.view.y - p.y);
+    const d0 = Math.hypot(near.x - vortex.view.x, near.y - vortex.view.y);
+    for (let t = 0; t < 500; t += 50) orb.update(50, ctx({ range: 120 }));
+    out.vortexPulled = d0 - Math.hypot(near.x - vortex.view.x, near.y - vortex.view.y);
+    out.vortexWant = V.pullSpeed * 0.5;
+    for (let t = 0; t < V.lifeMs; t += 50) orb.update(50, ctx({ range: 120, mastered: false }));
+    out.vortexGone = orb.vortices.length;
+  }
   s.spawner.clear();
 
-  // 낙뢰: awakened, a kill always strikes again. The roll is pinned high, where
-  // an ordinary recast never comes and an awakened one (100%) always does.
+  // 낙뢰 (0.84): what it hits is 감전, and every hit on it lands harder while it lasts.
   const thunder = weapon('thunderStrike');
-  const crowd = () => { s.spawner.clear(); for (let i = 0; i < 3; i++) put(60 + i * 30, 0, 1); };
-  const real = Math.random;
-  const pinned = (fn) => { Math.random = () => 0.999; try { fn(); } finally { Math.random = real; } };
-  crowd();
-  pinned(() => thunder.update(16, ctx({ mastered: false })));
-  out.boltsPlain = thunder.lastStrikes;
-  crowd();
-  pinned(() => thunder.update(16, ctx({})));
-  out.boltsAwake = thunder.lastStrikes;
-  out.boltsWant = 3;
+  const shockedOne = put(60, 0);
+  thunder.sinceCastMs = 1e9;
+  thunder.update(16, ctx({ mastered: false }));
+  out.shockPlain = shockedOne.isShocked;
+  thunder.sinceCastMs = 1e9;
+  thunder.update(16, ctx({}));
+  out.shocked = shockedOne.isShocked;
+  const h0 = shockedOne.hp;
+  c.hit(shockedOne, 100);
+  out.shockHit = { took: h0 - shockedOne.hp, want: Math.round(100 * (1 + window.config.SKILL_MASTERY.thunderShock.amplify)) };
+  for (let t = 0; t < window.config.SKILL_MASTERY.thunderShock.durationMs + 100; t += 50) shockedOne.update(0, 50);
+  out.shockLater = shockedOne.isShocked;
+  window.config.PLAYER.critChance = critWas;
   s.spawner.clear();
 
   // 공허구체: two orbs on the same enemy hit it twice; the same orb again, not at once.
@@ -226,16 +228,18 @@ check('연쇄번개: each strike is amplified by the jumps still to come, and st
     effects.chainAwake.length === 5 &&
     effects.chainAwake.every((d, i) => Math.abs(d - 10 * (1 + effects.chainBonus * (4 - i))) < 1e-9),
   `${effects.chainPlain.join(',')} → ${effects.chainAwake.map((d) => d.toFixed(1)).join(',')}`);
-check('화염구: the burst leaves a fire that burns at its share a second, then goes out',
-  effects.zones === 1 && Math.abs(effects.burnt - effects.wantBurn) <= 2 && effects.zonesLater === 0,
-  `burnt ${effects.burnt} in 1s, want ${effects.wantBurn}`);
+check('화염구: awakened, the burst is fireBlastScale as wide, and that again at the second; 효과범위 on top',
+  effects.blast.once === effects.blast.plain * effects.blast.k1 && effects.blast.twice === effects.blast.once * effects.blast.k2 &&
+    Math.abs(effects.blast.area - effects.blast.plain * 1.2) < 1e-9, JSON.stringify(effects.blast));
 check('얼음창: an enemy already chilled is frozen; one that was not, is not',
   effects.frozen === true && effects.warmFrozen === false);
-check('공허구체: an enemy near the orbit is drawn toward the survivor, one far off is not',
-  Math.abs(effects.pulled - effects.pullWant) < 1 && Math.abs(effects.farPulled) < 1e-6,
-  `${effects.pulled.toFixed(1)}px in 1s, want ${effects.pullWant}; far ${effects.farPulled}`);
-check('낙뢰: awakened, every kill strikes again',
-  effects.boltsPlain === 1 && effects.boltsAwake === effects.boltsWant, `${effects.boltsPlain} → ${effects.boltsAwake} strikes on 3 weak enemies`);
+check('공허구체: awakened, a 공허 opens on its clock near the survivor, draws enemies in, then closes',
+  effects.vortexPlain === 0 && effects.vortexOpen === 1 && effects.vortexNear &&
+    Math.abs(effects.vortexPulled - effects.vortexWant) < 2 && effects.vortexGone === 0,
+  JSON.stringify({ plain: effects.vortexPlain, open: effects.vortexOpen, near: effects.vortexNear, pulled: effects.vortexPulled, want: effects.vortexWant, gone: effects.vortexGone }));
+check('낙뢰: awakened, what it hits is 감전, takes more from every hit, and it wears off',
+  effects.shockPlain === false && effects.shocked === true && effects.shockHit.took === effects.shockHit.want && effects.shockLater === false,
+  JSON.stringify({ shocked: effects.shocked, hit: effects.shockHit, later: effects.shockLater }));
 check('공허구체: each orb hits an enemy it sweeps; the same orb not again inside its cooldown',
   effects.twoOrbs === 2 && effects.again === 0, `two orbs: ${effects.twoOrbs} hits, at once again: ${effects.again}`);
 
@@ -268,19 +272,6 @@ const second = await run(`
   out.sideTwice = sideHp - side.hp;
   s.spawner.clear();
 
-  // 화염구: what it hit bursts again fireBlast.delayMs later, for its share.
-  const hitOne = put(300, 0), beside = put(300, 20);
-  const fake = { active: true, damage: 10, chillMs: 0, freezeMs: 0, blastRadius: 30, fireZoneDps: 0, delayedBlast: 10 * S2.fireBlast.damageShare, chilledBonus: 0,
-    registerHit: () => true, consumePierce: () => false, despawn() { this.active = false; } };
-  c.onProjectileHit(fake, hitOne);
-  const h1 = hitOne.hp, b1 = beside.hp;
-  out.armed = c.delayedBlasts.length;
-  for (let t = 0; t < S2.fireBlast.delayMs - 100; t += 50) c.tickFireZones(50);
-  out.early = h1 - hitOne.hp;
-  for (let t = 0; t < 200; t += 50) c.tickFireZones(50);
-  out.burst = { hit: h1 - hitOne.hp, beside: b1 - beside.hp, want: 10 * S2.fireBlast.damageShare, left: c.delayedBlasts.length };
-  s.spawner.clear();
-
   // 연쇄번개: two arcs from one cast, each from its own nearest enemy.
   const chain = weapon('chainLightning');
   put(80, 0); put(-80, 0); put(160, 0); put(-160, 0);
@@ -291,15 +282,18 @@ const second = await run(`
   out.forksWant = S2.chainForks * 2;
   s.spawner.clear();
 
-  // 얼음창: a share more on an enemy already chilled; the same on one that was not.
-  const cold = put(300, 0), warm = put(-300, 0);
-  cold.chill(2000);
-  const spear = () => ({ active: true, damage: 10, chillMs: 2000, freezeMs: 0, blastRadius: 0, fireZoneDps: 0, delayedBlast: 0,
-    chilledBonus: S2.iceChilledBonus, registerHit: () => true, consumePierce: () => true, despawn() {} });
-  const c0 = cold.hp, w0 = warm.hp;
-  c.onProjectileHit(spear(), cold);
-  c.onProjectileHit(spear(), warm);
-  out.ice = { cold: c0 - cold.hp, warm: w0 - warm.hp, want: 10 * (1 + S2.iceChilledBonus) };
+  // 얼음창 (0.84): an enemy that dies frozen freezes what stands within the shatter's reach.
+  // It is the main skill's 2차 각성: 얼음창 is made the main one, awakened twice, for the probe.
+  const mainWas = s.mainSkill;
+  s.acquire('iceSpear');
+  s.mainSkill = 'iceSpear';
+  while (s.progression.levelFor('iceSpear') < S2.level) s.progression.apply('iceSpear', 'damage');
+  const doomed = put(300, 0, 1), close = put(300 + S2.iceShatter.radius - 15, 0), away = put(300 + S2.iceShatter.radius + 60, 0);
+  doomed.freeze(1000);
+  c.hit(doomed, 1e6);
+  out.shatter = { close: close.isFrozen, away: away.isFrozen };
+  s.mainSkill = mainWas;
+  out.shatterOff = (() => { const d2 = put(-300, 0, 1), c2 = put(-300 + 20, 0); d2.freeze(1000); c.hit(d2, 1e6); return c2.isFrozen; })();
   s.spawner.clear();
 
   // 공허구체: an inner ring as many orbs, turning the other way.
@@ -332,12 +326,10 @@ const second = await run(`
 console.log('second:', JSON.stringify(second));
 check('2차 각성 타격: the swing opens to 180°, cutting what stood beside the target',
   second.sidePlain === 0 && second.sideTwice > 0, JSON.stringify(second));
-check('2차 각성 화염구: what it hit bursts again after the delay, for its share, round it too',
-  second.armed === 1 && second.early === 0 && second.burst.hit === second.burst.want && second.burst.beside === second.burst.want && second.burst.left === 0,
-  JSON.stringify(second.burst));
 check('2차 각성 연쇄번개: one cast runs down more arcs', second.forks === second.forksWant, `${second.forks} strikes, want ${second.forksWant}`);
-check('2차 각성 얼음창: a share more on what is already chilled, the plain hit on the rest',
-  Math.abs(second.ice.cold - second.ice.want) < 1e-6 && second.ice.warm === 10, JSON.stringify(second.ice));
+check('2차 각성 얼음창: an enemy that dies frozen freezes those close by, not those further — and only as the main skill’s',
+  second.shatter.close === true && second.shatter.away === false && second.shatterOff === false,
+  JSON.stringify({ shatter: second.shatter, off: second.shatterOff }));
 check('2차 각성 공허구체: an inner ring as many orbs, at its share of the radius',
   second.innerPlain === 0 && second.inner.count === second.inner.outer && Math.abs(second.inner.radius - second.inner.want) <= 2,
   JSON.stringify(second.inner));

@@ -178,6 +178,7 @@ export const TEXTURES = {
   boneSpine: "tex-bone-spine",
   altar: "tex-altar",
   mango: "tex-mango",
+  voidVortex: "tex-void-vortex",
   magnet: "tex-magnet",
   orbTransmute: "tex-orb-transmute",
   orbChaos: "tex-orb-chaos",
@@ -895,3 +896,29 @@ export const lookTexture = (id: string): string => lookFrame(id, 'idle');
 
 /** A look's walk or cast animation. */
 export const lookAnim = (id: string, kind: 'walk' | 'cast'): string => `look-${id}-${kind}`;
+
+/** 감전 (낙뢰 각성): the sparks that crackle round a shocked enemy. */
+export const SHOCK_FX = {
+  color: 0xf0d050,
+  sparks: 4,
+  /** How far out from the body's edge they start, px. */
+  gap: 2,
+  /** How far each kink strays. */
+  jag: 7,
+  /** How often they are thrown again — the flicker. */
+  redrawMs: 70,
+} as const;
+
+/** 공허구체 각성's 공허: a purple vortex, drawn by BootScene.createVortexTexture. */
+export const VOID_VORTEX_FX = {
+  /** Its arms' colours, outer to inner, and the dark eye. */
+  arms: [0x6b2fbf, 0x9b5cff, 0xd2b0ff],
+  eye: 0x1a0830,
+  /** Spiral arms, and how far each winds round (turns). */
+  armCount: 4,
+  winds: 1.1,
+  spinPerSecond: 5,
+  fadeMs: 250,
+  /** How solid it is at its fullest: the field under it still shows. */
+  alpha: 0.7,
+} as const;

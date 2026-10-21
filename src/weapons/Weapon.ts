@@ -51,6 +51,11 @@ export interface WeaponContext {
   readonly mastered: boolean;
   /** The main skill at SKILL_MASTERY.second.level: its 2차 각성 is on too. */
   readonly masteredTwice?: boolean;
+  /**
+   * What every radius an effect reaches is multiplied by — a burst, an
+   * orb, a 공허, a splash (화염구's 보유 효과, 0.84). 1 when absent.
+   */
+  readonly areaScale?: number;
   /** The enemies' shots in the air, for a skill that can strike them down (타격). */
   readonly enemyShots: Phaser.Physics.Arcade.Group;
   /**

@@ -15,6 +15,44 @@ export interface PatchNote {
 
 export const PATCH_NOTES: readonly PatchNote[] = [
   {
+    version: '0.84',
+    date: '2026-10-21',
+    changes: {
+      ko: [
+        '스킬마다 보유 효과가 생겼습니다. 가진 스킬의 효과는 그 스킬을 포함한 모든 스킬과 생존자에게 적용됩니다: 낙뢰 치명타 확률 +5%p(기본 20% → 25%), 화염구 효과 범위 +20%, 얼음창 피해 ×1.2, 연쇄번개 공격속도 +20%, 공허구체 이동속도 +15%, 타격 최대 체력 +20%.',
+        '보조 스킬은 메인 스킬 외에 3개까지 가질 수 있습니다. 가득 차면 다른 스킬은 떨어지지 않고 무작위 스킬에도 나오지 않으며, 그 전에 떨어진 스킬을 주우면 체력 포션 효과가 됩니다.',
+        '공허구체 각성이 바뀌었습니다: 5초마다 생존자 주변 무작위 위치에 적을 끌어당기는 공허가 2초 동안 생깁니다.',
+        '낙뢰 각성이 바뀌었습니다: 맞은 적이 2초 동안 감전되어 받는 피해가 30% 늘어납니다.',
+        '얼음창 각성의 빙결이 0.2초로 늘었습니다. 2차 각성은 빙결된 적이 죽으면 주변 60px 안의 적도 얼어붙는 것으로 바뀌었습니다.',
+        '화염구 각성이 폭발 범위 2배로, 2차 각성도 폭발 범위 2배로 바뀌었습니다(모두 받으면 4배). 화염지대와 다시 폭발하는 효과는 없어졌습니다.',
+      ],
+      en: [
+        'Every skill now gives a held bonus to every skill (itself included) and to the survivor: Thunderstrike crit chance +5 pts (base 20% → 25%), Fireball area +20%, Ice Spear damage ×1.2, Chain Lightning attack speed +20%, Void Orb move speed +15%, Strike max health +20%.',
+        'You can hold at most 3 skills besides the main one. Once full, no other skill drops or comes up on a Random Skill, and one that dropped before becomes a health potion when picked up.',
+        'Void Orb\'s awakening is new: every 5s a void opens at a random spot around you, pulling enemies in for 2s.',
+        'Thunderstrike\'s awakening is new: what it hits is shocked for 2s, taking 30% more damage.',
+        'Ice Spear\'s awakening freezes for 0.2s now. Its second awakening is new: a frozen enemy that dies freezes the enemies within 60px of it.',
+        'Fireball\'s awakening and second awakening each double its burst (4× with both). The fire zone and the second burst are gone.',
+      ],
+      ja: [
+        'スキルごとに保有効果ができました。持っているスキルの効果はそのスキルを含むすべてのスキルと生存者に適用されます：落雷 クリティカル率 +5%p（基本 20% → 25%）、火球 効果範囲 +20%、氷槍 ダメージ ×1.2、連鎖雷 攻撃速度 +20%、虚無球 移動速度 +15%、打撃 最大体力 +20%。',
+        '補助スキルはメインスキル以外に3つまで持てます。いっぱいになると他のスキルは落ちず、ランダムスキルにも出ず、それ以前に落ちたスキルを拾うと体力ポーション効果になります。',
+        '虚無球の覚醒が変わりました：5秒ごとに生存者の周りのランダムな位置に敵を引き寄せる虚空が2秒間現れます。',
+        '落雷の覚醒が変わりました：当たった敵が2秒間感電し、受けるダメージが30%増えます。',
+        '氷槍の覚醒の凍結が0.2秒になりました。第二覚醒は、凍った敵が倒れると周囲60px内の敵も凍りつく効果に変わりました。',
+        '火球の覚醒が爆発範囲2倍に、第二覚醒も爆発範囲2倍に変わりました（両方で4倍）。炎の地帯と再爆発はなくなりました。',
+      ],
+      zh: [
+        '每个技能都有了持有效果，持有技能的效果作用于包括该技能在内的所有技能和幸存者：落雷 暴击率 +5%（基础 20% → 25%）、火球 效果范围 +20%、冰枪 伤害 ×1.2、连锁闪电 攻击速度 +20%、虚空球 移动速度 +15%、打击 最大生命 +20%。',
+        '除主技能外最多持有3个辅助技能。满了之后其他技能不会掉落，也不会出现在随机技能中，之前掉落的技能拾取时变为生命药水效果。',
+        '虚空球的觉醒改为：每5秒在幸存者周围随机位置生成持续2秒、吸引敌人的虚空。',
+        '落雷的觉醒改为：被击中的敌人感电2秒，受到的伤害提高30%。',
+        '冰枪觉醒的冻结延长到0.2秒。二次觉醒改为：冻结的敌人死亡时，周围60px内的敌人也会被冻结。',
+        '火球的觉醒改为爆炸范围2倍，二次觉醒也是爆炸范围2倍（两者共4倍）。火焰地带和再次爆炸已移除。',
+      ],
+    },
+  },
+  {
     version: '0.83',
     date: '2026-10-20',
     changes: {

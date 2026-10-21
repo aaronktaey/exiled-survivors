@@ -4,6 +4,7 @@ import {
   ALTAR,
   AUDIO,
   BONES,
+  CHILL,
   boneChanceFor,
   COLORS,
   DEPTH,
@@ -72,6 +73,11 @@ export interface CombatHooks {
    * certain, and the flat 망고 and 자석 it does not touch.
    */
   readonly luck: () => number;
+  /**
+   * 얼음창 2차 각성 (0.84): how far an enemy that dies frozen spreads the
+   * freeze, and for how long — null while it is not the main skill's.
+   */
+  readonly shatter: () => { readonly radius: number; readonly freezeMs: number } | null;
   /** What one of the survivor's critical hits is worth. */
   readonly critMultiplier: () => number;
   /** Called when the player walks over a dropped skill. */
@@ -416,7 +422,9 @@ export class CombatSystem {
     }
 
     const crit = this.player.critChance > 0 && Math.random() < this.player.critChance;
-    const dealt = crit ? Math.round(amount * this.hooks.critMultiplier()) : amount;
+    // 감전 (낙뢰 각성): every hit on it lands harder while it lasts.
+    const shocked = enemy.isShocked ? 1 + SKILL_MASTERY.thunderShock.amplify : 1;
+    const dealt = Math.round(amount * shocked * (crit ? this.hooks.critMultiplier() : 1));
 
     this.damageNumbers.spawn(
       enemy.x,
@@ -434,6 +442,30 @@ export class CombatSystem {
     }
   };
 
+  /**
+   * 얼음창 2차 각성: every enemy within the shatter's reach of (x, y) is
+   * frozen — a ring of frost says where. One of them dying frozen in turn
+   * does the same, through killEnemy.
+   */
+  private shatterAt(x: number, y: number): void {
+    const shatter = this.hooks.shatter();
+    if (!shatter) {
+      return;
+    }
+    for (const child of this.enemies.getChildren()) {
+      const other = child as Enemy;
+      if (other.active && Phaser.Math.Distance.Between(x, y, other.x, other.y) <= shatter.radius) {
+        other.freeze(shatter.freezeMs);
+      }
+    }
+    const ring = this.scene.add
+      .circle(x, y, shatter.radius, CHILL.tint, 0.18)
+      .setStrokeStyle(2, CHILL.tint, 0.9)
+      .setDepth(DEPTH.vfx)
+      .setScale(0.4);
+    this.scene.tweens.add({ targets: ring, scale: 1, alpha: 0, duration: 320, ease: 'Quad.easeOut', onComplete: () => ring.destroy() });
+  }
+
   private onProjectileHit: Phaser.Types.Physics.Arcade.ArcadePhysicsCallback = (a, b) => {
     const shot = a as unknown as Projectile;
     const enemy = b as unknown as Enemy;
@@ -447,9 +479,6 @@ export class CombatSystem {
       return;
     }
 
-    // 얼음창 2차 각성: one already under 냉각 takes more — read before this
-    // spear chills it.
-    const chilledBonus = shot.chilledBonus > 0 && enemy.isChilled ? 1 + shot.chilledBonus : 1;
     // 얼음창 각성: one already under 냉각 is frozen solid by the next spear.
     if (shot.freezeMs > 0 && enemy.isChilled) {
       enemy.freeze(shot.freezeMs);
@@ -461,17 +490,11 @@ export class CombatSystem {
     // Spend the pierce before the hit: a kill recycles the enemy, and the
     // shot has to know whether it is done either way.
     const carriesOn = shot.consumePierce();
-    const { x, y, lives } = enemy;
-    this.hit(enemy, shot.damage * chilledBonus);
+    const { x, y } = enemy;
+    this.hit(enemy, shot.damage);
 
     if (shot.blastRadius > 0) {
       this.blast(x, y, shot.blastRadius, shot.damage, enemy);
-      if (shot.fireZoneDps > 0) {
-        this.burnGround(x, y, shot.blastRadius, shot.fireZoneDps);
-      }
-      if (shot.delayedBlast > 0) {
-        this.armBlast(enemy, lives, x, y, shot.blastRadius, shot.delayedBlast);
-      }
     }
 
     if (!carriesOn) {
@@ -512,82 +535,6 @@ export class CombatSystem {
     });
 
     return caught.length;
-  }
-
-  /** 화염구 2차 각성: bursts waiting to go off. Public for tests. */
-  public readonly delayedBlasts: { enemy: Enemy; lives: number; x: number; y: number; radius: number; damage: number; leftMs: number; view: Phaser.GameObjects.Arc }[] = [];
-
-  /**
-   * A second burst on what a 화염구 hit, SKILL_MASTERY.second.fireBlast.delayMs
-   * later: where that enemy stands then, or where it fell. A ring closes on
-   * it meanwhile, so it can be seen coming.
-   */
-  public armBlast(enemy: Enemy, lives: number, x: number, y: number, radius: number, damage: number): void {
-    const view = this.scene.add
-      .circle(x, y, radius, COLORS.fireBlast, 0.08)
-      .setStrokeStyle(2, COLORS.fireBlast, 0.8)
-      .setDepth(DEPTH.vfx);
-    this.delayedBlasts.push({ enemy, lives, x, y, radius, damage, leftMs: SKILL_MASTERY.second.fireBlast.delayMs, view });
-  }
-
-  /** Counts the waiting bursts down — stepped with the run, so a pause holds them — and sets off the ones that are due. */
-  private tickDelayedBlasts(delta: number): void {
-    const { delayMs } = SKILL_MASTERY.second.fireBlast;
-    for (let i = this.delayedBlasts.length - 1; i >= 0; i--) {
-      const pending = this.delayedBlasts[i]!;
-      if (pending.enemy.active && pending.enemy.lives === pending.lives) {
-        pending.x = pending.enemy.x;
-        pending.y = pending.enemy.y;
-      }
-      pending.leftMs -= delta;
-      pending.view.setPosition(pending.x, pending.y).setScale(0.4 + 0.6 * Math.max(0, pending.leftMs / delayMs));
-      if (pending.leftMs <= 0) {
-        pending.view.destroy();
-        this.delayedBlasts.splice(i, 1);
-        this.blast(pending.x, pending.y, pending.radius, pending.damage);
-      }
-    }
-  }
-
-  /** 화염구 각성: the patches of ground still burning. Public for tests. */
-  public readonly fireZones: { x: number; y: number; radius: number; dps: number; leftMs: number; sinceTickMs: number; view: Phaser.GameObjects.Arc }[] = [];
-
-  /** Leaves the ground at (x, y) burning for SKILL_MASTERY.fireZone.durationMs. */
-  public burnGround(x: number, y: number, radius: number, dps: number): void {
-    const view = this.scene.add
-      .circle(x, y, radius, COLORS.fireBlast, 0.18)
-      .setStrokeStyle(2, COLORS.fireBlast, 0.5)
-      .setDepth(DEPTH.pickups - 1);
-    this.scene.tweens.add({ targets: view, alpha: 0.7, duration: 260, yoyo: true, repeat: -1 });
-    this.fireZones.push({ x, y, radius, dps, leftMs: SKILL_MASTERY.fireZone.durationMs, sinceTickMs: 0, view });
-  }
-
-  /** Burns whatever stands in a fire, once every SKILL_MASTERY.fireZone.tickMs. */
-  public tickFireZones(delta: number): void {
-    this.tickDelayedBlasts(delta);
-    const { tickMs } = SKILL_MASTERY.fireZone;
-    for (let i = this.fireZones.length - 1; i >= 0; i--) {
-      const zone = this.fireZones[i]!;
-      zone.leftMs -= delta;
-      zone.sinceTickMs += delta;
-      if (zone.sinceTickMs >= tickMs) {
-        zone.sinceTickMs -= tickMs;
-        const amount = Math.max(1, Math.round((zone.dps * tickMs) / 1000));
-        const caught: Enemy[] = [];
-        for (const child of this.enemies.getChildren()) {
-          const enemy = child as Enemy;
-          if (enemy.active && Phaser.Math.Distance.Between(zone.x, zone.y, enemy.x, enemy.y) <= zone.radius) {
-            caught.push(enemy);
-          }
-        }
-        caught.forEach((enemy) => this.hit(enemy, amount));
-      }
-      if (zone.leftMs <= 0) {
-        this.scene.tweens.killTweensOf(zone.view);
-        zone.view.destroy();
-        this.fireZones.splice(i, 1);
-      }
-    }
   }
 
   private onEnemyTouch: Phaser.Types.Physics.Arcade.ArcadePhysicsCallback = (_player, b) => {
@@ -745,6 +692,7 @@ export class CombatSystem {
     const wasBoss = enemy.isBoss;
     const certainSkill = enemy.alwaysDropsSkill;
     const webStacks = enemy.webStacks;
+    const diedFrozen = enemy.isFrozen;
     const scale = this.hooks.dropScale();
     // Every ordinary drop below is raised by what this kill was: a rare's
     // 속성, a 우두머리. What only a 우두머리 leaves, and what is certain, is not.
@@ -754,6 +702,11 @@ export class CombatSystem {
 
     const gem = this.gems.get() as XpGem | null;
     gem?.drop(x, y, worth, this.player);
+
+    // 얼음창 2차 각성: dying frozen, it freezes what stands round it.
+    if (diedFrozen) {
+      this.shatterAt(x, y);
+    }
 
     // A 거미 leaves its web where it fell.
     if (webStacks > 0) {

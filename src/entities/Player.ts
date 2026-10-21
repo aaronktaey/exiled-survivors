@@ -36,6 +36,8 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   /** True while standing in a 거미줄. Set by the run each frame. */
   public webbed = false;
   private maxHpValue: number = PLAYER.maxHp;
+  /** The held skills' 보유 효과 on the survivor (0.84): crit points, move speed and health. */
+  private held = { critChance: 0, moveSpeedScale: 1, maxHpScale: 1 };
   private analog?: AnalogInput;
   private invulnerableUntil = 0;
   /** The look worn: a skill id from PLAYER_LOOK.bySkill, or `base`. Public for tests. */
@@ -175,8 +177,9 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   }
 
   public get critChance(): number {
-    // The weapon's 치명 raises the base by a share of itself, its lines summed.
-    return Math.min(1, PLAYER.critChance * (1 + this.gear.critChanceIncrease));
+    // The held 낙뢰 adds points to the base; the weapon's 치명 then raises
+    // that by a share of itself, its lines summed.
+    return Math.min(1, (PLAYER.critChance + this.held.critChance) * (1 + this.gear.critChanceIncrease));
   }
 
   /** How far a gem has to be before it starts drifting over. */
@@ -191,9 +194,26 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
    */
   public applyGear(bonus: GearBonus): void {
     this.gear = bonus;
-    this.maxHpValue = Math.max(1, Math.round(PLAYER.maxHp * bonus.maxHpScale));
+    this.maxHpValue = this.fullHp();
     this.hp = this.maxHpValue;
     this.drawHealthBar();
+  }
+
+  /**
+   * The held skills' 보유 효과 (0.84). A bar that grows mid-run gives the
+   * health it gained, so taking 타격 is not a heal-to-full nor a dent.
+   */
+  public applyHeld(bonus: { readonly critChance: number; readonly moveSpeedScale: number; readonly maxHpScale: number }): void {
+    this.held = { critChance: bonus.critChance, moveSpeedScale: bonus.moveSpeedScale, maxHpScale: bonus.maxHpScale };
+    const was = this.maxHpValue;
+    this.maxHpValue = this.fullHp();
+    this.hp = Math.min(this.maxHpValue, Math.max(1, this.hp + Math.max(0, this.maxHpValue - was)));
+    this.drawHealthBar();
+  }
+
+  /** The full bar: balance.ts, then the weapon's 거대, then what the held skills give. */
+  private fullHp(): number {
+    return Math.max(1, Math.round(PLAYER.maxHp * this.gear.maxHpScale * this.held.maxHpScale));
   }
 
   /** Keeps the nameplate's level in step with progression. */
@@ -211,7 +231,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   public get moveSpeed(): number {
     const mango = this.mangoActive ? MANGO.moveSpeedScale : 1;
     const web = this.webbed ? 1 - WEB.slow : 1;
-    return PLAYER.speed * this.passiveSpeed * this.gear.moveSpeedScale * mango * web;
+    return PLAYER.speed * this.passiveSpeed * this.gear.moveSpeedScale * this.held.moveSpeedScale * mango * web;
   }
 
   /** True while a 하얀 망고 is working. */

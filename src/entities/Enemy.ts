@@ -5,6 +5,7 @@ import {
   BOSS,
   CHILL,
   COLORS,
+  SHOCK_FX,
   DEPTH,
   ENEMY,
   ENEMY_KINDS,
@@ -120,6 +121,11 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
   private chillMs = 0;
   /** Frozen solid (얼음창 각성): it neither moves nor shoots. */
   private frozenMs = 0;
+  /** 감전 (낙뢰 각성): every hit on it lands harder while this lasts. */
+  private shockMs = 0;
+  /** The crackle round a 감전 enemy, redrawn every SHOCK_FX.redrawMs. */
+  private shockFx?: Phaser.GameObjects.Graphics;
+  private shockFxMs = 0;
   /** A 기행종's hop: how long the current one or the rest after it has left, and where it goes. */
   private hopLeftMs = 0;
   private hopping = false;
@@ -283,6 +289,8 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
     this.flashMs = 0;
     this.chillMs = 0;
     this.frozenMs = 0;
+    this.shockMs = 0;
+    this.shockFx?.clear();
     this.hopLeftMs = 0;
     this.hopping = false;
     this.contactReadyAt = 0;
@@ -433,6 +441,8 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
     this.hooks = undefined;
     this.chillMs = 0;
     this.frozenMs = 0;
+    this.shockMs = 0;
+    this.shockFx?.clear();
     this.hopLeftMs = 0;
     this.hopping = false;
     this.rare = false;
@@ -453,7 +463,58 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
     this.footRing?.destroy(fromScene);
     this.healthBar?.destroy(fromScene);
     this.plate?.destroy(fromScene);
+    this.shockFx?.destroy(fromScene);
     super.destroy(fromScene);
+  }
+
+  /** True while 감전 (낙뢰 각성). */
+  public get isShocked(): boolean {
+    return this.shockMs > 0;
+  }
+
+  /** 감전 for `durationMs`, starting over if it already is. */
+  public shock(durationMs: number): void {
+    if (this.active) {
+      this.shockMs = durationMs;
+    }
+  }
+
+  /**
+   * The crackle: a few short jagged sparks round the body, thrown again
+   * every SHOCK_FX.redrawMs so they flicker — the 찌릿찌릿 the user asked for.
+   */
+  private drawShock(dt: number): void {
+    if (this.shockMs <= 0) {
+      return;
+    }
+    this.shockMs -= dt;
+    this.shockFx ??= this.scene.add.graphics().setDepth(DEPTH.vfx);
+    if (this.shockMs <= 0) {
+      this.shockFx.clear();
+      return;
+    }
+    this.shockFxMs -= dt;
+    if (this.shockFxMs > 0) {
+      this.shockFx.setPosition(this.x, this.y);
+      return;
+    }
+    this.shockFxMs = SHOCK_FX.redrawMs;
+    const r = this.shownRadius + SHOCK_FX.gap;
+    const g = this.shockFx.clear().setPosition(this.x, this.y);
+    for (let i = 0; i < SHOCK_FX.sparks; i++) {
+      const a = Math.random() * Math.PI * 2;
+      let px = Math.cos(a) * r;
+      let py = Math.sin(a) * r;
+      g.lineStyle(i % 2 ? 1 : 2, i % 2 ? 0xffffff : SHOCK_FX.color, 1);
+      g.beginPath();
+      g.moveTo(px, py);
+      for (let k = 0; k < 3; k++) {
+        px += (Math.random() - 0.5) * SHOCK_FX.jag + Math.cos(a) * 3;
+        py += (Math.random() - 0.5) * SHOCK_FX.jag + Math.sin(a) * 3;
+        g.lineTo(px, py);
+      }
+      g.strokePath();
+    }
   }
 
   /** True while frozen solid. */
@@ -521,6 +582,7 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
         this.applyTint();
       }
     }
+    this.drawShock(dt);
 
     this.outline?.setPosition(this.x, this.y);
     this.placeFootRing();

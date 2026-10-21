@@ -16,6 +16,7 @@ import {
   type OrbId,
   type PassiveId,
   SKILL_MASTERY,
+  SKILL_HELD_BONUS,
 } from '@/config';
 import { en } from '@/i18n/en';
 import { ja } from '@/i18n/ja';
@@ -123,31 +124,57 @@ export function masteryText(id: SkillId, tier: 1 | 2 = 1): string {
   const pct = (share: number): string => `${Math.round(share * 100)}%`;
   if (tier === 2) {
     const line = (t().mastery.effects2 as Record<string, string>)[id];
-    const { meleeArcDegrees, fireBlast, chainForks, iceChilledBonus, voidInner, thunderSplash } = SKILL_MASTERY.second;
+    const { meleeArcDegrees, fireBlastScale, chainForks, iceShatter, voidInner, thunderSplash } = SKILL_MASTERY.second;
     return line
       ? fill(line, {
           arc: meleeArcDegrees,
-          delay: fireBlast.delayMs / 1000,
-          blastShare: pct(fireBlast.damageShare),
+          blastScale: fireBlastScale,
           forks: chainForks,
-          chilled: pct(iceChilledBonus),
+          shatter: iceShatter.radius,
           innerShare: pct(voidInner.damageShare),
           splashShare: pct(thunderSplash.damageShare),
         })
       : '';
   }
-  const effects = t().mastery.effects as Record<string, string>;
-  const line = effects[id];
+  const line = (t().mastery.effects as Record<string, string>)[id];
   if (!line) {
     return '';
   }
-  const { fireZone, freezeMs, chainBonusPerJump } = SKILL_MASTERY;
+  const { fireBlastScale, freezeMs, chainBonusPerJump, thunderShock } = SKILL_MASTERY;
   return fill(line, {
-    bonus: `${Math.round(chainBonusPerJump * 100)}%`,
-    seconds: fireZone.durationMs / 1000,
-    share: `${Math.round(fireZone.damageShare * 100)}%`,
+    bonus: pct(chainBonusPerJump),
+    blastScale: fireBlastScale,
     freeze: freezeMs / 1000,
+    shockSecs: thunderShock.durationMs / 1000,
+    shockAmp: pct(thunderShock.amplify),
   });
+}
+
+/** What holding a skill gives every skill and the survivor (SKILL_HELD_BONUS), as one line. */
+export function heldBonusText(id: SkillId): string {
+  const bonus = SKILL_HELD_BONUS[id];
+  const copy = t().heldBonus;
+  const lines: string[] = [];
+  const raise = (scale: number): number => Math.round((scale - 1) * 100);
+  if (bonus?.critChance) {
+    lines.push(fill(copy.critChance, { n: Math.round(bonus.critChance * 100) }));
+  }
+  if (bonus?.areaScale) {
+    lines.push(fill(copy.areaScale, { n: raise(bonus.areaScale) }));
+  }
+  if (bonus?.damageScale) {
+    lines.push(fill(copy.damageScale, { n: Number(bonus.damageScale.toFixed(2)) }));
+  }
+  if (bonus?.attackSpeedScale) {
+    lines.push(fill(copy.attackSpeedScale, { n: raise(bonus.attackSpeedScale) }));
+  }
+  if (bonus?.moveSpeedScale) {
+    lines.push(fill(copy.moveSpeedScale, { n: raise(bonus.moveSpeedScale) }));
+  }
+  if (bonus?.maxHpScale) {
+    lines.push(fill(copy.maxHpScale, { n: raise(bonus.maxHpScale) }));
+  }
+  return lines.length > 0 ? fill(copy.line, { effects: lines.join(' · ') }) : '';
 }
 
 export function skillSummary(id: SkillId): string {

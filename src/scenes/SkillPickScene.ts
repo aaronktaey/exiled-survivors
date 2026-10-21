@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 
 import { COLORS, DEPTH, SCENES, SCRIM, SKILL_ICON_SIZE, SKILL_ICONS, TEXT } from '@/config';
-import { fill, skillName, skillSummary, t, tagName } from '@/i18n';
+import { fill, heldBonusText, skillName, skillSummary, t, tagName } from '@/i18n';
 import { addBackButton } from '@/systems/BackButton';
 import { fitText } from '@/systems/Layout';
 import { prefersTouchControls } from '@/systems/VirtualJoystick';
@@ -299,7 +299,8 @@ export class SkillPickScene extends Phaser.Scene {
 
     const note = this.payload.notes?.[skill];
     this.add
-      .text(textX, ty, note ? note.text : skillSummary(skill), {
+      .text(textX, ty, note ? note.text : `${heldBonusText(skill)}
+${skillSummary(skill)}`, {
         fontFamily: 'system-ui, sans-serif',
         fontSize: TEXT.size.hint,
         color: note?.warn ? COLORS.warnText : note ? COLORS.text : COLORS.muted,

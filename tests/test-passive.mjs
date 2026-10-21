@@ -257,9 +257,11 @@ const folded = await run(`
       window.config.AFFIXES.mighty.gearTiers.find(t => t.tier === 3).gear.damageScale - 1,
     base: window.config.SKILL_BASE.meleeStrike.damage,
     lines: [...window.gear.equipped.prefixes, ...window.gear.equipped.suffixes].map(l => l.id),
+    // The held skills' 보유 효과 multiplies the bar too (0.84: 타격 is held).
     wantMaxHp: Math.round(
       window.config.PLAYER.maxHp *
-        window.config.AFFIXES.giant.gearTiers.find(t => t.tier === 3).gear.maxHpScale,
+        window.config.AFFIXES.giant.gearTiers.find(t => t.tier === 3).gear.maxHpScale *
+        s.heldBonus.maxHpScale,
     ),
   };
 `);

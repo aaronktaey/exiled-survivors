@@ -31,6 +31,9 @@ import {
   TIMING,
   WORLD,
   SKILL_MASTERY,
+  SUB_SKILLS,
+  NO_HELD_BONUS,
+  heldBonusFor,
   AUDIO,
   TERRAIN,
   CHIMERA_RUSH,
@@ -201,6 +204,8 @@ export class GameScene extends Phaser.Scene {
   public runGear: GearItem | null = null;
   /** 패시브 and 장비 together, in the order they are applied. */
   private mods: RunModifiers = NO_MODIFIERS;
+  /** Every held skill's 보유 효과, folded (0.84): rebuilt each time a skill is taken. Public for tests. */
+  public heldBonus = NO_HELD_BONUS;
   /** What this run has done, read out on the screen that ends it. */
   private stats!: RunStats;
   /** The touch steering in use, so a settings change can replace it. */
@@ -297,6 +302,7 @@ export class GameScene extends Phaser.Scene {
     this.runGear = GameScene.gearFor(this.resuming);
     this.gearBonus = gearBonusFor(this.runGear);
     this.mods = { passive: passives.bonus, gear: this.gearBonus };
+    this.heldBonus = NO_HELD_BONUS;
 
     this.player = new Player(this, WORLD.width / 2, WORLD.height / 2);
     this.player.applyGear(this.gearBonus);
@@ -340,6 +346,10 @@ export class GameScene extends Phaser.Scene {
           this.announce(fill(t().game.mangoEaten, { seconds: Math.round(MANGO.durationMs / 1000) })),
         onMagnetCollected: () => this.announce(t().game.magnetPulled),
         dropScale: () => this.boneBonus.dropScale,
+        shatter: () =>
+          this.mainSkill === 'iceSpear' && this.masteryOf('iceSpear') >= 2
+            ? { radius: SKILL_MASTERY.second.iceShatter.radius * this.heldBonus.areaScale, freezeMs: SKILL_MASTERY.freezeMs }
+            : null,
         luck: () => 1 + passives.bonus.luck,
         critMultiplier: () => critMultiplierFor(this.mods),
         clearOfTerrain: (x, y) => this.terrain?.clear(x, y, DROP_ROOM) ?? [x, y],
@@ -454,7 +464,8 @@ export class GameScene extends Phaser.Scene {
    * there is — held ones included, which come up as 강화.
    */
   public randomSkills(): SkillId[] {
-    const pool = DROPPABLE_SKILLS.map((skill) => skill.id);
+    // With every 보조 스킬 slot taken, only the skills held come up (0.84).
+    const pool = DROPPABLE_SKILLS.map((skill) => skill.id).filter((id) => !this.subSkillsFull || this.owned.has(id));
     for (let i = pool.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
       [pool[i], pool[j]] = [pool[j]!, pool[i]!];
@@ -562,11 +573,13 @@ export class GameScene extends Phaser.Scene {
         enemies: this.spawner.group,
         damage: this.damageOf(id),
         cooldownMs: this.cooldownOf(id),
-        range: this.progression.rangeFor(id),
+        // 타격's swing is an area too: the held 효과범위 widens it (0.84).
+        range: this.progression.rangeFor(id) * (id === 'meleeStrike' ? this.heldBonus.areaScale : 1),
         projectileSpeed: stats.projectileSpeed,
         chainCount: stats.chainCount,
         orbitSpeed: stats.orbitSpeed,
         blastRadius: stats.blastRadius,
+        areaScale: this.heldBonus.areaScale,
         recastChance: stats.recastChance,
         pierceCount: stats.pierceCount,
         orbCount: stats.orbCount,
@@ -578,8 +591,6 @@ export class GameScene extends Phaser.Scene {
         onCast: id === this.mainSkill ? this.castLook : undefined,
       });
     }
-    // 화염구's 각성: the ground it burst on keeps burning.
-    this.combat.tickFireZones(dt);
 
     this.damageNumbers.update(dt);
     this.edgeMarkers.update();
@@ -901,6 +912,9 @@ export class GameScene extends Phaser.Scene {
     }
     this.owned.add(skill);
     this.mainSkill ??= skill;
+    // What holding it gives every skill and the survivor (0.84).
+    this.heldBonus = heldBonusFor(this.owned);
+    this.player.applyHeld(this.heldBonus);
     // The survivor dresses for the main skill (0.76's look, kept in 0.80).
     if (this.mainSkill === skill) {
       this.player.wearLook(skill);
@@ -921,6 +935,11 @@ export class GameScene extends Phaser.Scene {
    */
   private onSkillCollected(skill: SkillId): void {
     const isNew = !this.owned.has(skill);
+    // No room for another (0.84): one that dropped before the last slot filled is a potion.
+    if (isNew && this.subSkillsFull) {
+      this.drinkForMaxedSkill(skill, 'full');
+      return;
+    }
     this.acquire(skill);
 
     const name = skillName(skill);
@@ -945,7 +964,9 @@ export class GameScene extends Phaser.Scene {
       return null;
     }
 
-    return DROPPABLE_SKILLS[Math.floor(Math.random() * DROPPABLE_SKILLS.length)] ?? null;
+    // With every 보조 스킬 slot taken, only a skill already held drops (0.84).
+    const pool = this.subSkillsFull ? DROPPABLE_SKILLS.filter((skill) => this.owned.has(skill.id)) : DROPPABLE_SKILLS;
+    return pool[Math.floor(Math.random() * pool.length)] ?? null;
   }
 
   /**
@@ -1003,7 +1024,7 @@ export class GameScene extends Phaser.Scene {
     const upgraded = this.progression.statsFor(skill).damage;
     // Whole numbers: a percentage from the tree would otherwise put a
     // decimal point on every damage number that floats off an enemy.
-    return Math.round(damageFor(skill, upgraded, this.mods) * (BALANCE.damageScale[skill] ?? 1));
+    return Math.round(damageFor(skill, upgraded, this.mods) * (BALANCE.damageScale[skill] ?? 1) * this.heldBonus.damageScale);
   }
 
   /** The same fold, for how often that skill goes off. */
@@ -1011,7 +1032,7 @@ export class GameScene extends Phaser.Scene {
     const upgraded = this.progression.statsFor(skill).attackSpeed;
     // A 하얀 망고 doubles every skill's pace while it lasts.
     const mango = this.player?.mangoActive ? MANGO.attackSpeedScale : 1;
-    const rate = attackSpeedFor(skill, upgraded, this.mods) * mango;
+    const rate = attackSpeedFor(skill, upgraded, this.mods) * mango * this.heldBonus.attackSpeedScale;
     return Math.max(STATS.minCooldownMs, 1000 / Math.max(rate, 0.01));
   }
 
@@ -1073,7 +1094,8 @@ export class GameScene extends Phaser.Scene {
       (this.gearBonus.damageScale === 1
         ? ''
         : fill(copy.formulaGearScale, { scale: num(this.gearBonus.damageScale) })) +
-      (scale === 1 ? '' : fill(copy.formulaScale, { scale: num(scale) }));
+      (scale === 1 ? '' : fill(copy.formulaScale, { scale: num(scale) })) +
+      (this.heldBonus.damageScale === 1 ? '' : fill(copy.formulaHeld, { scale: num(this.heldBonus.damageScale) }));
 
     const mango = this.player?.mangoActive ? MANGO.attackSpeedScale : 1;
     const rateLine =
@@ -1083,7 +1105,8 @@ export class GameScene extends Phaser.Scene {
         passive: num(this.mods.passive.attackSpeedScale),
         gear: num(gearAttackSpeedFor(skill, this.mods.gear)),
         run: num(runScale(base.attackSpeed, stats.attackSpeed)),
-      }) + (mango === 1 ? '' : fill(copy.formulaMango, { mango: num(mango) }));
+      }) + (mango === 1 ? '' : fill(copy.formulaMango, { mango: num(mango) })) +
+      (this.heldBonus.attackSpeedScale === 1 ? '' : fill(copy.formulaHeld, { scale: num(this.heldBonus.attackSpeedScale) }));
     const capped = this.cooldownOf(skill) <= STATS.minCooldownMs;
 
     const { shots, orbs } = this.projectilesOf(skill);
@@ -1279,6 +1302,8 @@ export class GameScene extends Phaser.Scene {
             subtitle: t().upgrade.enhanced,
             skill,
           });
+        } else if (this.subSkillsFull) {
+          this.drinkForMaxedSkill(skill, 'full');
         } else {
           this.acquire(skill);
           this.announce(fill(t().game.pickedUp, { skill: skillName(skill) }));
@@ -1327,7 +1352,12 @@ export class GameScene extends Phaser.Scene {
    * survivor with the health it gave, a green burst round them, and a toast
    * naming the skill.
    */
-  private drinkForMaxedSkill(skill: SkillId): void {
+  /** Every 보조 스킬 slot taken (SUB_SKILLS.max besides the main skill): no other skill can come in. */
+  public get subSkillsFull(): boolean {
+    return [...this.owned].filter((id) => id !== this.mainSkill).length >= SUB_SKILLS.max;
+  }
+
+  private drinkForMaxedSkill(skill: SkillId, why: 'maxed' | 'full' = 'maxed'): void {
     const healed = this.player.heal(HealthPotion.healingFor(this.player.maxHp));
     const { x, y } = this.player;
     // Over the survivor's own name and health, not on them.
@@ -1347,7 +1377,7 @@ export class GameScene extends Phaser.Scene {
       ease: 'Quad.easeOut',
       onComplete: () => burst.destroy(),
     });
-    this.announce(fill(t().game.maxedHeal, { skill: skillName(skill), heal: Math.round(healed) }), 'heal');
+    this.announce(fill(why === 'full' ? t().game.subSkillsFullHeal : t().game.maxedHeal, { skill: skillName(skill), heal: Math.round(healed) }), 'heal');
   }
 
 

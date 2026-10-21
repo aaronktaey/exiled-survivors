@@ -1004,37 +1004,42 @@ export const SKILL_MASTERY = {
   // 20 until 2026-10-16.
   level: 10,
   /** 타격: an enemy's shot inside the swing is struck out of the air. */
-  /** 화염구: where it bursts burns, at this share of its damage a second. */
-  fireZone: { damageShare: 0.2, durationMs: 5000, tickMs: 500 },
+  /** 화염구: its burst is this many times as wide (0.84; it left burning ground before). */
+  fireBlastScale: 2,
   /**
    * 연쇄번개: each strike is amplified by this share for every jump still to
    * come after it — the first of a seven-jump arc by 7×, the last not at all.
    */
   chainBonusPerJump: 0.1,
-  /** 얼음창: an enemy already under 냉각 is frozen solid this long when struck. */
-  freezeMs: 100,
+  /** 얼음창: an enemy already under 냉각 is frozen solid this long when struck. 100 until 0.84. */
+  freezeMs: 200,
   /**
-   * 공허구체: an enemy within `reach` px beyond the orbit is drawn toward the
-   * survivor at this speed (px/s) — into the orbs' path, not onto an orb.
+   * 공허구체 (0.84, the user's design): every `everyMs` a 공허 opens at a
+   * random spot within `spreadShare` × the orbit's radius of the survivor —
+   * twice the orbit's diameter across — and for `lifeMs` draws every enemy
+   * within `reach` of it toward its middle at `pullSpeed` px/s. No damage.
    */
-  voidPull: { reach: 70, speed: 20 },
-  /** 낙뢰: a strike that kills strikes again this often (the skill's recastChance when not awakened). */
-  thunderRecastChance: 1,
+  voidVortex: { everyMs: 5000, lifeMs: 2000, spreadShare: 2, reach: 100, pullSpeed: 140 },
+  /**
+   * 낙뢰 (0.84): what it hits is 감전 for `durationMs` (each hit starts it
+   * over), taking `amplify` more from every hit while it lasts.
+   */
+  thunderShock: { durationMs: 2000, amplify: 0.3 },
   /** ★ 2차 각성 (0.83, the user's ask): the main skill's second effect, at `level`. */
   second: {
     level: 20,
     /** 타격: the swing's full width, in degrees (MELEE.arcRadians before it). */
     meleeArcDegrees: 180,
-    /**
-     * 화염구: in place of the burning ground, what it hits bursts again
-     * `delayMs` later — where it stands then, or where it fell — for this
-     * share of the shot's damage, as wide as the shot's own burst.
-     */
-    fireBlast: { delayMs: 1000, damageShare: 1 },
+    /** 화염구: its burst this many times wider again — 4× in all with the first (0.84). */
+    fireBlastScale: 2,
     /** 연쇄번개: arcs each cast starts, each from its own nearest enemy. */
     chainForks: 2,
-    /** 얼음창: a share more damage to an enemy already under 냉각. */
-    iceChilledBonus: 0.5,
+    /**
+     * 얼음창 (0.84): an enemy that dies frozen freezes every enemy within
+     * `radius` of it, for SKILL_MASTERY.freezeMs — and one of those dying
+     * frozen does the same.
+     */
+    iceShatter: { radius: 60 },
     /**
      * 공허구체: a second ring as many orbs inside the first, `radiusShare` of
      * its radius, turning the other way and hitting for `damageShare`.
@@ -1044,6 +1049,61 @@ export const SKILL_MASTERY = {
     thunderSplash: { radius: 60, damageShare: 0.5 },
   },
 } as const;
+
+/**
+ * ★ 보유 효과 (0.84, the user's ask): holding a skill — main or found —
+ * gives every skill and the survivor this, the skill itself included.
+ * `critChance` is points on the base chance (0.2 → 0.25); every other key
+ * multiplies: `areaScale` every radius an effect reaches (a burst, a swing,
+ * an orb, a 공허, a splash, a shatter), `damageScale` every hit,
+ * `attackSpeedScale` every skill's pace, `moveSpeedScale` and `maxHpScale`
+ * the survivor. Two held skills with the same key multiply.
+ */
+export interface HeldSkillBonus {
+  readonly critChance?: number;
+  readonly areaScale?: number;
+  readonly damageScale?: number;
+  readonly attackSpeedScale?: number;
+  readonly moveSpeedScale?: number;
+  readonly maxHpScale?: number;
+}
+
+export const SKILL_HELD_BONUS: Record<SkillId, HeldSkillBonus> = {
+  thunderStrike: { critChance: 0.05 },
+  fireball: { areaScale: 1.2 },
+  iceSpear: { damageScale: 1.2 },
+  chainLightning: { attackSpeedScale: 1.2 },
+  voidOrb: { moveSpeedScale: 1.15 },
+  meleeStrike: { maxHpScale: 1.2 },
+};
+
+/** Every 보유 효과 of the skills held, folded: points added, scales multiplied. */
+export function heldBonusFor(skills: Iterable<SkillId>): Required<HeldSkillBonus> {
+  const out = { critChance: 0, areaScale: 1, damageScale: 1, attackSpeedScale: 1, moveSpeedScale: 1, maxHpScale: 1 };
+  for (const id of skills) {
+    const bonus = SKILL_HELD_BONUS[id];
+    if (!bonus) {
+      continue;
+    }
+    out.critChance += bonus.critChance ?? 0;
+    out.areaScale *= bonus.areaScale ?? 1;
+    out.damageScale *= bonus.damageScale ?? 1;
+    out.attackSpeedScale *= bonus.attackSpeedScale ?? 1;
+    out.moveSpeedScale *= bonus.moveSpeedScale ?? 1;
+    out.maxHpScale *= bonus.maxHpScale ?? 1;
+  }
+  return out;
+}
+
+/** Nothing held: what a fresh run folds before its first skill. */
+export const NO_HELD_BONUS: Required<HeldSkillBonus> = heldBonusFor([]);
+
+/**
+ * ★ 보조 스킬 (0.84, the user's ask): skills held besides the main one stop
+ * at `max`. Past it no other skill drops or comes up on a 무작위 스킬's
+ * cards, and one that dropped before is a 체력 포션's worth when picked up.
+ */
+export const SUB_SKILLS = { max: 3 } as const;
 
 /** 낙뢰: a bolt out of the sky onto something near the survivor. */
 export const THUNDER = {

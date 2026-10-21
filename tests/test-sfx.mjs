@@ -233,7 +233,9 @@ for (const skill of ['fireball', 'iceSpear']) {
 const orbs = await run(`
   s.choosing = true;
   s.spawner.clear();
-  s.onSkillCollected('voidOrb');
+  // Granted directly: the suite already holds three 보조 스킬 by here, and
+  // past them a pickup is a potion (0.84).
+  s.acquire('voidOrb');
   const w = s.weapons.find(w => w.definition.id === 'voidOrb');
   const st = s.progression.statsFor('voidOrb');
   const p = s.player;
