@@ -272,6 +272,13 @@ const without = await run(`return s.effectsNow().map((e) => e.id);`);
 check('a run started with a 뼈다귀 shows it, and the next run without one does not',
   withRib.includes('bone:rib') && !without.includes('bone:rib'), `${withRib.join(',')} -> ${without.join(',')}`);
 
+// --- the survivor's own health over its head: whole numbers (0.97) — a 감폭 hit left it fractional ---
+await run(`s.player.setInvulnerable(true); s.player.hp = s.player.maxHp - 12.3456; return 1;`);
+await sleep(300);
+const headLine = await run(`const text = s.player.nameplate.text; s.player.hp = s.player.maxHp; return text;`);
+check('the survivor’s nameplate shows its health in whole numbers',
+  typeof headLine === 'string' && /\d+\/\d+$/.test(headLine) && !/\./.test(headLine), headLine);
+
 console.log('\n=== SUMMARY ===');
 const failed = results.filter((r) => !r.p);
 console.log(`${results.length - failed.length}/${results.length} passed`);

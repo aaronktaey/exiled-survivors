@@ -15,6 +15,32 @@ export interface PatchNote {
 
 export const PATCH_NOTES: readonly PatchNote[] = [
   {
+    version: '0.97',
+    date: '2026-10-22',
+    changes: {
+      ko: [
+        '드론이 다시 모두에게 나옵니다.',
+        '드론 조정: 피해 80 → 125, 공격 속도 초당 0.47 → 0.25회, 적 한 마리에 붙는 드론 최대 3 → 2대. 한 발이 묵직해지고, 드론이 더 많은 적에게 흩어집니다.',
+        '생존자 머리 위 체력이 소수점 없이 정수로만 표시됩니다.',
+      ],
+      en: [
+        'The Drone is back for everyone.',
+        'Drone retuned: damage 80 → 125, attack speed 0.47 → 0.25 shots a second, and at most 2 drones on one enemy instead of 3. Each shot hits harder, and the drones spread over more enemies.',
+        'The health over the survivor’s head is shown in whole numbers, with no long decimals.',
+      ],
+      ja: [
+        'ドローンが再び全員に出現します。',
+        'ドローン調整：ダメージ80 → 125、攻撃速度 毎秒0.47 → 0.25回、1体の敵に張り付くドローンは最大3 → 2機。一発が重くなり、ドローンがより多くの敵に散らばります。',
+        '生存者の頭上の体力が小数点なしの整数で表示されます。',
+      ],
+      zh: [
+        '无人机重新对所有人开放。',
+        '无人机调整：伤害80 → 125，攻击速度每秒0.47 → 0.25次，同一个敌人最多3 → 2架。每一发更有分量，无人机会分散到更多敌人身上。',
+        '幸存者头顶的生命值只显示整数，不再出现很长的小数。',
+      ],
+    },
+  },
+  {
     version: '0.96',
     date: '2026-10-22',
     changes: {

@@ -1218,12 +1218,11 @@ export const SUB_SKILLS = { max: 3 } as const;
 
 /**
  * ★ Skills offered only to these accounts for now (0.96, the user's word:
- * 드론 is off for everyone but the user's own account while it is tried).
- * A run that already holds one keeps it. systems/SkillGate.ts applies it.
+ * 드론 was off for everyone but the user's own account while it was tried;
+ * open to all again in 0.97). A run that already holds one keeps it.
+ * systems/SkillGate.ts applies it.
  */
-export const SKILL_TRIAL: Partial<Record<SkillId, readonly string[]>> = {
-  drone: ['mli6lWxFN7F41CC6'],
-};
+export const SKILL_TRIAL: Partial<Record<SkillId, readonly string[]>> = {};
 
 /** 낙뢰: a bolt out of the sky onto something near the survivor. */
 export const THUNDER = {
@@ -1268,8 +1267,9 @@ export const DRONE = {
   /**
    * The most drones on one enemy (the user's ask): past it a drone takes
    * another, or circles the survivor — so a lone 우두머리 is not all of them.
+   * 2 since 0.97 (3 while tried): what one enemy takes is two drones' worth.
    */
-  perEnemy: 3,
+  perEnemy: 2,
 } as const;
 
 export const VOID_ORB = {
@@ -1593,10 +1593,11 @@ export const SKILL_BASE: Record<SkillId, SkillBaseStats> = {
   // enemy (and lets go of it); `droneCount` how many fly; attackSpeed how
   // often each one fires. One shot, one enemy — no sweep.
   drone: {
-    // 80 · 0.47 · 5 (the user's pick, 0.94 trial): the same DPS as 50 · 0.75
-    // without a weapon, but a weapon's flat attack weighs less (나르실 ×1.5).
-    damage: 80,
-    attackSpeed: 0.47,
+    // 125 · 0.25 · 5 (the user's pick, 0.97, with DRONE.perEnemy 2): under
+    // 연쇄번개 against a crowd, a little over 화염구 on a lone enemy. 80 · 0.47
+    // while it was tried.
+    damage: 125,
+    attackSpeed: 0.25,
     // +20% on the user's word (225 at first).
     range: 270,
     projectileSpeed: 0,

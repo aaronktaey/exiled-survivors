@@ -100,7 +100,8 @@ const spread = await run(`
            trial: Object.keys(window.config.SKILL_TRIAL ?? {}) };
 `);
 check('a trial skill (SKILL_TRIAL) is never offered to a player without its account — not at the start, not on the cards',
-  opened.trial.length > 0 && opened.trial.every((id) => !opened.options.includes(id)) && spread.trial.every((id) => !(spread.seen[id] > 0)),
+  // Holds with none listed too (0.97: the 드론 is open to all again).
+  opened.trial.every((id) => !opened.options.includes(id)) && spread.trial.every((id) => !(spread.seen[id] > 0)),
   JSON.stringify({ trial: opened.trial, start: opened.options, seen: spread.seen }));
 check('every skill turns up on the cards, at about even odds',
   spread.all.every((id) => (spread.seen[id] ?? 0) > 600 * 3 / spread.all.length * 0.7),

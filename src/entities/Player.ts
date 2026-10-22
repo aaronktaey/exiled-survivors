@@ -402,8 +402,9 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     }
 
     const copy = t().hud;
+    // Whole numbers, as the enemy plate: a 감폭 hit or a share heal leaves hp fractional.
     this.nameplate.setText(
-      `${fill(copy.level, { level: this.level })}  ${this.hp}/${this.maxHpValue}`,
+      `${fill(copy.level, { level: this.level })}  ${Math.max(0, Math.ceil(this.hp))}/${Math.ceil(this.maxHpValue)}`,
     );
     this.nameplate.setPosition(this.x, top - HUD.nameplateGap);
   }

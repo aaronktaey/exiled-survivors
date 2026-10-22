@@ -486,13 +486,15 @@ Read `git log` for what changed and when. What is not in the log:
   (`SKILL_MASTERY.second.droneTimes`). 1차 각성: every
   `SKILL_MASTERY.droneBomb.every`-th shot of a drone bombs. `areaScale`
   (화염구 held) widens the bomb and the reach (the user's call). 보유 효과:
-  move speed +15% (공허구체's before). Base 5 · 80 · 0.47 — picked so a
-  weapon's flat attack weighs about what it does on 연쇄번개. The look
+  move speed +15% (공허구체's before). Base 5 · 125 · 0.25 with 2 a enemy
+  (0.97, the user's pick, after DPS tables against 연쇄번개 and 화염구 with
+  70% of drones shooting in a crowd: about 0.4–0.7 of 연쇄번개 there, about
+  1.1× 화염구 on a lone enemy). It was 80 · 0.47 with 3 while tried. The look
   holds a `remote` (LookProp). Its shot borrows 얼음창's clip. F11 (debug)
   takes the main skill straight to its next 각성.
 - **Trial skills (0.96).** `SKILL_TRIAL` (balance.ts) names skills offered
   only to listed account ids — the 드론, to the user's own (Taeyeon Kim,
-  `mli6lWxFN7F41CC6`), while it is tried. `systems/SkillGate.skillOffered`
+  `mli6lWxFN7F41CC6`), while it was tried — empty since 0.97. `systems/SkillGate.skillOffered`
   is asked by `GameScene.offeredSkills` (start pick, 무작위 스킬, skill drops;
   a skill already held is always offered) and by the guide's skill chapter.
   The dev server lets trial skills through, but not the harness (no
