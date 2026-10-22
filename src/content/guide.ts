@@ -1,3 +1,4 @@
+import { skillOffered } from '@/systems/SkillGate';
 import {
   AFFIXES,
   ALL_BONES,
@@ -267,7 +268,8 @@ export function guideChapters(): readonly GuideChapter[] {
     ]),
     chapter(
       'skills',
-      ALL_SKILLS.map((skill) => ({
+      // A trial skill (SKILL_TRIAL) shows only to the accounts trying it.
+      ALL_SKILLS.filter((skill) => skillOffered(skill.id)).map((skill) => ({
         id: skill.id,
         title: skillName(skill.id),
         cards: [skillCard(skill.id)],

@@ -49,7 +49,9 @@ const opened = await ev(`(() => {
     active: window.game.scene.isActive('SkillPickScene'),
     choosing: g.choosing, paused: g.physics.world.isPaused,
     options: p.payload.options, owned: [...g.owned],
-    all: Object.keys(window.config.SKILL_BASE),
+    // What may be offered: every skill but a trial one (SKILL_TRIAL) — the harness has no account.
+    all: Object.keys(window.config.SKILL_BASE).filter((id) => !window.config.SKILL_TRIAL?.[id]),
+    trial: Object.keys(window.config.SKILL_TRIAL ?? {}),
   };
 })()`);
 console.log('opened:', JSON.stringify(opened));
@@ -94,8 +96,12 @@ check('and the run goes on', took.choosing === false && took.paused === false);
 const spread = await run(`
   const seen = {};
   for (let i = 0; i < 600; i++) for (const id of s.randomSkills()) seen[id] = (seen[id] ?? 0) + 1;
-  return { seen, all: Object.keys(window.config.SKILL_BASE) };
+  return { seen, all: Object.keys(window.config.SKILL_BASE).filter((id) => !window.config.SKILL_TRIAL?.[id]),
+           trial: Object.keys(window.config.SKILL_TRIAL ?? {}) };
 `);
+check('a trial skill (SKILL_TRIAL) is never offered to a player without its account — not at the start, not on the cards',
+  opened.trial.length > 0 && opened.trial.every((id) => !opened.options.includes(id)) && spread.trial.every((id) => !(spread.seen[id] > 0)),
+  JSON.stringify({ trial: opened.trial, start: opened.options, seen: spread.seen }));
 check('every skill turns up on the cards, at about even odds',
   spread.all.every((id) => (spread.seen[id] ?? 0) > 600 * 3 / spread.all.length * 0.7),
   Object.entries(spread.seen).map(([k, n]) => `${k} ${n}`).join(' / '));

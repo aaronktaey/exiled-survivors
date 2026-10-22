@@ -83,6 +83,7 @@ import { sfx, effectVolume } from '@/systems/Sfx';
 import { saveGame, type SavedRun } from '@/systems/SaveGame';
 import { runLedger } from '@/systems/RunLedger';
 import { runTally } from '@/systems/RunTally';
+import { skillOffered } from '@/systems/SkillGate';
 import { personal } from '@/systems/PersonalBest';
 import { tuning } from '@/systems/Tuning';
 import { dropTierFor } from '@/systems/Gear';
@@ -433,9 +434,14 @@ export class GameScene extends Phaser.Scene {
    * attack. The arena is frozen while the choice is open, the same hold an
    * upgrade puts on it, and the title card waits until the skill is in hand.
    */
+  /** What this player may be offered (SkillGate): every skill but a trial one, and any already held. */
+  private offeredSkills(): readonly SkillDefinition[] {
+    return DROPPABLE_SKILLS.filter((skill) => skillOffered(skill.id) || this.owned.has(skill.id));
+  }
+
   private openStartPick(): void {
     // Every skill there is (0.82, the user's ask; three at random before).
-    const options = DROPPABLE_SKILLS.map((skill) => skill.id);
+    const options = this.offeredSkills().map((skill) => skill.id);
     if (options.length === 0) {
       this.showIntro();
       return;
@@ -473,7 +479,7 @@ export class GameScene extends Phaser.Scene {
    */
   public randomSkills(): SkillId[] {
     // With every 보조 스킬 slot taken, only the skills held come up (0.84).
-    const pool = DROPPABLE_SKILLS.map((skill) => skill.id).filter((id) => !this.subSkillsFull || this.owned.has(id));
+    const pool = this.offeredSkills().map((skill) => skill.id).filter((id) => !this.subSkillsFull || this.owned.has(id));
     for (let i = pool.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
       [pool[i], pool[j]] = [pool[j]!, pool[i]!];
@@ -977,7 +983,8 @@ export class GameScene extends Phaser.Scene {
    * `bonus` is the killed enemy's drop multiplier — 1 for anything ordinary.
    */
   private rollSkillDrop(bonus = 1, guaranteed = false): SkillDefinition | null {
-    if (DROPPABLE_SKILLS.length === 0) {
+    const offered = this.offeredSkills();
+    if (offered.length === 0) {
       return null;
     }
 
@@ -986,7 +993,7 @@ export class GameScene extends Phaser.Scene {
     }
 
     // With every 보조 스킬 slot taken, only a skill already held drops (0.84).
-    const pool = this.subSkillsFull ? DROPPABLE_SKILLS.filter((skill) => this.owned.has(skill.id)) : DROPPABLE_SKILLS;
+    const pool = this.subSkillsFull ? offered.filter((skill) => this.owned.has(skill.id)) : offered;
     return pool[Math.floor(Math.random() * pool.length)] ?? null;
   }
 

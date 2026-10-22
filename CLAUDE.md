@@ -490,6 +490,14 @@ Read `git log` for what changed and when. What is not in the log:
   weapon's flat attack weighs about what it does on 연쇄번개. The look
   holds a `remote` (LookProp). Its shot borrows 얼음창's clip. F11 (debug)
   takes the main skill straight to its next 각성.
+- **Trial skills (0.96).** `SKILL_TRIAL` (balance.ts) names skills offered
+  only to listed account ids — the 드론, to the user's own (Taeyeon Kim,
+  `mli6lWxFN7F41CC6`), while it is tried. `systems/SkillGate.skillOffered`
+  is asked by `GameScene.offeredSkills` (start pick, 무작위 스킬, skill drops;
+  a skill already held is always offered) and by the guide's skill chapter.
+  The dev server lets trial skills through, but not the harness (no
+  account there), so suites see the shipped rule. Taking the 드론 out of
+  `SKILL_TRIAL` is the whole of turning it back on.
 - **공허구체 changed with it (0.95).** Its 1차 각성 heals
   `SKILL_MASTERY.voidHealPerHit` a hit (`WeaponContext.heal`), uncapped on
   the user's word — they were to try a cap locally; the 공허 that pulled

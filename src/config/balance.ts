@@ -1216,6 +1216,15 @@ export const NO_HELD_BONUS: Required<HeldSkillBonus> = heldBonusFor([]);
  */
 export const SUB_SKILLS = { max: 3 } as const;
 
+/**
+ * ★ Skills offered only to these accounts for now (0.96, the user's word:
+ * 드론 is off for everyone but the user's own account while it is tried).
+ * A run that already holds one keeps it. systems/SkillGate.ts applies it.
+ */
+export const SKILL_TRIAL: Partial<Record<SkillId, readonly string[]>> = {
+  drone: ['mli6lWxFN7F41CC6'],
+};
+
 /** 낙뢰: a bolt out of the sky onto something near the survivor. */
 export const THUNDER = {
   // The chance a kill strikes again is the skill's own stat since 0.83

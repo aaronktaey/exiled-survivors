@@ -15,6 +15,16 @@ export interface PatchNote {
 
 export const PATCH_NOTES: readonly PatchNote[] = [
   {
+    version: '0.96',
+    date: '2026-10-22',
+    changes: {
+      ko: ['드론은 다듬는 동안 잠시 나오지 않습니다. 이미 드론을 가지고 저장된 판은 그대로 이어서 할 수 있습니다.'],
+      en: ['The Drone is held back for a while as it is worked on. A saved run that already has it carries on as it was.'],
+      ja: ['ドローンは調整中のため、しばらく出現しません。すでにドローンを持って保存した回はそのまま続けられます。'],
+      zh: ['无人机正在调整中，暂时不会出现。已拥有无人机的存档可以继续进行。'],
+    },
+  },
+  {
     version: '0.95',
     date: '2026-10-22',
     changes: {
