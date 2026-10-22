@@ -419,7 +419,8 @@ Read `git log` for what changed and when. What is not in the log:
   — so `ROLLBACK_GIFT` (equipment.ts, `systems/Gift.ts`) hands everyone bare
   오니고로시 and every 구슬 once on the title (`MenuScene.giveGift`, after
   the account settles, `STORAGE.rollbackGift`, synced; since 0.93 it gives no
-  오니고로시 — `ROLLBACK_GIFT.gear` is empty, the user's word); the harness turns it
+  오니고로시 — `ROLLBACK_GIFT.gear` is empty — and since 0.94 no 구슬, `orbsEach` 0,
+  the user's word: only the passive points are left); the harness turns it
   off unless `window.__giftOn` (test-gift). 0.81 added passive points to
   it (`passivesToMax`: `passives.topUpToMax` fills held + spent up to
   `maxPoints`), under a mark of its own (`STORAGE.passiveGift`) so those

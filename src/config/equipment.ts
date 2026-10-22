@@ -223,7 +223,8 @@ export const ROLLBACK_GIFT = {
   // No 오니고로시 since 0.93 (the user's word): it only drops. A browser that
   // has not had the gift yet gets the 구슬 and the passive points alone.
   gear: {} as Partial<Record<GearId, number>>,
-  orbsEach: 10,
+  // No 구슬 either since 0.94 (the user's word): what is left is the passive points.
+  orbsEach: 0,
   /**
    * 0.81 (the user's word): passive points topped up, once, to what fills
    * every line to its maxRank — what is held and what is spent counted —

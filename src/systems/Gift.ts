@@ -39,8 +39,14 @@ export function giveRollbackGift(): GiftGiven | null {
     }
     given.push({ id, count });
   }
-  for (const id of Object.keys(ORBS) as OrbId[]) {
-    orbs.add(id, ROLLBACK_GIFT.orbsEach);
+  if (ROLLBACK_GIFT.orbsEach > 0) {
+    for (const id of Object.keys(ORBS) as OrbId[]) {
+      orbs.add(id, ROLLBACK_GIFT.orbsEach);
+    }
+  }
+  // Nothing in it (since 0.94 the sword and the 구슬 are gone): marked, unsaid.
+  if (given.length === 0 && ROLLBACK_GIFT.orbsEach <= 0) {
+    return null;
   }
   return { gear: given, orbsEach: ROLLBACK_GIFT.orbsEach };
 }

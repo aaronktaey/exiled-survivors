@@ -15,6 +15,16 @@ export interface PatchNote {
 
 export const PATCH_NOTES: readonly PatchNote[] = [
   {
+    version: '0.94',
+    date: '2026-10-22',
+    changes: {
+      ko: ['처음 시작하는 플레이어의 복구 보상에서 구슬도 빠졌습니다. 패시브 포인트만 받습니다.'],
+      en: ['New players’ rollback gift no longer includes orbs either: only the passive points remain.'],
+      ja: ['新しく始めるプレイヤーの復旧の補償からオーブもなくなりました。パッシブポイントだけを受け取ります。'],
+      zh: ['新玩家的回滚补偿也不再包含宝珠，只获得被动点数。'],
+    },
+  },
+  {
     version: '0.93',
     date: '2026-10-22',
     changes: {

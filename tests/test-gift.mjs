@@ -58,11 +58,12 @@ const first = await ev(`(() => {
 // No 오니고로시 in it since 0.93 (the user's word): it only drops.
 check('the gift gives no sword at all — no 오니고로시 any more',
   first.pieces.length === 0 && first.oni === 0, JSON.stringify(first));
-check('and ROLLBACK_GIFT.orbsEach of every 구슬', first.orbs.every(([, n]) => n === first.each), JSON.stringify(first.orbs));
+// No 구슬 either since 0.94 (the user's word).
+check('and no 구슬', first.each === 0 && first.orbs.every(([, n]) => n === 0), JSON.stringify(first.orbs));
 check('and passive points enough to fill every line to its maxRank (0.81)',
   first.max === first.wantMax && first.points + first.spent === first.max, JSON.stringify({ points: first.points, spent: first.spent, max: first.max }));
 check('and says so on the title in one toast, and marks it given',
-  toast.length === 1 && !/오니고로시/.test(toast[0]) && /모든 구슬/.test(toast[0]) && new RegExp('패시브 포인트 ' + first.max + '점').test(toast[0]) && !!first.flag,
+  toast.length === 1 && !/오니고로시/.test(toast[0]) && !/구슬/.test(toast[0]) && new RegExp('패시브 포인트 ' + first.max + '점').test(toast[0]) && !!first.flag,
   JSON.stringify({ toast, flag: first.flag }));
 
 // --- once only ---
@@ -70,7 +71,7 @@ await toTitle();
 await sleep(1500);
 const again = await ev(`(() => ({ pieces: window.gear.items.filter((it) => it.id === 'onigoroshi').length,
   orb: window.orbs.count('chaos') }))()`);
-check('a second visit gives nothing more', again.pieces === 0 && again.orb === first.each,
+check('a second visit gives nothing more', again.pieces === 0 && again.orb === 0,
   JSON.stringify(again));
 
 // --- 0.80's gift already had, ranks already bought: only what is missing comes ---
