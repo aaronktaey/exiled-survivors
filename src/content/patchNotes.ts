@@ -15,6 +15,40 @@ export interface PatchNote {
 
 export const PATCH_NOTES: readonly PatchNote[] = [
   {
+    version: '0.90',
+    date: '2026-10-22',
+    changes: {
+      ko: [
+        '장비 판매와 골드가 없어졌습니다. 가지고 있던 골드도 사라집니다.',
+        '인벤토리의 분해 버튼으로 분해 화면이 열립니다. 무기를 하나씩 분해하거나, 무기 종류와 속성 개수(N개 이하)를 골라 한꺼번에 분해할 수 있습니다.',
+        '분해하면 철광석을 얻습니다: 녹슨 검 1 · 무쇠 검 3 · 강철 검 9 · 룬 각인 검 20 · 오니고로시 50. 속성이 2~3개면 변화의 구슬, 4~5개면 혼돈의 구슬, 6개면 각성의 구슬도 1개 얻습니다.',
+        '철광석으로 속성 없는 검을 제작할 수 있습니다: 녹슨 검 5 · 무쇠 검 15 · 강철 검 45 · 룬 각인 검 100. 오니고로시는 제작할 수 없습니다.',
+        '분해 화면에서 무기를 잠그면 낱개 분해와 일괄 분해 모두에서 빠집니다. 착용 중인 무기도 분해되지 않습니다.',
+      ],
+      en: [
+        'Selling weapons and gold are gone. Any gold you had goes with them.',
+        'The Salvage button in the inventory opens the Salvage screen: take weapons apart one at a time, or pick weapon types and an affix count (up to N) to salvage them all at once.',
+        'Salvaging gives iron ore: Rusty Sword 1 · Iron Sword 3 · Steel Sword 9 · Runed Sword 20 · Onigoroshi 50. A weapon with 2–3 affixes also gives a Transmutation Orb, 4–5 a Chaos Orb, 6 an Awakening Orb.',
+        'Iron ore crafts swords with no affixes: Rusty Sword 5 · Iron Sword 15 · Steel Sword 45 · Runed Sword 100. Onigoroshi cannot be crafted.',
+        'A weapon locked on the Salvage screen is left out of salvaging, one at a time or in bulk. The weapon in hand is never salvaged either.',
+      ],
+      ja: [
+        '装備の売却とゴールドがなくなりました。持っていたゴールドも消えます。',
+        'インベントリの分解ボタンで分解画面が開きます。武器を1本ずつ分解するか、武器の種類と属性数（N個以下）を選んでまとめて分解できます。',
+        '分解すると鉄鉱石が手に入ります：錆びた剣 1 · 鉄の剣 3 · 鋼の剣 9 · ルーンの剣 20 · 鬼殺し 50。属性が2〜3個なら変化の球、4〜5個なら混沌の球、6個なら覚醒の球も1個手に入ります。',
+        '鉄鉱石で属性のない剣を製作できます：錆びた剣 5 · 鉄の剣 15 · 鋼の剣 45 · ルーンの剣 100。鬼殺しは製作できません。',
+        '分解画面で武器をロックすると、個別分解・一括分解のどちらからも外れます。装備中の武器も分解されません。',
+      ],
+      zh: [
+        '取消了装备出售和金币，已有的金币也会消失。',
+        '在背包中按分解按钮打开分解界面：可逐把分解武器，也可选择武器种类和属性数（N 条及以下）批量分解。',
+        '分解可获得铁矿石：生锈的剑 1 · 铁剑 3 · 钢剑 9 · 符文剑 20 · 鬼杀 50。属性 2~3 条时另得变化宝珠，4~5 条得混沌宝珠，6 条得觉醒宝珠各 1 个。',
+        '可用铁矿石制作无属性的剑：生锈的剑 5 · 铁剑 15 · 钢剑 45 · 符文剑 100。鬼杀无法制作。',
+        '在分解界面锁定的武器不会被单件分解或批量分解。装备中的武器也不会被分解。',
+      ],
+    },
+  },
+  {
     version: '0.89',
     date: '2026-10-21',
     changes: {

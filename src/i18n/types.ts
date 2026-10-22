@@ -95,8 +95,6 @@ export interface Strings {
     readonly noPoints: string;
     readonly hintKeyboard: string;
     readonly hintTouch: string;
-    /** Gold in the purse. */
-    readonly goldHeld: string;
     /** Under the root of the tree, over the points in it. */
     readonly root: string;
     /** What one rank of a line is worth: {detail}. */
@@ -275,13 +273,8 @@ export interface Strings {
     readonly savedRunGear: string;
     readonly equipped: string;
     readonly equip: string;
-    /** The button that throws one away, and what it says once it is armed. */
+    /** The button that opens 분해 (0.90; it sold the weapon before). */
     readonly discard: string;
-    readonly discardConfirm: string;
-    /** The 팔기 button with its price: {price}. */
-    readonly sellFor: string;
-    /** After a sale: {gear}, {price}. */
-    readonly sold: string;
     /** The 구슬 buttons: "변화 x3", and what one press asks before acting. */
     readonly orbCount: string;
     /** Shown when the stash holds none of a 구슬 at all. */
@@ -333,6 +326,51 @@ export interface Strings {
   };
 
   /** 인벤토리 — the tabs everything kept between runs lives in. */
+  /** 분해 (0.90): take swords apart one by one or in bulk, and make bare ones. */
+  readonly forge: {
+    readonly title: string;
+    readonly tabs: { readonly single: string; readonly bulk: string; readonly craft: string };
+    /** {count} 철광석 held, under the title. */
+    readonly ore: string;
+    readonly oreName: string;
+    /** Its cell on the 소모품 tab: where it comes from and goes. */
+    readonly oreUse: string;
+    /** {what} one gives back. */
+    readonly yields: string;
+    readonly yieldOre: string;
+    /** {orb} {count}. */
+    readonly yieldOrb: string;
+    readonly salvage: string;
+    readonly salvageConfirm: string;
+    readonly lock: string;
+    readonly unlock: string;
+    readonly lockedNote: string;
+    readonly equippedNote: string;
+    /** {gear} taken apart for {what}. */
+    readonly salvaged: string;
+    readonly bulkTypes: string;
+    /** {count} of a base in the stash. */
+    readonly bulkHeld: string;
+    /** {max} 속성 or fewer. */
+    readonly bulkMax: string;
+    readonly bulkCount: string;
+    readonly bulkYield: string;
+    readonly bulkNone: string;
+    readonly bulkGo: string;
+    readonly bulkConfirm: string;
+    readonly bulkDone: string;
+    /** {cost} 철광석. */
+    readonly craftCost: string;
+    readonly craftNo: string;
+    readonly craftGo: string;
+    readonly craftShort: string;
+    /** {gear} made for {cost}. */
+    readonly crafted: string;
+    readonly hintSingle: string;
+    readonly hintBulk: string;
+    readonly hintCraft: string;
+    readonly hintTouch: string;
+  };
   readonly inventory: {
     readonly title: string;
     readonly tabGear: string;
@@ -385,7 +423,6 @@ export interface Strings {
     /** The table: what the run dealt, killed, earned, and was carrying. */
     readonly damageDealt: string;
     readonly killsDealt: string;
-    readonly goldEarned: string;
     /** One skill's line: "타격 Lv 3 · DPS 21". */
     readonly skillLine: string;
     readonly retry: string;
@@ -816,6 +853,10 @@ export interface Strings {
       readonly gearBossShare: string;
       readonly gearFromKill: string;
       readonly gearBossOnly: string;
+      /** 분해 and 제작 on a sword's card (0.90): {ore}, {cost}. */
+      readonly gearSalvage: string;
+      readonly gearCraft: string;
+      readonly gearNoCraft: string;
       readonly boneStack: string;
       readonly boneSingle: string;
       /** {detail} a rank, up to {max} ranks. */

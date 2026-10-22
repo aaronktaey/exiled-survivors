@@ -25,7 +25,6 @@ import {
   SKILL_BASE,
   SKILL_DROP,
   SKILL_MASTERY,
-  GEAR_SELL,
   SKILL_PICK,
   SPAWN,
   SPAWN_TABLE,
@@ -205,8 +204,6 @@ function values(): Record<string, string | number> {
     rankResetHour: RANKING.dailyReset.hour,
     masteryLevel: SKILL_MASTERY.level,
     masteryLevel2: SKILL_MASTERY.second.level,
-    sellBase: GEAR_SELL.perRank,
-    sellAffix: percent(GEAR_SELL.perAffix),
   };
 }
 
@@ -479,6 +476,9 @@ function gearCards(): GuideCard[] {
       spec.fromKill !== undefined
         ? fill(g.gearFromKill, { chance: percent(spec.fromKill) })
         : g.gearBossOnly,
+      // 분해 and 제작 (0.90).
+      fill(g.gearSalvage, { ore: spec.salvageOre }),
+      spec.craftOre !== undefined ? fill(g.gearCraft, { cost: spec.craftOre }) : g.gearNoCraft,
     ],
   }));
 }

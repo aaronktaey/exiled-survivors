@@ -4,6 +4,7 @@ export { SettingsScene, type SettingsSceneData } from '@/scenes/SettingsScene';
 export { BoneScene } from '@/scenes/BoneScene';
 export { InventoryScene, type InventorySceneData, type InventoryTab } from '@/scenes/InventoryScene';
 export { OrbScene, type OrbSceneData } from '@/scenes/OrbScene';
+export { ForgeScene, type ForgeSceneData, type ForgeTab } from '@/scenes/ForgeScene';
 export { PassiveScene, type PassiveSceneData } from '@/scenes/PassiveScene';
 export { CreditsScene, type CreditsSceneData } from '@/scenes/CreditsScene';
 export { InfoScene, type InfoSceneData, type InfoTopic } from '@/scenes/InfoScene';

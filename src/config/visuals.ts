@@ -180,6 +180,9 @@ export const TEXTURES = {
   boneSpine: "tex-bone-spine",
   altar: "tex-altar",
   mango: "tex-mango",
+  /** 철광석, and the padlock a 잠금 weapon wears in the 분해 grid (0.90). */
+  ore: "tex-ore",
+  lock: "tex-lock",
   voidVortex: "tex-void-vortex",
   magnet: "tex-magnet",
   orbTransmute: "tex-orb-transmute",

@@ -34,7 +34,7 @@ export { canvasSizeFor, currentCanvasSize, type CanvasSize } from '@/systems/Vie
 export { centredTop, fitText, fitWidth } from '@/systems/Layout';
 export { gear, type GearState } from '@/systems/Gear';
 export { passives, passiveBonusFor, type PassiveBonus, type PassiveState } from '@/systems/Passives';
-export { gold, goldFor } from '@/systems/Gold';
+export { ore } from '@/systems/Ore';
 export { orbs, type OrbCounts } from '@/systems/Orbs';
 export { RunStats, type RunSummary, type RunSkillLine } from '@/systems/RunStats';
 export { IconBar, type IconButton } from '@/systems/IconBar';

@@ -13,7 +13,6 @@ import {
 } from '@/config';
 import { fill, passiveDetail, passiveName, t } from '@/i18n';
 import { addBackButton, type BackButton } from '@/systems/BackButton';
-import { gold } from '@/systems/Gold';
 import { fitText } from '@/systems/Layout';
 import { passives } from '@/systems/Passives';
 import { prefersTouchControls } from '@/systems/VirtualJoystick';
@@ -69,7 +68,7 @@ export class PassiveScene extends Phaser.Scene {
   public static readonly KEY = SCENES.passives;
   /** The way out in the corner. Public so a test can press it. */
   public backButton?: BackButton;
-  /** Points and gold in hand. Public for tests. */
+  /** Points in hand. Public for tests. */
   public purse!: Phaser.GameObjects.Text;
   /** Every node, by its line. Public so a test can read and press one. */
   public nodes = new Map<PassiveId, PassiveNode>();
@@ -510,11 +509,8 @@ export class PassiveScene extends Phaser.Scene {
     this.detail.setScale(1).setText(status ? `${head} · ${what}\n${status}` : `${head} · ${what}`);
     fitText(this.detail, this.scale.width - 24, 0);
 
-    // The purse: points (when there are any) and gold.
-    const parts = [
-      ...(points > 0 ? [fill(copy.points, { points })] : []),
-      fill(copy.goldHeld, { gold: gold.value }),
-    ];
+    // Points in hand, when there are any (gold went in 0.90).
+    const parts = points > 0 ? [fill(copy.points, { points })] : [];
     this.purse.setText(parts.join('   ·   '));
     fitText(this.purse.setScale(1), this.scale.width - 40);
 

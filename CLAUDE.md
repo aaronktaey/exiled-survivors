@@ -68,7 +68,7 @@ wrong shape.
   centre it (`src/systems/Layout.ts`); landscape is only ever ~540 tall, so a
   screen that fits upright can still overflow lying down. Check both.
 - **Everything the player keeps is in `localStorage`** behind `STORAGE.*`:
-  the stash, the passive tree, the purse, the 구슬 drawer, the 뼈다귀 drawer,
+  the stash, the passive tree, the 철광석, the 구슬 drawer, the 뼈다귀 drawer,
   the save slot and the settings. Stores cache: writing the key behind a
   store's back does not change what the store already has in memory.
 
@@ -133,7 +133,7 @@ set takes about six minutes. One suite on its own: `node run-all.mjs test-gear`.
   it and the suite dies with `undefined`. Return the answer, not the corpus.
 - Dev-only handles the suites drive: `window.game`, `window.config`,
   `window.gear`, `window.orbs`, `window.bones`, `window.passives`,
-  `window.gold`, `window.gearBonusFor`, `window.orbApplied`, `window.sealRecord`,
+  `window.ore`, `window.gearBonusFor`, `window.orbApplied`, `window.sealRecord`,
   `window.openRecord`,
   `window.critMultiplierFor`. They are behind `import.meta.env.DEV`, so the
   deployed build does not have them — a live check can only click and look.
@@ -640,8 +640,8 @@ Read `git log` for what changed and when. What is not in the log:
   edge marker.
 - **No 신성한 조각 since 0.83.** The drop, its entity, its 필터 switch and
   dial, the passive screen's gold shop and the shard copy all went (the
-  user's ask). Gold stays — still earned and shown — though nothing spends
-  it: taking it out too is on hold, the user's word.
+  user's ask). Gold went in 0.90 with selling (below); `RETIRED_STORAGE`
+  (system.ts) clears its old key on load (main.ts).
 - **Weapons by tier — 1 is the best**, the same way round as an 속성's
   tier (the user corrected this once). `attackForTier` counts up from the
   weakest tier. A 우두머리 always leaves one, weighted over the whole `GEAR`
@@ -701,11 +701,19 @@ Read `git log` for what changed and when. What is not in the log:
   구슬 are warded against — a failed 합성 still spends its swords. The
   인벤토리 shows it on the cell (`GridItem.badge`) and in `stateLine` under
   the name, not as a read-out line (that block is budgeted to the screen).
-- **Swords are sold, not thrown away.** The 인벤토리's second button (still
-  `discard`/`pressDiscard` in code) pays `sellPriceFor(item)` into
-  `gold` (`GEAR_SELL`: rank from the weakest tier × `perRank`, + `perAffix`
-  of that a 속성, added). The rank counts from the weakest, so the best sword
-  is the dearest — the user chose that over the literal tier number.
+- **Swords are taken apart, not sold (0.90, the user's ask).** Selling and
+  gold went. The 인벤토리's second button (still `discard`/`pressDiscard` in
+  code) opens `ForgeScene` (분해) on the weapon under the cursor, three tabs:
+  낱개 분해 (its own `ItemGrid`, asked twice, `잠금` per weapon —
+  `GearItem.locked`, the padlock `TEXTURES.lock` as the cell's badge), 일괄
+  분해 (bases ticked + at most N 속성, `gear.salvageMany`) and 제작
+  (`gear.craft`: a bare sword for `GEAR[id].craftOre`; none on the
+  오니고로시). What one gives is `salvageFor`: `GEAR[id].salvageOre` 철광석
+  (`systems/Ore.ts`, `STORAGE.ore`, `window.ore`) and the first
+  `SALVAGE_ORBS` band its 속성 count falls in (2–3 변화, 4–5 혼돈, 6 각성).
+  The one in hand and a locked one are never taken (`canSalvage`); a locked
+  one can still go into a 합성 — the lock is 분해's only. The 소모품 tab
+  shows the 철광석. Back (or Esc) returns to the 인벤토리.
 - **전투 알림 are toasts.** `GameScene.announce` hands every in-run line to
   `systems/Toasts.ts`: top-right (under the HUD on a narrow screen),
   `TOAST.lifeMs` each, at most `TOAST.max`, oldest out first. A toast's text

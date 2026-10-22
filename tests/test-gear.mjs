@@ -544,103 +544,142 @@ check('and the arrow keys reach every weapon in it',
   `${new Set(walk.seen).size} of ${walk.items} reached`);
 await shot('gear-06-scrolled');
 
-// --- 10. throwing one away ---
-// Destructive, so it asks first, and what is being carried is not on offer
-// at all — which is also what stops the stash from ever emptying.
+// --- 10. 분해 (0.90): selling went, and gold with it ---
+// The 인벤토리's 분해 button opens the 분해 screen on the weapon under the
+// cursor: one at a time (asked twice), in bulk by base and 속성 count, and 제작.
 const gearScene = (body) => scene('InventoryScene', body);
-const armedLook = await gearScene(`
-  const i = s.menu.items.findIndex(it => it.id === 'l1');
-  s.menu.selected = i; s.menu.refresh(); s.showDetails();
-  const resting = { text: s.discard.text, colour: String(s.discard.style.color), armed: s.armed };
+const forge = (body) => scene('ForgeScene', body);
+const forgeOpened = await gearScene(`
+  s.menu.focus('l1'); s.showDetails();
+  const label = s.discard.text;
   s.pressDiscard();
-  return { resting, asking: { text: s.discard.text, colour: String(s.discard.style.color),
-           armed: s.armed }, stash: window.gear.items.length };
+  return { label };
 `);
-console.log('버리기 armed:', JSON.stringify(armedLook));
-check('one press asks rather than throws',
-  armedLook.resting.armed === null && armedLook.asking.armed === 'discard' &&
-    armedLook.asking.text !== armedLook.resting.text && armedLook.stash === 10,
-  `"${armedLook.resting.text}" -> "${armedLook.asking.text}", ${armedLook.stash} still held`);
-await shot('gear-07-discard-asks');
+await sleep(900);
+const atForge = await forge(`return { active: s.scene.isActive(), tab: s.tab, on: s.menu?.selectedId, back: !!s.backButton };`);
+check('the 인벤토리’s 분해 button opens the 분해 screen on that weapon',
+  forgeOpened.label === '분해' && atForge.active && atForge.tab === 'single' && atForge.on === 'l1' && atForge.back, JSON.stringify({ forgeOpened, atForge }));
 
-const moved = await gearScene(`
+const asked = await forge(`
+  s.pressSalvage();
+  const asking = { armed: s.armed, text: s.salvageButton.label.text, stash: window.gear.items.length };
   s.menu.step(1);
-  return { armed: s.armed, text: s.discard.text };
+  const moved = s.armed;
+  s.menu.focus('l1');
+  return { asking, moved };
 `);
-check('and moving the cursor takes the question back',
-  moved.armed === null, `"${moved.text}"`);
+check('one press asks rather than takes it apart, and moving the cursor takes the question back',
+  asked.asking.armed === 'salvage' && asked.asking.stash === 10 && asked.moved === null, JSON.stringify(asked));
 
-const thrown = await gearScene(`
-  const i = s.menu.items.findIndex(it => it.id === 'l1');
-  s.menu.selected = i; s.menu.refresh(); s.showDetails();
-  const item = window.gear.items.find(it => it.uid === 'l1');
-  const price = window.config.sellPriceFor(item);
-  const want = (window.config.LOWEST_GEAR_TIER + 1 - window.config.GEAR[item.id].tier) * window.config.GEAR_SELL.perRank *
-    (1 + window.config.GEAR_SELL.perAffix * (item.prefixes.length + item.suffixes.length));
-  const goldBefore = window.gold.value;
+const before = await forge(`
+  const c = window.config, item = window.gear.items.find((i) => i.uid === 'l1');
+  const lines = item.prefixes.length + item.suffixes.length;
+  const band = c.SALVAGE_ORBS.find((b) => lines >= b.minLines && lines <= b.maxLines);
   const at = s.menu.selected;
-  s.pressDiscard();
-  s.pressDiscard();
-  return { stash: window.gear.items.map(i => i.uid), price, want: Math.round(want), goldBefore, goldAfter: window.gold.value, at };
+  const was = { ore: window.ore.value, orb: band ? window.orbs.count(band.orb) : 0 };
+  s.pressSalvage();
+  s.pressSalvage();
+  return { at, was, wantOre: c.GEAR[item.id].salvageOre, orb: band?.orb ?? null };
 `);
 await sleep(900);
-const afterThrow = await gearScene(`
-  return { note: s.orbHint?.text ?? '', items: s.menu.items.length, selected: s.menu.selected,
-           stash: window.gear.items.map(i => i.uid),
-           stored: JSON.parse(localStorage.getItem('exiled-survivors:gear:v2')).items.map(i => i.uid) };
+const salvaged = await forge(`
+  return { stash: window.gear.items.map((i) => i.uid), stored: JSON.parse(localStorage.getItem('exiled-survivors:gear:v2')).items.map((i) => i.uid),
+           ore: window.ore.value, orb: ${JSON.stringify(before.orb)} ? window.orbs.count(${JSON.stringify(before.orb)}) : 0,
+           note: s.noteLine.text, cells: s.menu.items.length, selected: s.menu.selected };
 `);
-console.log('thrown away:', JSON.stringify(afterThrow));
-check('the second press throws it away for good',
-  !afterThrow.stash.includes('l1') && !afterThrow.stored.includes('l1') &&
-    afterThrow.stash.length === 9,
-  `${afterThrow.stash.length} left, none of them l1`);
-check('after a sale the cursor stays at the same place in the list',
-  afterThrow.selected === Math.min(thrown.at, afterThrow.items - 1), `${thrown.at} → ${afterThrow.selected}`);
-check('selling pays its price into the purse: its rank × the base, + a share for each 속성',
-  thrown.price === thrown.want && thrown.goldAfter - thrown.goldBefore === thrown.price && thrown.price > 0 &&
-    afterThrow.note.includes(thrown.price.toLocaleString('en-US')),
-  `${thrown.goldBefore} → ${thrown.goldAfter} (+${thrown.price}, want ${thrown.want}); "${afterThrow.note}"`);
-check('and the grid is laid out again around what is left',
-  afterThrow.items === afterThrow.stash.length,
-  `${afterThrow.items} cells filled for ${afterThrow.stash.length} weapons`);
+console.log('분해:', JSON.stringify({ before, salvaged }));
+check('the second press takes it apart for good: its base’s 철광석, and the 구슬 its 속성 count earns',
+  !salvaged.stash.includes('l1') && !salvaged.stored.includes('l1') && salvaged.ore - before.was.ore === before.wantOre &&
+    before.orb === 'chaos' && salvaged.orb - before.was.orb === 1 && /분해/.test(salvaged.note),
+  JSON.stringify({ ore: [before.was.ore, salvaged.ore], orb: before.orb, note: salvaged.note }));
+check('the grid is laid out again around what is left, the cursor where it was',
+  salvaged.cells === salvaged.stash.length && salvaged.selected === Math.min(before.at, salvaged.cells - 1), `${before.at} → ${salvaged.selected}`);
 
-const inHand = await gearScene(`
+const forgeRefused = await forge(`
   const uid = window.gear.value.equipped;
-  const i = s.menu.items.findIndex(it => it.id === uid);
-  s.menu.selected = i; s.menu.refresh(); s.showDetails();
-  s.pressDiscard();
-  s.pressDiscard();
-  return { uid, armed: s.armed, alpha: s.discard.alpha,
-           stash: window.gear.items.map(i => i.uid) };
+  s.menu.focus(uid);
+  s.pressSalvage(); s.pressSalvage();
+  const inHand = { kept: window.gear.items.some((i) => i.uid === uid), note: s.noteLine.text };
+  s.menu.focus('l2');
+  s.pressLock();
+  s.pressSalvage(); s.pressSalvage();
+  const locked = { kept: window.gear.items.some((i) => i.uid === 'l2'), flag: window.gear.items.find((i) => i.uid === 'l2').locked === true,
+                   badge: s.menu.items.find((it) => it.id === 'l2').badge(), lock: window.config.TEXTURES.lock, note: s.noteLine.text };
+  return { inHand, locked };
 `);
-console.log('the one in hand:', JSON.stringify(inHand));
-check('what is being carried cannot be thrown away at all',
-  inHand.stash.includes(inHand.uid) && inHand.armed === null && inHand.alpha < 1,
-  `${inHand.uid} still held, button at ${inHand.alpha} alpha`);
-await shot('gear-08-discard-equipped');
+console.log('forgeRefused:', JSON.stringify(forgeRefused));
+check('the weapon in hand cannot be taken apart, and it says why', forgeRefused.inHand.kept && /착용 중/.test(forgeRefused.inHand.note), JSON.stringify(forgeRefused.inHand));
+check('잠금 keeps a weapon from 분해, and its cell wears the padlock',
+  forgeRefused.locked.kept && forgeRefused.locked.flag && forgeRefused.locked.badge === forgeRefused.locked.lock && /잠긴/.test(forgeRefused.locked.note), JSON.stringify(forgeRefused.locked));
+await shot('gear-07-forge-single');
 
-// 녹슨 검 is only forced back when there is nothing else, so it can go too.
-await ev(`(() => { window.gear.equip('l2'); return 1; })()`);
-const starter = await gearScene(`
-  s.menu.refresh();
-  const i = s.menu.items.findIndex(it => it.id === 'starter');
-  s.menu.selected = i; s.menu.refresh(); s.showDetails();
-  s.pressDiscard();
-  s.pressDiscard();
-  return 1;
+// 일괄 분해: the bases ticked, at most so many 속성 — never the one in hand, never a locked one.
+await forge(`s.openTab('bulk'); return 1;`);
+await sleep(800);
+const bulk = await forge(`
+  const c = window.config;
+  const types = ['rustySword', 'ironSword', 'steelSword'];
+  types.forEach((id) => s.toggleType(id));
+  s.setBulkMax(2);
+  const eq = window.gear.value.equipped;
+  const want = window.gear.items.filter((i) => types.includes(i.id) && i.prefixes.length + i.suffixes.length <= 2 && i.uid !== eq && !i.locked);
+  const wantOre = want.reduce((sum, i) => sum + c.GEAR[i.id].salvageOre, 0);
+  const wantTransmute = want.filter((i) => { const n = i.prefixes.length + i.suffixes.length; return n >= 2 && n <= 3; }).length;
+  const was = { ore: window.ore.value, transmute: window.orbs.count('transmute'), stash: window.gear.items.length };
+  s.pressBulk();
+  const asking = { armed: s.armed, stash: window.gear.items.length, preview: s.preview.text };
+  s.pressBulk();
+  return { want: want.map((i) => i.uid), wantOre, wantTransmute, was, asking, eq };
 `);
 await sleep(900);
+const afterBulk = await forge(`
+  return { stash: window.gear.items.map((i) => i.uid), ore: window.ore.value, transmute: window.orbs.count('transmute'),
+           note: s.noteLine.text, kept: { types: [...s.bulkTypes], max: s.bulkMax } };
+`);
+console.log('일괄 분해:', JSON.stringify({ bulk, afterBulk }));
+check('일괄 분해 asks first, its preview counting what would go',
+  bulk.asking.armed === 'bulk' && bulk.asking.stash === bulk.was.stash && bulk.asking.preview.includes(String(bulk.want.length)), JSON.stringify(bulk.asking));
+check('then takes every match apart at once — the ticked bases with that many 속성 or fewer',
+  bulk.want.length > 0 && bulk.want.every((uid) => !afterBulk.stash.includes(uid)) &&
+    afterBulk.ore - bulk.was.ore === bulk.wantOre && afterBulk.transmute - bulk.was.transmute === bulk.wantTransmute,
+  `${bulk.want.length} gone: ore +${afterBulk.ore - bulk.was.ore} (want ${bulk.wantOre}), 변화 +${afterBulk.transmute - bulk.was.transmute} (want ${bulk.wantTransmute})`);
+check('but never the one in hand nor a locked one, and the settings stay',
+  afterBulk.stash.includes(bulk.eq) && afterBulk.stash.includes('l2') && afterBulk.kept.max === 2 && afterBulk.kept.types.length === 3,
+  JSON.stringify(afterBulk.stash));
+await shot('gear-08-forge-bulk');
+
+// 제작: a bare sword for its 철광석; not without enough, never an 오니고로시.
+await forge(`s.openTab('craft'); return 1;`);
+await sleep(800);
+const craft = await forge(`
+  const c = window.config, cost = c.GEAR.rustySword.craftOre;
+  window.ore.reset(); window.ore.add(cost);
+  const was = window.gear.items.length;
+  s.pressCraft('rustySword');
+  const made = window.gear.items[window.gear.items.length - 1];
+  const after = { stash: window.gear.items.length, ore: window.ore.value, bare: made.prefixes.length + made.suffixes.length === 0 && made.id === 'rustySword' };
+  s.pressCraft('rustySword');
+  const short = { stash: window.gear.items.length, note: s.noteLine.text };
+  return { was, after, short, oni: s.craftButtons.has('onigoroshi'), oniCost: c.GEAR.onigoroshi.craftOre ?? null };
+`);
+console.log('제작:', JSON.stringify(craft));
+check('제작 makes a bare sword of that base and spends its 철광석',
+  craft.after.stash === craft.was + 1 && craft.after.ore === 0 && craft.after.bare, JSON.stringify(craft.after));
+check('without enough 철광석 it makes nothing and says so', craft.short.stash === craft.after.stash && /부족/.test(craft.short.note), JSON.stringify(craft.short));
+check('an 오니고로시 cannot be made', craft.oni === false && craft.oniCost === null);
+await shot('gear-09-forge-craft');
+
+await forge(`s.input.keyboard.emit('keydown', { code: 'Escape', repeat: false, preventDefault() {} }); return 1;`);
+await sleep(800);
+const backHome = await ev(`(() => ({ forge: window.game.scene.isActive('ForgeScene'), inventory: window.game.scene.isActive('InventoryScene') }))()`);
+check('Esc goes back to the 인벤토리', backHome.inventory && !backHome.forge, JSON.stringify(backHome));
 await cdp.send('Page.reload', {});
 await sleep(4300);
-const outlived = await ev(`(() => ({
-  stash: JSON.parse(localStorage.getItem('exiled-survivors:gear:v2')).items.map(i => i.uid),
-  equipped: JSON.parse(localStorage.getItem('exiled-survivors:gear:v2')).equipped,
-}))()`);
-console.log('녹슨 검 thrown away:', JSON.stringify(outlived));
-check('even the 녹슨 검 goes, once something else is in hand, and stays gone',
-  !outlived.stash.includes('starter') && outlived.equipped === 'l2' &&
-    outlived.stash.length === 8,
-  `${outlived.stash.length} left, carrying ${outlived.equipped}`);
+const outlived = await ev(`(() => {
+  const raw = JSON.parse(localStorage.getItem('exiled-survivors:gear:v2'));
+  return { stash: raw.items.map((i) => i.uid), locked: raw.items.find((i) => i.uid === 'l2')?.locked === true, ore: window.ore.value };
+})()`);
+check('what was taken apart stays gone, and 잠금 outlives the page', !outlived.stash.includes('l1') && outlived.locked, JSON.stringify(outlived));
 
 // --- 11. 구슬: what they do to a weapon ---
 const orbSpread = await ev(`(() => {

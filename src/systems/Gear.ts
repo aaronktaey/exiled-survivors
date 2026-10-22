@@ -7,6 +7,7 @@ import {
   GEAR_COMBINE,
   GEAR_DROP,
   PREFIXES,
+  SALVAGE_ORBS,
   STARTING_GEAR,
   STORAGE,
   SUFFIXES,
@@ -22,8 +23,11 @@ import {
   type GearId,
   type DropTier,
   type GearSpec,
+  type OrbId,
   type OrbSpec,
 } from '@/config';
+import { orbs } from '@/systems/Orbs';
+import { ore } from '@/systems/Ore';
 import type { SkillId } from '@/weapons/skills';
 
 /**
@@ -38,6 +42,8 @@ export interface GearItem {
   readonly suffixes: readonly AffixLine[];
   /** 망고 상태 (망고의 구슬): the next 구슬 that would destroy it does not. */
   readonly mango?: boolean;
+  /** 잠금 (0.90): 분해 passes it by, one at a time or in bulk. */
+  readonly locked?: boolean;
   /**
    * How many rungs its ladders had when its lines were rolled (AFFIX_RUNGS).
    * Missing means before 0.88 — `onCurrentLadder` moves such lines down.
@@ -101,6 +107,50 @@ export const NO_BONUS: GearBonus = {
   regen: 0,
   repeatChance: 0,
 };
+
+/** What one sword gives back when taken apart: its 철광석, and maybe one 구슬. */
+export interface SalvageYield {
+  readonly ore: number;
+  readonly orb: OrbId | null;
+}
+
+/** What several give back together. */
+export interface SalvageTotal {
+  readonly ore: number;
+  readonly orbs: Partial<Record<OrbId, number>>;
+}
+
+const linesOf = (item: GearItem): number => item.prefixes.length + item.suffixes.length;
+
+/** Whether 분해 may take it: not in hand, not locked. */
+export const canSalvage = (item: GearItem, equipped: string): boolean => item.uid !== equipped && item.locked !== true;
+
+/** 분해: the base's 철광석, and the 구슬 of the band its 속성 count falls in (SALVAGE_ORBS). */
+export function salvageFor(item: GearItem): SalvageYield {
+  const lines = linesOf(item);
+  const band = SALVAGE_ORBS.find((entry) => lines >= entry.minLines && lines <= entry.maxLines);
+  return { ore: GEAR[item.id]?.salvageOre ?? 0, orb: band?.orb ?? null };
+}
+
+export function totalSalvage(items: readonly GearItem[]): SalvageTotal {
+  let total = 0;
+  const found: Partial<Record<OrbId, number>> = {};
+  for (const item of items) {
+    const got = salvageFor(item);
+    total += got.ore;
+    if (got.orb) {
+      found[got.orb] = (found[got.orb] ?? 0) + 1;
+    }
+  }
+  return { ore: total, orbs: found };
+}
+
+function giveSalvage(got: SalvageYield): void {
+  ore.add(got.ore);
+  if (got.orb) {
+    orbs.add(got.orb);
+  }
+}
 
 const STARTER_UID = 'starter';
 
@@ -638,6 +688,79 @@ class GearStore {
   }
 
   /**
+   * 분해 (0.90): takes one apart for its 철광석 and, by its 속성 count, a
+   * 구슬 — which go into their drawers. Never the one in hand, never a
+   * locked one. Returns what it gave, or null when it would not.
+   */
+  public salvage(uid: string): SalvageYield | null {
+    const item = this.value.items.find((held) => held.uid === uid);
+    if (!item || !canSalvage(item, this.value.equipped)) {
+      return null;
+    }
+    const got = salvageFor(item);
+    this.commit({ ...this.value, items: this.value.items.filter((held) => held.uid !== uid) });
+    giveSalvage(got);
+    return got;
+  }
+
+  /**
+   * 일괄 분해 (0.90): every sword of the bases named with at most `maxLines`
+   * 속성 — never the one in hand, never a locked one — in one commit.
+   */
+  public salvageMany(ids: readonly GearId[], maxLines: number): { readonly count: number; readonly got: SalvageTotal } {
+    const going = this.salvageable(ids, maxLines);
+    const got = totalSalvage(going);
+    if (going.length > 0) {
+      const gone = new Set(going.map((item) => item.uid));
+      this.commit({ ...this.value, items: this.value.items.filter((held) => !gone.has(held.uid)) });
+      ore.add(got.ore);
+      for (const [id, count] of Object.entries(got.orbs) as [OrbId, number][]) {
+        orbs.add(id, count);
+      }
+    }
+    return { count: going.length, got };
+  }
+
+  /** What 일괄 분해 would take with these settings. */
+  public salvageable(ids: readonly GearId[], maxLines: number): GearItem[] {
+    const bases = new Set(ids);
+    return this.value.items.filter(
+      (item) => bases.has(item.id) && linesOf(item) <= maxLines && canSalvage(item, this.value.equipped),
+    );
+  }
+
+  /** 잠금 on or off. */
+  public setLocked(uid: string, locked: boolean): boolean {
+    if (!this.value.items.some((held) => held.uid === uid)) {
+      return false;
+    }
+    this.commit({
+      ...this.value,
+      items: this.value.items.map((held) => {
+        if (held.uid !== uid) {
+          return held;
+        }
+        const { locked: _was, ...rest } = held;
+        return locked ? { ...rest, locked: true } : rest;
+      }),
+    });
+    return true;
+  }
+
+  /**
+   * 제작 (0.90): a bare sword of this base for its `craftOre` 철광석. Null when
+   * it cannot be made or there is not enough.
+   */
+  public craft(id: GearId): GearItem | null {
+    const cost = GEAR[id]?.craftOre;
+    if (cost === undefined || !ore.spend(cost)) {
+      return null;
+    }
+    nextUid += 1;
+    return this.add({ uid: `g${Date.now().toString(36)}${nextUid}`, id, prefixes: [], suffixes: [], rungs: AFFIX_RUNGS });
+  }
+
+  /**
    * Swaps one weapon for a changed copy of itself, keeping its place in the
    * stash and whether it is being carried. This is what a 구슬 does: the
    * same weapon, different lines.
@@ -805,6 +928,7 @@ class GearStore {
           prefixes: GearStore.lines(item.prefixes, 'prefix'),
           suffixes: GearStore.lines(item.suffixes, 'suffix'),
           ...(item.mango === true ? { mango: true } : {}),
+          ...(item.locked === true ? { locked: true } : {}),
           rungs: AFFIX_RUNGS,
         };
       });

@@ -108,6 +108,8 @@ export class BootScene extends Phaser.Scene {
     this.createVortexTexture();
     this.createMangoTexture();
     this.createMagnetTexture();
+    this.createOreTexture();
+    this.createLockTexture();
     this.createUnknownRuneTextures();
     this.createLightPillarTexture();
     this.createGlowTexture();
@@ -781,6 +783,53 @@ export class BootScene extends Phaser.Scene {
    * leaf at the stem and a soft blush, so it reads as fruit and not a gem.
    */
   /** 자석: a red horseshoe magnet with silver tips, and two sparks at its mouth. */
+  /** 철광석: a dark lump of rock, rust-red veins through it and a bright glint. */
+  private createOreTexture(): void {
+    const size = 32;
+    const g = this.add.graphics();
+    g.fillStyle(0x4a4f5a, 1);
+    g.fillPoints(
+      [
+        new Phaser.Math.Vector2(6, 18), new Phaser.Math.Vector2(10, 8), new Phaser.Math.Vector2(19, 5),
+        new Phaser.Math.Vector2(27, 11), new Phaser.Math.Vector2(28, 21), new Phaser.Math.Vector2(20, 28),
+        new Phaser.Math.Vector2(9, 27),
+      ],
+      true,
+    );
+    g.fillStyle(0x6b717e, 1);
+    g.fillTriangle(10, 8, 19, 5, 15, 15);
+    g.fillStyle(0x363a43, 1);
+    g.fillTriangle(20, 28, 28, 21, 18, 18);
+    g.lineStyle(2, 0xb5562e, 1);
+    g.lineBetween(9, 20, 16, 16);
+    g.lineBetween(16, 16, 23, 19);
+    g.lineBetween(13, 11, 17, 13);
+    g.fillStyle(0xe8edf5, 1);
+    g.fillCircle(21, 10, 1.6);
+    g.fillCircle(12, 23, 1.2);
+    g.generateTexture(TEXTURES.ore, size, size);
+    g.destroy();
+  }
+
+  /** 잠금: a small gold padlock, worn in a cell's corner in the 분해 grid. */
+  private createLockTexture(): void {
+    const size = 32;
+    const g = this.add.graphics();
+    g.lineStyle(4, 0xd9b44a, 1);
+    g.beginPath();
+    g.arc(16, 13, 7, Math.PI, 0, false);
+    g.strokePath();
+    g.lineBetween(9, 13, 9, 16);
+    g.lineBetween(23, 13, 23, 16);
+    g.fillStyle(0xf2d08a, 1);
+    g.fillRoundedRect(5, 15, 22, 15, 3);
+    g.fillStyle(0x3a2e14, 1);
+    g.fillCircle(16, 21, 2.4);
+    g.fillRect(15, 21, 2, 5);
+    g.generateTexture(TEXTURES.lock, size, size);
+    g.destroy();
+  }
+
   private createMagnetTexture(): void {
     const size = 48;
     const g = this.add.graphics();

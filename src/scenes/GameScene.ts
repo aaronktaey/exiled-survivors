@@ -69,7 +69,6 @@ import {
   type EffectEntry,
   Progression,
   RunStats,
-  gold,
   type LoadoutEntry,
   Separation,
   SpawnDirector,
@@ -1588,10 +1587,7 @@ export class GameScene extends Phaser.Scene {
     // A save is somewhere to come back from, not a way to undo a death.
     saveGame.clear();
 
-    // The run is paid for the damage it dealt, so one that ended badly still
-    // moved the tree forward. Paid once, here, before the screen reads it.
     const damage = this.stats.damage;
-    const earned = gold.earn(damage);
     // Every run goes on 내 기록, entered on the shared board or not — but
     // not one the developer tools played a part in.
     if (!this.devRun) {
@@ -1614,7 +1610,6 @@ export class GameScene extends Phaser.Scene {
         })),
         survivedMs: this.elapsedMs,
         level: this.progression.level,
-        gold: earned,
       },
       level: this.progression.level,
       survivedMs: this.elapsedMs,

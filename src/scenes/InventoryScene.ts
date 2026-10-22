@@ -19,7 +19,6 @@ import {
   gearTexture,
   type AffixLine,
   type OrbId,
-  sellPriceFor,
 } from '@/config';
 import {
   affixGearDetail,
@@ -47,7 +46,7 @@ import {
 } from '@/systems/Gear';
 import { ItemGrid, type GridItem } from '@/systems/ItemGrid';
 import { fitText } from '@/systems/Layout';
-import { gold } from '@/systems/Gold';
+import { ore } from '@/systems/Ore';
 import { orbs } from '@/systems/Orbs';
 import { prefersTouchControls } from '@/systems/VirtualJoystick';
 import { addBackButton, type BackButton } from '@/systems/BackButton';
@@ -426,8 +425,11 @@ export class InventoryScene extends Phaser.Scene {
       }));
     }
 
-    // One cell per kind held, 구슬 first, then 뼈다귀.
+    // One cell per kind held: 철광석, then 구슬, then 뼈다귀.
     return [
+      ...(ore.value > 0
+        ? [{ id: 'ore', icon: TEXTURES.ore, tier: 'normal' as const, count: () => ore.value, label: () => t().forge.oreName }]
+        : []),
       ...ALL_ORBS.filter((orb) => orbs.count(orb.id) > 0).map((orb) => ({
         id: `orb:${orb.id}`,
         icon: orb.texture,
@@ -568,6 +570,12 @@ export class InventoryScene extends Phaser.Scene {
     if (!id) {
       this.heading.setText(copy.empty);
       this.lines.setText('');
+      return;
+    }
+
+    if (id === 'ore') {
+      this.heading.setText(t().forge.oreName);
+      this.lines.setText([fill(copy.held, { count: ore.value }), '', t().forge.oreUse].join('\n'));
       return;
     }
 
@@ -819,12 +827,15 @@ export class InventoryScene extends Phaser.Scene {
     this.orbHint.setText(this.payload.note ?? '');
   }
 
-  /** Only something the survivor is not carrying can be thrown away. */
+  /** 분해 opens on any weapon: what it can and cannot take apart is said there. */
   private canDiscard(item: GearItem | undefined): boolean {
-    return item !== undefined && gear.value.equipped !== item.uid;
+    return item !== undefined;
   }
 
-  /** First press asks, second press throws it away. */
+  /**
+   * 분해 (0.90 — it replaced selling): opens the 분해 screen on the weapon
+   * under the cursor. Still `pressDiscard` for the key and the tests.
+   */
   public pressDiscard(): void {
     if (this.combining || this.busy) {
       return;
@@ -833,26 +844,7 @@ export class InventoryScene extends Phaser.Scene {
     if (!this.canDiscard(item) || !item) {
       return;
     }
-
-    if (this.armed !== 'discard') {
-      this.armed = 'discard';
-      this.refreshDiscard();
-      this.refreshOrbs();
-      return;
-    }
-
-    // 팔기: the sword goes, and its price goes into the purse.
-    const price = sellPriceFor(item);
-    const at = this.menu.selected;
-    gear.discard(item.uid);
-    gold.gain(price);
-    // A weapon shorter, so the grid is laid out again around what is left.
-    this.scene.restart({
-      onClose: this.payload.onClose,
-      tab: 'gear',
-      focusIndex: at,
-      note: fill(t().gear.sold, { gear: gearTitle(item), price: price.toLocaleString('en-US') }),
-    });
+    this.scene.start(SCENES.forge, { onClose: this.payload.onClose, focus: item.uid });
   }
 
   private refreshDiscard(): void {
@@ -860,16 +852,12 @@ export class InventoryScene extends Phaser.Scene {
       return;
     }
 
-    const copy = t().gear;
-    const item = this.selected();
-    const live = this.canDiscard(item);
-    const asking = this.armed === 'discard' && live;
-    const price = item ? sellPriceFor(item).toLocaleString('en-US') : '';
-    this.discard.setText(asking ? fill(copy.discardConfirm, { price }) : live ? fill(copy.sellFor, { price }) : copy.discard);
+    const live = this.canDiscard(this.selected());
+    this.discard.setText(t().gear.discard);
     fitText(this.discard.setScale(1), (this.discardPlate.width ?? 120) - 6, 0);
-    this.discard.setColor(asking ? COLORS.accent : COLORS.muted);
+    this.discard.setColor(COLORS.muted);
     this.discard.setAlpha(live ? 1 : 0.35);
-    this.discardPlate.setFillStyle(COLORS.panelActive, asking ? 0.55 : 0);
+    this.discardPlate.setFillStyle(COLORS.panelActive, 0);
     this.discardPlate.setAlpha(live ? 1 : 0.35);
   }
 

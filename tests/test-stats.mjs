@@ -29,12 +29,13 @@ await sleep(4500);
 // --- 1. a fresh run starts from nothing ---
 const fresh = await run(`
   return { damage: s.stats.damage, kills: s.stats.killCount, byKind: s.stats.byKind,
-           gold: window.gold.value };
+           gold: typeof window.gold, economy: 'ECONOMY' in window.config };
 `);
 check('a run starts with nothing counted',
   fresh.damage === 0 && fresh.kills === 0 && fresh.byKind.length === 0,
   `${fresh.damage} damage, ${fresh.kills} kills`);
-check('and an empty purse the first time', fresh.gold === 0, `${fresh.gold} gold`);
+// Gold went in 0.90 (분해 took selling's place): no purse, no rate.
+check('there is no gold any more — no purse, no rate', fresh.gold === 'undefined' && fresh.economy === false, JSON.stringify(fresh));
 
 // --- 2. what it dealt, and to what ---
 const KINDS = { grunt: 120, brute: 8, runner: 15, shooter: 9 };
@@ -75,13 +76,12 @@ check('and counted under the kind it was',
     fought.byKind.find((k) => k.kind === 'boss')?.count === fought.bosses,
   fought.byKind.map((k) => `${k.kind} ${k.count}`).join(' / '));
 // A hit that kills something with two health left is worth two, not whatever
-// the weapon rolled: overkill would otherwise pay out as gold.
+// the weapon rolled: overkill would otherwise swell the board.
 check('damage is what the enemies actually absorbed, overkill aside',
   fought.damage === fought.expected,
   `${fought.damage} against ${fought.expected} of enemy health`);
 
-// --- 3. the run is paid for it ---
-const ECON = await ev(`(() => ({ ...window.config.ECONOMY }))()`);
+// --- 3. the end screen is handed the run ---
 const died = await run(`
   s.player.invulnerableUntil = 0;
   s.player.takeDamage(99999);
@@ -90,22 +90,19 @@ const died = await run(`
 await sleep(1400);
 const over = await scene('GameOverScene', `
   return { summary: s.payload.summary,
-           lines: s.table.list.map(o => o.text),
-           gold: window.gold.value };
+           lines: s.table.list.map(o => o.text) };
 `);
 console.log('summary:', JSON.stringify({ ...over.summary, skills: over.summary.skills.length }));
 check('the end-of-run screen is handed the run it just played',
   over.summary.damage === died.damage && over.summary.kills === planned,
   `${over.summary.damage} damage, ${over.summary.kills} kills`);
-check('gold is the damage over the configured rate, rounded down',
-  over.summary.gold === Math.floor(died.damage / ECON.damagePerGold) && over.gold === over.summary.gold,
-  `${died.damage} damage -> ${over.summary.gold} gold`);
+check('and pays nothing out — there is no gold in it', !('gold' in over.summary), JSON.stringify(Object.keys(over.summary)));
 
 // --- 4. and reads it out ---
 const table = over.lines.join(' | ');
 console.log('table:', table);
-check('the table shows what was dealt, killed and earned',
-  /가한 피해/.test(table) && /처치/.test(table) && /획득 골드/.test(table) &&
+check('the table shows what was dealt and killed, and no gold',
+  /가한 피해/.test(table) && /처치/.test(table) && !/골드/.test(table) &&
     table.includes(over.summary.damage.toLocaleString('en-US')),
   table);
 check('it breaks the kills down by kind',
@@ -125,7 +122,7 @@ check('nothing in the table runs off the screen',
   `) === true, 'every line inside the canvas');
 await shot('stats-01-summary');
 
-// --- 5. the purse, on 패시브 — and no shop since the 신성한 조각 went (0.83) ---
+// --- 5. 패시브 shows no purse, and no shop since the 신성한 조각 went (0.83) ---
 await ev(`(() => {
   const s = window.game.scene.getScene('GameOverScene');
   const i = s.menu.rows.findIndex(r => r.item.id === 'menu');
@@ -135,24 +132,23 @@ await cdp.tap('Space', 32, ' ');
 await sleep(1800);
 await ev(`(() => { window.game.scene.getScene('MenuScene').icons.press('passives'); return 1; })()`);
 await sleep(1000);
-await ev(`(() => { const e = window.config.ECONOMY; window.gold.earn(e.damagePerGold * 250); return 1; })()`);
 await ev(`(() => { window.game.scene.getScene('PassiveScene').scene.restart({ onClose: () => {} }); return 1; })()`);
 await sleep(900);
 const purse = await scene('PassiveScene', `
-  return { gold: window.gold.value, purse: s.purse.text, shop: 'shopButton' in s && s.shopButton !== undefined,
+  return { purse: s.purse.text, shop: 'shopButton' in s && s.shopButton !== undefined,
            buttons: s.children.list.filter((o) => o.type === 'Text' && /구매|조각/.test(o.text)).map((o) => o.text) };
 `);
 console.log('purse:', JSON.stringify(purse));
-check('the purse is read out on the screen', purse.purse.includes(`골드 ${purse.gold}`), purse.purse);
+check('no gold is read out on 패시브', !/골드/.test(purse.purse), purse.purse);
 check('and nothing on 패시브 sells a 신성한 조각 any more', !purse.shop && purse.buttons.length === 0, JSON.stringify(purse.buttons));
 await shot('stats-02-purse');
-const tenth = { gold: purse.gold };
 
-// --- 6. the purse outlives the page ---
+// --- 6. an old purse is cleared on load ---
+await ev(`(() => { localStorage.setItem('exiled-survivors:gold:v1', '12345'); return 1; })()`);
 await cdp.send('Page.reload', {});
 await sleep(4200);
-const survived = await ev(`(() => ({ gold: window.gold.value }))()`);
-check('the purse outlives the page', survived.gold === tenth.gold, `${survived.gold} gold`);
+const cleared = await ev(`(() => ({ gold: localStorage.getItem('exiled-survivors:gold:v1'), retired: window.config.RETIRED_STORAGE }))()`);
+check('a purse left from before is cleared from storage on load', cleared.gold === null && cleared.retired.includes('exiled-survivors:gold:v1'), JSON.stringify(cleared));
 
 // --- 7. and a new run starts its own count ---
 await ev(`(() => { window.game.scene.getScene('MenuScene')?.scene.start('GameScene', { save: null }); return 1; })()`);

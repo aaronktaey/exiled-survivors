@@ -15,7 +15,6 @@ export interface RunSummary {
   readonly skills: readonly RunSkillLine[];
   readonly survivedMs: number;
   readonly level: number;
-  readonly gold: number;
 }
 
 /**
@@ -38,7 +37,7 @@ export class RunStats {
   /**
    * Carries on from a saved run's count, so the damage and kills before it
    * was saved still count at the end (they were lost on every resume until
-   * 2026-10-18 — and the board, 내 기록 and the gold went by the rest only).
+   * 2026-10-18 — and the board and 내 기록 went by the rest only).
    */
   public seed(damage: number, kills: Partial<Record<EnemyKind, number>> = {}): void {
     this.damageDealt = Math.max(0, Number(damage) || 0);

@@ -6,7 +6,7 @@ import Phaser from 'phaser';
 import './style.css';
 
 import * as balance from '@/config';
-import { COLORS } from '@/config';
+import { COLORS, RETIRED_STORAGE } from '@/config';
 import { settings } from '@/systems/Settings';
 import { registerSharpText } from '@/systems/SharpText';
 import { gear, gearBonusFor, orbApplied } from '@/systems/Gear';
@@ -15,7 +15,7 @@ import { liveUpdate } from '@/systems/LiveUpdate';
 import { personal } from '@/systems/PersonalBest';
 import { account } from '@/systems/Account';
 import { cloudSave } from '@/systems/CloudSave';
-import { gold } from '@/systems/Gold';
+import { ore } from '@/systems/Ore';
 import { critMultiplierFor } from '@/systems/Modifiers';
 import { bones as bonesStore } from '@/systems/Bones';
 import { orbs } from '@/systems/Orbs';
@@ -37,6 +37,7 @@ import {
   GameScene,
   BoneScene,
   InventoryScene,
+  ForgeScene,
   OrbScene,
   InfoScene,
   PassiveScene,
@@ -50,6 +51,15 @@ import {
   SkillPickScene,
   PodiumScene,
 } from '@/scenes';
+
+// What nothing reads any more goes, so it is not synced about for ever.
+for (const key of RETIRED_STORAGE) {
+  try {
+    window.localStorage.removeItem(key);
+  } catch {
+    // Storage off: there is nothing to clear.
+  }
+}
 
 // Language first: every scene reads its text as it is built.
 settings.prime();
@@ -99,6 +109,7 @@ const config: Phaser.Types.Core.GameConfig = {
     ConfirmScene,
     GameOverScene,
     InventoryScene,
+    ForgeScene,
   OrbScene,
     PassiveScene,
     BoneScene,
@@ -136,7 +147,7 @@ if (import.meta.env.DEV) {
     passives?: typeof passives;
     sealRecord?: typeof sealRecord;
     openRecord?: typeof openRecord;
-    gold?: typeof gold;
+    ore?: typeof ore;
     orbs?: typeof orbs;
     bones?: typeof bonesStore;
     orbApplied?: typeof orbApplied;
@@ -158,7 +169,7 @@ if (import.meta.env.DEV) {
   dev.passives = passives;
   dev.sealRecord = sealRecord;
   dev.openRecord = openRecord;
-  dev.gold = gold;
+  dev.ore = ore;
   dev.orbs = orbs;
   dev.bones = bonesStore;
   dev.orbApplied = orbApplied;

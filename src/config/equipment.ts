@@ -63,6 +63,10 @@ export interface GearSpec {
   readonly fromKill?: number;
   /** 고정 속성: on every one of this base, outside the affix slots. */
   readonly implicit?: GearImplicit;
+  /** 분해: the 철광석 one gives back when taken apart (0.90). */
+  readonly salvageOre: number;
+  /** 제작: the 철광석 a bare one costs to make. Unset, it cannot be made. */
+  readonly craftOre?: number;
   /**
    * Its picture (public/, from the Raven Fantasy pack — see
    * assets/icons/CREDITS.txt), loaded under `gearTexture(id)`. Each tier its
@@ -90,6 +94,7 @@ export const GEAR_BASE = {
 export const GEAR: Record<GearId, GearSpec> = {
   onigoroshi: {
     id: 'onigoroshi',
+    salvageOre: 50,
     icon: 'assets/icons/gear-onigoroshi.png',
     slot: 'weapon',
     tier: 1,
@@ -99,6 +104,8 @@ export const GEAR: Record<GearId, GearSpec> = {
   },
   runedSword: {
     id: 'runedSword',
+    salvageOre: 20,
+    craftOre: 100,
     icon: 'assets/icons/gear-runedSword.png',
     slot: 'weapon',
     tier: 2,
@@ -109,6 +116,8 @@ export const GEAR: Record<GearId, GearSpec> = {
   // From tier 3 down, any kill can leave one too — rarely.
   steelSword: {
     id: 'steelSword',
+    salvageOre: 9,
+    craftOre: 45,
     icon: 'assets/icons/gear-steelSword.png',
     slot: 'weapon',
     tier: 3,
@@ -119,6 +128,8 @@ export const GEAR: Record<GearId, GearSpec> = {
   },
   ironSword: {
     id: 'ironSword',
+    salvageOre: 3,
+    craftOre: 15,
     icon: 'assets/icons/gear-ironSword.png',
     slot: 'weapon',
     tier: 4,
@@ -129,6 +140,8 @@ export const GEAR: Record<GearId, GearSpec> = {
   },
   rustySword: {
     id: 'rustySword',
+    salvageOre: 1,
+    craftOre: 5,
     icon: 'assets/icons/gear-rustySword.png',
     slot: 'weapon',
     tier: 5,
@@ -143,15 +156,16 @@ export const GEAR: Record<GearId, GearSpec> = {
 };
 
 /**
- * ★ 장비 판매 — what a sword fetches in 골드 in place of throwing it away.
- * The weakest tier is worth `perRank`, and each tier up one more `perRank`
- * (1티어 오니고로시 500, 5티어 녹슨 검 100 with five tiers); every 속성 it
- * carries adds `perAffix` of that, added rather than compounded.
+ * ★ 분해 (0.90, the user's ask — it replaced selling, and gold went with it).
+ * Taking a sword apart gives its base's `salvageOre` 철광석 and, by how many
+ * 속성 it carries, one 구슬: the first band its count falls in. Fewer than
+ * the lowest band, only the ore.
  */
-export const GEAR_SELL = {
-  perRank: 100,
-  perAffix: 0.1,
-} as const;
+export const SALVAGE_ORBS: readonly { readonly minLines: number; readonly maxLines: number; readonly orb: OrbId }[] = [
+  { minLines: 2, maxLines: 3, orb: 'transmute' },
+  { minLines: 4, maxLines: 5, orb: 'chaos' },
+  { minLines: 6, maxLines: 6, orb: 'awaken' },
+];
 
 /** The weakest tier on the roster — the one worth GEAR_BASE.lowestAttack. */
 export const LOWEST_GEAR_TIER = Math.max(...Object.values(GEAR).map((spec) => spec.tier));
@@ -339,9 +353,3 @@ export const ORB_DROP = {
   size: 16,
 } as const;
 
-/** What selling this sword pays: its rank from the bottom × GEAR_SELL.perRank, + perAffix a 속성. */
-export function sellPriceFor(item: { readonly id: GearId; readonly prefixes: readonly unknown[]; readonly suffixes: readonly unknown[] }): number {
-  const rank = LOWEST_GEAR_TIER + 1 - GEAR[item.id].tier;
-  const lines = item.prefixes.length + item.suffixes.length;
-  return Math.round(rank * GEAR_SELL.perRank * (1 + GEAR_SELL.perAffix * lines));
-}

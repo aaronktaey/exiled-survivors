@@ -42,6 +42,7 @@ export const SCENES = {
   confirm: "ConfirmScene",
   gameOver: "GameOverScene",
   inventory: "InventoryScene",
+  forge: "ForgeScene",
   orb: "OrbScene",
   bones: "BoneScene",
   passives: "PassiveScene",
@@ -80,6 +81,12 @@ export const SEAL = {
 } as const;
 
 /** Keys the browser keeps our state under. Bump the suffix to invalidate. */
+/**
+ * Keys no longer read by anything, cleared on load (main.ts): the purse,
+ * since gold went in 0.90.
+ */
+export const RETIRED_STORAGE: readonly string[] = ["exiled-survivors:gold:v1"];
+
 export const STORAGE = {
   settings: "exiled-survivors:settings:v1",
   save: "exiled-survivors:save:v1",
@@ -87,8 +94,8 @@ export const STORAGE = {
   gear: "exiled-survivors:gear:v2",
   /** The passive tree, which outlives it too. */
   passives: "exiled-survivors:passives:v1",
-  /** And the purse a run pays into. */
-  gold: "exiled-survivors:gold:v1",
+  /** 철광석: what 분해 gives and 제작 spends (0.90). */
+  ore: "exiled-survivors:ore:v1",
   /** The 구슬 drawer, which outlives a run beside the stash. */
   orbs: "exiled-survivors:orbs:v1",
   /** And the 뼈다귀 drawer, spent one run at a time. */

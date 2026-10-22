@@ -1,15 +1,12 @@
-import { ECONOMY, STORAGE } from '@/config';
+import { STORAGE } from '@/config';
 
-type Listener = (gold: number) => void;
+type Listener = (ore: number) => void;
 
 /**
- * The purse. It is paid out of how much damage a run dealt. Since 0.83 it
- * buys nothing (the 신성한 조각 it bought went); the user put taking it out
- * on hold, so it is still earned and shown.
- *
- * Kept beside the stash and the tree: all three outlive a run on purpose.
+ * 철광석 (0.90): what 분해 gives back and 제작 spends. It took the purse's
+ * place when gold went — kept beside the stash and outliving a run the same way.
  */
-class GoldStore {
+class OreStore {
   private current = 0;
   private readonly listeners = new Set<Listener>();
   private loaded = false;
@@ -21,22 +18,7 @@ class GoldStore {
     return this.current;
   }
 
-  /** What a run's damage is worth, rounded down. */
-  public static earnedFor(damage: number): number {
-    return Math.max(0, Math.floor(damage / ECONOMY.damagePerGold));
-  }
-
-  /** Pays a run out. Returns what it earned. */
-  public earn(damage: number): number {
-    const earned = GoldStore.earnedFor(damage);
-    if (earned > 0) {
-      this.commit(this.value + earned);
-    }
-    return earned;
-  }
-
-  /** Adds a sum earned some other way than a run (a sword sold). */
-  public gain(amount: number): void {
+  public add(amount: number): void {
     if (amount > 0) {
       this.commit(this.value + amount);
     }
@@ -71,7 +53,7 @@ class GoldStore {
   private load(): void {
     this.loaded = true;
     try {
-      const raw = window.localStorage.getItem(STORAGE.gold);
+      const raw = window.localStorage.getItem(STORAGE.ore);
       this.current = raw ? Math.max(0, Math.floor(Number(JSON.parse(raw)) || 0)) : 0;
     } catch {
       this.current = 0;
@@ -80,12 +62,11 @@ class GoldStore {
 
   private save(): void {
     try {
-      window.localStorage.setItem(STORAGE.gold, JSON.stringify(this.current));
+      window.localStorage.setItem(STORAGE.ore, JSON.stringify(this.current));
     } catch {
-      // The purse lasts as long as the tab, then.
+      // It lasts as long as the tab, then.
     }
   }
 }
 
-export const gold = new GoldStore();
-export const goldFor = GoldStore.earnedFor;
+export const ore = new OreStore();
