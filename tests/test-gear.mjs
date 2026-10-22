@@ -1656,6 +1656,15 @@ const v091 = await ev(`(() => {
 console.log('0.91 gear:', JSON.stringify(v091));
 check('룬 각인 검 has no 합성: no 합성 makes an 오니고로시 (or a 나르실)',
   v091.problem === 'top' && v091.targets.length === 0 && v091.oniCombine === false && v091.steel.length > 0, JSON.stringify(v091));
+const narsilRead = await ev(`(() => {
+  const InventoryScene = window.game.scene.getScene('InventoryScene').constructor;
+  const c = window.config, item = { uid: 'n', id: 'narsil', prefixes: [], suffixes: [] };
+  return { first: InventoryScene.describe(item).split(String.fromCharCode(10))[0], base: c.attackForTier(c.GEAR.narsil.tier),
+           implicit: c.GEAR.narsil.implicit.attack, total: window.gearBonusFor(item).attack };
+})()`);
+check('나르실 reads its base attack and its 고정 속성 apart — and fights with both',
+  narsilRead.first.startsWith(`공격력 +${narsilRead.base} `) && narsilRead.first.includes(`공격력 +${narsilRead.implicit}`) &&
+    narsilRead.total === narsilRead.base + narsilRead.implicit, JSON.stringify(narsilRead));
 check('나르실 is made for its 철광석, never dropped, and gives back 50 when taken apart',
   v091.made === 'narsil' && v091.oreAfter === 0 && v091.back?.ore === 50 && v091.narsilWeight === 0, JSON.stringify(v091));
 

@@ -10,8 +10,10 @@ import {
   DEPTH,
   GEAR_COMBINE,
   GEAR_DROP,
+  GEAR,
   INVENTORY,
   ORBS,
+  attackForTier,
   PAUSE_BUTTON,
   SCENES,
   SCRIM,
@@ -39,7 +41,6 @@ import { bones } from '@/systems/Bones';
 import {
   dropTierFor,
   gear,
-  gearBonusFor,
   orbApplied,
   type CombineOutcome,
   type GearItem,
@@ -900,7 +901,9 @@ export class InventoryScene extends Phaser.Scene {
    */
   public static describe(item: GearItem): string {
     const copy = t().gear;
-    const head = fill(copy.attack, { attack: gearBonusFor(item).attack });
+    // The base's own attack, as its tier gives it: a 고정 속성 that adds
+    // attack (나르실) is read on its own line after, not folded in (0.92).
+    const head = fill(copy.attack, { attack: attackForTier(GEAR[item.id].tier) });
     const implicit = gearImplicitText(item.id);
 
     return [

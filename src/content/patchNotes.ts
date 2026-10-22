@@ -15,6 +15,16 @@ export interface PatchNote {
 
 export const PATCH_NOTES: readonly PatchNote[] = [
   {
+    version: '0.92',
+    date: '2026-10-22',
+    changes: {
+      ko: ['장비 설명의 공격력이 고정 속성을 뺀 기본 공격력으로 표시됩니다. 나르실은 ‘공격력 +25 · 고정: 공격력 +15’로 보이며, 실제로는 둘을 더한 40이 적용됩니다.'],
+      en: ['A weapon’s Attack line now shows the base’s own attack, its implicit apart: Narsil reads “Attack +25 · Implicit: Attack +15”, and fights with both, 40 in all.'],
+      ja: ['装備説明の攻撃力が固定属性を除いた基本攻撃力で表示されます。ナルシルは「攻撃力 +25 · 固定: 攻撃力 +15」と表示され、実際には合計40が適用されます。'],
+      zh: ['装备说明中的攻击力改为显示不含固定属性的基础攻击力。纳希尔显示为“攻击力 +25 · 固定：攻击力 +15”，实际按两者之和40计算。'],
+    },
+  },
+  {
     version: '0.91',
     date: '2026-10-22',
     changes: {
