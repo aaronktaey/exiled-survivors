@@ -71,6 +71,7 @@ export const ko: Strings = {
     attackSpeedScale: '공격속도 +{n}%',
     moveSpeedScale: '이동속도 +{n}%',
     maxHpScale: '최대 체력 +{n}%',
+    contactDamageScale: '받는 접촉 피해 {n}% 감폭',
   },
   mastery: {
     title: '{skill} 각성!',
@@ -80,8 +81,9 @@ export const ko: Strings = {
       fireball: '폭발 범위가 {blastScale}배로 넓어집니다',
       chainLightning: '남은 연쇄 횟수 1회당 피해가 {bonus} 증폭됩니다',
       iceSpear: '이미 냉각된 적을 맞히면 {freeze}초 동안 얼어붙습니다',
-      voidOrb: '공허 생성',
+      voidOrb: '구체가 적을 때릴 때마다 체력을 {heal} 회복합니다',
       thunderStrike: '맞은 적이 {shockSecs}초 동안 감전되어 받는 피해가 {shockAmp} 늘어납니다',
+      drone: '드론이 {bombEvery}번 쏠 때마다 작은 범위에 피해 {bombShare}의 폭탄을 떨어뜨립니다',
     },
     title2: '{skill} 2차 각성!',
     card2: '2차 각성 — {effect}',
@@ -92,6 +94,7 @@ export const ko: Strings = {
       iceSpear: '냉각된 적이 죽으면 주변 {shatter}px 안의 적도 냉각됩니다',
       voidOrb: '안쪽에 반대로 도는 구체 고리가 하나 더 생깁니다 (피해 {innerShare})',
       thunderStrike: '떨어진 자리 주변의 적에게도 피해의 {splashShare}를 줍니다',
+      drone: '드론 수가 {droneTimes}배가 됩니다',
     },
   },
   tuning: {
@@ -100,7 +103,7 @@ export const ko: Strings = {
     tabs: { skills: '스킬', enemies: '적', drops: '드랍' },
     common: '모든 스킬 공통',
     unlockAt: '{kind} 등장',
-    fields: { damage: '피해', attackSpeed: '초당 공격', range: '사거리', projectileSpeed: '투사체 속도', chainCount: '연쇄', pierceCount: '관통', orbCount: '구체 수', orbitSpeed: '회전 속도', blastRadius: '폭발 범위', recastChance: '재시전 확률', damageScale: '피해 배율' },
+    fields: { damage: '피해', attackSpeed: '초당 공격', range: '사거리', projectileSpeed: '투사체 속도', chainCount: '연쇄', pierceCount: '관통', orbCount: '구체 수', orbitSpeed: '회전 속도', blastRadius: '폭발 범위', recastChance: '재시전 확률', droneCount: '드론 수', damageScale: '피해 배율' },
     labels: {
       'UPGRADE_PERCENT.damage': '강화 피해 %',
       'UPGRADE_PERCENT.attackSpeed': '강화 공속 %',
@@ -158,6 +161,7 @@ export const ko: Strings = {
       orbitSpeed: '{skill} 구체가 도는 속도(px/초)입니다. 빠를수록 같은 시간에 더 많은 적을 스쳐 지나갑니다.',
       blastRadius: '{skill} 폭발의 기본 반경(px)입니다. 폭발 범위 강화·각성·화염구 보유 효과가 이 값에 곱해집니다.',
       recastChance: '{skill}로 적을 처치했을 때 한 번 더 떨어질 기본 확률입니다. 재시전 확률 강화가 이 값 위에 더해집니다.',
+      droneCount: '{skill}의 기본 드론 수입니다. 드론 수 강화와 룬 각인 검의 투사체 +1이 이 값 위에 더해집니다.',
     },
     details: {
       'BALANCE.enemyHpScale': '모든 적의 체력에 곱해지는 배율입니다. 1.5면 모든 적이 처음부터 50% 더 단단합니다. 시간에 따른 체력 증가는 이 값 위에 곱해집니다.',
@@ -598,6 +602,7 @@ export const ko: Strings = {
     chainCount: { label: '연쇄 횟수 +{n}', detail: '{skill}{이가} {n}명에게 더 옮겨붙습니다' },
     pierceCount: { label: '관통 횟수 +{n}', detail: '{skill}{이가} {n}명을 더 꿰뚫고 지나갑니다' },
     orbCount: { label: '구체 수 +{n}', detail: '{skill}{이가} {n}개 더 공전합니다' },
+    droneCount: { label: '드론 수 +{n}', detail: '{skill}{이가} {n}대 더 날아다닙니다' },
     blastRadius: { label: '폭발 범위 +{n}%', detail: '{skill}의 폭발 범위가 기본값의 {n}%만큼 넓어집니다' },
     recastChance: { label: '처치 시 재시전 +{n}%', detail: '{skill}{이가} 적을 처치하면 다시 떨어질 확률이 {n}%p 오릅니다' },
   },

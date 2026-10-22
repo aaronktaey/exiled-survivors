@@ -75,31 +75,44 @@ const pace = await run(`
   const before = { cooldown: s.cooldownOf('meleeStrike'), speed: p.moveSpeed, hp: p.hp, max: p.maxHp };
   s.acquire('chainLightning');
   const mid = { cooldown: s.cooldownOf('meleeStrike') };
-  s.acquire('voidOrb');
+  s.acquire('drone');
   const after = { speed: p.moveSpeed };
-  return { before, mid, after, H, min: c.STATS.minCooldownMs };
+  // 공허구체 (0.95): a body does contactDamageScale as much.
+  p.setInvulnerable(false);
+  p.hp = p.maxHp;
+  let h = p.hp; p.takeContact(10); const plain = h - p.hp;
+  s.acquire('voidOrb');
+  p.hp = p.maxHp;
+  h = p.hp; p.takeContact(10); const less = h - p.hp;
+  p.hp = p.maxHp;
+  p.setInvulnerable(true);
+  return { before, mid, after, H, min: c.STATS.minCooldownMs, plain, less };
 `);
 check('연쇄번개 held: every skill goes off faster by its share',
   Math.abs(pace.before.cooldown / pace.mid.cooldown - pace.H.chainLightning.attackSpeedScale) < 0.02 || pace.mid.cooldown === pace.min,
   `${pace.before.cooldown}ms → ${pace.mid.cooldown}ms`);
-check('공허구체 held: the survivor moves faster by its share',
-  Math.abs(pace.after.speed / pace.before.speed - pace.H.voidOrb.moveSpeedScale) < 1e-6, `${pace.before.speed} → ${pace.after.speed}`);
+check('드론 held: the survivor moves faster by its share (공허구체’s until 0.95)',
+  Math.abs(pace.after.speed / pace.before.speed - pace.H.drone.moveSpeedScale) < 1e-6, `${pace.before.speed} → ${pace.after.speed}`);
+check('공허구체 held: an enemy’s body does less by its share',
+  Math.abs(pace.less - pace.plain * pace.H.voidOrb.contactDamageScale) < 1e-6, `${pace.plain} → ${pace.less}`);
 
 // The card says so.
 const card = await run(`
   s.hud.update(0, s.spawner.alive, s.loadout(), s.effectsNow());
-  const i = s.loadout().findIndex((l) => l.id === 'voidOrb');
-  s.hud.point(i);
-  const text = s.hud.cardText.text;
-  s.hud.point(-1);
-  return text;
+  const read = (id) => { s.hud.point(s.loadout().findIndex((l) => l.id === id)); const text = s.hud.cardText.text; s.hud.point(-1); return text; };
+  return { drone: read('drone'), voidOrb: read('voidOrb') };
 `);
-check('the skill’s card on the HUD carries its 보유 효과', /보유 효과/.test(card) && /이동속도/.test(card), card.split('\n').find((l) => /보유/.test(l)));
+check('the skill’s card on the HUD carries its 보유 효과',
+  /보유 효과/.test(card.drone) && /이동속도/.test(card.drone) && /접촉 피해/.test(card.voidOrb),
+  [card.drone, card.voidOrb].map((t) => t.split('\n').find((l) => /보유/.test(l))).join(' / '));
 
 // --- 2. 보조 스킬: three besides the main one, then only what is held ---
 const full = await run(`
   const c = window.config;
-  s.acquire('fireball');
+  // Filled to the slots (the 보유 효과 checks above took three already since 0.95).
+  for (const id of ['fireball', 'iceSpear', 'thunderStrike']) {
+    if ([...s.owned].filter((x) => x !== s.mainSkill).length < c.SUB_SKILLS.max) s.acquire(id);
+  }
   const subs = [...s.owned].filter((id) => id !== s.mainSkill);
   const isFull = s.subSkillsFull;
   // What a skill drop and a 무작위 스킬 can be now.

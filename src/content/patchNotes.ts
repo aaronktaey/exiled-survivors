@@ -15,6 +15,36 @@ export interface PatchNote {
 
 export const PATCH_NOTES: readonly PatchNote[] = [
   {
+    version: '0.95',
+    date: '2026-10-22',
+    changes: {
+      ko: [
+        '새 스킬 드론: 작은 원격 로봇 5대가 주변 270px 안에 들어온 적에게 붙어 작은 총으로 쏩니다(피해 80, 초당 0.47회). 적이 죽거나 범위를 벗어나면 다음 적으로 옮겨 가고, 적 한 마리에는 최대 3대까지 붙습니다.',
+        '드론 강화: 공격력 · 공격속도 · 드론 수. 1차 각성은 드론이 5번 쏠 때마다 작은 범위에 폭탄(피해 150%), 2차 각성은 드론 수 2배. 보유 효과는 이동속도 +15%입니다.',
+        '공허구체 1차 각성이 바뀌었습니다: 공허 생성 대신 구체가 적을 때릴 때마다 체력을 1 회복합니다.',
+        '공허구체 보유 효과가 바뀌었습니다: 이동속도 +15% 대신 받는 접촉 피해 20% 감폭.',
+      ],
+      en: [
+        'New skill, Drone: five little remote robots go after enemies that come within 270px and shoot them with little guns (80 damage, 0.47 shots a second). When one dies or strays out of range they move on, and no more than three take the same enemy.',
+        'Drone upgrades: damage, attack speed and drones. Awakening: every fifth shot of a drone drops a bomb on a small area (150% damage). Second awakening: twice the drones. Held bonus: move speed +15%.',
+        'Void Orb’s awakening is new: instead of opening a void, every hit of an orb gives back 1 health.',
+        'Void Orb’s held bonus is new: 20% less contact damage taken, in place of move speed +15%.',
+      ],
+      ja: [
+        '新スキル「ドローン」：小さな遠隔ロボット5機が周囲270px以内に入った敵に張り付き、小さな銃で撃ちます（ダメージ80、毎秒0.47回）。敵が倒れるか範囲外に出ると次の敵へ移り、1体の敵には最大3機まで張り付きます。',
+        'ドローンの強化：攻撃力・攻撃速度・ドローン数。覚醒はドローンが5回撃つたびに小さな範囲へ爆弾（ダメージ150%）、第二覚醒はドローン数2倍。保有効果は移動速度+15%です。',
+        '虚無球の覚醒が変わりました：虚空の生成の代わりに、球が敵を叩くたびに体力を1回復します。',
+        '虚無球の保有効果が変わりました：移動速度+15%の代わりに、受ける接触ダメージ20%減少。',
+      ],
+      zh: [
+        '新技能“无人机”：5架小型遥控机器人会贴近进入周围270px的敌人，用小枪射击（伤害80，每秒0.47次）。敌人死亡或离开范围后会转向下一个敌人，同一个敌人最多3架。',
+        '无人机强化：攻击力、攻击速度、无人机数量。觉醒：无人机每射击5次，在小范围投下炸弹（150%伤害）；二次觉醒：无人机数量翻倍。持有效果：移动速度+15%。',
+        '虚空球的觉醒改为：不再生成虚空，球体每次命中敌人时恢复1点生命。',
+        '虚空球的持有效果改为：受到的接触伤害减少20%（原为移动速度+15%）。',
+      ],
+    },
+  },
+  {
     version: '0.94',
     date: '2026-10-22',
     changes: {

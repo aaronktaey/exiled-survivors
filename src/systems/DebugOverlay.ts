@@ -34,12 +34,14 @@ export interface DebugActions {
   readonly spawnBoss: () => void;
   readonly clearEnemies: () => void;
   readonly grantLevel: () => void;
+  /** The main skill straight to its next 각성 (F11, for trying one). Returns what it did. */
+  readonly awakenMain: () => string;
   readonly dropSkill: () => void;
   /** Returns the new state. */
   readonly toggleInvulnerable: () => boolean;
 }
 
-const KEYS = 'F1,F2,F3,F4,F5,F6,F7,F8,F9,F10';
+const KEYS = 'F1,F2,F3,F4,F5,F6,F7,F8,F9,F10,F11';
 
 /**
  * F1 overlay: frame timings and live object counts, plus the dev keys used
@@ -105,6 +107,7 @@ export class DebugOverlay {
     keyboard.on('keydown-F8', this.onDropPotion, this);
     keyboard.on('keydown-F9', this.onSpawnRare, this);
     keyboard.on('keydown-F10', this.onSpawnBoss, this);
+    keyboard.on('keydown-F11', this.onAwaken, this);
   }
 
   public get visible(): boolean {
@@ -153,6 +156,7 @@ export class DebugOverlay {
       `F2 +${DEBUG.stressSpawnCount} enemies   F3 clear enemies   F4 level up`,
       `F5 drop skill   F6 invulnerable: ${this.invulnerable ? 'ON' : 'OFF'}`,
       `F7 one of each enemy   F8 drop potion   F9 rare   F10 boss`,
+      'F11 main skill to its next awakening',
       'F1 close',
       this.lastNote,
     ];
@@ -196,6 +200,13 @@ export class DebugOverlay {
     }
     this.actions.grantLevel();
     this.note('granted a level');
+  }
+
+  private onAwaken(): void {
+    if (!this.shown) {
+      return;
+    }
+    this.note(this.actions.awakenMain());
   }
 
   private onDrop(): void {

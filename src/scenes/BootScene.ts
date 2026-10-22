@@ -22,7 +22,6 @@ import {
   TERRAIN,
   TEXTURES,
   PLAYER_LOOK,
-  VOID_VORTEX_FX,
   UNKNOWN_RUNE_LOOKS,
   enemyPose,
   unknownRuneTexture,
@@ -110,7 +109,7 @@ export class BootScene extends Phaser.Scene {
     this.createWebIcon();
     this.createFlagTextures();
     this.createLookTextures();
-    this.createVortexTexture();
+    this.createDroneTextures();
     this.createMangoTexture();
     this.createMagnetTexture();
     this.createOreTexture();
@@ -494,39 +493,39 @@ export class BootScene extends Phaser.Scene {
   }
 
   /**
-   * 공허구체 각성's 공허: spiral arms winding into a dark eye, in
-   * VOID_VORTEX_FX's purples — turned by the weapon, so it swirls.
+   * 드론 (0.94): the drone itself — a body with a lens and four rotors — and
+   * its skill icon, the same machine on the icons' round plate.
    */
-  private createVortexTexture(): void {
-    const size = 128;
-    const c = size / 2;
-    const { arms, eye, armCount, winds } = VOID_VORTEX_FX;
+  private createDroneTextures(): void {
+    const drawDrone = (g: Phaser.GameObjects.Graphics, cx: number, cy: number, k: number): void => {
+      g.lineStyle(2 * k, 0x9aa3b0, 1);
+      g.lineBetween(cx - 9 * k, cy - 9 * k, cx + 9 * k, cy + 9 * k);
+      g.lineBetween(cx - 9 * k, cy + 9 * k, cx + 9 * k, cy - 9 * k);
+      g.fillStyle(0xc9d3df, 0.85);
+      for (const [dx, dy] of [[-9, -9], [9, -9], [-9, 9], [9, 9]] as const) {
+        g.fillEllipse(cx + dx * k, cy + dy * k, 9 * k, 3.5 * k);
+      }
+      g.fillStyle(0x3d5a4a, 1);
+      g.fillRoundedRect(cx - 6 * k, cy - 5 * k, 12 * k, 10 * k, 3 * k);
+      g.fillStyle(0x7fe0c0, 1);
+      g.fillCircle(cx, cy + 0.5 * k, 2.6 * k);
+      g.fillStyle(0xff5a4a, 1);
+      g.fillCircle(cx + 3.5 * k, cy - 2.8 * k, 1 * k);
+    };
+    const size = 32;
     const g = this.add.graphics();
-    g.fillStyle(arms[0]!, 0.22);
-    g.fillCircle(c, c, c - 2);
-    for (let arm = 0; arm < armCount; arm++) {
-      const start = (arm / armCount) * Math.PI * 2;
-      arms.forEach((color, layer) => {
-        g.lineStyle(7 - layer * 2, color, 0.9);
-        g.beginPath();
-        for (let step = 0; step <= 40; step++) {
-          const t = step / 40;
-          const r = (c - 4) * (1 - t) + 6 * t;
-          const a = start + t * winds * Math.PI * 2 + layer * 0.12;
-          const x = c + Math.cos(a) * r;
-          const y = c + Math.sin(a) * r;
-          if (step === 0) {
-            g.moveTo(x, y);
-          } else {
-            g.lineTo(x, y);
-          }
-        }
-        g.strokePath();
-      });
+    drawDrone(g, size / 2, size / 2, 1.2);
+    g.generateTexture(TEXTURES.drone, size, size);
+    g.clear();
+    const key = SKILL_ICONS.drone?.key;
+    if (key && !this.textures.exists(key)) {
+      g.fillStyle(0x1b2a26, 1);
+      g.fillCircle(size / 2, size / 2, size * 0.47);
+      g.lineStyle(2, 0x7fe0c0, 1);
+      g.strokeCircle(size / 2, size / 2, size * 0.44);
+      drawDrone(g, size / 2, size / 2, 1);
+      g.generateTexture(key, size, size);
     }
-    g.fillStyle(eye, 1);
-    g.fillCircle(c, c, 9);
-    g.generateTexture(TEXTURES.voidVortex, size, size);
     g.destroy();
   }
 
@@ -646,6 +645,20 @@ export class BootScene extends Phaser.Scene {
         const [wx, wy] = at(7);
         stroke(look.glow, 2, wx, wy, tip[0] + 2, tip[1] - 1);
         stroke(look.glow, 2, tip[0] + 2, tip[1] - 1, tip[0] - 1, tip[1] - 3);
+        break;
+      }
+      case 'remote': {
+        // 드론's: a little box in the hand, an aerial up off it, its tip lit.
+        const [rx, ry] = at(2);
+        g.fillStyle(0x2a2f38, 1);
+        g.fillRect(rx - 3 + o, ry - 2.5 + o, 6, 5);
+        g.fillStyle(look.trim, 1);
+        g.fillRect(rx - 1.5 + o, ry - 0.5 + o, 1.2, 1.2);
+        g.fillRect(rx + 0.6 + o, ry - 0.5 + o, 1.2, 1.2);
+        stroke(0x9aa3b0, 1, rx + 2, ry - 2.5, rx + 3, ry - 8);
+        tip = [rx + 3, ry - 8];
+        g.fillStyle(look.glow, 1);
+        circle(tip[0], tip[1], 1.4);
         break;
       }
       case 'orb':

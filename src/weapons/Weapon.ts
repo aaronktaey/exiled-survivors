@@ -66,6 +66,10 @@ export interface WeaponContext {
   readonly onCast?: (targetX?: number) => void;
   /** The weapon's 반복: the chance a cast goes off once more (0.88). 0 when absent. */
   readonly repeatChance?: number;
+  /** 드론 in the air (0.94). Ignored unless the skill flies drones. */
+  readonly droneCount?: number;
+  /** Gives the survivor health back (0.94: 공허구체's 각성). */
+  readonly heal?: (amount: number) => void;
 }
 
 /**

@@ -67,6 +67,7 @@ export const zh: Strings = {
     attackSpeedScale: '攻击速度 +{n}%',
     moveSpeedScale: '移动速度 +{n}%',
     maxHpScale: '最大生命 +{n}%',
+    contactDamageScale: '受到的接触伤害减少 {n}%',
   },
   mastery: {
     title: '{skill} 觉醒！',
@@ -76,8 +77,9 @@ export const zh: Strings = {
       fireball: '爆炸范围扩大到 {blastScale} 倍',
       chainLightning: '每剩余一次连锁，伤害提高 {bonus}',
       iceSpear: '命中已被冷却的敌人时使其冻结 {freeze} 秒',
-      voidOrb: '生成虚空',
+      voidOrb: '球体每次命中敌人时恢复 {heal} 点生命',
       thunderStrike: '被击中的敌人感电 {shockSecs} 秒，受到的伤害提高 {shockAmp}',
+      drone: '无人机每射击 {bombEvery} 次，就会在小范围内投下造成 {bombShare} 伤害的炸弹',
     },
     title2: '{skill} 二次觉醒！',
     card2: '二次觉醒 — {effect}',
@@ -88,6 +90,7 @@ export const zh: Strings = {
       iceSpear: '冰冷状态的敌人死亡时，周围 {shatter}px 内的敌人也会被冰冷',
       voidOrb: '内侧多出一圈反向旋转的球体（伤害 {innerShare}）',
       thunderStrike: '落点周围的敌人也受到 {splashShare} 的伤害',
+      drone: '无人机数量变为 {droneTimes} 倍',
     },
   },
   tuning: {
@@ -96,7 +99,7 @@ export const zh: Strings = {
     tabs: { skills: '技能', enemies: '敌人', drops: '掉落' },
     common: '所有技能通用',
     unlockAt: '{kind} 出现',
-    fields: { damage: '伤害', attackSpeed: '每秒攻击', range: '射程', projectileSpeed: '投射物速度', chainCount: '连锁', pierceCount: '贯穿', orbCount: '球数', orbitSpeed: '旋转速度', blastRadius: '爆炸范围', recastChance: '重施几率', damageScale: '伤害倍率' },
+    fields: { damage: '伤害', attackSpeed: '每秒攻击', range: '射程', projectileSpeed: '投射物速度', chainCount: '连锁', pierceCount: '贯穿', orbCount: '球数', orbitSpeed: '旋转速度', blastRadius: '爆炸范围', recastChance: '重施几率', droneCount: '无人机数', damageScale: '伤害倍率' },
     labels: {
       'UPGRADE_PERCENT.damage': '强化伤害 %',
       'UPGRADE_PERCENT.attackSpeed': '强化攻速 %',
@@ -154,6 +157,7 @@ export const zh: Strings = {
       orbitSpeed: '{skill}球体旋转的速度（px/秒）。越快在同样时间内扫过的敌人越多。',
       blastRadius: '{skill}爆炸时的基础半径（px）。爆炸范围强化、觉醒和火球持有效果会乘在这个值上。',
       recastChance: '用{skill}击杀敌人时再落下一次的基础几率。再施放几率强化会加在这个值上。',
+      droneCount: '{skill}的基础无人机数量。无人机数量强化和符文剑的投射物 +1 会加在这个值上。',
     },
     details: {
       'BALANCE.enemyHpScale': '乘在所有敌人生命上的倍率。1.5表示所有敌人从一开始就硬50%，随时间的增长再乘在其上。',
@@ -594,6 +598,7 @@ export const zh: Strings = {
     chainCount: { label: '连锁次数 +{n}', detail: '{skill}多连锁 {n} 个敌人' },
     pierceCount: { label: '穿透次数 +{n}', detail: '{skill}多穿透 {n} 个敌人' },
     orbCount: { label: '球体数量 +{n}', detail: '{skill}多环绕 {n} 个球体' },
+    droneCount: { label: '无人机数量 +{n}', detail: '{skill}增加 {n} 架' },
     blastRadius: { label: '爆炸范围 +{n}%', detail: '{skill}的爆炸范围按基础值扩大 {n}%' },
     recastChance: { label: '击杀重施 +{n}%', detail: '{skill}击杀敌人后再次落下的几率提高 {n}%' },
   },
@@ -606,6 +611,7 @@ export const zh: Strings = {
       iceSpear: '冰枪',
       voidOrb: '虚空球',
       thunderStrike: '落雷',
+      drone: '无人机',
     },
     skillSummaries: {
       meleeStrike: '朝最近的敌人短促挥击，范围内的敌人一并命中。',
@@ -614,6 +620,7 @@ export const zh: Strings = {
       iceSpear: '穿透敌人前进，并给掠过的所有敌人附加冰冷（移动速度 -30%）。',
       voidOrb: '球体顺时针环绕你，扫到的敌人都会受伤，无需瞄准。',
       thunderStrike: '从天上降下一道雷劈向你周围的一名敌人。若其死亡，有一半概率立刻再落一道。',
+      drone: '小型遥控机器人会贴近进入范围的敌人，用小枪射击。敌人死亡或离开范围后，无人机会转向下一个敌人。',
     },
     tags: {
       물리: '物理',

@@ -133,13 +133,15 @@ export interface Strings {
     readonly attackSpeedScale: string;
     readonly moveSpeedScale: string;
     readonly maxHpScale: string;
+    /** {n}% off what an enemy's body does (0.94: 공허구체). */
+    readonly contactDamageScale: string;
   };
   readonly mastery: {
     /** The banner when it happens: {skill}. */
     readonly title: string;
     /** On the skill's card: "각성 — {effect}". */
     readonly card: string;
-    /** One line a skill. {bonus} {blastScale} {freeze} {shockSecs} {shockAmp} filled from SKILL_MASTERY. */
+    /** One line a skill. {bonus} {blastScale} {freeze} {shockSecs} {shockAmp} {heal} {bombEvery} {bombShare} filled from SKILL_MASTERY. */
     readonly effects: {
       readonly meleeStrike: string;
       readonly fireball: string;
@@ -147,11 +149,12 @@ export interface Strings {
       readonly iceSpear: string;
       readonly voidOrb: string;
       readonly thunderStrike: string;
+      readonly drone: string;
     };
     /** 2차 각성 (SKILL_MASTERY.second): its banner, its card line, and one line a skill. */
     readonly title2: string;
     readonly card2: string;
-    /** {arc} {blastScale} {forks} {shatter} {innerShare} {splashShare} filled from SKILL_MASTERY.second. */
+    /** {arc} {blastScale} {forks} {shatter} {innerShare} {splashShare} {droneTimes} filled from SKILL_MASTERY.second. */
     readonly effects2: {
       readonly meleeStrike: string;
       readonly fireball: string;
@@ -159,6 +162,7 @@ export interface Strings {
       readonly iceSpear: string;
       readonly voidOrb: string;
       readonly thunderStrike: string;
+      readonly drone: string;
     };
   };
   /** 밸런스: the admin's dial panel. */
@@ -182,6 +186,7 @@ export interface Strings {
       readonly orbitSpeed: string;
       readonly blastRadius: string;
       readonly recastChance: string;
+      readonly droneCount: string;
       readonly damageScale: string;
     };
     /** By dial path, for the dials that are not a skill's stat or a 구슬 · 뼈다귀 · 검. */
@@ -774,7 +779,8 @@ export interface Strings {
     | 'pierceCount'
     | 'orbCount'
     | 'blastRadius'
-    | 'recastChance',
+    | 'recastChance'
+    | 'droneCount',
     { readonly label: string; readonly detail: string }
   >;
 

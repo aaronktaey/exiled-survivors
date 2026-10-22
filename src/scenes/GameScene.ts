@@ -127,6 +127,7 @@ import {
   IceSpear,
   MeleeStrike,
   VoidOrb,
+  Drone,
   ThunderStrike,
   UNSPUN_SKILL,
   type SkillDefinition,
@@ -141,6 +142,7 @@ const WEAPONS: Record<SkillId, (scene: Phaser.Scene) => Weapon> = {
   chainLightning: (scene) => new ChainLightning(scene),
   iceSpear: (scene) => new IceSpear(scene),
   voidOrb: (scene) => new VoidOrb(scene),
+  drone: (scene) => new Drone(scene),
   thunderStrike: (scene) => new ThunderStrike(scene),
 };
 
@@ -597,6 +599,8 @@ export class GameScene extends Phaser.Scene {
         enemyShots: this.combat.enemyShots,
         onCast: id === this.mainSkill ? this.castLook : undefined,
         repeatChance: this.gearBonus.repeatChance,
+        droneCount: stats.droneCount,
+        heal: this.healBy,
       });
     }
 
@@ -1195,6 +1199,35 @@ export class GameScene extends Phaser.Scene {
       },
       clearEnemies: () => this.spawner.clear(),
       grantLevel: () => this.progression.addXp(this.progression.xpToNext),
+      // F11: the main skill's picks taken one after another until its next 각성.
+      awakenMain: () => {
+        const skill = this.mainSkill;
+        if (!skill) {
+          return 'no main skill yet';
+        }
+        const goal = this.masteryOf(skill) >= 1 ? SKILL_MASTERY.second.level : SKILL_MASTERY.level;
+        for (let guard = 0; guard < 200 && this.progression.levelFor(skill) < goal; guard++) {
+          const before = this.progression.levelFor(skill);
+          for (const upgrade of SKILLS[skill].upgrades) {
+            this.progression.apply(skill, upgrade);
+            if (this.progression.levelFor(skill) > before) {
+              break;
+            }
+          }
+          if (this.progression.levelFor(skill) === before) {
+            break;
+          }
+        }
+        const tier = this.masteryOf(skill);
+        if (tier >= 1 && !this.awakened.has(skill)) {
+          this.awakened.add(skill);
+          this.celebrateMastery(skill, 1);
+        } else if (tier >= 2 && !this.awakenedTwice.has(skill)) {
+          this.awakenedTwice.add(skill);
+          this.celebrateMastery(skill, 2);
+        }
+        return `${skill} Lv ${this.progression.levelFor(skill)} (awakening ${tier})`;
+      },
       dropSkill: () => {
         const skill = DROPPABLE_SKILLS[this.nextDebugDrop % DROPPABLE_SKILLS.length];
         this.nextDebugDrop += 1;
@@ -1587,6 +1620,11 @@ export class GameScene extends Phaser.Scene {
       }
     }
   }
+
+  /** Health back from a skill (0.94: 공허구체's 각성). Bound, so a weapon can hold it. */
+  private healBy = (amount: number): void => {
+    this.player.heal(amount);
+  };
 
   /** Every held skill's level, added up — what the run's tally counts toward. */
   private totalSkillLevels(): number {

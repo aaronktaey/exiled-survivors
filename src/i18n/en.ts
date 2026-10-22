@@ -67,6 +67,7 @@ export const en: Strings = {
     attackSpeedScale: 'attack speed +{n}%',
     moveSpeedScale: 'move speed +{n}%',
     maxHpScale: 'max health +{n}%',
+    contactDamageScale: '{n}% less contact damage taken',
   },
   mastery: {
     title: '{skill} Awakened!',
@@ -76,8 +77,9 @@ export const en: Strings = {
       fireball: 'Its burst is {blastScale}× as wide',
       chainLightning: 'Each strike deals {bonus} more for every jump still to come',
       iceSpear: 'Freezes an already chilled enemy solid for {freeze}s',
-      voidOrb: 'Opens a void',
+      voidOrb: 'Every hit of an orb gives back {heal} health',
       thunderStrike: 'What it hits is shocked for {shockSecs}s, taking {shockAmp} more damage',
+      drone: 'Every {bombEvery}th shot of a drone drops a bomb on a small area for {bombShare} damage',
     },
     title2: '{skill} Awakened Again!',
     card2: 'Second awakening — {effect}',
@@ -88,6 +90,7 @@ export const en: Strings = {
       iceSpear: 'A chilled enemy that dies chills the enemies within {shatter}px of it',
       voidOrb: 'A second ring of orbs turns the other way inside the first ({innerShare} damage)',
       thunderStrike: 'Enemies around the strike take {splashShare} of its damage too',
+      drone: '{droneTimes} times as many drones',
     },
   },
   tuning: {
@@ -96,7 +99,7 @@ export const en: Strings = {
     tabs: { skills: 'Skills', enemies: 'Enemies', drops: 'Drops' },
     common: 'Every skill',
     unlockAt: '{kind} appears',
-    fields: { damage: 'Damage', attackSpeed: 'Attacks/s', range: 'Range', projectileSpeed: 'Shot speed', chainCount: 'Chains', pierceCount: 'Pierce', orbCount: 'Orbs', orbitSpeed: 'Orbit speed', blastRadius: 'Blast radius', recastChance: 'Recast chance', damageScale: 'Damage ×' },
+    fields: { damage: 'Damage', attackSpeed: 'Attacks/s', range: 'Range', projectileSpeed: 'Shot speed', chainCount: 'Chains', pierceCount: 'Pierce', orbCount: 'Orbs', orbitSpeed: 'Orbit speed', blastRadius: 'Blast radius', recastChance: 'Recast chance', droneCount: 'Drones', damageScale: 'Damage ×' },
     labels: {
       'UPGRADE_PERCENT.damage': 'Upgrade dmg %',
       'UPGRADE_PERCENT.attackSpeed': 'Upgrade speed %',
@@ -154,6 +157,7 @@ export const en: Strings = {
       orbitSpeed: 'How fast {skill}’s orbs travel round, in px/s. Faster sweeps through more enemies in the same time.',
       blastRadius: '{skill}’s base burst radius in px. Blast upgrades, awakening and Fireball’s held bonus multiply it.',
       recastChance: 'The base chance {skill} strikes again after a kill. Recast upgrades add to it.',
+      droneCount: '{skill}’s base number of drones. Drone upgrades and the Runed Sword’s +1 add to it.',
     },
     details: {
       'BALANCE.enemyHpScale': 'Multiplies every enemy’s health. 1.5 makes every enemy 50% tougher from the start; the climb over time multiplies on top.',
@@ -594,6 +598,7 @@ export const en: Strings = {
     chainCount: { label: 'Chains +{n}', detail: '{skill} jumps to {n} more enemy' },
     pierceCount: { label: 'Pierce +{n}', detail: '{skill} passes through {n} more enemy' },
     orbCount: { label: 'Orbs +{n}', detail: '{skill} keeps {n} more orb in the air' },
+    droneCount: { label: 'Drones +{n}', detail: '{n} more {skill} take to the air' },
     blastRadius: { label: 'Blast radius +{n}%', detail: '{skill} bursts {n}% wider than its base radius' },
     recastChance: { label: 'Recast on kill +{n}%', detail: '{skill} strikes again after a kill {n} points more often' },
   },
@@ -606,6 +611,7 @@ export const en: Strings = {
       iceSpear: 'Ice Spear',
       voidOrb: 'Void Orb',
       thunderStrike: 'Thunderstrike',
+      drone: 'Drone',
     },
     skillSummaries: {
       meleeStrike: 'A short swing at the nearest enemy, catching everything in the arc.',
@@ -614,6 +620,7 @@ export const en: Strings = {
       iceSpear: 'Runs a line through the crowd, chilling everything it passes (-30% move speed).',
       voidOrb: 'Orbs ride around you clockwise and hurt whatever they sweep through. No aiming.',
       thunderStrike: 'Calls a bolt out of the sky onto one enemy near you. If it dies, there is an even chance another bolt falls at once.',
+      drone: 'Little remote robots fly up close to the enemies that come within range and shoot them with little guns. When one dies or strays out of range, a drone moves on to the next.',
     },
     tags: {
       물리: 'physical',

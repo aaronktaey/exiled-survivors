@@ -183,7 +183,7 @@ export const TEXTURES = {
   /** 철광석, and the padlock a 잠금 weapon wears in the 분해 grid (0.90). */
   ore: "tex-ore",
   lock: "tex-lock",
-  voidVortex: "tex-void-vortex",
+  drone: "tex-drone",
   magnet: "tex-magnet",
   orbTransmute: "tex-orb-transmute",
   orbChaos: "tex-orb-chaos",
@@ -223,6 +223,8 @@ export const SKILL_ICONS: Record<string, { readonly file?: string; readonly key:
   voidOrb: { file: 'assets/icons/skill-voidOrb.png', key: 'tex-skill-voidOrb' },
   // No file: drawn at boot until the pack has a bolt that fits.
   thunderStrike: { key: 'tex-skill-thunderStrike' },
+  // Drawn at boot: a little quadcopter (0.94).
+  drone: { key: 'tex-skill-drone' },
 };
 
 /** How big a skill icon is drawn, on the ground and on a card. */
@@ -826,7 +828,7 @@ export const DAMAGE_NUMBERS = {
 export const LOOK_CANVAS = { size: 56, inset: 12 } as const;
 
 /** What a survivor carries in its look: drawn by BootScene.createLookTextures. */
-export type LookProp = 'none' | 'sword' | 'staff' | 'wand' | 'spear' | 'orb' | 'rod';
+export type LookProp = 'none' | 'sword' | 'staff' | 'wand' | 'spear' | 'orb' | 'rod' | 'remote';
 
 export interface PlayerLook {
   /** The robe or tunic, its trim (belt, cuffs, hem), and the hood or hair. */
@@ -861,6 +863,8 @@ export const PLAYER_LOOK: {
     iceSpear: { robe: 0xbfe3ff, trim: 0x5aa0e0, hood: 0x7fb8e8, prop: 'spear', glow: 0xd6f2ff },
     voidOrb: { robe: 0x4b2a7a, trim: 0xb07cff, hood: 0x2a1748, prop: 'orb', glow: 0xb07cff },
     thunderStrike: { robe: 0x2a2f55, trim: 0xf0d050, hood: 0x1a1d38, prop: 'rod', glow: 0xf0d050 },
+    // 0.94: an engineer in green, a remote in hand.
+    drone: { robe: 0x3d5a4a, trim: 0x7fe0c0, hood: 0x24382e, prop: 'remote', glow: 0x7fe0c0 },
   },
 };
 
@@ -927,19 +931,6 @@ export const SHOCK_FX = {
   redrawMs: 70,
 } as const;
 
-/** 공허구체 각성's 공허: a purple vortex, drawn by BootScene.createVortexTexture. */
-export const VOID_VORTEX_FX = {
-  /** Its arms' colours, outer to inner, and the dark eye. */
-  arms: [0x6b2fbf, 0x9b5cff, 0xd2b0ff],
-  eye: 0x1a0830,
-  /** Spiral arms, and how far each winds round (turns). */
-  armCount: 4,
-  winds: 1.1,
-  spinPerSecond: 5,
-  fadeMs: 250,
-  /** How solid it is at its fullest: the field under it still shows. */
-  alpha: 0.7,
-} as const;
 
 /** A 제단 being summoned: a red pillar (the light pillar's picture, tinted) comes down on the spot. */
 export const ALTAR_SUMMON_FX = {

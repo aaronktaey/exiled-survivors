@@ -37,7 +37,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   public webbed = false;
   private maxHpValue: number = PLAYER.maxHp;
   /** The held skills' 보유 효과 on the survivor (0.84): crit points, move speed and health. */
-  private held = { critChance: 0, moveSpeedScale: 1, maxHpScale: 1 };
+  private held = { critChance: 0, moveSpeedScale: 1, maxHpScale: 1, contactDamageScale: 1 };
   private analog?: AnalogInput;
   private invulnerableUntil = 0;
   /** The look worn: a skill id from PLAYER_LOOK.bySkill, or `base`. Public for tests. */
@@ -203,8 +203,18 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
    * The held skills' 보유 효과 (0.84). A bar that grows mid-run gives the
    * health it gained, so taking 타격 is not a heal-to-full nor a dent.
    */
-  public applyHeld(bonus: { readonly critChance: number; readonly moveSpeedScale: number; readonly maxHpScale: number }): void {
-    this.held = { critChance: bonus.critChance, moveSpeedScale: bonus.moveSpeedScale, maxHpScale: bonus.maxHpScale };
+  public applyHeld(bonus: {
+    readonly critChance: number;
+    readonly moveSpeedScale: number;
+    readonly maxHpScale: number;
+    readonly contactDamageScale?: number;
+  }): void {
+    this.held = {
+      critChance: bonus.critChance,
+      moveSpeedScale: bonus.moveSpeedScale,
+      maxHpScale: bonus.maxHpScale,
+      contactDamageScale: bonus.contactDamageScale ?? 1,
+    };
     const was = this.maxHpValue;
     this.maxHpValue = this.fullHp();
     this.hp = Math.min(this.maxHpValue, Math.max(1, this.hp + Math.max(0, this.maxHpValue - was)));
@@ -339,7 +349,8 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
       return;
     }
 
-    this.hurt(amount);
+    // 공허구체's 보유 효과 (0.94): a body does less.
+    this.hurt(amount * this.held.contactDamageScale);
   }
 
   /** How long one enemy waits before its body can hurt again. 회피 lengthens it. */

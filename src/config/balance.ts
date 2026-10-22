@@ -28,6 +28,7 @@ export const BALANCE = {
     // 1.2 until 2026-10-16.
     voidOrb: 1,
     thunderStrike: 0.8,
+    drone: 1,
   } as Record<SkillId, number>,
 };
 
@@ -1118,13 +1119,10 @@ export const SKILL_MASTERY = {
   chainBonusPerJump: 0.1,
   /** 얼음창: an enemy already under 냉각 is frozen solid this long when struck. 100 until 0.84. */
   freezeMs: 200,
-  /**
-   * 공허구체 (0.84, the user's design): every `everyMs` a 공허 opens at a
-   * random spot within `spreadShare` × the orbit's radius of the survivor —
-   * twice the orbit's diameter across — and for `lifeMs` draws every enemy
-   * within `reach` of it toward its middle at `pullSpeed` px/s. No damage.
-   */
-  voidVortex: { everyMs: 5000, lifeMs: 2000, spreadShare: 2, reach: 100, pullSpeed: 140 },
+  /** 공허구체 (0.94, the user's ask; a 공허 that pulled before): every orb's hit gives this much health back. */
+  voidHealPerHit: 1,
+  /** 드론 (0.94 trial): every `every`th shot of a drone drops a bomb — `damageShare` of a shot on all within `radius`. */
+  droneBomb: { every: 5, radius: 50, damageShare: 1.5 },
   /**
    * 낙뢰 (0.84): what it hits is 감전 for `durationMs` (each hit starts it
    * over), taking `amplify` more from every hit while it lasts.
@@ -1150,6 +1148,8 @@ export const SKILL_MASTERY = {
      * its radius, turning the other way and hitting for `damageShare`.
      */
     voidInner: { radiusShare: 0.6, damageShare: 0.5 },
+    /** 드론 (0.94 trial, the user's ask; a satellite's laser before): this many times the drones. */
+    droneTimes: 2,
     /** 낙뢰: every strike also hurts what stands within `radius` of it, for `damageShare`. */
     thunderSplash: { radius: 60, damageShare: 0.5 },
   },
@@ -1171,6 +1171,8 @@ export interface HeldSkillBonus {
   readonly attackSpeedScale?: number;
   readonly moveSpeedScale?: number;
   readonly maxHpScale?: number;
+  /** What an enemy's body does to the survivor, multiplied (0.94: 공허구체's 접촉 피해 감폭). */
+  readonly contactDamageScale?: number;
 }
 
 export const SKILL_HELD_BONUS: Record<SkillId, HeldSkillBonus> = {
@@ -1178,13 +1180,16 @@ export const SKILL_HELD_BONUS: Record<SkillId, HeldSkillBonus> = {
   fireball: { areaScale: 1.2 },
   iceSpear: { damageScale: 1.2 },
   chainLightning: { attackSpeedScale: 1.2 },
-  voidOrb: { moveSpeedScale: 1.15 },
+  // 0.94 (the user's ask): 공허구체 now takes 20% off what bodies do; its
+  // move speed went to the 드론.
+  voidOrb: { contactDamageScale: 0.8 },
   meleeStrike: { maxHpScale: 1.2 },
+  drone: { moveSpeedScale: 1.15 },
 };
 
 /** Every 보유 효과 of the skills held, folded: points added, scales multiplied. */
 export function heldBonusFor(skills: Iterable<SkillId>): Required<HeldSkillBonus> {
-  const out = { critChance: 0, areaScale: 1, damageScale: 1, attackSpeedScale: 1, moveSpeedScale: 1, maxHpScale: 1 };
+  const out = { critChance: 0, areaScale: 1, damageScale: 1, attackSpeedScale: 1, moveSpeedScale: 1, maxHpScale: 1, contactDamageScale: 1 };
   for (const id of skills) {
     const bonus = SKILL_HELD_BONUS[id];
     if (!bonus) {
@@ -1196,6 +1201,7 @@ export function heldBonusFor(skills: Iterable<SkillId>): Required<HeldSkillBonus
     out.attackSpeedScale *= bonus.attackSpeedScale ?? 1;
     out.moveSpeedScale *= bonus.moveSpeedScale ?? 1;
     out.maxHpScale *= bonus.maxHpScale ?? 1;
+    out.contactDamageScale *= bonus.contactDamageScale ?? 1;
   }
   return out;
 }
@@ -1238,6 +1244,25 @@ export const LIGHTNING = {
 } as const;
 
 /** The orbs 공허구체 keeps in the air around the player. */
+/** 드론 (0.94 trial): how one flies and shoots. */
+export const DRONE = {
+  /** How fast one flies to its enemy or back, px/s. +30% on the user's word (380 at first). */
+  flySpeed: 494,
+  /** Its place round the survivor while it has nothing to shoot. */
+  idleRadius: 34,
+  /** How far off its enemy's edge it hovers. */
+  hover: 26,
+  /** How big it is drawn. */
+  size: 18,
+  /** How long a shot's tracer lingers, ms. */
+  tracerMs: 90,
+  /**
+   * The most drones on one enemy (the user's ask): past it a drone takes
+   * another, or circles the survivor — so a lone 우두머리 is not all of them.
+   */
+  perEnemy: 3,
+} as const;
+
 export const VOID_ORB = {
   /** Drawn radius of one orb. */
   radius: 15,
@@ -1430,6 +1455,8 @@ export interface SkillBaseStats {
   readonly pierceCount: number;
   /** Orbs kept in the air. Only the skills that orbit have any. */
   readonly orbCount: number;
+  /** 드론 in the air (0.94). Only the 드론 has any. */
+  readonly droneCount: number;
   /** How fast an orbit travels, in px per second. Only the skills that orbit. */
   readonly orbitSpeed: number;
   /** How far a burst reaches round where it lands, in px. Only 화염구 bursts. */
@@ -1474,6 +1501,7 @@ export const SKILL_BASE: Record<SkillId, SkillBaseStats> = {
     orbitSpeed: 0,
     blastRadius: 0,
     recastChance: 0,
+    droneCount: 0,
   },
   fireball: {
     damage: 180,
@@ -1489,6 +1517,7 @@ export const SKILL_BASE: Record<SkillId, SkillBaseStats> = {
     // FIREBALL.blastRadius until 0.83, when it became a pick.
     blastRadius: 30,
     recastChance: 0,
+    droneCount: 0,
   },
   // Four enemies a cast since 0.83 (two before).
   chainLightning: {
@@ -1502,6 +1531,7 @@ export const SKILL_BASE: Record<SkillId, SkillBaseStats> = {
     orbitSpeed: 0,
     blastRadius: 0,
     recastChance: 0,
+    droneCount: 0,
   },
   // It stops at the first body now; what it leaves behind is the 냉각.
   iceSpear: {
@@ -1517,6 +1547,7 @@ export const SKILL_BASE: Record<SkillId, SkillBaseStats> = {
     orbitSpeed: 0,
     blastRadius: 0,
     recastChance: 0,
+    droneCount: 0,
   },
   // A bolt out of the sky once a second onto something nearby.
   thunderStrike: {
@@ -1531,6 +1562,7 @@ export const SKILL_BASE: Record<SkillId, SkillBaseStats> = {
     blastRadius: 0,
     // THUNDER.recastChance until 0.83 (0.5), when it became a pick.
     recastChance: 0.3,
+    droneCount: 0,
   },
   // An orbit rather than a shot: range is how far out the orbs ride,
   // orbitSpeed how fast they travel around, and attackSpeed how often one
@@ -1546,6 +1578,26 @@ export const SKILL_BASE: Record<SkillId, SkillBaseStats> = {
     orbitSpeed: 200,
     blastRadius: 0,
     recastChance: 0,
+    droneCount: 0,
+  },
+  // 드론 (0.94 trial): `range` is how far from the survivor a drone takes an
+  // enemy (and lets go of it); `droneCount` how many fly; attackSpeed how
+  // often each one fires. One shot, one enemy — no sweep.
+  drone: {
+    // 80 · 0.47 · 5 (the user's pick, 0.94 trial): the same DPS as 50 · 0.75
+    // without a weapon, but a weapon's flat attack weighs less (나르실 ×1.5).
+    damage: 80,
+    attackSpeed: 0.47,
+    // +20% on the user's word (225 at first).
+    range: 270,
+    projectileSpeed: 0,
+    chainCount: 0,
+    pierceCount: 0,
+    orbCount: 0,
+    orbitSpeed: 0,
+    blastRadius: 0,
+    recastChance: 0,
+    droneCount: 5,
   },
 };
 
@@ -1581,6 +1633,7 @@ export const UPGRADE_STEP = {
   chainCount: 1,
   pierceCount: 1,
   orbCount: 1,
+  droneCount: 1,
   // 낙뢰's 처치 시 재시전 확률: ten points a pick (0.83).
   recastChance: 0.1,
 } as const;
@@ -1643,6 +1696,7 @@ export const UPGRADE_MAX_PICKS: Partial<Record<UpgradeKey, number>> = {
   chainCount: 5,
   pierceCount: 5,
   orbCount: 5,
+  droneCount: 5,
   range: 5,
   blastRadius: 5,
   recastChance: 5,

@@ -67,7 +67,7 @@ interface Zoom {
 }
 /** The 스킬 tab's pages: the skills with dials, and 공통 only while some dial is on it. */
 const pageSkills = (): string[] =>
-  ['meleeStrike', 'fireball', 'chainLightning', 'iceSpear', 'voidOrb', 'thunderStrike', 'common'].filter((page) =>
+  ['meleeStrike', 'fireball', 'chainLightning', 'iceSpear', 'voidOrb', 'thunderStrike', 'drone', 'common'].filter((page) =>
     DIALS.some((dial) => dial.tab === 'skills' && dial.skill === page),
   );
 

@@ -25,7 +25,8 @@ export type SkillId =
   | 'chainLightning'
   | 'iceSpear'
   | 'voidOrb'
-  | 'thunderStrike';
+  | 'thunderStrike'
+  | 'drone';
 
 export interface SkillDefinition {
   readonly id: SkillId;
@@ -81,6 +82,14 @@ export const SKILLS: Record<SkillId, SkillDefinition> = {
     upgrades: ['damage', 'attackSpeed', 'recastChance'],
     summary: '주위의 적 하나에게 하늘에서 벼락을 내립니다. 그 적이 죽으면 절반의 확률로 곧바로 한 번 더 떨어집니다.',
   },
+  // 0.94 (trial, the user's design): the latching orbs, as little robots with guns.
+  drone: {
+    id: 'drone',
+    name: '드론',
+    tags: ['물리', '원거리', '투사체'],
+    upgrades: ['damage', 'attackSpeed', 'droneCount'],
+    summary: '작은 원격 로봇이 범위 안에 들어온 적에게 가까이 붙어 작은 총으로 쏩니다. 적이 죽거나 범위를 벗어나면 다음 적으로 옮겨 갑니다.',
+  },
 };
 
 /**
@@ -95,6 +104,7 @@ export const DROPPABLE_SKILLS: readonly SkillDefinition[] = [
   SKILLS.iceSpear,
   SKILLS.voidOrb,
   SKILLS.thunderStrike,
+  SKILLS.drone,
 ];
 
 export const ALL_SKILLS: readonly SkillDefinition[] = Object.values(SKILLS);

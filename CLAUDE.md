@@ -474,6 +474,27 @@ Read `git log` for what changed and when. What is not in the log:
   multiply, `Player.applyHeld` takes the survivor's three (a bar that
   grows mid-run gives the health it gained). `heldBonusText` writes the
   line for the HUD card, the guide's skill card and the pick cards.
+- **드론 (0.95, the user's design).** `weapons/Drone.ts`: each drone takes
+  an enemy within `range` (270) of the survivor — the nearest no drone has,
+  else one with fewer than `DRONE.perEnemy` (3) on it — flies to it
+  (`DRONE.flySpeed`), hovers just off it and shoots every cooldown until it
+  dies or strays past the range; doubled-up drones move to a free enemy as
+  soon as one is in range, so they gather only when enemies are fewer than
+  drones. With nothing to shoot they circle the survivor. `droneCount` is
+  a stat and a pick of its own (UPGRADE_STEP/UPGRADE_MAX_PICKS, a dial on
+  the 드론 page); the Runed Sword's +1 adds before the 2차 각성 doubles it
+  (`SKILL_MASTERY.second.droneTimes`). 1차 각성: every
+  `SKILL_MASTERY.droneBomb.every`-th shot of a drone bombs. `areaScale`
+  (화염구 held) widens the bomb and the reach (the user's call). 보유 효과:
+  move speed +15% (공허구체's before). Base 5 · 80 · 0.47 — picked so a
+  weapon's flat attack weighs about what it does on 연쇄번개. The look
+  holds a `remote` (LookProp). Its shot borrows 얼음창's clip. F11 (debug)
+  takes the main skill straight to its next 각성.
+- **공허구체 changed with it (0.95).** Its 1차 각성 heals
+  `SKILL_MASTERY.voidHealPerHit` a hit (`WeaponContext.heal`), uncapped on
+  the user's word — they were to try a cap locally; the 공허 that pulled
+  enemies is gone. Its 보유 효과 is `contactDamageScale` 0.8 (받는 접촉
+  피해 20% 감폭, `Player.takeContact`), the move speed went to the 드론.
 - **보조 스킬 stop at `SUB_SKILLS.max` (0.84).** Besides the main skill, at
   most three: once full (`GameScene.subSkillsFull`) `rollSkillDrop` and
   `randomSkills` offer only skills held, and a skill picked up that was

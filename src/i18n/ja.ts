@@ -67,6 +67,7 @@ export const ja: Strings = {
     attackSpeedScale: '攻撃速度 +{n}%',
     moveSpeedScale: '移動速度 +{n}%',
     maxHpScale: '最大体力 +{n}%',
+    contactDamageScale: '受ける接触ダメージ {n}% 減少',
   },
   mastery: {
     title: '{skill} 覚醒!',
@@ -76,8 +77,9 @@ export const ja: Strings = {
       fireball: '爆発範囲が {blastScale} 倍に広がります',
       chainLightning: '残り連鎖回数 1 回につきダメージが {bonus} 増幅されます',
       iceSpear: 'すでに冷却された敵に当たると {freeze} 秒間凍りつきます',
-      voidOrb: '虚空を生成',
+      voidOrb: '球が敵を叩くたびに体力を {heal} 回復します',
       thunderStrike: '当たった敵が {shockSecs} 秒間感電し、受けるダメージが {shockAmp} 増えます',
+      drone: 'ドローンが {bombEvery} 回撃つたびに、小さな範囲に {bombShare} のダメージの爆弾を落とします',
     },
     title2: '{skill} 第二覚醒!',
     card2: '第二覚醒 — {effect}',
@@ -88,6 +90,7 @@ export const ja: Strings = {
       iceSpear: '冷却された敵が倒れると周囲 {shatter}px の敵も冷却されます',
       voidOrb: '内側に逆回りの球の輪がもう一つできます（ダメージ {innerShare}）',
       thunderStrike: '落ちた場所の周りの敵にもダメージの {splashShare} を与えます',
+      drone: 'ドローンの数が {droneTimes} 倍になります',
     },
   },
   tuning: {
@@ -96,7 +99,7 @@ export const ja: Strings = {
     tabs: { skills: 'スキル', enemies: '敵', drops: 'ドロップ' },
     common: '全スキル共通',
     unlockAt: '{kind} 出現',
-    fields: { damage: 'ダメージ', attackSpeed: '毎秒攻撃', range: '射程', projectileSpeed: '投射物速度', chainCount: '連鎖', pierceCount: '貫通', orbCount: '球の数', orbitSpeed: '回転速度', blastRadius: '爆発範囲', recastChance: '再発動確率', damageScale: 'ダメージ倍率' },
+    fields: { damage: 'ダメージ', attackSpeed: '毎秒攻撃', range: '射程', projectileSpeed: '投射物速度', chainCount: '連鎖', pierceCount: '貫通', orbCount: '球の数', orbitSpeed: '回転速度', blastRadius: '爆発範囲', recastChance: '再発動確率', droneCount: 'ドローン数', damageScale: 'ダメージ倍率' },
     labels: {
       'UPGRADE_PERCENT.damage': '強化ダメージ %',
       'UPGRADE_PERCENT.attackSpeed': '強化攻速 %',
@@ -154,6 +157,7 @@ export const ja: Strings = {
       orbitSpeed: '{skill}の球が回る速さ(px/秒)です。速いほど同じ時間により多くの敵をかすめます。',
       blastRadius: '{skill}が爆発する時の基本半径(px)です。爆発範囲強化・覚醒・火球の保有効果が掛かります。',
       recastChance: '{skill}で敵を倒した時にもう一度落ちる基本確率です。再詠唱確率の強化が加算されます。',
+      droneCount: '{skill}の基本のドローン数です。ドローン数の強化とルーンの剣の投射物 +1 がこの値に加算されます。',
     },
     details: {
       'BALANCE.enemyHpScale': 'すべての敵の体力に掛かる倍率です。1.5ならすべての敵が最初から50%硬くなります。時間による増加はこの上に掛かります。',
@@ -594,6 +598,7 @@ export const ja: Strings = {
     chainCount: { label: '連鎖回数 +{n}', detail: '{skill}が {n} 体多く連鎖します' },
     pierceCount: { label: '貫通回数 +{n}', detail: '{skill}が {n} 体多く貫きます' },
     orbCount: { label: '球の数 +{n}', detail: '{skill}が {n} 個多く周回します' },
+    droneCount: { label: 'ドローン数 +{n}', detail: '{skill}が {n} 機増えます' },
     blastRadius: { label: '爆発範囲 +{n}%', detail: '{skill}の爆発範囲が基本値の {n}% 広がります' },
     recastChance: { label: '撃破時の再発動 +{n}%', detail: '{skill}が敵を倒したとき再び落ちる確率が {n}% 上がります' },
   },
@@ -606,6 +611,7 @@ export const ja: Strings = {
       iceSpear: '氷槍',
       voidOrb: '虚無球',
       thunderStrike: '落雷',
+      drone: 'ドローン',
     },
     skillSummaries: {
       meleeStrike: '最も近い敵へ短く振り抜き、範囲内の敵をまとめて叩きます。',
@@ -614,6 +620,7 @@ export const ja: Strings = {
       iceSpear: '敵を貫いて進み、かすめた敵すべてに冷却（移動速度 -30%）を与えます。',
       voidOrb: '球が時計回りに周回し、触れた敵を叩きます。狙いは不要です。',
       thunderStrike: '周囲の敵ひとりに空から雷を落とします。その敵が倒れると、半分の確率ですぐにもう一度落ちます。',
+      drone: '小さな遠隔ロボットが範囲内に入った敵に近づき、小さな銃で撃ちます。敵が倒れるか範囲外に出ると、次の敵へ移ります。',
     },
     tags: {
       물리: '物理',

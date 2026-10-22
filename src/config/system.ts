@@ -381,6 +381,8 @@ export const AUDIO = {
     voidOrb: { files: ['assets/voidSphere.mp3'], volume: 0.35, gapMs: 600 },
     // No clip of its own yet: it borrows 연쇄번개's crack, a little quieter.
     thunderStrike: { files: ['assets/chainLightening1.mp3'], volume: 0.35, gapMs: 200 },
+    // No clip of its own yet: 얼음창's, quiet and held apart, for a little gun.
+    drone: { files: ['assets/iceSpear.mp3'], volume: 0.22, gapMs: 140 },
   } as Partial<
     Record<
       SkillId,

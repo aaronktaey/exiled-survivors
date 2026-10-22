@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 
-import { AFFIX_TIMING, DEPTH, ENEMY_KINDS, SKILL_MASTERY, TEXTURES, VOID_ORB, VOID_VORTEX_FX, orbsHeld } from '@/config';
+import { AFFIX_TIMING, DEPTH, ENEMY_KINDS, SKILL_MASTERY, TEXTURES, VOID_ORB, orbsHeld } from '@/config';
 import type { Enemy } from '@/entities/Enemy';
 import { sfx } from '@/systems/Sfx';
 import { SKILLS } from '@/weapons/skills';
@@ -42,9 +42,6 @@ export class VoidOrb implements Weapon {
 
   /** Where the first orb is on the circle, in radians. */
   private angle = 0;
-  /** 각성's 공허: the ones open now, and the time since the last opened. Public for tests. */
-  public readonly vortices: { view: Phaser.GameObjects.Image; leftMs: number; reach: number }[] = [];
-  private sinceVortexMs = 0;
   /** What an orb's radius is now, after the held 효과범위. */
   private orbRadius: number = VOID_ORB.radius;
   /** How far round the orbs have come since the last lap was counted, in radians. */
@@ -94,66 +91,10 @@ export class VoidOrb implements Weapon {
       this.inner[i]?.setPosition(x + Math.cos(orbAngle) * radius * radiusShare, y + Math.sin(orbAngle) * radius * radiusShare);
     }
 
-    this.tickVortices(context, delta);
     this.sweep(context, this.orbs, count, 0, context.damage);
     if (innerCount > 0) {
       // Keys past the outer ring's, so the two rings keep their own timers.
       this.sweep(context, this.inner, innerCount, 1000, context.damage * damageShare);
-    }
-  }
-
-  /**
-   * 각성 (0.84): every SKILL_MASTERY.voidVortex.everyMs a 공허 opens at a
-   * random spot within `spreadShare` × the orbit's radius of the survivor,
-   * and for `lifeMs` draws every enemy within its reach toward its middle —
-   * moving x/y the way Separation does. Stepped by the run, so a pause holds it.
-   */
-  private tickVortices(context: WeaponContext, delta: number): void {
-    const { everyMs, lifeMs, spreadShare, reach, pullSpeed } = SKILL_MASTERY.voidVortex;
-    const area = context.areaScale ?? 1;
-    const step = (pullSpeed * delta) / 1000;
-    for (let i = this.vortices.length - 1; i >= 0; i--) {
-      const vortex = this.vortices[i]!;
-      vortex.leftMs -= delta;
-      const { x, y } = vortex.view;
-      // It turns, fades in, and fades out at the end of its life.
-      vortex.view.rotation -= (delta / 1000) * VOID_VORTEX_FX.spinPerSecond;
-      vortex.view.setAlpha(VOID_VORTEX_FX.alpha * Math.min(1, (lifeMs - vortex.leftMs) / VOID_VORTEX_FX.fadeMs, vortex.leftMs / VOID_VORTEX_FX.fadeMs));
-      if (vortex.leftMs <= 0) {
-        vortex.view.destroy();
-        this.vortices.splice(i, 1);
-        continue;
-      }
-      for (const child of context.enemies.getChildren()) {
-        const enemy = child as Enemy;
-        if (!enemy.active) {
-          continue;
-        }
-        const dist = Phaser.Math.Distance.Between(x, y, enemy.x, enemy.y);
-        if (dist > vortex.reach || dist <= 1) {
-          continue;
-        }
-        const move = Math.min(step, dist);
-        enemy.x += ((x - enemy.x) / dist) * move;
-        enemy.y += ((y - enemy.y) / dist) * move;
-      }
-    }
-    // A new one opens after the rest have aged: it does not lose this frame.
-    if (context.mastered) {
-      this.sinceVortexMs += delta;
-      if (this.sinceVortexMs >= everyMs) {
-        // One at a time, however long it was since the last.
-        this.sinceVortexMs = 0;
-        const spread = Math.max(1, context.range) * spreadShare;
-        const a = Math.random() * Math.PI * 2;
-        const d = Math.sqrt(Math.random()) * spread;
-        const view = this.scene.add
-          .image(context.origin.x + Math.cos(a) * d, context.origin.y + Math.sin(a) * d, TEXTURES.voidVortex)
-          .setDepth(DEPTH.pickups - 1)
-          .setDisplaySize(reach * area * 2, reach * area * 2)
-          .setAlpha(0);
-        this.vortices.push({ view, leftMs: lifeMs, reach: reach * area });
-      }
     }
   }
 
@@ -200,6 +141,10 @@ export class VoidOrb implements Weapon {
         const wait = again ? Math.min(AFFIX_TIMING.repeatDelayMs, context.cooldownMs / 2) : context.cooldownMs;
         records.set(key + i, { life: enemy.lives, readyAt: this.elapsedMs + wait, repeated: again });
         context.hit(enemy, damage);
+        // 각성 (0.94, the user's ask): every hit gives health back.
+        if (context.mastered) {
+          context.heal?.(SKILL_MASTERY.voidHealPerHit);
+        }
         // Held well apart by its own gap, or an orbit would drone.
         sfx.playSkill(this.scene, this.definition.id);
       }

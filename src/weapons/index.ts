@@ -8,6 +8,7 @@ export { ChainLightning } from '@/weapons/ChainLightning';
 export { IceSpear } from '@/weapons/IceSpear';
 export { VoidOrb } from '@/weapons/VoidOrb';
 export { ThunderStrike } from '@/weapons/ThunderStrike';
+export { Drone } from '@/weapons/Drone';
 export { ProjectileWeapon } from '@/weapons/ProjectileWeapon';
 export { findNearest, findNearestEnemy, type Weapon, type WeaponContext } from '@/weapons/Weapon';
 export {

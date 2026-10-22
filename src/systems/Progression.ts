@@ -24,7 +24,8 @@ export type UpgradeId =
   | 'pierceCount'
   | 'orbCount'
   | 'blastRadius'
-  | 'recastChance';
+  | 'recastChance'
+  | 'droneCount';
 
 export interface UpgradeOption {
   readonly id: UpgradeId;
