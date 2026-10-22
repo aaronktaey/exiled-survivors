@@ -34,8 +34,9 @@ interface DroneState {
  * No more than DRONE.perEnemy on one enemy: with enemies fewer than drones
  * the rest circle the survivor.
  *
- * 각성: every SKILL_MASTERY.droneBomb.every-th shot of a drone drops a bomb.
- * 2차 각성: SKILL_MASTERY.second.droneTimes as many drones.
+ * 각성: SKILL_MASTERY.droneTimes as many drones.
+ * 2차 각성: every SKILL_MASTERY.second.droneBomb.every-th shot of a drone drops a bomb.
+ * (The other way round until 0.98, the user's ask.)
  */
 export class Drone implements Weapon {
   public readonly definition = SKILLS.drone;
@@ -58,7 +59,7 @@ export class Drone implements Weapon {
   public update(delta: number, context: WeaponContext): void {
     this.elapsedMs += delta;
     this.spin = Phaser.Math.Angle.Wrap(this.spin + (delta / 1000) * 1.6);
-    const times = context.masteredTwice ? SKILL_MASTERY.second.droneTimes : 1;
+    const times = context.mastered ? SKILL_MASTERY.droneTimes : 1;
     const count = Math.max(1, Math.round(((context.droneCount ?? 1) + (context.extraProjectiles ?? 0)) * times));
     this.sync(count);
 
@@ -155,9 +156,9 @@ export class Drone implements Weapon {
         this.tracers.push({ x1: drone.view.x, y1: drone.view.y, x2: tx2, y2: ty2, leftMs: DRONE.tracerMs });
         context.hit(t, context.damage);
         sfx.playSkill(this.scene, this.definition.id);
-        // 각성: every so many shots, a bomb where that enemy stood.
-        const bomb = SKILL_MASTERY.droneBomb;
-        if (context.mastered && drone.shots % bomb.every === 0) {
+        // 2차 각성: every so many shots, a bomb where that enemy stood.
+        const bomb = SKILL_MASTERY.second.droneBomb;
+        if (context.masteredTwice && drone.shots % bomb.every === 0) {
           this.burst(context, tx2, ty2, bomb.radius * (context.areaScale ?? 1), context.damage * bomb.damageShare, 0xffb347);
           this.bombs += 1;
         }

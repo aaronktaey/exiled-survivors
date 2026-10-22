@@ -22,6 +22,7 @@ import {
   TERRAIN,
   TEXTURES,
   PLAYER_LOOK,
+  VOID_VORTEX_FX,
   UNKNOWN_RUNE_LOOKS,
   enemyPose,
   unknownRuneTexture,
@@ -110,6 +111,7 @@ export class BootScene extends Phaser.Scene {
     this.createFlagTextures();
     this.createLookTextures();
     this.createDroneTextures();
+    this.createVortexTexture();
     this.createMangoTexture();
     this.createMagnetTexture();
     this.createOreTexture();
@@ -490,6 +492,43 @@ export class BootScene extends Phaser.Scene {
       graphics.generateTexture(bone.texture, size, size);
       graphics.destroy();
     }
+  }
+
+  /**
+   * 공허구체 각성's 공허: spiral arms winding into a dark eye, in
+   * VOID_VORTEX_FX's purples — turned by the weapon, so it swirls.
+   */
+  private createVortexTexture(): void {
+    const size = 128;
+    const c = size / 2;
+    const { arms, eye, armCount, winds } = VOID_VORTEX_FX;
+    const g = this.add.graphics();
+    g.fillStyle(arms[0]!, 0.22);
+    g.fillCircle(c, c, c - 2);
+    for (let arm = 0; arm < armCount; arm++) {
+      const start = (arm / armCount) * Math.PI * 2;
+      arms.forEach((color, layer) => {
+        g.lineStyle(7 - layer * 2, color, 0.9);
+        g.beginPath();
+        for (let step = 0; step <= 40; step++) {
+          const t = step / 40;
+          const r = (c - 4) * (1 - t) + 6 * t;
+          const a = start + t * winds * Math.PI * 2 + layer * 0.12;
+          const x = c + Math.cos(a) * r;
+          const y = c + Math.sin(a) * r;
+          if (step === 0) {
+            g.moveTo(x, y);
+          } else {
+            g.lineTo(x, y);
+          }
+        }
+        g.strokePath();
+      });
+    }
+    g.fillStyle(eye, 1);
+    g.fillCircle(c, c, 9);
+    g.generateTexture(TEXTURES.voidVortex, size, size);
+    g.destroy();
   }
 
   /**

@@ -184,6 +184,7 @@ export const TEXTURES = {
   ore: "tex-ore",
   lock: "tex-lock",
   drone: "tex-drone",
+  voidVortex: "tex-void-vortex",
   magnet: "tex-magnet",
   orbTransmute: "tex-orb-transmute",
   orbChaos: "tex-orb-chaos",
@@ -931,6 +932,20 @@ export const SHOCK_FX = {
   redrawMs: 70,
 } as const;
 
+
+/** 공허구체 각성's 공허: a purple vortex, drawn by BootScene.createVortexTexture. */
+export const VOID_VORTEX_FX = {
+  /** Its arms' colours, outer to inner, and the dark eye. */
+  arms: [0x6b2fbf, 0x9b5cff, 0xd2b0ff],
+  eye: 0x1a0830,
+  /** Spiral arms, and how far each winds round (turns). */
+  armCount: 4,
+  winds: 1.1,
+  spinPerSecond: 5,
+  fadeMs: 250,
+  /** How solid it is at its fullest: the field under it still shows. */
+  alpha: 0.7,
+} as const;
 
 /** A 제단 being summoned: a red pillar (the light pillar's picture, tinted) comes down on the spot. */
 export const ALTAR_SUMMON_FX = {

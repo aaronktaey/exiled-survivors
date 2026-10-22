@@ -482,9 +482,10 @@ Read `git log` for what changed and when. What is not in the log:
   soon as one is in range, so they gather only when enemies are fewer than
   drones. With nothing to shoot they circle the survivor. `droneCount` is
   a stat and a pick of its own (UPGRADE_STEP/UPGRADE_MAX_PICKS, a dial on
-  the 드론 page); the Runed Sword's +1 adds before the 2차 각성 doubles it
-  (`SKILL_MASTERY.second.droneTimes`). 1차 각성: every
-  `SKILL_MASTERY.droneBomb.every`-th shot of a drone bombs. `areaScale`
+  the 드론 page); the Runed Sword's +1 adds before the 1차 각성 doubles it
+  (`SKILL_MASTERY.droneTimes`). 2차 각성: every
+  `SKILL_MASTERY.second.droneBomb.every`-th shot of a drone bombs (the two
+  were the other way round until 0.98, the user's ask). `areaScale`
   (화염구 held) widens the bomb and the reach (the user's call). 보유 효과:
   move speed +15% (공허구체's before). Base 5 · 125 · 0.25 with 2 a enemy
   (0.97, the user's pick, after DPS tables against 연쇄번개 and 화염구 with
@@ -500,11 +501,11 @@ Read `git log` for what changed and when. What is not in the log:
   The dev server lets trial skills through, but not the harness (no
   account there), so suites see the shipped rule. Taking the 드론 out of
   `SKILL_TRIAL` is the whole of turning it back on.
-- **공허구체 changed with it (0.95).** Its 1차 각성 heals
-  `SKILL_MASTERY.voidHealPerHit` a hit (`WeaponContext.heal`), uncapped on
-  the user's word — they were to try a cap locally; the 공허 that pulled
-  enemies is gone. Its 보유 효과 is `contactDamageScale` 0.8 (받는 접촉
-  피해 20% 감폭, `Player.takeContact`), the move speed went to the 드론.
+- **공허구체 changed with it (0.95).** Its 보유 효과 is
+  `contactDamageScale` 0.8 (받는 접촉 피해 20% 감폭, `Player.takeContact`),
+  the move speed went to the 드론. 0.95–0.97 its 1차 각성 healed a point a
+  hit; 0.98 put the 공허 back (below), now healing by the head
+  (`WeaponContext.heal`), uncapped.
 - **보조 스킬 stop at `SUB_SKILLS.max` (0.84).** Besides the main skill, at
   most three: once full (`GameScene.subSkillsFull`) `rollSkillDrop` and
   `randomSkills` offer only skills held, and a skill picked up that was
@@ -582,9 +583,12 @@ Read `git log` for what changed and when. What is not in the log:
   얼음창 shots carry `freezeMs` (0.2s) for an enemy already chilled (`Enemy.freeze`),
   공허구체 (whose hit timers are per orb: each orb hits an enemy once a
   cooldown, every orb on its own) opens a 공허 every `voidVortex.everyMs`
-  somewhere within `spreadShare` × its orbit radius that draws enemies in
-  by moving x/y the way Separation does (`VoidOrb.vortices`, the purple
-  `TEXTURES.voidVortex`; its card says only 공허 생성 — the user's word),
+  that draws enemies in by moving x/y the way Separation does
+  (`VoidOrb.vortices`, the purple `TEXTURES.voidVortex`). Since 0.98 (the
+  user's ask) it opens on the thickest crowd — the enemy within
+  `searchShare` × the orbit radius with the most others within `reach`
+  (`VoidOrb.thickest`), waiting if none is near — and heals `healPerEnemy`
+  a head inside every `healEveryMs`,
   낙뢰 leaves what it hits 감전 (`Enemy.shock`, `thunderShock`: every hit on
   it × 1 + `amplify` in `CombatSystem.hit`, sparks drawn by
   `Enemy.drawShock` from `SHOCK_FX`). Reaching it calls `GameScene.celebrateMastery`

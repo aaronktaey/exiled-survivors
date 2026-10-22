@@ -141,7 +141,7 @@ export interface Strings {
     readonly title: string;
     /** On the skill's card: "각성 — {effect}". */
     readonly card: string;
-    /** One line a skill. {bonus} {blastScale} {freeze} {shockSecs} {shockAmp} {heal} {bombEvery} {bombShare} filled from SKILL_MASTERY. */
+    /** One line a skill. {bonus} {blastScale} {freeze} {shockSecs} {shockAmp} {heal} {healSecs} {droneTimes} filled from SKILL_MASTERY. */
     readonly effects: {
       readonly meleeStrike: string;
       readonly fireball: string;
@@ -154,7 +154,7 @@ export interface Strings {
     /** 2차 각성 (SKILL_MASTERY.second): its banner, its card line, and one line a skill. */
     readonly title2: string;
     readonly card2: string;
-    /** {arc} {blastScale} {forks} {shatter} {innerShare} {splashShare} {droneTimes} filled from SKILL_MASTERY.second. */
+    /** {arc} {blastScale} {forks} {shatter} {innerShare} {splashShare} {bombEvery} {bombShare} filled from SKILL_MASTERY.second. */
     readonly effects2: {
       readonly meleeStrike: string;
       readonly fireball: string;

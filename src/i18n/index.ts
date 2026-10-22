@@ -125,7 +125,7 @@ export function masteryText(id: SkillId, tier: 1 | 2 = 1): string {
   const pct = (share: number): string => `${Math.round(share * 100)}%`;
   if (tier === 2) {
     const line = (t().mastery.effects2 as Record<string, string>)[id];
-    const { meleeArcDegrees, fireBlastScale, chainForks, iceShatter, voidInner, thunderSplash, droneTimes } = SKILL_MASTERY.second;
+    const { meleeArcDegrees, fireBlastScale, chainForks, iceShatter, voidInner, thunderSplash, droneBomb } = SKILL_MASTERY.second;
     return line
       ? fill(line, {
           arc: meleeArcDegrees,
@@ -134,7 +134,8 @@ export function masteryText(id: SkillId, tier: 1 | 2 = 1): string {
           shatter: iceShatter.radius,
           innerShare: pct(voidInner.damageShare),
           splashShare: pct(thunderSplash.damageShare),
-          droneTimes,
+          bombEvery: droneBomb.every,
+          bombShare: pct(droneBomb.damageShare),
         })
       : '';
   }
@@ -142,16 +143,16 @@ export function masteryText(id: SkillId, tier: 1 | 2 = 1): string {
   if (!line) {
     return '';
   }
-  const { fireBlastScale, freezeMs, chainBonusPerJump, thunderShock, voidHealPerHit, droneBomb } = SKILL_MASTERY;
+  const { fireBlastScale, freezeMs, chainBonusPerJump, thunderShock, voidVortex, droneTimes } = SKILL_MASTERY;
   return fill(line, {
     bonus: pct(chainBonusPerJump),
     blastScale: fireBlastScale,
     freeze: freezeMs / 1000,
     shockSecs: thunderShock.durationMs / 1000,
     shockAmp: pct(thunderShock.amplify),
-    heal: voidHealPerHit,
-    bombEvery: droneBomb.every,
-    bombShare: pct(droneBomb.damageShare),
+    heal: voidVortex.healPerEnemy,
+    healSecs: voidVortex.healEveryMs / 1000,
+    droneTimes,
   });
 }
 

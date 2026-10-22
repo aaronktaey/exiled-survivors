@@ -1119,10 +1119,17 @@ export const SKILL_MASTERY = {
   chainBonusPerJump: 0.1,
   /** 얼음창: an enemy already under 냉각 is frozen solid this long when struck. 100 until 0.84. */
   freezeMs: 200,
-  /** 공허구체 (0.94, the user's ask; a 공허 that pulled before): every orb's hit gives this much health back. */
-  voidHealPerHit: 1,
-  /** 드론 (0.94 trial): every `every`th shot of a drone drops a bomb — `damageShare` of a shot on all within `radius`. */
-  droneBomb: { every: 5, radius: 50, damageShare: 1.5 },
+  /**
+   * 공허구체 (0.98, the user's ask: 0.84's 공허 back, in place of 0.95's heal
+   * a hit): every `everyMs` a 공허 opens where the enemies stand thickest —
+   * on the enemy, within `searchShare` × the orbit's radius of the survivor,
+   * with the most others within its `reach` — and for `lifeMs` draws every
+   * enemy within `reach` toward its middle at `pullSpeed` px/s. Every
+   * `healEveryMs` it gives `healPerEnemy` health for each enemy inside it.
+   */
+  voidVortex: { everyMs: 5000, lifeMs: 2000, searchShare: 2, reach: 100, pullSpeed: 140, healEveryMs: 1000, healPerEnemy: 1 },
+  /** 드론 (0.98, the 2차 각성's until then): this many times the drones. */
+  droneTimes: 2,
   /**
    * 낙뢰 (0.84): what it hits is 감전 for `durationMs` (each hit starts it
    * over), taking `amplify` more from every hit while it lasts.
@@ -1148,8 +1155,11 @@ export const SKILL_MASTERY = {
      * its radius, turning the other way and hitting for `damageShare`.
      */
     voidInner: { radiusShare: 0.6, damageShare: 0.5 },
-    /** 드론 (0.94 trial, the user's ask; a satellite's laser before): this many times the drones. */
-    droneTimes: 2,
+    /**
+     * 드론 (0.98, the 1차 각성's until then): every `every`th shot of a drone
+     * drops a bomb — `damageShare` of a shot on all within `radius`.
+     */
+    droneBomb: { every: 5, radius: 50, damageShare: 1.5 },
     /** 낙뢰: every strike also hurts what stands within `radius` of it, for `damageShare`. */
     thunderSplash: { radius: 60, damageShare: 0.5 },
   },

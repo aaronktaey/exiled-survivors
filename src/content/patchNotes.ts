@@ -15,6 +15,28 @@ export interface PatchNote {
 
 export const PATCH_NOTES: readonly PatchNote[] = [
   {
+    version: '0.98',
+    date: '2026-10-23',
+    changes: {
+      ko: [
+        '공허구체 1차 각성이 공허로 돌아왔습니다: 5초마다 근처에서 적이 가장 많이 모인 곳에 공허가 2초 동안 열려 적을 끌어당기고, 공허 안의 적 1마리당 1초마다 체력을 1 회복합니다. 구체가 적을 때릴 때마다 체력을 회복하던 효과는 없어졌습니다.',
+        '드론의 1차 · 2차 각성이 서로 바뀌었습니다: 1차 각성은 드론 수 2배, 2차 각성은 드론이 5번 쏠 때마다 작은 범위에 폭탄(피해 150%).',
+      ],
+      en: [
+        'Void Orb’s awakening is the void again: every 5s a void opens for 2s where the enemies nearby are thickest, draws them in, and gives back 1 health every second for each enemy inside. The heal on every orb hit is gone.',
+        'The Drone’s two awakenings have swapped: the first now doubles the drones, the second drops a bomb on a small area every fifth shot of a drone (150% damage).',
+      ],
+      ja: [
+        '虚無球の覚醒が虚空に戻りました：5秒ごとに近くで敵が最も多く集まった場所に虚空が2秒間開いて敵を引き寄せ、虚空の中の敵1体につき1秒ごとに体力を1回復します。球が敵を叩くたびに回復する効果はなくなりました。',
+        'ドローンの覚醒と第二覚醒が入れ替わりました：覚醒はドローン数2倍、第二覚醒はドローンが5回撃つたびに小さな範囲へ爆弾（ダメージ150%）。',
+      ],
+      zh: [
+        '虚空球的觉醒恢复为虚空：每5秒在附近敌人最密集处打开持续2秒的虚空，把敌人吸过去，虚空内每有1个敌人，每秒恢复1点生命。球体每次命中时恢复生命的效果已移除。',
+        '无人机的觉醒与二次觉醒互换：觉醒为无人机数量翻倍，二次觉醒为无人机每射击5次在小范围投下炸弹（150%伤害）。',
+      ],
+    },
+  },
+  {
     version: '0.97',
     date: '2026-10-22',
     changes: {

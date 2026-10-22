@@ -166,16 +166,33 @@ const effects = await run(`
   out.warmFrozen = warm.isFrozen;
   s.spawner.clear();
 
-  // 공허구체 (0.95): awakened, every hit of an orb gives SKILL_MASTERY.voidHealPerHit back.
+  // 공허구체 (0.98): awakened, a 공허 opens on the thickest crowd near the survivor, draws enemies in,
+  // heals healPerEnemy a head inside every healEveryMs, then closes. Orbs far out, so none hits.
   const orb = weapon('voidOrb');
-  put(120, 0);
+  const V = window.config.SKILL_MASTERY.voidVortex;
+  const lone = put(60, 0);
+  const crowd = [put(-150, 0), put(-160, 20), put(-140, -20)];
   let healed = 0;
   const heal = (n) => { healed += n; };
-  for (let t = 0; t < 2000; t += 50) orb.update(50, ctx({ range: 120, cooldownMs: 200, mastered: false, heal }));
-  out.healPlain = healed;
-  for (let t = 0; t < 2000; t += 50) orb.update(50, ctx({ range: 120, cooldownMs: 200, heal }));
-  out.healAwake = healed;
-  out.healPer = window.config.SKILL_MASTERY.voidHealPerHit;
+  const orbCtx = (over) => ctx({ range: 120, damage: 0, heal, ...over });
+  for (let t = 0; t < V.everyMs + 100; t += 50) orb.update(50, orbCtx({ mastered: false }));
+  out.vortexPlain = orb.vortices.length;
+  // Its clock runs only once awakened.
+  for (let t = 0; t < V.everyMs && orb.vortices.length === 0; t += 50) orb.update(50, orbCtx({}));
+  const vortex = orb.vortices[0];
+  out.vortexOpen = orb.vortices.length;
+  out.vortexOnCrowd = vortex ? Math.hypot(vortex.view.x - crowd[0].x, vortex.view.y - crowd[0].y) < 30 : false;
+  if (vortex) {
+    const edge = crowd[1];
+    const d0 = Math.hypot(edge.x - vortex.view.x, edge.y - vortex.view.y);
+    for (let t = 0; t < V.healEveryMs; t += 50) orb.update(50, orbCtx({}));
+    out.vortexPulled = d0 > 2 ? d0 - Math.hypot(edge.x - vortex.view.x, edge.y - vortex.view.y) : -1;
+    out.vortexHealed = healed;
+    out.vortexWantHeal = crowd.length * V.healPerEnemy;
+    out.loneLeft = Math.hypot(lone.x - vortex.view.x, lone.y - vortex.view.y) > vortex.reach;
+    for (let t = 0; t < V.lifeMs; t += 50) orb.update(50, orbCtx({ mastered: false }));
+    out.vortexGone = orb.vortices.length;
+  }
   s.spawner.clear();
 
   // 낙뢰 (0.84): what it hits is 감전, and every hit on it lands harder while it lasts.
@@ -225,9 +242,11 @@ check('화염구: awakened, the burst is fireBlastScale as wide, and that again 
     Math.abs(effects.blast.area - effects.blast.plain * 1.2) < 1e-9, JSON.stringify(effects.blast));
 check('얼음창: an enemy already chilled is frozen; one that was not, is not',
   effects.frozen === true && effects.warmFrozen === false);
-check('공허구체: awakened, every orb hit gives health back; not awakened, none',
-  effects.healPlain === 0 && effects.healAwake > 0 && effects.healAwake % effects.healPer === 0,
-  JSON.stringify({ plain: effects.healPlain, awake: effects.healAwake, per: effects.healPer }));
+check('공허구체: awakened, a 공허 opens on the thickest crowd, not the nearest enemy, draws enemies in, then closes',
+  effects.vortexPlain === 0 && effects.vortexOpen === 1 && effects.vortexOnCrowd && effects.vortexPulled > 0 && effects.vortexGone === 0,
+  JSON.stringify({ plain: effects.vortexPlain, open: effects.vortexOpen, onCrowd: effects.vortexOnCrowd, pulled: effects.vortexPulled, gone: effects.vortexGone }));
+check('and every healEveryMs it heals healPerEnemy for each enemy inside it',
+  effects.vortexHealed === effects.vortexWantHeal && effects.loneLeft, `${effects.vortexHealed} vs ${effects.vortexWantHeal}`);
 check('낙뢰: awakened, what it hits is 감전, takes more from every hit, and it wears off',
   effects.shockPlain === false && effects.shocked === true && effects.shockHit.took === effects.shockHit.want && effects.shockLater === false,
   JSON.stringify({ shocked: effects.shocked, hit: effects.shockHit, later: effects.shockLater }));
@@ -523,7 +542,7 @@ check('척추 doubles the rare chance, and only one goes into a run',
   spine.scale === 2 && spine.both === 2 && spine.stack === false && Math.abs(rares.got - rares.want) < 1e-9,
   JSON.stringify({ spine, rares }));
 
-// --- 드론 (0.95): one enemy each, no more than DRONE.perEnemy on one, a bomb every so many shots, twice as many at the 2차 ---
+// --- 드론 (0.95): one enemy each, no more than DRONE.perEnemy on one; twice as many at the 1차, a bomb every so many shots at the 2차 (0.98) ---
 const drone = await run(`
   const c = s.combat, g = s.spawner.group, p = s.player, C = window.config;
   s.spawner.clear();
@@ -544,22 +563,24 @@ const drone = await run(`
   const far = put(500, 0);
   step(500);
   const farHeld = on().some((d) => d.target === far);
+  step(200, { mastered: true, extraProjectiles: 1 });
+  const twice = on().length;
   const bombs0 = w.bombs;
   step(1500, { mastered: true });
-  const bombs = w.bombs - bombs0;
+  const bombsOnce = w.bombs - bombs0;
+  step(1500, { mastered: true, masteredTwice: true });
+  const bombs = w.bombs - bombs0 - bombsOnce;
   const shots = on().reduce((n, d) => n + d.shots, 0);
-  step(200, { mastered: true, masteredTwice: true, extraProjectiles: 1 });
-  const twice = on().length;
   s.spawner.clear();
-  return { capped, spread, farHeld, bombs, twice, wantTwice: (5 + 1) * C.SKILL_MASTERY.second.droneTimes, every: C.SKILL_MASTERY.droneBomb.every, shots };
+  return { capped, spread, farHeld, bombsOnce, bombs, twice, wantTwice: (5 + 1) * C.SKILL_MASTERY.droneTimes, every: C.SKILL_MASTERY.second.droneBomb.every, shots };
 `);
 console.log('drone:', JSON.stringify(drone));
 check('드론: no more than DRONE.perEnemy on one enemy; the rest circle the survivor',
   drone.capped.onLone === drone.capped.cap && drone.capped.idle === 5 - drone.capped.cap, JSON.stringify(drone.capped));
 check('and with more enemies in reach they spread out — every one held', drone.spread.every((n) => n >= 1), JSON.stringify(drone.spread));
 check('one out of reach is left alone', drone.farHeld === false);
-check('1차 각성: a bomb every so many shots of a drone', drone.bombs > 0, `${drone.bombs} bombs`);
-check('2차 각성: twice the drones, the Runed Sword’s +1 counted before the doubling', drone.twice === drone.wantTwice, `${drone.twice} vs ${drone.wantTwice}`);
+check('1차 각성 (0.98): twice the drones, the Runed Sword’s +1 counted before the doubling', drone.twice === drone.wantTwice, `${drone.twice} vs ${drone.wantTwice}`);
+check('2차 각성 (0.98): a bomb every so many shots of a drone — none at the 1차 alone', drone.bombsOnce === 0 && drone.bombs > 0, `${drone.bombsOnce} → ${drone.bombs} bombs`);
 
 console.log('\n=== SUMMARY ===');
 const failed = results.filter((r) => !r.p);
