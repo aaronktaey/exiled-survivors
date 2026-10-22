@@ -23,7 +23,7 @@ export class MagnetDrop extends GroundItem {
   public drop(x: number, y: number): void {
     this.begin(x, y, MAGNET.size);
     this.setDisplaySize(MAGNET.size, MAGNET.size);
-    this.nameplate.show(t().game.magnet, 'rare');
+    this.nameplate.show(t().game.magnet, 'mythic');
     this.nameplate.place(x, y, MAGNET.size);
     this.pop();
   }

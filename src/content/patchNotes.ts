@@ -15,6 +15,44 @@ export interface PatchNote {
 
 export const PATCH_NOTES: readonly PatchNote[] = [
   {
+    version: '0.91',
+    date: '2026-10-22',
+    changes: {
+      ko: [
+        '분해 · 제작은 인벤토리 오른쪽 위의 버튼으로 엽니다. 장비 아래의 분해 버튼은 없어졌습니다.',
+        '장비 등급이 바뀌었습니다: 속성 2개는 마법(파랑), 3~4개는 희귀(노랑), 5~6개는 신화(빨강). 인벤토리 테두리와 바닥의 이름표가 이 등급을 따르고, 아이템 필터에 신화가 생겼습니다.',
+        '분해할 때 얻는 구슬도 등급을 따릅니다: 마법은 변화의 구슬, 희귀는 혼돈의 구슬, 신화는 각성의 구슬.',
+        '룬 각인 검은 더 이상 합성할 수 없습니다. 오니고로시는 드랍으로만 얻습니다.',
+        '새 검 나르실: 철광석 1000개로 제작합니다. 공격력 +25에 고정 속성 공격력 +15, 분해하면 철광석 50개. 드랍되지 않습니다.',
+        '타이틀 화면에서 불러오기와 저장된 판 정보가 겹쳐 보이던 문제를 고쳤습니다.',
+      ],
+      en: [
+        'Salvage · Craft now opens from the button at the top right of the inventory. The Salvage button under the weapon is gone.',
+        'Weapon rarity changed: 2 affixes are Magic (blue), 3–4 Rare (yellow), 5–6 Mythic (red). Inventory borders and names on the ground follow it, and the item filter has a Mythic switch.',
+        'The orb a salvage gives follows rarity too: Magic a Transmutation Orb, Rare a Chaos Orb, Mythic an Awakening Orb.',
+        'Runed Swords can no longer be combined. Onigoroshi only drops.',
+        'New sword, Narsil: crafted for 1000 iron ore. Attack +25 with an implicit Attack +15, salvages for 50 iron ore. It never drops.',
+        'Fixed Load and the saved run’s line overlapping on the title screen.',
+      ],
+      ja: [
+        '分解 · 製作はインベントリ右上のボタンから開きます。装備の下の分解ボタンはなくなりました。',
+        '装備の等級が変わりました：属性2個はマジック（青）、3〜4個はレア（黄）、5〜6個は神話（赤）。インベントリの枠と地面の名前がこの等級に従い、アイテムフィルターに神話が加わりました。',
+        '分解で得る球も等級に従います：マジックは変化の球、レアは混沌の球、神話は覚醒の球。',
+        'ルーンの剣は合成できなくなりました。鬼殺しはドロップでのみ手に入ります。',
+        '新しい剣ナルシル：鉄鉱石1000個で製作します。攻撃力 +25 に固定属性 攻撃力 +15、分解すると鉄鉱石50個。ドロップしません。',
+        'タイトル画面で「つづきから」と保存データの表示が重なる問題を修正しました。',
+      ],
+      zh: [
+        '分解 · 制作改由背包右上角的按钮打开，装备下方的分解按钮已移除。',
+        '装备等级调整：2 条属性为魔法（蓝），3~4 条为稀有（黄），5~6 条为神话（红）。背包边框和地面名称按此显示，物品过滤器新增神话。',
+        '分解获得的宝珠也按等级：魔法得变化宝珠，稀有得混沌宝珠，神话得觉醒宝珠。',
+        '符文剑不能再合成。鬼杀只能通过掉落获得。',
+        '新剑纳希尔：消耗1000铁矿石制作。攻击力 +25，固定属性攻击力 +15，分解得50铁矿石。不会掉落。',
+        '修复了标题画面中“继续游戏”与存档信息重叠的问题。',
+      ],
+    },
+  },
+  {
     version: '0.90',
     date: '2026-10-22',
     changes: {

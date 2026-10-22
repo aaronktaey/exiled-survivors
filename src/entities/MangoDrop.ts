@@ -22,7 +22,7 @@ export class MangoDrop extends GroundItem {
   public drop(x: number, y: number): void {
     this.begin(x, y, MANGO.size);
     this.setDisplaySize(MANGO.size, MANGO.size);
-    this.nameplate.show(t().game.mango, 'rare');
+    this.nameplate.show(t().game.mango, 'mythic');
     this.nameplate.place(x, y, MANGO.size);
     this.pop();
   }

@@ -112,7 +112,7 @@ for (const [w, h, shape] of [[0, 0, 'landscape'], [420, 860, 'upright']]) {
   check(`${shape} OrbScene: pressing it goes back to the 인벤토리`,
     (await active('OrbScene')) === false && (await active('InventoryScene')) === true);
   // 분해, from the 인벤토리 (0.90): its way out goes back there too.
-  await ev(`(() => { window.game.scene.getScene('InventoryScene').pressDiscard(); return 1; })()`);
+  await ev(`(() => { window.game.scene.getScene('InventoryScene').openForge(); return 1; })()`);
   await sleep(800);
   fits(`${shape} ForgeScene`, await probe('ForgeScene'));
   await press('ForgeScene');

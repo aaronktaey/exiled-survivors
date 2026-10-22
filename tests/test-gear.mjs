@@ -75,7 +75,8 @@ check('a plain sword changes nothing else',
 const tiers = await ev(`(() => {
   const s = window.game.scene.getScene('GameScene');
   const roll = s.rollGearDrop.bind(s);
-  const roster = Object.keys(window.config.GEAR);
+  // A base no 우두머리 leaves (weight 0 — the 나르실, only made) is not on it.
+  const roster = Object.keys(window.config.GEAR).filter((id) => window.config.GEAR[id].weight > 0);
   const seen = {};
   for (let i = 0; i < 8000 && Object.keys(seen).length < roster.length; i++) {
     const item = roll(true);
@@ -83,14 +84,19 @@ const tiers = await ev(`(() => {
   }
   return { ids: Object.keys(seen), roster };
 })()`);
-check('a 우두머리 can leave every sword on the roster, 오니고로시 included',
-  tiers.ids.length === tiers.roster.length && tiers.ids.includes('onigoroshi'),
+check('a 우두머리 can leave every sword on the roster, 오니고로시 included — never the 나르실',
+  tiers.ids.length === tiers.roster.length && tiers.ids.includes('onigoroshi') && !tiers.ids.includes('narsil'),
   tiers.ids.join(' / '));
 
 const attacks = await ev(`(() => {
-  const ids = Object.keys(window.config.GEAR)
+  // The ladder the drops climb; the 나르실 (made, 고정 속성 공격력) is read on its own.
+  const ids = Object.keys(window.config.GEAR).filter((id) => window.config.GEAR[id].weight > 0)
     .sort((a, b) => window.config.GEAR[a].tier - window.config.GEAR[b].tier);
+  const narsil = window.config.GEAR.narsil;
   return {
+    narsil: { attack: window.gearBonusFor({ uid: 'n', id: 'narsil', prefixes: [], suffixes: [] }).attack,
+              want: window.config.attackForTier(narsil.tier) + narsil.implicit.attack,
+              oni: window.config.attackForTier(window.config.GEAR.onigoroshi.tier) },
     ids,
     tiers: ids.map(id => window.config.GEAR[id].tier),
     attack: ids.map(id => window.gearBonusFor({ uid: 'probe', id, prefixes: [], suffixes: [] }).attack),
@@ -104,6 +110,8 @@ check('a lower tier number is one more step of attack',
     attacks.attack.every((a, i) => i === 0 ||
       attacks.attack[i - 1] - a === (attacks.tiers[i] - attacks.tiers[i - 1]) * attacks.step),
   attacks.ids.map((id, i) => `${id} T${attacks.tiers[i]} +${attacks.attack[i]}`).join(' / '));
+check('나르실 is the 오니고로시’s attack, with its 고정 속성’s on top',
+  attacks.narsil.attack === attacks.narsil.want && attacks.narsil.want > attacks.narsil.oni, JSON.stringify(attacks.narsil));
 check('the ladder is 오니고로시 > 룬 각인 검 > 강철 검 > 무쇠 검 > 녹슨 검',
   JSON.stringify(attacks.ids) ===
     JSON.stringify(['onigoroshi', 'runedSword', 'steelSword', 'ironSword', 'rustySword']) &&
@@ -132,8 +140,8 @@ const drops = await run(`
   }
   marked.forEach((g, i) => { g.fromKill = was[i]; });
   const allowed = marked.map(g => g.id);
-  const bossOnly = Object.values(G).filter(g => g.fromKill === undefined).map(g => g.id);
-  const lowTiers = Object.values(G).filter(g => g.fromKill === undefined).map(g => g.tier);
+  const bossOnly = Object.values(G).filter(g => g.fromKill === undefined && g.weight > 0).map(g => g.id);
+  const lowTiers = Object.values(G).filter(g => g.fromKill === undefined && g.weight > 0).map(g => g.tier);
   const ordinary = Object.values(ordinaryIds).reduce((a, b) => a + b, 0);
 
   const N = 10;
@@ -404,18 +412,20 @@ console.log('ladder:', JSON.stringify(ladder, null, 1));
 const bare = (l) => l.plateShown === false && l.plateAlpha === 0 && l.outline >= 2;
 const isNormal = (l) => bare(l) && l.colour === '#e8edf7';
 const isMagic = (l) => bare(l) && l.colour === '#cfe8ff';
-const isRare = (l) => bare(l) && l.colour === '#FE0000' && l.outlineColour === '#ffffff';
+const isRare = (l) => bare(l) && l.colour === '#ffd84a';
+const isMythic = (l) => bare(l) && l.colour === '#FE0000' && l.outlineColour === '#ffffff';
 
 check('a skill is an ordinary drop, however good the skill is',
   isNormal(ladder.skill), `${ladder.skill.text} ${ladder.skill.colour}`);
-check('a sword with up to two 속성 is ordinary too',
-  isNormal(ladder.plain) && isNormal(ladder.two),
+// 0.91 (the user's ask): 2 속성 마법 (blue), 3–4 희귀 (yellow), 5–6 신화 (red).
+check('a sword with no 속성 is ordinary too, and one with two reads as 마법',
+  isNormal(ladder.plain) && isMagic(ladder.two),
   `${ladder.plain.text} / ${ladder.two.text}`);
-check('three or four 속성 reads as 마법 — its own colour, no plate',
-  isMagic(ladder.three) && isMagic(ladder.four),
-  `${ladder.three.text} / ${ladder.four.text}`);
-check('five or six reads as 희귀 — the loudest colour, still no plate',
-  isRare(ladder.five) && isRare(ladder.six),
+check('three or four 속성 reads as 희귀 — yellow, no plate',
+  isRare(ladder.three) && isRare(ladder.four),
+  `${ladder.three.text} ${ladder.three.colour} / ${ladder.four.text}`);
+check('five or six reads as 신화 — the loudest colour, still no plate',
+  isMythic(ladder.five) && isMythic(ladder.six),
   `${ladder.five.text} / ${ladder.six.text}`);
 
 // Visibility goes up with rarity, and never down.
@@ -551,14 +561,16 @@ const gearScene = (body) => scene('InventoryScene', body);
 const forge = (body) => scene('ForgeScene', body);
 const forgeOpened = await gearScene(`
   s.menu.focus('l1'); s.showDetails();
-  const label = s.discard.text;
-  s.pressDiscard();
-  return { label };
+  const b = s.forgeButton.getBounds();
+  const label = s.children.list.find((o) => o.type === 'Text' && o.text === '분해 · 제작')?.text ?? null;
+  const topRight = b.right > s.scale.width - 20 && b.top < 20;
+  s.forgeButton.emit('pointerdown');
+  return { label, topRight };
 `);
 await sleep(900);
 const atForge = await forge(`return { active: s.scene.isActive(), tab: s.tab, on: s.menu?.selectedId, back: !!s.backButton };`);
-check('the 인벤토리’s 분해 button opens the 분해 screen on that weapon',
-  forgeOpened.label === '분해' && atForge.active && atForge.tab === 'single' && atForge.on === 'l1' && atForge.back, JSON.stringify({ forgeOpened, atForge }));
+check('the 인벤토리’s top-right 분해 · 제작 button opens that screen on the weapon under the cursor',
+  forgeOpened.label === '분해 · 제작' && forgeOpened.topRight && atForge.active && atForge.tab === 'single' && atForge.on === 'l1' && atForge.back, JSON.stringify({ forgeOpened, atForge }));
 
 const asked = await forge(`
   s.pressSalvage();
@@ -573,8 +585,9 @@ check('one press asks rather than takes it apart, and moving the cursor takes th
 
 const before = await forge(`
   const c = window.config, item = window.gear.items.find((i) => i.uid === 'l1');
-  const lines = item.prefixes.length + item.suffixes.length;
-  const band = c.SALVAGE_ORBS.find((b) => lines >= b.minLines && lines <= b.maxLines);
+  const lines = item.prefixes.length + item.suffixes.length, T = c.AUDIO.dropTiers;
+  const tier = lines >= T.mythicFrom ? 'mythic' : lines >= T.rareFrom ? 'rare' : lines >= T.magicFrom ? 'magic' : 'normal';
+  const band = c.SALVAGE_ORBS[tier] ? { orb: c.SALVAGE_ORBS[tier] } : null;
   const at = s.menu.selected;
   const was = { ore: window.ore.value, orb: band ? window.orbs.count(band.orb) : 0 };
   s.pressSalvage();
@@ -588,9 +601,9 @@ const salvaged = await forge(`
            note: s.noteLine.text, cells: s.menu.items.length, selected: s.menu.selected };
 `);
 console.log('분해:', JSON.stringify({ before, salvaged }));
-check('the second press takes it apart for good: its base’s 철광석, and the 구슬 its 속성 count earns',
+check('the second press takes it apart for good: its base’s 철광석, and the 구슬 its rarity earns (5 속성: 신화 → 각성)',
   !salvaged.stash.includes('l1') && !salvaged.stored.includes('l1') && salvaged.ore - before.was.ore === before.wantOre &&
-    before.orb === 'chaos' && salvaged.orb - before.was.orb === 1 && /분해/.test(salvaged.note),
+    before.orb === 'awaken' && salvaged.orb - before.was.orb === 1 && /분해/.test(salvaged.note),
   JSON.stringify({ ore: [before.was.ore, salvaged.ore], orb: before.orb, note: salvaged.note }));
 check('the grid is laid out again around what is left, the cursor where it was',
   salvaged.cells === salvaged.stash.length && salvaged.selected === Math.min(before.at, salvaged.cells - 1), `${before.at} → ${salvaged.selected}`);
@@ -624,7 +637,8 @@ const bulk = await forge(`
   const eq = window.gear.value.equipped;
   const want = window.gear.items.filter((i) => types.includes(i.id) && i.prefixes.length + i.suffixes.length <= 2 && i.uid !== eq && !i.locked);
   const wantOre = want.reduce((sum, i) => sum + c.GEAR[i.id].salvageOre, 0);
-  const wantTransmute = want.filter((i) => { const n = i.prefixes.length + i.suffixes.length; return n >= 2 && n <= 3; }).length;
+  const T = c.AUDIO.dropTiers;
+  const wantTransmute = want.filter((i) => { const n = i.prefixes.length + i.suffixes.length; return n >= T.magicFrom && n < T.rareFrom; }).length;
   const was = { ore: window.ore.value, transmute: window.orbs.count('transmute'), stash: window.gear.items.length };
   s.pressBulk();
   const asking = { armed: s.armed, stash: window.gear.items.length, preview: s.preview.text };
@@ -1131,7 +1145,7 @@ console.log('망고:', JSON.stringify(mango));
 // Its own chance (a tenth of the 폭발의 구슬's when it was made; the live
 // values have parted them since).
 check('망고의 구슬 drops, rarer than the 폭발의 구슬, labelled rare',
-  mango.chance > 0 && mango.chance < mango.explode && mango.tier === 'rare', `${mango.chance} vs ${mango.explode}`);
+  mango.chance > 0 && mango.chance < mango.explode && mango.tier === 'mythic', `${mango.chance} vs ${mango.explode}`);
 check('it puts a weapon in 망고 상태, kept with the stash, and is not spent on one already there',
   mango.warded.kind === 'ward' && mango.warded.mango === true && mango.twice === null && mango.stored === true,
   JSON.stringify(mango.warded));
@@ -1622,6 +1636,72 @@ check('a stashed weapon from before 0.88 has its lines laddered down onto the se
   JSON.stringify(laddered.lines) === JSON.stringify([1 + rungShift, 5 + rungShift]) && laddered.rungs === laddered.want, JSON.stringify(laddered));
 check('a saved run’s weapon from before is laddered the same way as it resumes',
   laddered.saved === 2 + rungShift && laddered.savedRungs === laddered.want, JSON.stringify(laddered));
+
+// --- 0.91: no 합성 makes an 오니고로시; 나르실 is made; borders by rarity; 불러오기 clear of its line ---
+const v091 = await ev(`(() => {
+  const c = window.config, R = c.AFFIX_RUNGS;
+  window.gear.reset();
+  const runed = ['r1', 'r2', 'r3'].map((uid) => ({ uid, id: 'runedSword', prefixes: [], suffixes: [], rungs: R }));
+  runed.forEach((item) => window.gear.add(item));
+  const problem = window.gear.combineProblem(['r1', 'r2', 'r3']);
+  const targets = c.combineTargets('runedSword').map((g) => g.id);
+  const steel = c.combineTargets('ironSword').map((g) => g.id);
+  // 나르실: made for its 철광석, taken apart for its own.
+  window.ore.reset(); window.ore.add(c.GEAR.narsil.craftOre);
+  const made = window.gear.craft('narsil');
+  const oreAfter = window.ore.value;
+  const back = made ? window.gear.salvage(made.uid) : null;
+  return { problem, targets, steel, made: made?.id ?? null, oreAfter, back, oniCombine: c.GEAR.onigoroshi.combineInto, narsilWeight: c.GEAR.narsil.weight };
+})()`);
+console.log('0.91 gear:', JSON.stringify(v091));
+check('룬 각인 검 has no 합성: no 합성 makes an 오니고로시 (or a 나르실)',
+  v091.problem === 'top' && v091.targets.length === 0 && v091.oniCombine === false && v091.steel.length > 0, JSON.stringify(v091));
+check('나르실 is made for its 철광석, never dropped, and gives back 50 when taken apart',
+  v091.made === 'narsil' && v091.oreAfter === 0 && v091.back?.ore === 50 && v091.narsilWeight === 0, JSON.stringify(v091));
+
+// Borders in the 인벤토리 by rarity: 2 마법, 3–4 희귀, 5–6 신화.
+await ev(`(() => {
+  const R = window.config.AFFIX_RUNGS, L = (id) => ({ id, tier: 5 });
+  window.gear.reset();
+  window.gear.add({ uid: 'b2', id: 'steelSword', prefixes: [L('mighty')], suffixes: [L('giant')], rungs: R });
+  window.gear.add({ uid: 'b3', id: 'steelSword', prefixes: [L('mighty'), L('cruel')], suffixes: [L('giant')], rungs: R });
+  window.gear.add({ uid: 'b5', id: 'steelSword', prefixes: [L('mighty'), L('cruel'), L('critical')], suffixes: [L('giant'), L('swift')], rungs: R });
+  window.game.scene.getScenes(true).forEach((sc) => sc.scene.key !== 'MenuScene' && sc.scene.stop());
+  window.game.scene.getScene('MenuScene').scene.start();
+  return 1;
+})()`);
+await sleep(1500);
+await ev(`(() => { window.game.scene.getScene('MenuScene').openOverlay('InventoryScene', {}); return 1; })()`);
+await sleep(900);
+const borders = await scene('InventoryScene', `
+  const B = window.config.INVENTORY.border;
+  const of = (uid) => { const i = s.menu.items.findIndex((it) => it.id === uid); return s.menu.cells[i]?.plate.strokeColor; };
+  return { two: of('b2'), three: of('b3'), five: of('b5'), want: { magic: B.magic, rare: B.rare, mythic: B.mythic } };
+`);
+check('인벤토리 borders: 2 속성 blue (마법), 3–4 yellow (희귀), 5–6 red (신화)',
+  borders.two === borders.want.magic && borders.three === borders.want.rare && borders.five === borders.want.mythic &&
+    borders.want.rare !== borders.want.mythic, JSON.stringify(borders));
+
+// The title's 불러오기 row: its name never runs into the run read out beside it.
+for (const [w, h, shape] of [[0, 0, 'landscape'], [360, 740, 'narrow phone']]) {
+  if (w) await cdp.send('Emulation.setDeviceMetricsOverride', { width: w, height: h, deviceScaleFactor: 1, mobile: true });
+  else await cdp.send('Emulation.clearDeviceMetricsOverride', {});
+  await cdp.send('Page.navigate', { url: 'about:blank' });
+  await cdp.send('Page.navigate', { url: 'http://localhost:5173/#run' });
+  await sleep(4500);
+  await ev(`(() => {
+    const s = window.game.scene.getScene('GameScene');
+    s.runGear = { uid: 'long', id: 'runedSword', prefixes: [{ id: 'mighty', tier: 1 }], suffixes: [{ id: 'vital', tier: 1 }], rungs: window.config.AFFIX_RUNGS };
+    s.writeSave(); s.scene.start('MenuScene'); return 1; })()`);
+  await sleep(1500);
+  const row = await scene('MenuScene', `
+    const r = s.menu.rows.find((x) => x.item.id === 'load');
+    const a = r.label.getBounds(), b = r.detail.getBounds();
+    return { label: r.label.text, detail: r.detail.text, gap: Math.round(b.left - a.right), inside: b.right <= s.scale.width && a.left >= 0 };
+  `);
+  check(`${shape}: the title’s 불러오기 name and its run read-out do not touch`, row.gap >= 8 && row.inside, JSON.stringify(row));
+}
+await cdp.send('Emulation.clearDeviceMetricsOverride', {});
 
 console.log('\n=== SUMMARY ===');
 const failed = results.filter((r) => !r.p);

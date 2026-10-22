@@ -103,12 +103,13 @@ console.log('by rarity:', JSON.stringify(byRarity.out));
 const forLines = (lines) => byRarity.out.find((o) => o.lines === lines);
 check('a sword with nothing on it sounds ordinary',
   forLines(0).calls[0] === 'sfx-drop-normal', forLines(0).calls.join(' '));
-check('up to two 속성 still sounds ordinary',
-  forLines(1).calls[0] === 'sfx-drop-normal' && forLines(2).calls[0] === 'sfx-drop-normal',
+// 0.91: 2 속성 마법, 3–4 희귀 (마법's clip), 5–6 신화 (the loud one 희귀 had).
+check('one 속성 still sounds ordinary, two like a magic drop',
+  forLines(1).calls[0] === 'sfx-drop-normal' && forLines(2).calls[0] === 'sfx-drop-magic',
   `${forLines(1).calls[0]} / ${forLines(2).calls[0]}`);
-check('three or four sounds like a magic drop',
+check('three or four (희귀) lands with the magic clip',
   forLines(3).calls[0] === 'sfx-drop-magic', forLines(3).calls[0]);
-check('five or six sounds like a rare one, swell and all',
+check('five or six (신화) sounds like the loudest, swell and all',
   forLines(5).calls[0] === 'sfx-drop-rare', forLines(5).calls[0]);
 check('and a rare drop is one clip rather than two played together',
   byRarity.out.every((o) => o.calls.length === 1),

@@ -56,8 +56,13 @@ export class BootScene extends Phaser.Scene {
   public preload(): void {
     const base = import.meta.env.BASE_URL;
 
+    // Two tiers may share a clip: each file is loaded once.
+    const dropKeys = new Set<string>();
     for (const clip of Object.values(AUDIO.drops)) {
-      this.load.audio(clip.key, `${base}${clip.file}`);
+      if (!dropKeys.has(clip.key)) {
+        dropKeys.add(clip.key);
+        this.load.audio(clip.key, `${base}${clip.file}`);
+      }
     }
     sfx.preload(this);
 

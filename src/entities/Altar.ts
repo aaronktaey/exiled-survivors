@@ -55,7 +55,7 @@ export class Altar extends GroundItem {
   public static tierFor(offer: AltarOfferId): DropTier {
     const spec = ALTAR_OFFERS[offer];
     if (spec?.kind === 'boss' || (spec && ENEMY_KINDS[spec.kind]?.guaranteedSkill)) {
-      return 'rare';
+      return 'mythic';
     }
 
     return spec?.rare ? 'magic' : 'normal';

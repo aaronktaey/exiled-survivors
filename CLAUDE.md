@@ -426,6 +426,15 @@ Read `git log` for what changed and when. What is not in the log:
   0.79's) is thrown away by `saveGame.read`. The server's `tuning` row
   still holds `RUNE_*` paths: `Tuning.apply` lays over only dials and
   `publish` sends only dials, so they do nothing.
+- **The run counts what it gains (0.91, the user's ask).** `systems/RunTally.ts`
+  (module scope, like the second clock) counts each level-up
+  (`onLevelUp`) and each skill level (`acquire`, and an upgrade that raised
+  one in `onUpgradePicked`); the save carries it sealed (`SavedRun.tally`;
+  an older save takes what it holds). At death the character's level must
+  be 1 + level-ups and the held skills' levels must add up to what was
+  counted, or `GameOverData.refused` takes the run off the ranking with no
+  word said (no 랭킹 row, no note). Not in the patch notes, on purpose. A
+  new way a skill gains a level must count it, or honest runs are refused.
 - **A second clock on every run (0.71, kept in 0.80).** `systems/RunLedger.ts`
   adds up the real time between the frames that move `GameScene.elapsedMs`
   (capped per frame, held while a card/popup/pause holds the run), in
@@ -642,6 +651,18 @@ Read `git log` for what changed and when. What is not in the log:
   dial, the passive screen's gold shop and the shard copy all went (the
   user's ask). Gold went in 0.90 with selling (below); `RETIRED_STORAGE`
   (system.ts) clears its old key on load (main.ts).
+- **Four rarities (0.91).** `DropTier` is 일반 · 마법 · 희귀 · 신화; a
+  weapon's comes from its 속성 count (`AUDIO.dropTiers`: 2 마법 blue, 3–4
+  희귀 yellow, 5–6 신화 red) and drives its border, ground label, drop sound
+  and 분해 구슬. 신화 wears what 희귀 looked like before (red, white outline,
+  the swell, the light pillar, the loud clip), so everything that was 희귀 —
+  the 망고, 자석, 룬, the rare 구슬 and 뼈다귀, a 우두머리 제단 — is 신화 now;
+  희귀 is yellow with 마법's clip.
+- **나르실 and the 합성 rule (0.91).** `GEAR[id].combineInto: false` keeps a
+  base out of every 합성 (`combineTargets`): the 오니고로시 only drops, the
+  나르실 (`weight` 0, no `fromKill`: never dropped) is only made, for
+  `craftOre` 1000 — so the 룬 각인 검 has no 합성 at all. Its 고정 속성 is
+  flat attack (`GearImplicit.attack`, added in `gearBonusFor`).
 - **Weapons by tier — 1 is the best**, the same way round as an 속성's
   tier (the user corrected this once). `attackForTier` counts up from the
   weakest tier. A 우두머리 always leaves one, weighted over the whole `GEAR`
@@ -702,15 +723,16 @@ Read `git log` for what changed and when. What is not in the log:
   인벤토리 shows it on the cell (`GridItem.badge`) and in `stateLine` under
   the name, not as a read-out line (that block is budgeted to the screen).
 - **Swords are taken apart, not sold (0.90, the user's ask).** Selling and
-  gold went. The 인벤토리's second button (still `discard`/`pressDiscard` in
-  code) opens `ForgeScene` (분해) on the weapon under the cursor, three tabs:
+  gold went. The 인벤토리's top-right 분해 · 제작 button (`forgeButton`,
+  `openForge`, key F — 0.91 moved it there from the weapon's own row, the
+  only way in) opens `ForgeScene` on the weapon under the cursor, three tabs:
   낱개 분해 (its own `ItemGrid`, asked twice, `잠금` per weapon —
   `GearItem.locked`, the padlock `TEXTURES.lock` as the cell's badge), 일괄
   분해 (bases ticked + at most N 속성, `gear.salvageMany`) and 제작
   (`gear.craft`: a bare sword for `GEAR[id].craftOre`; none on the
   오니고로시). What one gives is `salvageFor`: `GEAR[id].salvageOre` 철광석
   (`systems/Ore.ts`, `STORAGE.ore`, `window.ore`) and the first
-  `SALVAGE_ORBS` band its 속성 count falls in (2–3 변화, 4–5 혼돈, 6 각성).
+  `SALVAGE_ORBS` entry of its rarity (0.91: 마법 변화, 희귀 혼돈, 신화 각성).
   The one in hand and a locked one are never taken (`canSalvage`); a locked
   one can still go into a 합성 — the lock is 분해's only. The 소모품 tab
   shows the 철광석. Back (or Esc) returns to the 인벤토리.

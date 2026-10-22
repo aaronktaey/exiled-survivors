@@ -282,7 +282,9 @@ export function gearImplicitText(id: GearId): string {
             ? pct(implicit.attackSpeedScale - 1)
             : implicit.skillAttackSpeed
               ? pct(implicit.skillAttackSpeed.scale - 1)
-              : '';
+              : implicit.attack !== undefined
+                ? String(implicit.attack)
+                : '';
   const skill = implicit.skillAttackSpeed ? skillName(implicit.skillAttackSpeed.skill) : '';
   const template = t().names?.gearImplicits?.[id] ?? implicit.detail;
   return fill(template, { value, skill });

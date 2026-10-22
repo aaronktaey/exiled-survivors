@@ -216,6 +216,41 @@ check('a saved run picks its 가한 피해 and kills back up when it is resumed'
   `saved ${saved.damage} / ${saved.kills} kills, resumed at ${resumed.damage} / ${resumed.kills}`);
 await ev(`(() => { localStorage.removeItem('exiled-survivors:save:v1'); return 1; })()`);
 
+// --- 0.91: levels the run did not count gaining keep it off the ranking, unsaid ---
+const runAndDie = async (tamper) => {
+  await cdp.send('Page.navigate', { url: 'about:blank' });
+  await cdp.send('Page.navigate', { url: 'http://localhost:5173/#run' });
+  for (let i = 0; i < 40; i++) {
+    await sleep(500);
+    if ((await ev(`!!window.game?.scene.getScene('GameScene')?.player?.active`)) === true) break;
+  }
+  await run(`
+    s.progression.addXp(s.progression.xpToNext);
+    return 1;
+  `);
+  await sleep(1500);
+  // The level-up's cards: take the first upgrade, the way a player would.
+  await ev(`(() => { const u = window.game.scene.getScene('UpgradeScene'); if (u?.scene.isActive()) u.pick(u.payload.options[0].id); return 1; })()`);
+  await sleep(800);
+  await run(`
+    ${tamper ? "s.progression.level += 3; s.progression.statsFor('meleeStrike').damage *= 4;" : ''}
+    s.player.invulnerableUntil = 0; s.player.setInvulnerable(false);
+    s.player.takeDamage(999999);
+    return 1;
+  `);
+  await sleep(1500);
+  return scene('GameOverScene', `
+    return { refused: s.payload.refused === true, rows: s.menu.rows.map((r) => r.item.id),
+             notes: s.children.list.filter((o) => o.type === 'Text' && o.name === 'devRunNote').length };
+  `);
+};
+const honest = await runAndDie(false);
+const edited = await runAndDie(true);
+console.log('tally:', JSON.stringify({ honest, edited }));
+check('an honest run’s levels come to what it counted, and it is offered as ever', honest.refused === false, JSON.stringify(honest));
+check('a run whose levels were changed mid-run is not offered to the ranking — and nothing says why',
+  edited.refused === true && !edited.rows.includes('rank') && edited.notes === 0, JSON.stringify(edited));
+
 console.log('\n=== SUMMARY ===');
 const failed = results.filter((r) => !r.p);
 console.log(`${results.length - failed.length}/${results.length} passed`);

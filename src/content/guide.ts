@@ -472,10 +472,12 @@ function gearCards(): GuideCard[] {
     facts: [fill(g.gearTier, { tier: spec.tier, attack: attackForTier(spec.tier) })],
     lines: [
       ...(spec.implicit ? [fill(g.gearImplicit, { text: gearImplicitText(spec.id) })] : []),
-      fill(g.gearBossShare, { share: percent(total > 0 ? spec.weight / total : 0) }),
-      spec.fromKill !== undefined
-        ? fill(g.gearFromKill, { chance: percent(spec.fromKill) })
-        : g.gearBossOnly,
+      ...(spec.weight > 0 || spec.fromKill !== undefined
+        ? [
+            fill(g.gearBossShare, { share: percent(total > 0 ? spec.weight / total : 0) }),
+            spec.fromKill !== undefined ? fill(g.gearFromKill, { chance: percent(spec.fromKill) }) : g.gearBossOnly,
+          ]
+        : [g.gearCraftOnly]),
       // 분해 and 제작 (0.90).
       fill(g.gearSalvage, { ore: spec.salvageOre }),
       spec.craftOre !== undefined ? fill(g.gearCraft, { cost: spec.craftOre }) : g.gearNoCraft,

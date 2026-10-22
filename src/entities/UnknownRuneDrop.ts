@@ -27,7 +27,7 @@ export class UnknownRuneDrop extends GroundItem {
     this.begin(x, y, UNKNOWN_RUNE.size);
     this.setDisplaySize(UNKNOWN_RUNE.size, UNKNOWN_RUNE.size);
     this.glow.setFillStyle(UNKNOWN_RUNE_LOOKS[this.look]!.color, this.glow.fillAlpha);
-    this.nameplate.show(t().game.unknownRune, 'rare');
+    this.nameplate.show(t().game.unknownRune, 'mythic');
     this.nameplate.place(x, y, UNKNOWN_RUNE.size);
     this.pop();
   }

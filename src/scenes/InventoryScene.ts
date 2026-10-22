@@ -2,16 +2,17 @@ import Phaser from 'phaser';
 
 import {
   ALL_BONES,
+  combineTargets,
   ALL_ORBS,
   AUDIO,
   COLORS,
   COMBINE_FX,
   DEPTH,
-  GEAR,
   GEAR_COMBINE,
   GEAR_DROP,
   INVENTORY,
   ORBS,
+  PAUSE_BUTTON,
   SCENES,
   SCRIM,
   TEXT,
@@ -143,8 +144,8 @@ export class InventoryScene extends Phaser.Scene {
   /** 착용, 버리기, and the plates behind them. Public so a test can press them. */
   public equip?: Phaser.GameObjects.Text;
   private equipPlate?: Phaser.GameObjects.Rectangle;
-  public discard?: Phaser.GameObjects.Text;
-  private discardPlate?: Phaser.GameObjects.Rectangle;
+  /** 분해 · 제작, top-right (0.91). Public for tests. */
+  public forgeButton?: Phaser.GameObjects.Rectangle;
   /** 합성, and the plate behind it. Public so a test can press it. */
   public combineButton?: Phaser.GameObjects.Text;
   private combinePlate?: Phaser.GameObjects.Rectangle;
@@ -196,8 +197,6 @@ export class InventoryScene extends Phaser.Scene {
     this.orbIcons = new Map();
     this.equip = undefined;
     this.equipPlate = undefined;
-    this.discard = undefined;
-    this.discardPlate = undefined;
     this.combineButton = undefined;
     this.combinePlate = undefined;
     this.combining = null;
@@ -210,6 +209,7 @@ export class InventoryScene extends Phaser.Scene {
 
   public create(): void {
     this.backButton = addBackButton(this, () => this.close());
+    this.forgeButton = this.addForgeButton();
     const { width, height } = this.scale;
     const copy = t().inventory;
 
@@ -498,10 +498,9 @@ export class InventoryScene extends Phaser.Scene {
           this.menu.activate();
         }
         return;
-      case 'Delete':
-      case 'Backspace':
+      case 'KeyF':
         if (!event.repeat) {
-          this.pressDiscard();
+          this.openForge();
         }
         return;
       case 'KeyC':
@@ -557,7 +556,6 @@ export class InventoryScene extends Phaser.Scene {
       }
       this.lines.setText(item ? InventoryScene.describe(item) : '');
       this.refreshEquip();
-      this.refreshDiscard();
       this.refreshOrbs();
       this.refreshCombine();
       return;
@@ -619,9 +617,9 @@ export class InventoryScene extends Phaser.Scene {
     return gear.items.find((held) => held.uid === this.menu.selectedId);
   }
 
-  /** 착용, 버리기 and 합성, side by side. Returns the bottom of the row. */
+  /** 착용 and 합성, side by side (분해 · 제작 is top-right since 0.91). Returns the bottom of the row. */
   private buildActions(x: number, y: number, paneWidth: number): number {
-    const width = Math.min(130, (paneWidth - 24) / 3);
+    const width = Math.min(150, (paneWidth - 12) / 2);
     const make = (cx: number, onPress: () => void) => {
       const plate = this.add
         .rectangle(cx, y, width, BUTTON_HEIGHT, COLORS.panelActive, 0)
@@ -640,7 +638,7 @@ export class InventoryScene extends Phaser.Scene {
       return { plate, label };
     };
 
-    const equip = make(x - width - 12, () => {
+    const equip = make(x - width / 2 - 6, () => {
       const item = this.selected();
       if (item) {
         this.wear(item.uid);
@@ -649,11 +647,7 @@ export class InventoryScene extends Phaser.Scene {
     this.equip = equip.label;
     this.equipPlate = equip.plate;
 
-    const discard = make(x, () => this.pressDiscard());
-    this.discard = discard.label;
-    this.discardPlate = discard.plate;
-
-    const combine = make(x + width + 12, () => this.pressCombine());
+    const combine = make(x + width / 2 + 6, () => this.pressCombine());
     this.combineButton = combine.label;
     this.combinePlate = combine.plate;
 
@@ -827,38 +821,36 @@ export class InventoryScene extends Phaser.Scene {
     this.orbHint.setText(this.payload.note ?? '');
   }
 
-  /** 분해 opens on any weapon: what it can and cannot take apart is said there. */
-  private canDiscard(item: GearItem | undefined): boolean {
-    return item !== undefined;
+  /**
+   * 분해 · 제작, in the top-right corner — the 인벤토리 is the only way in
+   * (0.91, the user's ask: the 분해 button among the weapon's own buttons
+   * read as if 제작 lived inside 분해). Mirrors the back button opposite.
+   */
+  private addForgeButton(): Phaser.GameObjects.Rectangle {
+    const { size, margin } = PAUSE_BUTTON;
+    const y = margin + size / 2;
+    const label = this.add
+      .text(0, y, t().forge.title, { fontFamily: 'system-ui, sans-serif', fontSize: TEXT.size.body, color: COLORS.text })
+      .setOrigin(0.5)
+      .setDepth(DEPTH.ui + 21);
+    const width = Math.max(size, Math.ceil(label.width) + 24);
+    const x = this.scale.width - margin - width / 2;
+    label.setX(x);
+    const plate = this.add
+      .rectangle(x, y, width, size, COLORS.panel, 0.85)
+      .setStrokeStyle(2, COLORS.panelEdge, 1)
+      .setDepth(DEPTH.ui + 20)
+      .setInteractive({ useHandCursor: true });
+    plate.on(Phaser.Input.Events.GAMEOBJECT_POINTER_DOWN, () => this.openForge());
+    return plate;
   }
 
-  /**
-   * 분해 (0.90 — it replaced selling): opens the 분해 screen on the weapon
-   * under the cursor. Still `pressDiscard` for the key and the tests.
-   */
-  public pressDiscard(): void {
+  /** Opens 분해 · 제작, on the weapon under the cursor when there is one. Public so a test can. */
+  public openForge(): void {
     if (this.combining || this.busy) {
       return;
     }
-    const item = this.selected();
-    if (!this.canDiscard(item) || !item) {
-      return;
-    }
-    this.scene.start(SCENES.forge, { onClose: this.payload.onClose, focus: item.uid });
-  }
-
-  private refreshDiscard(): void {
-    if (!this.discard || !this.discardPlate) {
-      return;
-    }
-
-    const live = this.canDiscard(this.selected());
-    this.discard.setText(t().gear.discard);
-    fitText(this.discard.setScale(1), (this.discardPlate.width ?? 120) - 6, 0);
-    this.discard.setColor(COLORS.muted);
-    this.discard.setAlpha(live ? 1 : 0.35);
-    this.discardPlate.setFillStyle(COLORS.panelActive, 0);
-    this.discardPlate.setAlpha(live ? 1 : 0.35);
+    this.scene.start(SCENES.forge, { onClose: this.payload.onClose, focus: this.selected()?.uid });
   }
 
   private refreshEquip(): void {
@@ -936,7 +928,6 @@ export class InventoryScene extends Phaser.Scene {
     // What is now in hand cannot be thrown away, and what was may be.
     this.armed = null;
     this.refreshEquip();
-    this.refreshDiscard();
     this.refreshOrbs();
   }
 
@@ -956,7 +947,7 @@ export class InventoryScene extends Phaser.Scene {
     if (item.uid === gear.value.equipped) {
       return copy.combineEquipped;
     }
-    if (!Object.values(GEAR).some((spec) => spec.tier === GEAR[item.id].tier - 1)) {
+    if (combineTargets(item.id).length === 0) {
       return copy.combineTop;
     }
     if (this.combinable(item.id).length < GEAR_COMBINE.count) {
@@ -1089,8 +1080,7 @@ export class InventoryScene extends Phaser.Scene {
       return;
     }
     if (this.combining && first) {
-      const above = Object.values(GEAR)
-        .filter((spec) => spec.tier === GEAR[first.id].tier - 1)
+      const above = combineTargets(first.id)
         .map((spec) => gearName(spec.id))
         .join(' / ');
       this.orbHint.setColor(COLORS.gearText);

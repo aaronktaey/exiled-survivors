@@ -13,3 +13,4 @@ Only the icons used by the game are included here, taken from the pack's
   gear-steelSword.png  fb727   (tier 3, 강철 검)
   gear-runedSword.png  fb735   (tier 2, 룬 각인 검)
   gear-onigoroshi.png  fb1006  (tier 1, 오니고로시)
+  gear-narsil.png      fb1022  (tier 1, 나르실 — made, never dropped)

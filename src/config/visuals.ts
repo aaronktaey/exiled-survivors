@@ -343,7 +343,19 @@ export const DROP_LABEL = {
       outlined: true,
       pulse: 0,
     },
+    /** 희귀 (0.91): a yellow name, a size up from 마법, no pillar. */
     rare: {
+      fontSize: "23px",
+      text: "#ffd84a",
+      plate: 0x000000,
+      plateAlpha: 0,
+      border: 0x000000,
+      borderWidth: 0,
+      outlined: true,
+      pulse: 0,
+    },
+    /** 신화 (0.91): what 희귀 looked like before — the loudest there is. */
+    mythic: {
       fontSize: "24px",
       text: "#FE0000",
       plate: 0x000000,
@@ -539,7 +551,8 @@ export const INVENTORY = {
   border: {
     normal: 0x5a6478,
     magic: 0x6aa9ff,
-    rare: 0xff4a4a,
+    rare: 0xf2c94c,
+    mythic: 0xff4a4a,
   },
   /** An empty cell. */
   empty: 0x151a24,

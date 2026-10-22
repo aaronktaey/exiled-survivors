@@ -7,6 +7,7 @@ import {
   GEAR_COMBINE,
   GEAR_DROP,
   PREFIXES,
+  combineTargets,
   SALVAGE_ORBS,
   STARTING_GEAR,
   STORAGE,
@@ -125,11 +126,9 @@ const linesOf = (item: GearItem): number => item.prefixes.length + item.suffixes
 /** Whether 분해 may take it: not in hand, not locked. */
 export const canSalvage = (item: GearItem, equipped: string): boolean => item.uid !== equipped && item.locked !== true;
 
-/** 분해: the base's 철광석, and the 구슬 of the band its 속성 count falls in (SALVAGE_ORBS). */
+/** 분해: the base's 철광석, and the 구슬 its rarity earns (SALVAGE_ORBS). */
 export function salvageFor(item: GearItem): SalvageYield {
-  const lines = linesOf(item);
-  const band = SALVAGE_ORBS.find((entry) => lines >= entry.minLines && lines <= entry.maxLines);
-  return { ore: GEAR[item.id]?.salvageOre ?? 0, orb: band?.orb ?? null };
+  return { ore: GEAR[item.id]?.salvageOre ?? 0, orb: SALVAGE_ORBS[dropTierFor(item)] ?? null };
 }
 
 export function totalSalvage(items: readonly GearItem[]): SalvageTotal {
@@ -230,7 +229,7 @@ export function gearBonusFor(item: GearItem | null): GearBonus {
   }
 
   return {
-    attack: attackForTier(GEAR[item.id].tier),
+    attack: attackForTier(GEAR[item.id].tier) + (implicit?.attack ?? 0),
     attackSpeedScale: 1 + attackSpeed,
     maxHpScale: 1 + maxHp,
     moveSpeedScale: 1 + moveSpeed,
@@ -267,9 +266,9 @@ export function onCurrentLadder<T extends GearItem>(item: T): T {
 }
 
 /**
- * How rare a weapon came out, which is both how it is labelled on the
- * ground and what it sounds like when it lands. Up to two 속성 is ordinary,
- * three or four is magic, five or six is rare.
+ * How rare a weapon came out, which is how it is labelled on the ground,
+ * what it sounds like when it lands, its border in the 인벤토리 and what
+ * 분해 gives for it: 0–1 속성 일반, 2 마법, 3–4 희귀, 5–6 신화 (0.91).
  */
 export function dropTierFor(item: GearItem): DropTier {
   return tierForLines(item.prefixes.length + item.suffixes.length);
@@ -277,6 +276,9 @@ export function dropTierFor(item: GearItem): DropTier {
 
 /** The same ladder, for anything that knows its own count. */
 export function tierForLines(lines: number): DropTier {
+  if (lines >= AUDIO.dropTiers.mythicFrom) {
+    return 'mythic';
+  }
   if (lines >= AUDIO.dropTiers.rareFrom) {
     return 'rare';
   }
@@ -528,9 +530,13 @@ export function rollOrbDrop(scale = 1, fromBoss = false, bonus = 1): OrbSpec | n
 
 /** A base from the whole roster by weight, the way a 우두머리 picks one. */
 function rollGearBase(): GearSpec {
+  // A base no 우두머리 leaves (weight 0: the 나르실) is never picked.
   const total = Object.values(GEAR).reduce((sum, spec) => sum + spec.weight, 0);
   let roll = Math.random() * total;
   for (const spec of Object.values(GEAR)) {
+    if (spec.weight <= 0) {
+      continue;
+    }
     roll -= spec.weight;
     if (roll <= 0) {
       return spec;
@@ -597,7 +603,7 @@ export function combineTargetFor(id: GearId): GearSpec | null {
     return null;
   }
 
-  const above = Object.values(GEAR).filter((spec) => spec.tier === from.tier - 1);
+  const above = combineTargets(from.id);
   if (above.length === 0) {
     return null;
   }
@@ -810,7 +816,7 @@ class GearStore {
       return 'equipped';
     }
     const id = picked[0]?.id;
-    if (!id || !Object.values(GEAR).some((spec) => spec.tier === GEAR[id].tier - 1)) {
+    if (!id || combineTargets(id).length === 0) {
       return 'top';
     }
     return null;

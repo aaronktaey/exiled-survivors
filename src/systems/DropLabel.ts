@@ -104,7 +104,7 @@ export class DropLabel {
     this.label.setVisible(true);
 
     this.pop(style.pulse);
-    this.light(tier === 'rare');
+    this.light(tier === 'mythic');
   }
 
   /** Centres the plate and its words just above an item of `size` at (x, y). */

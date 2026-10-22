@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 
+import type { DropTier } from '@/config';
 import {
   COLORS,
   DEPTH,
@@ -215,7 +216,7 @@ export class FilterScene extends Phaser.Scene {
       case 'bone':
         return boneShort(id as BoneId);
       case 'rarity':
-        return copy.rarity[id as 'normal' | 'magic' | 'rare'];
+        return copy.rarity[id as DropTier];
       case 'gear':
         return fill(t().gear.tier, { tier: GEAR[id as GearId].tier });
       default:
@@ -232,7 +233,7 @@ export class FilterScene extends Phaser.Scene {
       case 'bone':
         return boneName(id as BoneId);
       case 'rarity':
-        return `${t().filter.sections.rarity} · ${t().filter.rarity[id as 'normal' | 'magic' | 'rare']}`;
+        return `${t().filter.sections.rarity} · ${t().filter.rarity[id as DropTier]}`;
       case 'gear':
         return `${gearName(id as GearId)} (${fill(t().gear.tier, { tier: GEAR[id as GearId].tier })})`;
       default:

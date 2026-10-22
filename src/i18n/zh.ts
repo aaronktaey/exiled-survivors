@@ -50,7 +50,7 @@ export const zh: Strings = {
     sections: { supplies: '消耗品', orbs: '宝珠', bones: '骨头', rarity: '装备等级', bases: '装备种类' },
     items: { potion: '生命药水', skill: '技能', randomSkill: '随机技能', mango: '白芒果', magnet: '磁铁', unknownRune: '未知符文' },
     itemsShort: { potion: '药水', skill: '技能', randomSkill: '随机', mango: '芒果', magnet: '磁铁', unknownRune: '符文' },
-    rarity: { normal: '普通', magic: '魔法', rare: '稀有' },
+    rarity: { normal: '普通', magic: '魔法', rare: '稀有', mythic: '神话' },
     shown: '显示',
     hidden: '隐藏',
     showAll: '全部显示',
@@ -237,8 +237,8 @@ export const zh: Strings = {
     orbSaved: '{orb} — 芒果挡下了摧毁（芒果状态已消失）',
     mangoState: '🥭 芒果状态 — 下一次爆炸宝珠无法摧毁该装备',
     mangoSpent: '（芒果状态已消失）',
-    hintKeyboard: '↑ ↓ 移动   Space 装备   {keys} 宝珠   Del 分解   Esc 返回',
-    hintTouch: '点击装备 — 分解与宝珠在下方按钮',
+    hintKeyboard: '↑ ↓ 移动   Space 装备   {keys} 宝珠   F 分解·制作   Esc 返回',
+    hintTouch: '点击装备 — 宝珠在下方按钮 · 分解·制作在右上角',
     prefix: '词缀前缀',
     suffix: '词缀后缀',
     tier: 'T{tier}',
@@ -252,7 +252,7 @@ export const zh: Strings = {
     combineHint: '请选择 {count} 把{gear}（{n}/{count}）— 合成 · Space 放入或取出，Esc 取消',
     combineReady: '{chance} 几率获得无属性的{target} — 失败时所选的 {count} 把也会消失。请按开始合成',
     combineEquipped: '装备中的剑不能用于合成',
-    combineTop: '已是最高阶的剑，无法合成',
+    combineTop: '没有可以通过合成得到的更高阶剑',
     combineShort: '需要 {count} 把未装备的同种剑才能合成',
     combineSuccess: '合成成功 — 获得{gear}！',
     combineFail: '合成失败 — {count} 把{gear}消失了',
@@ -260,7 +260,7 @@ export const zh: Strings = {
   },
 
   forge: {
-    title: '分解',
+    title: '分解 · 制作',
     tabs: { single: '单件分解', bulk: '批量分解', craft: '制作' },
     ore: '铁矿石 {count}个',
     oreName: '铁矿石',
@@ -303,9 +303,9 @@ export const zh: Strings = {
     held: '持有 {count}',
     orbUse: '在装备标签中选择武器后使用。',
     boneUse: '在开始游戏时生效，只对那一局有效。',
-    hintGear: '方向键 移动   Space 装备   {keys} 宝珠   Del 分解   C 合成   Tab 标签   Esc 返回',
+    hintGear: '方向键 移动   Space 装备   {keys} 宝珠   F 分解·制作   C 合成   Tab 标签   Esc 返回',
     hintConsumables: '方向键 移动   Tab 标签   Esc 返回',
-    hintTouch: '点击格子查看 — 装备、分解与宝珠在旁边的按钮',
+    hintTouch: '点击格子查看 — 装备、合成与宝珠在旁边的按钮 · 分解·制作在右上角',
   },
 
   bones: {
@@ -633,6 +633,7 @@ export const zh: Strings = {
     enemies: { boss: '首领', fugitive: '逃亡者', grunt: '杂兵', brute: '巨汉', runner: '疾走者', shooter: '射手', erratic: '奇行种', chimera: '奇美拉' },
     gear: {
       rustySword: '生锈的剑',
+      narsil: '纳希尔',
       onigoroshi: '鬼杀',
       ironSword: '铁剑',
       steelSword: '钢剑',
@@ -644,6 +645,7 @@ export const zh: Strings = {
       steelSword: '伤害 +{value}',
       ironSword: '攻击速度 +{value}',
       rustySword: '{skill}的攻击速度 +{value}',
+      narsil: '攻击力 +{value}',
     },
     affixes: {
       giant: '巨大',
@@ -1108,7 +1110,7 @@ export const zh: Strings = {
           title: '装备标签',
           lines: [
             '持有的剑排列在 {cols}×{rows} 的格子中。选中格子后旁边会显示攻击力 · 固定属性 · 属性。',
-            '装备 · 使用宝珠 · 合成通过旁边的按钮或 Space 进行。分解按钮会打开分解界面。',
+            '装备 · 使用宝珠 · 合成通过旁边的按钮或 Space 进行。右上角的分解 · 制作按钮会打开分解 · 制作界面。',
             '点宝珠按钮会打开「使用宝珠」窗口：一边看宝珠的全部效果和所选装备，一边连续使用；装备被摧毁时会当场提示。',
             '在分解界面可逐把或按种类与属性数批量分解剑，获得铁矿石和宝珠，并用铁矿石制作无属性的剑。装备中和锁定的剑不会被分解。',
           ],
@@ -1166,6 +1168,7 @@ export const zh: Strings = {
       gearSalvage: '分解得铁矿石 {ore}',
       gearCraft: '制作：铁矿石 {cost}',
       gearNoCraft: '无法制作',
+      gearCraftOnly: '不会掉落，只能制作获得',
       boneStack: '一局可以放入多个',
       boneSingle: '一局只能放入一个',
       passiveRank: '每阶 {detail} · 最多 {max} 阶',

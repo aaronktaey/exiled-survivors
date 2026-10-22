@@ -44,6 +44,11 @@ export interface SavedRun {
   readonly kills?: Partial<Record<EnemyKind, number>>;
   /** The 지형지물 field's seed, so a resumed run finds its rocks where they were. */
   readonly terrainSeed?: number;
+  /**
+   * What the run had counted gaining (systems/RunTally.ts, 0.91). Absent
+   * on an older save, which takes what it holds as counted.
+   */
+  readonly tally?: { readonly levelUps: number; readonly skillLevels: number };
 }
 
 /**

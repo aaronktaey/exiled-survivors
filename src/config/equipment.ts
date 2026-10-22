@@ -12,10 +12,11 @@
  */
 
 import type { SkillId } from '@/weapons/skills';
+import type { DropTier } from '@/config/system';
 
 export type GearSlot = 'weapon';
 
-export type GearId = 'onigoroshi' | 'runedSword' | 'steelSword' | 'ironSword' | 'rustySword';
+export type GearId = 'onigoroshi' | 'runedSword' | 'steelSword' | 'ironSword' | 'rustySword' | 'narsil';
 
 /**
  * 고정 속성 — what every sword of a base does, whatever it rolled. It sits
@@ -39,6 +40,8 @@ export interface GearImplicit {
   readonly attackSpeedScale?: number;
   /** Multiplies one skill's attack speed. */
   readonly skillAttackSpeed?: { readonly skill: SkillId; readonly scale: number };
+  /** Flat attack power on top of the base's own (나르실, 0.91). */
+  readonly attack?: number;
 }
 
 export interface GearSpec {
@@ -68,6 +71,11 @@ export interface GearSpec {
   /** 제작: the 철광석 a bare one costs to make. Unset, it cannot be made. */
   readonly craftOre?: number;
   /**
+   * False: no 합성 makes it (0.91) — the 오니고로시 only drops, the 나르실
+   * is only made. A sword with no other base a tier up then has no 합성.
+   */
+  readonly combineInto?: boolean;
+  /**
    * Its picture (public/, from the Raven Fantasy pack — see
    * assets/icons/CREDITS.txt), loaded under `gearTexture(id)`. Each tier its
    * own, so the 인벤토리 tells them apart at a glance.
@@ -94,6 +102,7 @@ export const GEAR_BASE = {
 export const GEAR: Record<GearId, GearSpec> = {
   onigoroshi: {
     id: 'onigoroshi',
+    combineInto: false,
     salvageOre: 50,
     icon: 'assets/icons/gear-onigoroshi.png',
     slot: 'weapon',
@@ -153,19 +162,40 @@ export const GEAR: Record<GearId, GearSpec> = {
       skillAttackSpeed: { skill: 'meleeStrike', scale: 1.2 },
     },
   },
+  /**
+   * 나르실 (0.91, the user's ask): only made, for 철광석 — no 우두머리 leaves
+   * one (weight 0), no kill, no 합성. The 오니고로시's tier and attack, and
+   * attack power on top as its 고정 속성.
+   */
+  narsil: {
+    id: 'narsil',
+    salvageOre: 50,
+    craftOre: 1000,
+    combineInto: false,
+    icon: 'assets/icons/gear-narsil.png',
+    slot: 'weapon',
+    tier: 1,
+    name: '나르실',
+    weight: 0,
+    implicit: { detail: '공격력 +{value}', attack: 15 },
+  },
 };
 
 /**
  * ★ 분해 (0.90, the user's ask — it replaced selling, and gold went with it).
- * Taking a sword apart gives its base's `salvageOre` 철광석 and, by how many
- * 속성 it carries, one 구슬: the first band its count falls in. Fewer than
- * the lowest band, only the ore.
+ * Taking a sword apart gives its base's `salvageOre` 철광석 and one 구슬 by
+ * its rarity (0.91: the rarity its border shows): 마법 변화, 희귀 혼돈, 신화
+ * 각성. An 일반 one gives only the ore.
  */
-export const SALVAGE_ORBS: readonly { readonly minLines: number; readonly maxLines: number; readonly orb: OrbId }[] = [
-  { minLines: 2, maxLines: 3, orb: 'transmute' },
-  { minLines: 4, maxLines: 5, orb: 'chaos' },
-  { minLines: 6, maxLines: 6, orb: 'awaken' },
-];
+export const SALVAGE_ORBS: Partial<Record<DropTier, OrbId>> = {
+  magic: 'transmute',
+  rare: 'chaos',
+  mythic: 'awaken',
+};
+
+/** What a 합성 of this base can make: the bases a tier up that a 합성 may make (0.91). */
+export const combineTargets = (id: GearId): GearSpec[] =>
+  Object.values(GEAR).filter((spec) => spec.tier === GEAR[id].tier - 1 && spec.combineInto !== false);
 
 /** The weakest tier on the roster — the one worth GEAR_BASE.lowestAttack. */
 export const LOWEST_GEAR_TIER = Math.max(...Object.values(GEAR).map((spec) => spec.tier));
@@ -257,7 +287,7 @@ export interface OrbSpec {
   /** When set, only a 우두머리 leaves it, at `chance`. */
   readonly fromBossOnly?: boolean;
   /** How loudly it lands: its nameplate and its drop sound both read this. */
-  readonly tier: 'normal' | 'magic' | 'rare';
+  readonly tier: DropTier;
   readonly color: number;
   /** Its own sprite: the three read apart at a glance, not only by colour. */
   readonly texture: string;
@@ -304,7 +334,7 @@ export const ORBS: Record<OrbId, OrbSpec> = {
     short: '혼돈',
     detail: '속성을 2~4개로 다시 굴립니다',
     chance: 0.002,
-    tier: 'rare',
+    tier: 'mythic',
     color: 0xd45fd0,
     texture: TEXTURES.orbChaos,
     reroll: { min: 2, max: 4 },
@@ -315,7 +345,7 @@ export const ORBS: Record<OrbId, OrbSpec> = {
     short: '각성',
     detail: '속성 1개를 더합니다 (최대 6)',
     chance: 0.002,
-    tier: 'rare',
+    tier: 'mythic',
     color: 0xffd34d,
     texture: TEXTURES.orbAwaken,
     add: 1,
@@ -327,7 +357,7 @@ export const ORBS: Record<OrbId, OrbSpec> = {
     detail: '1티어가 아닌 속성 1개를 한 단계 높은 것으로, 모두 1티어면 속성 1개를 다른 1티어 속성으로 — 20% 확률로 장비 파괴',
     // Off any kill now, raised like the rest — it was a 우두머리's only.
     chance: 0.0011,
-    tier: 'rare',
+    tier: 'mythic',
     color: 0xff7a3d,
     texture: TEXTURES.orbExplode,
     upgrade: { steps: 1, destroyChance: 0.2 },
@@ -339,7 +369,7 @@ export const ORBS: Record<OrbId, OrbSpec> = {
     short: '망고',
     detail: '장비를 망고 상태로 — 다음 폭발의 구슬 한 번은 장비를 파괴하지 못하고, 그 구슬에 망고 상태가 사라집니다',
     chance: 0.00032,
-    tier: 'rare',
+    tier: 'mythic',
     color: 0xffe9a8,
     texture: TEXTURES.orbMango,
     ward: true,

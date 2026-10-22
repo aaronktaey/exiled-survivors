@@ -113,7 +113,7 @@ export interface Strings {
     readonly items: { readonly potion: string; readonly skill: string; readonly randomSkill: string; readonly mango: string; readonly magnet: string; readonly unknownRune: string };
     /** The same, short enough to sit under an icon. */
     readonly itemsShort: { readonly potion: string; readonly skill: string; readonly randomSkill: string; readonly mango: string; readonly magnet: string; readonly unknownRune: string };
-    readonly rarity: { readonly normal: string; readonly magic: string; readonly rare: string };
+    readonly rarity: { readonly normal: string; readonly magic: string; readonly rare: string; readonly mythic: string };
     readonly shown: string;
     readonly hidden: string;
     readonly showAll: string;
@@ -857,6 +857,8 @@ export interface Strings {
       readonly gearSalvage: string;
       readonly gearCraft: string;
       readonly gearNoCraft: string;
+      /** A sword that never drops, only made (나르실). */
+      readonly gearCraftOnly: string;
       readonly boneStack: string;
       readonly boneSingle: string;
       /** {detail} a rank, up to {max} ranks. */

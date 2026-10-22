@@ -50,7 +50,7 @@ export const ja: Strings = {
     sections: { supplies: '消耗品', orbs: '球', bones: '骨', rarity: '装備の等級', bases: '装備の種類' },
     items: { potion: '回復ポーション', skill: 'スキル', randomSkill: 'ランダムスキル', mango: '白いマンゴー', magnet: '磁石', unknownRune: '謎のルーン' },
     itemsShort: { potion: 'ポーション', skill: 'スキル', randomSkill: 'ランダム', mango: 'マンゴー', magnet: '磁石', unknownRune: 'ルーン' },
-    rarity: { normal: 'ノーマル', magic: 'マジック', rare: 'レア' },
+    rarity: { normal: 'ノーマル', magic: 'マジック', rare: 'レア', mythic: '神話' },
     shown: '表示',
     hidden: '非表示',
     showAll: 'すべて表示',
@@ -237,8 +237,8 @@ export const ja: Strings = {
     orbSaved: '{orb} — マンゴーが破壊を防ぎました（マンゴー状態は消えました）',
     mangoState: '🥭 マンゴー状態 — 次の爆発の球 1 回では壊れません',
     mangoSpent: '（マンゴー状態は消えました）',
-    hintKeyboard: '↑ ↓ 移動   Space 装備   {keys} 球   Del 分解   Esc 戻る',
-    hintTouch: 'タップで装備 — 分解と球は下のボタン',
+    hintKeyboard: '↑ ↓ 移動   Space 装備   {keys} 球   F 分解·製作   Esc 戻る',
+    hintTouch: 'タップで装備 — 球は下のボタン · 分解·製作は右上',
     prefix: '接頭辞',
     suffix: '接尾辞',
     tier: 'T{tier}',
@@ -252,7 +252,7 @@ export const ja: Strings = {
     combineHint: '{gear}を {count} 本選んでください（{n}/{count}）— 合成 · Space で出し入れ、Esc で取り消し',
     combineReady: '{chance} の確率で属性のない{target} — 失敗しても選んだ {count} 本は消えます。「合成する」を押してください',
     combineEquipped: '装備中の剣は合成に使えません',
-    combineTop: '最高ティアの剣なので合成できません',
+    combineTop: '合成で作れる上位の剣がありません',
     combineShort: '装備していない同じ剣が {count} 本必要です',
     combineSuccess: '合成成功 — {gear}を入手！',
     combineFail: '合成失敗 — {gear} {count} 本が消えました',
@@ -260,7 +260,7 @@ export const ja: Strings = {
   },
 
   forge: {
-    title: '分解',
+    title: '分解 · 製作',
     tabs: { single: '個別分解', bulk: '一括分解', craft: '製作' },
     ore: '鉄鉱石 {count}個',
     oreName: '鉄鉱石',
@@ -303,9 +303,9 @@ export const ja: Strings = {
     held: '所持 {count}',
     orbUse: '装備タブで武器を選んで使います。',
     boneUse: 'ゲーム開始時に適用します。その回にだけ効果があります。',
-    hintGear: '方向キー 移動   Space 装備   {keys} 球   Del 分解   C 合成   Tab タブ   Esc 戻る',
+    hintGear: '方向キー 移動   Space 装備   {keys} 球   F 分解·製作   C 合成   Tab タブ   Esc 戻る',
     hintConsumables: '方向キー 移動   Tab タブ   Esc 戻る',
-    hintTouch: 'マスを押して確認 — 装備・分解・球は横のボタン',
+    hintTouch: 'マスを押して確認 — 装備・合成・球は横のボタン · 分解·製作は右上',
   },
 
   bones: {
@@ -633,6 +633,7 @@ export const ja: Strings = {
     enemies: { boss: 'ボス', fugitive: '逃亡者', grunt: '雑兵', brute: '巨漢', runner: '俊足', shooter: '射手', erratic: '奇行種', chimera: 'キメラ' },
     gear: {
       rustySword: '錆びた剣',
+      narsil: 'ナルシル',
       onigoroshi: '鬼殺し',
       ironSword: '鉄の剣',
       steelSword: '鋼の剣',
@@ -644,6 +645,7 @@ export const ja: Strings = {
       steelSword: '被害 +{value}',
       ironSword: '攻撃速度 +{value}',
       rustySword: '{skill}の攻撃速度 +{value}',
+      narsil: '攻撃力 +{value}',
     },
     affixes: {
       giant: '巨大',
@@ -1114,7 +1116,7 @@ export const ja: Strings = {
           title: '装備タブ',
           lines: [
             '持っている剣が {cols}×{rows} のマスに並びます。マスを選ぶと横に攻撃力 · 固定属性 · 属性が出ます。',
-            '装備 · 球の使用 · 合成は横のボタンか Space で行います。分解ボタンは分解画面を開きます。',
+            '装備 · 球の使用 · 合成は横のボタンか Space で行います。右上の分解 · 製作ボタンは分解 · 製作画面を開きます。',
             '球のボタンを押すと「球を使う」画面が開きます。球のすべての効果と選んだ装備を見ながら続けて使え、装備が壊れればその場で知らせます。',
             '分解画面では剣を1本ずつ、または種類と属性数でまとめて分解して鉄鉱石と球を得て、鉄鉱石で属性のない剣を製作します。装備中の剣とロックした剣は分解しません。',
           ],
@@ -1172,6 +1174,7 @@ export const ja: Strings = {
       gearSalvage: '分解で鉄鉱石 {ore}',
       gearCraft: '製作: 鉄鉱石 {cost}',
       gearNoCraft: '製作不可',
+      gearCraftOnly: 'ドロップせず、製作でのみ手に入ります',
       boneStack: '1 回に複数入れられます',
       boneSingle: '1 回に 1 個だけ入れられます',
       passiveRank: '1 段階ごとに {detail} · 最大 {max} 段階',

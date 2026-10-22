@@ -82,6 +82,7 @@ import { RareTooltip } from '@/systems/RareTooltip';
 import { sfx, effectVolume } from '@/systems/Sfx';
 import { saveGame, type SavedRun } from '@/systems/SaveGame';
 import { runLedger } from '@/systems/RunLedger';
+import { runTally } from '@/systems/RunTally';
 import { personal } from '@/systems/PersonalBest';
 import { tuning } from '@/systems/Tuning';
 import { dropTierFor } from '@/systems/Gear';
@@ -277,6 +278,7 @@ export class GameScene extends Phaser.Scene {
     this.lastingEffects = undefined;
     this.elapsedMs = 0;
     runLedger.begin(0);
+    runTally.begin();
     // Back from the pause menu: the wait there is not play.
     this.events.off(Phaser.Scenes.Events.RESUME, runLedger.hold);
     this.events.on(Phaser.Scenes.Events.RESUME, runLedger.hold);
@@ -652,6 +654,8 @@ export class GameScene extends Phaser.Scene {
     this.spawner.seed(run.spawnerMs);
     // What it had dealt and killed before the save still counts at the end.
     this.stats.seed(run.damage ?? 0, run.kills ?? {});
+    // And what it had counted gaining — or, from an older save, what it holds.
+    runTally.begin(run.tally ?? { levelUps: run.level - 1, skillLevels: this.totalSkillLevels() });
   }
 
   /**
@@ -749,6 +753,7 @@ export class GameScene extends Phaser.Scene {
       devUsed: this.devRun,
       elapsedMs: this.elapsedMs,
       wallMs: runLedger.ms,
+      tally: runTally.value,
       level: this.progression.level,
       xp: this.progression.xp,
       hp: this.player.hp,
@@ -921,6 +926,8 @@ export class GameScene extends Phaser.Scene {
       return;
     }
     this.owned.add(skill);
+    // Taking a skill is its first level (a resumed run's are re-counted after).
+    runTally.skillLevel();
     this.mainSkill ??= skill;
     // What holding it gives every skill and the survivor (0.84).
     this.heldBonus = heldBonusFor(this.owned);
@@ -1213,6 +1220,7 @@ export class GameScene extends Phaser.Scene {
    * (drinkForMaxedSkill), said plainly so it does not look lost.
    */
   private onLevelUp(level: number): void {
+    runTally.levelUp();
     this.player.setLevel(level);
     const skill = this.mainSkill;
     if (!skill) {
@@ -1309,7 +1317,9 @@ export class GameScene extends Phaser.Scene {
   }
 
   private onUpgradePicked(skill: SkillId, upgrade: UpgradeId): void {
+    const before = this.progression.levelFor(skill);
     this.progression.apply(skill, upgrade);
+    runTally.skillLevel(this.progression.levelFor(skill) - before);
     this.afterChoice();
     const tier = this.masteryOf(skill);
     if (tier >= 1 && !this.awakened.has(skill)) {
@@ -1581,6 +1591,15 @@ export class GameScene extends Phaser.Scene {
     }
   }
 
+  /** Every held skill's level, added up — what the run's tally counts toward. */
+  private totalSkillLevels(): number {
+    let total = 0;
+    for (const id of this.owned) {
+      total += this.progression.levelFor(id);
+    }
+    return total;
+  }
+
   private onPlayerDied(): void {
     this.over = true;
     this.physics.pause();
@@ -1614,6 +1633,8 @@ export class GameScene extends Phaser.Scene {
       level: this.progression.level,
       survivedMs: this.elapsedMs,
       devRun: this.devRun,
+      // Levels that do not come to what was counted: off the board, no reason given.
+      refused: !runTally.matches(this.progression.level, this.totalSkillLevels()),
       devReason: this.devUsedBefore || this.debug.used ? 'debug' : this.tunedRun ? 'draft' : undefined,
       mainSkill: this.mainSkill ?? undefined,
       detail: this.runDetail(),

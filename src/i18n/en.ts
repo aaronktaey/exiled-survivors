@@ -50,7 +50,7 @@ export const en: Strings = {
     sections: { supplies: 'Supplies', orbs: 'Orbs', bones: 'Bones', rarity: 'Rarity', bases: 'Weapons' },
     items: { potion: 'Potion', skill: 'Skill', randomSkill: 'Random Skill', mango: 'White Mango', magnet: 'Magnet', unknownRune: 'Unknown Rune' },
     itemsShort: { potion: 'Potion', skill: 'Skill', randomSkill: 'Random', mango: 'Mango', magnet: 'Magnet', unknownRune: 'Rune' },
-    rarity: { normal: 'Normal', magic: 'Magic', rare: 'Rare' },
+    rarity: { normal: 'Normal', magic: 'Magic', rare: 'Rare', mythic: 'Mythic' },
     shown: 'shown',
     hidden: 'hidden',
     showAll: 'Show all',
@@ -237,8 +237,8 @@ export const en: Strings = {
     orbSaved: '{orb} — the Mango took the blow; the weapon is whole, the Mango spent',
     mangoState: '🥭 Mango state — the next Explosion Orb cannot destroy it',
     mangoSpent: ' (Mango state spent)',
-    hintKeyboard: '↑ ↓ move   Space carry   {keys} orbs   Del salvage   Esc back',
-    hintTouch: 'Tap to carry — salvage and orbs are the buttons below',
+    hintKeyboard: '↑ ↓ move   Space carry   {keys} orbs   F salvage·craft   Esc back',
+    hintTouch: 'Tap to carry — orbs are the buttons below · Salvage · Craft is top-right',
     prefix: 'Prefix',
     suffix: 'Suffix',
     tier: 'T{tier}',
@@ -252,7 +252,7 @@ export const en: Strings = {
     combineHint: 'Pick {count} × {gear} ({n}/{count}) — Combine or Space adds and removes, Esc cancels',
     combineReady: '{chance} chance of a {target} with no affixes — the {count} picked are spent either way. Press Combine now',
     combineEquipped: 'The sword in hand cannot be combined',
-    combineTop: 'This is the highest tier; it cannot be combined',
+    combineTop: 'No higher sword can be made by combining this one',
     combineShort: 'Combining takes {count} of the same sword, not counting the one in hand',
     combineSuccess: 'Combined — you got a {gear}!',
     combineFail: 'The combine failed — {count} × {gear} lost',
@@ -260,7 +260,7 @@ export const en: Strings = {
   },
 
   forge: {
-    title: 'Salvage',
+    title: 'Salvage · Craft',
     tabs: { single: 'Salvage one', bulk: 'Salvage many', craft: 'Craft' },
     ore: 'Iron ore {count}',
     oreName: 'Iron ore',
@@ -303,9 +303,9 @@ export const en: Strings = {
     held: 'Held: {count}',
     orbUse: 'Spent on a weapon from the Gear tab.',
     boneUse: 'Applied when a run starts, for that run only.',
-    hintGear: 'Arrows move   Space equip   {keys} orbs   Del salvage   C combine   Tab tabs   Esc back',
+    hintGear: 'Arrows move   Space equip   {keys} orbs   F salvage·craft   C combine   Tab tabs   Esc back',
     hintConsumables: 'Arrows move   Tab tabs   Esc back',
-    hintTouch: 'Tap a cell to inspect it — equip, salvage and orbs are the buttons beside it',
+    hintTouch: 'Tap a cell to inspect it — equip, combine and orbs beside it · Salvage · Craft is top-right',
   },
 
   bones: {
@@ -633,6 +633,7 @@ export const en: Strings = {
     enemies: { boss: 'Boss', fugitive: 'Runaway', grunt: 'Grunt', brute: 'Brute', runner: 'Runner', shooter: 'Shooter', erratic: 'Oddity', chimera: 'Chimera' },
     gear: {
       rustySword: 'Rusty Sword',
+      narsil: 'Narsil',
       onigoroshi: 'Onigoroshi',
       ironSword: 'Iron Sword',
       steelSword: 'Steel Sword',
@@ -644,6 +645,7 @@ export const en: Strings = {
       steelSword: '+{value} damage',
       ironSword: '+{value} attack speed',
       rustySword: '+{value} {skill} attack speed',
+      narsil: 'Attack +{value}',
     },
     affixes: {
       giant: 'Giant',
@@ -1114,7 +1116,7 @@ export const en: Strings = {
           title: 'Gear tab',
           lines: [
             'Your swords sit in a {cols}×{rows} grid. Pick a cell and its attack power, implicit and affixes are read out beside it.',
-            'Equip, orbs and combine are the buttons beside it, or Space. Salvage opens the Salvage screen.',
+            'Equip, orbs and combine are the buttons beside it, or Space. Salvage · Craft, top-right, opens the Salvage · Craft screen.',
             'An orb button opens Use an Orb: every rule of the orb beside the selected sword, used as many times in a row as you like, and a notice right there if the sword is destroyed.',
             'On the Salvage screen, take swords apart one at a time, or by type and affix count, for iron ore and orbs — and craft swords with no affixes from the ore. The sword in hand and locked swords are never salvaged.',
           ],
@@ -1172,6 +1174,7 @@ export const en: Strings = {
       gearSalvage: 'Salvages for {ore} iron ore',
       gearCraft: 'Craft: {cost} iron ore',
       gearNoCraft: 'Cannot be crafted',
+      gearCraftOnly: 'Never dropped — only crafted',
       boneStack: 'More than one can go into a run',
       boneSingle: 'Only one can go into a run',
       passiveRank: '{detail} a rank · up to {max} ranks',

@@ -275,7 +275,7 @@ export class CombatSystem {
     }
 
     drop.drop(x, y);
-    this.land(drop, itemFilter.shows('mango'), 'rare');
+    this.land(drop, itemFilter.shows('mango'), 'mythic');
   }
 
   /**
@@ -290,7 +290,7 @@ export class CombatSystem {
     }
 
     drop.drop(x, y, look);
-    this.land(drop, itemFilter.shows('unknownRune'), 'rare');
+    this.land(drop, itemFilter.shows('unknownRune'), 'mythic');
   }
 
   /** Places a 자석 directly — used by the kill roll and by tests. */
@@ -302,7 +302,7 @@ export class CombatSystem {
     }
 
     drop.drop(x, y);
-    this.land(drop, itemFilter.shows('magnet'), 'rare');
+    this.land(drop, itemFilter.shows('magnet'), 'mythic');
   }
 
   /**

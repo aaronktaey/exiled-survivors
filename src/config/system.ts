@@ -318,7 +318,8 @@ export const DEBUG = {
 } as const;
 
 /** How rare a drop is, which is what it sounds like when it lands. */
-export type DropTier = 'normal' | 'magic' | 'rare';
+/** How rare a drop is, quietest first. 신화 since 0.91: the loudest look, which 희귀 had before. */
+export type DropTier = 'normal' | 'magic' | 'rare' | 'mythic';
 
 export const AUDIO = {
   /**
@@ -335,7 +336,10 @@ export const AUDIO = {
   drops: {
     normal: { key: "sfx-drop-normal", file: "assets/normalDrop.mp3", volume: 0.55 },
     magic: { key: "sfx-drop-magic", file: "assets/magicDrop.mp3", volume: 0.5 },
-    rare: { key: "sfx-drop-rare", file: "assets/rareDrop.mp3", volume: 0.6 },
+    // 희귀 (a weapon with 3–4 속성, 0.91) lands with 마법's clip, as it did
+    // when 3–4 was 마법; 신화 has the loud one 희귀 had.
+    rare: { key: "sfx-drop-magic", file: "assets/magicDrop.mp3", volume: 0.5 },
+    mythic: { key: "sfx-drop-rare", file: "assets/rareDrop.mp3", volume: 0.6 },
   } as const,
   /**
    * How many 속성 a weapon needs to be the next rarity up. One ladder: it
@@ -343,8 +347,10 @@ export const AUDIO = {
    * so the two can never disagree.
    */
   dropTiers: {
-    magicFrom: 3,
-    rareFrom: 5,
+    // 0.91 (the user's ask): 2 마법 (blue), 3–4 희귀 (yellow), 5–6 신화 (red).
+    magicFrom: 2,
+    rareFrom: 3,
+    mythicFrom: 5,
   } as const,
   /**
    * Background music. 5.6MB, so it is fetched after the menu is already on

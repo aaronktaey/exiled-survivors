@@ -1,3 +1,4 @@
+import type { DropTier } from '@/config/system';
 import { TEXTURES } from '@/config/visuals';
 
 /**
@@ -42,7 +43,7 @@ export interface BoneSpec {
   readonly texture: string;
   readonly color: number;
   /** How loudly it lands: its nameplate and its drop sound both read this. */
-  readonly tier: 'normal' | 'magic' | 'rare';
+  readonly tier: DropTier;
   /** Whether more than one can go into the same run. */
   readonly stackable: boolean;
   /**
@@ -66,7 +67,7 @@ export const BONES: Record<BoneId, BoneSpec> = {
     detail: '희귀 적 대신 우두머리가 나옵니다',
     texture: TEXTURES.boneSkull,
     color: 0xe9e3d2,
-    tier: 'rare',
+    tier: 'mythic',
     // Two of them would do nothing a third time: rares are already all
     // 우두머리 with one.
     stackable: false,

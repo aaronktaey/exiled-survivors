@@ -19,6 +19,11 @@ export interface GameOverData {
   readonly survivedMs: number;
   /** The developer tools changed this run: it is not offered to the ranking. */
   readonly devRun?: boolean;
+  /**
+   * The run's levels did not come to what it counted gaining (RunTally): it
+   * is not offered to the ranking, and the screen does not say why (0.91).
+   */
+  readonly refused?: boolean;
   /** Which of them, said on the screen so a record that is not offered is not a mystery. */
   readonly devReason?: 'debug' | 'draft';
   /** The run's main skill, shown beside it on the board. */
@@ -79,7 +84,7 @@ export class GameOverScene extends Phaser.Scene {
 
     // A run that made the board gets a row for entering it, and asks once
     // on its own as the screen opens.
-    const qualifies = !this.payload.devRun && ranking.qualifies(this.payload.summary.damage);
+    const qualifies = !this.payload.devRun && !this.payload.refused && ranking.qualifies(this.payload.summary.damage);
     const rowCount = qualifies ? 4 : 3;
 
     // Built first, measured, then everything is centred around it.

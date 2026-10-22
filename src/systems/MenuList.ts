@@ -4,6 +4,9 @@ import { COLORS, DEPTH, MENU, TEXT } from '@/config';
 import { fitWidth } from '@/systems/Layout';
 import { outlineWidth } from '@/systems/SharpText';
 
+
+/** The least room between a row's name and the value on its right. */
+const DETAIL_GAP = 12;
 export interface MenuItem {
   readonly id: string;
   /** Read every refresh, so a row can show live values. */
@@ -275,13 +278,24 @@ export class MenuList {
       }
       row.panel.setAlpha(enabled ? 1 : 0.45);
 
-      // Centred normally; on a narrow screen a row with a value on its
-      // right has to give that value somewhere to be.
-      const tight = this.tightLayout && item.detail !== undefined;
-      row.label.setVisible(true);
-      row.label.setX(tight ? this.listX - this.listWidth / 2 + 14 : this.listX);
-      row.label.setOrigin(tight ? 0 : 0.5, 0.5);
+      // Centred normally; a row with a value on its right moves its name to
+      // the left when the two would meet — on a narrow screen always, and on
+      // any screen once the value is long (불러오기's run and weapon, 0.91).
       row.label.setText(item.label());
+      const detailRight = this.listX + this.listWidth / 2 - (item.onAdjust ? 46 : 14);
+      row.detail.setText(item.detail?.() ?? '').setScale(1);
+      const detailWidth = item.detail ? row.detail.width : 0;
+      const meets = detailWidth > 0 && this.listX + row.label.width / 2 + DETAIL_GAP > detailRight - detailWidth;
+      const tight = item.detail !== undefined && (this.tightLayout || meets);
+      const labelLeft = this.listX - this.listWidth / 2 + 14;
+      // Still too long beside a name on the left: the value is drawn smaller.
+      const room = detailRight - (labelLeft + row.label.width + DETAIL_GAP);
+      if (tight && detailWidth > room && room > 0) {
+        row.detail.setScale(Math.max(0.55, room / detailWidth));
+      }
+      row.label.setVisible(true);
+      row.label.setX(tight ? labelLeft : this.listX);
+      row.label.setOrigin(tight ? 0 : 0.5, 0.5);
       row.label.setColor(
         !enabled ? COLORS.muted : item.accentText ?? (active ? COLORS.accent : COLORS.text),
       );
@@ -291,8 +305,7 @@ export class MenuList {
 
       // A value row keeps its arrows clear of the read-out.
       row.detail.setVisible(true);
-      row.detail.setX(this.listX + this.listWidth / 2 - (item.onAdjust ? 46 : 14));
-      row.detail.setText(item.detail?.() ?? '');
+      row.detail.setX(detailRight);
       row.detail.setAlpha(enabled ? 1 : 0.6);
 
       row.arrows.forEach((arrow) => {
