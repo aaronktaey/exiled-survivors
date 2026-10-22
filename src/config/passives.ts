@@ -42,7 +42,7 @@ export const PASSIVES: Record<PassiveId, PassiveSpec> = {
   damage: {
     id: 'damage',
     name: '피해',
-    detail: '피해 +3%',
+    detail: '피해 증폭 +3%',
     maxRank: 10,
     damageScale: 1.03,
   },

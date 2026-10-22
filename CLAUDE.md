@@ -418,7 +418,8 @@ Read `git log` for what changed and when. What is not in the log:
   gold, passive ranks) was gone for good — locally and in the cloud copies
   — so `ROLLBACK_GIFT` (equipment.ts, `systems/Gift.ts`) hands everyone bare
   오니고로시 and every 구슬 once on the title (`MenuScene.giveGift`, after
-  the account settles, `STORAGE.rollbackGift`, synced); the harness turns it
+  the account settles, `STORAGE.rollbackGift`, synced; since 0.93 it gives no
+  오니고로시 — `ROLLBACK_GIFT.gear` is empty, the user's word); the harness turns it
   off unless `window.__giftOn` (test-gift). 0.81 added passive points to
   it (`passivesToMax`: `passives.topUpToMax` fills held + spent up to
   `maxPoints`), under a mark of its own (`STORAGE.passiveGift`) so those
@@ -683,6 +684,19 @@ Read `git log` for what changed and when. What is not in the log:
   running; 공허구체 re-arms the orb's hit on that enemy instead), 활력
   (suffix, `regen` every `AFFIX_TIMING.regenEveryMs`, `GameScene.regenerate`)
   and 기교 (suffix, `projectileBlock` added to the base's own).
+- **Damage is 플랫 × 증가 × 증폭 (0.93, the user's rule).** `damageFor`
+  (Modifiers.ts, `damageParts` for the HUD): (SKILL_BASE damage + the
+  weapon's attack, 고정 속성 included) × (1 + every 증가, added: the run's
+  공격력 picks as a share of the base) × every 증폭, multiplied: the passive
+  피해, the weapon's `GearBonus.damageAmplify` (강력 and its 피해 고정
+  속성, added within the weapon as its lines always are) and, in GameScene,
+  the held 얼음창. `GearBonus.damageIncrease` is 0 until something rolls a
+  weapon 증가. The skill's own `BALANCE.damageScale` stays a separate
+  multiplier; 감전, 연쇄번개 각성 and 치명타 land on the hit after. A new
+  damage source says 증가 or 증폭 in its text and goes in that layer.
+  The user first had 강력 as a 증가 and every base damage +15% to make up
+  for it, then asked for neither: 강력 as an 증폭 keeps the old difficulty
+  (only the weapon's attack now takes the passive, +0–5%).
 - **A weapon's lines add, they do not compound.** `gearBonusFor` sums each
   line's share (scale − 1) with the 고정 속성's and returns 1 + the sum, so
   two +50% are +100%. 치명 is `critChanceIncrease`: the summed share raises

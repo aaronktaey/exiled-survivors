@@ -63,7 +63,7 @@ export const ja: Strings = {
     line: '保有効果 — {effects}',
     critChance: 'クリティカル率 +{n}%p',
     areaScale: '効果範囲 +{n}%',
-    damageScale: 'ダメージ ×{n}',
+    damageScale: 'ダメージ増幅 ×{n}',
     attackSpeedScale: '攻撃速度 +{n}%',
     moveSpeedScale: '移動速度 +{n}%',
     maxHpScale: '最大体力 +{n}%',
@@ -144,7 +144,7 @@ export const ja: Strings = {
     never: '既定値',
     hint: 'ダイヤルを押すと拡大 · ホイールで回す · ←→ 選択 ↑↓ 調整（Shift ×10）· Enter で拡大',
     fieldDetails: {
-      damage: '{skill}の1回あたりの基本ダメージです。強化・装備・パッシブ・保有効果はすべてこの値に掛かるので、上げると{skill}の火力が同じ割合で上がります。',
+      damage: '{skill}の1回あたりの基本ダメージです。武器の攻撃力を足した後、増加（強化、足し合わせ）と増幅（パッシブ・剛力・固定属性・保有効果、掛け合わせ）が掛かるので、上げるとプレイ中ずっと{skill}の火力が上がります。',
       attackSpeed: '{skill}の1秒あたりの基本攻撃回数です。2なら0.5秒に1回攻撃します。攻撃速度強化・狂乱・保有効果がこの値に掛かります。',
       range: '{skill}の基本射程(px)です。この距離内の敵だけを狙います。投げるスキルは投射物の速度に比例して射程が伸びます。',
       projectileSpeed: '{skill}の投射物が飛ぶ速さ(px/秒)です。速いほど早く届き、射程も同じ割合で伸びます。',
@@ -194,6 +194,7 @@ export const ja: Strings = {
     settings: '設定',
     gift: '復旧の補償：{gear}、すべてのオーブ {orbs}個ずつを受け取りました',
     giftGear: '{name} {count}個',
+    giftOrbs: '復旧の補償：すべてのオーブ {orbs}個ずつを受け取りました',
     giftPassives: '復旧の補償：パッシブポイント {points}点を受け取りました — すべてのパッシブを最大にできます',
     gear: 'インベントリ',
     guide: '遊び方',
@@ -509,11 +510,10 @@ export const ja: Strings = {
     level: 'Lv {level}',
     enemies: '敵 {count}',
     dps: 'DPS {dps}',
-    formulaDamage: '被害 {damage} = (基本 {base} × パッシブ {passive} + 装備 {gear}) × 強化 {run}',
+    formulaDamage: '被害 {damage} = (基本 {base} + 装備 {gear}) × 増加 {increase} × 増幅 {amplify}',
     formulaRate: '毎秒 {rate} 回 = 基本 {base} × パッシブ {passive} × 装備 {gear} × 強化 {run}',
     formulaMango: ' × マンゴー {mango}',
     formulaScale: ' × 補正 {scale}',
-    formulaGearScale: ' × 装備被害 {scale}',
     formulaHeld: ' × 保有効果 {scale}',
     formulaCap: '毎秒最大 {rate} 回（クールダウン下限）',
     formulaTargets: '対象 {targets} = {parts}',
@@ -586,7 +586,7 @@ export const ja: Strings = {
   },
 
   upgrades: {
-    damage: { label: '攻撃力 +{n}%', detail: '{skill}のダメージが基本値の {n}% 増えます' },
+    damage: { label: 'ダメージ増加 +{n}%', detail: '{skill}のダメージ増加に {n}% が加わります（増加同士は足し、増幅は掛けます）' },
     attackSpeed: { label: '攻撃速度 +{n}%', detail: '{skill}の毎秒攻撃回数が基本値の {n}% 増えます' },
     range: { label: '射程 +{n}%', detail: '{skill}の射程が基本値の {n}% 伸びます' },
     projectileSpeed: { label: '弾速 +{n}%', detail: '{skill}が基本値の {n}% 速く、その分遠くまで飛びます' },
@@ -642,7 +642,7 @@ export const ja: Strings = {
     gearImplicits: {
       onigoroshi: '{value} の確率で敵の投射物を防ぐ',
       runedSword: 'スキルの投射物 +{value} 個',
-      steelSword: '被害 +{value}',
+      steelSword: 'ダメージ増幅 +{value}',
       ironSword: '攻撃速度 +{value}',
       rustySword: '{skill}の攻撃速度 +{value}',
       narsil: '攻撃力 +{value}',
@@ -678,7 +678,7 @@ export const ja: Strings = {
       spider: '倒れた場所に蜘蛛の巣 — 1 分間移動速度 -30%',
     },
     affixGearDetails: {
-      mighty: '被害 +{value}%',
+      mighty: 'ダメージ増幅 +{value}%',
       critical: '基本クリティカル率 +{value}%',
       cruel: 'クリティカル被害 +{value}%',
       frenzied: '攻撃速度 +{value}%',
@@ -728,7 +728,7 @@ export const ja: Strings = {
     },
     passives: { damage: 'ダメージ', attackSpeed: '攻撃速度', moveSpeed: '移動速度', luck: '幸運' },
     passiveDetails: {
-      damage: 'ダメージ +3%',
+      damage: 'ダメージ増幅 +3%',
       attackSpeed: '攻撃速度 +3%',
       moveSpeed: '移動速度 +1%',
       luck: 'アイテムドロップ率 +1%',
@@ -1066,6 +1066,7 @@ export const ja: Strings = {
           lines: [
             'ボスは倒すたびに剣を 1 本必ず落とします。ティア {fromKillTiers} の剣は通常の敵もまれに落とします。',
             '剣のティアは数字が小さいほど強くなります。攻撃力はすべてのスキルの 1 回の被害に足されます。',
+            'ダメージは (スキルの基本ダメージ + 攻撃力) × 増加 × 増幅 で決まります。「増加」の効果（強化）は互いに足し、「増幅」の効果（パッシブ、剛力、固定属性、保有効果）は互いに掛けます。1本の武器の剛力と固定属性は先に足されます。',
             '拾った剣は保管箱に入り、装備はタイトル画面のインベントリで行います。',
             '剣は接頭辞（攻撃）と接尾辞（防御 · 移動）をそれぞれ {maxPrefix} 個まで持てます。属性が 1 行付く確率は {affixChance} で、付くたびに次の行をもう一度振ります。',
             '固定属性は剣の種類ごとに決まっており、接頭辞 · 接尾辞の数に関係なく常に付いています。',

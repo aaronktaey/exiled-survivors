@@ -75,11 +75,13 @@ export interface GearBonus {
   readonly critChanceIncrease: number;
   /** Added to RARE.critMultiplier when one lands. */
   readonly critMultiplierBonus: number;
+  /** 피해 증가 from the weapon (0.93): none rolls one yet; it would add to the run's 공격력 picks. */
+  readonly damageIncrease: number;
   /**
-   * Multiplies every skill's damage, after the flat attack is added: the
-   * base's 피해 고정 속성 and every 강력, added together.
+   * 피해 증폭 from the weapon (0.93): the base's 피해 고정 속성 (강철 검) and
+   * every 강력, added within the weapon as its lines always are, multiplying the hit.
    */
-  readonly damageScale: number;
+  readonly damageAmplify: number;
   /** One skill's own attack-speed multiplier, on top of attackSpeedScale. */
   readonly skillAttackSpeed: Partial<Record<SkillId, number>>;
   /** Chance an enemy's shot is stopped before it hurts. */
@@ -101,7 +103,8 @@ export const NO_BONUS: GearBonus = {
   invulnerableScale: 1,
   critChanceIncrease: 0,
   critMultiplierBonus: 0,
-  damageScale: 1,
+  damageIncrease: 0,
+  damageAmplify: 1,
   skillAttackSpeed: {},
   projectileBlock: 0,
   extraProjectiles: 0,
@@ -208,6 +211,7 @@ export function gearBonusFor(item: GearItem | null): GearBonus {
 
   const implicit = GEAR[item.id].implicit;
   attackSpeed += (implicit?.attackSpeedScale ?? 1) - 1;
+  // 강력 and the base's 피해 고정 속성 are the weapon's 증폭 (0.93), its lines added.
   let damage = (implicit?.damageScale ?? 1) - 1;
   let projectileBlock = implicit?.projectileBlock ?? 0;
   const skillAttackSpeed: Partial<Record<SkillId, number>> = implicit?.skillAttackSpeed
@@ -237,7 +241,8 @@ export function gearBonusFor(item: GearItem | null): GearBonus {
     invulnerableScale: Math.max(0, 1 + invulnerable),
     critChanceIncrease,
     critMultiplierBonus,
-    damageScale: 1 + damage,
+    damageIncrease: 0,
+    damageAmplify: 1 + damage,
     skillAttackSpeed,
     projectileBlock: Math.min(1, projectileBlock),
     extraProjectiles: implicit?.extraProjectiles ?? 0,

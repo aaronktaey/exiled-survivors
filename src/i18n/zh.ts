@@ -63,7 +63,7 @@ export const zh: Strings = {
     line: '持有效果 — {effects}',
     critChance: '暴击率 +{n}%',
     areaScale: '效果范围 +{n}%',
-    damageScale: '伤害 ×{n}',
+    damageScale: '伤害增幅 ×{n}',
     attackSpeedScale: '攻击速度 +{n}%',
     moveSpeedScale: '移动速度 +{n}%',
     maxHpScale: '最大生命 +{n}%',
@@ -144,7 +144,7 @@ export const zh: Strings = {
     never: '默认值',
     hint: '按下旋钮放大 · 滚轮转动 · ←→ 选择 ↑↓ 调整（Shift ×10）· Enter 放大',
     fieldDetails: {
-      damage: '{skill}每次命中的基础伤害。强化、装备、被动和持有效果都乘在这个值上，提高它会让{skill}整局的火力按同样比例提升。',
+      damage: '{skill}每次命中的基础伤害。先加上武器攻击力，再乘以增加（强化，彼此相加）和增幅（被动、强力、固定属性、持有效果，彼此相乘），提高它会让{skill}整局的火力上升。',
       attackSpeed: '{skill}每秒的基础攻击次数。2表示每0.5秒攻击一次。攻速强化、狂乱和持有效果都乘在这个值上。',
       range: '{skill}的基础射程（px），只瞄准这个距离内的敌人。投掷类技能的射程会随投射物速度按比例增加。',
       projectileSpeed: '{skill}投射物的飞行速度（px/秒）。越快越早命中，射程也按同样比例增加。',
@@ -194,6 +194,7 @@ export const zh: Strings = {
     settings: '设置',
     gift: '回滚补偿：已获得{gear}，每种宝珠各 {orbs} 个',
     giftGear: '{name} {count} 个',
+    giftOrbs: '回滚补偿：已获得每种宝珠各 {orbs} 个',
     giftPassives: '回滚补偿：已获得被动点数 {points} 点，足以将所有被动升到满级',
     gear: '背包',
     guide: '游戏指南',
@@ -509,11 +510,10 @@ export const zh: Strings = {
     level: 'Lv {level}',
     enemies: '敌人 {count}',
     dps: 'DPS {dps}',
-    formulaDamage: '伤害 {damage} = (基础 {base} × 被动 {passive} + 装备 {gear}) × 强化 {run}',
+    formulaDamage: '伤害 {damage} = (基础 {base} + 装备 {gear}) × 增加 {increase} × 增幅 {amplify}',
     formulaRate: '每秒 {rate} 次 = 基础 {base} × 被动 {passive} × 装备 {gear} × 强化 {run}',
     formulaMango: ' × 芒果 {mango}',
     formulaScale: ' × 修正 {scale}',
-    formulaGearScale: ' × 装备伤害 {scale}',
     formulaHeld: ' × 持有效果 {scale}',
     formulaCap: '每秒最多 {rate} 次（冷却下限）',
     formulaTargets: '目标 {targets} = {parts}',
@@ -586,7 +586,7 @@ export const zh: Strings = {
   },
 
   upgrades: {
-    damage: { label: '攻击力 +{n}%', detail: '{skill}的伤害按基础值提高 {n}%' },
+    damage: { label: '伤害增加 +{n}%', detail: '{skill}的伤害增加再加 {n}%（增加之间相加，增幅相乘）' },
     attackSpeed: { label: '攻击速度 +{n}%', detail: '{skill}每秒攻击次数按基础值提高 {n}%' },
     range: { label: '射程 +{n}%', detail: '{skill}的射程按基础值增加 {n}%' },
     projectileSpeed: { label: '弹速 +{n}%', detail: '{skill}按基础值提速 {n}%，射程也同样增加' },
@@ -642,7 +642,7 @@ export const zh: Strings = {
     gearImplicits: {
       onigoroshi: '{value} 几率格挡敌人的投射物',
       runedSword: '技能投射物 +{value} 个',
-      steelSword: '伤害 +{value}',
+      steelSword: '伤害增幅 +{value}',
       ironSword: '攻击速度 +{value}',
       rustySword: '{skill}的攻击速度 +{value}',
       narsil: '攻击力 +{value}',
@@ -678,7 +678,7 @@ export const zh: Strings = {
       spider: '死亡处留下蛛网 — 1 分钟内移动速度 -30%',
     },
     affixGearDetails: {
-      mighty: '伤害 +{value}%',
+      mighty: '伤害增幅 +{value}%',
       critical: '基础暴击几率 +{value}%',
       cruel: '暴击伤害 +{value}%',
       frenzied: '攻击速度 +{value}%',
@@ -728,7 +728,7 @@ export const zh: Strings = {
     },
     passives: { damage: '伤害', attackSpeed: '攻击速度', moveSpeed: '移动速度', luck: '幸运' },
     passiveDetails: {
-      damage: '伤害 +3%',
+      damage: '伤害增幅 +3%',
       attackSpeed: '攻击速度 +3%',
       moveSpeed: '移动速度 +1%',
       luck: '物品掉落率 +1%',
@@ -1062,6 +1062,7 @@ export const zh: Strings = {
           lines: [
             '每击杀一只首领必定掉落一把剑。{fromKillTiers} 阶的剑普通敌人也会偶尔掉落。',
             '剑的阶数越小越强。攻击力会加到所有技能的单次伤害上。',
+            '伤害 = (技能基础伤害 + 攻击力) × 增加 × 增幅。带“增加”的效果（强化）彼此相加，带“增幅”的效果（被动、强力、固定属性、持有效果）彼此相乘。同一把武器上的强力和固定属性先相加。',
             '拾取的剑进入仓库，在标题画面的背包中装备。',
             '剑最多可带 {maxPrefix} 个词缀前缀（攻击）和 {maxPrefix} 个词缀后缀（防御 · 移动）。每条属性出现的几率为 {affixChance}，每出现一条就再掷下一条。',
             '固定属性由剑的种类决定，与前缀 · 后缀数量无关，始终存在。',

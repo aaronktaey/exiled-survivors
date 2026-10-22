@@ -617,7 +617,8 @@ export class MenuScene extends Phaser.Scene {
     const given = giveRollbackGift();
     if (given) {
       const pieces = given.gear.map(({ id, count }) => fill(copy.giftGear, { name: gearName(id), count })).join(', ');
-      lines.push(fill(copy.gift, { gear: pieces, orbs: given.orbsEach }));
+      // No sword in it (since 0.93): only the 구슬 are named.
+      lines.push(pieces ? fill(copy.gift, { gear: pieces, orbs: given.orbsEach }) : fill(copy.giftOrbs, { orbs: given.orbsEach }));
     }
     const points = givePassivePoints();
     if (points) {

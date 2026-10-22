@@ -296,7 +296,7 @@ check('장비창 lists the stash, best first',
   screen.labels.join(' / '));
 check('and reads out what the one under the cursor is worth',
   /공격력 \+\d+/.test(screen.lines) && /접두어/.test(screen.lines) &&
-    /\d티어\s+강력\s+피해 \+\d+%/.test(screen.lines) &&
+    /\d티어\s+강력\s+피해 증폭 \+\d+%/.test(screen.lines) &&
     /접미어/.test(screen.lines) && /\d티어\s+신속\s+이동속도 \+\d+%/.test(screen.lines),
   screen.lines.split('\n').join(' | '));
 await shot('gear-02-screen');
@@ -319,17 +319,20 @@ const carried = await run(`
   const mighty = window.config.AFFIXES.mighty.gearTiers.find(t => t.tier === 3);
   return { bonus: s.gearBonus, max: s.player.maxHp, hp: s.player.hp,
            wantAttack: window.config.attackForTier(window.config.GEAR.steelSword.tier),
-           // 강력 is a share of every skill's damage, added to the base's own.
-           wantScale: (window.config.GEAR.steelSword.implicit?.damageScale ?? 1) + mighty.gear.damageScale - 1,
+           // 강력 and the base's 피해 고정 속성 are the weapon's 증폭, added within it (0.93).
+           wantIncrease: 0,
+           wantAmplify: (window.config.GEAR.steelSword.implicit?.damageScale ?? 1) + mighty.gear.damageScale - 1,
+           passive: s.mods.passive.damageScale, base: window.config.SKILL_BASE.meleeStrike.damage,
            wantSwift: rung.gear.moveSpeedScale,
            melee: s.damageOf('meleeStrike'), stat: s.progression.statsFor('meleeStrike').damage };
 `);
 console.log('carried into the run:', JSON.stringify(carried));
 check('the next run goes out with it',
   carried.bonus.attack === carried.wantAttack &&
-    Math.abs(carried.bonus.damageScale - carried.wantScale) < 1e-9 &&
-    carried.melee === Math.round((carried.stat + carried.wantAttack) * carried.bonus.damageScale),
-  `+${carried.bonus.attack} attack ×${carried.bonus.damageScale}, melee ${carried.melee}`);
+    carried.bonus.damageIncrease === carried.wantIncrease && Math.abs(carried.bonus.damageAmplify - carried.wantAmplify) < 1e-9 &&
+    carried.melee === Math.round((carried.base + carried.wantAttack) * (carried.stat / carried.base + carried.wantIncrease) *
+      carried.passive * carried.wantAmplify),
+  `+${carried.bonus.attack} attack, 증가 +${carried.bonus.damageIncrease}, 증폭 ×${carried.bonus.damageAmplify}, melee ${carried.melee}`);
 check('and its 신속 is on the survivor, not just on paper',
   Math.abs(carried.bonus.moveSpeedScale - carried.wantSwift) < 0.001,
   `move x${carried.bonus.moveSpeedScale}, wanted x${carried.wantSwift}`);
@@ -512,7 +515,7 @@ check('the read-out is the base (attack and 고정 속성), then a 접두어 blo
     read.lines.length === 9,
   block);
 check('every 속성 fills a slot with its rung, its name and what it does',
-  /1티어\s+강력\s+피해 \+\d+%/.test(block) &&
+  /1티어\s+강력\s+피해 증폭 \+\d+%/.test(block) &&
     /2티어\s+치명\s+기본 치명타 확률 \+\d+%/.test(block) &&
     /1티어\s+거대\s+최대 체력 \+[\d.]+%/.test(block) &&
     /5티어\s+신속\s+이동속도 \+[\d.]+%/.test(block) &&
@@ -1241,7 +1244,7 @@ const implicits = await ev(`(() => {
     const ok = (b, lines = 0) =>
       b.projectileBlock === (im.projectileBlock ?? 0) &&
       b.extraProjectiles === (im.extraProjectiles ?? 0) &&
-      Math.abs(b.damageScale - ((im.damageScale ?? 1) + mighty(lines))) < 1e-9 &&
+      b.damageIncrease === 0 && Math.abs(b.damageAmplify - ((im.damageScale ?? 1) + mighty(lines))) < 1e-9 &&
       (im.skillAttackSpeed ? b.skillAttackSpeed[im.skillAttackSpeed.skill] === im.skillAttackSpeed.scale
                            : Object.keys(b.skillAttackSpeed).length === 0);
     out[id] = { has: !!G[id].implicit, bare: ok(bare(id)), full: ok(full(id), 1),
@@ -1261,9 +1264,10 @@ const steelBonus = await hold('steelSword');
 const steel = await run(`
   const c = window.config, base = c.SKILL_BASE.meleeStrike.damage;
   const st = s.progression.statsFor('meleeStrike');
-  const want = Math.round((base * s.mods.passive.damageScale + ${steelBonus.attack}) * ${steelBonus.damageScale} *
-    (st.damage / base) * (c.BALANCE.damageScale.meleeStrike ?? 1));
-  return { got: s.damageOf('meleeStrike'), want, scale: ${steelBonus.damageScale} };
+  // 0.93: its 고정 속성 is an 증폭 on the whole hit.
+  const want = Math.round((base + ${steelBonus.attack}) * (st.damage / base + ${steelBonus.damageIncrease}) *
+    s.mods.passive.damageScale * ${steelBonus.damageAmplify} * (c.BALANCE.damageScale.meleeStrike ?? 1) * s.heldBonus.damageScale);
+  return { got: s.damageOf('meleeStrike'), want, scale: ${steelBonus.damageAmplify} };
 `);
 check('강철 검 scales every skill’s damage by its 고정 속성',
   steel.got === steel.want && steel.scale > 1, `${steel.got} (want ${steel.want}, ×${steel.scale})`);

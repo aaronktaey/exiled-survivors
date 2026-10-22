@@ -234,6 +234,8 @@ export interface Strings {
     readonly gift: string;
     /** One piece of {gear}: {name} and {count}. */
     readonly giftGear: string;
+    /** The gift with no sword in it (0.93): {orbs} of every 구슬. */
+    readonly giftOrbs: string;
     /** 0.81's gift: {points} passive points, enough to fill every line. */
     readonly giftPassives: string;
     readonly gear: string;
@@ -653,10 +655,9 @@ export interface Strings {
     readonly formulaMango: string;
     /** Appended to the damage line when the skill's balance dial is not 1. */
     readonly formulaScale: string;
-    /** Appended to the damage line when the weapon's 고정 속성 scales damage. */
-    readonly formulaGearScale: string;
-    /** The held skills' 보유 효과 on a damage or pace line: {scale}. */
     readonly formulaHeld: string;
+    /** Appended to the damage line when the weapon's 고정 속성 scales damage. */
+    /** The held skills' 보유 효과 on a damage or pace line: {scale}. */
     /** A line of its own when the cooldown floor holds the rate down. */
     readonly formulaCap: string;
     readonly formulaTargets: string;

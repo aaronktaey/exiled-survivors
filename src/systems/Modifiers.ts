@@ -35,17 +35,33 @@ function runScale(base: number, upgraded: number): number {
   return base === 0 ? 1 : upgraded / base;
 }
 
-/** One skill's damage per hit. */
+/**
+ * One skill's damage per hit, the rule since 0.93 (the user's):
+ *
+ *   플랫 (기본 피해 + 무기 공격력) × 증가 (1 + every 증가, added) × 증폭 (every 증폭, multiplied)
+ *
+ * 증가 — the run's 공격력 picks (each a share of the base).
+ * 증폭 — the passive tree's 피해, and the weapon's 강력 and 피해 고정 속성 (강철 검),
+ *        which add within the weapon as its lines always do.
+ * GameScene multiplies in the rest: the skill's own 보정 (BALANCE.damageScale)
+ * and the held 얼음창's 증폭; a hit then takes 감전, 각성 and 치명타 on top.
+ */
 export function damageFor(skill: SkillId, upgraded: number, mods: RunModifiers): number {
-  const base = SKILL_BASE[skill].damage;
+  const parts = damageParts(skill, upgraded, mods);
+  return parts.flat * parts.increase * parts.amplify;
+}
 
-  // 1. 패시브
-  let damage = base * mods.passive.damageScale;
-  // 2. 장비 — the weapon's attack power is flat, and lands at its own layer;
-  // a base whose 고정 속성 is 피해 scales the lot
-  damage = (damage + mods.gear.attack) * mods.gear.damageScale;
-  // 3. 전투 내 효과
-  return damage * runScale(base, upgraded);
+/** The three layers of damageFor, for the HUD to spell out. */
+export function damageParts(
+  skill: SkillId,
+  upgraded: number,
+  mods: RunModifiers,
+): { readonly base: number; readonly attack: number; readonly flat: number; readonly increase: number; readonly amplify: number } {
+  const base = SKILL_BASE[skill].damage;
+  const flat = base + mods.gear.attack;
+  const increase = 1 + (runScale(base, upgraded) - 1) + mods.gear.damageIncrease;
+  const amplify = mods.passive.damageScale * mods.gear.damageAmplify;
+  return { base, attack: mods.gear.attack, flat, increase, amplify };
 }
 
 /** One skill's attacks per second, folded the same way. */

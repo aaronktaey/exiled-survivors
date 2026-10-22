@@ -253,8 +253,11 @@ const folded = await run(`
     // The save also carries 예리 and 재생, which are gone: they must fall off
     // rather than count.
     wantAttack: window.config.attackForTier(window.config.GEAR.steelSword.tier),
-    wantScale: (window.config.GEAR.steelSword.implicit?.damageScale ?? 1) +
+    // 0.93: 강력 and the base's 피해 고정 속성 are the weapon's 증폭, added within it.
+    wantIncrease: 0,
+    wantAmplify: (window.config.GEAR.steelSword.implicit?.damageScale ?? 1) +
       window.config.AFFIXES.mighty.gearTiers.find(t => t.tier === 3).gear.damageScale - 1,
+    scale: window.config.BALANCE.damageScale.meleeStrike ?? 1,
     base: window.config.SKILL_BASE.meleeStrike.damage,
     lines: [...window.gear.equipped.prefixes, ...window.gear.equipped.suffixes].map(l => l.id),
     // The held skills' 보유 효과 multiplies the bar too (0.84: 타격 is held).
@@ -266,17 +269,18 @@ const folded = await run(`
   };
 `);
 console.log('folded:', JSON.stringify(folded));
-// The base, lifted by the tree, with the weapon added to the result — and
-// the weapon's 고정 속성 (강철 검: 피해) scaling the lot.
+// 0.93: 플랫 (the base and the weapon's attack) × 증가 (강력) × 증폭 (the tree, the 강철 검's 고정 속성).
 const wantDamage = Math.round(
-  (folded.base * folded.passive.damageScale + folded.gear.attack) * folded.gear.damageScale,
+  (folded.base + folded.gear.attack) * (1 + folded.gear.damageIncrease) *
+    folded.passive.damageScale * folded.gear.damageAmplify * folded.scale,
 );
-check('패시브 lifts the skill, then 장비 is added to the result',
+check('the weapon’s attack joins the base, then 증가 and 증폭 multiply the lot',
   folded.damage === wantDamage,
-  `(${folded.base} x ${folded.passive.damageScale.toFixed(2)} + ${folded.gear.attack}) x ${folded.gear.damageScale} = ${folded.damage}`);
-check('and the sword is its tier’s attack, with 강력 added to the damage scale',
-  folded.gear.attack === folded.wantAttack && Math.abs(folded.gear.damageScale - folded.wantScale) < 1e-9,
-  `+${folded.gear.attack} ×${folded.gear.damageScale}, wanted +${folded.wantAttack} ×${folded.wantScale}`);
+  `(${folded.base} + ${folded.gear.attack}) x ${1 + folded.gear.damageIncrease} x ${folded.passive.damageScale.toFixed(2)} x ${folded.gear.damageAmplify} = ${folded.damage}`);
+check('and the sword is its tier’s attack, its 강력 and 고정 속성 added into one 증폭',
+  folded.gear.attack === folded.wantAttack && folded.gear.damageIncrease === folded.wantIncrease &&
+    Math.abs(folded.gear.damageAmplify - folded.wantAmplify) < 1e-9,
+  `+${folded.gear.attack}, 증가 +${folded.gear.damageIncrease}, 증폭 ×${folded.gear.damageAmplify}`);
 check('a saved 예리 and 재생 fall off the weapon instead of counting',
   JSON.stringify(folded.lines) === JSON.stringify(['mighty', 'giant']),
   folded.lines.join(' / '));
@@ -301,16 +305,19 @@ const stacked = await run(`
     after: s.damageOf('meleeStrike'),
     passive: s.mods.passive.damageScale,
     gear: s.mods.gear.attack,
-    gearScale: s.mods.gear.damageScale,
+    increase: s.mods.gear.damageIncrease,
+    amplify: s.mods.gear.damageAmplify,
+    scale: window.config.BALANCE.damageScale.meleeStrike ?? 1,
   };
 `);
 console.log('stacked:', JSON.stringify(stacked));
 check('picks within the run add up on the base, rather than compounding',
   Math.abs(stacked.stat - stacked.base * 2) < 1e-6,
   `${stacked.base} with five picks of +20% -> ${stacked.stat}`);
-check('and the layers multiply with each other',
-  stacked.after === Math.round((stacked.base * stacked.passive + stacked.gear) * stacked.gearScale * 2),
-  `(${stacked.base} x ${stacked.passive.toFixed(2)} + ${stacked.gear}) x ${stacked.gearScale} x 2 = ${stacked.after}`);
+// 0.93: 플랫 (기본 + 무기 공격력) × 증가 (picks + 강력, added) × 증폭 (패시브, 고정 속성, multiplied).
+check('damage is 플랫 × 증가 × 증폭: the picks and 강력 add, the passive multiplies',
+  stacked.after === Math.round((stacked.base + stacked.gear) * (2 + stacked.increase) * stacked.passive * stacked.amplify * stacked.scale),
+  `(${stacked.base} + ${stacked.gear}) x ${2 + stacked.increase} x ${stacked.passive.toFixed(2)} x ${stacked.amplify} = ${stacked.after}`);
 
 // --- 6. life over time comes only from a weapon's 활력 (0.88) ---
 // 재생 was taken off weapons and the tree never had it; 활력 is the one line

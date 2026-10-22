@@ -15,6 +15,36 @@ export interface PatchNote {
 
 export const PATCH_NOTES: readonly PatchNote[] = [
   {
+    version: '0.93',
+    date: '2026-10-22',
+    changes: {
+      ko: [
+        '피해 계산이 바뀌었습니다: (스킬 기본 피해 + 무기 공격력) × 증가 × 증폭. ‘증가’ 효과는 서로 더해지고, ‘증폭’ 효과는 서로 곱해집니다.',
+        '증가: 공격력 강화(이제 ‘피해 증가 +20%’). 증폭: 패시브 피해, 강력, 강철 검의 고정 속성, 얼음창 보유 효과(이제 ‘피해 증폭’으로 표기). 연쇄번개 각성과 낙뢰 감전도 증폭입니다. 한 무기 안의 강력과 고정 속성은 지금처럼 먼저 더해집니다.',
+        '무기 공격력이 이제 패시브 피해 증폭을 함께 받습니다.',
+        '처음 시작하는 플레이어의 복구 보상에서 오니고로시가 빠졌습니다. 오니고로시는 드랍으로만 얻습니다.',
+      ],
+      en: [
+        'Damage is now (the skill’s base damage + weapon attack) × increased × amplified. Increased effects add together; amplified effects multiply each other.',
+        'Increased: the damage upgrade (now “Increased damage +20%”). Amplified: the damage passive, Mighty, the Steel Sword’s implicit and Ice Spear’s held bonus (now marked “amplified”). Chain Lightning’s awakening and Thunderstrike’s shock are amplified too. One weapon’s Mighty and implicit still add up first.',
+        'Weapon attack now takes the damage passive’s amplify as well.',
+        'New players’ rollback gift no longer includes Onigoroshi: it only drops.',
+      ],
+      ja: [
+        'ダメージ計算が変わりました：(スキルの基本ダメージ + 武器の攻撃力) × 増加 × 増幅。「増加」の効果は互いに足し、「増幅」の効果は互いに掛けます。',
+        '増加：攻撃力強化（「ダメージ増加 +20%」に変更）。増幅：パッシブのダメージ、剛力、鋼の剣の固定属性、氷槍の保有効果（「ダメージ増幅」と表記）。連鎖雷の覚醒と落雷の感電も増幅です。1本の武器の剛力と固定属性はこれまで通り先に足されます。',
+        '武器の攻撃力もパッシブのダメージ増幅を受けるようになりました。',
+        '新しく始めるプレイヤーの復旧の補償から鬼殺しがなくなりました。鬼殺しはドロップでのみ手に入ります。',
+      ],
+      zh: [
+        '伤害计算调整为：(技能基础伤害 + 武器攻击力) × 增加 × 增幅。“增加”效果彼此相加，“增幅”效果彼此相乘。',
+        '增加：攻击力强化（改为“伤害增加 +20%”）。增幅：被动伤害、强力、钢剑的固定属性、冰枪的持有效果（标为“伤害增幅”）。连锁闪电的觉醒和落雷的感电也属于增幅。同一把武器上的强力和固定属性仍先相加。',
+        '武器攻击力现在也会受到被动伤害增幅的加成。',
+        '新玩家的回滚补偿不再包含鬼杀。鬼杀只能通过掉落获得。',
+      ],
+    },
+  },
+  {
     version: '0.92',
     date: '2026-10-22',
     changes: {

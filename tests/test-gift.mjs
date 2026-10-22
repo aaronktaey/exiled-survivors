@@ -51,17 +51,18 @@ const first = await ev(`(() => {
     bare: items.filter((it) => it.id === id).every((it) => it.prefixes.length === 0 && it.suffixes.length === 0) }));
   const orbs = Object.keys(c.ORBS).map((id) => [id, window.orbs.count(id)]);
   const p = window.passives;
-  return { pieces, orbs, each: g.orbsEach, flag: localStorage.getItem(c.STORAGE.rollbackGift),
+  return { pieces, oni: items.filter((it) => it.id === 'onigoroshi').length, orbs, each: g.orbsEach, flag: localStorage.getItem(c.STORAGE.rollbackGift),
            points: p.value.points, spent: p.spent, max: p.maxPoints,
            wantMax: Object.values(c.PASSIVES).reduce((sum, spec) => sum + spec.maxRank, 0) };
 })()`);
-check('the title gives every piece the gift names, bare (no 속성)',
-  first.pieces.length > 0 && first.pieces.every((p) => p.got === p.n && p.bare), JSON.stringify(first.pieces));
+// No 오니고로시 in it since 0.93 (the user's word): it only drops.
+check('the gift gives no sword at all — no 오니고로시 any more',
+  first.pieces.length === 0 && first.oni === 0, JSON.stringify(first));
 check('and ROLLBACK_GIFT.orbsEach of every 구슬', first.orbs.every(([, n]) => n === first.each), JSON.stringify(first.orbs));
 check('and passive points enough to fill every line to its maxRank (0.81)',
   first.max === first.wantMax && first.points + first.spent === first.max, JSON.stringify({ points: first.points, spent: first.spent, max: first.max }));
 check('and says so on the title in one toast, and marks it given',
-  toast.length === 1 && /오니고로시/.test(toast[0]) && new RegExp('패시브 포인트 ' + first.max + '점').test(toast[0]) && !!first.flag,
+  toast.length === 1 && !/오니고로시/.test(toast[0]) && /모든 구슬/.test(toast[0]) && new RegExp('패시브 포인트 ' + first.max + '점').test(toast[0]) && !!first.flag,
   JSON.stringify({ toast, flag: first.flag }));
 
 // --- once only ---
@@ -69,7 +70,7 @@ await toTitle();
 await sleep(1500);
 const again = await ev(`(() => ({ pieces: window.gear.items.filter((it) => it.id === 'onigoroshi').length,
   orb: window.orbs.count('chaos') }))()`);
-check('a second visit gives nothing more', again.pieces === first.pieces.find((p) => p.id === 'onigoroshi').n && again.orb === first.each,
+check('a second visit gives nothing more', again.pieces === 0 && again.orb === first.each,
   JSON.stringify(again));
 
 // --- 0.80's gift already had, ranks already bought: only what is missing comes ---
@@ -91,7 +92,7 @@ await sleep(1000);
 const topped = await ev(`(() => ({ points: window.passives.value.points, damage: window.passives.rankOf('damage'), max: window.passives.maxPoints,
   onigoroshi: window.gear.items.filter((it) => it.id === 'onigoroshi').length }))()`);
 check('a player who had the 0.80 gift gets the passive points alone: held + bought come to the max, ranks kept',
-  topped.points === topped.max - 3 && topped.damage === 3 && topped.onigoroshi === first.pieces.find((p) => p.id === 'onigoroshi').n &&
+  topped.points === topped.max - 3 && topped.damage === 3 && topped.onigoroshi === 0 &&
     toast2.length === 1 && !/오니고로시/.test(toast2[0]) && new RegExp('패시브 포인트 ' + (topped.max - 5) + '점').test(toast2[0]),
   JSON.stringify({ topped, toast2 }));
 

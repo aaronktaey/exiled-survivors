@@ -601,7 +601,7 @@ export const AFFIXES: Record<AffixId, AffixSpec> = {
     enemy: { damageScale: 1.5 },
     gearTiers: tiers(
       // Every skill's damage, not the weapon's attack alone.
-      (v) => `피해 +${v}%`,
+      (v) => `피해 증폭 +${v}%`,
       (v) => ({ damageScale: 1 + v / 100 }),
       [27, 24, 21, 17, 13, 9, 5],
     ),

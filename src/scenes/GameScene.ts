@@ -102,7 +102,7 @@ import {
   NO_MODIFIERS,
   attackSpeedFor,
   critMultiplierFor,
-  damageFor,
+  damageFor, damageParts,
   gearAttackSpeedFor,
   type RunModifiers,
 } from '@/systems/Modifiers';
@@ -1100,19 +1100,16 @@ export class GameScene extends Phaser.Scene {
     const runScale = (from: number, to: number): number => (from === 0 ? 1 : to / from);
 
     const scale = BALANCE.damageScale[skill] ?? 1;
+    // 플랫 × 증가 × 증폭 (0.93): the held 얼음창 is one more 증폭.
+    const layers = damageParts(skill, stats.damage, this.mods);
     const damageLine =
       fill(copy.formulaDamage, {
         damage,
-        base: num(base.damage),
-        passive: num(this.mods.passive.damageScale),
-        gear: num(this.mods.gear.attack),
-        run: num(runScale(base.damage, stats.damage)),
-      }) +
-      (this.gearBonus.damageScale === 1
-        ? ''
-        : fill(copy.formulaGearScale, { scale: num(this.gearBonus.damageScale) })) +
-      (scale === 1 ? '' : fill(copy.formulaScale, { scale: num(scale) })) +
-      (this.heldBonus.damageScale === 1 ? '' : fill(copy.formulaHeld, { scale: num(this.heldBonus.damageScale) }));
+        base: num(layers.base),
+        gear: num(layers.attack),
+        increase: num(layers.increase),
+        amplify: num(layers.amplify * this.heldBonus.damageScale),
+      }) + (scale === 1 ? '' : fill(copy.formulaScale, { scale: num(scale) }));
 
     const mango = this.player?.mangoActive ? MANGO.attackSpeedScale : 1;
     const rateLine =

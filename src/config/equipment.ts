@@ -133,7 +133,7 @@ export const GEAR: Record<GearId, GearSpec> = {
     name: '강철 검',
     weight: 2,
     fromKill: 0.0016,
-    implicit: { detail: '피해 +{value}', damageScale: 1.1 },
+    implicit: { detail: '피해 증폭 +{value}', damageScale: 1.1 },
   },
   ironSword: {
     id: 'ironSword',
@@ -220,7 +220,9 @@ export const STARTING_GEAR: GearId = 'rustySword';
  */
 export const ROLLBACK_GIFT = {
   enabled: true as boolean,
-  gear: { onigoroshi: 2 } as Partial<Record<GearId, number>>,
+  // No 오니고로시 since 0.93 (the user's word): it only drops. A browser that
+  // has not had the gift yet gets the 구슬 and the passive points alone.
+  gear: {} as Partial<Record<GearId, number>>,
   orbsEach: 10,
   /**
    * 0.81 (the user's word): passive points topped up, once, to what fills

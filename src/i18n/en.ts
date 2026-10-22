@@ -63,7 +63,7 @@ export const en: Strings = {
     line: 'Held — {effects}',
     critChance: 'crit chance +{n} pts',
     areaScale: 'area +{n}%',
-    damageScale: 'damage ×{n}',
+    damageScale: 'amplified damage ×{n}',
     attackSpeedScale: 'attack speed +{n}%',
     moveSpeedScale: 'move speed +{n}%',
     maxHpScale: 'max health +{n}%',
@@ -144,7 +144,7 @@ export const en: Strings = {
     never: 'defaults',
     hint: 'Press a dial to magnify · wheel to turn · ←→ pick ↑↓ adjust (Shift ×10) · Enter to magnify',
     fieldDetails: {
-      damage: '{skill}’s base damage per hit. Upgrades, gear, passives and held bonuses all multiply on top, so raising it lifts {skill}’s firepower by the same share all run.',
+      damage: '{skill}’s base damage per hit. The weapon’s attack is added, then increases (upgrades, added together) and amplifies (passive, Mighty, implicits, held skills — multiplied) multiply it, so raising it lifts {skill}’s firepower all run.',
       attackSpeed: '{skill}’s base attacks per second. 2 means one attack every 0.5s. Attack-speed upgrades, Frenzied and held bonuses multiply it.',
       range: '{skill}’s base reach in px: it only aims at enemies within it. A thrown skill’s reach grows with its shot speed.',
       projectileSpeed: 'How fast {skill}’s shots fly, in px/s. Faster lands sooner, and stretches the reach by the same share.',
@@ -194,6 +194,7 @@ export const en: Strings = {
     settings: 'Settings',
     gift: 'A gift for the rollback: {gear} and {orbs} of every orb',
     giftGear: '{count} × {name}',
+    giftOrbs: 'A gift for the rollback: {orbs} of every orb',
     giftPassives: 'A gift for the rollback: {points} passive points, enough to max every passive',
     gear: 'Inventory',
     guide: 'How to Play',
@@ -509,11 +510,10 @@ export const en: Strings = {
     level: 'Lv {level}',
     enemies: 'Enemies {count}',
     dps: 'DPS {dps}',
-    formulaDamage: 'Damage {damage} = (base {base} × passive {passive} + weapon {gear}) × upgrades {run}',
+    formulaDamage: 'Damage {damage} = (base {base} + weapon {gear}) × increased {increase} × amplified {amplify}',
     formulaRate: '{rate}/s = base {base} × passive {passive} × weapon {gear} × upgrades {run}',
     formulaMango: ' × mango {mango}',
     formulaScale: ' × balance {scale}',
-    formulaGearScale: ' × weapon damage {scale}',
     formulaHeld: ' × held skills {scale}',
     formulaCap: 'capped at {rate}/s (shortest cooldown)',
     formulaTargets: 'Targets {targets} = {parts}',
@@ -586,7 +586,7 @@ export const en: Strings = {
   },
 
   upgrades: {
-    damage: { label: 'Damage +{n}%', detail: '{skill} hits for {n}% more of its base damage' },
+    damage: { label: 'Increased damage +{n}%', detail: '{n}% is added to {skill}’s increased damage (increases add up; amplifies multiply)' },
     attackSpeed: { label: 'Attack speed +{n}%', detail: '{skill} attacks {n}% more often than its base rate' },
     range: { label: 'Range +{n}%', detail: '{skill} reaches {n}% further than its base range' },
     projectileSpeed: { label: 'Projectile speed +{n}%', detail: '{skill} flies {n}% faster than its base speed, and reaches as much further' },
@@ -642,7 +642,7 @@ export const en: Strings = {
     gearImplicits: {
       onigoroshi: '{value} chance to block enemy projectiles',
       runedSword: '+{value} projectile on skills',
-      steelSword: '+{value} damage',
+      steelSword: 'Amplified damage +{value}',
       ironSword: '+{value} attack speed',
       rustySword: '+{value} {skill} attack speed',
       narsil: 'Attack +{value}',
@@ -678,7 +678,7 @@ export const en: Strings = {
       spider: 'Leaves a web where it dies — -30% move speed for a minute',
     },
     affixGearDetails: {
-      mighty: 'Damage +{value}%',
+      mighty: 'Amplified damage +{value}%',
       critical: 'Base critical chance +{value}%',
       cruel: 'Critical damage +{value}%',
       frenzied: 'Attack speed +{value}%',
@@ -728,7 +728,7 @@ export const en: Strings = {
     },
     passives: { damage: 'Damage', attackSpeed: 'Attack speed', moveSpeed: 'Move speed', luck: 'Luck' },
     passiveDetails: {
-      damage: 'Damage +3%',
+      damage: 'Amplified damage +3%',
       attackSpeed: 'Attack speed +3%',
       moveSpeed: 'Move speed +1%',
       luck: 'Item drop rate +1%',
@@ -1066,6 +1066,7 @@ export const en: Strings = {
           lines: [
             'Every Boss drops a sword. Tier {fromKillTiers} swords also rarely drop from ordinary enemies.',
             'The lower a sword’s tier number, the stronger it is. Its attack power is added to every skill’s hit.',
+            'Damage is (the skill’s base damage + attack) × increased × amplified. Effects marked increased (upgrades) add together; effects marked amplified (passives, Mighty, implicits, held skills) multiply each other. One weapon’s Mighty and implicit add up first.',
             'Swords you pick up go to the stash; you equip them from the Inventory on the title screen.',
             'A sword can carry up to {maxPrefix} prefixes (offence) and {maxPrefix} suffixes (defence and movement). Each line is a {affixChance} roll, and every success rolls for another.',
             'The implicit is fixed by the kind of sword, and is always there however many prefixes and suffixes it has.',

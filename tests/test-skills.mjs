@@ -337,10 +337,9 @@ const dials = await run(`
 console.log('dials:', JSON.stringify(dials));
 check('enemy hp follows enemyHpScale', dials.hp === dials.configured,
   `hp=${dials.hp} at enemyHpScale=1 (configured maxHp=${dials.configured})`);
-// At a dial of 1 the base, lifted by the tree, plus whatever the sword in
-// hand adds — the same flat number on every skill — and then the run's own
-// picks over the lot (Modifiers.damageFor).
-const folded = (base, stat) => Math.round((base * dials.passive + dials.sword) * (stat / base));
+// At a dial of 1: the base plus the sword in hand's flat attack, then the
+// run's picks (a 증가) and the tree (an 증폭) over the lot — Modifiers.damageFor (0.93).
+const folded = (base, stat) => Math.round((base + dials.sword) * (stat / base) * dials.passive);
 check('damage is the stat plus the sword, at a dial of 1',
   dials.fire === folded(dials.fireBase, dials.fireStat) &&
     dials.melee === folded(dials.meleeBase, dials.meleeStat),
