@@ -15,6 +15,16 @@ export interface PatchNote {
 
 export const PATCH_NOTES: readonly PatchNote[] = [
   {
+    version: '0.100',
+    date: '2026-10-23',
+    changes: {
+      ko: ['드론이 더 작게 그려집니다. 공격과 범위는 그대로입니다.'],
+      en: ['Drones are drawn smaller. Their attacks and reach are unchanged.'],
+      ja: ['ドローンが小さく描かれるようになりました。攻撃と範囲は変わりません。'],
+      zh: ['无人机的外观变小了，攻击和范围不变。'],
+    },
+  },
+  {
     version: '0.99',
     date: '2026-10-23',
     changes: {

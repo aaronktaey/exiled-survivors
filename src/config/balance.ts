@@ -1296,8 +1296,8 @@ export const DRONE = {
   idleRadius: 34,
   /** How far off its enemy's edge it hovers. */
   hover: 26,
-  /** How big it is drawn. */
-  size: 18,
+  /** How big it is drawn. 18 until 0.100 — the user found a swarm of them too big. */
+  size: 12,
   /** How long a shot's tracer lingers, ms. */
   tracerMs: 90,
   /**

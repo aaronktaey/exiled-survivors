@@ -145,7 +145,8 @@ set takes about six minutes. One suite on its own: `node run-all.mjs test-gear`.
 2. `npx vite build`
 3. the full regression above, green
 4. a patch note in `src/content/patchNotes.ts`, **all four languages**, as a
-   **new version entry for every deploy** (0.20 → 0.21 → …). Write it by
+   **new version entry for every deploy** (0.20 → 0.21 → …; after 0.99
+   came 0.100, the user's pick — the version is only ever shown, never compared). Write it by
    comparing the previous version's notes — and `git diff` since the commit
    that shipped them — with the game as it now is: only the net change, in
    its final state. No line for something added and taken out again, no
@@ -510,7 +511,8 @@ Read `git log` for what changed and when. What is not in the log:
   (0.97, the user's pick, after DPS tables against 연쇄번개 and 화염구 with
   70% of drones shooting in a crowd: about 0.4–0.7 of 연쇄번개 there, about
   1.1× 화염구 on a lone enemy). It was 80 · 0.47 with 3 while tried. The look
-  holds a `remote` (LookProp). Its shot borrows 얼음창's clip. F11 (debug)
+  holds a `remote` (LookProp), and is drawn `DRONE.size` (12 since 0.100,
+  18 before). Its shot borrows 얼음창's clip. F11 (debug)
   takes the main skill straight to its next 각성.
 - **Trial skills (0.96).** `SKILL_TRIAL` (balance.ts) names skills offered
   only to listed account ids — the 드론, to the user's own (Taeyeon Kim,
