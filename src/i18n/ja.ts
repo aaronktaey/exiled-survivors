@@ -32,7 +32,7 @@ export const ja: Strings = {
   passives: {
     title: 'パッシブ',
     lead: '各能力値の欠片が落ちる確率を上げます',
-    chance: 'ドロップ率 {pct}%',
+    chance: '{pct}% 増加',
     reset: 'リセット',
     pointsOf: 'ポイント {points} / {total}',
     points: 'ポイント {points}',

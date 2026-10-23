@@ -9,7 +9,6 @@ import {
   PASSIVES,
   SCENES,
   SCRIM,
-  TALENT_SHARD,
   TEXT,
   type PassiveId,
 } from '@/config';
@@ -32,7 +31,7 @@ interface PassiveKnob {
   /** The ranks it holds, inside the ring (no cap of its own since 0.102: the ring fills against every point). */
   readonly rank: Phaser.GameObjects.Text;
   readonly name: Phaser.GameObjects.Text;
-  /** Its shard's drop chance off a kill, now. */
+  /** How much more often its shard drops, now: "15% 증가". */
   readonly chance: Phaser.GameObjects.Text;
   readonly hit: Phaser.GameObjects.Arc;
   readonly minus: Phaser.GameObjects.Text;
@@ -270,8 +269,9 @@ export class PassiveScene extends Phaser.Scene {
         g.strokeCircle(knob.x, knob.y, radius + PASSIVE_DIALS.ringWidth + 3);
       }
       knob.rank.setText(String(rank));
-      // Its shard's drop chance off a kill, as the tree has it now.
-      knob.chance.setText(fill(copy.chance, { pct: Number((TALENT_SHARD.chance * weights[spec.shardStat] * 100).toFixed(4)) }));
+      // How much more often its shard drops, as the tree has it now (0.103:
+      // the user's word — the increase, not the chance itself).
+      knob.chance.setText(fill(copy.chance, { pct: Math.round((weights[spec.shardStat] - 1) * 100) }));
       knob.plus.setAlpha(buyable ? 1 : 0.35);
       knob.minus.setAlpha(rank > 0 ? 1 : 0.35);
       knob.name.setColor(focused ? COLORS.accent : COLORS.text);

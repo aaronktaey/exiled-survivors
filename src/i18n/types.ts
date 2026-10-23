@@ -85,7 +85,7 @@ export interface Strings {
 
   readonly passives: {
     readonly title: string;
-    /** 0.102's dial screen: what the lines do, a stat's chance, the reset, points of the whole. */
+    /** 0.102's dial screen: what the lines do, how much more often a stat's shard drops ({pct}), the reset, points of the whole. */
     readonly lead: string;
     readonly chance: string;
     readonly reset: string;

@@ -111,11 +111,10 @@ const dials = `[...s.knobs.values()].map(k => ({ id: k.id, rank: k.rank.text, ch
 const screen = await scene('PassiveScene', `return { dials: ${dials}, purse: s.purse.text, width: s.scale.width, height: s.scale.height,
   tree: 'treeCam' in s || 'nodes' in s };`);
 console.log('dials:', JSON.stringify(screen));
-// Under each dial, its shard's drop rate off a kill: TALENT_SHARD.chance at no ranks.
-const baseRate = await ev('window.config.TALENT_SHARD.chance');
-const rateText = (mult) => String(Number((baseRate * mult * 100).toFixed(4)));
-check('패시브 is a grid of dials, one a line, each at 0 and its shard’s plain drop rate — no tree',
-  screen.dials.length === fresh.lines.length && screen.dials.every((d) => d.rank === '0' && d.chance.includes(rateText(1))) && !screen.tree,
+// Under each dial, how much more often its shard drops (0.103: the increase, not the chance).
+const rateText = (mult) => `${Math.round((mult - 1) * 100)}% 증가`;
+check('패시브 is a grid of dials, one a line, each at 0 and 0% 증가 — no tree, no raw drop chance',
+  screen.dials.length === fresh.lines.length && screen.dials.every((d) => d.rank === '0' && d.chance === rateText(1)) && !screen.tree,
   screen.dials.map((d) => `${d.id} ${d.rank} ${d.chance}`).join(' / '));
 check('every dial sits on the screen, and the purse reads every point',
   screen.dials.every((d) => d.x > 0 && d.x < screen.width && d.y > 0 && d.y < screen.height) && /30 \/ 30/.test(screen.purse),
@@ -128,7 +127,7 @@ const spent = await scene('PassiveScene', `
 `);
 const want = rateText(1 + 3 * fresh.lines[0].per);
 check('a press puts a point in: the rank, the purse and that shard’s drop rate go up',
-  spent.rank === 3 && spent.points === 27 && spent.dials[0].rank === '3' && spent.dials[0].chance.includes(want),
+  spent.rank === 3 && spent.points === 27 && spent.dials[0].rank === '3' && spent.dials[0].chance === want,
   `${spent.dials[0].rank} ${spent.dials[0].chance} (want ${want}%), ${spent.purse}`);
 const back = await scene('PassiveScene', `s.refund('${first}'); return { points: window.passives.value.points, rank: window.passives.rankOf('${first}') };`);
 check('its − takes one back', back.rank === 2 && back.points === 28, JSON.stringify(back));

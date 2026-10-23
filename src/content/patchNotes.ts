@@ -15,6 +15,16 @@ export interface PatchNote {
 
 export const PATCH_NOTES: readonly PatchNote[] = [
   {
+    version: '0.103',
+    date: '2026-10-23',
+    changes: {
+      ko: ['패시브 다이얼 아래에 파편의 드랍률 대신 얼마나 올랐는지(예: 50% 증가)가 표시됩니다.'],
+      en: ['Under each passive dial, how much more often its shard drops (e.g. +50% drops) is shown instead of the drop rate itself.'],
+      ja: ['パッシブのダイヤルの下に、欠片のドロップ率の代わりにどれだけ上がったか（例：50% 増加）が表示されます。'],
+      zh: ['被动拨盘下方改为显示碎片掉落率提高了多少（例如：提高 50%），不再显示掉落率本身。'],
+    },
+  },
+  {
     version: '0.102',
     date: '2026-10-23',
     changes: {

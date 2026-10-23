@@ -32,7 +32,7 @@ export const en: Strings = {
   passives: {
     title: 'Passives',
     lead: 'Raises how often each stat’s shard drops',
-    chance: '{pct}% drop rate',
+    chance: '+{pct}% drops',
     reset: 'Reset',
     pointsOf: '{points} / {total} points',
     points: '{points} points',

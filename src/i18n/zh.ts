@@ -32,7 +32,7 @@ export const zh: Strings = {
   passives: {
     title: '被动',
     lead: '提高各项能力碎片的掉落几率',
-    chance: '掉落率 {pct}%',
+    chance: '提高 {pct}%',
     reset: '重置',
     pointsOf: '点数 {points} / {total}',
     points: '点数 {points}',
