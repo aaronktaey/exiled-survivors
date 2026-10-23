@@ -593,7 +593,9 @@ Read `git log` for what changed and when. What is not in the log:
   `shardBonusFor`: damage and attack speed as `RunModifiers.shard` (an 증폭,
   where the tree's layer sat in Modifiers), move speed and max health on
   `Player.applyShards`, area into `GameScene.areaScale`, regen in
-  `regenerate`; `Hud.setShards` writes the sum top left. A level-up with the
+  `regenerate`; the HUD shows them as one effect icon (`effectsNow`, id
+  `shard`: the count in its corner — `EffectEntry.count` — and each stat's
+  total on its card; 0.102's line of text went in 0.106). A level-up with the
   main skill maxed, or a 무작위 스킬 whose every option is maxed, is a
   `'shard'` choice: `openShardPick` shows `choices` of the stats, evenly,
   through UpgradeScene (its cards are any `ChoiceCard` since 0.102). The
@@ -716,8 +718,9 @@ Read `git log` for what changed and when. What is not in the log:
   hand — the user once reported the design itself as a swap that did not
   take.
 - **What acts on the survivor is on the HUD.** `GameScene.effectsNow()`
-  hands `Hud.update` an `EffectEntry` list — 장비 (`runGear`), 패시브, each
-  뼈다귀 (built once a run), then 하얀 망고 and 거미줄 while they last — drawn
+  hands `Hud.update` an `EffectEntry` list — 장비 (`runGear`), each 뼈다귀
+  (built once a run), then the 재능의 파편 held (0.106; the 패시브 icon went
+  then, the user's ask), 하얀 망고 and 거미줄 while they last — drawn
   as icons left of the skills (`HUD.effectSlot`, buff/debuff edges in
   `HUD.effectEdge`), or on a row under them when that would run into the
   clock. Pointing at one opens the skills' card and the same hold

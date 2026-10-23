@@ -7,7 +7,6 @@ import {
   SKILL_ICONS,
   TEXT,
   TEXTURES,
-  TALENT_SHARD_FX,
 } from '@/config';
 import { fill, heldBonusText, masteryText, t } from '@/i18n';
 import type { Progression } from '@/systems/Progression';
@@ -40,12 +39,17 @@ export interface EffectEntry {
   /** The card: a heading, then a line each. */
   readonly title: string;
   readonly lines: readonly string[];
+  /** A number in the icon's corner (the 재능의 파편 held, 0.106). */
+  readonly count?: number;
+  /** A tint for an icon drawn pale to be coloured (the shard's). */
+  readonly tint?: number;
 }
 
 /** One effect's icon. */
 interface EffectSlot {
   readonly plate: Phaser.GameObjects.Rectangle;
   readonly icon: Phaser.GameObjects.Image;
+  readonly count: Phaser.GameObjects.Text;
 }
 
 /** One skill in the bar. */
@@ -101,7 +105,6 @@ export class Hud {
   /** The hover card, and what it says. Public for tests. */
   public readonly card: Phaser.GameObjects.Rectangle;
   public readonly cardText: Phaser.GameObjects.Text;
-  private readonly shardLabel: Phaser.GameObjects.Text;
   private readonly clockLabel: Phaser.GameObjects.Text;
   private readonly enemiesLabel: Phaser.GameObjects.Text;
   private readonly progression: Progression;
@@ -201,7 +204,13 @@ export class Hud {
           this.pointEffect(-1);
         }
       });
-      this.effectSlots.push({ plate, icon });
+      const count = scene.add
+        .text(0, 0, '', { fontFamily: 'system-ui, sans-serif', fontSize: TEXT.size.hint, color: COLORS.text, stroke: TEXT.outline.color, strokeThickness: 3 })
+        .setOrigin(1, 1)
+        .setScrollFactor(0)
+        .setDepth(DEPTH.ui + 2)
+        .setVisible(false);
+      this.effectSlots.push({ plate, icon, count });
     }
 
     this.card = scene.add
@@ -220,21 +229,6 @@ export class Hud {
       })
       .setScrollFactor(0)
       .setDepth(DEPTH.ui + 6)
-      .setVisible(false);
-
-    // 재능의 파편 (0.102): what the run's shards add up to, under the icons on the left.
-    this.shardLabel = scene.add
-      .text(this.rowLeft, this.rowTop, '', {
-        fontFamily: 'system-ui, sans-serif',
-        fontSize: TEXT.size.small,
-        color: TALENT_SHARD_FX.text,
-        stroke: TEXT.outline.color,
-        strokeThickness: 3,
-        wordWrap: { width: Math.max(160, Math.min(this.viewWidth * 0.45, 360)) },
-        lineSpacing: 2,
-      })
-      .setScrollFactor(0)
-      .setDepth(DEPTH.ui)
       .setVisible(false);
 
     this.clockLabel = scene.add
@@ -281,16 +275,6 @@ export class Hud {
   }
 
   /** Starts the clock partway in, when a saved run is resumed. */
-  /** The run's 재능의 파편 summed up, or nothing while it has none (0.102). */
-  public setShards(text: string): void {
-    this.shardLabel.setText(text).setVisible(text.length > 0);
-  }
-
-  /** The shard line, for tests. */
-  public get shardText(): string {
-    return this.shardLabel.visible ? this.shardLabel.text : '';
-  }
-
   public seed(elapsedMs: number): void {
     this.elapsedMs = elapsedMs;
   }
@@ -309,11 +293,20 @@ export class Hud {
       const entry = effects[i];
       slot.plate.setVisible(entry !== undefined);
       slot.icon.setVisible(entry !== undefined);
+      slot.count.setVisible(entry?.count !== undefined);
       if (!entry) {
         return;
       }
       if (slot.icon.texture.key !== entry.icon) {
         slot.icon.setTexture(entry.icon).setDisplaySize(EFFECT - 6, EFFECT - 6);
+      }
+      if (entry.tint === undefined) {
+        slot.icon.clearTint();
+      } else {
+        slot.icon.setTint(entry.tint);
+      }
+      if (entry.count !== undefined) {
+        slot.count.setText(String(entry.count));
       }
       const edge = entry.kind === 'buff' || entry.kind === 'debuff' ? HUD.effectEdge[entry.kind] : COLORS.panelEdge;
       slot.plate.setStrokeStyle(entry.kind === 'buff' || entry.kind === 'debuff' ? 2 : 1, edge, 1);
@@ -389,10 +382,8 @@ export class Hud {
       const x = this.rowLeft + EFFECT / 2 + i * (EFFECT + HUD.effectGap);
       slot.plate.setPosition(x, effectY);
       slot.icon.setPosition(x, effectY);
+      slot.count.setPosition(x + EFFECT / 2 - 1, effectY + EFFECT / 2 + 1);
     });
-    // Under whichever row is lowest; the skills' level numbers hang a little below theirs.
-    const bottom = beside || effects === 0 ? this.rowTop + SLOT : effectY + EFFECT / 2;
-    this.shardLabel.setPosition(this.rowLeft, bottom + 12);
   }
 
   /**

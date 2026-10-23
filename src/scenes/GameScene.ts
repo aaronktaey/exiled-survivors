@@ -2,7 +2,6 @@ import Phaser from 'phaser';
 
 import {
   AFFIXES,
-  ALL_PASSIVES,
   BALANCE,
   BONES,
   AFFIX_TIMING,
@@ -56,8 +55,6 @@ import {
   gearTitle,
   masteryText,
   orbName,
-  passiveDetail,
-  passiveName,
   skillName,
   t,
 } from '@/i18n';
@@ -728,6 +725,18 @@ export class GameScene extends Phaser.Scene {
     }
     const out = [...this.lastingEffects];
     const copy = t().hud;
+    // 재능의 파편 (0.106: an icon with the count, in place of 0.102's line of text).
+    const held = TALENT_SHARD.stats.reduce((sum, stat) => sum + this.shards[stat], 0);
+    if (held > 0) {
+      const shard = t().shard;
+      out.push({
+        id: 'shard', kind: 'buff', icon: TEXTURES.talentShard, tint: TALENT_SHARD_FX.tint.attackSpeed, count: held,
+        title: fill(shard.hud, { count: held, list: '' }).replace(/\s*·\s*$/, ''),
+        lines: TALENT_SHARD.stats
+          .filter((stat) => this.shards[stat] > 0)
+          .map((stat) => fill(shard.gain[stat], GameScene.shardValues(this.shards[stat]))),
+      });
+    }
     if (this.player.mangoLeftMs > 0) {
       out.push({
         id: 'mango', kind: 'buff', icon: TEXTURES.mango, title: t().filter.items.mango,
@@ -744,7 +753,6 @@ export class GameScene extends Phaser.Scene {
   }
 
   private buildLastingEffects(): EffectEntry[] {
-    const copy = t().hud;
     const out: EffectEntry[] = [];
     const item = this.runGear;
     if (item && GEAR[item.id]) {
@@ -756,15 +764,7 @@ export class GameScene extends Phaser.Scene {
       ].filter(Boolean);
       out.push({ id: 'gear', kind: 'gear', icon: gearTexture(item.id), title: gearTitle(item), lines });
     }
-    const bought = ALL_PASSIVES.filter((spec) => passives.rankOf(spec.id) > 0);
-    if (bought.length > 0) {
-      out.push({
-        id: 'passive', kind: 'passive', icon: TEXTURES.passive, title: copy.effectPassive,
-        lines: bought.map((spec) =>
-          fill(copy.effectPassiveLine, { name: passiveName(spec.id), rank: passives.rankOf(spec.id), detail: passiveDetail(spec.id) }),
-        ),
-      });
-    }
+    // No 패시브 icon since 0.106 (the user's ask): the tree only weighs the shards now.
     for (const id of this.bones) {
       const bone = BONES[id];
       if (bone) {
@@ -1516,12 +1516,6 @@ export class GameScene extends Phaser.Scene {
     this.shardBonus = shardBonusFor(this.shards);
     this.mods = { ...this.mods, shard: { damage: this.shardBonus.damage, attackSpeed: this.shardBonus.attackSpeed } };
     this.player.applyShards({ moveSpeedScale: this.shardBonus.moveSpeed, maxHpScale: this.shardBonus.maxHp });
-    const copy = t().shard;
-    const parts = TALENT_SHARD.stats
-      .filter((stat) => this.shards[stat] > 0)
-      .map((stat) => fill(copy.short[stat], GameScene.shardValues(this.shards[stat])));
-    const total = TALENT_SHARD.stats.reduce((sum, stat) => sum + this.shards[stat], 0);
-    this.hud.setShards(total > 0 ? fill(copy.hud, { count: total, list: parts.join(' · ') }) : '');
   }
 
   /**

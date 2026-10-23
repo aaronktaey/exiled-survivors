@@ -130,7 +130,11 @@ try {
     const hp0 = p.hp;
     for (let t = 0; t < C.TALENT_SHARD.regenEveryMs + 100; t += 50) s.regenerate(50);
     return { before, after, healed: p.hp - hp0, amp: C.TALENT_SHARD.amplify, regen: C.TALENT_SHARD.regen,
-      hud: s.hud.shardText, shards: s.shards };
+      shards: s.shards,
+      // 0.106: an icon on the left of the HUD, the count in its corner, the card listing each stat — and no 패시브 icon.
+      icon: (() => { s.hud.update(0, 0, s.loadout(), s.effectsNow()); const effects = s.effectsNow(); const e = effects.find((x) => x.id === 'shard');
+        const i = effects.indexOf(e); const slot = s.hud.effectSlots[i];
+        return e ? { count: e.count, lines: e.lines, shown: slot?.icon.visible, corner: slot?.count.text, passive: effects.some((x) => x.id === 'passive') } : null; })() };
   `);
   console.log('acts:', JSON.stringify(acts));
   const near = (a, b) => Math.abs(a - b) < 1e-6;
@@ -140,7 +144,10 @@ try {
     JSON.stringify({ before: acts.before, after: acts.after }));
   check('체력회복 gives its health back every TALENT_SHARD.regenEveryMs', acts.healed === acts.regen, `healed ${acts.healed}`);
   const held = Object.values(acts.shards).reduce((sum, n) => sum + n, 0);
-  check('the HUD sums them up top left', acts.hud.includes(`재능의 파편 ${held}개`) && /범위 \+2%/.test(acts.hud) && /회복 \+1/.test(acts.hud), acts.hud);
+  check('the HUD shows them as one icon on the left, the count in its corner, its card each stat’s total — no 패시브 icon',
+    !!acts.icon && acts.icon.count === held && acts.icon.shown && acts.icon.corner === String(held) && !acts.icon.passive &&
+      acts.icon.lines.some((l) => /효과범위 증폭 \+2%/.test(l)) && acts.icon.lines.some((l) => /체력 \+1/.test(l)),
+    JSON.stringify(acts.icon));
   await shot('shard-01-hud');
 
   // --- 5. a maxed main skill: its level-up is 재능의 파편 cards, three, even, and taking one is a shard ---

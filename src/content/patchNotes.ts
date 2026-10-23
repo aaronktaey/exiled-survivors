@@ -15,6 +15,24 @@ export interface PatchNote {
 
 export const PATCH_NOTES: readonly PatchNote[] = [
   {
+    version: '0.106',
+    date: '2026-10-23',
+    changes: {
+      ko: [
+        '전투 중 왼쪽 위의 패시브 효과 아이콘이 없어지고, 재능의 파편 합계가 글자 대신 아이콘으로 표시됩니다. 아이콘 모서리에 모은 개수가 나오고, 가리키면 능력치별 합계를 볼 수 있습니다.',
+      ],
+      en: [
+        'The passive effect icon at the top left of the battle is gone, and your Talent Shards are shown as an icon instead of a line of text: the count in its corner, and each stat’s total when you point at it.',
+      ],
+      ja: [
+        '戦闘中の左上のパッシブ効果アイコンがなくなり、才能の欠片の合計が文字の代わりにアイコンで表示されます。アイコンの角に集めた数が出て、指すと能力値ごとの合計を見られます。',
+      ],
+      zh: [
+        '战斗中左上角的被动效果图标被移除，天赋碎片总计改为以图标显示：图标角落显示已收集的数量，指向图标可查看各能力的总计。',
+      ],
+    },
+  },
+  {
     version: '0.105',
     date: '2026-10-23',
     changes: {
