@@ -35,7 +35,7 @@ export const ko: Strings = {
 
   passives: {
     title: '패시브',
-    lead: '각 능력치 파편이 떨어질 확률을 높입니다',
+    lead: '재능의 파편이 떨어질 때 각 능력치 파편이 나올 확률을 높입니다',
     chance: '{pct}% 증가',
     reset: '초기화',
     pointsOf: '포인트 {points} / {total}',

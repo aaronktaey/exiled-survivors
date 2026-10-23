@@ -1501,12 +1501,12 @@ export const UNKNOWN_RUNE: { readonly from: EnemyKind; readonly chance: number; 
 export type ShardStat = 'damage' | 'attackSpeed' | 'moveSpeed' | 'maxHp' | 'area' | 'regen';
 
 /**
- * ★ 재능의 파편 (0.102, the user's ask): one shard a stat — 피해량 파편,
- * 공격속도 파편 and so on — each rolled on its own off every kill at
- * `chance` (they do not share it), raised only by the passive tree's line
- * for it (passives.ts: +5% of the chance a rank) and nothing else; a 도망자
- * or a 키메라 always leaves one (`guaranteedShard`), its stat weighed by
- * the same lines. Each gives the run `amplify` more damage, attack speed,
+ * ★ 재능의 파편 (0.102, the user's ask): one roll off every kill at `chance`
+ * (0.104: shared by every stat again, and 0.5%) — nothing raises it — and
+ * when it lands, which stat's shard it is (피해량 파편, 공격속도 파편 …) is
+ * weighed by the passive tree's lines (passives.ts: each rank +5% of that
+ * stat's weight, so the others come up less). A 도망자 or a 키메라 always
+ * leaves one (`guaranteedShard`), weighed the same. Each gives the run `amplify` more damage, attack speed,
  * move speed, max health or area (each an 증폭, its shards added), or
  * `regen` health every `regenEveryMs`. Once the main skill (a level-up) or
  * every skill on offer (a 무작위 스킬) is maxed, `choices` cards of the
@@ -1515,7 +1515,7 @@ export type ShardStat = 'damage' | 'attackSpeed' | 'moveSpeed' | 'maxHp' | 'area
  * GROUND_ITEM.lifespanMs.
  */
 export const TALENT_SHARD = {
-  chance: 0.001,
+  chance: 0.005,
   stats: ['damage', 'attackSpeed', 'moveSpeed', 'maxHp', 'area', 'regen'] as readonly ShardStat[],
   amplify: 0.01,
   regen: 1,

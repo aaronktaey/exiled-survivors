@@ -103,7 +103,7 @@ export interface CombatHooks {
   readonly onUnknownRuneCollected: () => void;
   /** A 재능의 파편 taken (0.102): what it gives. */
   readonly onTalentShardCollected: (stat: ShardStat) => void;
-  /** What a stat's shard's drop chance is multiplied by: the passive tree's line for it. */
+  /** A stat's weight when a shard lands: the passive tree's line for it. */
   readonly shardWeight: (stat: ShardStat) => number;
   /** Called when the player walks over a 무작위 스킬: offer the cards. */
   readonly onRandomSkillCollected: () => void;
@@ -289,6 +289,13 @@ export class CombatSystem {
 
     drop.drop(x, y);
     this.land(drop, itemFilter.shows('mango'), 'mythic', true);
+  }
+
+  /** Which stat a 재능의 파편 that lands is: each weighed by the passive tree's line for it. Public for tests. */
+  public rollShardStat(): ShardStat {
+    const total = TALENT_SHARD.stats.reduce((sum, stat) => sum + this.hooks.shardWeight(stat), 0);
+    let roll = Math.random() * total;
+    return TALENT_SHARD.stats.find((stat) => (roll -= this.hooks.shardWeight(stat)) < 0) ?? TALENT_SHARD.stats[0]!;
   }
 
   /** Places a 재능의 파편 of a stat directly — used by the kill roll and by tests. */
@@ -860,21 +867,10 @@ export class CombatSystem {
       this.dropUnknownRuneAt(x, y - 36);
     }
 
-    // 재능의 파편 (0.102): each stat's its own roll, as flat as the 망고 but for
-    // the tree's line for it — and one certain off a 도망자 or a 키메라, its
-    // stat weighed by the same lines.
-    let shards = 0;
-    for (const stat of TALENT_SHARD.stats) {
-      if (Math.random() < TALENT_SHARD.chance * this.hooks.shardWeight(stat)) {
-        this.dropTalentShardAt(x - 18 + shards * 14, y + 18, stat);
-        shards += 1;
-      }
-    }
-    if (certainShard && shards === 0) {
-      const total = TALENT_SHARD.stats.reduce((sum, stat) => sum + this.hooks.shardWeight(stat), 0);
-      let roll = Math.random() * total;
-      const stat = TALENT_SHARD.stats.find((s) => (roll -= this.hooks.shardWeight(s)) < 0) ?? TALENT_SHARD.stats[0]!;
-      this.dropTalentShardAt(x - 18, y + 18, stat);
+    // 재능의 파편 (0.104): one roll for them all, as flat as the 망고 — and
+    // certain off a 도망자 or a 키메라. Which stat it is, the tree weighs.
+    if (certainShard || Math.random() < TALENT_SHARD.chance) {
+      this.dropTalentShardAt(x - 18, y + 18, this.rollShardStat());
     }
 
     // 자석: as rare as the 망고, and as flat.

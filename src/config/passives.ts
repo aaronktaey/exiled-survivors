@@ -5,8 +5,9 @@ import type { ShardStat } from '@/config/balance';
  * of the lines below, and the ranks stack.
  *
  * Since 0.102 (the user's ask) every line is a 재능의 파편 line: each rank
- * raises its stat's shard's drop chance by `shardWeight` of it (ten ranks of
- * +5%: 1.5 × TALENT_SHARD.chance). No line has a cap of its own
+ * adds `shardWeight` to its stat's weight when a shard lands (ten ranks of
+ * +5%: 1.5 against the others' 1 — it comes up more, they come up less;
+ * 0.104, the user's word: the drop chance itself is shared and not raised). No line has a cap of its own
  * (the user's word): any can take every point there is. Every player holds
  * PASSIVE_POINTS in all, nothing earns more, and a tree from before is
  * started over (PASSIVE_SCHEME): its damage, attack speed, move speed and
@@ -34,7 +35,7 @@ export interface PassiveSpec {
   readonly maxRank: number;
   /** The line it hangs from, and the ranks that one needs before this opens. Without it, it hangs from the root. */
   readonly requires?: { readonly id: PassiveId; readonly rank: number };
-  /** The 재능의 파편 whose drop chance it raises, and by how much a rank (a share of that chance). */
+  /** The 재능의 파편 stat it makes likelier when a shard lands, and by how much a rank (a share of its weight). */
   readonly shardStat: ShardStat;
   readonly shardWeight: number;
 }
@@ -42,7 +43,7 @@ export interface PassiveSpec {
 const shardLine = (id: PassiveId, stat: ShardStat, name: string): PassiveSpec => ({
   id,
   name: `${name} 파편`,
-  detail: `${name} 파편 드랍률 +5%`,
+  detail: `${name} 파편 등장 확률 +5%`,
   // No cap but the points themselves.
   maxRank: PASSIVE_POINTS,
   shardStat: stat,

@@ -10,9 +10,9 @@ export interface PassiveState {
   readonly ranks: Partial<Record<PassiveId, number>>;
 }
 
-/** What the tree is worth: since 0.102, only how often each 재능의 파편 drops. */
+/** What the tree is worth: since 0.102, only which 재능의 파편 a dropped one is likelier to be. */
 export interface PassiveBonus {
-  /** What each stat's shard's drop chance is multiplied by: 1, plus each rank's share. */
+  /** Each stat's weight when a shard lands: 1, plus each rank's share. */
   readonly shardWeights: Readonly<Record<ShardStat, number>>;
 }
 
@@ -26,8 +26,8 @@ const fresh = (): PassiveState => ({ scheme: PASSIVE_SCHEME, points: PASSIVE_POI
 type Listener = (state: PassiveState) => void;
 
 /**
- * What a set of ranks adds up to: each line's ranks add to its shard's
- * multiplier (ten ranks of +5% make it 1.5).
+ * What a set of ranks adds up to: each line's ranks add to its stat's
+ * weight (ten ranks of +5% make it 1.5 against the others' 1).
  */
 export function passiveBonusFor(ranks: PassiveState['ranks']): PassiveBonus {
   const shardWeights = evenWeights();

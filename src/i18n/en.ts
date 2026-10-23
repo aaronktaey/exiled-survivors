@@ -31,8 +31,8 @@ export const en: Strings = {
 
   passives: {
     title: 'Passives',
-    lead: 'Raises how often each stat’s shard drops',
-    chance: '+{pct}% drops',
+    lead: 'Makes each stat’s shard likelier when a Talent Shard drops',
+    chance: '+{pct}% chance',
     reset: 'Reset',
     pointsOf: '{points} / {total} points',
     points: '{points} points',
@@ -756,12 +756,12 @@ export const en: Strings = {
     },
     passives: { shardDamage: 'Damage shard', shardAttackSpeed: 'Attack speed shard', shardMoveSpeed: 'Move speed shard', shardMaxHp: 'Max health shard', shardArea: 'Area shard', shardRegen: 'Regeneration shard' },
     passiveDetails: {
-      shardDamage: 'Damage shard drop rate +5%',
-      shardAttackSpeed: 'Attack speed shard drop rate +5%',
-      shardMoveSpeed: 'Move speed shard drop rate +5%',
-      shardMaxHp: 'Max health shard drop rate +5%',
-      shardArea: 'Area shard drop rate +5%',
-      shardRegen: 'Regeneration shard drop rate +5%',
+      shardDamage: 'Damage shard chance +5%',
+      shardAttackSpeed: 'Attack speed shard chance +5%',
+      shardMoveSpeed: 'Move speed shard chance +5%',
+      shardMaxHp: 'Max health shard chance +5%',
+      shardArea: 'Area shard chance +5%',
+      shardRegen: 'Regeneration shard chance +5%',
     },
   },
 

@@ -31,7 +31,7 @@ interface PassiveKnob {
   /** The ranks it holds, inside the ring (no cap of its own since 0.102: the ring fills against every point). */
   readonly rank: Phaser.GameObjects.Text;
   readonly name: Phaser.GameObjects.Text;
-  /** How much more often its shard drops, now: "15% 증가". */
+  /** How much likelier its shard is when one lands, now: "15% 증가". */
   readonly chance: Phaser.GameObjects.Text;
   readonly hit: Phaser.GameObjects.Arc;
   readonly minus: Phaser.GameObjects.Text;
@@ -269,8 +269,8 @@ export class PassiveScene extends Phaser.Scene {
         g.strokeCircle(knob.x, knob.y, radius + PASSIVE_DIALS.ringWidth + 3);
       }
       knob.rank.setText(String(rank));
-      // How much more often its shard drops, as the tree has it now (0.103:
-      // the user's word — the increase, not the chance itself).
+      // How much likelier its shard is when one lands, as the tree has it now
+      // (0.103: the increase, not the chance itself).
       knob.chance.setText(fill(copy.chance, { pct: Math.round((weights[spec.shardStat] - 1) * 100) }));
       knob.plus.setAlpha(buyable ? 1 : 0.35);
       knob.minus.setAlpha(rank > 0 ? 1 : 0.35);

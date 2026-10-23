@@ -31,7 +31,7 @@ export const ja: Strings = {
 
   passives: {
     title: 'パッシブ',
-    lead: '各能力値の欠片が落ちる確率を上げます',
+    lead: '才能の欠片が落ちるとき、各能力値の欠片が出る確率を上げます',
     chance: '{pct}% 増加',
     reset: 'リセット',
     pointsOf: 'ポイント {points} / {total}',
@@ -756,12 +756,12 @@ export const ja: Strings = {
     },
     passives: { shardDamage: 'ダメージの欠片', shardAttackSpeed: '攻撃速度の欠片', shardMoveSpeed: '移動速度の欠片', shardMaxHp: '最大体力の欠片', shardArea: '効果範囲の欠片', shardRegen: '体力回復の欠片' },
     passiveDetails: {
-      shardDamage: 'ダメージの欠片のドロップ率 +5%',
-      shardAttackSpeed: '攻撃速度の欠片のドロップ率 +5%',
-      shardMoveSpeed: '移動速度の欠片のドロップ率 +5%',
-      shardMaxHp: '最大体力の欠片のドロップ率 +5%',
-      shardArea: '効果範囲の欠片のドロップ率 +5%',
-      shardRegen: '体力回復の欠片のドロップ率 +5%',
+      shardDamage: 'ダメージの欠片の出現確率 +5%',
+      shardAttackSpeed: '攻撃速度の欠片の出現確率 +5%',
+      shardMoveSpeed: '移動速度の欠片の出現確率 +5%',
+      shardMaxHp: '最大体力の欠片の出現確率 +5%',
+      shardArea: '効果範囲の欠片の出現確率 +5%',
+      shardRegen: '体力回復の欠片の出現確率 +5%',
     },
   },
 

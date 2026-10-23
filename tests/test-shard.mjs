@@ -1,5 +1,5 @@
-// 재능의 파편 (0.102): one shard a stat, each on its own roll that the passive
-// tree raises, never pulled in (only the 자석 takes it), every stat where it acts, the cards a maxed skill turns into, the 도망자 and 키메라's
+// 재능의 파편 (0.102): one shared roll off a kill (0.104), the stat it lands as
+// weighed by the passive tree, never pulled in (only the 자석 takes it), every stat where it acts, the cards a maxed skill turns into, the 도망자 and 키메라's
 // certain shard, the save — and the enemies dampened alongside.
 import { connect, sleep } from './cdp-lib.mjs';
 import { writeFileSync } from 'node:fs';
@@ -61,17 +61,17 @@ try {
     C.TALENT_SHARD.chance = 1;
     kill();
     const sure = count();
-    const stats = live().map((x) => x.stat).sort();
+    const stats = live().map((x) => x.stat);
     c.talentShardDrops.getChildren().forEach((x) => x.active && x.collect());
     C.TALENT_SHARD.chance = 0;
     for (let i = 0; i < 20; i++) kill();
     const never = count();
     C.TALENT_SHARD.chance = was;
     s.spawner.clear();
-    return { sure, never, stats, want: [...C.TALENT_SHARD.stats].sort() };
+    return { sure, never, stats, all: C.TALENT_SHARD.stats };
   `);
-  check('each stat’s shard is its own roll off a kill: at a chance of 1, one of every stat; at 0, none',
-    flat.sure === flat.want.length && JSON.stringify(flat.stats) === JSON.stringify(flat.want) && flat.never === 0, JSON.stringify(flat));
+  check('one roll off a kill, shared by every stat: at a chance of 1, one shard of some stat; at 0, none',
+    flat.sure === 1 && flat.all.includes(flat.stats[0]) && flat.never === 0, JSON.stringify(flat));
 
   // --- 2. the 도망자 and the 키메라 leave a shard every time, and no skill ---
   const certain = await run(`
@@ -95,18 +95,26 @@ try {
     ['fugitive', 'chimera'].every((k) => certain[k].shards >= 1 && certain[k].skills === 0 && certain[k].precious),
     JSON.stringify(certain));
 
-  // --- 3. the tree raises a stat's own drop chance: +shardWeight of it a rank ---
+  // --- 3. which stat a shard lands as: even, or as the tree weighs it (the others less) ---
   const rolls = await run(`
     const C = window.config, c = s.combat;
+    const tally = () => { const n = Object.fromEntries(C.TALENT_SHARD.stats.map((st) => [st, 0])); for (let i = 0; i < 12000; i++) n[c.rollShardStat()]++; return n; };
+    const even = tally();
     const was = s.mods.passive;
-    const before = c.hooks.shardWeight('damage');
-    s.mods = { ...s.mods, passive: { shardWeights: { ...was.shardWeights, damage: 1 + 10 * C.PASSIVES.shardDamage.shardWeight } } };
-    const after = { damage: c.hooks.shardWeight('damage'), area: c.hooks.shardWeight('area') };
+    const weights = { ...was.shardWeights, damage: 1 + 10 * C.PASSIVES.shardDamage.shardWeight };
+    s.mods = { ...s.mods, passive: { shardWeights: weights } };
+    const weighted = tally();
     s.mods = { ...s.mods, passive: was };
-    return { before, after, per: C.PASSIVES.shardDamage.shardWeight };
+    return { even, weighted, weights, stats: C.TALENT_SHARD.stats };
   `);
-  check('ten ranks of a line make its shard’s drop chance 1 + 10 × its share, the others untouched',
-    rolls.before === 1 && Math.abs(rolls.after.damage - (1 + 10 * rolls.per)) < 1e-9 && rolls.after.area === 1, JSON.stringify(rolls));
+  const share = (n, stat) => n[stat] / Object.values(n).reduce((a, b) => a + b, 0);
+  const total = Object.values(rolls.weights).reduce((a, b) => a + b, 0);
+  check('with no ranks, every stat comes up about as often as the others',
+    rolls.stats.every((st) => Math.abs(share(rolls.even, st) - 1 / rolls.stats.length) < 0.03), JSON.stringify(rolls.even));
+  check('ten ranks in a line make its stat come up by its weight, and the others less',
+    Math.abs(share(rolls.weighted, 'damage') - rolls.weights.damage / total) < 0.03 &&
+      share(rolls.weighted, 'area') < 1 / rolls.stats.length,
+    `damage ${share(rolls.weighted, 'damage').toFixed(3)} vs ${(rolls.weights.damage / total).toFixed(3)}, area ${share(rolls.weighted, 'area').toFixed(3)}`);
 
   // --- 4. each stat where it acts, and the line on the HUD ---
   const acts = await run(`

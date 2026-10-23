@@ -31,7 +31,7 @@ export const zh: Strings = {
 
   passives: {
     title: '被动',
-    lead: '提高各项能力碎片的掉落几率',
+    lead: '天赋碎片掉落时，提高各项能力碎片出现的几率',
     chance: '提高 {pct}%',
     reset: '重置',
     pointsOf: '点数 {points} / {total}',
@@ -756,12 +756,12 @@ export const zh: Strings = {
     },
     passives: { shardDamage: '伤害碎片', shardAttackSpeed: '攻击速度碎片', shardMoveSpeed: '移动速度碎片', shardMaxHp: '最大生命碎片', shardArea: '效果范围碎片', shardRegen: '生命恢复碎片' },
     passiveDetails: {
-      shardDamage: '伤害碎片掉落率 +5%',
-      shardAttackSpeed: '攻击速度碎片掉落率 +5%',
-      shardMoveSpeed: '移动速度碎片掉落率 +5%',
-      shardMaxHp: '最大生命碎片掉落率 +5%',
-      shardArea: '效果范围碎片掉落率 +5%',
-      shardRegen: '生命恢复碎片掉落率 +5%',
+      shardDamage: '伤害碎片出现几率 +5%',
+      shardAttackSpeed: '攻击速度碎片出现几率 +5%',
+      shardMoveSpeed: '移动速度碎片出现几率 +5%',
+      shardMaxHp: '最大生命碎片出现几率 +5%',
+      shardArea: '效果范围碎片出现几率 +5%',
+      shardRegen: '生命恢复碎片出现几率 +5%',
     },
   },
 

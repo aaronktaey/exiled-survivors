@@ -570,9 +570,11 @@ Read `git log` for what changed and when. What is not in the log:
   flag on is the whole of putting it back.
 - **재능의 파편 (0.102, the user's design).** `TALENT_SHARD` (balance.ts):
   one shard a stat (`stats`: 피해량 · 공격속도 · 이동속도 · 최대체력 ·
-  효과범위 · 체력회복), each its own roll off every kill at `chance` × the
-  passive tree's line for it (`CombatSystem.killEnemy`, `hooks.shardWeight`)
-  — no rare's or 우두머리's bonus. A 도망자 or 키메라 always leaves one
+  효과범위 · 체력회복). One roll off every kill at `chance` (0.5%, shared
+  by every stat — 0.102–0.103 rolled each stat on its own; the user asked
+  for the shared roll back in 0.104), no rare's or 우두머리's bonus; which
+  stat it is, `CombatSystem.rollShardStat` weighs by the passive tree's
+  lines (`hooks.shardWeight`). A 도망자 or 키메라 always leaves one
   (`guaranteedShard`; their guaranteed skill went — `Enemy.precious` still
   keeps them at the cap). `TalentShardDrop` carries its `stat`, tinted
   (`TALENT_SHARD_FX.tint`); like every ground item it is never pulled in and
@@ -588,7 +590,8 @@ Read `git log` for what changed and when. What is not in the log:
   potion heal for a maxed main skill is gone; a maxed skill picked up again
   still heals.
 - **패시브 is 재능의 파편 lines (0.102, the user's ask).** passives.ts: six
-  lines, each +`shardWeight` (5%) of its shard's drop chance a point, no cap
+  lines, each +`shardWeight` (5%) on its stat's weight when a shard lands
+  (the others come up less; the screen shows the increase, "N% 증가"), no cap
   but the points (`maxRank` = PASSIVE_POINTS). Every player holds
   PASSIVE_POINTS (30): a stored tree without `scheme` 2 (`PASSIVE_SCHEME`) —
   every tree from before — starts over at 30, and nothing stored is a fresh

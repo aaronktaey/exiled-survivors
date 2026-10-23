@@ -15,6 +15,28 @@ export interface PatchNote {
 
 export const PATCH_NOTES: readonly PatchNote[] = [
   {
+    version: '0.104',
+    date: '2026-10-23',
+    changes: {
+      ko: [
+        '재능의 파편이 다시 하나의 확률로 떨어지고, 확률이 0.6%(0.1% × 6종)에서 0.5%로 바뀌었습니다. 떨어질 때 어떤 능력치의 파편일지가 정해집니다.',
+        '패시브는 이제 파편이 떨어질 때 해당 능력치 파편이 나올 확률을 높입니다. 한 능력치에 포인트를 넣으면 그 파편이 더 자주, 다른 파편은 그만큼 덜 나옵니다.',
+      ],
+      en: [
+        'Talent Shards drop on one shared roll again, at 0.5% (it was 0.1% for each of six). Which stat’s shard it is is decided as it drops.',
+        'Passives now make a stat’s shard likelier when a shard drops: points in one stat bring its shard up more often, and the others less.',
+      ],
+      ja: [
+        '才能の欠片は再び1つの確率で落ちるようになり、確率が0.6%（0.1% × 6種）から0.5%に変わりました。落ちるときにどの能力値の欠片かが決まります。',
+        'パッシブは、欠片が落ちるときにその能力値の欠片が出る確率を上げるようになりました。ある能力値にポイントを入れると、その欠片がより多く、他の欠片はその分少なく出ます。',
+      ],
+      zh: [
+        '天赋碎片重新改为共用一个几率掉落，几率由0.6%（每种0.1% × 6种）改为0.5%。掉落时决定是哪种能力的碎片。',
+        '被动现在提高碎片掉落时对应能力碎片出现的几率：在某项能力投入点数，该碎片会更常出现，其他碎片则相应减少。',
+      ],
+    },
+  },
+  {
     version: '0.103',
     date: '2026-10-23',
     changes: {
