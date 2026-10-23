@@ -157,7 +157,6 @@ export const TEXTURES = {
   filter: "tex-filter",
   tuning: "tex-tuning",
   grid: "tex-grid",
-  arenaFloor: "tex-arena-floor",
   talentShard: "tex-talent-shard",
   player: "tex-player",
   enemy: "tex-enemy",
@@ -935,46 +934,146 @@ export const VOID_VORTEX_FX = {
   alpha: 0.7,
 } as const;
 
+/** 전투 배경's five grounds (0.105, the user's ask): one picked a run from its terrain seed. */
+export type ArenaThemeId = 'earth' | 'ice' | 'fire' | 'machine' | 'void';
+export const ARENA_THEMES: readonly ArenaThemeId[] = ['earth', 'ice', 'fire', 'machine', 'void'];
+
 /**
- * 전투 배경 (0.101, the user's ask, tried on the dev server first): the floor
- * as worn flagstones (a seamless `tile`-px texture), loose decals over the
- * world, and rocks drawn with light, cracks and moss. Kept dark and low in
- * contrast, so what moves on it still reads first. `devOnly` false ships it.
+ * One ground's look. `accent` is what is strewn small over its floor
+ * (grass, ice shards, embers, rivets, motes) and `bits` what lies about
+ * bigger (bones, icicles, charred bones, gears, runes); `crackStyle` hair
+ * cracks or a machine floor's straight seams, `crackGlow` a light under
+ * them (lava, the void). The rock's `moss` is moss, frost, magma, rust or
+ * crystal as the ground calls for.
+ */
+export interface ArenaTheme {
+  readonly base: number;
+  readonly patchShades: readonly number[];
+  readonly crack: number;
+  readonly crackStyle: 'hair' | 'seam';
+  readonly crackGlow?: number;
+  readonly accent: 'grass' | 'shard' | 'ember' | 'rivet' | 'mote';
+  readonly accentColors: readonly [number, number];
+  readonly pebble: number;
+  readonly pebbleLight: number;
+  readonly stain: number;
+  readonly moss: number;
+  readonly bits: 'bone' | 'icicle' | 'char' | 'gear' | 'rune';
+  readonly bitColor: number;
+  readonly rock: {
+    readonly body: number;
+    readonly face: number;
+    readonly light: number;
+    readonly rim: number;
+    readonly edgeLight: number;
+    readonly crack: number;
+    readonly crackGlow?: number;
+    readonly moss: number;
+    readonly mossLight: number;
+  };
+}
+
+/**
+ * 전투 배경 (0.101; live and in five grounds since 0.105, the user's ask):
+ * the floor as a seamless `tile`-px ground, loose decals over the world, and
+ * rocks drawn with light, cracks and moss — kept dark and low in contrast,
+ * so what moves on it reads first. 설정's 맵 디자인 (`settings.mapDesign`)
+ * turns it off for the old grid. `devOnly` true keeps it to the dev server.
  */
 export const ARENA_LOOK = {
-  devOnly: true,
+  devOnly: false,
   tile: 512,
-  /** What the floor tile is strewn with: patches, grit, hairline cracks, pebbles, grass tufts (no slabs since 0.102). */
+  /** What the floor tile is strewn with: patches, grit, cracks or seams, pebbles, accents (no slabs since 0.102). */
   patches: 26,
-  patchShades: [0x0e1219, 0x080a0f, 0x121820, 0x0d1311],
   specks: 420,
   cracks: 10,
   pebbles: 40,
-  tufts: 36,
-  base: 0x0b0e14,
-  crack: 0x080a0f,
-  dirt: 0x0f1218,
-  stain: 0x05070a,
-  moss: 0x1c2a1f,
-  grass: 0x2b3a28,
-  grassLight: 0x3a4d33,
-  pebble: 0x232a36,
-  pebbleLight: 0x343d4c,
-  bone: 0xb8b0a0,
+  accents: 36,
   /** How many of each the world gets. */
-  decals: { stains: 70, moss: 60, grass: 160, rubble: 70, bones: 18 },
-  rock: {
-    shadow: 0x000000,
-    body: 0x262b36,
-    face: 0x353c4b,
-    light: 0x4a5368,
-    rim: 0x12151c,
-    edgeLight: 0x7b86a0,
-    crack: 0x10131a,
-    moss: 0x2e4630,
-    mossLight: 0x3f5c3b,
-  },
-} as const;
+  decals: { stains: 70, moss: 60, accents: 160, rubble: 70, bits: 18 },
+  themes: {
+    earth: {
+      base: 0x0b0e14,
+      patchShades: [0x0e1219, 0x080a0f, 0x121820, 0x0d1311],
+      crack: 0x080a0f,
+      crackStyle: 'hair',
+      accent: 'grass',
+      accentColors: [0x2b3a28, 0x3a4d33],
+      pebble: 0x232a36,
+      pebbleLight: 0x343d4c,
+      stain: 0x05070a,
+      moss: 0x1c2a1f,
+      bits: 'bone',
+      bitColor: 0xb8b0a0,
+      rock: { body: 0x262b36, face: 0x353c4b, light: 0x4a5368, rim: 0x12151c, edgeLight: 0x7b86a0, crack: 0x10131a, moss: 0x2e4630, mossLight: 0x3f5c3b },
+    },
+    ice: {
+      base: 0x0c1520,
+      patchShades: [0x12202d, 0x09111a, 0x182a3a, 0x0f1d2a],
+      crack: 0x8fc8ee,
+      crackStyle: 'hair',
+      accent: 'shard',
+      accentColors: [0x9fd6f5, 0xd8f1ff],
+      pebble: 0x2a3b4e,
+      pebbleLight: 0x5d7c9a,
+      stain: 0x081018,
+      moss: 0x6fa8cf,
+      bits: 'icicle',
+      bitColor: 0xcfeeff,
+      rock: { body: 0x2c3e52, face: 0x3f5872, light: 0x7fa6c8, rim: 0x0e1620, edgeLight: 0xe0f4ff, crack: 0x14202c, moss: 0xcfeeff, mossLight: 0xffffff },
+    },
+    fire: {
+      base: 0x130a07,
+      patchShades: [0x1c0f0a, 0x0b0504, 0x24130b, 0x180c08],
+      crack: 0xff6a1a,
+      crackStyle: 'hair',
+      crackGlow: 0xff3a00,
+      accent: 'ember',
+      accentColors: [0xff8a3a, 0xffd27a],
+      pebble: 0x2b1c16,
+      pebbleLight: 0x4a3226,
+      stain: 0x040201,
+      moss: 0x2a2018,
+      bits: 'char',
+      bitColor: 0x6e5c50,
+      rock: { body: 0x2a1c18, face: 0x3a2620, light: 0x55382a, rim: 0x0c0606, edgeLight: 0xff8a3a, crack: 0xff5a14, crackGlow: 0xff3a00, moss: 0xff6a1a, mossLight: 0xffc060 },
+    },
+    machine: {
+      base: 0x0f1317,
+      patchShades: [0x151b21, 0x0a0d11, 0x1a222a, 0x11171c],
+      crack: 0x050608,
+      crackStyle: 'seam',
+      accent: 'rivet',
+      accentColors: [0x55626f, 0x8a98a6],
+      pebble: 0x2c3640,
+      pebbleLight: 0x55636f,
+      stain: 0x1a120a,
+      moss: 0x4a2c16,
+      bits: 'gear',
+      bitColor: 0x6b7885,
+      rock: { body: 0x2a3038, face: 0x3a434d, light: 0x56616d, rim: 0x0b0d10, edgeLight: 0x9fb0c0, crack: 0x14181d, moss: 0x7a4520, mossLight: 0xa8622a },
+    },
+    void: {
+      base: 0x0b0713,
+      patchShades: [0x140d20, 0x06040b, 0x1b112e, 0x110a1b],
+      crack: 0xb07cff,
+      crackStyle: 'hair',
+      crackGlow: 0x7a3cff,
+      accent: 'mote',
+      accentColors: [0xc9a8ff, 0x7f5cff],
+      pebble: 0x241a36,
+      pebbleLight: 0x45346a,
+      stain: 0x040208,
+      moss: 0x2e1856,
+      bits: 'rune',
+      bitColor: 0x9b7ae0,
+      rock: { body: 0x231a33, face: 0x31244a, light: 0x4b3a70, rim: 0x08060e, edgeLight: 0xc9a8ff, crack: 0x0e0a16, crackGlow: 0x7a3cff, moss: 0x9b6bff, mossLight: 0xd8c0ff },
+    },
+  } as Record<ArenaThemeId, ArenaTheme>,
+};
+
+/** A ground's floor tile, drawn the first time a run stands on it (Arena.ensureArenaFloor). */
+export const arenaFloorTexture = (theme: ArenaThemeId): string => `tex-arena-floor-${theme}`;
 
 /**
  * 재능의 파편 (0.102): a pale crystal shard, tinted by its stat (`tint`)

@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 
 import { ARENA_LOOK, COLORS, DEPTH, PLAYER, TERRAIN, WORLD } from '@/config';
-import { arenaLookOn, bake } from '@/systems/Arena';
+import { arenaLookOn, bake, themeFor } from '@/systems/Arena';
 import type { Enemy } from '@/entities/Enemy';
 
 /** Points round each outline: enough to read smooth, few enough to test cheaply. */
@@ -248,7 +248,8 @@ export class Terrain {
   }
 
   private drawDetailed(seed: number): void {
-    const R = ARENA_LOOK.rock;
+    // The run's ground's rocks (0.105): ice, lava-veined, steel, void-lit or plain stone.
+    const R = { shadow: 0x000000, ...ARENA_LOOK.themes[themeFor(seed)].rock };
     const random = seeded(seed ^ 0x5bd1e995);
     const g = this.graphics;
     const points = (rock: Rock, scale: number, ox: number, oy: number) =>
@@ -287,16 +288,25 @@ export class Terrain {
       g.fillPoints(points(rock, 0.5, -7, -11), true, true);
       // Cracks from the edge in, bending once.
       const cracks = 2 + Math.floor(random() * 3);
-      g.lineStyle(1.6, R.crack, 0.9);
       for (let c = 0; c < cracks; c++) {
         const angle = random() * Math.PI * 2;
         const edge = Terrain.edgeAt(rock, angle);
         const bend = angle + (random() - 0.5) * 0.8;
-        g.beginPath();
-        g.moveTo(rock.x + Math.cos(angle) * edge * 0.95, rock.y + Math.sin(angle) * edge * 0.95);
-        g.lineTo(rock.x + Math.cos(bend) * edge * 0.6, rock.y + Math.sin(bend) * edge * 0.6);
-        g.lineTo(rock.x + Math.cos(angle + (random() - 0.5)) * edge * 0.3, rock.y + Math.sin(angle + (random() - 0.5)) * edge * 0.3);
-        g.strokePath();
+        const end = angle + (random() - 0.5);
+        const path = (): void => {
+          g.beginPath();
+          g.moveTo(rock.x + Math.cos(angle) * edge * 0.95, rock.y + Math.sin(angle) * edge * 0.95);
+          g.lineTo(rock.x + Math.cos(bend) * edge * 0.6, rock.y + Math.sin(bend) * edge * 0.6);
+          g.lineTo(rock.x + Math.cos(end) * edge * 0.3, rock.y + Math.sin(end) * edge * 0.3);
+          g.strokePath();
+        };
+        // Lava and the void light their cracks from inside.
+        if (R.crackGlow !== undefined) {
+          g.lineStyle(5, R.crackGlow, 0.25);
+          path();
+        }
+        g.lineStyle(1.6, R.crack, 0.9);
+        path();
       }
       // Moss on the top.
       const tufts = 2 + Math.floor(random() * 3);

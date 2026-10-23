@@ -4,7 +4,7 @@ import { COLORS, DEPTH, JOYSTICK, LOCALE, MENU, SCENES, SCRIM, TEXT } from '@/co
 import { centredTop, fitWidth } from '@/systems/Layout';
 import { fill, languageName, t } from '@/i18n';
 import { bgm } from '@/systems/Bgm';
-import { MenuList } from '@/systems/MenuList';
+import { MenuList, type MenuItem } from '@/systems/MenuList';
 import { MOVEMENT_MODES, settings, type MovementMode } from '@/systems/Settings';
 import { requestTiltPermission, tiltAvailable } from '@/systems/TiltInput';
 import { prefersTouchControls } from '@/systems/VirtualJoystick';
@@ -20,8 +20,18 @@ export interface SettingsSceneData {
   readonly allowLanguage?: boolean;
   /** True once the language has been changed during this visit. */
   readonly languageChanged?: boolean;
+  /** Which tab is open (0.105); 조작 when left out. */
+  readonly tab?: SettingsTab;
   readonly onClose: (languageChanged: boolean) => void;
 }
+
+/** 설정's tabs (0.105, the user's ask: the rows had grown too many for one list). */
+export type SettingsTab = 'controls' | 'sound' | 'display';
+export const SETTINGS_TABS: readonly SettingsTab[] = ['controls', 'sound', 'display'];
+const TAB_WIDTH = 104;
+const TAB_HEIGHT = 34;
+/** The most rows a tab holds, its own and the three every tab has: the list is laid out for that. */
+const MOST_ROWS = 6;
 
 const modeName = (mode: MovementMode): string => {
   const copy = t().settings;
@@ -46,7 +56,11 @@ export class SettingsScene extends Phaser.Scene {
   public backButton?: BackButton;
 
   private payload!: SettingsSceneData;
-  private menu!: MenuList;
+  /** This screen's list of rows. Public so a test can drive it. */
+  public menu!: MenuList;
+  /** The open tab, and its buttons. Public for tests. */
+  public tab: SettingsTab = 'controls';
+  public tabs = new Map<SettingsTab, Phaser.GameObjects.Rectangle>();
   private previewBase!: Phaser.GameObjects.Arc;
   private previewThumb!: Phaser.GameObjects.Arc;
   private hint!: Phaser.GameObjects.Text;
@@ -57,6 +71,8 @@ export class SettingsScene extends Phaser.Scene {
 
   public init(data: SettingsSceneData): void {
     this.payload = data;
+    this.tab = data.tab ?? 'controls';
+    this.tabs = new Map();
   }
 
   public create(): void {
@@ -64,10 +80,11 @@ export class SettingsScene extends Phaser.Scene {
     const { width, height } = this.scale;
 
     this.add.rectangle(0, 0, width, height, 0x05070b, SCRIM.reading).setOrigin(0, 0).setDepth(DEPTH.ui);
-    // Title and the rows, centred together rather than pinned to the top.
-    const rows = (LOCALE.choosable ? 1 : 0) + 8;
-    const listHeight = rows * (MENU.buttonHeight + MENU.buttonGap) - MENU.buttonGap;
-    const top = centredTop(height, MENU.titleBlockHeight + listHeight);
+    // Title, tabs and the rows, centred together rather than pinned to the
+    // top — laid out for the fullest tab, so switching does not jump.
+    const listHeight = MOST_ROWS * (MENU.buttonHeight + MENU.buttonGap) - MENU.buttonGap;
+    const tabBlock = TAB_HEIGHT + 14;
+    const top = centredTop(height, MENU.titleBlockHeight + tabBlock + listHeight);
 
     this.add
       .text(width / 2, top + 16, t().settings.title, {
@@ -79,14 +96,17 @@ export class SettingsScene extends Phaser.Scene {
       .setDepth(DEPTH.ui + 1);
 
     this.createPreview();
+    this.buildTabs(width / 2, top + MENU.titleBlockHeight + TAB_HEIGHT / 2 - 6);
+    this.input.keyboard?.on('keydown', this.onTabKey, this);
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.input.keyboard?.off('keydown', this.onTabKey, this));
 
-    this.menu = new MenuList(this, {
-      x: width / 2,
-      y: top + MENU.titleBlockHeight + MENU.buttonHeight / 2,
-      width: 420,
-      onCancel: () => this.close(),
-      onMove: () => this.setHint(),
-      items: [
+    const rows: Record<SettingsTab, readonly string[]> = {
+      controls: ['joystickScale', 'movement'],
+      sound: ['bgm', 'sfx'],
+      display: ['language', 'damageNumbers', 'mapDesign'],
+    };
+    const every = ['reset', 'credits', 'back'];
+    const allItems: MenuItem[] = [
         // Off until the official release (LOCALE.choosable): the row is not there at all.
         ...(LOCALE.choosable ? [{
           id: 'language',
@@ -136,6 +156,13 @@ export class SettingsScene extends Phaser.Scene {
           onAdjust: () => settings.toggleDamageNumbers(),
         },
         {
+          id: 'mapDesign',
+          label: () => t().settings.mapDesign,
+          detail: () => (settings.value.mapDesign ? t().common.on : t().common.off),
+          onSelect: () => settings.toggleMapDesign(),
+          onAdjust: () => settings.toggleMapDesign(),
+        },
+        {
           id: 'reset',
           label: () => t().settings.reset,
           onSelect: () => {
@@ -147,7 +174,15 @@ export class SettingsScene extends Phaser.Scene {
         },
         { id: 'credits', label: () => t().menu.credits, onSelect: () => this.openCredits() },
         { id: 'back', label: () => t().common.back, onSelect: () => this.close() },
-      ],
+    ];
+    const shown = [...rows[this.tab], ...every];
+    this.menu = new MenuList(this, {
+      x: width / 2,
+      y: top + MENU.titleBlockHeight + tabBlock + MENU.buttonHeight / 2,
+      width: 420,
+      onCancel: () => this.close(),
+      onMove: () => this.setHint(),
+      items: allItems.filter((item) => shown.includes(item.id)).sort((x, y) => shown.indexOf(x.id) - shown.indexOf(y.id)),
     });
 
     this.hint = this.add
@@ -164,6 +199,47 @@ export class SettingsScene extends Phaser.Scene {
       .setDepth(DEPTH.ui + 1);
     this.setHint();
 
+  }
+
+  /** The tabs under the title: one a button, the open one lit. */
+  private buildTabs(centreX: number, y: number): void {
+    const copy = t().settings.tabs;
+    const left = centreX - (SETTINGS_TABS.length * (TAB_WIDTH + 6) - 6) / 2;
+    SETTINGS_TABS.forEach((tab, index) => {
+      const x = left + TAB_WIDTH / 2 + index * (TAB_WIDTH + 6);
+      const active = tab === this.tab;
+      const plate = this.add
+        .rectangle(x, y, TAB_WIDTH, TAB_HEIGHT, active ? COLORS.panelActive : COLORS.panel, 1)
+        .setStrokeStyle(2, active ? COLORS.accentFill : COLORS.panelEdge, 1)
+        .setDepth(DEPTH.ui + 1)
+        .setInteractive({ useHandCursor: true });
+      this.add
+        .text(x, y, copy[tab], { fontFamily: 'system-ui, sans-serif', fontSize: TEXT.size.body, color: active ? COLORS.text : COLORS.muted })
+        .setOrigin(0.5)
+        .setDepth(DEPTH.ui + 2);
+      plate.on(Phaser.Input.Events.GAMEOBJECT_POINTER_DOWN, () => this.openTab(tab));
+      this.tabs.set(tab, plate);
+    });
+  }
+
+  /** Opens another tab: the screen is built again on it. Public so a test can. */
+  public openTab(tab: SettingsTab): void {
+    if (tab === this.tab) {
+      return;
+    }
+    // A frame later: this may be inside the input handler walking this scene's objects.
+    this.time.delayedCall(0, () => this.scene.restart({ ...this.payload, tab }));
+  }
+
+  /** Tab (Shift+Tab back), or Q / E, walks the tabs. */
+  private onTabKey(event: KeyboardEvent): void {
+    const at = SETTINGS_TABS.indexOf(this.tab);
+    const by = event.code === 'Tab' ? (event.shiftKey ? -1 : 1) : event.code === 'KeyE' ? 1 : event.code === 'KeyQ' ? -1 : 0;
+    if (by === 0) {
+      return;
+    }
+    event.preventDefault?.();
+    this.openTab(SETTINGS_TABS[(at + by + SETTINGS_TABS.length) % SETTINGS_TABS.length]!);
   }
 
   private createPreview(): void {
@@ -186,8 +262,8 @@ export class SettingsScene extends Phaser.Scene {
   private drawPreview(): void {
     const { joystickScale, movementMode } = settings.value;
 
-    // Nothing to preview for tilt: there is no pad at all.
-    const shown = movementMode !== 'tilt';
+    // Nothing to preview for tilt, nor off the 조작 tab.
+    const shown = movementMode !== 'tilt' && this.tab === 'controls';
     this.previewBase.setVisible(shown);
     this.previewThumb.setVisible(shown);
 

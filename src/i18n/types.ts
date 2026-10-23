@@ -284,6 +284,10 @@ export interface Strings {
     readonly sfx: string;
     /** 데미지 숫자 표시 (0.101): the numbers off hits, on or off. */
     readonly damageNumbers: string;
+    /** 맵 디자인 (0.105): the run's ground, or the old grid. */
+    readonly mapDesign: string;
+    /** The tabs (0.105). */
+    readonly tabs: { readonly controls: string; readonly sound: string; readonly display: string };
     readonly reset: string;
     readonly hint: string;
     readonly hintFloating: string;

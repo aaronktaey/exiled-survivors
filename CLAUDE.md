@@ -295,24 +295,34 @@ Read `git log` for what changed and when. What is not in the log:
   공허구체's orbs (`VOID_ORB_FX`) are hollow rims drawn under the enemies —
   the 2차 inner ring since 0.99 (fainter, `innerAlpha`), the outer since
   0.101; as solid orbs over everything they hid the survivor.
+- **설정 is in tabs (0.105, the user's ask).** `SettingsScene` opens on 조작
+  (pad size, movement), with 소리 (배경음, 효과음) and 화면 (Language while
+  `LOCALE.choosable`, 데미지 숫자, 맵 디자인); 기본값으로 · 제작자 정보 ·
+  돌아가기 are under every tab. `openTab` restarts the scene on
+  `SettingsSceneData.tab`; Tab / Shift+Tab / Q / E walk them. A suite that
+  wants a row off 조작 opens its tab first (test-shell, test-info).
 - **설정's 데미지 숫자 표시 (0.101).** `settings.damageNumbers` (default on)
   gates only the floater in `CombatSystem.hit` — heals, 포션 효과!, 막음
   and the rune line still show. `window.settings` is the dev handle.
-- **전투 배경 (0.101, tried locally first).** `ARENA_LOOK` (visuals.ts):
-  `BootScene.createArenaFloorTexture` paints seamless dark ground — patches,
-  grit, hairline cracks, pebbles, grass; no slabs (0.101's flagstones read
-  as a dizzying grid, the user's word) — (`TEXTURES.arenaFloor`, `tile` px), `systems/Arena.drawArenaDecals` lays
-  stains, moss, grass, rubble and bones from the run's terrain seed, and
-  `Terrain.drawDetailed` gives rocks light, cracks, moss and loose stones.
-  `arenaLookOn()` decides: `ARENA_LOOK.devOnly` (true) keeps it to the dev
-  server and off the harness and `#run` (the page is marked only after the
-  first load, so `#run` counts as the harness, as in BootScene). The user
-  decides whether it ships; `devOnly: false` is the whole of shipping it.
-  Both the decals and the detailed rocks are drawn once into a Graphics and
-  baked into one world-sized picture (`Arena.bake`): a Graphics replays every
-  command every frame, and these came to ~150,000 — 20 ms a frame against
-  7 (the user felt it stutter). Anything static and drawn in bulk should be
-  baked the same way.
+- **전투 배경 (0.101; live in five grounds since 0.105, the user's ask).**
+  `ARENA_LOOK` (visuals.ts) and `systems/Arena.ts`. A run's ground is
+  `themeFor(terrainSeed)` — one of `ARENA_THEMES` (earth · ice · fire ·
+  machine · void), so 불러오기 keeps it; `GameScene.arenaTheme`. Each
+  `ArenaTheme` is a palette plus what is strewn: `accent` (grass, ice
+  shards, embers, rivets, motes), `bits` (bones, icicles, charred bones,
+  gears, runes), `crackStyle` (hairline, or a machine's straight seams),
+  `crackGlow` (lava, the void) and its rock colours. `ensureArenaFloor`
+  paints the ground's seamless floor tile the first time it is stood on
+  (`arenaFloorTexture(id)`); `drawArenaDecals` lays the world's decals from
+  the seed; `Terrain.drawDetailed` the rocks in its palette. The decals and
+  the rocks are drawn once and baked into one world-sized picture each
+  (`Arena.bake`): a Graphics replays every command every frame, and these
+  came to ~150,000 — 20 ms a frame against 7 (the user felt it stutter).
+  Anything static and drawn in bulk should be baked the same way.
+  `arenaLookOn()`: 설정's 맵 디자인 (`settings.mapDesign`, default on; off
+  is the old grid, `TEXTURES.grid`), never on the harness or `#run` unless
+  a page sets `window.__arenaOn` (test-terrain does), and only on the dev
+  server while `ARENA_LOOK.devOnly` (false since 0.105).
 - **도망자 is table-driven.** `flee`, `lifespanMs`, `guaranteedSkill` and
   `flashy` on an `ENEMY_KINDS` entry give any kind that behaviour; the
   fugitive is the only one using them. It spawns on `FUGITIVE`'s clock.

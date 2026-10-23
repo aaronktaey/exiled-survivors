@@ -42,6 +42,7 @@ import {
   TALENT_SHARD_FX,
   shardBonusFor,
   type ShardStat,
+  type ArenaThemeId,
 } from '@/config';
 import type { Enemy } from '@/entities/Enemy';
 import { Player } from '@/entities/Player';
@@ -88,7 +89,7 @@ import { saveGame, type SavedRun } from '@/systems/SaveGame';
 import { runLedger } from '@/systems/RunLedger';
 import { runTally } from '@/systems/RunTally';
 import { skillOffered } from '@/systems/SkillGate';
-import { arenaLookOn, drawArenaDecals } from '@/systems/Arena';
+import { arenaLookOn, drawArenaDecals, ensureArenaFloor, themeFor } from '@/systems/Arena';
 import { personal } from '@/systems/PersonalBest';
 import { tuning } from '@/systems/Tuning';
 import { dropTierFor } from '@/systems/Gear';
@@ -197,6 +198,8 @@ export class GameScene extends Phaser.Scene {
   /** 지형지물, or null on a run without them. */
   private terrain: Terrain | null = null;
   private terrainSeed = 0;
+  /** The run's ground (전투 배경, 0.105), from its terrain seed. Public for tests. */
+  public arenaTheme: ArenaThemeId = 'earth';
   private damageNumbers!: DamageNumbers;
   /** The 거미줄 on the ground. Public for tests. */
   public webs!: WebField;
@@ -316,6 +319,9 @@ export class GameScene extends Phaser.Scene {
     this.physics.world.setBounds(0, 0, WORLD.width, WORLD.height);
     this.cameras.main.setBounds(0, 0, WORLD.width, WORLD.height);
 
+    // The ground is the terrain seed's: a resumed run stands on the one it had.
+    this.terrainSeed = this.resuming?.terrainSeed ?? Terrain.newSeed();
+    this.arenaTheme = themeFor(this.terrainSeed);
     this.createFloor();
 
     // Both are picked on the title screen, so they are fixed for the run:
@@ -339,9 +345,8 @@ export class GameScene extends Phaser.Scene {
     });
     this.separation = new Separation(this.spawner.group, this.player);
     // A resumed run lays the rocks it had; a new one rolls a field of its own.
-    this.terrainSeed = this.resuming?.terrainSeed ?? Terrain.newSeed();
     if (arenaLookOn()) {
-      drawArenaDecals(this, this.terrainSeed);
+      drawArenaDecals(this, this.terrainSeed, this.arenaTheme);
     }
     this.terrain = GameScene.terrainOn()
       ? new Terrain(this, this.terrainSeed, this.player, this.spawner.group)
@@ -951,7 +956,7 @@ export class GameScene extends Phaser.Scene {
   /** The grid, or — while 전투 배경 is tried (arenaLookOn) — the flagstones. */
   private createFloor(): void {
     this.add
-      .tileSprite(0, 0, WORLD.width, WORLD.height, arenaLookOn() ? TEXTURES.arenaFloor : TEXTURES.grid)
+      .tileSprite(0, 0, WORLD.width, WORLD.height, arenaLookOn() ? ensureArenaFloor(this, this.arenaTheme) : TEXTURES.grid)
       .setOrigin(0, 0)
       .setDepth(DEPTH.ground);
   }

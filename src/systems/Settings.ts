@@ -21,6 +21,8 @@ export interface GameSettings {
   sfxVolume: number;
   /** The numbers that rise off an enemy that is hit (0.101). Heals and notices show either way. */
   damageNumbers: boolean;
+  /** 맵 디자인 (0.105): the run's ground (전투 배경); off is the old grid. */
+  mapDesign: boolean;
   language: Language;
 }
 
@@ -30,6 +32,7 @@ const DEFAULTS: GameSettings = {
   bgmVolume: 0.35,
   sfxVolume: 1,
   damageNumbers: true,
+  mapDesign: true,
   // Nothing stored yet means a first visit: follow the browser.
   language: detectLanguage(),
 };
@@ -95,6 +98,11 @@ class SettingsStore {
     return this.update({ damageNumbers: !this.value.damageNumbers });
   }
 
+  /** The run's ground, or the old grid. Read as a run starts. */
+  public toggleMapDesign(): GameSettings {
+    return this.update({ mapDesign: !this.value.mapDesign });
+  }
+
   /** Walks the movement mode round its three options. */
   public cycleMovementMode(direction: -1 | 1): GameSettings {
     const at = MOVEMENT_MODES.indexOf(this.value.movementMode);
@@ -150,6 +158,7 @@ class SettingsStore {
       bgmVolume: clamp(Number(raw.bgmVolume ?? DEFAULTS.bgmVolume), volume.min, volume.max),
       sfxVolume: clamp(Number(raw.sfxVolume ?? DEFAULTS.sfxVolume), effects.min, effects.max),
       damageNumbers: raw.damageNumbers !== false,
+      mapDesign: raw.mapDesign !== false,
     };
   }
 }

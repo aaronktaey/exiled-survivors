@@ -24,7 +24,6 @@ import {
   PLAYER_LOOK,
   VOID_VORTEX_FX,
   VOID_ORB_FX,
-  ARENA_LOOK,
   TALENT_SHARD_FX,
   ENEMY_SHOT_FX,
   ENEMY_WALK_STEPS,
@@ -89,7 +88,6 @@ export class BootScene extends Phaser.Scene {
 
   public create(): void {
     this.createGridTexture();
-    this.createArenaFloorTexture();
     this.createSquareTexture(TEXTURES.player, PLAYER.size, COLORS.player);
     for (const kind of Object.values(ENEMY_KINDS)) {
       if (kind.flashy) {
@@ -302,105 +300,6 @@ export class BootScene extends Phaser.Scene {
 
     graphics.generateTexture(TEXTURES.grid, GRID_TILE, GRID_TILE);
     graphics.destroy();
-  }
-
-  /**
-   * 전투 배경's floor (ARENA_LOOK): dark ground with nothing laid on it in
-   * rows — soft patches darker and lighter, specks of grit, a few hairline
-   * cracks, pebbles and grass — seamless, every piece near an edge drawn
-   * again on the far side. (0.101's flagstones repeated as a grid that the
-   * user found dizzying; they went in 0.102.)
-   */
-  private createArenaFloorTexture(): void {
-    const A = ARENA_LOOK;
-    const tile = A.tile;
-    const random = new Phaser.Math.RandomDataGenerator(['arena-floor']);
-    const g = this.add.graphics();
-    const everywhere = (draw: (ox: number, oy: number) => void): void => {
-      for (const ox of [-tile, 0, tile]) {
-        for (const oy of [-tile, 0, tile]) {
-          draw(ox, oy);
-        }
-      }
-    };
-    g.fillStyle(A.base, 1);
-    g.fillRect(0, 0, tile, tile);
-    // Broad, soft patches: the ground is never one flat colour.
-    for (let n = 0; n < A.patches; n++) {
-      const x = random.realInRange(0, tile);
-      const y = random.realInRange(0, tile);
-      const r = random.realInRange(30, 110);
-      const color = random.pick([...A.patchShades]);
-      const alpha = random.realInRange(0.25, 0.55);
-      const stretch = random.realInRange(0.6, 1.4);
-      everywhere((ox, oy) => {
-        g.fillStyle(color, alpha);
-        g.fillEllipse(x + ox, y + oy, r * 2 * stretch, r * 2);
-        g.fillStyle(color, alpha * 0.6);
-        g.fillEllipse(x + ox + r * 0.3, y + oy - r * 0.2, r * 1.3 * stretch, r * 1.2);
-      });
-    }
-    // Grit.
-    for (let n = 0; n < A.specks; n++) {
-      const x = random.realInRange(0, tile);
-      const y = random.realInRange(0, tile);
-      const r = random.realInRange(0.6, 1.6);
-      const light = random.frac() < 0.5;
-      everywhere((ox, oy) => {
-        g.fillStyle(light ? A.pebbleLight : A.crack, light ? 0.35 : 0.6);
-        g.fillCircle(x + ox, y + oy, r);
-      });
-    }
-    // A few hairline cracks, each a short bent line.
-    for (let n = 0; n < A.cracks; n++) {
-      const points: [number, number][] = [[random.realInRange(0, tile), random.realInRange(0, tile)]];
-      let angle = random.realInRange(0, Math.PI * 2);
-      for (let k = 0; k < 3; k++) {
-        angle += random.realInRange(-0.7, 0.7);
-        const len = random.realInRange(8, 18);
-        const [px, py] = points[points.length - 1]!;
-        points.push([px + Math.cos(angle) * len, py + Math.sin(angle) * len]);
-      }
-      everywhere((ox, oy) => {
-        g.lineStyle(1, A.crack, 0.6);
-        g.beginPath();
-        g.moveTo(points[0]![0] + ox, points[0]![1] + oy);
-        for (const [x, y] of points.slice(1)) {
-          g.lineTo(x + ox, y + oy);
-        }
-        g.strokePath();
-      });
-    }
-    // Pebbles.
-    for (let n = 0; n < A.pebbles; n++) {
-      const x = random.realInRange(0, tile);
-      const y = random.realInRange(0, tile);
-      const r = random.realInRange(1.5, 3.2);
-      everywhere((ox, oy) => {
-        g.fillStyle(0x000000, 0.3);
-        g.fillEllipse(x + ox + 1, y + oy + 1.2, r * 2.2, r * 1.4);
-        g.fillStyle(A.pebble, 1);
-        g.fillEllipse(x + ox, y + oy, r * 2, r * 1.5);
-      });
-    }
-    // Grass, in little tufts.
-    for (let n = 0; n < A.tufts; n++) {
-      const x = random.realInRange(0, tile);
-      const y = random.realInRange(0, tile);
-      const blades = Array.from({ length: random.between(3, 6) }, () => {
-        const bx = x + random.realInRange(-5, 5);
-        const by = y + random.realInRange(-2, 2);
-        return [bx, by, bx + random.realInRange(-3, 3), by - random.realInRange(4, 9), random.frac() < 0.5] as const;
-      });
-      everywhere((ox, oy) => {
-        for (const [x1, y1, x2, y2, light] of blades) {
-          g.lineStyle(1.2, light ? A.grassLight : A.grass, 0.8);
-          g.lineBetween(x1 + ox, y1 + oy, x2 + ox, y2 + oy);
-        }
-      });
-    }
-    g.generateTexture(TEXTURES.arenaFloor, tile, tile);
-    g.destroy();
   }
 
   private createSquareTexture(key: string, size: number, color: number): void {

@@ -221,6 +221,46 @@ const other = await run(`
 `);
 check('a new run lays a field of its own', fresh === 1 && other.differs);
 
+// --- 5b. (0.105) 전투 배경: a ground a run, from the seed; the old grid when 맵 디자인 is off ---
+const grounds = await run(`
+  window.__arenaOn = true;
+  const T = s.terrain.constructor;
+  window.__newSeed = T.newSeed;
+  window.__grounds = [];
+  window.__T = T;
+  return window.config.ARENA_THEMES;
+`);
+const seen = [];
+for (let i = 0; i < grounds.length; i++) {
+  await run(`window.__T.newSeed = () => ${i}; s.scene.restart({ save: null }); return 1;`);
+  await sleep(1500);
+  seen.push(await run(`
+    const floor = s.children.list.find((o) => o.type === 'TileSprite');
+    const decals = s.children.list.some((o) => o.type === 'Image' && o.texture.key === 'tex-arena-decals');
+    const rocks = s.children.list.some((o) => o.type === 'Image' && o.texture.key === 'tex-terrain-rocks');
+    return { theme: s.arenaTheme, floor: floor?.texture.key, decals, rocks };
+  `));
+}
+console.log('grounds:', JSON.stringify(seen));
+check('each run stands on one of the five grounds, from its seed, its floor, decals and rocks drawn for it',
+  grounds.every((id, i) => seen[i].theme === id && seen[i].floor === 'tex-arena-floor-' + id && seen[i].decals && seen[i].rocks),
+  seen.map((g) => `${g.theme}:${g.floor}`).join(' / '));
+const plain = await run(`
+  window.settings.update({ mapDesign: false });
+  s.scene.restart({ save: null });
+  return 1;
+`);
+await sleep(1500);
+const grid = await run(`
+  const floor = s.children.list.find((o) => o.type === 'TileSprite');
+  const out = { floor: floor?.texture.key, decals: s.children.list.some((o) => o.type === 'Image' && o.texture.key === 'tex-arena-decals') };
+  window.settings.update({ mapDesign: true });
+  window.__T.newSeed = window.__newSeed;
+  window.__arenaOn = false;
+  return out;
+`);
+check('with 설정’s 맵 디자인 off, a run is on the old grid, nothing strewn', plain === 1 && grid.floor === 'tex-grid' && !grid.decals, JSON.stringify(grid));
+
 // --- 6. off for every other suite ---
 await cdp.send('Page.removeScriptToEvaluateOnNewDocument', { identifier: hook.identifier });
 await cdp.send('Page.reload', {});

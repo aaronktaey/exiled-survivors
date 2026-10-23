@@ -161,15 +161,16 @@ const inSettings = await active();
 check('설정 opens over the title', inSettings.settings === true && inSettings.menu === false);
 
 const rows = await scene('SettingsScene', `
-  return { labels: s.menu.rows.map(r => r.item.label()), details: s.menu.rows.map(r => r.item.detail ? r.item.detail() : '') };
+  return { labels: s.menu.rows.map(r => r.item.label()), details: s.menu.rows.map(r => r.item.detail ? r.item.detail() : ''),
+           tabs: [...s.tabs.keys()], tab: s.tab };
 `);
-console.log('settings rows:', JSON.stringify(rows.labels));
-// No Language row until the official release (LOCALE.choosable).
-const at = choosable ? 1 : 0;
-check(choosable ? '설정 offers language, pad size, movement and volume' : '설정 offers pad size, movement and volume — no language until release',
-  (choosable ? rows.labels[0] === 'Language' : !rows.labels.includes('Language')) && rows.labels[at].includes('크기') &&
-  rows.labels[at + 1].includes('이동 방식') && rows.labels[at + 2].includes('배경음') &&
-  !rows.labels.some((l) => l.includes('위치')),
+console.log('settings rows:', JSON.stringify(rows));
+// Since 0.105 in tabs (조작 · 소리 · 화면), 조작 open first: pad size and movement, then the three every tab has.
+void choosable;
+check('설정 has three tabs, 조작 open first: pad size and movement, and no place setting',
+  JSON.stringify(rows.tabs) === JSON.stringify(['controls', 'sound', 'display']) && rows.tab === 'controls' &&
+    rows.labels[0].includes('크기') && rows.labels[1].includes('이동 방식') && !rows.labels.includes('Language') &&
+    !rows.labels.some((l) => l.includes('위치')),
   rows.labels.join(' / '));
 
 // Size: right arrow on the first row.
@@ -208,7 +209,9 @@ check('and it wraps straight back round, with no third option',
   wrapped.movementMode === 'floating', `mode=${wrapped.movementMode}`);
 await shot('shell-03-settings-movement');
 
-// Music volume.
+// Music volume: on the 소리 tab since 0.105.
+await scene('SettingsScene', `s.openTab('sound'); return 1;`);
+await sleep(600);
 await selectRow('SettingsScene', 'bgm');
 for (let i = 0; i < 2; i++) { await cdp.tap('ArrowLeft', 37, 'ArrowLeft'); await sleep(150); }
 const volume = await stored('exiled-survivors:settings:v1');

@@ -15,6 +15,32 @@ export interface PatchNote {
 
 export const PATCH_NOTES: readonly PatchNote[] = [
   {
+    version: '0.105',
+    date: '2026-10-23',
+    changes: {
+      ko: [
+        '새 맵 디자인: 판마다 흙 · 얼음 · 불 · 기계 · 공허 다섯 가지 지형 중 하나가 무작위로 펼쳐집니다. 지형마다 바닥, 흩어진 장식, 바위의 모습이 다릅니다. 이어하기는 저장 당시의 지형 그대로입니다.',
+        '설정에 \'맵 디자인\'이 생겼습니다. 끄면 예전의 격자 맵으로 플레이합니다.',
+        '설정 화면이 조작 · 소리 · 화면 탭으로 나뉘었습니다. Tab 키(또는 Q · E)로 탭을 바꿀 수 있습니다.',
+      ],
+      en: [
+        'New map design: each run takes place on one of five grounds — earth, ice, fire, machine or void — at random, each with its own floor, scattered details and rocks. A resumed run keeps the ground it was saved on.',
+        'Settings has a new “Map design” switch. Turn it off to play on the old grid.',
+        'Settings is split into Controls, Sound and Display tabs. Tab (or Q / E) switches between them.',
+      ],
+      ja: [
+        '新しいマップデザイン：回ごとに土・氷・炎・機械・虚空の5種類の地形のうち1つがランダムに広がります。地形ごとに床、散らばった装飾、岩の見た目が異なります。続きからは保存時の地形のままです。',
+        '設定に「マップデザイン」が加わりました。オフにすると以前の格子マップでプレイします。',
+        '設定画面が操作・サウンド・画面のタブに分かれました。Tabキー（またはQ・E）でタブを切り替えられます。',
+      ],
+      zh: [
+        '新地图设计：每局随机展开土、冰、火、机械、虚空五种地形之一，各地形的地面、散落装饰和岩石外观都不同。继续游戏时保持保存时的地形。',
+        '设置中新增“地图设计”。关闭后使用以前的网格地图。',
+        '设置界面分为操作、声音、画面三个标签页，可用Tab键（或Q、E）切换。',
+      ],
+    },
+  },
+  {
     version: '0.104',
     date: '2026-10-23',
     changes: {

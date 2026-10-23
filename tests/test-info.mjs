@@ -363,6 +363,9 @@ check('clicking ◀ lowers it again — the bug this fixes',
   shrunk.radius < grown.radius && shrunk.radius < before.scale,
   `${grown.radius}px -> ${shrunk.radius}px (${shrunk.value.trim()})`);
 
+// 배경음 is on the 소리 tab since 0.105.
+await scene('SettingsScene', `s.openTab('sound'); return 1;`);
+await sleep(600);
 const volumeRow = await scene('SettingsScene', `
   const row = s.menu.rows.find(r => r.item.id === 'bgm');
   return { left: Math.round(row.arrows[0].x), y: Math.round(row.arrows[0].y),
