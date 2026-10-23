@@ -1002,16 +1002,24 @@ Read `git log` for what changed and when. What is not in the log:
     browser's tools, not someone reading the code — the server's check is
     the other half. The user chose not to detect devtools, and to leave the
     three runs on the board.
-- **폰트 비교 (dev server only, 2026-10-23).** `systems/DevFonts.ts`: a
-  picker in the page's corner (bottom-left) swaps every `system-ui` label for
-  a candidate — 갈무리 11/14, Neo둥근모, Pretendard, 함렛 from their CDNs, and
-  the title logo's own letters as a font (`public/dev-fonts/exiled-pixel.*`,
-  built by `tools/make-logo-font.py` from PixelFont's grids plus digits and
-  symbols; no Hangul, so 갈무리 draws the Korean). It patches
-  `TextStyle.setStyle` after the font loads, before the game is made
-  (main.ts awaits it), keeps the choice in `localStorage['dev-font']`, and is
-  a dynamic import behind `import.meta.env.DEV`: none of it reaches the
-  bundle. No font is chosen for the game yet — the user is comparing.
+- **게임 폰트 (0.108, the user's pick).** Every label asks for
+  `system-ui, sans-serif` in code; `systems/Fonts.useGameFont` (installed in
+  main.ts) turns that into `TEXT.fontFamily` — `"ExiledPixel", "Galmuri11"`,
+  then the system's. ExiledPixel is the title logo's own 5x7 letters as a
+  font (`public/fonts/exiled-pixel.woff2`, built by
+  `tools/make-logo-font.py` from PixelFont's grids plus digits, symbols,
+  quotes, dashes, arrows and ★; lowercase drawn as capitals). It has no
+  Hangul, kana or hanzi: the browser draws those per character in 갈무리 11
+  (`public/fonts/galmuri/`, SIL OFL 1.1, © Lee Minseo — its LICENSE.txt
+  must ship beside it, and the credits name it, `credits.roleFont`).
+  `loadGameFonts` loads all three faces before the game is made (5 s at
+  most). Simplified Chinese is only partly in 갈무리: when the language
+  choice opens, add a Chinese pixel font as a third family. A glyph the
+  logo font should have is a grid in the tool's `EXTRA`, then a rerun.
+  On the dev server, `systems/DevFonts.ts` (a dynamic import, never in the
+  bundle) puts a 폰트 비교 picker bottom-left: it sets `TEXT.fontFamily` to
+  a candidate from its CDN (or 시스템, the look before 0.108), kept in
+  `localStorage['dev-font']`.
 - **Known gaps, left on purpose:**
   - The 뼈다귀 pick screen is reached only on the way into a fresh run (게임
     시작, and 다시하기 after a death — both through `BoneScene.before`).

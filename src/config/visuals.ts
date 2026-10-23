@@ -241,6 +241,12 @@ export const SKILL_ICON_SIZE = {
  * down: sharp edges for texture memory, and nothing per frame.
  */
 export const TEXT = {
+  /**
+   * The game's font (0.108, the user's pick): the logo's pixel letters for
+   * Latin, digits and symbols, 갈무리 11 for everything else, the system's as
+   * a last resort. Every label asking for `system-ui` gets this (systems/Fonts.ts).
+   */
+  fontFamily: '"ExiledPixel", "Galmuri11", system-ui, sans-serif' as string,
   resolution: 2,
   /** A ceiling, so a 3x phone does not bake enormous glyph canvases. */
   maxResolution: 3,

@@ -3,9 +3,8 @@
 The logo is drawn from 5x7 grids in src/systems/PixelFont.ts (A-Z). This
 reads those grids, adds digits and the punctuation the game writes on the
 same grid, maps lowercase onto the capitals, and writes
-public/dev-fonts/exiled-pixel.woff2 (and its CSS). It has no Hangul: paired
-with a Korean pixel font as the fallback (갈무리), it is one of the 폰트 비교
-candidates on the dev server (src/systems/DevFonts.ts).
+public/fonts/exiled-pixel.woff2 — the game's font since 0.108, with 갈무리 11
+drawing what it has no glyph for (Hangul and the rest; src/systems/Fonts.ts).
 
     python tools/make-logo-font.py
 """
@@ -17,7 +16,7 @@ from fontTools.pens.ttGlyphPen import TTGlyphPen
 
 ROOT = Path(__file__).resolve().parent.parent
 SOURCE = ROOT / 'src' / 'systems' / 'PixelFont.ts'
-OUT = ROOT / 'public' / 'dev-fonts'
+OUT = ROOT / 'public' / 'fonts'
 
 PX = 100            # font units a pixel
 ROWS = 7            # glyph height in pixels, cap height = ROWS * PX
@@ -60,6 +59,23 @@ EXTRA = {
     '×': ['00000', '10001', '01010', '00100', '01010', '10001', '00000'],
     '·': ['0', '0', '0', '1', '0', '0', '0'],
     '~': ['00000', '00000', '01000', '10101', '00010', '00000', '00000'],
+    # What the menus and hints draw with (0.108): curly quotes, dashes, arrows, a star.
+    '’': ['01', '01', '10', '00', '00', '00', '00'],
+    '‘': ['01', '10', '10', '00', '00', '00', '00'],
+    '“': ['0101', '1010', '1010', '0000', '0000', '0000', '0000'],
+    '”': ['0101', '0101', '1010', '0000', '0000', '0000', '0000'],
+    '—': ['0000000', '0000000', '0000000', '1111111', '0000000', '0000000', '0000000'],
+    '–': ['00000', '00000', '00000', '11111', '00000', '00000', '00000'],
+    '…': ['00000', '00000', '00000', '00000', '00000', '00000', '10101'],
+    '←': ['00000', '00100', '01000', '11111', '01000', '00100', '00000'],
+    '→': ['00000', '00100', '00010', '11111', '00010', '00100', '00000'],
+    '↑': ['00100', '01110', '10101', '00100', '00100', '00100', '00100'],
+    '↓': ['00100', '00100', '00100', '00100', '10101', '01110', '00100'],
+    '▲': ['00000', '00000', '00100', '01110', '11111', '00000', '00000'],
+    '▼': ['00000', '00000', '11111', '01110', '00100', '00000', '00000'],
+    '◀': ['0001', '0011', '0111', '1111', '0111', '0011', '0001'],
+    '▶': ['1000', '1100', '1110', '1111', '1110', '1100', '1000'],
+    '★': ['00100', '00100', '11111', '01110', '01010', '10001', '00000'],
 }
 
 
@@ -119,10 +135,6 @@ def main() -> None:
     OUT.mkdir(parents=True, exist_ok=True)
     fb.font.flavor = 'woff2'
     fb.save(str(OUT / 'exiled-pixel.woff2'))
-    (OUT / 'exiled-pixel.css').write_text(
-        "@font-face {\n  font-family: 'ExiledPixel';\n  src: url('exiled-pixel.woff2') format('woff2');\n  font-display: block;\n}\n",
-        encoding='utf-8',
-    )
     print(f'{len(glyphs)} glyphs -> {OUT / "exiled-pixel.woff2"}')
 
 

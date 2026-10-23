@@ -9,6 +9,7 @@ import * as balance from '@/config';
 import { COLORS, RETIRED_STORAGE } from '@/config';
 import { settings } from '@/systems/Settings';
 import { registerSharpText } from '@/systems/SharpText';
+import { loadGameFonts, useGameFont } from '@/systems/Fonts';
 import { gear, gearBonusFor, orbApplied } from '@/systems/Gear';
 import { ranking } from '@/systems/Ranking';
 import { liveUpdate } from '@/systems/LiveUpdate';
@@ -121,11 +122,15 @@ const config: Phaser.Types.Core.GameConfig = {
   ],
 };
 
-// 폰트 비교 (dev server only): the picked candidate is loaded before a word is drawn.
-// The dynamic import keeps it out of the deployed bundle.
+// 게임 폰트 (0.108): every label in the logo's letters and 갈무리 11, loaded
+// before a word is drawn — and on the dev server, 폰트 비교's pick over it
+// (the dynamic import keeps that out of the deployed bundle).
+useGameFont();
 if (import.meta.env.DEV) {
   const { primeDevFont } = await import('@/systems/DevFonts');
   await primeDevFont();
+} else {
+  await loadGameFonts();
 }
 
 const game = new Phaser.Game(config);

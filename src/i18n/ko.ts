@@ -602,6 +602,7 @@ export const ko: Strings = {
     roleAuthor: '제작',
     roleDev: '개발',
     roleEngine: '엔진',
+    roleFont: '폰트',
   },
 
   confirm: {

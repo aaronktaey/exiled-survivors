@@ -598,6 +598,7 @@ export const ja: Strings = {
     roleAuthor: '制作',
     roleDev: '開発',
     roleEngine: 'エンジン',
+    roleFont: 'フォント',
   },
 
   confirm: {

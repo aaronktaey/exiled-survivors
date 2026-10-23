@@ -785,6 +785,8 @@ export interface Strings {
     readonly roleAuthor: string;
     readonly roleDev: string;
     readonly roleEngine: string;
+    /** 폰트 (0.108): 갈무리's credit. */
+    readonly roleFont: string;
   };
 
   /** The one question the game asks before throwing a save away. */

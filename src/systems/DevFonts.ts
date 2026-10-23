@@ -1,29 +1,28 @@
-import Phaser from 'phaser';
+import { TEXT } from '@/config';
+import { loadGameFonts } from '@/systems/Fonts';
 
 /**
  * 폰트 비교 (dev server only, 2026-10-23, the user's ask): a picker in the
- * page's corner that swaps every label the game draws in `system-ui` for a
- * candidate font, loaded from its CDN — nothing is bundled or shipped. The
- * choice is kept in localStorage under `dev-font` (outside the game's
- * `exiled-survivors:` keys, so it is never synced or carried) and applied by
- * a reload, before the first scene draws a word.
+ * page's corner that sets TEXT.fontFamily — what every label is drawn in
+ * (systems/Fonts.ts) — to a candidate, loaded from its CDN; nothing here is
+ * bundled. It starts on the game's own font (0.108: the logo's letters with
+ * 갈무리 11). The choice is kept in localStorage under `dev-font` (outside the
+ * game's `exiled-survivors:` keys, so it is never synced or carried) and
+ * applied by a reload, before the first scene draws a word.
  */
 interface DevFont {
   readonly id: string;
   readonly label: string;
-  /** The CSS families, first to last fallback; none for the game's own. */
+  /** The CSS families, first to last fallback; none for the game's own font. */
   readonly families?: readonly string[];
   readonly css?: readonly string[];
 }
 
 const GALMURI = 'https://cdn.jsdelivr.net/npm/galmuri/dist/galmuri.css';
 
-/** The title logo's letters as a font (tools/make-logo-font.py): Latin, digits and symbols only. */
-const LOGO = `${import.meta.env.BASE_URL}dev-fonts/exiled-pixel.css`;
-
 export const DEV_FONTS: readonly DevFont[] = [
-  { id: 'default', label: '기본 (system-ui)' },
-  { id: 'logo', label: '로고체 + 갈무리 11 (한글)', families: ['ExiledPixel', 'Galmuri11'], css: [LOGO, GALMURI] },
+  { id: 'game', label: '게임 폰트 (로고체 + 갈무리 11)' },
+  { id: 'system', label: '시스템 (0.107까지)', families: ['system-ui'], css: [] },
   { id: 'galmuri11', label: '갈무리 11', families: ['Galmuri11'], css: [GALMURI] },
   { id: 'galmuri14', label: '갈무리 14', families: ['Galmuri14'], css: [GALMURI] },
   { id: 'neodgm', label: 'Neo둥근모', families: ['NeoDunggeunmo'], css: ['https://cdn.jsdelivr.net/gh/neodgm/neodgm-webfont@latest/neodgm/style.css'] },
@@ -70,13 +69,14 @@ function addPicker(current: DevFont): void {
 }
 
 /**
- * Loads the chosen font and has every `system-ui` label use it. Awaited in
- * main.ts before the game is made, so no word is drawn in the old font first.
- * The harness never sees it: run-all clears storage before every suite.
+ * Loads the game's font, then the chosen candidate over it (TEXT.fontFamily).
+ * Awaited in main.ts before the game is made. The harness never sees a
+ * candidate: run-all clears storage before every suite.
  */
 export async function primeDevFont(): Promise<void> {
   const font = chosen();
   addPicker(font);
+  await loadGameFonts();
   if (!font.families || !font.css) {
     return;
   }
@@ -101,17 +101,5 @@ export async function primeDevFont(): Promise<void> {
     ),
     new Promise((resolve) => setTimeout(resolve, 6000)),
   ]);
-
-  const family = `${font.families.map((name) => `"${name}"`).join(', ')}, system-ui, sans-serif`;
-  const proto = Phaser.GameObjects.TextStyle.prototype as unknown as {
-    setStyle: (style: Record<string, unknown> | undefined, updateText?: boolean, setDefaults?: boolean) => unknown;
-  };
-  const original = proto.setStyle;
-  proto.setStyle = function (style, updateText, setDefaults) {
-    const swapped =
-      style && typeof style.fontFamily === 'string' && style.fontFamily.startsWith('system-ui')
-        ? { ...style, fontFamily: family }
-        : style;
-    return original.call(this, swapped, updateText, setDefaults);
-  };
+  (TEXT as { fontFamily: string }).fontFamily = `${font.families.map((name) => (name === 'system-ui' ? name : `"${name}"`)).join(', ')}, system-ui, sans-serif`;
 }

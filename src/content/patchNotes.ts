@@ -15,6 +15,24 @@ export interface PatchNote {
 
 export const PATCH_NOTES: readonly PatchNote[] = [
   {
+    version: '0.108',
+    date: '2026-10-23',
+    changes: {
+      ko: [
+        '게임 글씨체가 바뀌었습니다: 영문 · 숫자 · 기호는 로고와 같은 픽셀 글씨로, 한글은 갈무리 11 픽셀 글꼴로 표시됩니다. 제작자 정보에 글꼴 저작권을 표기했습니다.',
+      ],
+      en: [
+        'New lettering: Latin, digits and symbols now use the logo’s own pixel letters, and everything else the Galmuri 11 pixel font. The font’s credit is in the credits.',
+      ],
+      ja: [
+        'ゲームの文字が変わりました：英字・数字・記号はロゴと同じピクセル文字で、それ以外はGalmuri 11ピクセルフォントで表示されます。制作者情報にフォントの著作権を記載しました。',
+      ],
+      zh: [
+        '游戏字体已更换：英文、数字和符号使用与标志相同的像素字，其他文字使用Galmuri 11像素字体。制作信息中已注明字体版权。',
+      ],
+    },
+  },
+  {
     version: '0.107',
     date: '2026-10-23',
     changes: {

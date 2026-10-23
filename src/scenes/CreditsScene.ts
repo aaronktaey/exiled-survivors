@@ -17,6 +17,8 @@ function lines(): readonly (readonly [string, string])[] {
     [copy.roleAuthor, 'whitemango'],
     [copy.roleDev, 'Claude Code (Anthropic)'],
     [copy.roleEngine, 'Phaser 4 · Vite · TypeScript'],
+    // Galmuri is SIL OFL 1.1: its copyright is shown here, its licence ships in public/fonts/galmuri.
+    [copy.roleFont, 'Galmuri © Lee Minseo (SIL OFL 1.1)'],
   ];
 }
 
