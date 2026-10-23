@@ -15,6 +15,24 @@ export interface PatchNote {
 
 export const PATCH_NOTES: readonly PatchNote[] = [
   {
+    version: '0.107',
+    date: '2026-10-23',
+    changes: {
+      ko: [
+        '지형 바닥과 바위에 그어진 금 · 이음새 선이 어두운 색으로 바뀌어 덜 눈에 띕니다. 얼음 · 불 · 공허 지형의 빛나던 선도 어둡게 바뀌었습니다.',
+      ],
+      en: [
+        'The cracks and seams drawn across the ground and the rocks are now dark and less eye-catching, including the glowing ones on the ice, fire and void grounds.',
+      ],
+      ja: [
+        '地形の床や岩に描かれたひび・継ぎ目の線が暗い色になり、目立たなくなりました。氷・炎・虚空の地形の光っていた線も暗くなりました。',
+      ],
+      zh: [
+        '地面和岩石上的裂纹、接缝线条改为深色，不再显眼。冰、火、虚空地形中发光的线条也变暗了。',
+      ],
+    },
+  },
+  {
     version: '0.106',
     date: '2026-10-23',
     changes: {

@@ -142,10 +142,6 @@ function drawCrack(g: Phaser.GameObjects.Graphics, theme: ArenaTheme, random: ()
       stroke(ox, oy, 4, theme.crackGlow, 0.22);
     }
     stroke(ox, oy, theme.crackStyle === 'seam' ? 1.5 : 1, theme.crack, theme.crackGlow !== undefined ? 0.85 : 0.6);
-    // A steel seam catches the light along one lip.
-    if (theme.crackStyle === 'seam') {
-      stroke(ox + 1, oy + 1, 1, theme.pebbleLight, 0.35);
-    }
   };
 }
 

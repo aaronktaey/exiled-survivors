@@ -129,6 +129,12 @@ set takes about six minutes. One suite on its own: `node run-all.mjs test-gear`.
   pins `Math.random` to force a drop roll must first fill every pool the
   kill can draw from (drop one of each and collect it) with the real roll,
   or the first new label throws "reading 'context'" — see test-mango.
+- **Wait for a state, not a clock (`cdp.until`, 2026-10-23).** `until(expr,
+  timeoutMs, everyMs)` polls the page until `expr` is truthy and returns it.
+  A step whose end is a state — a sync done, a screen open, a pickup taken —
+  waits on that: fixed sleeps were too short with four Chromes sharing the
+  machine (test-account, test-inventory, test-gear and test-skills failed
+  that way, and passed alone). New checks should do the same.
 - **`cdp.evaluate` hands results back as one JSON string.** Returning
   everything on screen (the patch notes, every chapter of the guide) overflows
   it and the suite dies with `undefined`. Return the answer, not the corpus.

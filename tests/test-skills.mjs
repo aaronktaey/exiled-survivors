@@ -185,7 +185,8 @@ await shot('skill-01-drop');
 // a skill of its own and be walked over too.
 await run(`s.spawner.clear(); return 1;`);
 await cdp.key('keyDown', 'KeyD', 68, 'd');
-await sleep(800);
+// Walked until the drop is taken (a fixed 0.8s fell short with several Chromes sharing the machine).
+await cdp.until(`window.game.scene.getScene('GameScene').owned.has('fireball')`, 6000, 50);
 await cdp.key('keyUp', 'KeyD', 68, 'd');
 await sleep(600);
 

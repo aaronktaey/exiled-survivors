@@ -327,7 +327,7 @@ export class Terrain {
         const angle = (i / SAMPLES) * Math.PI * 2;
         return angle > Math.PI * 0.95 && angle < Math.PI * 1.6;
       });
-      g.lineStyle(1.5, R.edgeLight, 0.55);
+      g.lineStyle(1.5, R.edgeLight, 0.25);
       g.strokePoints(lit, false, false);
     }
   }

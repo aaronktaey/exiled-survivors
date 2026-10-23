@@ -89,7 +89,7 @@ try {
   await shot('account-01-signed-out');
   // 0.101: a way in is not taken at once — a popup says the account's records will replace this device's.
   await scene('AccountScene', `s.login('google'); return 1;`);
-  await sleep(500);
+  await cdp.until(`window.game.scene.isActive('ConfirmScene')`);
   const warned = await scene('ConfirmScene', `return { active: s.scene.isActive(), rows: s.menu.items.map(i => i.id),
     texts: s.children.list.filter((o) => o.type === 'Text').map((o) => o.text), at: location.pathname + location.search };`);
   check('pressing a way in first warns that the account’s records will replace this device’s, offering 로그인 or 취소',
@@ -105,7 +105,8 @@ try {
   await ev(`(() => { window.gear.add(${JSON.stringify(sword('mine'))}); return 1; })()`);
   await fake(`s.user = ${JSON.stringify(user)}`);
   await arrive(`${BASE}#login=ok`);
-  await sleep(800);
+  // Signed in, the upload done: the browser's note says it agrees with the account.
+  await cdp.until(`window.cloudSave?.status === 'synced' && !!localStorage.getItem('exiled-survivors:sync:v1')`);
   const first = await ev(`(() => { const s = window.__fake.load(); return {
     hash: location.hash, uploaded: Object.keys(s.save.data || {}), at: s.save.updatedAt,
     note: JSON.parse(localStorage.getItem('exiled-survivors:sync:v1') || 'null'),
@@ -121,7 +122,7 @@ try {
   // --- 3. a change here goes up on the next sync ---
   await ev(`(() => { window.gear.add(${JSON.stringify(sword('later'))}); return 1; })()`);
   await ev(`window.cloudSave.flush().then(() => 1)`);
-  await sleep(500);
+  await cdp.until(`(window.__fake.load().save.data?.['exiled-survivors:gear:v2'] ?? '').includes('later')`);
   const flushed = await fake(`0`);
   check('a change made here is uploaded on the next sync',
     (flushed.save.data?.['exiled-survivors:gear:v2'] ?? '').includes('later') && flushed.save.updatedAt > first.at);
@@ -130,7 +131,8 @@ try {
   const other = { 'exiled-survivors:gear:v2': JSON.stringify({ items: [sword('fromOther')], equipped: 'fromOther' }) };
   await fake(`s.save = { data: ${JSON.stringify(other)}, updatedAt: s.save.updatedAt + 1000 }`);
   await arrive();
-  await sleep(2500);
+  // The account's records taken, the page started over on them.
+  await cdp.until(`window.gear?.items?.some((i) => i.uid === 'fromOther') && window.cloudSave?.status === 'synced'`);
   const took = await ev(`({ gear: window.gear.items.map(i => i.uid), conflict: window.cloudSave.conflict !== null })`);
   check('when only the account changed, its records are taken and the game starts on them',
     took.gear.includes('fromOther') && !took.gear.includes('later') && !took.conflict, JSON.stringify(took));
@@ -139,7 +141,8 @@ try {
   await ev(`(() => { window.gear.add(${JSON.stringify(sword('localOnly'))}); return 1; })()`);
   await fake(`s.save = { data: { 'exiled-survivors:gear:v2': ${JSON.stringify(JSON.stringify({ items: [sword('remoteOnly')], equipped: 'remoteOnly' }))} }, updatedAt: s.save.updatedAt + 1000 }`);
   await arrive();
-  await sleep(1500);
+  await cdp.until(`window.game?.scene?.isActive('ConflictScene')`);
+  await sleep(300);
   const texts = `s.children.list.filter((o) => o.type === 'Text').map((o) => o.text)`;
   const asked = await scene('ConflictScene', `return { active: s.scene.isActive(), cards: s.headings.map((h, i) => h.text + ':' + s.cards[i].text.split(String.fromCharCode(10))[0]), texts: ${texts} };`);
   check('when both changed, the title opens the choice, both sides read out, no keep buttons under them',
@@ -171,7 +174,8 @@ try {
   // --- 5b. (0.101) a sign-in on a browser with records of its own: the account's win, nothing asked ---
   await ev(`(() => { localStorage.removeItem('exiled-survivors:sync:v1'); window.gear.add(${JSON.stringify(sword('freshHere'))}); return 1; })()`);
   await arrive(`${BASE}#login=ok`);
-  await sleep(3000);
+  // The account's taken and the page started over: synced, 'freshHere' gone.
+  await cdp.until(`window.cloudSave?.status === 'synced' && !window.gear?.items?.some((i) => i.uid === 'freshHere')`);
   const fresh = await ev(`({ gear: window.gear.items.map(i => i.uid), conflict: window.cloudSave.conflict !== null,
     asked: window.game.scene.isActive('ConflictScene'), status: window.cloudSave.status })`);
   check('a sign-in on a browser with records of its own takes the account’s, asking nothing',
@@ -183,12 +187,14 @@ try {
     window.account.user = null; window.account.notify();
     s.scene.launch('RankEntryScene', { run: { damage: 77777, level: 9, survivedMs: 300000 }, onDone: () => {} });
     return 1;`);
-  await sleep(700);
+  await cdp.until(`window.game.scene.isActive('RankEntryScene')`);
+  await sleep(200);
   const entry = await scene('RankEntryScene', `return { needs: s.needsSignIn, labels: s.children.list.filter(o => o.type === 'Text').map(o => o.text) };`);
   check('signed out, the entry popup offers to sign in and enter',
     entry.needs === true && entry.labels.includes('로그인하고 등록'), JSON.stringify(entry.labels.slice(0, 8)));
   await scene('RankEntryScene', `s.finish(true); return 1;`);
-  await sleep(700);
+  await cdp.until(`window.game.scene.isActive('AccountScene')`);
+  await sleep(200);
   const ranked = await scene('AccountScene', `
     const lead = s.lead.text;
     s.payload.onBeforeLogin();
@@ -197,7 +203,7 @@ try {
     /랭킹에 올리려면/.test(ranked.lead) && /77777/.test(ranked.pending ?? ''), JSON.stringify(ranked));
   await fake(`s.user = ${JSON.stringify(user)}`);
   await arrive(`${BASE}#login=ok`);
-  await sleep(1500);
+  await cdp.until(`window.game?.scene?.isActive('RankingScene') && sessionStorage.getItem('exiled-survivors:pending-rank') === null`);
   const landed = await ev(`(() => ({ board: window.__fake.load().board.map(e => e.damage),
     pending: sessionStorage.getItem('exiled-survivors:pending-rank'), ranking: window.game.scene.isActive('RankingScene') }))()`);
   check('coming back signed in hands the waiting run in and opens the board',

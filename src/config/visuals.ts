@@ -1010,7 +1010,8 @@ export const ARENA_LOOK = {
     ice: {
       base: 0x0c1520,
       patchShades: [0x12202d, 0x09111a, 0x182a3a, 0x0f1d2a],
-      crack: 0x8fc8ee,
+      // 0.107 (the user's ask): the lines drawn on a ground are dark — bright ones read as noise.
+      crack: 0x1c3042,
       crackStyle: 'hair',
       accent: 'shard',
       accentColors: [0x9fd6f5, 0xd8f1ff],
@@ -1025,9 +1026,8 @@ export const ARENA_LOOK = {
     fire: {
       base: 0x130a07,
       patchShades: [0x1c0f0a, 0x0b0504, 0x24130b, 0x180c08],
-      crack: 0xff6a1a,
+      crack: 0x3a1408,
       crackStyle: 'hair',
-      crackGlow: 0xff3a00,
       accent: 'ember',
       accentColors: [0xff8a3a, 0xffd27a],
       pebble: 0x2b1c16,
@@ -1036,7 +1036,7 @@ export const ARENA_LOOK = {
       moss: 0x2a2018,
       bits: 'char',
       bitColor: 0x6e5c50,
-      rock: { body: 0x2a1c18, face: 0x3a2620, light: 0x55382a, rim: 0x0c0606, edgeLight: 0xff8a3a, crack: 0xff5a14, crackGlow: 0xff3a00, moss: 0xff6a1a, mossLight: 0xffc060 },
+      rock: { body: 0x2a1c18, face: 0x3a2620, light: 0x55382a, rim: 0x0c0606, edgeLight: 0xff8a3a, crack: 0x2a0e06, moss: 0xff6a1a, mossLight: 0xffc060 },
     },
     machine: {
       base: 0x0f1317,
@@ -1056,9 +1056,8 @@ export const ARENA_LOOK = {
     void: {
       base: 0x0b0713,
       patchShades: [0x140d20, 0x06040b, 0x1b112e, 0x110a1b],
-      crack: 0xb07cff,
+      crack: 0x24143e,
       crackStyle: 'hair',
-      crackGlow: 0x7a3cff,
       accent: 'mote',
       accentColors: [0xc9a8ff, 0x7f5cff],
       pebble: 0x241a36,
@@ -1067,7 +1066,7 @@ export const ARENA_LOOK = {
       moss: 0x2e1856,
       bits: 'rune',
       bitColor: 0x9b7ae0,
-      rock: { body: 0x231a33, face: 0x31244a, light: 0x4b3a70, rim: 0x08060e, edgeLight: 0xc9a8ff, crack: 0x0e0a16, crackGlow: 0x7a3cff, moss: 0x9b6bff, mossLight: 0xd8c0ff },
+      rock: { body: 0x231a33, face: 0x31244a, light: 0x4b3a70, rim: 0x08060e, edgeLight: 0xc9a8ff, crack: 0x0e0a16, moss: 0x9b6bff, mossLight: 0xd8c0ff },
     },
   } as Record<ArenaThemeId, ArenaTheme>,
 };

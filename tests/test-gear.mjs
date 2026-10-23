@@ -19,14 +19,19 @@ const run = (body) =>
 const scene = (key, body) =>
   cdp.evaluate(`(() => { const s = window.game.scene.getScene('${key}'); ${body} })()`);
 /** 장비 and 패시브 are reached from the corner, not from the list. */
+// Which screen each corner icon opens: waited for, not slept on (a fixed
+// sleep was too short with several Chromes sharing the machine).
+const OPENS = { gear: 'InventoryScene', passives: 'PassiveScene', ranking: 'RankingScene', filter: 'FilterScene', tuning: 'TuningScene', account: 'AccountScene' };
 const openIcon = async (id) => {
+  await cdp.until(`window.game?.scene?.isActive('MenuScene') && !!window.game.scene.getScene('MenuScene').icons`);
   await cdp.evaluate(`(() => {
     const s = window.game.scene.getScene('MenuScene');
     const view = s.icons.views.find(v => v.button.id === '${id}');
     view.button.onSelect();
     return !!view;
   })()`);
-  await sleep(900);
+  await cdp.until(`window.game.scene.isActive('${OPENS[id]}')`);
+  await sleep(300);
 };
 const pick = async (key, id) => {
   await cdp.evaluate(`(() => {

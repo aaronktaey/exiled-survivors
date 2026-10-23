@@ -37,13 +37,16 @@ const open = async (weapons) => {
   await sleep(1200);
   await ev(SETUP(weapons));
   await cdp.send('Page.reload', {});
-  await sleep(4200);
+  await sleep(1500);
+  // The title up, then the 인벤토리 open: waited for, not slept on.
+  await cdp.until(`window.game?.scene?.isActive('MenuScene') && !!window.game.scene.getScene('MenuScene').icons`);
   await ev(`(() => {
     const m = window.game.scene.getScene('MenuScene');
     m.icons.views.find((v) => v.button.id === 'gear').button.onSelect();
     return 1;
   })()`);
-  await sleep(900);
+  await cdp.until(`window.game.scene.isActive('InventoryScene') && !!window.game.scene.getScene('InventoryScene').menu`);
+  await sleep(300);
 };
 
 // --- 1. the title's corner icon opens it, on 장비 ---

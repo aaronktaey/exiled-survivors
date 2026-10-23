@@ -82,7 +82,28 @@ export async function connect(port = 9333) {
     await key('keyUp', code, vk, k);
   };
 
-  return { send, evaluate, key, tap, close: () => ws.close() };
+  /**
+   * Waits until `expr` (evaluated in the page) comes back truthy, then
+   * returns it — or, after `timeoutMs`, the last value it read. For a step
+   * whose end is a state rather than a moment: a fixed sleep is too short
+   * when several Chromes share the machine, and too long when they do not.
+   */
+  const until = async (expr, timeoutMs = 20000, everyMs = 150) => {
+    const end = Date.now() + timeoutMs;
+    let last;
+    while (Date.now() < end) {
+      try {
+        last = await evaluate(expr);
+      } catch {
+        last = undefined;
+      }
+      if (last && !last.__err) return last;
+      await sleep(everyMs);
+    }
+    return last;
+  };
+
+  return { send, evaluate, key, tap, until, close: () => ws.close() };
 }
 
 export const STATE = `(() => {
