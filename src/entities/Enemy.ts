@@ -7,6 +7,8 @@ import {
   COLORS,
   SHOCK_FX,
   enemyPose,
+  enemyWalk,
+  ENEMY_WALK_STEPS,
   DEPTH,
   ENEMY,
   ENEMY_KINDS,
@@ -144,6 +146,9 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
   /** A giant's walk: where it is in GIANT_STRIDE, and how long that step has shown. */
   private strideAt = 0;
   private strideMs = 0;
+  /** A walking figure's stride (EnemyKindSpec.walk): its step, and how far into it. */
+  private walkStep = 0;
+  private walkMs = 0;
   /** The turn a giant takes when it throws, while it lasts. */
   private spin?: Phaser.Tweens.Tween;
   /** 우두머리's health bar and the line above it, made on its first one. */
@@ -206,9 +211,9 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
     return tally;
   }
 
-  /** Half the sprite's width, plus the ring. What counts as "pointing at it". */
+  /** Half the picture's width, plus the ring. What counts as "pointing at it". */
   public get pickRadius(): number {
-    return this.spec.size / 2 + RARE.outlinePadding;
+    return this.shownRadius + RARE.outlinePadding;
   }
 
   /** Side of the sprite, for anything that has to give it room. */
@@ -305,6 +310,9 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
     this.stopSpin();
     this.strideAt = 0;
     this.strideMs = 0;
+    this.walkStep = 0;
+    this.walkMs = 0;
+    this.setFlipX(false);
 
     // A little spread so a pack does not move as one rigid blob.
     // Only the roll is baked in here; the affix multiplier is applied when
@@ -373,7 +381,8 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
       return;
     }
 
-    const side = this.spec.size + RARE.outlinePadding * 2;
+    // Round the picture, not the body: a figure drawn wider than its body (0.99) is not cut through.
+    const side = this.shownRadius * 2 + RARE.outlinePadding * 2;
     if (!this.outline) {
       this.outline = this.scene.add
         .rectangle(this.x, this.y, side, side)
@@ -637,12 +646,48 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
     const distance = Phaser.Math.Distance.Between(this.x, this.y, this.target.x, this.target.y);
 
     if (this.spec.shot && this.fightAtRange(dt, distance, this.spec.shot)) {
+      if (this.spec.walk) {
+        this.walkCycle(dt, this.spec.walk);
+      }
       return;
     }
 
     this.scene.physics.moveTo(this, this.target.x, this.target.y, this.currentSpeed);
     if (this.spec.giant) {
       this.stride(dt, this.spec.giant);
+    } else if (this.spec.walk) {
+      this.walkCycle(dt, this.spec.walk);
+    }
+  }
+
+  /**
+   * A walking figure (0.99): its next picture each `stepMs` while it moves —
+   * sooner the faster it is actually going, so a chilled one trudges — the
+   * plain one standing, the 사수's draw for `poses.castMs` after it looses.
+   * It faces the way it goes, and the survivor while it stands.
+   */
+  private walkCycle(delta: number, walk: { readonly stepMs: number }): void {
+    const body = this.body as Phaser.Physics.Arcade.Body | null;
+    const vx = body?.velocity.x ?? 0;
+    const pace = body ? body.velocity.length() : 0;
+    this.castPoseMs = Math.max(0, this.castPoseMs - delta);
+    if (this.castPoseMs > 0 && this.spec.poses) {
+      this.showFrame(enemyPose(this.spec.texture, 'cast'));
+    } else if (pace > 2) {
+      this.walkMs += delta * (pace / Math.max(1, this.spec.speed));
+      if (this.walkMs >= walk.stepMs) {
+        this.walkMs %= walk.stepMs;
+        this.walkStep = (this.walkStep + 1) % ENEMY_WALK_STEPS;
+      }
+      this.showFrame(enemyWalk(this.spec.texture, this.walkStep));
+    } else {
+      this.walkMs = 0;
+      this.showFrame(this.spec.texture);
+    }
+    if (Math.abs(vx) > 1) {
+      this.setFlipX(vx < 0);
+    } else if (this.target) {
+      this.setFlipX(this.target.x < this.x);
     }
   }
 
@@ -818,6 +863,10 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
     if (distance <= shot.range && this.shotCooldownMs <= 0 && this.target) {
       this.shotCooldownMs = shot.cooldownMs;
       const angle = Phaser.Math.Angle.Between(this.x, this.y, this.target.x, this.target.y);
+      // The 사수 draws its bow for a moment as it looses (0.99).
+      if (this.spec.poses) {
+        this.castPoseMs = this.spec.poses.castMs;
+      }
 
       // 연발 throws the extra bolts in a fan around the aimed one, so a
       // 사수 wearing it covers a wedge rather than a line: stepping aside

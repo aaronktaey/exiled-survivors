@@ -171,6 +171,7 @@ export const TEXTURES = {
   projectile: "tex-projectile",
   iceShard: "tex-ice-shard",
   voidOrb: "tex-void-orb",
+  voidOrbInner: "tex-void-orb-inner",
   potion: "tex-potion",
   gem: "tex-gem",
   skillOrb: "tex-skill-orb",
@@ -961,6 +962,41 @@ export const ALTAR_SUMMON_FX = {
 /** A posed enemy's picture for a pose (EnemyKindSpec.poses): the kind's texture, or that with the pose's name. */
 export type EnemyPose = 'stand' | 'leap' | 'cast';
 export const enemyPose = (texture: string, pose: EnemyPose): string => (pose === 'stand' ? texture : `${texture}-${pose}`);
+
+/** A walking figure's stride (EnemyKindSpec.walk, 0.99): this many pictures, one a step. */
+export const ENEMY_WALK_STEPS = 4;
+/** Its picture for one step of the stride; standing it wears the plain texture. */
+export const enemyWalk = (texture: string, step: number): string => `${texture}-walk${step}`;
+
+/**
+ * An enemy's bolt (0.99: an 8px square before, hard to see in a crowd): a
+ * hot white core in a pink ring, four spikes and a soft halo, drawn on a
+ * `canvas`-px square and shown `drawnScale` × the shot's size — its body
+ * for hits stays the shot's size, in the middle. It spins as it flies.
+ */
+export const ENEMY_SHOT_FX = {
+  canvas: 32,
+  drawnScale: 2.6,
+  ring: 0xff3b6b,
+  inner: 0xffa3b8,
+  core: 0xffffff,
+  spike: 0xffd6e0,
+  halo: 0xff2d55,
+  spinPerSecond: 7,
+} as const;
+
+/**
+ * 공허구체's 2차 각성 ring (0.99: a second set of solid orbs before, which
+ * piled onto the survivor and hid it and what it fought): hollow — a bright
+ * rim over a faint fill — and drawn under the enemies.
+ */
+export const VOID_INNER_FX = {
+  rim: 0xd2b0ff,
+  rimWidth: 2.5,
+  fill: 0xb07cff,
+  fillAlpha: 0.18,
+  alpha: 0.85,
+} as const;
 
 /**
  * 알수없는 룬's looks (0.89): the 룬 stones of 0.71–0.79, as they were drawn

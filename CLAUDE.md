@@ -271,6 +271,25 @@ Read `git log` for what changed and when. What is not in the log:
   screen's plane), and stood in a gold `footRing` ellipse instead of the
   square `outline` a rare wears. Its body for hits is still `size`; never
   squash the sprite for an effect, Arcade scales the body with it.
+- **Walking figures (0.99, the user's ask).** 일반 · 사수 · 질주 · 거구 were
+  squares; `walk` on an `ENEMY_KINDS` entry (`EnemyWalkSpec.stepMs`) makes
+  BootScene paint the kind as a figure (`createWalkerTextures` →
+  `paintWalker`, one case per kind id, facing right in 32 units on a
+  `drawn` square): standing (the plain texture), `ENEMY_WALK_STEPS`
+  stride pictures (`enemyWalk(texture, step)`) and, with `poses`, the
+  사수's draw (`enemyPose(texture, 'cast')`, shown `castMs` after
+  `fightAtRange` looses). `Enemy.walkCycle` steps them at the pace it is
+  really going and flips to face its way (the survivor when standing).
+  `drawn` widens `shownRadius`, so the rare outline, `pickRadius` and
+  타격's reach follow the picture; the body is still `size`. A new walker
+  is a `walk` + `drawn` in the table and a case in `paintWalker` (an
+  unknown id falls back to a square).
+- **Enemy bolts (0.99).** The plain shot is `ENEMY_SHOT_FX`'s glowing bolt,
+  shown `drawnScale` × the shot's size and spinning; `EnemyShot.fire`
+  sets the body back to the shot's size (Arcade scales a body with its
+  sprite). A shot with its own `texture` (the 키메라's thorn) is untouched.
+  공허구체's 2차 ring is `TEXTURES.voidOrbInner` (`VOID_INNER_FX`), hollow
+  and under the enemies — it hid the survivor as a second solid ring.
 - **도망자 is table-driven.** `flee`, `lifespanMs`, `guaranteedSkill` and
   `flashy` on an `ENEMY_KINDS` entry give any kind that behaviour; the
   fugitive is the only one using them. It spawns on `FUGITIVE`'s clock.

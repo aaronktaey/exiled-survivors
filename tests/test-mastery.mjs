@@ -313,7 +313,10 @@ const second = await run(`
   orb.update(16, ctx({ range: 120 }));
   const inner = orb.inner.filter((o) => o.visible);
   out.inner = { count: inner.length, outer: orb.active.length,
-    radius: inner.length ? Math.round(Math.hypot(inner[0].x - p.x, inner[0].y - p.y)) : 0, want: Math.round(120 * S2.voidInner.radiusShare) };
+    radius: inner.length ? Math.round(Math.hypot(inner[0].x - p.x, inner[0].y - p.y)) : 0, want: Math.round(120 * S2.voidInner.radiusShare),
+    // 0.99: hollow, and under the enemies, so it no longer hides what it circles.
+    hollow: inner.every((o) => o.texture.key === window.config.TEXTURES.voidOrbInner),
+    under: inner.every((o) => o.depth < window.config.DEPTH.enemies) };
   orb.update(16, ctx({ masteredTwice: false, range: 120 }));
   s.spawner.clear();
 
@@ -343,6 +346,7 @@ check('2차 각성 얼음창: an enemy that dies under 냉각 chills those close
 check('2차 각성 공허구체: an inner ring as many orbs, at its share of the radius',
   second.innerPlain === 0 && second.inner.count === second.inner.outer && Math.abs(second.inner.radius - second.inner.want) <= 2,
   JSON.stringify(second.inner));
+check('and it is a hollow rim drawn under the enemies (0.99)', second.inner.hollow && second.inner.under, JSON.stringify(second.inner));
 check('2차 각성 낙뢰: what stands round the strike takes its share, what stands further does not',
   second.splashPlain === 0 && second.splash.near === second.splash.want && second.splash.far === 0, JSON.stringify(second.splash));
 

@@ -15,6 +15,32 @@ export interface PatchNote {
 
 export const PATCH_NOTES: readonly PatchNote[] = [
   {
+    version: '0.99',
+    date: '2026-10-23',
+    changes: {
+      ko: [
+        '일반 · 사수 · 질주 · 거구에 외형이 생겼습니다: 붉은 구울, 활을 든 고블린, 금빛 자칼, 보라색 트롤. 움직이는 방향을 보고 걸으며, 빠를수록 걸음도 빨라집니다. 사수는 쏠 때 활시위를 당깁니다.',
+        '적이 쏘는 탄이 더 잘 보입니다: 작은 분홍 사각형 대신 하얀 핵이 있는 빛나는 탄이 회전하며 날아옵니다. 맞는 판정 크기는 그대로입니다.',
+        '공허구체 2차 각성의 안쪽 고리가 속이 빈 테두리로 바뀌고 적 아래에 그려집니다. 생존자와 주변 적을 가리지 않습니다.',
+      ],
+      en: [
+        'The Grunt, Shooter, Runner and Brute have looks of their own: a red ghoul, a goblin with a bow, a golden jackal and a purple troll. They walk facing the way they go, stepping quicker the faster they move, and the Shooter draws its bow as it fires.',
+        'Enemy bolts are easier to see: a glowing, spinning bolt with a white core instead of a little pink square. What counts as a hit is the same size as before.',
+        'Void Orb’s second-awakening inner ring is now a hollow rim drawn under the enemies, so it no longer hides the survivor and what is around it.',
+      ],
+      ja: [
+        '雑兵・射手・俊足・巨漢に外見がつきました：赤いグール、弓を持ったゴブリン、金色のジャッカル、紫のトロル。進む方向を向いて歩き、速いほど足取りも速くなります。射手は撃つときに弓を引きます。',
+        '敵の弾が見やすくなりました：小さなピンクの四角の代わりに、白い核を持つ光る弾が回転しながら飛んできます。当たり判定の大きさは変わりません。',
+        '虚無球の第二覚醒の内側の輪が中空の縁になり、敵の下に描かれます。生存者や周りの敵を隠しません。',
+      ],
+      zh: [
+        '杂兵、射手、疾走者、巨汉有了自己的外形：红色食尸鬼、持弓的哥布林、金色豺狼和紫色巨魔。它们面朝行进方向行走，移动越快步伐越快，射手射击时会拉弓。',
+        '敌人的弹幕更容易看清：不再是粉色小方块，而是带白色核心、旋转飞行的发光弹。命中判定的大小不变。',
+        '虚空球二次觉醒的内圈改为空心边框，并绘制在敌人下方，不再遮挡幸存者和周围的敌人。',
+      ],
+    },
+  },
+  {
     version: '0.98',
     date: '2026-10-23',
     changes: {

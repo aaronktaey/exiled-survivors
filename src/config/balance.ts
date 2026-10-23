@@ -141,6 +141,13 @@ export interface EnemyKindSpec {
   /** Drawn as a fat giant that strides and spins rather than as a square (EnemyGiantSpec). */
   readonly giant?: EnemyGiantSpec;
   /**
+   * Drawn as a figure that walks (0.99, the user's ask; a square before):
+   * BootScene paints its stride (`enemyWalk(texture, step)`, ENEMY_WALK_STEPS
+   * pictures, the plain texture standing), and Enemy steps through it at its
+   * own pace, faster or slower with how fast it is actually going.
+   */
+  readonly walk?: EnemyWalkSpec;
+  /**
    * How big its picture is drawn, when not `size` (the body hit stays
    * `size`, centred under it) — the 키메라's, as big as a 우두머리's (0.87).
    */
@@ -162,6 +169,12 @@ export interface EnemyKindSpec {
  * spot each time it throws its ring. Only how it looks — its body for hits
  * is still `size`.
  */
+/** How a walking figure strides (EnemyKindSpec.walk). Only how it looks. */
+export interface EnemyWalkSpec {
+  /** How long each picture of the stride shows, at the kind's own speed. */
+  readonly stepMs: number;
+}
+
 export interface EnemyGiantSpec {
   /** How big the picture is drawn, in px (wider than its body for hits). */
   readonly drawn: number;
@@ -229,6 +242,9 @@ export const ENEMY_KINDS: Record<EnemyKind, EnemyKindSpec> = {
     name: "일반",
     texture: TEXTURES.enemy,
     size: ENEMY.size,
+    // A hunched red ghoul, claws out (0.99).
+    drawn: 26,
+    walk: { stepMs: 150 },
     color: COLORS.enemy,
     maxHp: ENEMY.maxHp,
     speed: ENEMY.speed,
@@ -239,6 +255,9 @@ export const ENEMY_KINDS: Record<EnemyKind, EnemyKindSpec> = {
     name: "거구",
     texture: TEXTURES.enemyBrute,
     size: 26,
+    // A purple troll, all shoulders and fists (0.99).
+    drawn: 42,
+    walk: { stepMs: 220 },
     color: COLORS.enemyBrute,
     maxHp: 1200,
     speed: 42,
@@ -249,6 +268,9 @@ export const ENEMY_KINDS: Record<EnemyKind, EnemyKindSpec> = {
     name: "질주",
     texture: TEXTURES.enemyRunner,
     size: 12,
+    // A lean gold jackal at the gallop (0.99).
+    drawn: 24,
+    walk: { stepMs: 80 },
     color: COLORS.enemyRunner,
     maxHp: 150,
     speed: 160,
@@ -361,6 +383,10 @@ export const ENEMY_KINDS: Record<EnemyKind, EnemyKindSpec> = {
     name: "사수",
     texture: TEXTURES.enemyShooter,
     size: 16,
+    // A green goblin with a bow, drawn to its cheek as it looses (0.99).
+    drawn: 26,
+    walk: { stepMs: 160 },
+    poses: { castMs: 280 },
     color: COLORS.enemyShooter,
     maxHp: 180,
     speed: 50,

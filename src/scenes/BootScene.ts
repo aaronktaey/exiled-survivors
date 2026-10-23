@@ -23,6 +23,10 @@ import {
   TEXTURES,
   PLAYER_LOOK,
   VOID_VORTEX_FX,
+  VOID_INNER_FX,
+  ENEMY_SHOT_FX,
+  ENEMY_WALK_STEPS,
+  enemyWalk,
   UNKNOWN_RUNE_LOOKS,
   enemyPose,
   unknownRuneTexture,
@@ -36,6 +40,7 @@ import {
   VOID_ORB,
 } from '@/config';
 import { MENU, SCENES } from '@/config';
+import type { EnemyKindSpec } from '@/config';
 import { createPixelTextTexture } from '@/systems/PixelFont';
 import { sfx } from '@/systems/Sfx';
 
@@ -90,13 +95,16 @@ export class BootScene extends Phaser.Scene {
         this.createGiantTextures(kind.texture, kind.giant.drawn, kind.color);
       } else if (kind.id === 'chimera') {
         this.createChimeraTexture(kind.texture, kind.drawn ?? kind.size);
+      } else if (kind.walk) {
+        this.createWalkerTextures(kind);
       } else {
         this.createSquareTexture(kind.texture, kind.size, kind.color);
       }
     }
-    this.createSquareTexture(TEXTURES.enemyShot, 8, COLORS.enemyShot);
+    this.createEnemyShotTexture();
     this.createThornTexture();
     this.createVoidOrbTexture();
+    this.createVoidInnerTexture();
     this.createPotionTexture();
     this.createGearTexture();
     this.createDivineShardTexture();
@@ -400,6 +408,241 @@ export class BootScene extends Phaser.Scene {
       g.fillStyle(COLORS.chimeraMane, 1);
       g.fillTriangle((hx + 4.5) * k, (hy + 2.5) * k, (hx + 7) * k, (hy + 1.5) * k, (hx + 5) * k, (hy + 4) * k);
     }
+  }
+
+  /**
+   * The four walkers (0.99, the user's ask: plain squares before), facing
+   * right on a square `drawn` across: standing, the ENEMY_WALK_STEPS
+   * pictures of the stride (`enemyWalk`), and — for a kind with `poses`, the
+   * 사수 — the draw (`enemyPose(texture, 'cast')`). Drawn in 32 units, scaled.
+   */
+  private createWalkerTextures(kind: EnemyKindSpec): void {
+    const size = kind.drawn ?? kind.size;
+    const k = size / 32;
+    const frames: { key: string; step: number | null; cast: boolean }[] = [{ key: kind.texture, step: null, cast: false }];
+    for (let step = 0; step < ENEMY_WALK_STEPS; step++) {
+      frames.push({ key: enemyWalk(kind.texture, step), step, cast: false });
+    }
+    if (kind.poses) {
+      frames.push({ key: enemyPose(kind.texture, 'cast'), step: null, cast: true });
+    }
+    for (const frame of frames) {
+      const g = this.add.graphics();
+      // Legs forward and back, and the body up a little as they pass.
+      const swing = frame.step === null ? 0 : [1, 0, -1, 0][frame.step % 4]!;
+      const passing = frame.step !== null && frame.step % 2 === 1;
+      this.paintWalker(kind, g, k, { swing, passing, cast: frame.cast });
+      g.generateTexture(frame.key, size, size);
+      g.destroy();
+    }
+  }
+
+  private paintWalker(
+    kind: EnemyKindSpec,
+    g: Phaser.GameObjects.Graphics,
+    k: number,
+    gait: { readonly swing: number; readonly passing: boolean; readonly cast: boolean },
+  ): void {
+    const base = kind.color;
+    const dark = Phaser.Display.Color.ValueToColor(base).darken(30).color;
+    const light = Phaser.Display.Color.ValueToColor(base).lighten(18).color;
+    const line = (w: number, color: number, x1: number, y1: number, x2: number, y2: number): void => {
+      g.lineStyle(w * k, color, 1);
+      g.lineBetween(x1 * k, y1 * k, x2 * k, y2 * k);
+      // Round the ends, so a limb is not cut square.
+      g.fillStyle(color, 1);
+      g.fillCircle(x1 * k, y1 * k, (w / 2) * k);
+      g.fillCircle(x2 * k, y2 * k, (w / 2) * k);
+    };
+    const shadow = (w: number): void => {
+      g.fillStyle(0x000000, 0.3);
+      g.fillEllipse(16 * k, 30 * k, w * k, 3 * k);
+    };
+    const { swing } = gait;
+    switch (kind.id) {
+      case 'grunt': {
+        // 일반: a hunched ghoul, head low and forward, claws reaching.
+        const b = gait.passing ? -1 : 0;
+        shadow(14);
+        line(3.2, dark, 14, 21 + b, 14 - 3.5 * swing, 29);
+        line(2.6, dark, 18, 13 + b, 23 + 1.5 * swing, 19 + b);
+        g.fillStyle(base, 1);
+        g.fillEllipse(15 * k, (17 + b) * k, 12 * k, 11 * k);
+        // The ridge of its back.
+        g.fillStyle(dark, 1);
+        for (const [x, y] of [[10, 14], [12.5, 12], [15, 11]] as const) {
+          g.fillTriangle((x - 1.4) * k, (y + 1.5 + b) * k, (x + 1.4) * k, (y + 1.5 + b) * k, (x - 0.5) * k, (y - 1.5 + b) * k);
+        }
+        line(3.2, base, 17, 21 + b, 17 + 3.5 * swing, 29);
+        line(2.6, light, 19, 14 + b, 25 - 1.5 * swing, 18 + b);
+        g.lineStyle(0.8 * k, 0xf2e6d0, 1);
+        for (const dy of [-1, 0.2, 1.4]) {
+          const hx = 25 - 1.5 * swing;
+          g.lineBetween((hx + 0.5) * k, (18 + dy + b) * k, (hx + 2.4) * k, (18 + dy * 1.4 + b) * k);
+        }
+        g.fillStyle(light, 1);
+        g.fillCircle(21.5 * k, (10 + b) * k, 4.6 * k);
+        g.fillStyle(dark, 1);
+        g.fillTriangle(18.5 * k, (7.5 + b) * k, 20.5 * k, (6.5 + b) * k, 17 * k, (3 + b) * k);
+        g.fillStyle(0xffe066, 1);
+        g.fillCircle(23.4 * k, (9.2 + b) * k, 1.2 * k);
+        g.fillStyle(0x3a0d0d, 1);
+        g.fillTriangle(22.5 * k, (12 + b) * k, 26 * k, (11.3 + b) * k, 25 * k, (13.4 + b) * k);
+        break;
+      }
+      case 'shooter': {
+        // 사수: a goblin with a long ear, a pointed nose and a bow — drawn to its cheek in the cast.
+        const b = gait.passing ? -1 : 0;
+        const leather = 0x6b4a2b;
+        shadow(12);
+        line(2.6, dark, 14.5, 23 + b, 14.5 - 3 * swing, 29);
+        g.fillStyle(leather, 1);
+        g.fillRoundedRect(10.5 * k, (14.5 + b) * k, 10 * k, 9.5 * k, 2.5 * k);
+        g.fillStyle(0x3a2614, 1);
+        g.fillRect(10.5 * k, (20 + b) * k, 10 * k, 1.6 * k);
+        line(2.6, dark, 17.5, 23 + b, 17.5 + 3 * swing, 29);
+        // Head, ear back, nose forward, a red eye.
+        g.fillStyle(base, 1);
+        g.fillTriangle(12.5 * k, (8.5 + b) * k, 7 * k, (5 + b) * k, 13 * k, (11.5 + b) * k);
+        g.fillCircle(16 * k, (10 + b) * k, 5 * k);
+        g.fillTriangle(20.2 * k, (9.5 + b) * k, 24.5 * k, (11.8 + b) * k, 20.2 * k, (12.4 + b) * k);
+        g.fillStyle(0xff4040, 1);
+        g.fillCircle(18.6 * k, (8.9 + b) * k, 1.1 * k);
+        const wood = 0x8a5a2b;
+        if (gait.cast) {
+          // The draw: bow out front, string back to the cheek, an arrow on it.
+          g.lineStyle(1.6 * k, wood, 1);
+          g.beginPath();
+          g.arc(19 * k, 16 * k, 7.5 * k, -1.15, 1.15, false);
+          g.strokePath();
+          const top = [19 + Math.cos(-1.15) * 7.5, 16 + Math.sin(-1.15) * 7.5];
+          const bottom = [19 + Math.cos(1.15) * 7.5, 16 + Math.sin(1.15) * 7.5];
+          g.lineStyle(0.6 * k, 0xe8e0c8, 1);
+          g.lineBetween(top[0]! * k, top[1]! * k, 14 * k, 16 * k);
+          g.lineBetween(bottom[0]! * k, bottom[1]! * k, 14 * k, 16 * k);
+          line(1, 0xe8e0c8, 14, 16, 28, 16);
+          g.fillStyle(COLORS.enemyShot, 1);
+          g.fillTriangle(27 * k, 14.6 * k, 30.5 * k, 16 * k, 27 * k, 17.4 * k);
+          line(2.2, base, 15, 17, 14, 16);
+          line(2.2, base, 17, 17, 26, 16);
+        } else {
+          // Carried upright before it, swinging a little with the stride.
+          const bx = 21 + 0.6 * swing;
+          g.lineStyle(1.6 * k, wood, 1);
+          g.beginPath();
+          g.arc((bx - 3) * k, (17 + b) * k, 7 * k, -1.1, 1.1, false);
+          g.strokePath();
+          g.lineStyle(0.6 * k, 0xe8e0c8, 1);
+          g.lineBetween((bx - 3 + Math.cos(-1.1) * 7) * k, (17 + b + Math.sin(-1.1) * 7) * k, (bx - 3 + Math.cos(1.1) * 7) * k, (17 + b + Math.sin(1.1) * 7) * k);
+          line(2.2, base, 17, 17 + b, bx + 2.5, 17 + b);
+        }
+        break;
+      }
+      case 'runner': {
+        // 질주: a lean jackal at the gallop — stretched out, then gathered under.
+        const b = swing > 0 ? -1.5 : swing < 0 ? 0.5 : 0;
+        const feetY = swing > 0 ? 27 : 28.5;
+        shadow(16);
+        line(2, dark, 7, 17 + b, 3, 12 + b - swing);
+        // The far legs, a little behind the near ones.
+        line(1.8, dark, 11, 20 + b, 11 - 2 * swing + 1, feetY);
+        line(1.8, dark, 21, 20 + b, 21 + 2 * swing - 1, feetY);
+        g.fillStyle(base, 1);
+        g.fillEllipse(15.5 * k, (18 + b) * k, 17 * k, 7 * k);
+        g.fillStyle(light, 1);
+        g.fillEllipse(16 * k, (20 + b) * k, 10 * k, 2.6 * k);
+        line(2, base, 10, 20 + b, 10 - 4 * swing, feetY);
+        line(2, base, 22, 20 + b, 22 + 4 * swing, feetY);
+        // Neck, head, snout, ear.
+        line(3, base, 21, 17 + b, 24, 14 + b);
+        g.fillStyle(base, 1);
+        g.fillEllipse(24.5 * k, (13.5 + b) * k, 7 * k, 5 * k);
+        g.fillStyle(light, 1);
+        g.fillTriangle(26.5 * k, (12.5 + b) * k, 31 * k, (15 + b) * k, 26.5 * k, (16 + b) * k);
+        g.fillStyle(dark, 1);
+        g.fillTriangle(22.5 * k, (12 + b) * k, 23.2 * k, (6.5 + b) * k, 25.6 * k, (11.6 + b) * k);
+        g.fillStyle(0x2a1a08, 1);
+        g.fillCircle(30.6 * k, (14.8 + b) * k, 0.8 * k);
+        g.fillStyle(0xfff2b0, 1);
+        g.fillCircle(25.8 * k, (12.8 + b) * k, 0.9 * k);
+        break;
+      }
+      case 'brute': {
+        // 거구: a troll, all shoulders and fists, a little head sunk between them.
+        const b = gait.passing ? -1.2 : 0;
+        shadow(22);
+        line(4.6, dark, 12.5, 23 + b, 12.5 - 2.5 * swing, 29.5);
+        line(4.4, dark, 12, 13 + b, 11 + 2.5 * swing, 25 + b);
+        g.fillStyle(dark, 1);
+        g.fillCircle((11 + 2.5 * swing) * k, (25.5 + b) * k, 3 * k);
+        g.fillStyle(base, 1);
+        g.fillEllipse(15.5 * k, (17 + b) * k, 20 * k, 15 * k);
+        g.fillStyle(light, 1);
+        g.fillEllipse(17 * k, (20 + b) * k, 10 * k, 7 * k);
+        g.fillStyle(0x4a2a1a, 1);
+        g.fillRect(9 * k, (21.5 + b) * k, 13 * k, 3 * k);
+        line(4.6, base, 18.5, 23 + b, 18.5 + 2.5 * swing, 29.5);
+        // Head forward, low brow, a yellow eye, a tusk.
+        g.fillStyle(base, 1);
+        g.fillCircle(21.5 * k, (9.5 + b) * k, 4.3 * k);
+        g.fillStyle(dark, 1);
+        g.fillRect(19.5 * k, (7 + b) * k, 6 * k, 1.6 * k);
+        g.fillStyle(0xffe066, 1);
+        g.fillCircle(23.4 * k, (9.4 + b) * k, 1.1 * k);
+        g.fillStyle(0xf4efe0, 1);
+        g.fillTriangle(23 * k, (12.4 + b) * k, 24.2 * k, (10.4 + b) * k, 24.8 * k, (12.8 + b) * k);
+        // The near arm last, over the body, swinging against the near leg.
+        line(4.6, light, 19.5, 13.5 + b, 21.5 - 2.5 * swing, 25 + b);
+        g.fillStyle(light, 1);
+        g.fillCircle((21.5 - 2.5 * swing) * k, (25.5 + b) * k, 3.2 * k);
+        break;
+      }
+      default:
+        g.fillStyle(base, 1);
+        g.fillRect(((32 - (kind.size / k)) / 2) * k, ((32 - (kind.size / k)) / 2) * k, kind.size, kind.size);
+    }
+  }
+
+  /** An enemy's bolt (ENEMY_SHOT_FX): halo, pink ring, pale inner, white core, four spikes to show it spin. */
+  private createEnemyShotTexture(): void {
+    const { canvas, ring, inner, core, spike, halo } = ENEMY_SHOT_FX;
+    const c = canvas / 2;
+    const g = this.add.graphics();
+    g.fillStyle(halo, 0.16);
+    g.fillCircle(c, c, c - 0.5);
+    g.fillStyle(halo, 0.28);
+    g.fillCircle(c, c, c * 0.78);
+    g.fillStyle(spike, 0.95);
+    for (let i = 0; i < 4; i++) {
+      const a = (i / 4) * Math.PI * 2;
+      const side = a + Math.PI / 2;
+      g.fillTriangle(
+        c + Math.cos(side) * 2.2, c + Math.sin(side) * 2.2,
+        c - Math.cos(side) * 2.2, c - Math.sin(side) * 2.2,
+        c + Math.cos(a) * (c - 1), c + Math.sin(a) * (c - 1),
+      );
+    }
+    g.fillStyle(ring, 1);
+    g.fillCircle(c, c, c * 0.55);
+    g.fillStyle(inner, 1);
+    g.fillCircle(c, c, c * 0.38);
+    g.fillStyle(core, 1);
+    g.fillCircle(c, c, c * 0.22);
+    g.generateTexture(TEXTURES.enemyShot, canvas, canvas);
+    g.destroy();
+  }
+
+  /** 공허구체's 2차 각성 ring (VOID_INNER_FX): a bright rim over a faint fill, the size of an orb. */
+  private createVoidInnerTexture(): void {
+    const size = VOID_ORB.radius * 4;
+    const { rim, rimWidth, fill, fillAlpha } = VOID_INNER_FX;
+    const g = this.add.graphics();
+    g.fillStyle(fill, fillAlpha);
+    g.fillCircle(size / 2, size / 2, size / 2 - 1);
+    g.lineStyle(rimWidth * 2, rim, 1);
+    g.strokeCircle(size / 2, size / 2, size / 2 - rimWidth);
+    g.generateTexture(TEXTURES.voidOrbInner, size, size);
+    g.destroy();
   }
 
   /** A 키메라's thorn: a white spike, its point to the right (the way it flies). */

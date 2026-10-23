@@ -64,7 +64,8 @@ const kinds = await run(`
   s.choosing = false;
   out.spec = Object.fromEntries(['grunt', 'brute', 'runner', 'shooter'].map((k) =>
     [k, { hp: window.config.ENEMY_KINDS[k].maxHp, contact: window.config.ENEMY_KINDS[k].contactDamage,
-          speed: window.config.ENEMY_KINDS[k].speed }]));
+          speed: window.config.ENEMY_KINDS[k].speed, size: window.config.ENEMY_KINDS[k].size,
+          drawn: window.config.ENEMY_KINDS[k].drawn ?? window.config.ENEMY_KINDS[k].size }]));
   out.variance = window.config.ENEMY.speedVariance;
   return out;
 `);
@@ -84,8 +85,11 @@ check('거구 hits hardest on contact and pays the most XP',
     Object.values(SPEC).every((k) => k.contact <= SPEC.brute.contact) &&
     kinds.brute.xp > kinds.grunt.xp,
   `contact=${kinds.brute.contact} xp=${kinds.brute.xp} vs 일반 ${kinds.grunt.xp}`);
-check('거구 is visibly bigger', kinds.brute.drawn[0] === 26 && kinds.brute.body[0] === 26,
-  `drawn ${kinds.brute.drawn.join('x')}, body ${kinds.brute.body.join('x')}`);
+// Since 0.99 each of the four is a figure drawn at its kind's `drawn`, its body still `size`.
+check('each is drawn at its kind’s picture size over a body of its own size, the 거구 the biggest',
+  ['grunt', 'brute', 'runner', 'shooter'].every((k) => kinds[k].drawn[0] === SPEC[k].drawn && kinds[k].body[0] === SPEC[k].size) &&
+    ['grunt', 'runner', 'shooter'].every((k) => SPEC[k].drawn < SPEC.brute.drawn && SPEC[k].size < SPEC.brute.size),
+  ['grunt', 'brute', 'runner', 'shooter'].map((k) => `${k} drawn ${kinds[k].drawn[0]}/${SPEC[k].drawn} body ${kinds[k].body[0]}/${SPEC[k].size}`).join(', '));
 check('질주: fastest and frailest',
   kinds.runner.hp === SPEC.runner.hp &&
     Object.values(SPEC).every((k) => k.hp >= SPEC.runner.hp) &&
@@ -637,6 +641,46 @@ check('spread in a fan around the aimed one, not stacked on it',
   fan.gaps.length === fan.many - 1 && fan.gaps.every((g) => g > 2),
   `gaps of ${fan.gaps.join(', ')}°`);
 await shot('enemies-06-volley');
+
+// --- 0.99: the four walk, face their way, the 사수 draws as it looses; a bolt is drawn big over a body its own size ---
+await run(`
+  s.spawner.clear(); s.player.setInvulnerable(true);
+  const p = s.player, g = s.spawner.group;
+  window.__walkers = ['grunt', 'brute', 'runner'].map((k, i) => { const e = g.get(p.x, p.y); e.spawn(p.x + 260, p.y - 60 + i * 60, p, k, s.spawner.hooks); return e; });
+  window.__walkSeen = window.__walkers.map(() => new Set());
+  return 1;
+`);
+for (let i = 0; i < 10; i++) {
+  await run(`window.__walkers.forEach((e, j) => window.__walkSeen[j].add(e.texture.key)); return 1;`);
+  await sleep(80);
+}
+const walked = await run(`
+  const C = window.config;
+  const out = window.__walkers.map((e, j) => ({ kind: e.kind, seen: [...window.__walkSeen[j]],
+    want: Array.from({ length: C.ENEMY_WALK_STEPS }, (_, i) => C.enemyWalk(C.ENEMY_KINDS[e.kind].texture, i)), facesLeft: e.flipX }));
+  s.spawner.clear();
+  return out;
+`);
+check('일반 · 거구 · 질주 walk: their stride pictures go by as they come, facing the survivor’s side',
+  walked.every((w) => w.seen.filter((k) => w.want.includes(k)).length >= 2 && w.facesLeft),
+  JSON.stringify(walked.map((w) => ({ kind: w.kind, seen: w.seen.length, left: w.facesLeft }))));
+const drew = await run(`
+  const C = window.config, p = s.player, g = s.spawner.group;
+  const e = g.get(p.x, p.y);
+  e.spawn(p.x - 200, p.y, p, 'shooter', s.spawner.hooks);
+  e.shotCooldownMs = 0;
+  e.update(0, 16);
+  const key = e.texture.key;
+  const shot = s.combat.enemyShots.getChildren().find((x) => x.active);
+  const spec = C.ENEMY_KINDS.shooter.shot;
+  const out = { key, want: C.enemyPose(C.ENEMY_KINDS.shooter.texture, 'cast'), facesRight: !e.flipX,
+    shot: shot ? { shown: Math.round(shot.displayWidth), body: Math.round(shot.body.width), size: spec.size, scale: C.ENEMY_SHOT_FX.drawnScale } : null };
+  s.spawner.clear();
+  return out;
+`);
+check('a 사수 draws its bow as it looses, facing the survivor', drew.key === drew.want && drew.facesRight, JSON.stringify(drew));
+check('its bolt is drawn drawnScale × its size, its body still its size',
+  !!drew.shot && drew.shot.shown === Math.round(drew.shot.size * drew.shot.scale) && drew.shot.body === drew.shot.size, JSON.stringify(drew.shot));
 
 console.log('\n=== SUMMARY ===');
 const failed = results.filter((r) => !r.p);
