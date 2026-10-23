@@ -157,6 +157,7 @@ export const TEXTURES = {
   filter: "tex-filter",
   tuning: "tex-tuning",
   grid: "tex-grid",
+  arenaFloor: "tex-arena-floor",
   player: "tex-player",
   enemy: "tex-enemy",
   enemyBrute: "tex-enemy-brute",
@@ -171,7 +172,6 @@ export const TEXTURES = {
   projectile: "tex-projectile",
   iceShard: "tex-ice-shard",
   voidOrb: "tex-void-orb",
-  voidOrbInner: "tex-void-orb-inner",
   potion: "tex-potion",
   gem: "tex-gem",
   skillOrb: "tex-skill-orb",
@@ -948,6 +948,47 @@ export const VOID_VORTEX_FX = {
   alpha: 0.7,
 } as const;
 
+/**
+ * 전투 배경 (0.101, the user's ask, tried on the dev server first): the floor
+ * as worn flagstones (a seamless `tile`-px texture), loose decals over the
+ * world, and rocks drawn with light, cracks and moss. Kept dark and low in
+ * contrast, so what moves on it still reads first. `devOnly` false ships it.
+ */
+export const ARENA_LOOK = {
+  devOnly: true,
+  tile: 512,
+  /** Flagstones a side in one tile, how far a corner wanders, the gap, and how many are missing. */
+  slabs: 8,
+  jitter: 7,
+  gap: 2.5,
+  missing: 0.12,
+  base: 0x0b0e14,
+  slabShades: [0x151a24, 0x171d28, 0x131821, 0x181e27],
+  slabEdge: 0x1d2430,
+  crack: 0x080a0f,
+  dirt: 0x0f1218,
+  stain: 0x05070a,
+  moss: 0x1c2a1f,
+  grass: 0x2b3a28,
+  grassLight: 0x3a4d33,
+  pebble: 0x232a36,
+  pebbleLight: 0x343d4c,
+  bone: 0xb8b0a0,
+  /** How many of each the world gets. */
+  decals: { stains: 70, moss: 60, grass: 160, rubble: 70, bones: 18 },
+  rock: {
+    shadow: 0x000000,
+    body: 0x262b36,
+    face: 0x353c4b,
+    light: 0x4a5368,
+    rim: 0x12151c,
+    edgeLight: 0x7b86a0,
+    crack: 0x10131a,
+    moss: 0x2e4630,
+    mossLight: 0x3f5c3b,
+  },
+} as const;
+
 /** A 제단 being summoned: a red pillar (the light pillar's picture, tinted) comes down on the spot. */
 export const ALTAR_SUMMON_FX = {
   tint: 0xff2a2a,
@@ -986,16 +1027,18 @@ export const ENEMY_SHOT_FX = {
 } as const;
 
 /**
- * 공허구체's 2차 각성 ring (0.99: a second set of solid orbs before, which
- * piled onto the survivor and hid it and what it fought): hollow — a bright
- * rim over a faint fill — and drawn under the enemies.
+ * 공허구체's orbs: hollow — a bright rim over a faint fill — and drawn under
+ * the enemies, so they no longer hide the survivor and what it fights. The
+ * 2차 각성's inner ring went so in 0.99, the outer ring too in 0.101 (both
+ * were solid orbs over everything before); the inner is a little fainter.
  */
-export const VOID_INNER_FX = {
+export const VOID_ORB_FX = {
   rim: 0xd2b0ff,
   rimWidth: 2.5,
   fill: 0xb07cff,
   fillAlpha: 0.18,
-  alpha: 0.85,
+  alpha: 1,
+  innerAlpha: 0.8,
 } as const;
 
 /**

@@ -23,7 +23,8 @@ import {
   TEXTURES,
   PLAYER_LOOK,
   VOID_VORTEX_FX,
-  VOID_INNER_FX,
+  VOID_ORB_FX,
+  ARENA_LOOK,
   ENEMY_SHOT_FX,
   ENEMY_WALK_STEPS,
   enemyWalk,
@@ -87,6 +88,7 @@ export class BootScene extends Phaser.Scene {
 
   public create(): void {
     this.createGridTexture();
+    this.createArenaFloorTexture();
     this.createSquareTexture(TEXTURES.player, PLAYER.size, COLORS.player);
     for (const kind of Object.values(ENEMY_KINDS)) {
       if (kind.flashy) {
@@ -97,6 +99,8 @@ export class BootScene extends Phaser.Scene {
         this.createChimeraTexture(kind.texture, kind.drawn ?? kind.size);
       } else if (kind.walk) {
         this.createWalkerTextures(kind);
+      } else if (kind.hop) {
+        this.createHopperTextures(kind);
       } else {
         this.createSquareTexture(kind.texture, kind.size, kind.color);
       }
@@ -104,7 +108,6 @@ export class BootScene extends Phaser.Scene {
     this.createEnemyShotTexture();
     this.createThornTexture();
     this.createVoidOrbTexture();
-    this.createVoidInnerTexture();
     this.createPotionTexture();
     this.createGearTexture();
     this.createDivineShardTexture();
@@ -299,6 +302,127 @@ export class BootScene extends Phaser.Scene {
     graphics.destroy();
   }
 
+  /**
+   * 전투 배경's floor (ARENA_LOOK, 0.101): flagstones on a dark ground, their
+   * corners wandering a little, some missing (bare earth), a few cracked,
+   * with grass in the gaps — seamless, every piece near an edge drawn again
+   * on the far side.
+   */
+  private createArenaFloorTexture(): void {
+    const A = ARENA_LOOK;
+    const tile = A.tile;
+    const cell = tile / A.slabs;
+    const random = new Phaser.Math.RandomDataGenerator(['arena-floor']);
+    const g = this.add.graphics();
+    const everywhere = (draw: (ox: number, oy: number) => void): void => {
+      for (const ox of [-tile, 0, tile]) {
+        for (const oy of [-tile, 0, tile]) {
+          draw(ox, oy);
+        }
+      }
+    };
+    g.fillStyle(A.base, 1);
+    g.fillRect(0, 0, tile, tile);
+    // Corners shared by neighbouring slabs, wrapping, so the joints meet.
+    const corner: [number, number][][] = [];
+    for (let i = 0; i < A.slabs; i++) {
+      corner.push([]);
+      for (let j = 0; j < A.slabs; j++) {
+        corner[i]!.push([random.realInRange(-A.jitter, A.jitter), random.realInRange(-A.jitter, A.jitter)]);
+      }
+    }
+    const at = (i: number, j: number): [number, number] => {
+      const [dx, dy] = corner[i % A.slabs]![j % A.slabs]!;
+      return [i * cell + dx, j * cell + dy];
+    };
+    const missingLeft = new Set<number>();
+    const missingAbove = new Set<number>();
+    for (let i = 0; i < A.slabs; i++) {
+      for (let j = 0; j < A.slabs; j++) {
+        const quad = [at(i, j), at(i + 1, j), at(i + 1, j + 1), at(i, j + 1)];
+        const cx = quad.reduce((sum, p) => sum + p[0], 0) / 4;
+        const cy = quad.reduce((sum, p) => sum + p[1], 0) / 4;
+        // Pulled in toward the middle by the gap, so the ground shows between.
+        const inset = quad.map(([x, y]) => {
+          const d = Math.hypot(x - cx, y - cy) || 1;
+          return new Phaser.Math.Vector2(x - ((x - cx) / d) * A.gap, y - ((y - cy) / d) * A.gap);
+        });
+        // Never two gone side by side, or the tile repeats them as a band.
+        const gone = random.frac() < A.missing && !missingLeft.has(j) && !missingAbove.has(i);
+        if (gone) {
+          missingLeft.add(j);
+          missingAbove.add(i);
+        } else {
+          missingLeft.delete(j);
+          missingAbove.delete(i);
+        }
+        if (gone) {
+          // A slab gone: bare earth and a few stones.
+          everywhere((ox, oy) => {
+            g.fillStyle(A.dirt, 1);
+            g.fillPoints(inset.map((p) => new Phaser.Math.Vector2(p.x + ox, p.y + oy)), true);
+          });
+          for (let s = 0; s < 5; s++) {
+            const sx = cx + random.realInRange(-cell / 3, cell / 3);
+            const sy = cy + random.realInRange(-cell / 3, cell / 3);
+            const r = random.realInRange(1.5, 3.5);
+            everywhere((ox, oy) => {
+              g.fillStyle(A.pebble, 1);
+              g.fillEllipse(sx + ox, sy + oy, r * 2, r * 1.5);
+            });
+          }
+          continue;
+        }
+        const shade = A.slabShades[random.between(0, A.slabShades.length - 1)]!;
+        // A crack runs in from the middle of one edge, bending once, part way across.
+        const side = random.between(0, 3);
+        const from = [(quad[side]![0] + quad[(side + 1) % 4]![0]) / 2, (quad[side]![1] + quad[(side + 1) % 4]![1]) / 2] as const;
+        const reach = random.realInRange(0.35, 0.6);
+        const mid = [from[0] + (cx - from[0]) * reach * 0.5 + random.realInRange(-4, 4), from[1] + (cy - from[1]) * reach * 0.5 + random.realInRange(-4, 4)] as const;
+        const end = [from[0] + (cx - from[0]) * reach + random.realInRange(-6, 6), from[1] + (cy - from[1]) * reach + random.realInRange(-6, 6)] as const;
+        const crack = random.frac() < 0.3 ? [from, mid, end] : null;
+        everywhere((ox, oy) => {
+          const shifted = inset.map((p) => new Phaser.Math.Vector2(p.x + ox, p.y + oy));
+          g.fillStyle(shade, 1);
+          g.fillPoints(shifted, true);
+          // A lighter lip along the top and left edges, as if lit from there.
+          g.lineStyle(1.5, A.slabEdge, 0.9);
+          g.lineBetween(shifted[3]!.x, shifted[3]!.y, shifted[0]!.x, shifted[0]!.y);
+          g.lineBetween(shifted[0]!.x, shifted[0]!.y, shifted[1]!.x, shifted[1]!.y);
+          if (crack) {
+            g.lineStyle(1, A.crack, 0.75);
+            g.beginPath();
+            g.moveTo(crack[0]![0] + ox, crack[0]![1] + oy);
+            for (const [x, y] of crack.slice(1)) {
+              g.lineTo(x + ox, y + oy);
+            }
+            g.strokePath();
+          }
+        });
+      }
+    }
+    // Grass in the joints.
+    for (let n = 0; n < 90; n++) {
+      const i = random.between(0, A.slabs - 1);
+      const j = random.between(0, A.slabs - 1);
+      const [x, y] = at(i, j);
+      const blades = random.between(3, 6);
+      const lines = Array.from({ length: blades }, () => {
+        const bx = x + random.realInRange(-5, 5);
+        const by = y + random.realInRange(-3, 3);
+        return [bx, by, bx + random.realInRange(-3, 3), by - random.realInRange(4, 9), random.frac() < 0.5] as const;
+      });
+      everywhere((ox, oy) => {
+        for (const [x1, y1, x2, y2, light] of lines) {
+          g.lineStyle(1.2, light ? A.grassLight : A.grass, 0.85);
+          g.lineBetween(x1 + ox, y1 + oy, x2 + ox, y2 + oy);
+        }
+      });
+    }
+    g.generateTexture(TEXTURES.arenaFloor, tile, tile);
+    g.destroy();
+  }
+
   private createSquareTexture(key: string, size: number, color: number): void {
     const graphics = this.add.graphics();
 
@@ -431,8 +555,23 @@ export class BootScene extends Phaser.Scene {
       // Legs forward and back, and the body up a little as they pass.
       const swing = frame.step === null ? 0 : [1, 0, -1, 0][frame.step % 4]!;
       const passing = frame.step !== null && frame.step % 2 === 1;
-      this.paintWalker(kind, g, k, { swing, passing, cast: frame.cast });
+      this.paintWalker(kind, g, k, { swing, passing, cast: frame.cast, leap: false });
       g.generateTexture(frame.key, size, size);
+      g.destroy();
+    }
+  }
+
+  /**
+   * A hopper that is not the 키메라 (the 기행종, 0.101): standing — crouched
+   * — and its leap (`enemyPose(texture, 'leap')`), on a square `drawn` across.
+   */
+  private createHopperTextures(kind: EnemyKindSpec): void {
+    const size = kind.drawn ?? kind.size;
+    const k = size / 32;
+    for (const leap of [false, true]) {
+      const g = this.add.graphics();
+      this.paintWalker(kind, g, k, { swing: 0, passing: false, cast: false, leap });
+      g.generateTexture(leap ? enemyPose(kind.texture, 'leap') : kind.texture, size, size);
       g.destroy();
     }
   }
@@ -441,7 +580,7 @@ export class BootScene extends Phaser.Scene {
     kind: EnemyKindSpec,
     g: Phaser.GameObjects.Graphics,
     k: number,
-    gait: { readonly swing: number; readonly passing: boolean; readonly cast: boolean },
+    gait: { readonly swing: number; readonly passing: boolean; readonly cast: boolean; readonly leap: boolean },
   ): void {
     const base = kind.color;
     const dark = Phaser.Display.Color.ValueToColor(base).darken(30).color;
@@ -597,6 +736,63 @@ export class BootScene extends Phaser.Scene {
         g.fillCircle((21.5 - 2.5 * swing) * k, (25.5 + b) * k, 3.2 * k);
         break;
       }
+      case 'erratic': {
+        // 기행종: lanky and lopsided — one eye far too big, a grin too wide —
+        // crouched on knees that bend the wrong way, knuckles on the ground;
+        // in the leap it is all stretched out, a small shadow left below.
+        if (gait.leap) {
+          g.fillStyle(0x000000, 0.25);
+          g.fillEllipse(16 * k, 30 * k, 9 * k, 2 * k);
+          line(2.2, dark, 12, 15, 4, 20);
+          line(2.2, dark, 14, 15, 6, 23);
+          g.fillStyle(base, 1);
+          g.fillEllipse(15 * k, 13 * k, 13 * k, 7.5 * k);
+          line(2, dark, 18, 11, 28, 7);
+          line(2, light, 19, 12, 29, 11);
+          g.fillStyle(light, 1);
+          g.fillCircle(23 * k, 7 * k, 4.6 * k);
+          g.fillStyle(0xffffff, 1);
+          g.fillCircle(24.5 * k, 5.6 * k, 1.9 * k);
+          g.fillStyle(0x16081f, 1);
+          g.fillCircle(25 * k, 5.6 * k, 0.9 * k);
+          g.fillStyle(0xffffff, 1);
+          g.fillCircle(21.4 * k, 5.2 * k, 0.8 * k);
+          g.fillStyle(0x2a0d3a, 1);
+          g.fillEllipse(24.5 * k, 9.2 * k, 5.5 * k, 2.4 * k);
+          g.fillStyle(0xf4efe0, 1);
+          g.fillRect(22.6 * k, 8.4 * k, 3.8 * k, 0.8 * k);
+        } else {
+          g.fillStyle(0x000000, 0.3);
+          g.fillEllipse(16 * k, 30 * k, 16 * k, 3 * k);
+          // Legs folded: hip, a knee out behind, the foot under.
+          line(2.2, dark, 13, 19, 8, 23);
+          line(2.2, dark, 8, 23, 11, 29);
+          line(2, dark, 18, 13, 22, 29);
+          g.fillStyle(base, 1);
+          g.fillEllipse(14.5 * k, 16 * k, 11 * k, 9 * k);
+          line(2.2, base, 16, 19, 21, 22);
+          line(2.2, base, 21, 22, 18, 29);
+          line(2, light, 19, 13, 25.5, 29);
+          // The head, lopsided, with its spiky tuft.
+          g.fillStyle(dark, 1);
+          for (const [x, y] of [[17.5, 5.5], [19.5, 4.5], [21.5, 4.8]] as const) {
+            g.fillTriangle((x - 1.2) * k, (y + 2) * k, (x + 1.2) * k, (y + 2) * k, (x + 0.3) * k, (y - 1.8) * k);
+          }
+          g.fillStyle(light, 1);
+          g.fillCircle(21 * k, 10 * k, 5 * k);
+          g.fillStyle(0xffffff, 1);
+          g.fillCircle(22.6 * k, 8.6 * k, 2 * k);
+          g.fillStyle(0x16081f, 1);
+          g.fillCircle(23.2 * k, 8.8 * k, 1 * k);
+          g.fillStyle(0xffffff, 1);
+          g.fillCircle(19.6 * k, 8.2 * k, 0.8 * k);
+          g.fillStyle(0x2a0d3a, 1);
+          g.fillEllipse(22.4 * k, 12.6 * k, 6.5 * k, 2.6 * k);
+          g.fillStyle(0xf4efe0, 1);
+          g.fillRect(19.8 * k, 11.8 * k, 5.4 * k, 0.9 * k);
+        }
+        break;
+      }
       default:
         g.fillStyle(base, 1);
         g.fillRect(((32 - (kind.size / k)) / 2) * k, ((32 - (kind.size / k)) / 2) * k, kind.size, kind.size);
@@ -632,19 +828,6 @@ export class BootScene extends Phaser.Scene {
     g.destroy();
   }
 
-  /** 공허구체's 2차 각성 ring (VOID_INNER_FX): a bright rim over a faint fill, the size of an orb. */
-  private createVoidInnerTexture(): void {
-    const size = VOID_ORB.radius * 4;
-    const { rim, rimWidth, fill, fillAlpha } = VOID_INNER_FX;
-    const g = this.add.graphics();
-    g.fillStyle(fill, fillAlpha);
-    g.fillCircle(size / 2, size / 2, size / 2 - 1);
-    g.lineStyle(rimWidth * 2, rim, 1);
-    g.strokeCircle(size / 2, size / 2, size / 2 - rimWidth);
-    g.generateTexture(TEXTURES.voidOrbInner, size, size);
-    g.destroy();
-  }
-
   /** A 키메라's thorn: a white spike, its point to the right (the way it flies). */
   private createThornTexture(): void {
     const g = this.add.graphics();
@@ -657,15 +840,17 @@ export class BootScene extends Phaser.Scene {
     g.destroy();
   }
 
-  /** The void orb: a pale core inside a violet shell. */
+  /** The void orb: a hollow violet rim (VOID_ORB_FX). */
   private createVoidOrbTexture(): void {
+    // A rim over a faint fill (VOID_ORB_FX, 0.101; a solid orb with a pale core before).
     const size = VOID_ORB.radius * 4;
+    const { rim, rimWidth, fill, fillAlpha } = VOID_ORB_FX;
     const graphics = this.add.graphics();
 
-    graphics.fillStyle(COLORS.voidOrb, 1);
-    graphics.fillCircle(size / 2, size / 2, size / 2);
-    graphics.fillStyle(COLORS.voidOrbCore, 0.9);
-    graphics.fillCircle(size / 2, size / 2, size / 4);
+    graphics.fillStyle(fill, fillAlpha);
+    graphics.fillCircle(size / 2, size / 2, size / 2 - 1);
+    graphics.lineStyle(rimWidth * 2, rim, 1);
+    graphics.strokeCircle(size / 2, size / 2, size / 2 - rimWidth);
 
     graphics.generateTexture(TEXTURES.voidOrb, size, size);
     graphics.destroy();

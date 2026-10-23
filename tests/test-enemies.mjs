@@ -682,6 +682,25 @@ check('a 사수 draws its bow as it looses, facing the survivor', drew.key === d
 check('its bolt is drawn drawnScale × its size, its body still its size',
   !!drew.shot && drew.shot.shown === Math.round(drew.shot.size * drew.shot.scale) && drew.shot.body === drew.shot.size, JSON.stringify(drew.shot));
 
+// --- 0.101: the 기행종 is a figure too — crouched standing, stretched out in the leap ---
+const hopper = await run(`
+  const C = window.config, p = s.player, g = s.spawner.group;
+  s.spawner.clear();
+  const e = g.get(p.x, p.y);
+  e.spawn(p.x + 150, p.y, p, 'erratic', s.spawner.hooks);
+  const tex = C.ENEMY_KINDS.erratic.texture;
+  const standing = e.texture.key;
+  const seen = new Set();
+  for (let t = 0; t < 3000 && seen.size < 2; t += 16) { e.update(0, 16); seen.add(e.texture.key); }
+  const out = { standing, seen: [...seen], stand: tex, leap: C.enemyPose(tex, 'leap'),
+    drawn: Math.round(e.displayWidth), want: C.ENEMY_KINDS.erratic.drawn, body: Math.round(e.body.width), size: C.ENEMY_KINDS.erratic.size };
+  s.spawner.clear();
+  return out;
+`);
+check('기행종: drawn at its picture size over its own body, crouched until it leaps, then its leap',
+  hopper.standing === hopper.stand && hopper.seen.includes(hopper.leap) && hopper.drawn === hopper.want && hopper.body === hopper.size,
+  JSON.stringify(hopper));
+
 console.log('\n=== SUMMARY ===');
 const failed = results.filter((r) => !r.p);
 console.log(`${results.length - failed.length}/${results.length} passed`);

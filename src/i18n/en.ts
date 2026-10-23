@@ -216,6 +216,7 @@ export const en: Strings = {
     modeTilt: 'Tilt',
     bgm: 'Music volume',
     sfx: 'Effects volume',
+    damageNumbers: 'Damage numbers',
     reset: 'Reset to defaults',
     hint: '↑ ↓ to move   ◀ ▶ to adjust   Space to choose   Esc to go back',
     hintFloating: 'The pad appears wherever you touch the screen   ·   Esc to go back',
@@ -587,6 +588,10 @@ export const en: Strings = {
     startAnyway: 'Start a new run',
     loadInstead: 'Carry on with it',
     cancel: 'Cancel',
+    loginTitle: 'Before you sign in',
+    loginBody: 'Signing in replaces this device’s records (gear, orbs, bones, passives and a saved run) with the ones kept on the account, and this device’s are lost. If the account has none yet, this device’s are saved to it.',
+    loginHeld: 'On this device now: {swords} weapons · {orbs} orbs · {bones} bones',
+    loginGo: 'Sign in',
   },
 
   upgrades: {

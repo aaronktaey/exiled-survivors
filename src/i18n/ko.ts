@@ -220,6 +220,7 @@ export const ko: Strings = {
     modeTilt: '기울이기',
     bgm: '배경음 음량',
     sfx: '효과음 음량',
+    damageNumbers: '데미지 숫자 표시',
     reset: '기본값으로',
     hint: '↑ ↓ 이동   ◀ ▶ 값 조절   Space 선택   Esc 돌아가기',
     hintFloating: '화면 아무 곳이나 누른 자리에 패드가 생깁니다   ·   Esc 돌아가기',
@@ -591,6 +592,10 @@ export const ko: Strings = {
     startAnyway: '새로 시작',
     loadInstead: '이어서 하기',
     cancel: '취소',
+    loginTitle: '로그인하기 전에',
+    loginBody: '로그인하면 이 기기의 기록(장비 · 구슬 · 뼈다귀 · 패시브 · 저장된 판)이 계정에 저장된 기록으로 바뀌고, 이 기기의 기록은 사라집니다. 계정에 아직 기록이 없으면 이 기기의 기록이 계정에 저장됩니다.',
+    loginHeld: '지금 이 기기: 무기 {swords}개 · 구슬 {orbs}개 · 뼈다귀 {bones}개',
+    loginGo: '로그인',
   },
 
   upgrades: {

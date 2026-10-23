@@ -84,6 +84,7 @@ import { saveGame, type SavedRun } from '@/systems/SaveGame';
 import { runLedger } from '@/systems/RunLedger';
 import { runTally } from '@/systems/RunTally';
 import { skillOffered } from '@/systems/SkillGate';
+import { arenaLookOn, drawArenaDecals } from '@/systems/Arena';
 import { personal } from '@/systems/PersonalBest';
 import { tuning } from '@/systems/Tuning';
 import { dropTierFor } from '@/systems/Gear';
@@ -326,6 +327,9 @@ export class GameScene extends Phaser.Scene {
     this.separation = new Separation(this.spawner.group, this.player);
     // A resumed run lays the rocks it had; a new one rolls a field of its own.
     this.terrainSeed = this.resuming?.terrainSeed ?? Terrain.newSeed();
+    if (arenaLookOn()) {
+      drawArenaDecals(this, this.terrainSeed);
+    }
     this.terrain = GameScene.terrainOn()
       ? new Terrain(this, this.terrainSeed, this.player, this.spawner.group)
       : null;
@@ -923,9 +927,10 @@ export class GameScene extends Phaser.Scene {
     return TERRAIN.enabled && (import.meta.env.DEV || !TERRAIN.devOnly);
   }
 
+  /** The grid, or — while 전투 배경 is tried (arenaLookOn) — the flagstones. */
   private createFloor(): void {
     this.add
-      .tileSprite(0, 0, WORLD.width, WORLD.height, TEXTURES.grid)
+      .tileSprite(0, 0, WORLD.width, WORLD.height, arenaLookOn() ? TEXTURES.arenaFloor : TEXTURES.grid)
       .setOrigin(0, 0)
       .setDepth(DEPTH.ground);
   }

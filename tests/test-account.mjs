@@ -87,6 +87,19 @@ try {
       out.accents[0] !== null && out.accents[1] !== null && /로그인하면/.test(out.lead),
     JSON.stringify(out));
   await shot('account-01-signed-out');
+  // 0.101: a way in is not taken at once — a popup says the account's records will replace this device's.
+  await scene('AccountScene', `s.login('google'); return 1;`);
+  await sleep(500);
+  const warned = await scene('ConfirmScene', `return { active: s.scene.isActive(), rows: s.menu.items.map(i => i.id),
+    texts: s.children.list.filter((o) => o.type === 'Text').map((o) => o.text), at: location.pathname + location.search };`);
+  check('pressing a way in first warns that the account’s records will replace this device’s, offering 로그인 or 취소',
+    warned.active && JSON.stringify(warned.rows) === JSON.stringify(['overwrite', 'cancel']) &&
+      warned.texts.some((t) => /계정에 저장된 기록으로 바뀌/.test(t)) && warned.texts.some((t) => /지금 이 기기/.test(t)) && !/api\/auth/.test(warned.at),
+    JSON.stringify({ rows: warned.rows, at: warned.at }));
+  await scene('ConfirmScene', `s.menu.items.find((i) => i.id === 'cancel').onSelect(); return 1;`);
+  await sleep(400);
+  const backOut = await ev(`({ confirm: window.game.scene.isActive('ConfirmScene'), account: window.game.scene.isActive('AccountScene') })`);
+  check('and 취소 goes back to the account screen, signed out', !backOut.confirm && backOut.account, JSON.stringify(backOut));
 
   // --- 2. back from the provider, with records here and none on the account ---
   await ev(`(() => { window.gear.add(${JSON.stringify(sword('mine'))}); return 1; })()`);
@@ -154,6 +167,16 @@ try {
     (kept.save.data?.['exiled-survivors:gear:v2'] ?? '').includes('localOnly') &&
       !(kept.save.data?.['exiled-survivors:gear:v2'] ?? '').includes('remoteOnly'),
     (kept.save.data?.['exiled-survivors:gear:v2'] ?? '').slice(0, 120));
+
+  // --- 5b. (0.101) a sign-in on a browser with records of its own: the account's win, nothing asked ---
+  await ev(`(() => { localStorage.removeItem('exiled-survivors:sync:v1'); window.gear.add(${JSON.stringify(sword('freshHere'))}); return 1; })()`);
+  await arrive(`${BASE}#login=ok`);
+  await sleep(3000);
+  const fresh = await ev(`({ gear: window.gear.items.map(i => i.uid), conflict: window.cloudSave.conflict !== null,
+    asked: window.game.scene.isActive('ConflictScene'), status: window.cloudSave.status })`);
+  check('a sign-in on a browser with records of its own takes the account’s, asking nothing',
+    fresh.gear.includes('localOnly') && !fresh.gear.includes('freshHere') && !fresh.conflict && !fresh.asked,
+    JSON.stringify(fresh));
 
   // --- 6. the ranking: entering goes by way of signing in ---
   await scene('MenuScene', `

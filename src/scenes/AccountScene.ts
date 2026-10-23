@@ -4,7 +4,7 @@ import { ACCOUNT, ACCOUNT_BUTTONS, COLORS, DEPTH, MENU, SCENES, SCRIM, TEXT } fr
 import { fill, t } from '@/i18n';
 import { account, type ProviderId } from '@/systems/Account';
 import { addBackButton, type BackButton } from '@/systems/BackButton';
-import { cloudSave } from '@/systems/CloudSave';
+import { cloudSave, snapshot, summarize } from '@/systems/CloudSave';
 import { centredTop, fitText, fitWidth } from '@/systems/Layout';
 import { MenuList, type MenuItem } from '@/systems/MenuList';
 import { ranking } from '@/systems/Ranking';
@@ -190,9 +190,27 @@ export class AccountScene extends Phaser.Scene {
     }
   }
 
+  /**
+   * Asks first (0.101): signing in replaces this device's records with the
+   * account's without a choice (CloudSave), so the popup says so and what
+   * this device holds before the trip to the provider.
+   */
   private login(provider: ProviderId): void {
-    this.payload.onBeforeLogin?.();
-    account.login(provider, '/');
+    const copy = t().confirm;
+    const held = summarize(snapshot());
+    this.scene.pause();
+    this.scene.launch(SCENES.confirm, {
+      title: copy.loginTitle,
+      body: copy.loginBody,
+      detail: fill(copy.loginHeld, { swords: held.swords, orbs: held.orbs, bones: held.bones }),
+      confirmLabel: copy.loginGo,
+      onConfirm: () => {
+        this.payload.onBeforeLogin?.();
+        account.login(provider, '/');
+      },
+      onCancel: () => this.scene.resume(),
+    });
+    this.scene.bringToTop(SCENES.confirm);
   }
 
   private async logout(): Promise<void> {

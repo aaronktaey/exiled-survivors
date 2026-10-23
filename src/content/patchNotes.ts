@@ -15,6 +15,40 @@ export interface PatchNote {
 
 export const PATCH_NOTES: readonly PatchNote[] = [
   {
+    version: '0.101',
+    date: '2026-10-23',
+    changes: {
+      ko: [
+        '기행종에도 외형이 생겼습니다: 한쪽 눈이 큰 비틀린 괴물이 웅크리고 있다가 몸을 쭉 펴고 뛰어듭니다.',
+        '공허구체의 바깥 구체도 속이 빈 테두리로 바뀌고 적 아래에 그려집니다. 생존자와 적을 가리지 않습니다.',
+        '설정에 \'데미지 숫자 표시\'가 생겼습니다. 끄면 적을 때릴 때 뜨는 숫자가 보이지 않습니다. 회복량과 알림은 그대로 보입니다.',
+        '로그인하면 이 기기의 기록 대신 계정에 저장된 기록을 고르는 과정 없이 바로 불러옵니다. 계정에 기록이 없으면 이 기기의 기록이 계정에 저장됩니다. 로그인 버튼을 누르면 먼저 이 내용을 알리고 지금 이 기기에 있는 무기 · 구슬 · 뼈다귀 수를 보여 줍니다.',
+        '드론 공격속도 초당 0.25 → 0.2회, 연쇄번개 시전속도 초당 0.62 → 0.5회로 낮아졌습니다.',
+      ],
+      en: [
+        'The Oddity has a look of its own: a twisted thing with one eye too big, crouched until it stretches out and springs.',
+        'Void Orb’s outer orbs are now hollow rims drawn under the enemies as well, so they no longer hide the survivor or what it fights.',
+        'Settings has a new “Damage numbers” switch. Off, no number rises when an enemy is hit; heals and notices still show.',
+        'Signing in now loads the records kept on the account in place of this device’s, without asking which to keep. If the account has none yet, this device’s are saved to it. Pressing a way to sign in first says so, and how many weapons, orbs and bones this device holds.',
+        'Drone attack speed lowered from 0.25 to 0.2 shots a second, and Chain Lightning from 0.62 to 0.5 casts a second.',
+      ],
+      ja: [
+        '奇行種にも外見がつきました：片目だけ大きいねじれた怪物が、うずくまってから体を伸ばして跳びかかります。',
+        '虚無球の外側の球も中空の縁になり、敵の下に描かれます。生存者や敵を隠しません。',
+        '設定に「ダメージ数値の表示」が加わりました。オフにすると、敵に当てたときの数値が表示されません。回復量や通知はそのまま表示されます。',
+        'ログインすると、この端末の記録の代わりにアカウントに保存された記録を、選ぶ手順なしでそのまま読み込みます。アカウントに記録がなければ、この端末の記録がアカウントに保存されます。ログインボタンを押すと、先にこのことと、今この端末にある武器・オーブ・骨の数を表示します。',
+        'ドローンの攻撃速度が毎秒0.25 → 0.2回、連鎖雷の詠唱速度が毎秒0.62 → 0.5回に下がりました。',
+      ],
+      zh: [
+        '奇行种也有了外形：一只眼睛特别大的扭曲怪物，先蜷缩着，再伸展身体扑过来。',
+        '虚空球的外圈球体也改为空心边框，并绘制在敌人下方，不再遮挡幸存者和敌人。',
+        '设置中新增“显示伤害数字”。关闭后，击中敌人时不再弹出数字，回复量和提示照常显示。',
+        '登录后会直接载入账号中保存的记录来替换本设备的记录，不再询问保留哪一边。如果账号中还没有记录，本设备的记录会保存到账号。按下登录按钮时会先说明这一点，并显示本设备当前的武器、宝珠和骨头数量。',
+        '无人机攻击速度从每秒0.25次降至0.2次，连锁闪电施法速度从每秒0.62次降至0.5次。',
+      ],
+    },
+  },
+  {
     version: '0.100',
     date: '2026-10-23',
     changes: {

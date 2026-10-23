@@ -135,7 +135,7 @@ set takes about six minutes. One suite on its own: `node run-all.mjs test-gear`.
   `window.gear`, `window.orbs`, `window.bones`, `window.passives`,
   `window.ore`, `window.gearBonusFor`, `window.orbApplied`, `window.sealRecord`,
   `window.openRecord`,
-  `window.critMultiplierFor`. They are behind `import.meta.env.DEV`, so the
+  `window.critMultiplierFor`, `window.settings`. They are behind `import.meta.env.DEV`, so the
   deployed build does not have them — a live check can only click and look.
 - `#run` on the dev server skips the menu and drops straight into a run.
 
@@ -284,13 +284,28 @@ Read `git log` for what changed and when. What is not in the log:
   `drawn` widens `shownRadius`, so the rare outline, `pickRadius` and
   타격's reach follow the picture; the body is still `size`. A new walker
   is a `walk` + `drawn` in the table and a case in `paintWalker` (an
-  unknown id falls back to a square).
+  unknown id falls back to a square). The 기행종 (0.101) is painted by the
+  same `paintWalker` but as a hopper (`createHopperTextures`: standing and
+  `leap`, shown by `strikePose` through its `poses`).
 - **Enemy bolts (0.99).** The plain shot is `ENEMY_SHOT_FX`'s glowing bolt,
   shown `drawnScale` × the shot's size and spinning; `EnemyShot.fire`
   sets the body back to the shot's size (Arcade scales a body with its
   sprite). A shot with its own `texture` (the 키메라's thorn) is untouched.
-  공허구체's 2차 ring is `TEXTURES.voidOrbInner` (`VOID_INNER_FX`), hollow
-  and under the enemies — it hid the survivor as a second solid ring.
+  공허구체's orbs (`VOID_ORB_FX`) are hollow rims drawn under the enemies —
+  the 2차 inner ring since 0.99 (fainter, `innerAlpha`), the outer since
+  0.101; as solid orbs over everything they hid the survivor.
+- **설정's 데미지 숫자 표시 (0.101).** `settings.damageNumbers` (default on)
+  gates only the floater in `CombatSystem.hit` — heals, 포션 효과!, 막음
+  and the rune line still show. `window.settings` is the dev handle.
+- **전투 배경 (0.101, tried locally first).** `ARENA_LOOK` (visuals.ts):
+  `BootScene.createArenaFloorTexture` paints seamless flagstones
+  (`TEXTURES.arenaFloor`, `tile` px), `systems/Arena.drawArenaDecals` lays
+  stains, moss, grass, rubble and bones from the run's terrain seed, and
+  `Terrain.drawDetailed` gives rocks light, cracks, moss and loose stones.
+  `arenaLookOn()` decides: `ARENA_LOOK.devOnly` (true) keeps it to the dev
+  server and off the harness and `#run` (the page is marked only after the
+  first load, so `#run` counts as the harness, as in BootScene). The user
+  decides whether it ships; `devOnly: false` is the whole of shipping it.
 - **도망자 is table-driven.** `flee`, `lifespanMs`, `guaranteedSkill` and
   `flashy` on an `ENEMY_KINDS` entry give any kind that behaviour; the
   fugitive is the only one using them. It spawns on `FUGITIVE`'s clock.
@@ -400,6 +415,12 @@ Read `git log` for what changed and when. What is not in the log:
   The ranking takes runs from signed-in accounts only, one name and one best
   per account. `/api/save` holds a copy of the game's localStorage and only
   writes over the version the browser last saw (409 otherwise).
+  A sign-in (no `STORAGE.sync` note for that account on this browser) takes
+  the account's records without asking — or, the account empty, uploads
+  this browser's (0.101, the user's ask); `ConflictScene` is left for two
+  devices that both changed while signed in. So `AccountScene.login` asks
+  first, through `ConfirmScene` (title/body/detail/confirmLabel, `onLoad`
+  optional since 0.101), saying what this device holds.
   Client: `systems/Account.ts` (who, `#login=` outcome), `systems/CloudSave.ts`
   (three-way sync against the `STORAGE.sync` note: upload, take and reload,
   or ask in `ConflictScene`), `AccountScene` behind the title's corner icon,

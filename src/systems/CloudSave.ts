@@ -9,10 +9,13 @@
  * that, at start-up:
  *
  *   nothing changed on either side      → nothing to do
+ *   a sign-in here (no note for this
+ *   account) with records on it         → take the account's, asking nothing
+ *                                         (0.101, the user's ask — the account
+ *                                         screen warns before signing in)
  *   only this browser changed           → upload
  *   only the account changed            → take it, and reload
- *   both changed (or first sign-in with
- *   records on both sides that differ)  → ask the player which to keep
+ *   both changed                        → ask the player which to keep
  *
  * After that it uploads whenever what is held has changed, every
  * ACCOUNT.syncEveryMs and when the tab is hidden. A write that finds the
@@ -153,11 +156,11 @@ class CloudSaveStore {
       } else {
         await this.upload(local, serverAt);
       }
-    } else if (isEmpty(local)) {
-      this.take(server, serverAt);
-      return;
     } else if (hashOf(local) === hashOf(server)) {
       this.agree(user.id, serverAt, local);
+    } else if (!known || isEmpty(local)) {
+      this.take(server, serverAt);
+      return;
     } else if (!serverChanged && localChanged) {
       await this.upload(local, serverAt);
     } else if (serverChanged && !localChanged) {

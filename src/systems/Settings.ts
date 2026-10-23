@@ -19,6 +19,8 @@ export interface GameSettings {
   bgmVolume: number;
   /** Multiplies every sound effect's own volume. */
   sfxVolume: number;
+  /** The numbers that rise off an enemy that is hit (0.101). Heals and notices show either way. */
+  damageNumbers: boolean;
   language: Language;
 }
 
@@ -27,6 +29,7 @@ const DEFAULTS: GameSettings = {
   movementMode: 'floating',
   bgmVolume: 0.35,
   sfxVolume: 1,
+  damageNumbers: true,
   // Nothing stored yet means a first visit: follow the browser.
   language: detectLanguage(),
 };
@@ -87,6 +90,11 @@ class SettingsStore {
     return this.update({ language: LANGUAGES[next] });
   }
 
+  /** Shows or hides the numbers off hits. */
+  public toggleDamageNumbers(): GameSettings {
+    return this.update({ damageNumbers: !this.value.damageNumbers });
+  }
+
   /** Walks the movement mode round its three options. */
   public cycleMovementMode(direction: -1 | 1): GameSettings {
     const at = MOVEMENT_MODES.indexOf(this.value.movementMode);
@@ -141,6 +149,7 @@ class SettingsStore {
       language: LANGUAGES.includes(raw.language) ? raw.language : DEFAULTS.language,
       bgmVolume: clamp(Number(raw.bgmVolume ?? DEFAULTS.bgmVolume), volume.min, volume.max),
       sfxVolume: clamp(Number(raw.sfxVolume ?? DEFAULTS.sfxVolume), effects.min, effects.max),
+      damageNumbers: raw.damageNumbers !== false,
     };
   }
 }

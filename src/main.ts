@@ -160,6 +160,7 @@ if (import.meta.env.DEV) {
     account?: typeof account;
     cloudSave?: typeof cloudSave;
     podium?: typeof podium;
+    settings?: typeof settings;
   };
   dev.game = game;
   // So a test can read a tuned number instead of carrying a copy of it.
@@ -182,4 +183,5 @@ if (import.meta.env.DEV) {
   dev.account = account;
   dev.cloudSave = cloudSave;
   dev.podium = podium;
+  dev.settings = settings;
 }

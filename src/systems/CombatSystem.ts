@@ -30,6 +30,7 @@ import {
 } from '@/config';
 import { t } from '@/i18n';
 import { itemFilter } from '@/systems/ItemFilter';
+import { settings } from '@/systems/Settings';
 import { Altar } from '@/entities/Altar';
 import { Enemy } from '@/entities/Enemy';
 import { EnemyShot } from '@/entities/EnemyShot';
@@ -495,12 +496,15 @@ export class CombatSystem {
     const shocked = enemy.isShocked ? 1 + SKILL_MASTERY.thunderShock.amplify : 1;
     const dealt = Math.round(amount * shocked * (crit ? this.hooks.critMultiplier() : 1));
 
-    this.damageNumbers.spawn(
-      enemy.x,
-      enemy.y - 10,
-      dealt,
-      crit ? { color: COLORS.critText, crit: true } : undefined,
-    );
+    // 설정's 데미지 숫자 표시 (0.101) hides these, and only these.
+    if (settings.value.damageNumbers) {
+      this.damageNumbers.spawn(
+        enemy.x,
+        enemy.y - 10,
+        dealt,
+        crit ? { color: COLORS.critText, crit: true } : undefined,
+      );
+    }
     // What the enemy actually absorbed: a hit that kills something with two
     // health left is worth two, not whatever the number on the card said.
     const absorbed = Math.min(dealt, enemy.hp);

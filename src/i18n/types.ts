@@ -260,6 +260,8 @@ export interface Strings {
     readonly bgm: string;
     /** 효과음 음량: every sound but the music. */
     readonly sfx: string;
+    /** 데미지 숫자 표시 (0.101): the numbers off hits, on or off. */
+    readonly damageNumbers: string;
     readonly reset: string;
     readonly hint: string;
     readonly hintFloating: string;
@@ -766,6 +768,12 @@ export interface Strings {
     readonly startAnyway: string;
     readonly loadInstead: string;
     readonly cancel: string;
+    /** Before signing in (0.101): the account's records will replace this device's. */
+    readonly loginTitle: string;
+    readonly loginBody: string;
+    /** What this device holds now: {swords} {orbs} {bones}. */
+    readonly loginHeld: string;
+    readonly loginGo: string;
   };
 
   /** Upgrade picks. {n} is the step, {skill} the skill being upgraded. */

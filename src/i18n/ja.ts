@@ -216,6 +216,7 @@ export const ja: Strings = {
     modeTilt: '傾け操作',
     bgm: 'BGM音量',
     sfx: '効果音音量',
+    damageNumbers: 'ダメージ数値の表示',
     reset: '初期設定に戻す',
     hint: '↑ ↓ で移動   ◀ ▶ で調整   Space で決定   Esc で戻る',
     hintFloating: '画面のどこでも、触れた位置にパッドが出ます   ·   Esc で戻る',
@@ -587,6 +588,10 @@ export const ja: Strings = {
     startAnyway: '新しく始める',
     loadInstead: 'つづきから',
     cancel: 'キャンセル',
+    loginTitle: 'ログインする前に',
+    loginBody: 'ログインすると、この端末の記録（装備・オーブ・骨・パッシブ・保存したプレイ）がアカウントに保存された記録に置き換わり、この端末の記録は失われます。アカウントにまだ記録がなければ、この端末の記録がアカウントに保存されます。',
+    loginHeld: 'この端末の現在：武器 {swords}個・オーブ {orbs}個・骨 {bones}個',
+    loginGo: 'ログイン',
   },
 
   upgrades: {

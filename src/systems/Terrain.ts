@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 
-import { COLORS, DEPTH, PLAYER, TERRAIN, WORLD } from '@/config';
+import { ARENA_LOOK, COLORS, DEPTH, PLAYER, TERRAIN, WORLD } from '@/config';
+import { arenaLookOn } from '@/systems/Arena';
 import type { Enemy } from '@/entities/Enemy';
 
 /** Points round each outline: enough to read smooth, few enough to test cheaply. */
@@ -20,7 +21,7 @@ export interface Rock {
 }
 
 /** Same seed, same field: 불러오기 finds the rocks where they were. */
-function seeded(seed: number): () => number {
+export function seeded(seed: number): () => number {
   let a = seed >>> 0;
   return () => {
     a = (a + 0x6d2b79f5) >>> 0;
@@ -225,8 +226,97 @@ export class Terrain {
     return radii;
   }
 
-  /** A shadow, the stone, a lit top and rim, and a few flecks on it. */
+  /**
+   * 전투 배경 (0.101, while tried): a softer shadow, the stone in three tones
+   * lit from the upper left, a dark rim with a light edge where the light
+   * falls, cracks running in from the edge, moss on top and loose stones
+   * round the foot (ARENA_LOOK.rock). The old look otherwise.
+   */
   private draw(seed: number): void {
+    if (arenaLookOn()) {
+      this.drawDetailed(seed);
+      return;
+    }
+    this.drawPlain(seed);
+  }
+
+  private drawDetailed(seed: number): void {
+    const R = ARENA_LOOK.rock;
+    const random = seeded(seed ^ 0x5bd1e995);
+    const g = this.graphics;
+    const points = (rock: Rock, scale: number, ox: number, oy: number) =>
+      rock.radii.map((r, i) => {
+        const angle = (i / SAMPLES) * Math.PI * 2;
+        return new Phaser.Math.Vector2(rock.x + ox + Math.cos(angle) * r * scale, rock.y + oy + Math.sin(angle) * r * scale);
+      });
+    for (const rock of this.rocks) {
+      g.fillStyle(R.shadow, 0.25);
+      g.fillPoints(points(rock, 1.04, 10, 14), true, true);
+      g.fillStyle(R.shadow, 0.35);
+      g.fillPoints(points(rock, 1, 6, 9), true, true);
+      // Loose stones round the foot, mostly on the shadowed side.
+      const stones = 3 + Math.floor(random() * 5);
+      for (let s = 0; s < stones; s++) {
+        const angle = (random() * 0.9 + 0.05) * Math.PI;
+        const out = Terrain.edgeAt(rock, angle) + 5 + random() * 12;
+        const r = 2 + random() * 3.5;
+        const sx = rock.x + Math.cos(angle) * out;
+        const sy = rock.y + Math.sin(angle) * out;
+        g.fillStyle(R.shadow, 0.4);
+        g.fillEllipse(sx + 1.5, sy + 2, r * 2.2, r * 1.4);
+        g.fillStyle(R.body, 1);
+        g.fillEllipse(sx, sy, r * 2, r * 1.6);
+        g.fillStyle(R.face, 1);
+        g.fillCircle(sx - r * 0.3, sy - r * 0.35, r * 0.55);
+      }
+    }
+    for (const rock of this.rocks) {
+      const outline = points(rock, 1, 0, 0);
+      g.fillStyle(R.body, 1);
+      g.fillPoints(outline, true, true);
+      g.fillStyle(R.face, 1);
+      g.fillPoints(points(rock, 0.8, -3, -6), true, true);
+      g.fillStyle(R.light, 0.55);
+      g.fillPoints(points(rock, 0.5, -7, -11), true, true);
+      // Cracks from the edge in, bending once.
+      const cracks = 2 + Math.floor(random() * 3);
+      g.lineStyle(1.6, R.crack, 0.9);
+      for (let c = 0; c < cracks; c++) {
+        const angle = random() * Math.PI * 2;
+        const edge = Terrain.edgeAt(rock, angle);
+        const bend = angle + (random() - 0.5) * 0.8;
+        g.beginPath();
+        g.moveTo(rock.x + Math.cos(angle) * edge * 0.95, rock.y + Math.sin(angle) * edge * 0.95);
+        g.lineTo(rock.x + Math.cos(bend) * edge * 0.6, rock.y + Math.sin(bend) * edge * 0.6);
+        g.lineTo(rock.x + Math.cos(angle + (random() - 0.5)) * edge * 0.3, rock.y + Math.sin(angle + (random() - 0.5)) * edge * 0.3);
+        g.strokePath();
+      }
+      // Moss on the top.
+      const tufts = 2 + Math.floor(random() * 3);
+      for (let m = 0; m < tufts; m++) {
+        const angle = -Math.PI * (0.15 + random() * 0.7);
+        const out = Terrain.edgeAt(rock, angle) * (0.35 + random() * 0.4);
+        const mx = rock.x + Math.cos(angle) * out;
+        const my = rock.y + Math.sin(angle) * out;
+        for (let b = 0; b < 4; b++) {
+          g.fillStyle(b % 2 ? R.mossLight : R.moss, 0.85);
+          g.fillCircle(mx + (random() - 0.5) * 12, my + (random() - 0.5) * 7, 2.5 + random() * 3.5);
+        }
+      }
+      g.lineStyle(2.5, R.rim, 1);
+      g.strokePoints(outline, true, true);
+      // The edge the light catches: the upper left of the outline.
+      const lit = outline.filter((_, i) => {
+        const angle = (i / SAMPLES) * Math.PI * 2;
+        return angle > Math.PI * 0.95 && angle < Math.PI * 1.6;
+      });
+      g.lineStyle(1.5, R.edgeLight, 0.55);
+      g.strokePoints(lit, false, false);
+    }
+  }
+
+  /** A shadow, the stone, a lit top and rim, and a few flecks on it. */
+  private drawPlain(seed: number): void {
     const random = seeded(seed ^ 0x5bd1e995);
     const g = this.graphics;
     const points = (rock: Rock, scale: number, ox: number, oy: number) =>

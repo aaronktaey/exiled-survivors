@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 
-import { AFFIX_TIMING, DEPTH, ENEMY_KINDS, SKILL_MASTERY, TEXTURES, VOID_INNER_FX, VOID_ORB, VOID_VORTEX_FX, orbsHeld } from '@/config';
+import { AFFIX_TIMING, DEPTH, ENEMY_KINDS, SKILL_MASTERY, TEXTURES, VOID_ORB, VOID_ORB_FX, VOID_VORTEX_FX, orbsHeld } from '@/config';
 import type { Enemy } from '@/entities/Enemy';
 import { sfx } from '@/systems/Sfx';
 import { SKILLS } from '@/weapons/skills';
@@ -204,22 +204,17 @@ export class VoidOrb implements Weapon {
 
   /**
    * Grows or hides a ring's orbs so exactly `count` of them are in the air.
-   * The 2차 각성's inner ring (`hollow`, 0.99) is a rim, under the enemies and
-   * the survivor, so the two rings together no longer hide what they circle.
+   * Both rings are rims under the enemies and the survivor (VOID_ORB_FX), so
+   * they no longer hide what they circle; the 2차 각성's `inner` is fainter.
    */
-  private sync(orbs: Phaser.GameObjects.Image[], count: number, hollow = false): void {
+  private sync(orbs: Phaser.GameObjects.Image[], count: number, inner = false): void {
     while (orbs.length < count) {
       orbs.push(
-        hollow
-          ? this.scene.add
-              .image(0, 0, TEXTURES.voidOrbInner)
-              .setDepth(DEPTH.enemies - 1)
-              .setAlpha(VOID_INNER_FX.alpha)
-              .setDisplaySize(this.orbRadius * 2, this.orbRadius * 2)
-          : this.scene.add
-              .image(0, 0, TEXTURES.voidOrb)
-              .setDepth(DEPTH.projectiles)
-              .setDisplaySize(this.orbRadius * 2, this.orbRadius * 2),
+        this.scene.add
+          .image(0, 0, TEXTURES.voidOrb)
+          .setDepth(DEPTH.enemies - 1)
+          .setAlpha(inner ? VOID_ORB_FX.innerAlpha : VOID_ORB_FX.alpha)
+          .setDisplaySize(this.orbRadius * 2, this.orbRadius * 2),
       );
     }
 

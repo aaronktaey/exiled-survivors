@@ -216,6 +216,7 @@ export const zh: Strings = {
     modeTilt: '重力感应',
     bgm: '背景音量',
     sfx: '音效音量',
+    damageNumbers: '显示伤害数字',
     reset: '恢复默认',
     hint: '↑ ↓ 移动   ◀ ▶ 调整   Space 选择   Esc 返回',
     hintFloating: '摇杆会出现在你触摸屏幕的位置   ·   Esc 返回',
@@ -587,6 +588,10 @@ export const zh: Strings = {
     startAnyway: '开始新游戏',
     loadInstead: '继续那一局',
     cancel: '取消',
+    loginTitle: '登录之前',
+    loginBody: '登录后，本设备的记录（装备、宝珠、骨头、被动、保存的对局）将被账号中保存的记录替换，本设备的记录会丢失。如果账号中还没有记录，本设备的记录会保存到账号。',
+    loginHeld: '本设备当前：武器 {swords} 把 · 宝珠 {orbs} 个 · 骨头 {bones} 个',
+    loginGo: '登录',
   },
 
   upgrades: {

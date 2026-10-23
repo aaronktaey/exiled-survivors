@@ -288,6 +288,10 @@ export const ENEMY_KINDS: Record<EnemyKind, EnemyKindSpec> = {
     name: "기행종",
     texture: TEXTURES.enemyErratic,
     size: 16,
+    // A lanky, lopsided thing that crouches and springs (0.101): standing,
+    // and its leap while a hop carries it (the 키메라's `poses`, never cast).
+    drawn: 28,
+    poses: { castMs: 0 },
     color: COLORS.enemyErratic,
     maxHp: ENEMY.maxHp,
     speed: 355,
@@ -1567,7 +1571,8 @@ export const SKILL_BASE: Record<SkillId, SkillBaseStats> = {
   // Four enemies a cast since 0.83 (two before).
   chainLightning: {
     damage: 90,
-    attackSpeed: 0.96,
+    // 0.5 since 0.101 (the user's nerf; the live dial stood at 0.62).
+    attackSpeed: 0.5,
     range: 160,
     projectileSpeed: 0,
     chainCount: 3,
@@ -1631,9 +1636,9 @@ export const SKILL_BASE: Record<SkillId, SkillBaseStats> = {
   drone: {
     // 125 · 0.25 · 5 (the user's pick, 0.97, with DRONE.perEnemy 2): under
     // 연쇄번개 against a crowd, a little over 화염구 on a lone enemy. 80 · 0.47
-    // while it was tried.
+    // while it was tried; 0.2 a second since 0.101 (the user's nerf).
     damage: 125,
-    attackSpeed: 0.25,
+    attackSpeed: 0.2,
     // +20% on the user's word (225 at first).
     range: 270,
     projectileSpeed: 0,

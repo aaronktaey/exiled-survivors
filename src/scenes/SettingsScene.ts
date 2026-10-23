@@ -64,8 +64,9 @@ export class SettingsScene extends Phaser.Scene {
     const { width, height } = this.scale;
 
     this.add.rectangle(0, 0, width, height, 0x05070b, SCRIM.reading).setOrigin(0, 0).setDepth(DEPTH.ui);
-    // Title and eight rows, centred together rather than pinned to the top.
-    const listHeight = 7 * (MENU.buttonHeight + MENU.buttonGap) - MENU.buttonGap;
+    // Title and the rows, centred together rather than pinned to the top.
+    const rows = (LOCALE.choosable ? 1 : 0) + 8;
+    const listHeight = rows * (MENU.buttonHeight + MENU.buttonGap) - MENU.buttonGap;
     const top = centredTop(height, MENU.titleBlockHeight + listHeight);
 
     this.add
@@ -126,6 +127,13 @@ export class SettingsScene extends Phaser.Scene {
           detail: () => `${Math.round(settings.value.sfxVolume * 100)}%`,
           onSelect: () => this.stepEffects(1),
           onAdjust: (direction) => this.stepEffects(direction),
+        },
+        {
+          id: 'damageNumbers',
+          label: () => t().settings.damageNumbers,
+          detail: () => (settings.value.damageNumbers ? t().common.on : t().common.off),
+          onSelect: () => settings.toggleDamageNumbers(),
+          onAdjust: () => settings.toggleDamageNumbers(),
         },
         {
           id: 'reset',

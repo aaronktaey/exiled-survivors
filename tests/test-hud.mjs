@@ -279,6 +279,32 @@ const headLine = await run(`const text = s.player.nameplate.text; s.player.hp = 
 check('the survivor’s nameplate shows its health in whole numbers',
   typeof headLine === 'string' && /\d+\/\d+$/.test(headLine) && !/\./.test(headLine), headLine);
 
+// --- 0.101: 설정's 데미지 숫자 표시 hides the numbers off hits, and only those ---
+const numbers = await run(`
+  const st = window.settings ?? null;
+  const c = s.combat, p = s.player, g = s.spawner.group;
+  s.spawner.clear();
+  const e = g.get(p.x, p.y);
+  e.spawn(p.x + 300, p.y, p, 'brute', s.spawner.hooks, false, 1000);
+  const count = () => s.damageNumbers.activeCount;
+  const before = count();
+  c.hit(e, 1);
+  const shown = count() - before;
+  window.settings.update({ damageNumbers: false });
+  const off0 = count();
+  c.hit(e, 1);
+  const hidden = count() - off0;
+  s.player.setInvulnerable(true);
+  s.player.hp = s.player.maxHp - 50;
+  const h0 = count();
+  s.healBy(10);
+  const heal = count() - h0;
+  window.settings.update({ damageNumbers: true });
+  s.spawner.clear();
+  return { shown, hidden, heal, stored: JSON.parse(localStorage.getItem(window.config.STORAGE.settings) || '{}').damageNumbers };
+`);
+check('설정 데미지 숫자 표시: off, a hit shows no number; on, it does', numbers.shown === 1 && numbers.hidden === 0 && numbers.stored === true, JSON.stringify(numbers));
+
 console.log('\n=== SUMMARY ===');
 const failed = results.filter((r) => !r.p);
 console.log(`${results.length - failed.length}/${results.length} passed`);
