@@ -1002,6 +1002,16 @@ Read `git log` for what changed and when. What is not in the log:
     browser's tools, not someone reading the code — the server's check is
     the other half. The user chose not to detect devtools, and to leave the
     three runs on the board.
+- **폰트 비교 (dev server only, 2026-10-23).** `systems/DevFonts.ts`: a
+  picker in the page's corner (bottom-left) swaps every `system-ui` label for
+  a candidate — 갈무리 11/14, Neo둥근모, Pretendard, 함렛 from their CDNs, and
+  the title logo's own letters as a font (`public/dev-fonts/exiled-pixel.*`,
+  built by `tools/make-logo-font.py` from PixelFont's grids plus digits and
+  symbols; no Hangul, so 갈무리 draws the Korean). It patches
+  `TextStyle.setStyle` after the font loads, before the game is made
+  (main.ts awaits it), keeps the choice in `localStorage['dev-font']`, and is
+  a dynamic import behind `import.meta.env.DEV`: none of it reaches the
+  bundle. No font is chosen for the game yet — the user is comparing.
 - **Known gaps, left on purpose:**
   - The 뼈다귀 pick screen is reached only on the way into a fresh run (게임
     시작, and 다시하기 after a death — both through `BoneScene.before`).

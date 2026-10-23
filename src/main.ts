@@ -121,6 +121,13 @@ const config: Phaser.Types.Core.GameConfig = {
   ],
 };
 
+// 폰트 비교 (dev server only): the picked candidate is loaded before a word is drawn.
+// The dynamic import keeps it out of the deployed bundle.
+if (import.meta.env.DEV) {
+  const { primeDevFont } = await import('@/systems/DevFonts');
+  await primeDevFont();
+}
+
 const game = new Phaser.Game(config);
 // The scale manager follows window resizes on its own; a phone's bars coming
 // and going only move the visual viewport, so it is told then too (after
