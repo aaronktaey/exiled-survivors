@@ -15,6 +15,28 @@ export interface PatchNote {
 
 export const PATCH_NOTES: readonly PatchNote[] = [
   {
+    version: '0.109',
+    date: '2026-10-23',
+    changes: {
+      ko: [
+        '검 6종, 경험치 보석, 화염구, 스킬 구슬과 화염구 · 연쇄번개 · 얼음창 · 공허구체 스킬 아이콘을 새로 그린 픽셀 그림으로 바꿨습니다.',
+        '제작자 정보에 배경음악(Constance — Kevin MacLeod) 저작자 표시를 추가했습니다.',
+      ],
+      en: [
+        'The swords, the experience gem, the fireball, the skill orb and the Fireball, Chain Lightning, Ice Spear and Void Orb icons are new pixel art drawn for the game.',
+        'The credits now name the music: "Constance" by Kevin MacLeod.',
+      ],
+      ja: [
+        '剣6種、経験値ジェム、ファイアボール、スキルオーブと、ファイアボール・連鎖雷・氷槍・虚空球のアイコンを新しく描いたピクセルアートに変更しました。',
+        '制作者情報にBGM（Constance — Kevin MacLeod）のクレジットを追加しました。',
+      ],
+      zh: [
+        '6种剑、经验宝石、火球、技能球以及火球、连锁闪电、冰枪、虚空球的图标已换成新绘制的像素画。',
+        '制作信息中新增背景音乐（Constance — Kevin MacLeod）的署名。',
+      ],
+    },
+  },
+  {
     version: '0.108',
     date: '2026-10-23',
     changes: {

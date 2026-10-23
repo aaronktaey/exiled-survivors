@@ -78,9 +78,12 @@ check('it opens over 설정', credits.credits === true && credits.settings === f
 check('it still names who made it and what with',
   /whitemango/.test(creditLines.text) && /Phaser/.test(creditLines.text),
   creditLines.text.slice(0, 80));
-check('and no longer lists icons, music or sound',
-  !/Raven Fantasy/.test(creditLines.text) && !/Constance/.test(creditLines.text) &&
-  !/bulletcasing/.test(creditLines.text),
+// The music is CC BY 4.0 (0.109): its title, author, source and licence are
+// owed on screen. The icons are the game's own now, so no pack is named.
+check('it credits the music as its licence asks, and names no icon pack',
+  /Constance/.test(creditLines.text) && /Kevin MacLeod/.test(creditLines.text) &&
+  /incompetech\.com/.test(creditLines.text) && /Attribution 4\.0/.test(creditLines.text) &&
+  !/Raven Fantasy/.test(creditLines.text),
   creditLines.text);
 await shot('shell2-01-credits');
 

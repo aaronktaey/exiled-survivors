@@ -603,6 +603,7 @@ export const ko: Strings = {
     roleDev: '개발',
     roleEngine: '엔진',
     roleFont: '폰트',
+    roleMusic: '음악',
   },
 
   confirm: {

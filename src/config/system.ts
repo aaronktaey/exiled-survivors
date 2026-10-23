@@ -331,7 +331,7 @@ export const AUDIO = {
    *
    * The rare one is a single file: the hit and the swell behind it were two
    * recordings, mixed down to one so there is nothing to keep in step at
-   * playback time. See assets/CREDITS.txt.
+   * playback time. Where every clip comes from: assets/CREDITS.txt.
    */
   drops: {
     normal: { key: "sfx-drop-normal", file: "assets/normalDrop.mp3", volume: 0.55 },
@@ -342,7 +342,7 @@ export const AUDIO = {
     mythic: { key: "sfx-drop-rare", file: "assets/rareDrop.mp3", volume: 0.6 },
     // 0.102 (the user's ask): the rarest things there are — 재능의 파편, 하얀
     // 망고, 망고의 구슬, 오니고로시 and a 키메라 제단 (each says so in its table:
-    // `extremeSound`). Cut from assets/extremeRareDrop1.ogg as an mp3.
+    // `extremeSound`). Cut from assets-src/drops/extremeRareDrop.ogg as an mp3.
     extreme: { key: "sfx-drop-extreme", file: "assets/extremeRareDrop.mp3", volume: 0.6 },
   } as const,
   /**
@@ -360,6 +360,7 @@ export const AUDIO = {
    * Background music. 5.6MB, so it is fetched after the menu is already on
    * screen rather than held in front of the first frame.
    */
+  /** "Constance", Kevin MacLeod (incompetech.com), CC BY 4.0: named in 제작자 정보. */
   bgm: {
     key: "bgm-main",
     file: "assets/Constance.mp3",

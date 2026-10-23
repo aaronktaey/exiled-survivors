@@ -214,8 +214,9 @@ Read `git log` for what changed and when. What is not in the log:
   levelled quiet on purpose — the user found the first mix far too loud.
   `tools/mix-slot.py` rebuilds `public/assets/slot.mp3` from
   `assets-src/slot` and prints the offsets to copy into config. The jackpot
-  clips (in `assets-src/slot` and `public/assets`) are kept for later: do not
-  use or delete them.
+  clips in `assets-src/slot` are kept for later: do not use or delete them
+  (their copies in `public/assets` went in 0.109, with everything else the
+  game did not load).
 - **Every other language is checked for Korean.** Data tables are written in
   Korean and a locale renames what it knows (`names.*`); `test-locale` walks
   every screen in en/ja/zh and fails on any Hangul left on it. A new name,
@@ -774,7 +775,20 @@ Read `git log` for what changed and when. What is not in the log:
   (Bot Fight Mode, WAF rules, a rate limit on `/api/*`) are the user's to
   switch on — the deploy token cannot.
 - **Music.** `public/assets/Constance.mp3` is a 96 kbps encode (1.7 MB); the
-  320 kbps original is `assets-src/music/Constance.mp3`.
+  320 kbps original is `assets-src/music/Constance.mp3`. It is "Constance"
+  by Kevin MacLeod (incompetech.com), CC BY 4.0: 제작자 정보 must name it,
+  its source and the licence (`credits.roleMusic`, test-shell2 checks).
+- **What ships is what is used (0.109).** `public/` holds only files the
+  game loads; originals and sources live in `assets-src/` (not shipped).
+  Sound effects are only freesound.org's "Approved for Free Cultural Works"
+  (CC0 or CC BY 4.0 — a CC BY one owes its author a line in 제작자 정보), the
+  user's rule; `public/assets/CREDITS.txt` lists every clip and its use. The
+  pictures are all drawn by code: the swords, the 경험치 보석, the 화염구
+  shot, the skill orb and four skills' icons are 16x16 grids in
+  `config/pixelIcons.ts` (`PIXEL_ICONS`, painted ×`PIXEL_ICON_SCALE` by
+  `BootScene.createPixelIcons`) — the Raven Fantasy pack they replaced was
+  free only for games that earn nothing. A new icon is a grid there and a
+  name (`SKILL_ICONS[id].pixel`, `ICONS.*.pixel` or `GEAR[id].icon`).
 - **One drop rule.** Every ordinary drop is multiplied by the kill's
   `Enemy.dropBonus`: 1 + `RARE.dropBonusPerAffix` per 속성 on a rare,
   1 + `BOSS.dropBonus` for a 우두머리. The 하얀 망고 and the 자석 are the
@@ -900,9 +914,8 @@ Read `git log` for what changed and when. What is not in the log:
   `systems/Toasts.ts`: top-right (under the HUD on a narrow screen),
   `TOAST.lifeMs` each, at most `TOAST.max`, oldest out first. A toast's text
   is inside its container, not in `scene.children`; read `toasts.lines`.
-- **Each sword has its own picture.** `GEAR[id].icon` (a file under
-  `public/assets/icons/`, picked from the Raven Fantasy pack, listed in its
-  CREDITS.txt) is loaded as `gearTexture(id)`; the 인벤토리 grid, the drop on
+- **Each sword has its own picture.** `GEAR[id].icon` (a grid in
+  `PIXEL_ICONS`, 0.109) is painted as `gearTexture(id)`; the 인벤토리 grid, the drop on
   the ground, the 합성 result and the 필터 all draw it. `TEXTURES.gear` is
   left for the title's 인벤토리 icon and the 필터's rarity switches.
 - **Rare drops stand in a light pillar.** `DropLabel` draws it for the 희귀

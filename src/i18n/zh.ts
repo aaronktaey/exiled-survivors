@@ -599,6 +599,7 @@ export const zh: Strings = {
     roleDev: '开发',
     roleEngine: '引擎',
     roleFont: '字体',
+    roleMusic: '音乐',
   },
 
   confirm: {

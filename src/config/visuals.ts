@@ -3,6 +3,7 @@
  * layout of the HUD and the menus. Numbers here move things around the
  * screen; they do not change how the game plays.
  */
+import type { PixelIconId } from '@/config/pixelIcons';
 
 export const COLORS = {
   background: "#0b0d12",
@@ -207,23 +208,19 @@ export const TEXTURES = {
  * server (/) and on the Pages project site (/exiled-survivors/).
  */
 /**
- * Hand-picked icons from the Raven Fantasy pack (see assets/icons/CREDITS.txt).
- * Sprites are 32x32 and drawn down to `size`; the rest of the art is still
- * generated at boot.
+ * One icon per skill: the drop on the ground wears it, and so does the
+ * upgrade card. Every one is drawn at boot — `pixel` names a grid in
+ * PIXEL_ICONS (0.109, in place of the Raven Fantasy pack's); the rest have
+ * a painter of their own in BootScene.
  */
-/**
- * One icon per skill, from the Raven Fantasy pack (see
- * assets/icons/CREDITS.txt). Stand-ins until there is art of our own: the
- * drop on the ground wears it, and so does the upgrade card.
- */
-export const SKILL_ICONS: Record<string, { readonly file?: string; readonly key: string }> = {
+export const SKILL_ICONS: Record<string, { readonly pixel?: PixelIconId; readonly key: string }> = {
   // Drawn at boot: a fist, so it is not mistaken for the sword in hand (a sword until 2026-10-16).
   meleeStrike: { key: 'tex-skill-meleeStrike-fist' },
-  fireball: { file: 'assets/icons/skill-fireball.png', key: 'tex-skill-fireball' },
-  chainLightning: { file: 'assets/icons/skill-chainLightning.png', key: 'tex-skill-chainLightning' },
-  iceSpear: { file: 'assets/icons/skill-iceSpear.png', key: 'tex-skill-iceSpear' },
-  voidOrb: { file: 'assets/icons/skill-voidOrb.png', key: 'tex-skill-voidOrb' },
-  // No file: drawn at boot until the pack has a bolt that fits.
+  fireball: { pixel: 'skill-fireball', key: 'tex-skill-fireball' },
+  chainLightning: { pixel: 'skill-chainLightning', key: 'tex-skill-chainLightning' },
+  iceSpear: { pixel: 'skill-iceSpear', key: 'tex-skill-iceSpear' },
+  voidOrb: { pixel: 'skill-voidOrb', key: 'tex-skill-voidOrb' },
+  // A bolt in a round badge (createThunderIcon), unlike 연쇄번개's forked one.
   thunderStrike: { key: 'tex-skill-thunderStrike' },
   // Drawn at boot: a little quadcopter (0.94).
   drone: { key: 'tex-skill-drone' },
@@ -293,11 +290,12 @@ export const TEXT = {
   },
 } as const;
 
+/** The pickups and the shot drawn from PIXEL_ICONS, and the size each is shown at. */
 export const ICONS = {
-  gem: { file: "assets/icons/xp-gem.png", size: 14 },
-  projectile: { file: "assets/icons/fireball.png", size: 16 },
-  skillOrb: { file: "assets/icons/skill-orb.png", size: 22 },
-} as const;
+  gem: { pixel: 'xp-gem', size: 14 },
+  projectile: { pixel: 'fireball', size: 16 },
+  skillOrb: { pixel: 'skill-orb', size: 22 },
+} as const satisfies Record<string, { readonly pixel: PixelIconId; readonly size: number }>;
 
 /** How each projectile skill's shot is drawn. Width runs along its flight. */
 export const SHOTS = {

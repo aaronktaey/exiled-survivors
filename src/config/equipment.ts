@@ -13,6 +13,7 @@
 
 import type { SkillId } from '@/weapons/skills';
 import type { DropTier } from '@/config/system';
+import type { PixelIconId } from '@/config/pixelIcons';
 
 export type GearSlot = 'weapon';
 
@@ -78,11 +79,11 @@ export interface GearSpec {
    */
   readonly combineInto?: boolean;
   /**
-   * Its picture (public/, from the Raven Fantasy pack — see
-   * assets/icons/CREDITS.txt), loaded under `gearTexture(id)`. Each tier its
-   * own, so the 인벤토리 tells them apart at a glance.
+   * Its picture: a grid in PIXEL_ICONS, painted at boot under
+   * `gearTexture(id)`. Each tier its own, so the 인벤토리 tells them apart
+   * at a glance.
    */
-  readonly icon: string;
+  readonly icon: PixelIconId;
 }
 
 /** The texture a sword of this base is drawn with. */
@@ -107,7 +108,7 @@ export const GEAR: Record<GearId, GearSpec> = {
     extremeSound: true,
     combineInto: false,
     salvageOre: 50,
-    icon: 'assets/icons/gear-onigoroshi.png',
+    icon: 'gear-onigoroshi',
     slot: 'weapon',
     tier: 1,
     name: '오니고로시',
@@ -118,7 +119,7 @@ export const GEAR: Record<GearId, GearSpec> = {
     id: 'runedSword',
     salvageOre: 20,
     craftOre: 100,
-    icon: 'assets/icons/gear-runedSword.png',
+    icon: 'gear-runedSword',
     slot: 'weapon',
     tier: 2,
     name: '룬 각인 검',
@@ -130,7 +131,7 @@ export const GEAR: Record<GearId, GearSpec> = {
     id: 'steelSword',
     salvageOre: 9,
     craftOre: 45,
-    icon: 'assets/icons/gear-steelSword.png',
+    icon: 'gear-steelSword',
     slot: 'weapon',
     tier: 3,
     name: '강철 검',
@@ -142,7 +143,7 @@ export const GEAR: Record<GearId, GearSpec> = {
     id: 'ironSword',
     salvageOre: 3,
     craftOre: 15,
-    icon: 'assets/icons/gear-ironSword.png',
+    icon: 'gear-ironSword',
     slot: 'weapon',
     tier: 4,
     name: '무쇠 검',
@@ -154,7 +155,7 @@ export const GEAR: Record<GearId, GearSpec> = {
     id: 'rustySword',
     salvageOre: 1,
     craftOre: 5,
-    icon: 'assets/icons/gear-rustySword.png',
+    icon: 'gear-rustySword',
     slot: 'weapon',
     tier: 5,
     name: '녹슨 검',
@@ -175,7 +176,7 @@ export const GEAR: Record<GearId, GearSpec> = {
     salvageOre: 50,
     craftOre: 1000,
     combineInto: false,
-    icon: 'assets/icons/gear-narsil.png',
+    icon: 'gear-narsil',
     slot: 'weapon',
     tier: 1,
     name: '나르실',

@@ -19,6 +19,8 @@ function lines(): readonly (readonly [string, string])[] {
     [copy.roleEngine, 'Phaser 4 · Vite · TypeScript'],
     // Galmuri is SIL OFL 1.1: its copyright is shown here, its licence ships in public/fonts/galmuri.
     [copy.roleFont, 'Galmuri © Lee Minseo (SIL OFL 1.1)'],
+    // CC BY 4.0 asks for the title, the author, the source and the licence.
+    [copy.roleMusic, '"Constance" Kevin MacLeod (incompetech.com) · Licensed under Creative Commons: By Attribution 4.0 (creativecommons.org/licenses/by/4.0)'],
   ];
 }
 
@@ -45,7 +47,33 @@ export class CreditsScene extends Phaser.Scene {
     const { width, height } = this.scale;
 
     this.add.rectangle(0, 0, width, height, 0x05070b, SCRIM.reading).setOrigin(0, 0).setDepth(DEPTH.ui);
-    const block = MENU.titleBlockHeight + lines().length * 34 + 60 + MENU.buttonHeight;
+    const left = width / 2 - Math.min(230, width / 2 - 24);
+    const whoX = left + 90;
+
+    // Made first and measured, so a credit that wraps (the music's) pushes the
+    // rest down and the whole block is still centred.
+    const rows = lines().map(([role, who]) => {
+      const roleText = this.add
+        .text(left, 0, role, {
+          fontFamily: 'system-ui, sans-serif',
+          fontSize: TEXT.size.body,
+          color: COLORS.accent,
+        })
+        .setOrigin(0, 0)
+        .setDepth(DEPTH.ui + 1);
+      const whoText = this.add
+        .text(whoX, 0, who, {
+          fontFamily: 'system-ui, sans-serif',
+          fontSize: TEXT.size.body,
+          color: COLORS.text,
+          wordWrap: { width: Math.max(160, width - whoX - 24), useAdvancedWrap: true },
+        })
+        .setOrigin(0, 0)
+        .setDepth(DEPTH.ui + 1);
+      return { roleText, whoText, height: Math.max(34, whoText.height + 12) };
+    });
+    const listHeight = rows.reduce((sum, row) => sum + row.height, 0);
+    const block = MENU.titleBlockHeight + listHeight + 60 + MENU.buttonHeight;
     const top = centredTop(height, block);
 
     this.add
@@ -57,28 +85,12 @@ export class CreditsScene extends Phaser.Scene {
       .setOrigin(0.5)
       .setDepth(DEPTH.ui + 1);
 
-    const left = width / 2 - Math.min(230, width / 2 - 24);
-    lines().forEach(([role, who], index) => {
-      const y = top + MENU.titleBlockHeight + 12 + index * 34;
-
-      this.add
-        .text(left, y, role, {
-          fontFamily: 'system-ui, sans-serif',
-          fontSize: TEXT.size.body,
-          color: COLORS.accent,
-        })
-        .setOrigin(0, 0.5)
-        .setDepth(DEPTH.ui + 1);
-
-      this.add
-        .text(left + 90, y, who, {
-          fontFamily: 'system-ui, sans-serif',
-          fontSize: TEXT.size.body,
-          color: COLORS.text,
-        })
-        .setOrigin(0, 0.5)
-        .setDepth(DEPTH.ui + 1);
-    });
+    let y = top + MENU.titleBlockHeight - 5;
+    for (const row of rows) {
+      row.roleText.setY(y);
+      row.whoText.setY(y);
+      y += row.height;
+    }
 
     this.menu = new MenuList(this, {
       x: width / 2,

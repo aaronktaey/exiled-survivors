@@ -787,6 +787,8 @@ export interface Strings {
     readonly roleEngine: string;
     /** 폰트 (0.108): 갈무리's credit. */
     readonly roleFont: string;
+    /** 음악 (0.109): the music's CC BY credit. */
+    readonly roleMusic: string;
   };
 
   /** The one question the game asks before throwing a save away. */

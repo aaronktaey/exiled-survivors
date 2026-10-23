@@ -1,18 +1,36 @@
+Music
+-----
+Constance.mp3
+    "Constance" Kevin MacLeod (incompetech.com)
+    Licensed under Creative Commons: By Attribution 4.0 License
+    http://creativecommons.org/licenses/by/4.0/
+    (a 96 kbps encode; the original is assets-src/music/Constance.mp3)
+
 Sound
 -----
-normalDrop.mp3, magicDrop.mp3   — what an ordinary and a magic drop sound like
-rareDrop.wav, rareDropBackground.wav
-                                — the two recordings a rare drop is made of
-rareDrop.mp3                    — the two above, mixed down to one file:
+Every effect comes from freesound.org, taken only from sounds marked
+"Approved for Free Cultural Works" (CC0 or CC BY 4.0).
 
-    ffmpeg -i rareDrop.wav -i rareDropBackground.wav \
-      -filter_complex "[0:a][1:a]amix=inputs=2:duration=longest\
-:dropout_transition=0:normalize=0,alimiter=limit=0.85:level=false,volume=0.95" \
-      -c:a libmp3lame -q:a 3 rareDrop.mp3
+attack1-3.mp3          타격
+fireball.mp3           화염구
+iceSpear.mp3           얼음창, and the 드론's shot
+chainLightening1.mp3   연쇄번개 and 낙뢰
+voidSphere.mp3         공허구체
+bossAlert.mp3          a 우두머리 arriving
+normalDrop.mp3         an ordinary drop landing
+magicDrop.mp3          a 마법 / 희귀 drop landing
+rareDrop.mp3           a 신화 drop landing (two recordings mixed down to one)
+extremeRareDrop.mp3    the rarest drops (cut from assets-src/drops/extremeRareDrop.ogg)
+chimera*.mp3           the 키메라: appear, cast, death (cut from assets-src/chimera/hydra.mp3
+                       by tools/make-chimera-sfx.py)
+slot.mp3               the 슬롯머신 (mixed from assets-src/slot by tools/mix-slot.py)
 
-  Mixed rather than played together so there is nothing to keep in step at
-  playback time. Re-run the line above after replacing either source.
+Pictures
+--------
+Every picture in the game is drawn by its own code (src/config/pixelIcons.ts,
+src/scenes/BootScene.ts); logo.png is the game's logo.
 
-Icons
------
-icons/   — Raven Fantasy Icons (free pack). See icons/CREDITS.txt.
+Font
+----
+public/fonts/exiled-pixel.woff2 is the logo's lettering (tools/make-logo-font.py).
+public/fonts/galmuri/ is Galmuri © Lee Minseo, SIL Open Font License 1.1 (LICENSE.txt there).

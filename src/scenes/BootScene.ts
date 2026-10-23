@@ -10,6 +10,8 @@ import {
   giantFrame,
   GEAR_DROP,
   ICONS,
+  PIXEL_ICON_SCALE,
+  PIXEL_ICONS,
   GEAR,
   SKILL_ICONS,
   gearTexture,
@@ -41,7 +43,7 @@ import {
   VOID_ORB,
 } from '@/config';
 import { MENU, SCENES } from '@/config';
-import type { EnemyKindSpec } from '@/config';
+import type { EnemyKindSpec, PixelIcon, PixelIconId } from '@/config';
 import { createPixelTextTexture } from '@/systems/PixelFont';
 import { sfx } from '@/systems/Sfx';
 
@@ -71,22 +73,10 @@ export class BootScene extends Phaser.Scene {
       }
     }
     sfx.preload(this);
-
-    this.load.image(TEXTURES.gem, `${base}${ICONS.gem.file}`);
-    this.load.image(TEXTURES.projectile, `${base}${ICONS.projectile.file}`);
-    this.load.image(TEXTURES.skillOrb, `${base}${ICONS.skillOrb.file}`);
-
-    for (const icon of Object.values(SKILL_ICONS)) {
-      if (icon.file) {
-        this.load.image(icon.key, `${base}${icon.file}`);
-      }
-    }
-    for (const spec of Object.values(GEAR)) {
-      this.load.image(gearTexture(spec.id), `${base}${spec.icon}`);
-    }
   }
 
   public create(): void {
+    this.createPixelIcons();
     this.createGridTexture();
     this.createSquareTexture(TEXTURES.player, PLAYER.size, COLORS.player);
     for (const kind of Object.values(ENEMY_KINDS)) {
@@ -1527,6 +1517,47 @@ export class BootScene extends Phaser.Scene {
 
     g.generateTexture(key, size, size);
     g.destroy();
+  }
+
+  /**
+   * The game's own pixel icons (PIXEL_ICONS): the pickups and the shot under
+   * their TEXTURES keys, the skills that name one, and every sword under
+   * `gearTexture(id)` — a rectangle a run of one colour in a row.
+   */
+  private createPixelIcons(): void {
+    const wanted: [string, PixelIconId][] = [
+      [TEXTURES.gem, ICONS.gem.pixel],
+      [TEXTURES.projectile, ICONS.projectile.pixel],
+      [TEXTURES.skillOrb, ICONS.skillOrb.pixel],
+      ...Object.values(SKILL_ICONS).flatMap((icon): [string, PixelIconId][] => (icon.pixel ? [[icon.key, icon.pixel]] : [])),
+      ...Object.values(GEAR).map((spec): [string, PixelIconId] => [gearTexture(spec.id), spec.icon]),
+    ];
+    const px = PIXEL_ICON_SCALE;
+    for (const [key, id] of wanted) {
+      if (this.textures.exists(key)) {
+        continue;
+      }
+      const icon: PixelIcon = PIXEL_ICONS[id];
+      const g = this.add.graphics();
+      icon.rows.forEach((row, y) => {
+        let x = 0;
+        while (x < row.length) {
+          const cell = row[x]!;
+          let end = x + 1;
+          while (end < row.length && row[end] === cell) {
+            end += 1;
+          }
+          const color = icon.palette[cell];
+          if (cell !== '.' && color !== undefined) {
+            g.fillStyle(color, 1);
+            g.fillRect(x * px, y * px, (end - x) * px, px);
+          }
+          x = end;
+        }
+      });
+      g.generateTexture(key, icon.rows[0]!.length * px, icon.rows.length * px);
+      g.destroy();
+    }
   }
 
   private createThunderIcon(): void {
