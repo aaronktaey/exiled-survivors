@@ -15,6 +15,32 @@ export interface PatchNote {
 
 export const PATCH_NOTES: readonly PatchNote[] = [
   {
+    version: '0.110',
+    date: '2026-10-23',
+    changes: {
+      ko: [
+        '체력 포션을 초록 물약 병으로 바꿨습니다. 붉은 적 투사체와 헷갈리지 않습니다.',
+        '패시브의 이름이 재능으로 바뀌었습니다. 게임 가이드의 재능 · 피해 · 공격속도 설명도 지금 규칙에 맞게 고쳤습니다.',
+        '글씨가 서로 겹치거나 버튼에 걸리던 곳을 고쳤습니다(재능, 인벤토리, 분해 · 제작, 세로 화면의 시작 스킬 카드 · 구슬 버튼 · 설정 · 일시정지).',
+      ],
+      en: [
+        'The health potion is now a green flask, so it is no longer mistaken for a red enemy bolt.',
+        'Passives are now called Talents. The guide’s Talents, damage and attack speed pages now describe the rules as they are.',
+        'Fixed text that ran into other text or into buttons (Talents, Inventory, Salvage · Craft, and upright on a phone: the starting skill cards, the orb buttons, Settings and Pause).',
+      ],
+      ja: [
+        '体力ポーションを緑の薬瓶に変えました。赤い敵の弾と見間違えません。',
+        'パッシブの名前が才能に変わりました。ゲームガイドの才能・ダメージ・攻撃速度の説明も今のルールに合わせて直しました。',
+        '文字が重なったりボタンにかかったりしていた箇所を直しました（才能、インベントリ、分解・制作、縦画面のスタートスキルカード・オーブボタン・設定・一時停止）。',
+      ],
+      zh: [
+        '生命药水改为绿色药瓶，不会再和红色的敌人弹幕混淆。',
+        '被动改名为天赋。游戏指南中天赋、伤害、攻击速度的说明也已按现行规则更新。',
+        '修正了文字互相重叠或压到按钮的地方（天赋、背包、分解·制作，以及竖屏的初始技能卡、宝珠按钮、设置和暂停）。',
+      ],
+    },
+  },
+  {
     version: '0.109',
     date: '2026-10-23',
     changes: {

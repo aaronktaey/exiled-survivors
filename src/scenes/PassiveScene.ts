@@ -138,7 +138,7 @@ export class PassiveScene extends Phaser.Scene {
         .setDepth(DEPTH.ui + 1);
       fitText(name, cellW - 8, 0);
       const chance = this.add
-        .text(x, y + radius + 36, '', { fontFamily: 'system-ui, sans-serif', fontSize: TEXT.size.hint, color: COLORS.muted })
+        .text(x, y + radius + 35, '', { fontFamily: 'system-ui, sans-serif', fontSize: TEXT.size.hint, color: COLORS.muted })
         .setOrigin(0.5)
         .setDepth(DEPTH.ui + 1);
       const hit = this.add
@@ -147,7 +147,7 @@ export class PassiveScene extends Phaser.Scene {
         .setInteractive({ useHandCursor: true });
       const sign = (text: string, dx: number): Phaser.GameObjects.Text =>
         this.add
-          .text(x + dx, y + radius + 58, text, {
+          .text(x + dx, y + radius + 63, text, {
             fontFamily: 'system-ui, sans-serif',
             fontSize: TEXT.size.label,
             color: COLORS.text,

@@ -40,6 +40,8 @@ import {
   type EnemyKind,
   type GuideTone,
   MAGNET,
+  PASSIVE_POINTS,
+  TALENT_SHARD,
 } from '@/config';
 import {
   affixDetail,
@@ -136,6 +138,12 @@ function values(): Record<string, string | number> {
 
   return {
     hp: PLAYER.maxHp,
+    // 재능 (0.110): the points everyone holds, and what a 재능의 파편 is.
+    passivePoints: PASSIVE_POINTS,
+    shardChance: percent(TALENT_SHARD.chance),
+    shardAmplify: percent(TALENT_SHARD.amplify),
+    shardRegenSecs: seconds(TALENT_SHARD.regenEveryMs),
+    shardRegenHeal: TALENT_SHARD.regen,
     choices: SKILL_PICK.choices,
     bossFirst: seconds(BOSS.firstMs),
     bossEvery: seconds(BOSS.intervalMs),

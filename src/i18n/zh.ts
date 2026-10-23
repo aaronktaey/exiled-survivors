@@ -30,7 +30,7 @@ export const zh: Strings = {
   },
 
   passives: {
-    title: '被动',
+    title: '天赋',
     lead: '天赋碎片掉落时，提高各项能力碎片出现的几率',
     chance: '提高 {pct}%',
     reset: '重置',
@@ -163,7 +163,7 @@ export const zh: Strings = {
     never: '默认值',
     hint: '按下旋钮放大 · 滚轮转动 · ←→ 选择 ↑↓ 调整（Shift ×10）· Enter 放大',
     fieldDetails: {
-      damage: '{skill}每次命中的基础伤害。先加上武器攻击力，再乘以增加（强化，彼此相加）和增幅（被动、强力、固定属性、持有效果，彼此相乘），提高它会让{skill}整局的火力上升。',
+      damage: '{skill}每次命中的基础伤害。先加上武器攻击力，再乘以增加（强化，彼此相加）和增幅（天赋碎片、强力、固定属性、持有效果，彼此相乘），提高它会让{skill}整局的火力上升。',
       attackSpeed: '{skill}每秒的基础攻击次数。2表示每0.5秒攻击一次。攻速强化、狂乱和持有效果都乘在这个值上。',
       range: '{skill}的基础射程（px），只瞄准这个距离内的敌人。投掷类技能的射程会随投射物速度按比例增加。',
       projectileSpeed: '{skill}投射物的飞行速度（px/秒）。越快越早命中，射程也按同样比例增加。',
@@ -215,7 +215,7 @@ export const zh: Strings = {
     gift: '回滚补偿：已获得{gear}，每种宝珠各 {orbs} 个',
     giftGear: '{name} {count} 个',
     giftOrbs: '回滚补偿：已获得每种宝珠各 {orbs} 个',
-    giftPassives: '回滚补偿：已获得被动点数 {points} 点，足以将所有被动升到满级',
+    giftPassives: '回滚补偿：已获得天赋点数 {points} 点，足以将所有天赋升到满级',
     gear: '背包',
     guide: '游戏指南',
     patch: '更新日志',
@@ -419,7 +419,7 @@ export const zh: Strings = {
       bones: '骨头: {list}',
       gear: '装备: {name} — {lines}',
       skills: '技能: {list}',
-      passives: '被动: {list}',
+      passives: '天赋: {list}',
       none: '无',
       tier: '{name} {tier}阶',
       remove: '删除记录',
@@ -480,7 +480,7 @@ export const zh: Strings = {
     device: '本设备',
     cloud: '账号',
     swords: '剑 {n} 把',
-    passives: '被动 {n} 阶 · 剩余点数 {points}',
+    passives: '天赋 {n} 阶 · 剩余点数 {points}',
     orbs: '宝珠 {n} 个',
     bones: '骨头 {n} 个',
     savedRun: '有存档',
@@ -546,8 +546,8 @@ export const zh: Strings = {
     targetShots: ' × 投射物 {n}',
     formulaDps: 'DPS {dps} = {damage} × {rate} × {targets}',
     formulaNote: '不含暴击',
-    effectKinds: { gear: '装备', passive: '被动', bone: '骨头', buff: '增益', debuff: '减益' },
-    effectPassive: '被动',
+    effectKinds: { gear: '装备', passive: '天赋', bone: '骨头', buff: '增益', debuff: '减益' },
+    effectPassive: '天赋',
     effectPassiveLine: '{name} {rank} 阶 · 每阶 {detail}',
     effectMango: '攻击速度・移动速度 ×{scale} · 不受伤害 — 剩余 {seconds} 秒',
     effectWeb: '蛛网',
@@ -609,7 +609,7 @@ export const zh: Strings = {
     loadInstead: '继续那一局',
     cancel: '取消',
     loginTitle: '登录之前',
-    loginBody: '登录后，本设备的记录（装备、宝珠、骨头、被动、保存的对局）将被账号中保存的记录替换，本设备的记录会丢失。如果账号中还没有记录，本设备的记录会保存到账号。',
+    loginBody: '登录后，本设备的记录（装备、宝珠、骨头、天赋、保存的对局）将被账号中保存的记录替换，本设备的记录会丢失。如果账号中还没有记录，本设备的记录会保存到账号。',
     loginHeld: '本设备当前：武器 {swords} 把 · 宝珠 {orbs} 个 · 骨头 {bones} 个',
     loginGo: '登录',
   },
@@ -797,7 +797,7 @@ export const zh: Strings = {
     affixes: '属性',
     orbs: '宝珠',
     bones: '骨头',
-    passives: '被动',
+    passives: '天赋',
     inventory: '背包',
     ranking: '排行榜',
   },
@@ -884,7 +884,7 @@ export const zh: Strings = {
         {
           title: '账号',
           lines: [
-            '登录是可选的。在标题画面的账号中用 Google 等社交账号登录后，记录（装备·被动·宝珠·骨头·存档·设置）会保存到账号，可以在其他设备上继续游玩。',
+            '登录是可选的。在标题画面的账号中用 Google 等社交账号登录后，记录（装备·天赋·宝珠·骨头·存档·设置）会保存到账号，可以在其他设备上继续游玩。',
             '本设备与账号的记录不同时，会询问要保留哪一份。没有选择的那一份将会丢失。',
             '登录只使用账号的唯一编号和显示名称，不收集电子邮箱。可以在账号画面退出登录或删除账号。',
           ],
@@ -943,8 +943,8 @@ export const zh: Strings = {
         {
           title: '一次伤害',
           lines: [
-            '（技能伤害 × 被动 + 装备攻击力）× 装备固定属性 × 战斗中强化 × 技能修正。',
-            '效果按 被动 → 装备 → 战斗中强化 的顺序生效，各层之间相乘。同一层内的强化在基础值上相加。',
+            '（技能基础伤害 + 装备攻击力）× 增加 × 增幅 × 技能修正。',
+            '增加（战斗中强化）彼此相加，增幅（天赋碎片、强力、固定属性、持有效果）彼此相乘。',
           ],
         },
         {
@@ -958,7 +958,7 @@ export const zh: Strings = {
         {
           title: '攻击速度',
           lines: [
-            '每秒攻击次数 = 技能基础值 × 被动 × 装备 × 战斗中强化。吃下白芒果期间 ×{mangoRate}。',
+            '每秒攻击次数 = 技能基础值 × 天赋碎片 × 装备 × 战斗中强化。吃下白芒果期间 ×{mangoRate}。',
             '攻击间隔不会低于 {minCooldown}ms。',
           ],
         },
@@ -1096,7 +1096,7 @@ export const zh: Strings = {
           lines: [
             '每击杀一只首领必定掉落一把剑。{fromKillTiers} 阶的剑普通敌人也会偶尔掉落。',
             '剑的阶数越小越强。攻击力会加到所有技能的单次伤害上。',
-            '伤害 = (技能基础伤害 + 攻击力) × 增加 × 增幅。带“增加”的效果（强化）彼此相加，带“增幅”的效果（被动、强力、固定属性、持有效果）彼此相乘。同一把武器上的强力和固定属性先相加。',
+            '伤害 = (技能基础伤害 + 攻击力) × 增加 × 增幅。带“增加”的效果（强化）彼此相加，带“增幅”的效果（天赋碎片、强力、固定属性、持有效果）彼此相乘。同一把武器上的强力和固定属性先相加。',
             '拾取的剑进入仓库，在标题画面的背包中装备。',
             '剑最多可带 {maxPrefix} 个词缀前缀（攻击）和 {maxPrefix} 个词缀后缀（防御 · 移动）。每条属性出现的几率为 {affixChance}，每出现一条就再掷下一条。',
             '固定属性由剑的种类决定，与前缀 · 后缀数量无关，始终存在。',
@@ -1133,10 +1133,12 @@ export const zh: Strings = {
       ],
       passives: [
         {
-          title: '被动',
+          title: '天赋',
           lines: [
-            '所有玩家都已获得足以将所有被动升到满级的点数。',
-            '点数在标题画面的被动中使用。被动对每一局始终生效。',
+            '每位玩家都有 {passivePoints} 点天赋点数，在标题画面的天赋中分配到想要的属性上。',
+            '天赋碎片会以 {shardChance} 的概率从被击败的敌人身上掉落，逃亡者和奇美拉必定留下一个。碎片是哪种属性由天赋决定——某项属性投入越多，它的碎片出现得越频繁，其余的相应减少。',
+            '每个碎片使该属性增幅 {shardAmplify}（生命恢复为每 {shardRegenSecs} 秒恢复 {shardRegenHeal} 点生命），本局结束后消失。',
+            '投入的点数随时可以通过重置收回。',
           ],
         },
       ],

@@ -298,7 +298,7 @@ export class SkillPickScene extends Phaser.Scene {
     ty += meta.height + 6;
 
     const note = this.payload.notes?.[skill];
-    this.add
+    const body = this.add
       .text(textX, ty, note ? note.text : `${heldBonusText(skill)}
 ${skillSummary(skill)}`, {
         fontFamily: 'system-ui, sans-serif',
@@ -306,11 +306,13 @@ ${skillSummary(skill)}`, {
         color: note?.warn ? COLORS.warnText : note ? COLORS.text : COLORS.muted,
         align: compact ? 'left' : 'center',
         wordWrap: { width: textWidth },
-        // As many lines as the card has room left for.
-        maxLines: Math.max(1, Math.min(4, Math.floor((y + h / 2 - 8 - ty) / 17))),
       })
       .setOrigin(origin, 0)
       .setDepth(DEPTH.ui + 1);
+    // As many lines as the card has room left for, by the font's own line
+    // height (a fixed 17px let the game font's last line out of the card).
+    const lineHeight = body.style.getTextMetrics().fontSize + body.lineSpacing;
+    body.setMaxLines(Math.max(1, Math.min(4, Math.floor((y + h / 2 - 8 - ty) / lineHeight))));
 
     panel.on(Phaser.Input.Events.GAMEOBJECT_POINTER_OVER, () => {
       if (!this.picked) {

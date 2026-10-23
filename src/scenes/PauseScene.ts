@@ -7,6 +7,7 @@ import { MenuList } from '@/systems/MenuList';
 import { RareTooltip } from '@/systems/RareTooltip';
 import { devToolsAllowed } from '@/systems/DevAccess';
 import { addBackButton, type BackButton } from '@/systems/BackButton';
+import { fitText } from '@/systems/Layout';
 import type { SkillId } from '@/weapons/skills';
 
 
@@ -93,14 +94,19 @@ export class PauseScene extends Phaser.Scene {
       ],
     });
 
-    this.add
-      .text(width / 2, height - 28, t().pause.hint, {
-        fontFamily: 'system-ui, sans-serif',
-        fontSize: TEXT.size.hint,
-        color: COLORS.muted,
-      })
-      .setOrigin(0.5)
-      .setDepth(DEPTH.ui + 1);
+    // Shrunk to the screen: upright on a phone the line is wider than it is.
+    fitText(
+      this.add
+        .text(width / 2, height - 28, t().pause.hint, {
+          fontFamily: 'system-ui, sans-serif',
+          fontSize: TEXT.size.hint,
+          color: COLORS.muted,
+        })
+        .setOrigin(0.5)
+        .setDepth(DEPTH.ui + 1),
+      width,
+      8,
+    );
 
     this.input.keyboard?.on('keydown-ESC', this.resume, this);
 

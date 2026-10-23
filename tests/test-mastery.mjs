@@ -154,6 +154,10 @@ const effects = await run(`
                 k1: window.config.SKILL_MASTERY.fireBlastScale, k2: window.config.SKILL_MASTERY.second.fireBlastScale };
   const critWas = window.config.PLAYER.critChance;
   window.config.PLAYER.critChance = 0;
+  // Holding 낙뢰 adds crit of its own (보유 효과): off too, or one hit in
+  // twenty lands doubled and the 감전 figure below reads twice what it is.
+  const heldCritWas = s.player.held.critChance;
+  s.player.held.critChance = 0;
 
   // 얼음창: a chilled enemy struck again is frozen; an unchilled one is not.
   const cold = put(300, 0), warm = put(-300, 0);
@@ -210,6 +214,7 @@ const effects = await run(`
   for (let t = 0; t < window.config.SKILL_MASTERY.thunderShock.durationMs + 100; t += 50) shockedOne.update(0, 50);
   out.shockLater = shockedOne.isShocked;
   window.config.PLAYER.critChance = critWas;
+  s.player.held.critChance = heldCritWas;
   s.spawner.clear();
 
   // 공허구체: two orbs on the same enemy hit it twice; the same orb again, not at once.

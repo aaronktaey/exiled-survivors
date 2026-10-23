@@ -270,8 +270,13 @@ export class SettingsScene extends Phaser.Scene {
     this.previewBase.setRadius(JOYSTICK.baseRadius * joystickScale);
     this.previewThumb.setRadius(JOYSTICK.thumbRadius * joystickScale);
 
+    // In its corner, but clear of the hint at the foot of the screen: upright
+    // on a phone that wraps to two lines and ran into the ring. (A hint left
+    // from the last launch is destroyed and has no scene; it does not count.)
     const x = JOYSTICK.margin;
-    const y = this.scale.height - JOYSTICK.margin;
+    const hintTop = this.hint?.scene ? this.hint.y - this.hint.displayHeight : this.scale.height;
+    const radius = JOYSTICK.baseRadius * joystickScale;
+    const y = Math.min(this.scale.height - JOYSTICK.margin, hintTop - 10 - radius);
     this.previewBase.setPosition(x, y).setAlpha(0.45);
     this.previewThumb.setPosition(x, y).setAlpha(0.45);
   }
@@ -350,7 +355,13 @@ export class SettingsScene extends Phaser.Scene {
     }
   }
 
+  /** The hint for the row under the cursor, and the pad sample moved clear of it. */
   private setHint(): void {
+    this.writeHint();
+    this.drawPreview();
+  }
+
+  private writeHint(): void {
     if (this.payload.allowLanguage === false) {
       this.hint.setText(t().settings.languageTitleOnly);
       return;

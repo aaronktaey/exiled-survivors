@@ -87,6 +87,8 @@ const sameGear = (a: GearItem | null, b: GearItem | null): boolean =>
 
 const MARGIN = 16;
 const TITLE_BLOCK = 54;
+/** A 구슬 button's icon and the gap after it, before the word. */
+const ORB_ICON_ROOM = 20;
 const TAB_HEIGHT = 30;
 const TAB_WIDTH = 96;
 const FOOTER = 34;
@@ -165,6 +167,8 @@ export class InventoryScene extends Phaser.Scene {
   private gridCentre = { x: 0, y: 0 };
   /** The 구슬 buttons, by id. Public so a test can press one. */
   public orbButtons = new Map<OrbId, Phaser.GameObjects.Text>();
+  /** How wide each 구슬 button is, for fitting its word (buildOrbs). */
+  private orbSlot = 0;
   private orbPlates = new Map<OrbId, Phaser.GameObjects.Rectangle>();
   private orbIcons = new Map<OrbId, Phaser.GameObjects.Image>();
   /** What the armed 구슬 would do, or what the last one did. Public for tests. */
@@ -304,7 +308,7 @@ export class InventoryScene extends Phaser.Scene {
 
     // The weapon in hand, under the title, on every tab.
     this.wearing = this.add
-      .text(width / 2, MARGIN + 38, '', {
+      .text(width / 2, MARGIN + 41, '', {
         fontFamily: 'system-ui, sans-serif',
         fontSize: TEXT.size.hint,
         color: COLORS.gearText,
@@ -663,6 +667,7 @@ export class InventoryScene extends Phaser.Scene {
    */
   private buildOrbs(x: number, y: number, paneWidth: number): number {
     const slot = Math.min(110, Math.floor(paneWidth / ALL_ORBS.length));
+    this.orbSlot = slot;
     const left = x - (slot * ALL_ORBS.length) / 2 + slot / 2;
 
     ALL_ORBS.forEach((orb, index) => {
@@ -672,18 +677,19 @@ export class InventoryScene extends Phaser.Scene {
         .setDepth(DEPTH.ui + 1)
         .setInteractive({ useHandCursor: true });
       // Its own sprite beside the word, so the row reads as different things
-      // rather than a row of counts.
+      // rather than a row of counts. The two are centred as a pair once the
+      // word is known (refreshOrbs).
       const icon = this.add
-        .image(cx - slot / 2 + 14, y, orb.texture)
+        .image(cx, y, orb.texture)
         .setDisplaySize(16, 16)
         .setDepth(DEPTH.ui + 2);
       const label = this.add
-        .text(cx + 8, y, '', {
+        .text(cx, y, '', {
           fontFamily: 'system-ui, sans-serif',
           fontSize: TEXT.size.hint,
           color: COLORS.muted,
         })
-        .setOrigin(0.5)
+        .setOrigin(0, 0.5)
         .setDepth(DEPTH.ui + 2);
 
       plate.on(Phaser.Input.Events.GAMEOBJECT_POINTER_DOWN, () => this.pressOrb(orb.id));
@@ -805,7 +811,13 @@ export class InventoryScene extends Phaser.Scene {
       const held = orbs.count(orb.id);
       const live = this.canUse(orb.id);
 
-      label.setText(fill(copy.orbCount, { orb: orbShort(orb.id), count: held }));
+      label.setText(fill(copy.orbCount, { orb: orbShort(orb.id), count: held })).setScale(1);
+      // Icon, a gap, the word: shrunk to the slot (an upright phone's is
+      // narrow) and centred on it, so the icon never sits on the word.
+      fitText(label, this.orbSlot - 6 - ORB_ICON_ROOM, 2);
+      const pairLeft = plate.x - (ORB_ICON_ROOM + label.displayWidth) / 2;
+      this.orbIcons.get(orb.id)?.setX(pairLeft + 8);
+      label.setX(pairLeft + ORB_ICON_ROOM);
       label.setColor(COLORS.muted);
       label.setAlpha(live ? 1 : 0.35);
       plate.setFillStyle(COLORS.panelActive, 0);

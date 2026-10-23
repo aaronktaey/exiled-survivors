@@ -30,7 +30,7 @@ export const en: Strings = {
   },
 
   passives: {
-    title: 'Passives',
+    title: 'Talents',
     lead: 'Makes each stat’s shard likelier when a Talent Shard drops',
     chance: '+{pct}% chance',
     reset: 'Reset',
@@ -163,7 +163,7 @@ export const en: Strings = {
     never: 'defaults',
     hint: 'Press a dial to magnify · wheel to turn · ←→ pick ↑↓ adjust (Shift ×10) · Enter to magnify',
     fieldDetails: {
-      damage: '{skill}’s base damage per hit. The weapon’s attack is added, then increases (upgrades, added together) and amplifies (passive, Mighty, implicits, held skills — multiplied) multiply it, so raising it lifts {skill}’s firepower all run.',
+      damage: '{skill}’s base damage per hit. The weapon’s attack is added, then increases (upgrades, added together) and amplifies (Talent Shards, Mighty, implicits, held skills — multiplied) multiply it, so raising it lifts {skill}’s firepower all run.',
       attackSpeed: '{skill}’s base attacks per second. 2 means one attack every 0.5s. Attack-speed upgrades, Frenzied and held bonuses multiply it.',
       range: '{skill}’s base reach in px: it only aims at enemies within it. A thrown skill’s reach grows with its shot speed.',
       projectileSpeed: 'How fast {skill}’s shots fly, in px/s. Faster lands sooner, and stretches the reach by the same share.',
@@ -215,7 +215,7 @@ export const en: Strings = {
     gift: 'A gift for the rollback: {gear} and {orbs} of every orb',
     giftGear: '{count} × {name}',
     giftOrbs: 'A gift for the rollback: {orbs} of every orb',
-    giftPassives: 'A gift for the rollback: {points} passive points, enough to max every passive',
+    giftPassives: 'A gift for the rollback: {points} talent points, enough to max every talent',
     gear: 'Inventory',
     guide: 'How to Play',
     patch: 'Patch Notes',
@@ -419,7 +419,7 @@ export const en: Strings = {
       bones: 'Bones: {list}',
       gear: 'Weapon: {name} — {lines}',
       skills: 'Skills: {list}',
-      passives: 'Passives: {list}',
+      passives: 'Talents: {list}',
       none: 'none',
       tier: '{name} T{tier}',
       remove: 'Remove run',
@@ -480,7 +480,7 @@ export const en: Strings = {
     device: 'This device',
     cloud: 'Account',
     swords: '{n} swords',
-    passives: '{n} passive ranks · {points} points left',
+    passives: '{n} talent ranks · {points} points left',
     orbs: '{n} orbs',
     bones: '{n} bones',
     savedRun: 'A saved run',
@@ -546,8 +546,8 @@ export const en: Strings = {
     targetShots: ' × projectiles {n}',
     formulaDps: 'DPS {dps} = {damage} × {rate} × {targets}',
     formulaNote: 'Critical hits are not counted',
-    effectKinds: { gear: 'Gear', passive: 'Passive', bone: 'Bone', buff: 'Buff', debuff: 'Debuff' },
-    effectPassive: 'Passives',
+    effectKinds: { gear: 'Gear', passive: 'Talent', bone: 'Bone', buff: 'Buff', debuff: 'Debuff' },
+    effectPassive: 'Talents',
     effectPassiveLine: '{name} rank {rank} · {detail} a rank',
     effectMango: 'Attack and move speed ×{scale} · no damage taken — {seconds}s left',
     effectWeb: 'Web',
@@ -609,7 +609,7 @@ export const en: Strings = {
     loadInstead: 'Carry on with it',
     cancel: 'Cancel',
     loginTitle: 'Before you sign in',
-    loginBody: 'Signing in replaces this device’s records (gear, orbs, bones, passives and a saved run) with the ones kept on the account, and this device’s are lost. If the account has none yet, this device’s are saved to it.',
+    loginBody: 'Signing in replaces this device’s records (gear, orbs, bones, talents and a saved run) with the ones kept on the account, and this device’s are lost. If the account has none yet, this device’s are saved to it.',
     loginHeld: 'On this device now: {swords} weapons · {orbs} orbs · {bones} bones',
     loginGo: 'Sign in',
   },
@@ -797,7 +797,7 @@ export const en: Strings = {
     affixes: 'Affixes',
     orbs: 'Orbs',
     bones: 'Bones',
-    passives: 'Passives',
+    passives: 'Talents',
     inventory: 'Inventory',
     ranking: 'Ranking',
   },
@@ -884,7 +884,7 @@ export const en: Strings = {
         {
           title: 'Account',
           lines: [
-            'Signing in is optional. Sign in from Account on the title screen with a social account such as Google, and your records (gear, passives, orbs, Bones, the saved run, settings) are kept on your account, so you can carry on from another device.',
+            'Signing in is optional. Sign in from Account on the title screen with a social account such as Google, and your records (gear, talents, orbs, Bones, the saved run, settings) are kept on your account, so you can carry on from another device.',
             'If this device and your account hold different records, you are asked which to keep. The other set is lost.',
             'Signing in uses only your account’s ID and display name — no email. You can sign out or delete the account from the Account screen.',
           ],
@@ -945,8 +945,8 @@ export const en: Strings = {
         {
           title: 'One hit',
           lines: [
-            '(skill damage × passives + weapon attack) × weapon implicit × run upgrades × per-skill balance.',
-            'Effects apply passives → weapon → run upgrades, and the layers multiply. Within a layer, picks add up on the base.',
+            '(skill base damage + weapon attack) × increased × amplified × per-skill balance.',
+            'Increases (run upgrades) add together; amplifies (Talent Shards, Mighty, implicits, held skills) multiply each other.',
           ],
         },
         {
@@ -960,7 +960,7 @@ export const en: Strings = {
         {
           title: 'Attack speed',
           lines: [
-            'Attacks per second = skill base × passives × weapon × run upgrades, and ×{mangoRate} while a White Mango lasts.',
+            'Attacks per second = skill base × Talent Shards × weapon × run upgrades, and ×{mangoRate} while a White Mango lasts.',
             'The gap between attacks never goes below {minCooldown}ms.',
           ],
         },
@@ -1100,7 +1100,7 @@ export const en: Strings = {
           lines: [
             'Every Boss drops a sword. Tier {fromKillTiers} swords also rarely drop from ordinary enemies.',
             'The lower a sword’s tier number, the stronger it is. Its attack power is added to every skill’s hit.',
-            'Damage is (the skill’s base damage + attack) × increased × amplified. Effects marked increased (upgrades) add together; effects marked amplified (passives, Mighty, implicits, held skills) multiply each other. One weapon’s Mighty and implicit add up first.',
+            'Damage is (the skill’s base damage + attack) × increased × amplified. Effects marked increased (upgrades) add together; effects marked amplified (Talent Shards, Mighty, implicits, held skills) multiply each other. One weapon’s Mighty and implicit add up first.',
             'Swords you pick up go to the stash; you equip them from the Inventory on the title screen.',
             'A sword can carry up to {maxPrefix} prefixes (offence) and {maxPrefix} suffixes (defence and movement). Each line is a {affixChance} roll, and every success rolls for another.',
             'The implicit is fixed by the kind of sword, and is always there however many prefixes and suffixes it has.',
@@ -1139,10 +1139,12 @@ export const en: Strings = {
       ],
       passives: [
         {
-          title: 'Passives',
+          title: 'Talents',
           lines: [
-            'Every player has been given enough points to max every passive.',
-            'Spend points from Passives on the title screen. Passives apply to every run.',
+            'Every player holds {passivePoints} talent points. Share them out among the stats from Talents on the title screen.',
+            'A Talent Shard drops off {shardChance} of kills, and a Fugitive or a Chimera always leaves one. Which stat it carries follows your talents: the more points in a stat, the more often its shard comes, and the others that much less.',
+            'Each shard amplifies its stat by {shardAmplify} (regeneration: +{shardRegenHeal} health every {shardRegenSecs}s) until the run ends.',
+            'Reset gives every point back, at any time.',
           ],
         },
       ],

@@ -2,7 +2,8 @@
  * The game's own pixel icons (0.109, the user's ask): the swords, the 경험치
  * 보석, the 화염구 shot, the plain skill orb and four skills' icons. They took
  * the place of the Raven Fantasy pack, whose free version was for games that
- * earn nothing. Each is a 16x16 grid, one character a pixel ('.' is clear),
+ * earn nothing. The 체력 포션 joined in 0.110: a green flask, where the red
+ * square with a white cross it was read as one more red enemy bolt. Each is a 16x16 grid, one character a pixel ('.' is clear),
  * coloured by its own palette and painted at boot `PIXEL_ICON_SCALE` times
  * over (BootScene.createPixelIcons) — 32x32, the size the pack's were.
  *
@@ -290,6 +291,27 @@ export const PIXEL_ICONS = {
       '....oddddddo....',
       '.....oooooo.....',
       '................',
+    ],
+  },
+  "potion": {
+    palette: { "C": 0x7a4e2a, "D": 0x179a3c, "G": 0x8fb8b0, "L": 0x2fd65a, "c": 0xb07a48, "g": 0xcfe8e0, "l": 0x7dff8a, "o": 0x1a1016, "w": 0xffffff },
+    rows: [
+      '......oooo......',
+      '.....occCCo.....',
+      '.....occCCo.....',
+      '.....occCCo.....',
+      '....oGGGGGGo....',
+      '.....oggggo.....',
+      '....oggggggo....',
+      '...oggggggggo...',
+      '..ogllllllllgo..',
+      '..ogLwwLLLLDgo..',
+      '..ogLwLLLLLDgo..',
+      '..ogLLLLLLLDgo..',
+      '..ogLLLLLLDDgo..',
+      '...ogLLLDDDgo...',
+      '....oggLDggo....',
+      '.....oooooo.....',
     ],
   },
 } as const satisfies Record<string, PixelIcon>;

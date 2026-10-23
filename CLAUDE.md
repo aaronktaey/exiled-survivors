@@ -608,7 +608,9 @@ Read `git log` for what changed and when. What is not in the log:
   through UpgradeScene (its cards are any `ChoiceCard` since 0.102). The
   potion heal for a maxed main skill is gone; a maxed skill picked up again
   still heals.
-- **패시브 is 재능의 파편 lines (0.102, the user's ask).** passives.ts: six
+- **패시브 is 재능의 파편 lines (0.102, the user's ask) — shown as 재능 since
+  0.110** (Talents · 才能 · 天赋, the user's ask: a name tied to the shard, four
+  letters at most; the code, ids and storage still say passive). passives.ts: six
   lines, each +`shardWeight` (5%) on its stat's weight when a shard lands
   (the others come up less; the screen shows the increase, "N% 증가"), no cap
   but the points (`maxRank` = PASSIVE_POINTS). Every player holds
@@ -784,7 +786,8 @@ Read `git log` for what changed and when. What is not in the log:
   (CC0 or CC BY 4.0 — a CC BY one owes its author a line in 제작자 정보), the
   user's rule; `public/assets/CREDITS.txt` lists every clip and its use. The
   pictures are all drawn by code: the swords, the 경험치 보석, the 화염구
-  shot, the skill orb and four skills' icons are 16x16 grids in
+  shot, the skill orb, the 체력 포션 (a green flask since 0.110 — the red
+  square read as an enemy bolt) and four skills' icons are 16x16 grids in
   `config/pixelIcons.ts` (`PIXEL_ICONS`, painted ×`PIXEL_ICON_SCALE` by
   `BootScene.createPixelIcons`) — the Raven Fantasy pack they replaced was
   free only for games that earn nothing. A new icon is a grid there and a
@@ -1033,6 +1036,14 @@ Read `git log` for what changed and when. What is not in the log:
   bundle) puts a 폰트 비교 picker bottom-left: it sets `TEXT.fontFamily` to
   a candidate from its CDN (or 시스템, the look before 0.108), kept in
   `localStorage['dev-font']`.
+  Phaser measures a font from a test string and found no descenders in
+  these, so it drew every label low in its box and stacked lines met;
+  `useGameFont` also lays `TEXT.gameFontMetrics` (shares of the size) over
+  the measured metrics, in setStyle and on every re-measure (0.110). A
+  layout that counts lines should read `style.getTextMetrics()`, not a
+  fixed pixel height. `tests/text-check.mjs` (not a suite) walks every
+  screen at both shapes and lists labels that cross, run onto a plate's
+  edge or leave the screen — run it after anything that moves text.
 - **Known gaps, left on purpose:**
   - The 뼈다귀 pick screen is reached only on the way into a fresh run (게임
     시작, and 다시하기 after a death — both through `BoneScene.before`).

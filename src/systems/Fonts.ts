@@ -13,18 +13,58 @@ import { TEXT } from '@/config';
  * Every label in the code still asks for `system-ui, sans-serif`;
  * `useGameFont` turns any such request into TEXT.fontFamily, read at the
  * moment the style is set (so the dev server's 폰트 비교 can change it).
+ *
+ * It also hands Phaser the game font's metrics (TEXT.gameFontMetrics, 0.110).
+ * Phaser measures a font from a test string, and these glyphs have no
+ * descenders: it found none, put every spare pixel of the box above the
+ * letters, and so drew each label lower in its box than the system font did
+ * — enough for a title and the line under it to meet. Every size gets the
+ * same shares of its own size instead, which sit the letters where they sat.
  */
+const GAME_FAMILY = TEXT.fontFamily;
+
+interface StyleInternals {
+  fontFamily: string;
+  fontSize: string;
+  fontStyle: string;
+  _font: string;
+  metrics: { ascent: number; descent: number; fontSize: number };
+  parent: { updateText: () => unknown };
+  setStyle: (style: Record<string, unknown> | undefined, updateText?: boolean, setDefaults?: boolean) => unknown;
+  update: (recalculateMetrics: boolean) => unknown;
+}
+
+function gameMetrics(style: StyleInternals): StyleInternals['metrics'] {
+  const px = parseFloat(style.fontSize) || 16;
+  const ascent = Math.round(px * TEXT.gameFontMetrics.ascent);
+  const descent = Math.round(px * TEXT.gameFontMetrics.descent);
+  return { ascent, descent, fontSize: ascent + descent };
+}
+
 export function useGameFont(): void {
-  const proto = Phaser.GameObjects.TextStyle.prototype as unknown as {
-    setStyle: (style: Record<string, unknown> | undefined, updateText?: boolean, setDefaults?: boolean) => unknown;
-  };
+  const proto = Phaser.GameObjects.TextStyle.prototype as unknown as StyleInternals;
   const original = proto.setStyle;
-  proto.setStyle = function (style, updateText, setDefaults) {
+  proto.setStyle = function (this: StyleInternals, style, updateText = true, setDefaults = false) {
     const swapped =
       style && typeof style.fontFamily === 'string' && style.fontFamily.startsWith('system-ui')
         ? { ...style, fontFamily: TEXT.fontFamily }
         : style;
-    return original.call(this, swapped, updateText, setDefaults);
+    // Measured first as Phaser would, then the game font's own metrics laid over it.
+    original.call(this, swapped, false, setDefaults);
+    if (this.fontFamily === GAME_FAMILY && !(swapped && swapped.metrics)) {
+      this.metrics = gameMetrics(this);
+    }
+    return updateText ? this.parent.updateText() : this.parent;
+  };
+  // A new size or family (setFontSize, setFontFamily — fitText shrinks labels this way) re-measures here.
+  const update = proto.update;
+  proto.update = function (this: StyleInternals, recalculateMetrics) {
+    if (recalculateMetrics && this.fontFamily === GAME_FAMILY) {
+      this._font = [this.fontStyle, this.fontSize, this.fontFamily].join(' ').trim();
+      this.metrics = gameMetrics(this);
+      return this.parent.updateText();
+    }
+    return update.call(this, recalculateMetrics);
   };
 }
 

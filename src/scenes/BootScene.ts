@@ -19,7 +19,6 @@ import {
   RANKING,
   ROLLBACK_GIFT,
   PLAYER,
-  POTION,
   SHOTS,
   TERRAIN,
   TEXTURES,
@@ -97,7 +96,6 @@ export class BootScene extends Phaser.Scene {
     this.createEnemyShotTexture();
     this.createThornTexture();
     this.createVoidOrbTexture();
-    this.createPotionTexture();
     this.createGearTexture();
     this.createDivineShardTexture();
     this.createPassiveTexture();
@@ -1529,6 +1527,7 @@ export class BootScene extends Phaser.Scene {
       [TEXTURES.gem, ICONS.gem.pixel],
       [TEXTURES.projectile, ICONS.projectile.pixel],
       [TEXTURES.skillOrb, ICONS.skillOrb.pixel],
+      [TEXTURES.potion, ICONS.potion.pixel],
       ...Object.values(SKILL_ICONS).flatMap((icon): [string, PixelIconId][] => (icon.pixel ? [[icon.key, icon.pixel]] : [])),
       ...Object.values(GEAR).map((spec): [string, PixelIconId] => [gearTexture(spec.id), spec.icon]),
     ];
@@ -1747,21 +1746,6 @@ export class BootScene extends Phaser.Scene {
     graphics.fillCircle(half, size * 0.95, Math.max(2, size * 0.08));
 
     graphics.generateTexture(TEXTURES.gear, size, size);
-    graphics.destroy();
-  }
-
-  private createPotionTexture(): void {
-    const size = POTION.size * 2;
-    const arm = size * 0.22;
-    const graphics = this.add.graphics();
-
-    graphics.fillStyle(COLORS.potion, 1);
-    graphics.fillRect(0, 0, size, size);
-    graphics.fillStyle(COLORS.potionCross, 1);
-    graphics.fillRect(size / 2 - arm / 2, size * 0.2, arm, size * 0.6);
-    graphics.fillRect(size * 0.2, size / 2 - arm / 2, size * 0.6, arm);
-
-    graphics.generateTexture(TEXTURES.potion, size, size);
     graphics.destroy();
   }
 

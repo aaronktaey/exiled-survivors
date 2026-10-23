@@ -90,10 +90,8 @@ export const COLORS = {
   gearEdge: 0xf2d08a,
   gearGlow: 0xffd34d,
   gearText: '#f2d08a',
-  /** The potion: a white cross on crimson, haloed in pink as it expires. */
-  potion: 0xd94452,
-  potionCross: 0xfff2f2,
-  potionGlow: 0xff8fa0,
+  /** The potion's halo as it expires: green, like the flask (PIXEL_ICONS.potion) and the heal. */
+  potionGlow: 0x7dff8a,
   healText: '#7ef0b0',
   /** 알수없는 룬: the line over the survivor as one is picked up. */
   runeText: '#e6c4ff',
@@ -244,6 +242,13 @@ export const TEXT = {
    * a last resort. Every label asking for `system-ui` gets this (systems/Fonts.ts).
    */
   fontFamily: '"ExiledPixel", "Galmuri11", system-ui, sans-serif' as string,
+  /**
+   * Where the game font sits in a label's box, as shares of the font size
+   * (0.110): room above the baseline and below it. 갈무리's Hangul reaches
+   * 0.94 up and nothing down, the logo letters 0.7 up; these put the box's
+   * middle where the system font had it, a hair above the Hangul's.
+   */
+  gameFontMetrics: { ascent: 0.98, descent: 0.18 },
   resolution: 2,
   /** A ceiling, so a 3x phone does not bake enormous glyph canvases. */
   maxResolution: 3,
@@ -295,6 +300,8 @@ export const ICONS = {
   gem: { pixel: 'xp-gem', size: 14 },
   projectile: { pixel: 'fireball', size: 16 },
   skillOrb: { pixel: 'skill-orb', size: 22 },
+  // Shown at POTION.size: a cell a pixel, so the flask stays crisp.
+  potion: { pixel: 'potion', size: 16 },
 } as const satisfies Record<string, { readonly pixel: PixelIconId; readonly size: number }>;
 
 /** How each projectile skill's shot is drawn. Width runs along its flight. */
