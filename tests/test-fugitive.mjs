@@ -181,21 +181,22 @@ check('its colour keeps changing, and it wears no ring',
 // --- 7. killed, it always leaves a skill ---
 const killed = await run(`
   s.choosing = true;
-  s.combat.skillDrops.getChildren().forEach((d) => d.active && d.collect());
-  const was = window.config.SKILL_DROP.chance;
-  window.config.SKILL_DROP.chance = 0;
+  s.combat.talentShardDrops.getChildren().forEach((d) => d.active && d.collect());
+  const was = window.config.TALENT_SHARD.chance;
+  window.config.TALENT_SHARD.chance = 0;
   let drops = 0;
   for (let i = 0; i < 5; i++) {
     const f = s.spawner.spawnFugitive();
     s.combat.hit(f, 1e9);
   }
-  drops = s.combat.skillDrops.countActive(true);
-  window.config.SKILL_DROP.chance = was;
+  drops = s.combat.talentShardDrops.countActive(true);
+  window.config.TALENT_SHARD.chance = was;
+  s.combat.talentShardDrops.getChildren().forEach((d) => d.active && d.collect());
   s.combat.skillDrops.getChildren().forEach((d) => d.active && d.collect());
   s.choosing = false;
   return { drops };
 `);
-check('every 도망자 killed leaves a skill, whatever the drop chance is', killed.drops === 5,
+check('every 도망자 killed leaves a 재능의 파편 (0.102; a skill before), whatever the drop chance is', killed.drops === 5,
   `${killed.drops} of 5`);
 
 // --- 8. a minute later it is gone, and leaves nothing ---

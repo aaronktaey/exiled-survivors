@@ -40,6 +40,7 @@ export { RunStats, type RunSummary, type RunSkillLine } from '@/systems/RunStats
 export { IconBar, type IconButton } from '@/systems/IconBar';
 export {
   NO_MODIFIERS,
+  NO_SHARDS,
   attackSpeedFor,
   critMultiplierFor,
   damageFor,

@@ -359,7 +359,7 @@ const newOffers = await run(`
     const came = s.spawner.summon(altar.x, altar.y, id);
     const alive = s.spawner.group.getChildren().filter((e) => e.active);
     out[id] = { label, came, want: O[id].count, kinds: [...new Set(alive.map((e) => e.kind))],
-                skills: alive.every((e) => e.alwaysDropsSkill === true) };
+                skills: alive.every((e) => e.alwaysDropsShard === true) };
   }
   s.spawner.clear();
   s.combat.altars.getChildren().forEach((a) => a.active && a.collect());
@@ -370,7 +370,7 @@ check('a 기행종 altar offers its swarm by name and calls it all up',
   /기행종/.test(newOffers.erraticSwarm.label) && newOffers.erraticSwarm.came === newOffers.erraticSwarm.want &&
     JSON.stringify(newOffers.erraticSwarm.kinds) === JSON.stringify(['erratic']),
   JSON.stringify(newOffers.erraticSwarm));
-check('a 도망자 altar calls up 도망자, each sure to leave a skill',
+check('a 도망자 altar calls up 도망자, each sure to leave a 재능의 파편 (0.102)',
   /도망자/.test(newOffers.fugitives.label) && newOffers.fugitives.came === newOffers.fugitives.want &&
     JSON.stringify(newOffers.fugitives.kinds) === JSON.stringify(['fugitive']) && newOffers.fugitives.skills,
   JSON.stringify(newOffers.fugitives));

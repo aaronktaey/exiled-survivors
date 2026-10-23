@@ -13,6 +13,7 @@ import {
   SCRIM,
   TEXT,
   TEXTURES,
+  ICON_SPOTLIGHT,
 } from '@/config';
 import { PATCH_NOTES } from '@/content/patchNotes';
 import { fill, gearName, t } from '@/i18n';
@@ -162,6 +163,8 @@ export class MenuScene extends Phaser.Scene {
         texture: TEXTURES.passive,
         label: () => t().passives.title,
         badge: () => passives.value.points > 0,
+        // A day's spotlight on the rebuilt tree (0.102, the user's ask).
+        spotlight: () => Date.now() < ICON_SPOTLIGHT.passives,
         onSelect: () => this.openOverlay(SCENES.passives),
       },
       {

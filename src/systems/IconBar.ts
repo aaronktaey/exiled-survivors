@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 
-import { COLORS, DEPTH, ICON_BAR, TEXT } from '@/config';
+import { COLORS, DEPTH, ICON_BAR, ICON_SPOTLIGHT, TEXT } from '@/config';
 
 export interface IconButton {
   readonly id: string;
@@ -9,6 +9,8 @@ export interface IconButton {
   readonly onSelect: () => void;
   /** A dot in the corner when there is something waiting behind it. */
   readonly badge?: () => boolean;
+  /** A ring pulsing round it while true: something new behind it (ICON_SPOTLIGHT, 0.102). */
+  readonly spotlight?: () => boolean;
 }
 
 interface IconView {
@@ -17,6 +19,7 @@ interface IconView {
   readonly plate: Phaser.GameObjects.Rectangle;
   readonly label: Phaser.GameObjects.Text;
   readonly badge: Phaser.GameObjects.Arc;
+  readonly ring?: Phaser.GameObjects.Arc;
 }
 
 /**
@@ -71,6 +74,25 @@ export class IconBar {
         .setDepth(DEPTH.ui + 2)
         .setVisible(button.badge?.() ?? false);
 
+      // The spotlight: a ring round the icon, swelling and fading on a loop.
+      const ring = button.spotlight?.()
+        ? scene.add
+            .circle(x, y, size / 2 + 2)
+            .setStrokeStyle(3, ICON_SPOTLIGHT.color, 1)
+            .setDepth(DEPTH.ui + 2)
+        : undefined;
+      if (ring) {
+        scene.tweens.add({
+          targets: ring,
+          scale: 1.35,
+          alpha: 0.15,
+          duration: ICON_SPOTLIGHT.pulseMs,
+          ease: 'Sine.easeOut',
+          repeat: -1,
+        });
+        label.setColor(Phaser.Display.Color.IntegerToColor(ICON_SPOTLIGHT.color).rgba);
+      }
+
       plate.on(Phaser.Input.Events.GAMEOBJECT_POINTER_OVER, () => this.focus(index));
       // Leaving it hands the keyboard back, or Space would stay the icon's.
       plate.on(Phaser.Input.Events.GAMEOBJECT_POINTER_OUT, () => {
@@ -83,7 +105,7 @@ export class IconBar {
         button.onSelect();
       });
 
-      this.views.push({ button, image, plate, label, badge });
+      this.views.push({ button, image, plate, label, badge, ring });
     });
 
     let edge = right;
@@ -95,6 +117,7 @@ export class IconBar {
       view.image.setX(x);
       view.label.setX(x);
       view.badge.setX(x + size / 2 - 2);
+      view.ring?.setX(x);
       edge -= slot + gap;
     }
 
@@ -119,7 +142,13 @@ export class IconBar {
   public refresh(): void {
     this.views.forEach((view, index) => {
       view.label.setText(view.button.label());
-      view.label.setColor(index === this.focused ? COLORS.accent : COLORS.muted);
+      view.label.setColor(
+        index === this.focused
+          ? COLORS.accent
+          : view.ring
+            ? Phaser.Display.Color.IntegerToColor(ICON_SPOTLIGHT.color).rgba
+            : COLORS.muted,
+      );
       view.plate.setFillStyle(COLORS.panelActive, index === this.focused ? 0.55 : 0);
       view.image.setAlpha(index === this.focused ? 1 : 0.85);
       view.badge.setVisible(view.button.badge?.() ?? false);

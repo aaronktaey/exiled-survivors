@@ -85,6 +85,11 @@ export interface Strings {
 
   readonly passives: {
     readonly title: string;
+    /** 0.102's dial screen: what the lines do, a stat's chance, the reset, points of the whole. */
+    readonly lead: string;
+    readonly chance: string;
+    readonly reset: string;
+    readonly pointsOf: string;
     /** Points in hand, waiting to be spent. */
     readonly points: string;
     /** A line's rank, as "3 / 10". */
@@ -104,15 +109,32 @@ export interface Strings {
   };
 
   /** 아이템 필터: the switches for what drops, reached from the title. */
+  /** 재능의 파편 (0.102). {n} a percentage, {heal} health, {secs} seconds; {count} shards, {list} the short lines. */
+  readonly shard: {
+    readonly name: string;
+    /** The cards' head, and why they came instead of a skill. */
+    readonly pickTitle: string;
+    readonly allMaxed: string;
+    /** Each stat's name on its card. */
+    readonly stats: { readonly damage: string; readonly attackSpeed: string; readonly moveSpeed: string; readonly maxHp: string; readonly area: string; readonly regen: string; };
+    /** Each stat's shard, by name, on the ground and in the 필터's sense. */
+    readonly drops: { readonly damage: string; readonly attackSpeed: string; readonly moveSpeed: string; readonly maxHp: string; readonly area: string; readonly regen: string };
+    /** What one gives, over the survivor and on its card. */
+    readonly gain: { readonly damage: string; readonly attackSpeed: string; readonly moveSpeed: string; readonly maxHp: string; readonly area: string; readonly regen: string; };
+    /** The HUD's short form, for what they add up to. */
+    readonly short: { readonly damage: string; readonly attackSpeed: string; readonly moveSpeed: string; readonly maxHp: string; readonly area: string; readonly regen: string; };
+    readonly hud: string;
+    readonly toast: string;
+  };
   readonly filter: {
     readonly title: string;
     /** Under the title icon. */
     readonly icon: string;
     readonly lead: string;
     readonly sections: { readonly supplies: string; readonly orbs: string; readonly bones: string; readonly rarity: string; readonly bases: string };
-    readonly items: { readonly potion: string; readonly skill: string; readonly randomSkill: string; readonly mango: string; readonly magnet: string; readonly unknownRune: string };
+    readonly items: { readonly potion: string; readonly skill: string; readonly randomSkill: string; readonly mango: string; readonly magnet: string; readonly unknownRune: string; readonly talentShard: string };
     /** The same, short enough to sit under an icon. */
-    readonly itemsShort: { readonly potion: string; readonly skill: string; readonly randomSkill: string; readonly mango: string; readonly magnet: string; readonly unknownRune: string };
+    readonly itemsShort: { readonly potion: string; readonly skill: string; readonly randomSkill: string; readonly mango: string; readonly magnet: string; readonly unknownRune: string; readonly talentShard: string };
     readonly rarity: { readonly normal: string; readonly magic: string; readonly rare: string; readonly mythic: string };
     readonly shown: string;
     readonly hidden: string;

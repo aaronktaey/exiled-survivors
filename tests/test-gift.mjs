@@ -60,11 +60,10 @@ check('the gift gives no sword at all — no 오니고로시 any more',
   first.pieces.length === 0 && first.oni === 0, JSON.stringify(first));
 // No 구슬 either since 0.94 (the user's word).
 check('and no 구슬', first.each === 0 && first.orbs.every(([, n]) => n === 0), JSON.stringify(first.orbs));
-check('and passive points enough to fill every line to its maxRank (0.81)',
-  first.max === first.wantMax && first.points + first.spent === first.max, JSON.stringify({ points: first.points, spent: first.spent, max: first.max }));
-check('and says so on the title in one toast, and marks it given',
-  toast.length === 1 && !/오니고로시/.test(toast[0]) && !/구슬/.test(toast[0]) && new RegExp('패시브 포인트 ' + first.max + '점').test(toast[0]) && !!first.flag,
-  JSON.stringify({ toast, flag: first.flag }));
+// No passive points either since 0.102: every player holds PASSIVE_POINTS, the tree started over.
+check('and no passive points: the tree holds PASSIVE_POINTS, and with nothing to give no toast',
+  first.points + first.spent === (await ev('window.config.PASSIVE_POINTS')) && toast.length === 0,
+  JSON.stringify({ points: first.points, spent: first.spent, toast }));
 
 // --- once only ---
 await toTitle();
@@ -76,7 +75,7 @@ check('a second visit gives nothing more', again.pieces === 0 && again.orb === 0
 
 // --- 0.80's gift already had, ranks already bought: only what is missing comes ---
 await ev(`(() => {
-  window.passives.commit({ shards: 0, points: 2, ranks: { damage: 3 } });
+  window.passives.commit({ scheme: 2, points: 2, ranks: { shardDamage: 3 } });
   localStorage.removeItem(window.config.STORAGE.passiveGift);
   return 1;
 })()`);
@@ -90,11 +89,10 @@ for (let i = 0; i < 40 && toast2.length === 0; i++) {
     return s?.children ? s.children.list.filter((o) => o.type === 'Text' && /복구 보상/.test(o.text)).map((o) => o.text) : []; })()`)) ?? [];
 }
 await sleep(1000);
-const topped = await ev(`(() => ({ points: window.passives.value.points, damage: window.passives.rankOf('damage'), max: window.passives.maxPoints,
+const topped = await ev(`(() => ({ points: window.passives.value.points, damage: window.passives.rankOf('shardDamage'),
   onigoroshi: window.gear.items.filter((it) => it.id === 'onigoroshi').length }))()`);
-check('a player who had the 0.80 gift gets the passive points alone: held + bought come to the max, ranks kept',
-  topped.points === topped.max - 3 && topped.damage === 3 && topped.onigoroshi === 0 &&
-    toast2.length === 1 && !/오니고로시/.test(toast2[0]) && new RegExp('패시브 포인트 ' + (topped.max - 5) + '점').test(toast2[0]),
+check('without the 0.81 mark nothing is topped up any more: the points and ranks stay as they were',
+  topped.points === 2 && topped.damage === 3 && topped.onigoroshi === 0 && toast2.length === 0,
   JSON.stringify({ topped, toast2 }));
 
 // --- a run saved on 0.71–0.79 is not offered ---

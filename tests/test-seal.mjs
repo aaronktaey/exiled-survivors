@@ -71,12 +71,12 @@ await ev(`(() => {
 })()`);
 await reload();
 const tree = await ev(`(() => window.passives.value)()`);
-check('a tree edited by hand starts over', tree.points === 0 && Object.keys(tree.ranks).length === 0, JSON.stringify(tree));
+check('a tree edited by hand starts over, every point back (PASSIVE_POINTS)', tree.points === (await ev('window.config.PASSIVE_POINTS')) && Object.keys(tree.ranks).length === 0, JSON.stringify(tree));
 
 // --- 4. records from before the seal: taken and sealed in the grace, refused after ---
 await ev(`(() => {
   localStorage.setItem('${SAVE}', ${JSON.stringify(JSON.stringify(legacyRun))});
-  localStorage.setItem('${TREE}', JSON.stringify({ shards: 3, points: 2, ranks: { damage: 1 } }));
+  localStorage.setItem('${TREE}', JSON.stringify({ scheme: 2, points: 2, ranks: { shardDamage: 1 } }));
   return 1;
 })()`);
 await reload();
@@ -96,7 +96,7 @@ const after = await ev(`(() => {
 check('after it, a record with no seal is refused like an edited one', after === 'tampered', after);
 
 // --- 5. what comes over from the old address is sealed as it lands ---
-const items = { [TREE]: JSON.stringify({ shards: 1, points: 5, ranks: {} }) };
+const items = { [TREE]: JSON.stringify({ scheme: 2, points: 5, ranks: {} }) };
 const carry = Buffer.from(JSON.stringify({ v: 1, items }), 'utf8').toString('base64url');
 await ev(`(() => { localStorage.clear(); return 1; })()`);
 await cdp.send('Page.navigate', { url: 'about:blank' });

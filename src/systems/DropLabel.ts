@@ -107,6 +107,14 @@ export class DropLabel {
     this.light(tier === 'mythic');
   }
 
+  /**
+   * An extreme-rare drop (0.102, the user's ask): the pillar stands whatever
+   * the tier, in red. Called after `show`, by CombatSystem.land.
+   */
+  public blaze(): void {
+    this.light(true, LIGHT_PILLAR.extremeTint);
+  }
+
   /** Centres the plate and its words just above an item of `size` at (x, y). */
   public place(x: number, y: number, size: number): void {
     const top = y - size / 2 - DROP_LABEL.gap - this.plate.height / 2;
@@ -159,14 +167,19 @@ export class DropLabel {
     });
   }
 
-  /** Stands the pillar up, breathing, or takes it down. */
-  private light(on: boolean): void {
+  /** Stands the pillar up, breathing — in `tint`, or its own white — or takes it down. */
+  private light(on: boolean, tint?: number): void {
     this.glow?.remove();
     this.glow = undefined;
     if (!this.pillar) {
       return;
     }
 
+    if (tint === undefined) {
+      this.pillar.clearTint();
+    } else {
+      this.pillar.setTint(tint);
+    }
     this.pillar.setVisible(on).setAlpha(LIGHT_PILLAR.alpha);
     if (on) {
       this.glow = this.scene.tweens.add({

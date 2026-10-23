@@ -322,7 +322,7 @@ const carried = await run(`
            // 강력 and the base's 피해 고정 속성 are the weapon's 증폭, added within it (0.93).
            wantIncrease: 0,
            wantAmplify: (window.config.GEAR.steelSword.implicit?.damageScale ?? 1) + mighty.gear.damageScale - 1,
-           passive: s.mods.passive.damageScale, base: window.config.SKILL_BASE.meleeStrike.damage,
+           passive: s.mods.shard.damage, base: window.config.SKILL_BASE.meleeStrike.damage,
            wantSwift: rung.gear.moveSpeedScale,
            melee: s.damageOf('meleeStrike'), stat: s.progression.statsFor('meleeStrike').damage };
 `);
@@ -1266,7 +1266,7 @@ const steel = await run(`
   const st = s.progression.statsFor('meleeStrike');
   // 0.93: its 고정 속성 is an 증폭 on the whole hit.
   const want = Math.round((base + ${steelBonus.attack}) * (st.damage / base + ${steelBonus.damageIncrease}) *
-    s.mods.passive.damageScale * ${steelBonus.damageAmplify} * (c.BALANCE.damageScale.meleeStrike ?? 1) * s.heldBonus.damageScale);
+    s.mods.shard.damage * ${steelBonus.damageAmplify} * (c.BALANCE.damageScale.meleeStrike ?? 1) * s.heldBonus.damageScale);
   return { got: s.damageOf('meleeStrike'), want, scale: ${steelBonus.damageAmplify} };
 `);
 check('강철 검 scales every skill’s damage by its 고정 속성',
@@ -1280,7 +1280,7 @@ const pace = async (id) => {
     const c = window.config;
     const plain = (skill) => {
       const base = c.SKILL_BASE[skill].attackSpeed;
-      return base * s.mods.passive.attackSpeedScale * (s.progression.statsFor(skill).attackSpeed / base);
+      return base * s.mods.shard.attackSpeed * (s.progression.statsFor(skill).attackSpeed / base);
     };
     const want = (skill) => plain(skill) * s.gearBonus.attackSpeedScale * (s.gearBonus.skillAttackSpeed[skill] ?? 1);
     return { melee: 1000 / s.cooldownOf('meleeStrike'), fire: 1000 / s.cooldownOf('fireball'),

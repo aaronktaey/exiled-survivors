@@ -20,9 +20,12 @@ import { NO_PASSIVES, type PassiveBonus } from '@/systems/Passives';
 export interface RunModifiers {
   readonly passive: PassiveBonus;
   readonly gear: GearBonus;
+  /** The run's 재능의 파편 (0.102): damage and attack speed, each an 증폭 (the tree's took this place before). */
+  readonly shard: { readonly damage: number; readonly attackSpeed: number };
 }
 
-export const NO_MODIFIERS: RunModifiers = { passive: NO_PASSIVES, gear: NO_BONUS };
+export const NO_SHARDS = { damage: 1, attackSpeed: 1 } as const;
+export const NO_MODIFIERS: RunModifiers = { passive: NO_PASSIVES, gear: NO_BONUS, shard: NO_SHARDS };
 
 /**
  * What the run's own upgrades have multiplied a stat by.
@@ -41,8 +44,9 @@ function runScale(base: number, upgraded: number): number {
  *   플랫 (기본 피해 + 무기 공격력) × 증가 (1 + every 증가, added) × 증폭 (every 증폭, multiplied)
  *
  * 증가 — the run's 공격력 picks (each a share of the base).
- * 증폭 — the passive tree's 피해, and the weapon's 강력 and 피해 고정 속성 (강철 검),
- *        which add within the weapon as its lines always do.
+ * 증폭 — the run's 재능의 파편 (피해량, 0.102 — the tree's 피해 until then), and
+ *        the weapon's 강력 and 피해 고정 속성 (강철 검), which add within the
+ *        weapon as its lines always do.
  * GameScene multiplies in the rest: the skill's own 보정 (BALANCE.damageScale)
  * and the held 얼음창's 증폭; a hit then takes 감전, 각성 and 치명타 on top.
  */
@@ -60,7 +64,7 @@ export function damageParts(
   const base = SKILL_BASE[skill].damage;
   const flat = base + mods.gear.attack;
   const increase = 1 + (runScale(base, upgraded) - 1) + mods.gear.damageIncrease;
-  const amplify = mods.passive.damageScale * mods.gear.damageAmplify;
+  const amplify = mods.shard.damage * mods.gear.damageAmplify;
   return { base, attack: mods.gear.attack, flat, increase, amplify };
 }
 
@@ -68,7 +72,7 @@ export function damageParts(
 export function attackSpeedFor(skill: SkillId, upgraded: number, mods: RunModifiers): number {
   const base = SKILL_BASE[skill].attackSpeed;
 
-  let rate = base * mods.passive.attackSpeedScale;
+  let rate = base * mods.shard.attackSpeed;
   rate *= gearAttackSpeedFor(skill, mods.gear);
   return rate * runScale(base, upgraded);
 }

@@ -58,6 +58,17 @@ export const PLAYER = {
 } as const;
 
 /** Shared defaults; the plain chaser is built from these. */
+/**
+ * ★ Every enemy's base health and move speed, dampened (0.102, the user's
+ * ask): the passive tree's damage and attack speed went with the 재능의
+ * 파편 lines, and the enemies gave the same back. Folded in at spawn, after
+ * the kind's own numbers — what an enemy is worth in XP still reads those.
+ */
+export const ENEMY_DAMPEN = {
+  hp: 0.7,
+  speed: 0.9,
+} as const;
+
 export const ENEMY = {
   /**
    * Angle between one bolt of a 연발 fan and the next. Wide enough that the
@@ -134,6 +145,8 @@ export interface EnemyKindSpec {
   readonly lifespanMs?: number;
   /** Killing it always leaves a skill, the way a 우두머리 does. */
   readonly guaranteedSkill?: boolean;
+  /** Its kill always leaves a 재능의 파편 (0.102: the 도망자 and the 키메라). */
+  readonly guaranteedShard?: boolean;
   /** Drawn to be seen: a colour that cycles, and a body that breathes. */
   readonly flashy?: boolean;
   /** Only a 기행종 has one: it does not walk, it hops (EnemyHopSpec). */
@@ -346,7 +359,8 @@ export const ENEMY_KINDS: Record<EnemyKind, EnemyKindSpec> = {
     contactDamage: 0,
     flee: { distance: 240, arc: Math.PI * 0.9 },
     lifespanMs: 60_000,
-    guaranteedSkill: true,
+    // A 재능의 파편 every time, in place of the skill it left until 0.102 (the user's ask).
+    guaranteedShard: true,
     flashy: true,
   },
   /**
@@ -380,7 +394,8 @@ export const ENEMY_KINDS: Record<EnemyKind, EnemyKindSpec> = {
     },
     unstoppable: true,
     // Always leaves a skill (0.85), as a 도망자 does.
-    guaranteedSkill: true,
+    // A 재능의 파편 every time, in place of the skill it left until 0.102 (the user's ask).
+    guaranteedShard: true,
   },
   shooter: {
     id: "shooter",
@@ -977,6 +992,8 @@ export interface AltarOfferSpec {
   readonly weight: number;
   /** They arrive throwing their ring (Enemy.castVolleyNow) — 0.86, the user's ask for the 키메라. */
   readonly castOnArrival?: boolean;
+  /** Its 제단 lands with AUDIO.drops.extreme (0.102, the 키메라's). */
+  readonly extremeSound?: boolean;
 }
 
 export type AltarOfferId =
@@ -1000,7 +1017,7 @@ export const ALTAR_OFFERS: Record<AltarOfferId, AltarOfferSpec> = {
   // Each one always leaves a skill, as a 도망자 does — a prize worth the chase.
   fugitives: { kind: "fugitive", count: 3, rare: false, weight: 1 },
   // One 키메라 (0.85, the user's ask); its weight is a first guess.
-  chimera: { kind: "chimera", count: 1, rare: false, weight: 1, castOnArrival: true },
+  chimera: { kind: "chimera", count: 1, rare: false, weight: 1, castOnArrival: true, extremeSound: true },
 };
 
 export const ALTAR = {
@@ -1479,6 +1496,47 @@ export const UNKNOWN_RUNE: { readonly from: EnemyKind; readonly chance: number; 
   /** How big it is drawn on the ground. */
   size: 22,
 };
+
+/** What a 재능의 파편 can give, one of them a shard (TALENT_SHARD). */
+export type ShardStat = 'damage' | 'attackSpeed' | 'moveSpeed' | 'maxHp' | 'area' | 'regen';
+
+/**
+ * ★ 재능의 파편 (0.102, the user's ask): one shard a stat — 피해량 파편,
+ * 공격속도 파편 and so on — each rolled on its own off every kill at
+ * `chance` (they do not share it), raised only by the passive tree's line
+ * for it (passives.ts: +5% of the chance a rank) and nothing else; a 도망자
+ * or a 키메라 always leaves one (`guaranteedShard`), its stat weighed by
+ * the same lines. Each gives the run `amplify` more damage, attack speed,
+ * move speed, max health or area (each an 증폭, its shards added), or
+ * `regen` health every `regenEveryMs`. Once the main skill (a level-up) or
+ * every skill on offer (a 무작위 스킬) is maxed, `choices` cards of the
+ * stats are offered instead, evenly, the tree not counted. Like any item on
+ * the ground it is never pulled in — only the 자석 takes it — and goes after
+ * GROUND_ITEM.lifespanMs.
+ */
+export const TALENT_SHARD = {
+  chance: 0.001,
+  stats: ['damage', 'attackSpeed', 'moveSpeed', 'maxHp', 'area', 'regen'] as readonly ShardStat[],
+  amplify: 0.01,
+  regen: 1,
+  regenEveryMs: 5000,
+  choices: 3,
+  /** How big it is drawn on the ground. */
+  size: 22,
+} as const;
+
+/** What a run's shards add up to: an 증폭 per stat (1 + shards × amplify), and health a tick. */
+export function shardBonusFor(counts: Partial<Record<ShardStat, number>>): Record<ShardStat, number> {
+  const n = (stat: ShardStat): number => Math.max(0, Math.floor(counts[stat] ?? 0));
+  return {
+    damage: 1 + n('damage') * TALENT_SHARD.amplify,
+    attackSpeed: 1 + n('attackSpeed') * TALENT_SHARD.amplify,
+    moveSpeed: 1 + n('moveSpeed') * TALENT_SHARD.amplify,
+    maxHp: 1 + n('maxHp') * TALENT_SHARD.amplify,
+    area: 1 + n('area') * TALENT_SHARD.amplify,
+    regen: n('regen') * TALENT_SHARD.regen,
+  };
+}
 
 /** Health potions, rolled separately from the skill drop. */
 export const POTION = {

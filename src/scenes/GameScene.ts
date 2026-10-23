@@ -38,6 +38,10 @@ import {
   AUDIO,
   TERRAIN,
   UPGRADE_PERCENT,
+  TALENT_SHARD,
+  TALENT_SHARD_FX,
+  shardBonusFor,
+  type ShardStat,
 } from '@/config';
 import type { Enemy } from '@/entities/Enemy';
 import { Player } from '@/entities/Player';
@@ -102,6 +106,7 @@ import {
 } from '@/systems/Gear';
 import {
   NO_MODIFIERS,
+  NO_SHARDS,
   attackSpeedFor,
   critMultiplierFor,
   damageFor, damageParts,
@@ -172,7 +177,9 @@ export interface GameSceneData {
  */
 type ChoiceRequest =
   | { readonly kind: 'upgrade'; readonly title: string; readonly subtitle: string; readonly skill: SkillId }
-  | { readonly kind: 'pick' };
+  | { readonly kind: 'pick' }
+  /** 재능의 파편 cards (0.102): a level-up or a 무작위 스킬 with no skill left to raise. */
+  | { readonly kind: 'shard'; readonly subtitle: string };
 
 /** How far from a rock's edge a drop is let fall, so it can be walked up to and seen whole. */
 const DROP_ROOM = 20;
@@ -258,6 +265,10 @@ export class GameScene extends Phaser.Scene {
   private invulnerable = false;
   /** 활력: run time since the weapon last gave health back. */
   private regenMs = 0;
+  /** The run's 재능의 파편, by stat, what they add up to, and the clock on their health (0.102). */
+  private shards: Record<ShardStat, number> = GameScene.noShards();
+  private shardBonus = shardBonusFor({});
+  private shardRegenMs = 0;
   /** Round-robin cursor for the debug drop key. */
   private nextDebugDrop = 0;
 
@@ -293,6 +304,9 @@ export class GameScene extends Phaser.Scene {
     this.over = false;
     this.invulnerable = false;
     this.regenMs = 0;
+    this.shards = GameScene.noShards();
+    this.shardBonus = shardBonusFor({});
+    this.shardRegenMs = 0;
     this.weapons = [];
     this.owned = new Set<SkillId>();
     this.mainSkill = null;
@@ -309,12 +323,11 @@ export class GameScene extends Phaser.Scene {
     // run takes the weapon it went out with, not whatever is in hand now.
     this.runGear = GameScene.gearFor(this.resuming);
     this.gearBonus = gearBonusFor(this.runGear);
-    this.mods = { passive: passives.bonus, gear: this.gearBonus };
+    this.mods = { passive: passives.bonus, gear: this.gearBonus, shard: NO_SHARDS };
     this.heldBonus = NO_HELD_BONUS;
 
     this.player = new Player(this, WORLD.width / 2, WORLD.height / 2);
     this.player.applyGear(this.gearBonus);
-    this.player.applyPassives(this.mods.passive);
     this.cameras.main.startFollow(this.player, true, 0.12, 0.12);
 
     this.progression = new Progression();
@@ -357,12 +370,13 @@ export class GameScene extends Phaser.Scene {
           this.announce(fill(t().game.mangoEaten, { seconds: Math.round(MANGO.durationMs / 1000) })),
         onMagnetCollected: () => this.announce(t().game.magnetPulled),
         onUnknownRuneCollected: () => this.feelUnknownRune(),
+        onTalentShardCollected: (stat) => this.gainShard(stat),
+        shardWeight: (stat) => this.mods.passive.shardWeights[stat] ?? 1,
         dropScale: () => this.boneBonus.dropScale,
         shatter: () =>
           this.mainSkill === 'iceSpear' && this.masteryOf('iceSpear') >= 2
             ? { radius: SKILL_MASTERY.second.iceShatter.radius * this.heldBonus.areaScale }
             : null,
-        luck: () => 1 + passives.bonus.luck,
         critMultiplier: () => critMultiplierFor(this.mods),
         clearOfTerrain: (x, y) => this.terrain?.clear(x, y, DROP_ROOM) ?? [x, y],
       },
@@ -400,6 +414,7 @@ export class GameScene extends Phaser.Scene {
       { group: this.combat.mangoDrops },
       { group: this.combat.magnetDrops },
       { group: this.combat.unknownRuneDrops },
+      { group: this.combat.talentShardDrops },
       { group: this.combat.randomSkillDrops },
       { group: this.combat.skillDrops },
       { group: this.combat.potions },
@@ -593,12 +608,12 @@ export class GameScene extends Phaser.Scene {
         damage: this.damageOf(id),
         cooldownMs: this.cooldownOf(id),
         // 타격's swing is an area too: the held 효과범위 widens it (0.84).
-        range: this.progression.rangeFor(id) * (id === 'meleeStrike' ? this.heldBonus.areaScale : 1),
+        range: this.progression.rangeFor(id) * (id === 'meleeStrike' ? this.areaScale : 1),
         projectileSpeed: stats.projectileSpeed,
         chainCount: stats.chainCount,
         orbitSpeed: stats.orbitSpeed,
         blastRadius: stats.blastRadius,
-        areaScale: this.heldBonus.areaScale,
+        areaScale: this.areaScale,
         recastChance: stats.recastChance,
         pierceCount: stats.pierceCount,
         orbCount: stats.orbCount,
@@ -660,6 +675,11 @@ export class GameScene extends Phaser.Scene {
       }
     }
 
+    // Its 재능의 파편 back before the health, so a bar they had grown holds it.
+    for (const stat of TALENT_SHARD.stats) {
+      this.shards[stat] = Math.max(0, Math.floor(run.shards?.[stat] ?? 0));
+    }
+    this.applyShards();
     this.player.hp = run.hp;
     this.elapsedMs = run.elapsedMs;
     // A save from before the second clock counts its own as the shown one.
@@ -776,6 +796,7 @@ export class GameScene extends Phaser.Scene {
       damage: this.stats.damageExact,
       kills: this.stats.killsByKind,
       terrainSeed: this.terrainSeed,
+      shards: { ...this.shards },
     });
   }
 
@@ -1132,7 +1153,7 @@ export class GameScene extends Phaser.Scene {
       fill(copy.formulaRate, {
         rate: num(perSecond),
         base: num(base.attackSpeed),
-        passive: num(this.mods.passive.attackSpeedScale),
+        passive: num(this.mods.shard.attackSpeed),
         gear: num(gearAttackSpeedFor(skill, this.mods.gear)),
         run: num(runScale(base.attackSpeed, stats.attackSpeed)),
       }) + (mango === 1 ? '' : fill(copy.formulaMango, { mango: num(mango) })) +
@@ -1268,9 +1289,9 @@ export class GameScene extends Phaser.Scene {
     if (!skill) {
       return;
     }
-    // Nothing left to take: the level is a potion instead.
-    if (upgradeOptionsFor(SKILLS[skill], this.progression.statsFor(skill)).length === 0) {
-      this.drinkForMaxedSkill(skill);
+    // Nothing left to take: the level is a 재능의 파편 to choose instead (0.102; a potion before).
+    if (this.maxed(skill)) {
+      this.queueChoice({ kind: 'shard', subtitle: `${fill(t().upgrade.level, { level })} · ${t().shard.allMaxed}` });
       return;
     }
 
@@ -1305,6 +1326,10 @@ export class GameScene extends Phaser.Scene {
       this.openPick();
       return;
     }
+    if (request.kind === 'shard') {
+      this.openShardPick(request.subtitle);
+      return;
+    }
 
     // Worked out here, where the live stats are, so an upgrade that has hit
     // its ceiling is simply not offered — and a skill with none left gets no
@@ -1320,7 +1345,7 @@ export class GameScene extends Phaser.Scene {
     const data: UpgradeChoiceData = {
       ...request,
       options,
-      onPick: (upgrade) => this.onUpgradePicked(request.skill, upgrade),
+      onPick: (upgrade) => this.onUpgradePicked(request.skill, upgrade as UpgradeId),
     };
     this.scene.bringToTop(UpgradeScene.KEY);
     this.scene.launch(UpgradeScene.KEY, data);
@@ -1331,10 +1356,16 @@ export class GameScene extends Phaser.Scene {
    * already goes on to its own upgrade choice, ahead of anything else queued.
    */
   private openPick(): void {
+    const options = this.randomSkills();
+    // Every skill it could offer at its top: 재능의 파편 cards instead (0.102).
+    if (options.every((skill) => this.owned.has(skill) && this.maxed(skill))) {
+      this.openShardPick(`${t().skillPick.dropTitle} · ${t().shard.allMaxed}`);
+      return;
+    }
     const data: SkillPickData = {
       title: t().skillPick.dropTitle,
       subtitle: t().skillPick.dropSubtitle,
-      options: this.randomSkills(),
+      options,
       owned: [...this.owned],
       levels: Object.fromEntries([...this.owned].map((id) => [id, this.progression.levelFor(id)])),
       onPick: (skill) => {
@@ -1402,12 +1433,110 @@ export class GameScene extends Phaser.Scene {
     return [...this.owned].filter((id) => id !== this.mainSkill).length >= SUB_SKILLS.max;
   }
 
+  /** Whether a skill has taken every upgrade there is. */
+  private maxed(skill: SkillId): boolean {
+    return upgradeOptionsFor(SKILLS[skill], this.progression.statsFor(skill)).length === 0;
+  }
+
+  private static noShards(): Record<ShardStat, number> {
+    return Object.fromEntries(TALENT_SHARD.stats.map((stat) => [stat, 0])) as Record<ShardStat, number>;
+  }
+
+  /** Every radius the run widens: the held 화염구's, and the shards' 효과범위 (0.102). */
+  private get areaScale(): number {
+    return this.heldBonus.areaScale * this.shardBonus.area;
+  }
+
+  /**
+   * 재능의 파편's cards: TALENT_SHARD.choices of the stats, evenly — the
+   * tree does not weigh these (the user's word). Taking one is a shard.
+   */
+  private openShardPick(subtitle: string): void {
+    const copy = t().shard;
+    const picks = Phaser.Utils.Array.Shuffle([...TALENT_SHARD.stats]).slice(0, TALENT_SHARD.choices);
+    const data: UpgradeChoiceData = {
+      title: copy.pickTitle,
+      subtitle,
+      icon: TEXTURES.talentShard,
+      options: picks.map((stat) => ({
+        id: stat,
+        label: copy.stats[stat],
+        detail: fill(copy.gain[stat], GameScene.shardValues(1)),
+      })),
+      onPick: (stat) => {
+        this.gainShard(stat as ShardStat);
+        this.afterChoice();
+      },
+    };
+    this.scene.bringToTop(UpgradeScene.KEY);
+    this.scene.launch(UpgradeScene.KEY, data);
+  }
+
+  /** The numbers a shard line fills in, for `count` shards. */
+  private static shardValues(count: number): { n: number; heal: number; secs: number } {
+    return {
+      n: Math.round(count * TALENT_SHARD.amplify * 100),
+      heal: count * TALENT_SHARD.regen,
+      secs: TALENT_SHARD.regenEveryMs / 1000,
+    };
+  }
+
+  /** One 재능의 파편 more of `stat`: folded in at once, said over the survivor. */
+  private gainShard(stat: ShardStat): void {
+    this.shards[stat] += 1;
+    this.applyShards();
+    const { x, y } = this.player;
+    const line = fill(t().shard.gain[stat], GameScene.shardValues(1));
+    const tint = TALENT_SHARD_FX.tint[stat];
+    this.damageNumbers.spawn(x, y - 70, 0, { text: line, color: Phaser.Display.Color.IntegerToColor(tint).rgba, crit: true });
+    const glow = this.add
+      .image(x, y, TEXTURES.glow)
+      .setDisplaySize(70, 70)
+      .setTint(tint)
+      .setBlendMode(Phaser.BlendModes.ADD)
+      .setDepth(DEPTH.player + 1);
+    this.tweens.add({
+      targets: glow,
+      alpha: 0,
+      scale: glow.scale * 2.4,
+      duration: 700,
+      ease: 'Quad.easeOut',
+      onComplete: () => glow.destroy(),
+    });
+    this.announce(fill(t().shard.toast, { line }), 'heal');
+  }
+
+  /** What the run's shards add up to, everywhere they act, and the line on the HUD. */
+  private applyShards(): void {
+    this.shardBonus = shardBonusFor(this.shards);
+    this.mods = { ...this.mods, shard: { damage: this.shardBonus.damage, attackSpeed: this.shardBonus.attackSpeed } };
+    this.player.applyShards({ moveSpeedScale: this.shardBonus.moveSpeed, maxHpScale: this.shardBonus.maxHp });
+    const copy = t().shard;
+    const parts = TALENT_SHARD.stats
+      .filter((stat) => this.shards[stat] > 0)
+      .map((stat) => fill(copy.short[stat], GameScene.shardValues(this.shards[stat])));
+    const total = TALENT_SHARD.stats.reduce((sum, stat) => sum + this.shards[stat], 0);
+    this.hud.setShards(total > 0 ? fill(copy.hud, { count: total, list: parts.join(' · ') }) : '');
+  }
+
   /**
    * 활력 (a weapon 속성, 0.88): every AFFIX_TIMING.regenEveryMs of the run's
    * own clock the survivor gets the weapon's health back, shown in green
-   * over them when it filled anything.
+   * over them when it filled anything. The 재능의 파편's 체력회복 (0.102)
+   * runs on its own clock beside it.
    */
   private regenerate(dt: number): void {
+    const fromShards = this.shardBonus.regen;
+    if (fromShards > 0) {
+      this.shardRegenMs += dt;
+      if (this.shardRegenMs >= TALENT_SHARD.regenEveryMs) {
+        this.shardRegenMs -= TALENT_SHARD.regenEveryMs;
+        const healed = this.player.heal(fromShards);
+        if (healed > 0) {
+          this.damageNumbers.spawn(this.player.x, this.player.y - 46, healed, { prefix: '+', color: COLORS.healText });
+        }
+      }
+    }
     const amount = this.gearBonus.regen;
     if (amount <= 0) {
       return;

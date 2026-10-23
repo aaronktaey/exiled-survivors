@@ -1,16 +1,6 @@
 import Phaser from 'phaser';
 
-import {
-  ENEMY,
-  SKILL_BASE,
-  STATS,
-  UPGRADE_CAP,
-  orbsHeld,
-  UPGRADE_MAX_PICKS,
-  upgradeShown,
-  upgradeStep,
-  xpToNextLevel,
-} from '@/config';
+import { ENEMY, SKILL_BASE, STATS, UPGRADE_CAP, orbsHeld, UPGRADE_MAX_PICKS, upgradeShown, upgradeStep, xpToNextLevel, BALANCE, ENEMY_DAMPEN } from '@/config';
 import { fill, skillName, t } from '@/i18n';
 import type { SkillDefinition, SkillId } from '@/weapons/skills';
 
@@ -249,8 +239,8 @@ export class Progression extends Phaser.Events.EventEmitter {
     return dpsFromStats(this.statsFor(skill));
   }
 
-  /** A plain enemy's health, for reading a DPS against something. */
+  /** A plain enemy's health as it walks in at the start, for reading a DPS against something: dampened (0.102) and as dialled. */
   public static get enemyHealth(): number {
-    return ENEMY.maxHp;
+    return Math.max(1, Math.round(ENEMY.maxHp * BALANCE.enemyHpScale * ENEMY_DAMPEN.hp));
   }
 }

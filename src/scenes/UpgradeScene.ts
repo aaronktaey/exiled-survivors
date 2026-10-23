@@ -2,20 +2,37 @@ import Phaser from 'phaser';
 
 import { COLORS, DEPTH, SCRIM, SKILL_ICON_SIZE, SKILL_ICONS, TEXT, UPGRADE_SHOWN_AS_CHANCE } from '@/config';
 import { fill, t } from '@/i18n';
-import type { UpgradeId, UpgradeOption } from '@/systems/Progression';
+import type { UpgradeId } from '@/systems/Progression';
 import { fitText } from '@/systems/Layout';
 import { prefersTouchControls } from '@/systems/VirtualJoystick';
 import type { SkillId } from '@/weapons/skills';
+
+/**
+ * One card: an upgrade (Progression's ChoiceCard fits as it is), or since
+ * 0.102 a 재능의 파편 stat — anything with an id, a name and a line.
+ */
+export interface ChoiceCard {
+  readonly id: string;
+  readonly label: string;
+  readonly detail: string;
+  /** An upgrade's numbers: where it stands, where it goes, the picks taken of the most. */
+  readonly now?: number;
+  readonly next?: number;
+  readonly taken?: number;
+  readonly maxPicks?: number | null;
+}
 
 export interface UpgradeChoiceData {
   /** Headline — "LEVEL UP" for a level, the skill's name for a pickup. */
   readonly title: string;
   readonly subtitle: string;
-  /** Which skill the chosen upgrade is spent on. */
-  readonly skill: SkillId;
+  /** Which skill the chosen upgrade is spent on — its icon heads the screen. */
+  readonly skill?: SkillId;
+  /** A picture for the head when there is no skill (재능의 파편's). */
+  readonly icon?: string;
   /** The picks to show, already filtered by whatever has hit its ceiling. */
-  readonly options: readonly UpgradeOption[];
-  readonly onPick: (upgrade: UpgradeId) => void;
+  readonly options: readonly ChoiceCard[];
+  readonly onPick: (id: string) => void;
 }
 
 /** Moving the caret is free; it is confirming that movement keys cannot do. */
@@ -38,7 +55,7 @@ const SIDE_MARGIN = 28;
 const WIDE_CARD = 240;
 
 interface CardView {
-  readonly option: UpgradeOption;
+  readonly option: ChoiceCard;
   readonly panel: Phaser.GameObjects.Rectangle;
   readonly label: Phaser.GameObjects.Text;
   /** "현재 15 → 강화 후 18" and "강화 2/20회". Public through the card for tests. */
@@ -112,10 +129,10 @@ export class UpgradeScene extends Phaser.Scene {
     const block = ICON + 8 + 44 + 34 + 26 + rowCount * CARD_HEIGHT + (rowCount - 1) * CARD_GAP + 22 + 20;
     let y = Math.max(12, (height - block) / 2);
 
-    const icon = SKILL_ICONS[this.payload.skill];
-    if (icon && this.textures.exists(icon.key)) {
+    const iconKey = this.payload.icon ?? (this.payload.skill ? SKILL_ICONS[this.payload.skill]?.key : undefined);
+    if (iconKey && this.textures.exists(iconKey)) {
       this.add
-        .image(centerX, y + ICON / 2, icon.key)
+        .image(centerX, y + ICON / 2, iconKey)
         .setDisplaySize(ICON, ICON)
         .setDepth(DEPTH.ui);
     }
@@ -186,7 +203,7 @@ export class UpgradeScene extends Phaser.Scene {
     this.input.keyboard?.on('keydown', this.onKeyDown, this);
   }
 
-  private buildCard(x: number, y: number, cardWidth: number, option: UpgradeOption): CardView {
+  private buildCard(x: number, y: number, cardWidth: number, option: ChoiceCard): CardView {
     const panel = this.add.rectangle(x, y, cardWidth, CARD_HEIGHT, COLORS.panel, 1).setDepth(DEPTH.ui);
     panel.setStrokeStyle(2, COLORS.panelEdge, 1);
 
@@ -217,7 +234,7 @@ export class UpgradeScene extends Phaser.Scene {
     const copy = t().upgrade;
     const values = option.now !== undefined && option.next !== undefined
       ? this.add
-          .text(x, y + 46, fill(copy.values, { now: UpgradeScene.stat(option.id, option.now), next: UpgradeScene.stat(option.id, option.next) }), {
+          .text(x, y + 46, fill(copy.values, { now: UpgradeScene.stat(option.id as UpgradeId, option.now), next: UpgradeScene.stat(option.id as UpgradeId, option.next) }), {
             fontFamily: 'system-ui, sans-serif',
             fontSize: TEXT.size.hint,
             color: COLORS.gearText,
@@ -266,7 +283,7 @@ export class UpgradeScene extends Phaser.Scene {
     return Number.isInteger(value) ? String(value) : value.toFixed(1);
   }
 
-  private onCardTapped(upgrade: UpgradeId): void {
+  private onCardTapped(upgrade: string): void {
     if (this.picked || !this.unlocked) {
       return;
     }
@@ -291,7 +308,7 @@ export class UpgradeScene extends Phaser.Scene {
     this.refresh(true);
   }
 
-  private onCardHovered(upgrade: UpgradeId): void {
+  private onCardHovered(upgrade: string): void {
     if (this.picked || !this.unlocked) {
       return;
     }
@@ -355,7 +372,7 @@ export class UpgradeScene extends Phaser.Scene {
     }
   }
 
-  private pick(upgrade: UpgradeId): void {
+  private pick(upgrade: string): void {
     this.picked = true;
     this.input.keyboard?.off('keydown', this.onKeyDown, this);
 

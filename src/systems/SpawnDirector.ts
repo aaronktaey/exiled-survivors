@@ -201,7 +201,7 @@ export class SpawnDirector {
     let weakest: Enemy | undefined;
     for (const child of this.group.getChildren()) {
       const enemy = child as Enemy;
-      if (enemy.active && !enemy.alwaysDropsSkill && (!weakest || enemy.hp < weakest.hp)) {
+      if (enemy.active && !enemy.precious && (!weakest || enemy.hp < weakest.hp)) {
         weakest = enemy;
       }
     }

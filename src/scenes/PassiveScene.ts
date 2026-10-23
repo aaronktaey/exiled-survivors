@@ -4,102 +4,69 @@ import {
   ALL_PASSIVES,
   COLORS,
   DEPTH,
+  PASSIVE_DIALS,
+  PASSIVE_POINTS,
   PASSIVES,
-  PASSIVE_TREE,
   SCENES,
   SCRIM,
+  TALENT_SHARD,
   TEXT,
   type PassiveId,
 } from '@/config';
 import { fill, passiveDetail, passiveName, t } from '@/i18n';
 import { addBackButton, type BackButton } from '@/systems/BackButton';
 import { fitText } from '@/systems/Layout';
-import { passives } from '@/systems/Passives';
+import { passiveBonusFor, passives } from '@/systems/Passives';
 import { prefersTouchControls } from '@/systems/VirtualJoystick';
 
 export interface PassiveSceneData {
   readonly onClose: () => void;
 }
 
-/** One line of the tree, as drawn. */
-interface PassiveNode {
+/** One line's dial, as drawn. Public through `knobs` for tests. */
+interface PassiveKnob {
   readonly id: PassiveId;
   readonly x: number;
   readonly y: number;
-  /** "3 / 10", inside the ring. */
+  readonly ring: Phaser.GameObjects.Graphics;
+  /** The ranks it holds, inside the ring (no cap of its own since 0.102: the ring fills against every point). */
   readonly rank: Phaser.GameObjects.Text;
-  /** Its name, under the ring. */
   readonly name: Phaser.GameObjects.Text;
+  /** Its shard's drop chance off a kill, now. */
+  readonly chance: Phaser.GameObjects.Text;
   readonly hit: Phaser.GameObjects.Arc;
-}
-
-/** One of the two buttons under the tree. */
-interface PassiveButton {
-  readonly plate: Phaser.GameObjects.Rectangle;
-  readonly label: Phaser.GameObjects.Text;
+  readonly minus: Phaser.GameObjects.Text;
+  readonly plus: Phaser.GameObjects.Text;
 }
 
 const TITLE_Y = 34;
-const PURSE_Y = 66;
-/** Where the window onto the tree starts, under the purse. */
-const VIEW_TOP = PURSE_Y + 22;
-const FOOTER = 34;
-/** The detail lines and the buttons under the tree. */
-const BELOW = 54 + 44;
-/** How far a press has to travel before it is a drag rather than a tap. */
-const DRAG_FROM_PX = 6;
 
 /**
- * 패시브 — what carries over between runs, as a tree.
+ * 패시브 (0.102, the user's ask): the 재능의 파편 lines as dials in a grid,
+ * the way the 밸런스 panel lays its own — no tree. A tap on a dial (or its
+ * +) puts a point in, its − takes one back, and 초기화 gives every point
+ * back. Under each dial, the chance its stat has now.
  *
- * The root holds the points in hand; every line hangs from it or from the
- * line its `requires` names, and opens once that one holds enough ranks. A
- * ring round each node fills as its ranks are bought. Tap a node to pick it
- * and again to spend, or use 투자.
- * The shape is read off `PASSIVES`, so a new line places itself.
- *
- * The tree is drawn by a camera of its own (`treeCam`) whose viewport is the
- * window between the purse and the detail lines, so a tree bigger than the
- * screen is dragged (or wheeled) about under it rather than squeezed —
- * `setMask` does nothing under WebGL in Phaser 4, the same reason the guide
- * does this. A press that travels is a drag; only one that does not picks.
+ * Keys: arrows move round the grid, Space / Enter / + spend, − / Backspace
+ * take back, R resets, Esc leaves.
  */
 export class PassiveScene extends Phaser.Scene {
   public static readonly KEY = SCENES.passives;
   /** The way out in the corner. Public so a test can press it. */
   public backButton?: BackButton;
-  /** Points in hand. Public for tests. */
+  /** Points in hand, of the whole. Public for tests. */
   public purse!: Phaser.GameObjects.Text;
-  /** Every node, by its line. Public so a test can read and press one. */
-  public nodes = new Map<PassiveId, PassiveNode>();
-  /** What the picked node is and does. Public for tests. */
+  /** Every dial, by its line. Public so a test can read and press one. */
+  public knobs = new Map<PassiveId, PassiveKnob>();
+  /** What the focused dial is. Public for tests. */
   public detail!: Phaser.GameObjects.Text;
-  /** What is being pointed at: an index into the lines. */
+  /** Which dial the keys are on: an index into the lines. */
   public focused = 0;
-  /** The 투자 button. Public for tests. */
-  public spendButton!: PassiveButton;
-  /** The camera the tree is seen through; its scroll is where the tree has been dragged to. Public for tests. */
-  public treeCam!: Phaser.Cameras.Scene2D.Camera;
+  /** The 초기화 button. Public for tests. */
+  public resetButton!: { readonly plate: Phaser.GameObjects.Rectangle; readonly label: Phaser.GameObjects.Text };
 
   private payload!: PassiveSceneData;
-  /** Everything the tree draws, seen by `treeCam` only. */
-  private layer!: Phaser.GameObjects.Container;
-  /** The window onto the tree, on screen. */
-  private view = new Phaser.Geom.Rectangle();
-  /** What the tree covers, its names included, in its own space. */
-  private bounds = new Phaser.Geom.Rectangle();
-  /** A press on the tree: where it started, and the scroll then. */
-  private dragFrom: { x: number; y: number; scrollX: number; scrollY: number } | null = null;
-  /** Whether the press now ending travelled far enough to be a drag. */
-  private dragged = false;
-  private drawn!: Phaser.GameObjects.Graphics;
-  private rootPoints!: Phaser.GameObjects.Text;
-  private root = { x: 0, y: 0, r: 0 };
-  private radius: number = PASSIVE_TREE.nodeRadius;
-  /** Lying on its side, the root on the left: a wide window. */
-  private sideways = false;
-  /** The line 투자 acts on: the last node picked, kept while the shop is pointed at. */
-  private picked: PassiveId = ALL_PASSIVES[0]!.id;
+  private cols = 1;
 
   public constructor() {
     super(PassiveScene.KEY);
@@ -107,496 +74,255 @@ export class PassiveScene extends Phaser.Scene {
 
   public init(data: PassiveSceneData): void {
     this.payload = data;
-    this.nodes = new Map();
+    this.knobs = new Map();
     this.focused = 0;
-    this.picked = ALL_PASSIVES[0]!.id;
-    this.dragFrom = null;
-    this.dragged = false;
   }
 
   public create(): void {
     this.backButton = addBackButton(this, () => this.close());
     const { width, height } = this.scale;
     const copy = t().passives;
-    const text = (x: number, y: number, value: string, size: string, color: string) =>
-      this.add
-        .text(x, y, value, { fontFamily: 'system-ui, sans-serif', fontSize: size, color })
-        .setOrigin(0.5)
-        .setDepth(DEPTH.ui + 2);
 
     this.add.rectangle(0, 0, width, height, 0x05070b, SCRIM.reading).setOrigin(0, 0).setDepth(DEPTH.ui);
-    fitText(text(width / 2, TITLE_Y, copy.title, TEXT.size.screen, COLORS.text), width - 220);
-
-    this.purse = text(width / 2, PURSE_Y, '', TEXT.size.hint, COLORS.gearText);
-
-    const below = height - FOOTER - 8 - BELOW;
-    this.view.setTo(8, VIEW_TOP, width - 16, below - VIEW_TOP - 4);
-    // A faint frame says where the tree can be moved about.
     this.add
-      .graphics()
-      .setDepth(DEPTH.ui + 1)
-      .lineStyle(1, COLORS.panelEdge, 0.8)
-      .strokeRoundedRect(this.view.x, this.view.y, this.view.width, this.view.height, 10);
-    this.layer = this.add.container(0, 0).setDepth(DEPTH.ui + 1);
-    this.layOut(this.view);
-    this.detail = this.add
-      .text(width / 2, below + 8, '', {
+      .text(width / 2, TITLE_Y, copy.title, { fontFamily: 'system-ui, sans-serif', fontSize: TEXT.size.screen, color: COLORS.text })
+      .setOrigin(0.5)
+      .setDepth(DEPTH.ui + 1);
+    this.purse = this.add
+      .text(width / 2, TITLE_Y + 32, '', { fontFamily: 'system-ui, sans-serif', fontSize: TEXT.size.body, color: COLORS.accent })
+      .setOrigin(0.5)
+      .setDepth(DEPTH.ui + 1);
+    const lead = this.add
+      .text(width / 2, TITLE_Y + 58, copy.lead, {
         fontFamily: 'system-ui, sans-serif',
-        fontSize: TEXT.size.hint,
-        color: COLORS.text,
+        fontSize: TEXT.size.small,
+        color: COLORS.muted,
         align: 'center',
-        lineSpacing: 4,
+        wordWrap: { width: width - 32 },
       })
       .setOrigin(0.5, 0)
-      .setDepth(DEPTH.ui + 2);
+      .setDepth(DEPTH.ui + 1);
 
-    const buttonY = below + 54 + 20;
-    const buttonW = Math.min(220, Math.floor((width - 48) / 2));
-    // The shop beside it went with the 신성한 조각 (0.83).
-    this.spendButton = this.button(width / 2, buttonY, buttonW, copy.spend, () => this.spend(this.picked));
+    // The grid, under the lead and over the footer, centred; smaller when it would not fit.
+    const top = lead.y + lead.height + 14;
+    const footer = 96;
+    const lines = ALL_PASSIVES;
+    // As many as fit a row, then evened out: six on a wide screen are 3 × 2, not 5 and 1.
+    const fits = Math.max(1, Math.min(lines.length, Math.floor((width - 16) / PASSIVE_DIALS.cellW)));
+    const rows = Math.ceil(lines.length / fits);
+    this.cols = Math.ceil(lines.length / rows);
+    const room = height - top - footer;
+    const scale = Phaser.Math.Clamp(room / (rows * PASSIVE_DIALS.cellH), 0.6, 1);
+    const cellW = Math.min(PASSIVE_DIALS.cellW, (width - 16) / this.cols);
+    const cellH = PASSIVE_DIALS.cellH * scale;
+    const radius = PASSIVE_DIALS.radius * Math.max(scale, 0.75);
+    const used = Math.min(this.cols, lines.length);
+    const left = width / 2 - (used * cellW) / 2 + cellW / 2;
+    const gridTop = top + Math.max(0, (room - rows * cellH) / 2);
+
+    lines.forEach((spec, i) => {
+      const x = left + (i % this.cols) * cellW;
+      const y = gridTop + Math.floor(i / this.cols) * cellH + radius + 6;
+      const ring = this.add.graphics().setDepth(DEPTH.ui + 1);
+      const rank = this.add
+        .text(x, y, '', { fontFamily: 'system-ui, sans-serif', fontSize: TEXT.size.label, color: COLORS.text })
+        .setOrigin(0.5)
+        .setDepth(DEPTH.ui + 2);
+      const name = this.add
+        .text(x, y + radius + 16, passiveName(spec.id), {
+          fontFamily: 'system-ui, sans-serif',
+          fontSize: TEXT.size.small,
+          color: COLORS.text,
+          align: 'center',
+        })
+        .setOrigin(0.5)
+        .setDepth(DEPTH.ui + 1);
+      fitText(name, cellW - 8, 0);
+      const chance = this.add
+        .text(x, y + radius + 36, '', { fontFamily: 'system-ui, sans-serif', fontSize: TEXT.size.hint, color: COLORS.muted })
+        .setOrigin(0.5)
+        .setDepth(DEPTH.ui + 1);
+      const hit = this.add
+        .circle(x, y, radius + 6, 0xffffff, 0.001)
+        .setDepth(DEPTH.ui + 3)
+        .setInteractive({ useHandCursor: true });
+      const sign = (text: string, dx: number): Phaser.GameObjects.Text =>
+        this.add
+          .text(x + dx, y + radius + 58, text, {
+            fontFamily: 'system-ui, sans-serif',
+            fontSize: TEXT.size.label,
+            color: COLORS.text,
+            backgroundColor: '#1b2230',
+            padding: { left: 12, right: 12, top: 2, bottom: 2 },
+          })
+          .setOrigin(0.5)
+          .setDepth(DEPTH.ui + 2)
+          .setInteractive({ useHandCursor: true });
+      const minus = sign('−', -30);
+      const plus = sign('+', 30);
+      hit.on(Phaser.Input.Events.GAMEOBJECT_POINTER_DOWN, () => this.spend(spec.id));
+      hit.on(Phaser.Input.Events.GAMEOBJECT_POINTER_WHEEL, (_p: unknown, _dx: number, dy: number) => {
+        this.focused = i;
+        if (dy < 0) {
+          this.spend(spec.id);
+        } else {
+          this.refund(spec.id);
+        }
+      });
+      plus.on(Phaser.Input.Events.GAMEOBJECT_POINTER_DOWN, () => this.spend(spec.id));
+      minus.on(Phaser.Input.Events.GAMEOBJECT_POINTER_DOWN, () => this.refund(spec.id));
+      this.knobs.set(spec.id, { id: spec.id, x, y, ring, rank, name, chance, hit, minus, plus });
+    });
+
+    this.detail = this.add
+      .text(width / 2, height - footer + 10, '', {
+        fontFamily: 'system-ui, sans-serif',
+        fontSize: TEXT.size.small,
+        color: COLORS.muted,
+        align: 'center',
+        wordWrap: { width: width - 32 },
+      })
+      .setOrigin(0.5, 0)
+      .setDepth(DEPTH.ui + 1);
+
+    const plate = this.add
+      .rectangle(width / 2, height - 44, 150, 34, COLORS.panel, 1)
+      .setStrokeStyle(2, COLORS.panelEdge, 1)
+      .setDepth(DEPTH.ui + 1)
+      .setInteractive({ useHandCursor: true });
+    const label = this.add
+      .text(width / 2, height - 44, copy.reset, { fontFamily: 'system-ui, sans-serif', fontSize: TEXT.size.label, color: COLORS.text })
+      .setOrigin(0.5)
+      .setDepth(DEPTH.ui + 2);
+    plate.on(Phaser.Input.Events.GAMEOBJECT_POINTER_DOWN, () => this.reset());
+    this.resetButton = { plate, label };
 
     fitText(
-      text(width / 2, height - FOOTER / 2, prefersTouchControls() ? copy.hintTouch : copy.hintKeyboard, TEXT.size.hint, COLORS.muted),
-      width,
+      this.add
+        .text(width / 2, height - 16, prefersTouchControls() ? copy.hintTouch : copy.hintKeyboard, {
+          fontFamily: 'system-ui, sans-serif',
+          fontSize: TEXT.size.hint,
+          color: COLORS.muted,
+        })
+        .setOrigin(0.5)
+        .setDepth(DEPTH.ui + 1),
+      width - 16,
     );
 
-    // The tree's own camera: the main one leaves the tree out, this one sees nothing else.
-    this.cameras.main.ignore(this.layer);
-    this.treeCam = this.cameras.add(this.view.x, this.view.y, this.view.width, this.view.height);
-    this.treeCam.ignore(this.children.list.filter((child) => child !== this.layer));
-    this.treeCam.setScroll(...this.startScroll());
-
-    this.armKeys();
-    this.armDrag();
+    this.input.keyboard?.on('keydown', this.onKey, this);
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.input.keyboard?.off('keydown', this.onKey, this));
     this.refresh();
   }
 
-  /** Moves the tree under its window by this much, as a drag would. Public so a test can. */
-  public pan(dx: number, dy: number): void {
-    this.scrollTo(this.treeCam.scrollX - dx, this.treeCam.scrollY - dy);
-  }
-
-  /**
-   * Where the scroll may go on one axis: a tree that fits slides about
-   * inside the window, one that does not can be dragged until either edge
-   * shows — never off the window altogether.
-   */
-  private static range(low: number, high: number, size: number): [number, number] {
-    const margin = PASSIVE_TREE.dragMargin;
-    const a = low - margin;
-    const b = high + margin - size;
-    return [Math.min(a, b), Math.max(a, b)];
-  }
-
-  private scrollTo(x: number, y: number): void {
-    const [x0, x1] = PassiveScene.range(this.bounds.left, this.bounds.right, this.view.width);
-    const [y0, y1] = PassiveScene.range(this.bounds.top, this.bounds.bottom, this.view.height);
-    this.treeCam.setScroll(Phaser.Math.Clamp(x, x0, x1), Phaser.Math.Clamp(y, y0, y1));
-  }
-
-  /**
-   * Where the tree is first seen: centred when it fits; when it does not,
-   * from the root's end, with the root in the middle across.
-   */
-  private startScroll(): [number, number] {
-    const { view, bounds, root } = this;
-    const axis = (low: number, high: number, size: number, rootAt: number, along: boolean): number => {
-      const [from, to] = PassiveScene.range(low, high, size);
-      if (high - low <= size) {
-        return (low + high) / 2 - size / 2;
-      }
-      return along ? Math.min(from, to) : Phaser.Math.Clamp(rootAt - size / 2, from, to);
-    };
-    return [
-      axis(bounds.left, bounds.right, view.width, root.x, this.sideways),
-      axis(bounds.top, bounds.bottom, view.height, root.y, !this.sideways),
-    ];
-  }
-
-  /** Keeps a node the keyboard moved onto inside the window. */
-  private showNode(id: PassiveId): void {
-    const node = this.nodes.get(id);
-    if (!node) {
-      return;
-    }
-    const margin = this.radius + 30;
-    const cam = this.treeCam;
-    let { scrollX: x, scrollY: y } = cam;
-    x = Math.min(x, node.x - margin);
-    x = Math.max(x, node.x + margin - this.view.width);
-    y = Math.min(y, node.y - margin);
-    y = Math.max(y, node.y + margin - this.view.height);
-    this.scrollTo(x, y);
-  }
-
-  /** A press on the tree's window that travels drags the tree; the wheel moves it too. */
-  private armDrag(): void {
-    this.input.on(Phaser.Input.Events.POINTER_DOWN, (pointer: Phaser.Input.Pointer) => {
-      this.dragged = false;
-      this.dragFrom = this.view.contains(pointer.x, pointer.y)
-        ? { x: pointer.x, y: pointer.y, scrollX: this.treeCam.scrollX, scrollY: this.treeCam.scrollY }
-        : null;
-    });
-    this.input.on(Phaser.Input.Events.POINTER_MOVE, (pointer: Phaser.Input.Pointer) => {
-      const from = this.dragFrom;
-      if (!from || !pointer.isDown) {
-        return;
-      }
-      const dx = pointer.x - from.x;
-      const dy = pointer.y - from.y;
-      if (!this.dragged && Math.hypot(dx, dy) < DRAG_FROM_PX) {
-        return;
-      }
-      this.dragged = true;
-      this.scrollTo(from.scrollX - dx, from.scrollY - dy);
-    });
-    const release = (): void => {
-      this.dragFrom = null;
-    };
-    this.input.on(Phaser.Input.Events.POINTER_UP, release);
-    this.input.on(Phaser.Input.Events.POINTER_UP_OUTSIDE, release);
-    this.input.on(
-      Phaser.Input.Events.POINTER_WHEEL,
-      (pointer: Phaser.Input.Pointer, _over: unknown, dx: number, dy: number) => {
-        if (this.view.contains(pointer.x, pointer.y)) {
-          this.scrollTo(this.treeCam.scrollX + dx, this.treeCam.scrollY + dy);
-        }
-      },
-    );
-  }
-
-  /** What a tap on a node does: the first picks it, the next spends. Public so a test can tap. */
-  public press(id: PassiveId): void {
-    const index = ALL_PASSIVES.findIndex((spec) => spec.id === id);
-    if (this.focused === index) {
-      this.spend(id);
-      return;
-    }
-    this.point(index);
-  }
-
-  /** A point into a line. Public so a test can. */
+  /** A point into a line, if there is one to spend and room in it. Public so a test can. */
   public spend(id: PassiveId): void {
-    this.picked = id;
-    this.focused = ALL_PASSIVES.findIndex((spec) => spec.id === id);
+    this.focused = Math.max(0, ALL_PASSIVES.findIndex((spec) => spec.id === id));
     passives.spend(id);
     this.refresh();
   }
 
-  /**
-   * Where each node sits, in the tree's own space (0, 0 is the window's top
-   * left). Upright, the root is on top and each depth a row under it; on a
-   * wide window it lies on its side, the root on the left. Leaves are spread
-   * evenly and a parent sits level with its children. The spacing shrinks to
-   * fit the window, but never below PASSIVE_TREE's least gaps: past that the
-   * tree runs off the window and is dragged.
-   */
-  private layOut(view: Phaser.Geom.Rectangle): void {
-    const { width } = view;
-    const top = 0;
-    this.drawn = this.add.graphics();
-    this.layer.add(this.drawn);
-    const children = (parent: PassiveId | null) =>
-      ALL_PASSIVES.filter((spec) => (spec.requires?.id ?? null) === parent).map((spec) => spec.id);
-    const depth = new Map<PassiveId, number>();
-    const slot = new Map<PassiveId, number>();
-    let leaves = 0;
-    const place = (id: PassiveId, at: number): number => {
-      depth.set(id, at);
-      const under = children(id);
-      if (under.length === 0) {
-        slot.set(id, leaves++);
-      } else {
-        const spots = under.map((child) => place(child, at + 1));
-        slot.set(id, (spots[0]! + spots[spots.length - 1]!) / 2);
-      }
-      return slot.get(id)!;
-    };
-    children(null).forEach((id) => place(id, 1));
-
-    const levels = Math.max(1, ...depth.values()) + 1;
-    const spread = Math.max(1, leaves);
-    const room = view.height;
-    this.sideways = width > room * 1.4;
-    // A level and a leaf: how far apart, along the tree and across it.
-    const fitGap = (wanted: number, most: number, least: number) => Math.max(least, Math.min(most, wanted));
-    const levelGap = this.sideways
-      ? fitGap((width - 64) / levels, PASSIVE_TREE.maxLevelGap * 1.6, PASSIVE_TREE.minLevelGap)
-      : fitGap(room / levels, PASSIVE_TREE.maxLevelGap, PASSIVE_TREE.minLevelGap);
-    const leafGap = this.sideways
-      ? fitGap(room / spread, PASSIVE_TREE.maxLevelGap, PASSIVE_TREE.minLeafGap)
-      : fitGap((width - 32) / spread, PASSIVE_TREE.maxLevelGap * 1.6, PASSIVE_TREE.minLeafGap);
-    this.radius = Math.max(
-      16,
-      Math.min(PASSIVE_TREE.nodeRadius, (this.sideways ? leafGap : levelGap) * 0.3, (this.sideways ? levelGap : leafGap) * 0.32),
-    );
-    const treeH = this.sideways ? leafGap * spread : levelGap * levels;
-    const treeTop = top + Math.max(0, (room - treeH) / 2);
-    const at = (level: number, leaf: number) =>
-      this.sideways
-        ? { x: (width - levelGap * levels) / 2 + levelGap * (level + 0.5), y: treeTop + leafGap * (leaf + 0.5) - 8 }
-        : { x: (width - leafGap * spread) / 2 + leafGap * (leaf + 0.5), y: treeTop + levelGap * (level + 0.5) - 8 };
-
-    this.root = { ...at(0, (spread - 1) / 2), r: this.radius * PASSIVE_TREE.rootScale };
-    // The root says what it holds inside it, so a branch leaves straight from its rim.
-    const rootLabel = this.add
-      .text(this.root.x, this.root.y - this.root.r * 0.32, t().passives.root, {
-        fontFamily: 'system-ui, sans-serif',
-        fontSize: TEXT.size.hint,
-        color: COLORS.muted,
-      })
-      .setOrigin(0.5);
-    fitText(rootLabel, this.root.r * 2 - 10, 0);
-    this.rootPoints = this.add
-      .text(this.root.x, this.root.y + this.root.r * 0.22, '', { fontFamily: 'system-ui, sans-serif', fontSize: TEXT.size.body, color: COLORS.text })
-      .setOrigin(0.5);
-    this.layer.add([rootLabel, this.rootPoints]);
-
-    ALL_PASSIVES.forEach((spec) => {
-      const { x, y } = at(depth.get(spec.id)!, slot.get(spec.id)!);
-      const rank = this.add
-        .text(x, y, '', { fontFamily: 'system-ui, sans-serif', fontSize: TEXT.size.hint, color: COLORS.text })
-        .setOrigin(0.5);
-      const name = this.add
-        .text(x, y + this.radius + 6, passiveName(spec.id), {
-          fontFamily: 'system-ui, sans-serif',
-          fontSize: TEXT.size.hint,
-          color: COLORS.text,
-        })
-        .setOrigin(0.5, 0);
-      fitText(name, (this.sideways ? levelGap : leafGap) - 4, 0);
-      const hit = this.add.circle(x, y, this.radius + 6, 0x000000, 0.001).setInteractive({ useHandCursor: true });
-      // On the release, and only when the press did not travel: a drag that
-      // starts or ends on a node is still a drag.
-      hit.on(Phaser.Input.Events.GAMEOBJECT_POINTER_UP, () => {
-        if (!this.dragged) {
-          this.press(spec.id);
-        }
-      });
-      this.layer.add([rank, name, hit]);
-      this.nodes.set(spec.id, { id: spec.id, x, y, rank, name, hit });
-    });
-
-    // What the tree covers, the names under the nodes included.
-    const spots = [{ x: this.root.x, y: this.root.y, r: this.root.r }, ...[...this.nodes.values()].map((n) => ({ x: n.x, y: n.y, r: this.radius }))];
-    const reach = (this.sideways ? levelGap : leafGap) / 2;
-    const left = Math.min(...spots.map((p) => p.x - Math.max(p.r, reach)));
-    const right = Math.max(...spots.map((p) => p.x + Math.max(p.r, reach)));
-    const upper = Math.min(...spots.map((p) => p.y - p.r - 4));
-    const lower = Math.max(...spots.map((p) => p.y + p.r + 26));
-    this.bounds.setTo(left, upper, right - left, lower - upper);
-  }
-
-  private button(x: number, y: number, w: number, label: string, onPress: () => void): PassiveButton {
-    const plate = this.add
-      .rectangle(x, y, w, 38, COLORS.panel, 1)
-      .setStrokeStyle(2, COLORS.panelEdge, 1)
-      .setDepth(DEPTH.ui + 1)
-      .setInteractive({ useHandCursor: true });
-    const text = this.add
-      .text(x, y, label, { fontFamily: 'system-ui, sans-serif', fontSize: TEXT.size.hint, color: COLORS.text })
-      .setOrigin(0.5)
-      .setDepth(DEPTH.ui + 2);
-    fitText(text, w - 12, 0);
-    plate.on(Phaser.Input.Events.GAMEOBJECT_POINTER_DOWN, onPress);
-    return { plate, label: text };
-  }
-
-  private point(index: number): void {
-    this.focused = index;
-    const spec = ALL_PASSIVES[index];
-    if (spec) {
-      this.picked = spec.id;
-    }
+  /** A point back out of a line. Public so a test can. */
+  public refund(id: PassiveId): void {
+    this.focused = Math.max(0, ALL_PASSIVES.findIndex((spec) => spec.id === id));
+    passives.refund(id);
     this.refresh();
   }
 
-  /** Whether a point could go into a line right now. */
-  private static buyable(id: PassiveId): boolean {
-    return passives.value.points > 0 && passives.isOpen(id) && passives.rankOf(id) < PASSIVES[id].maxRank;
+  /** Every point back. Public so a test can. */
+  public reset(): void {
+    passives.reset();
+    this.refresh();
   }
 
+  /** Draws every dial as the tree now stands, and the focused one's line. */
   private refresh(): void {
     const copy = t().passives;
-    const g = this.drawn.clear();
     const { points } = passives.value;
+    this.purse.setText(fill(copy.pointsOf, { points, total: PASSIVE_POINTS }));
+    const weights = passiveBonusFor(passives.value.ranks).shardWeights;
 
-    // Branches first, under the nodes: lit where a rank went in, faint where shut.
-    // Where a branch leaves a node (under its name, or off its right side
-    // lying down) and where it arrives (its top, or its left side).
-    const centre = (id: PassiveId | undefined) => {
-      const node = id ? this.nodes.get(id) : undefined;
-      return node
-        ? { x: node.x, y: node.y, r: this.radius, below: node.name.y + node.name.displayHeight + 3 }
-        : { ...this.root, below: this.root.y + this.root.r + 4 };
-    };
-    for (const spec of ALL_PASSIVES) {
-      const from = centre(spec.requires?.id);
-      const to = centre(spec.id);
-      const color = passives.rankOf(spec.id) > 0
-        ? PASSIVE_TREE.edgeLit
-        : passives.isOpen(spec.id)
-          ? PASSIVE_TREE.edgeOpen
-          : PASSIVE_TREE.edgeShut;
-      g.lineStyle(PASSIVE_TREE.edgeWidth, color, 1);
-      g.beginPath();
-      if (this.sideways) {
-        const bend = (from.x + from.r + to.x - to.r) / 2;
-        g.moveTo(from.x + from.r + 4, from.y);
-        g.lineTo(bend, from.y);
-        g.lineTo(bend, to.y);
-        g.lineTo(to.x - to.r - 4, to.y);
-      } else {
-        const bend = (from.below + to.y - to.r - 4) / 2;
-        g.moveTo(from.x, from.below);
-        g.lineTo(from.x, bend);
-        g.lineTo(to.x, bend);
-        g.lineTo(to.x, to.y - to.r - 4);
+    ALL_PASSIVES.forEach((spec, i) => {
+      const knob = this.knobs.get(spec.id);
+      if (!knob) {
+        return;
       }
-      g.strokePath();
-    }
-
-    // The root: the points in hand.
-    g.fillStyle(COLORS.panel, 1);
-    g.fillCircle(this.root.x, this.root.y, this.root.r);
-    g.lineStyle(3, points > 0 ? PASSIVE_TREE.buyable : COLORS.panelEdge, 1);
-    g.strokeCircle(this.root.x, this.root.y, this.root.r);
-    this.rootPoints.setText(String(points));
-
-    ALL_PASSIVES.forEach((spec, index) => {
-      const node = this.nodes.get(spec.id)!;
       const rank = passives.rankOf(spec.id);
-      const open = passives.isOpen(spec.id);
-      const focused = index === this.focused;
-      const alpha = open || rank > 0 ? 1 : PASSIVE_TREE.shutAlpha;
-      const r = this.radius;
-
-      g.fillStyle(focused ? COLORS.panelActive : COLORS.panel, 1);
-      g.fillCircle(node.x, node.y, r);
-      g.lineStyle(PASSIVE_TREE.ringWidth, PASSIVE_TREE.ringTrack, alpha);
-      g.strokeCircle(node.x, node.y, r - PASSIVE_TREE.ringWidth / 2);
+      const max = PASSIVES[spec.id].maxRank;
+      const radius = (knob.hit.radius ?? PASSIVE_DIALS.radius + 6) - 6;
+      const buyable = points > 0 && rank < max;
+      const focused = i === this.focused;
+      const g = knob.ring;
+      g.clear();
+      g.fillStyle(COLORS.panel, 1);
+      g.fillCircle(knob.x, knob.y, radius);
+      g.lineStyle(PASSIVE_DIALS.ringWidth, PASSIVE_DIALS.ringTrack, 1);
+      g.beginPath();
+      g.arc(knob.x, knob.y, radius, -Math.PI / 2, Math.PI * 1.5, false);
+      g.strokePath();
       if (rank > 0) {
-        const start = -Math.PI / 2;
-        g.lineStyle(PASSIVE_TREE.ringWidth, PASSIVE_TREE.ringFill, alpha);
+        g.lineStyle(PASSIVE_DIALS.ringWidth, PASSIVE_DIALS.ringFill, 1);
         g.beginPath();
-        g.arc(node.x, node.y, r - PASSIVE_TREE.ringWidth / 2, start, start + (Math.PI * 2 * rank) / spec.maxRank, false);
+        g.arc(knob.x, knob.y, radius, -Math.PI / 2, -Math.PI / 2 + (rank / max) * Math.PI * 2, false);
         g.strokePath();
       }
-      const edge = focused ? COLORS.textFill : PassiveScene.buyable(spec.id) ? PASSIVE_TREE.buyable : COLORS.panelEdge;
-      g.lineStyle(focused ? 3 : 2, edge, alpha);
-      g.strokeCircle(node.x, node.y, r + 3);
-
-      node.rank.setText(rank >= spec.maxRank ? copy.maxed : fill(copy.rank, { rank, max: spec.maxRank }));
-      fitText(node.rank.setScale(1), r * 2 - PASSIVE_TREE.ringWidth * 2 - 4, 0);
-      node.rank.setAlpha(alpha);
-      node.name.setAlpha(alpha);
+      if (focused || buyable) {
+        g.lineStyle(2, focused ? COLORS.accentFill : PASSIVE_DIALS.buyable, focused ? 1 : 0.6);
+        g.strokeCircle(knob.x, knob.y, radius + PASSIVE_DIALS.ringWidth + 3);
+      }
+      knob.rank.setText(String(rank));
+      // Its shard's drop chance off a kill, as the tree has it now.
+      knob.chance.setText(fill(copy.chance, { pct: Number((TALENT_SHARD.chance * weights[spec.shardStat] * 100).toFixed(4)) }));
+      knob.plus.setAlpha(buyable ? 1 : 0.35);
+      knob.minus.setAlpha(rank > 0 ? 1 : 0.35);
+      knob.name.setColor(focused ? COLORS.accent : COLORS.text);
     });
 
-    // What the picked line is, and why it can or cannot take a point.
-    const spec = PASSIVES[this.picked];
-    const rank = passives.rankOf(spec.id);
-    const needs = spec.requires;
-    const status = !passives.isOpen(spec.id) && needs
-      ? fill(copy.locked, { name: passiveName(needs.id), rank: needs.rank })
-      : rank >= spec.maxRank
-        ? copy.maxed
-        : points <= 0
-          ? copy.noPoints
-          : '';
-    const head = `${passiveName(spec.id)}  ${fill(copy.rank, { rank, max: spec.maxRank })}`;
-    const what = fill(copy.perRank, { detail: passiveDetail(spec.id) });
-    // Two lines at most, drawn smaller rather than wrapped onto the buttons.
-    this.detail.setScale(1).setText(status ? `${head} · ${what}\n${status}` : `${head} · ${what}`);
-    fitText(this.detail, this.scale.width - 24, 0);
-
-    // Points in hand, when there are any (gold went in 0.90).
-    const parts = points > 0 ? [fill(copy.points, { points })] : [];
-    this.purse.setText(parts.join('   ·   '));
-    fitText(this.purse.setScale(1), this.scale.width - 40);
-
-    const paint = (button: PassiveButton, on: boolean, focused: boolean) => {
-      button.plate.setFillStyle(focused ? COLORS.panelActive : COLORS.panel, 1);
-      button.plate.setStrokeStyle(focused ? 3 : 2, focused ? COLORS.textFill : on ? PASSIVE_TREE.buyable : COLORS.panelEdge, 1);
-      button.label.setAlpha(on ? 1 : 0.45);
-    };
-    paint(this.spendButton, PassiveScene.buyable(this.picked), false);
+    const focused = ALL_PASSIVES[this.focused];
+    this.detail.setText(focused ? `${passiveName(focused.id)} — ${passiveDetail(focused.id)}` : '');
   }
 
-  /** Arrows between nodes by where they sit (the shop is under them), Space to act, Esc out. */
-  private armKeys(): void {
-    const keyboard = this.input.keyboard;
-    if (!keyboard) {
-      return;
+  private onKey(event: KeyboardEvent): void {
+    const count = ALL_PASSIVES.length;
+    const id = ALL_PASSIVES[this.focused]?.id;
+    switch (event.code) {
+      case 'ArrowLeft':
+      case 'KeyA':
+        this.focused = (this.focused - 1 + count) % count;
+        break;
+      case 'ArrowRight':
+      case 'KeyD':
+        this.focused = (this.focused + 1) % count;
+        break;
+      case 'ArrowUp':
+      case 'KeyW':
+        this.focused = (this.focused - this.cols + count) % count;
+        break;
+      case 'ArrowDown':
+      case 'KeyS':
+        this.focused = (this.focused + this.cols) % count;
+        break;
+      case 'Space':
+      case 'Enter':
+      case 'NumpadEnter':
+      case 'Equal':
+      case 'NumpadAdd':
+        if (id) this.spend(id);
+        return;
+      case 'Minus':
+      case 'NumpadSubtract':
+      case 'Backspace':
+        if (id) this.refund(id);
+        return;
+      case 'KeyR':
+        this.reset();
+        return;
+      case 'Escape':
+        this.close();
+        return;
+      default:
+        return;
     }
-    // Nodes where they are on screen now, wherever the tree has been dragged.
-    const spots = (): { x: number; y: number }[] => [
-      ...ALL_PASSIVES.map((spec) => {
-        const node = this.nodes.get(spec.id)!;
-        return { x: this.view.x + node.x - this.treeCam.scrollX, y: this.view.y + node.y - this.treeCam.scrollY };
-      }),
-    ];
-    const step = (dx: number, dy: number): void => {
-      const all = spots();
-      const here = all[this.focused]!;
-      let best = -1;
-      let bestScore = Infinity;
-      all.forEach((spot, index) => {
-        const along = (spot.x - here.x) * dx + (spot.y - here.y) * dy;
-        const across = Math.abs((spot.x - here.x) * dy) + Math.abs((spot.y - here.y) * dx);
-        if (index === this.focused || along <= 4) {
-          return;
-        }
-        const score = along + across * 2;
-        if (score < bestScore) {
-          bestScore = score;
-          best = index;
-        }
-      });
-      if (best >= 0) {
-        this.point(best);
-        const spec = ALL_PASSIVES[best];
-        if (spec) {
-          this.showNode(spec.id);
-        }
-      }
-    };
-    const onKey = (event: KeyboardEvent): void => {
-      switch (event.code) {
-        case 'ArrowLeft':
-        case 'KeyA':
-          step(-1, 0);
-          break;
-        case 'ArrowRight':
-        case 'KeyD':
-          step(1, 0);
-          break;
-        case 'ArrowUp':
-        case 'KeyW':
-          step(0, -1);
-          break;
-        case 'ArrowDown':
-        case 'KeyS':
-          step(0, 1);
-          break;
-        case 'Space':
-        case 'Enter':
-        case 'NumpadEnter': {
-          const spec = ALL_PASSIVES[this.focused];
-          if (spec) {
-            this.spend(spec.id);
-          }
-          break;
-        }
-        case 'Escape':
-          this.close();
-          break;
-        default:
-          return;
-      }
-      event.preventDefault?.();
-    };
-    keyboard.on('keydown', onKey);
-    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => keyboard.off('keydown', onKey));
+    this.refresh();
   }
 
   private close(): void {

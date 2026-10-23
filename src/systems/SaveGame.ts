@@ -1,4 +1,5 @@
 import { STORAGE, type BoneId } from '@/config';
+import type { ShardStat } from '@/config';
 import { gearTitle } from '@/i18n';
 import { openRecord, sealRecord } from '@/systems/Seal';
 import type { SkillStats } from '@/systems/Progression';
@@ -44,6 +45,8 @@ export interface SavedRun {
   readonly kills?: Partial<Record<EnemyKind, number>>;
   /** The 지형지물 field's seed, so a resumed run finds its rocks where they were. */
   readonly terrainSeed?: number;
+  /** The run's 재능의 파편, by stat (0.102). */
+  readonly shards?: Partial<Record<ShardStat, number>>;
   /**
    * What the run had counted gaining (systems/RunTally.ts, 0.91). Absent
    * on an older save, which takes what it holds as counted.

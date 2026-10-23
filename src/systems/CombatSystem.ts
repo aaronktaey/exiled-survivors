@@ -27,6 +27,10 @@ import {
   MAGNET,
   UNKNOWN_RUNE,
   UNKNOWN_RUNE_LOOKS,
+  TALENT_SHARD,
+  ALTAR_OFFERS,
+  GEAR,
+  type ShardStat,
 } from '@/config';
 import { t } from '@/i18n';
 import { itemFilter } from '@/systems/ItemFilter';
@@ -41,6 +45,8 @@ import { RandomSkillDrop } from '@/entities/RandomSkillDrop';
 import { MangoDrop } from '@/entities/MangoDrop';
 import { MagnetDrop } from '@/entities/MagnetDrop';
 import { UnknownRuneDrop } from '@/entities/UnknownRuneDrop';
+import { TalentShardDrop } from '@/entities/TalentShardDrop';
+import type { DropLabel } from '@/systems/DropLabel';
 import { dropTierFor, rollOrbDrop, type GearItem } from '@/systems/Gear';
 import type { RunStats } from '@/systems/RunStats';
 import { HealthPotion } from '@/entities/HealthPotion';
@@ -78,7 +84,6 @@ export interface CombatHooks {
    * 속성 raise by — 1 + its share. What only a 우두머리 leaves, what is
    * certain, and the flat 망고 and 자석 it does not touch.
    */
-  readonly luck: () => number;
   /**
    * 얼음창 2차 각성 (0.84): how far an enemy that dies frozen spreads the
    * freeze, and for how long — null while it is not the main skill's.
@@ -96,6 +101,10 @@ export interface CombatHooks {
   readonly onMagnetCollected: () => void;
   /** An 알수없는 룬 was picked up. */
   readonly onUnknownRuneCollected: () => void;
+  /** A 재능의 파편 taken (0.102): what it gives. */
+  readonly onTalentShardCollected: (stat: ShardStat) => void;
+  /** What a stat's shard's drop chance is multiplied by: the passive tree's line for it. */
+  readonly shardWeight: (stat: ShardStat) => number;
   /** Called when the player walks over a 무작위 스킬: offer the cards. */
   readonly onRandomSkillCollected: () => void;
   /** Called when the survivor walks up to a 제단: call up what it offered. */
@@ -140,6 +149,7 @@ export class CombatSystem {
   public readonly magnetDrops: Phaser.Physics.Arcade.Group;
   /** 알수없는 룬 lying on the ground. */
   public readonly unknownRuneDrops: Phaser.Physics.Arcade.Group;
+  public readonly talentShardDrops: Phaser.Physics.Arcade.Group;
   /** The 제단 a 우두머리 left. Never picked up; they wake instead. */
   public readonly altars: Phaser.Physics.Arcade.Group;
 
@@ -194,6 +204,7 @@ export class CombatSystem {
     this.mangoDrops = scene.physics.add.group({ classType: MangoDrop, runChildUpdate: true });
     this.magnetDrops = scene.physics.add.group({ classType: MagnetDrop, runChildUpdate: true });
     this.unknownRuneDrops = scene.physics.add.group({ classType: UnknownRuneDrop, runChildUpdate: true });
+    this.talentShardDrops = scene.physics.add.group({ classType: TalentShardDrop, runChildUpdate: true });
     // No overlap: an altar is woken by distance, in its own update.
     this.altars = scene.physics.add.group({ classType: Altar, runChildUpdate: true });
 
@@ -209,6 +220,7 @@ export class CombatSystem {
     scene.physics.add.overlap(player, this.mangoDrops, this.onMangoTouch, undefined, this);
     scene.physics.add.overlap(player, this.magnetDrops, this.onMagnetTouch, undefined, this);
     scene.physics.add.overlap(player, this.unknownRuneDrops, this.onUnknownRuneTouch, undefined, this);
+    scene.physics.add.overlap(player, this.talentShardDrops, this.onTalentShardTouch, undefined, this);
   }
 
   /** Where a drop meant for (x, y) lands: inside the world and off any rock. */
@@ -252,7 +264,7 @@ export class CombatSystem {
     }
 
     drop.drop(x, y, id);
-    this.land(drop, itemFilter.shows(`orb:${id}`), ORBS[id]?.tier ?? 'normal');
+    this.land(drop, itemFilter.shows(`orb:${id}`), ORBS[id]?.tier ?? 'normal', ORBS[id]?.extremeSound === true);
   }
 
   /** Places a 뼈다귀 directly — used by the kill roll and by debug keys. */
@@ -276,7 +288,19 @@ export class CombatSystem {
     }
 
     drop.drop(x, y);
-    this.land(drop, itemFilter.shows('mango'), 'mythic');
+    this.land(drop, itemFilter.shows('mango'), 'mythic', true);
+  }
+
+  /** Places a 재능의 파편 of a stat directly — used by the kill roll and by tests. */
+  public dropTalentShardAt(x: number, y: number, stat: ShardStat): void {
+    [x, y] = this.onGround(x, y);
+    const drop = this.talentShardDrops.get() as TalentShardDrop | null;
+    if (!drop) {
+      return;
+    }
+
+    drop.drop(x, y, stat);
+    this.land(drop, itemFilter.shows('talentShard'), 'mythic', true);
   }
 
   /**
@@ -340,6 +364,7 @@ export class CombatSystem {
     take(this.boneDrops, this.onBoneTouch);
     take(this.randomSkillDrops, this.onRandomSkillTouch);
     take(this.unknownRuneDrops, this.onUnknownRuneTouch);
+    take(this.talentShardDrops, this.onTalentShardTouch);
   }
 
   /** A copy of something just taken, flying from where it lay into the survivor. */
@@ -425,7 +450,7 @@ export class CombatSystem {
     altar.drop(x, y, offer, this.player, (woke) =>
       this.hooks.onAltarWoke(woke.offer, woke.x, woke.y),
     );
-    this.playDropSound(Altar.tierFor(offer));
+    this.playDropSound(ALTAR_OFFERS[offer]?.extremeSound ? 'extreme' : Altar.tierFor(offer));
     return altar;
   }
 
@@ -438,7 +463,7 @@ export class CombatSystem {
     }
 
     drop.drop(x, y, item);
-    this.land(drop, itemFilter.showsGear(item), dropTierFor(item));
+    this.land(drop, itemFilter.showsGear(item), dropTierFor(item), GEAR[item.id]?.extremeSound === true);
   }
 
   /** Places a drop directly — used by the spawner's roll and by debug keys. */
@@ -458,12 +483,20 @@ export class CombatSystem {
    * hiding: it still lies there to be walked over or taken by a 자석, it is
    * only not seen or heard (until 2026-10-18 it never landed at all).
    */
-  private land(item: GroundItem, shown: boolean, tier: DropTier | null = 'normal'): void {
+  /**
+   * Every drop ends here: hidden by the 아이템 필터, or heard. An `extreme`
+   * one (0.102: 재능의 파편, 하얀 망고, 망고의 구슬, 오니고로시) lands with
+   * AUDIO.drops.extreme and stands in a red pillar.
+   */
+  private land(item: GroundItem, shown: boolean, tier: DropTier | null = 'normal', extreme = false): void {
     if (!shown) {
       item.conceal();
       return;
     }
-    if (tier) {
+    if (extreme) {
+      this.playDropSound('extreme');
+      (item as GroundItem & { nameplate?: DropLabel }).nameplate?.blaze();
+    } else if (tier) {
       this.playDropSound(tier);
     }
   }
@@ -473,7 +506,7 @@ export class CombatSystem {
    * carries its own swell behind the hit — one mixed file rather than two
    * played together, so there is nothing to keep in step.
    */
-  private playDropSound(tier: DropTier = 'normal'): void {
+  private playDropSound(tier: DropTier | 'extreme' = 'normal'): void {
     const clip = AUDIO.drops[tier];
     // Stay quiet rather than warn if the clip failed to load.
     if (this.scene.cache.audio.exists(clip.key)) {
@@ -722,6 +755,16 @@ export class CombatSystem {
     this.hooks.onMangoCollected();
   };
 
+  private onTalentShardTouch: Phaser.Types.Physics.Arcade.ArcadePhysicsCallback = (_player, object) => {
+    const drop = object as TalentShardDrop;
+    if (!drop.active) {
+      return;
+    }
+
+    drop.collect();
+    this.hooks.onTalentShardCollected(drop.stat);
+  };
+
   private onUnknownRuneTouch: Phaser.Types.Physics.Arcade.ArcadePhysicsCallback = (_player, object) => {
     const drop = object as UnknownRuneDrop;
     if (!drop.active) {
@@ -769,11 +812,11 @@ export class CombatSystem {
     this.stats.recordKill(enemy.kind);
     sfx.playEnemy(this.scene, enemy.kind, 'death');
     const worth = enemy.xpValue;
-    // 행운 rides on the same bonus a rare's 속성 raise (0.83).
-    const dropBonus = enemy.dropBonus * this.hooks.luck();
+    const dropBonus = enemy.dropBonus;
     const wasBoss = enemy.isBoss;
     const kind = enemy.kind;
     const certainSkill = enemy.alwaysDropsSkill;
+    const certainShard = enemy.alwaysDropsShard;
     const webStacks = enemy.webStacks;
     const diedChilled = enemy.isChilled;
     const scale = this.hooks.dropScale();
@@ -815,6 +858,23 @@ export class CombatSystem {
     // 알수없는 룬: only off its kind (the 키메라), and as flat as the 망고.
     if (kind === UNKNOWN_RUNE.from && Math.random() < UNKNOWN_RUNE.chance) {
       this.dropUnknownRuneAt(x, y - 36);
+    }
+
+    // 재능의 파편 (0.102): each stat's its own roll, as flat as the 망고 but for
+    // the tree's line for it — and one certain off a 도망자 or a 키메라, its
+    // stat weighed by the same lines.
+    let shards = 0;
+    for (const stat of TALENT_SHARD.stats) {
+      if (Math.random() < TALENT_SHARD.chance * this.hooks.shardWeight(stat)) {
+        this.dropTalentShardAt(x - 18 + shards * 14, y + 18, stat);
+        shards += 1;
+      }
+    }
+    if (certainShard && shards === 0) {
+      const total = TALENT_SHARD.stats.reduce((sum, stat) => sum + this.hooks.shardWeight(stat), 0);
+      let roll = Math.random() * total;
+      const stat = TALENT_SHARD.stats.find((s) => (roll -= this.hooks.shardWeight(s)) < 0) ?? TALENT_SHARD.stats[0]!;
+      this.dropTalentShardAt(x - 18, y + 18, stat);
     }
 
     // 자석: as rare as the 망고, and as flat.

@@ -158,6 +158,7 @@ export const TEXTURES = {
   tuning: "tex-tuning",
   grid: "tex-grid",
   arenaFloor: "tex-arena-floor",
+  talentShard: "tex-talent-shard",
   player: "tex-player",
   enemy: "tex-enemy",
   enemyBrute: "tex-enemy-brute",
@@ -419,6 +420,8 @@ export const LIGHT_PILLAR = {
   pulseMs: 1400,
   /** How far below the item's centre its foot is. */
   footOffset: 6,
+  /** An extreme-rare drop's (AUDIO.drops.extreme, 0.102): the pillar in red. */
+  extremeTint: 0xff2a2a,
 } as const;
 
 /**
@@ -591,35 +594,19 @@ export const ICON_BAR = {
 } as const;
 
 /** Where the shell screens — title, settings, credits, pause — are tuned. */
-/** 패시브's tree: how its nodes are drawn. */
-export const PASSIVE_TREE = {
-  /** A node's radius at most; it shrinks to fit a short or narrow window. */
-  nodeRadius: 32,
-  /** The root is this much bigger than a node. */
-  rootScale: 1.2,
-  /** The ring that fills as ranks are bought. */
+/**
+ * 패시브's dials (0.102, the user's ask: a tree before): one knob a line in
+ * a grid, the way the 밸런스 panel lays its dials — the ring fills with ranks.
+ */
+export const PASSIVE_DIALS = {
+  radius: 30,
+  cellW: 150,
+  cellH: 168,
   ringWidth: 5,
   ringTrack: 0x2b3445,
   ringFill: 0xffd34d,
-  /** The edge round a node a point can go into now. */
+  /** The edge round a knob a point can go into now. */
   buyable: 0x7ef0b0,
-  /** Branches: one that has a rank in it, one that is open, one that is shut. */
-  edgeLit: 0xffd34d,
-  edgeOpen: 0x6b7385,
-  edgeShut: 0x2b3445,
-  edgeWidth: 3,
-  /** A shut node is drawn this faint. */
-  shutAlpha: 0.4,
-  /** The furthest apart two rows of the tree are drawn. */
-  maxLevelGap: 120,
-  /**
-   * The closest they are drawn, along the tree and across it. A tree that
-   * would need less runs off its window instead, and is dragged about.
-   */
-  minLevelGap: 96,
-  minLeafGap: 92,
-  /** How far past the tree's edge it can be dragged, in px. */
-  dragMargin: 24,
 } as const;
 
 export const MENU = {
@@ -957,14 +944,14 @@ export const VOID_VORTEX_FX = {
 export const ARENA_LOOK = {
   devOnly: true,
   tile: 512,
-  /** Flagstones a side in one tile, how far a corner wanders, the gap, and how many are missing. */
-  slabs: 8,
-  jitter: 7,
-  gap: 2.5,
-  missing: 0.12,
+  /** What the floor tile is strewn with: patches, grit, hairline cracks, pebbles, grass tufts (no slabs since 0.102). */
+  patches: 26,
+  patchShades: [0x0e1219, 0x080a0f, 0x121820, 0x0d1311],
+  specks: 420,
+  cracks: 10,
+  pebbles: 40,
+  tufts: 36,
   base: 0x0b0e14,
-  slabShades: [0x151a24, 0x171d28, 0x131821, 0x181e27],
-  slabEdge: 0x1d2430,
   crack: 0x080a0f,
   dirt: 0x0f1218,
   stain: 0x05070a,
@@ -987,6 +974,36 @@ export const ARENA_LOOK = {
     moss: 0x2e4630,
     mossLight: 0x3f5c3b,
   },
+} as const;
+
+/**
+ * 재능의 파편 (0.102): a pale crystal shard, tinted by its stat (`tint`)
+ * wherever it is drawn — on the ground, its glow, the line over the survivor.
+ */
+export const TALENT_SHARD_FX = {
+  body: 0xd8d8e0,
+  light: 0xffffff,
+  dark: 0x8a8a98,
+  /** The HUD's line and the cards' head, which are every stat at once. */
+  text: '#ffd76a',
+  tint: {
+    damage: 0xff6a5a,
+    attackSpeed: 0xffd34d,
+    moveSpeed: 0x6fd8ff,
+    maxHp: 0x7ef0a0,
+    area: 0xc08cff,
+    regen: 0xff9fd0,
+  },
+} as const;
+
+/**
+ * A title icon that wants to be noticed (0.102: the 패시브, rebuilt): a
+ * ring pulsing round it, until `until` (ms since the epoch) — a day.
+ */
+export const ICON_SPOTLIGHT = {
+  passives: Date.parse('2026-10-24T18:00:00+09:00'),
+  color: 0xffd76a,
+  pulseMs: 700,
 } as const;
 
 /** A 제단 being summoned: a red pillar (the light pillar's picture, tinted) comes down on the spot. */

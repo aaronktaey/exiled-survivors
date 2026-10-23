@@ -1,59 +1,43 @@
-import { ALL_PASSIVES, PASSIVES, STORAGE, type PassiveId } from '@/config';
+import { ALL_PASSIVES, PASSIVE_POINTS, PASSIVE_SCHEME, PASSIVES, STORAGE, TALENT_SHARD, type PassiveId, type ShardStat } from '@/config';
 import { openRecord, sealRecord } from '@/systems/Seal';
 
 /** The stash of points, and where they have been spent. */
 export interface PassiveState {
-  /** Points held and not yet spent (신성한 조각 went in 0.83; points come as gifts). */
+  /** The tree's shape it was written for; another (or none) starts over at PASSIVE_POINTS (0.102). */
+  readonly scheme: number;
+  /** Points held and not yet spent: PASSIVE_POINTS in all, spent or not. */
   readonly points: number;
   readonly ranks: Partial<Record<PassiveId, number>>;
 }
 
-/** What the tree is worth, before the weapon and before the run. */
+/** What the tree is worth: since 0.102, only how often each 재능의 파편 drops. */
 export interface PassiveBonus {
-  readonly damageScale: number;
-  readonly attackSpeedScale: number;
-  readonly moveSpeedScale: number;
-  /** 행운, as a share: what drops an enemy's 속성 raise are multiplied by, plus one (0.83). */
-  readonly luck: number;
+  /** What each stat's shard's drop chance is multiplied by: 1, plus each rank's share. */
+  readonly shardWeights: Readonly<Record<ShardStat, number>>;
 }
 
-export const NO_PASSIVES: PassiveBonus = {
-  damageScale: 1,
-  attackSpeedScale: 1,
-  moveSpeedScale: 1,
-  luck: 0,
-};
+const evenWeights = (): Record<ShardStat, number> =>
+  Object.fromEntries(TALENT_SHARD.stats.map((stat) => [stat, 1])) as Record<ShardStat, number>;
 
-const DEFAULTS: PassiveState = { points: 0, ranks: {} };
+export const NO_PASSIVES: PassiveBonus = { shardWeights: evenWeights() };
+
+const fresh = (): PassiveState => ({ scheme: PASSIVE_SCHEME, points: PASSIVE_POINTS, ranks: {} });
 
 type Listener = (state: PassiveState) => void;
 
 /**
- * What a set of ranks adds up to.
- *
- * Ranks of one line add together rather than compounding — three ranks of
- * +10% is +30%, not 1.1³ — so the tenth point in a line is worth what the
- * first was. The layers multiply with each other; that is Modifiers' job.
+ * What a set of ranks adds up to: each line's ranks add to its shard's
+ * multiplier (ten ranks of +5% make it 1.5).
  */
 export function passiveBonusFor(ranks: PassiveState['ranks']): PassiveBonus {
-  let damageScale = 1;
-  let attackSpeedScale = 1;
-  let moveSpeedScale = 1;
-  let luck = 0;
-
+  const shardWeights = evenWeights();
   for (const spec of Object.values(PASSIVES)) {
     const rank = ranks[spec.id] ?? 0;
-    if (rank <= 0) {
-      continue;
+    if (rank > 0) {
+      shardWeights[spec.shardStat] += spec.shardWeight * rank;
     }
-
-    damageScale += ((spec.damageScale ?? 1) - 1) * rank;
-    attackSpeedScale += ((spec.attackSpeedScale ?? 1) - 1) * rank;
-    moveSpeedScale += ((spec.moveSpeedScale ?? 1) - 1) * rank;
-    luck += (spec.luck ?? 0) * rank;
   }
-
-  return { damageScale, attackSpeedScale, moveSpeedScale, luck };
+  return { shardWeights };
 }
 
 /**
@@ -61,7 +45,7 @@ export function passiveBonusFor(ranks: PassiveState['ranks']): PassiveBonus {
  * outlive a run on purpose, and both are spent on the title screen.
  */
 class PassiveStore {
-  private current: PassiveState = { ...DEFAULTS, ranks: {} };
+  private current: PassiveState = fresh();
   private readonly listeners = new Set<Listener>();
   private loaded = false;
 
@@ -124,8 +108,23 @@ class PassiveStore {
     return true;
   }
 
+  /** Takes a rank off a line, the point back in hand. False when it holds none. */
+  public refund(id: PassiveId): boolean {
+    const rank = this.rankOf(id);
+    if (!PASSIVES[id] || rank <= 0) {
+      return false;
+    }
+    const ranks = { ...this.value.ranks, [id]: rank - 1 };
+    if (rank - 1 <= 0) {
+      delete ranks[id];
+    }
+    this.commit({ ...this.value, points: this.value.points + 1, ranks });
+    return true;
+  }
+
+  /** Every point back to spend again. */
   public reset(): PassiveState {
-    this.commit({ ...DEFAULTS, ranks: {} });
+    this.commit(fresh());
     return this.current;
   }
 
@@ -145,17 +144,18 @@ class PassiveStore {
     try {
       const raw = window.localStorage.getItem(STORAGE.passives);
       // A tree changed outside the game starts over; one from before the
-      // seal is taken and written back sealed.
+      // seal is taken and written back sealed — and one from before 0.102's
+      // tree (no `scheme`) starts over too, every point back to spend.
       const opened = raw ? openRecord<Partial<PassiveState>>(STORAGE.passives, raw) : null;
-      this.current =
-        opened && opened.state !== 'tampered'
-          ? this.sanitise({ ...DEFAULTS, ...opened.value })
-          : { ...DEFAULTS, ranks: {} };
-      if (opened && opened.state !== 'sealed') {
+      const current = opened && opened.state !== 'tampered' && opened.value.scheme === PASSIVE_SCHEME;
+      this.current = current ? this.sanitise({ ...fresh(), ...opened.value }) : fresh();
+      // Nothing stored is a fresh tree in memory, and nothing is written for
+      // it — a write here would read as a change to the records (CloudSave).
+      if (opened && (opened.state !== 'sealed' || !current)) {
         this.save();
       }
     } catch {
-      this.current = { ...DEFAULTS, ranks: {} };
+      this.current = fresh();
     }
   }
 
@@ -177,8 +177,11 @@ class PassiveStore {
       }
     }
 
+    // Never more than PASSIVE_POINTS, spent and held together.
+    const spent = Object.values(ranks).reduce((sum, rank) => sum + (rank ?? 0), 0);
     return {
-      points: Math.max(0, Math.floor(Number(raw.points) || 0)),
+      scheme: PASSIVE_SCHEME,
+      points: Math.max(0, Math.min(PASSIVE_POINTS - spent, Math.floor(Number(raw.points) || 0))),
       ranks,
     };
   }

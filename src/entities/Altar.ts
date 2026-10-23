@@ -51,10 +51,11 @@ export class Altar extends GroundItem {
     this.nameplate = new DropLabel(scene, x, y, { pillar: false });
   }
 
-  /** How loudly it reads: a 우두머리 offer (or one that always leaves skills) loudest, a rare pack next. */
+  /** How loudly it reads: a 우두머리 offer (or one that always leaves a skill or a shard) loudest, a rare pack next. */
   public static tierFor(offer: AltarOfferId): DropTier {
     const spec = ALTAR_OFFERS[offer];
-    if (spec?.kind === 'boss' || (spec && ENEMY_KINDS[spec.kind]?.guaranteedSkill)) {
+    const kind = spec ? ENEMY_KINDS[spec.kind] : undefined;
+    if (spec?.kind === 'boss' || kind?.guaranteedSkill || kind?.guaranteedShard) {
       return 'mythic';
     }
 

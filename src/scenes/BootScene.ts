@@ -25,6 +25,7 @@ import {
   VOID_VORTEX_FX,
   VOID_ORB_FX,
   ARENA_LOOK,
+  TALENT_SHARD_FX,
   ENEMY_SHOT_FX,
   ENEMY_WALK_STEPS,
   enemyWalk,
@@ -128,6 +129,7 @@ export class BootScene extends Phaser.Scene {
     this.createOreTexture();
     this.createLockTexture();
     this.createUnknownRuneTextures();
+    this.createTalentShardTexture();
     this.createLightPillarTexture();
     this.createGlowTexture();
     this.createAccountTexture();
@@ -303,15 +305,15 @@ export class BootScene extends Phaser.Scene {
   }
 
   /**
-   * 전투 배경's floor (ARENA_LOOK, 0.101): flagstones on a dark ground, their
-   * corners wandering a little, some missing (bare earth), a few cracked,
-   * with grass in the gaps — seamless, every piece near an edge drawn again
-   * on the far side.
+   * 전투 배경's floor (ARENA_LOOK): dark ground with nothing laid on it in
+   * rows — soft patches darker and lighter, specks of grit, a few hairline
+   * cracks, pebbles and grass — seamless, every piece near an edge drawn
+   * again on the far side. (0.101's flagstones repeated as a grid that the
+   * user found dizzying; they went in 0.102.)
    */
   private createArenaFloorTexture(): void {
     const A = ARENA_LOOK;
     const tile = A.tile;
-    const cell = tile / A.slabs;
     const random = new Phaser.Math.RandomDataGenerator(['arena-floor']);
     const g = this.add.graphics();
     const everywhere = (draw: (ox: number, oy: number) => void): void => {
@@ -323,98 +325,76 @@ export class BootScene extends Phaser.Scene {
     };
     g.fillStyle(A.base, 1);
     g.fillRect(0, 0, tile, tile);
-    // Corners shared by neighbouring slabs, wrapping, so the joints meet.
-    const corner: [number, number][][] = [];
-    for (let i = 0; i < A.slabs; i++) {
-      corner.push([]);
-      for (let j = 0; j < A.slabs; j++) {
-        corner[i]!.push([random.realInRange(-A.jitter, A.jitter), random.realInRange(-A.jitter, A.jitter)]);
-      }
+    // Broad, soft patches: the ground is never one flat colour.
+    for (let n = 0; n < A.patches; n++) {
+      const x = random.realInRange(0, tile);
+      const y = random.realInRange(0, tile);
+      const r = random.realInRange(30, 110);
+      const color = random.pick([...A.patchShades]);
+      const alpha = random.realInRange(0.25, 0.55);
+      const stretch = random.realInRange(0.6, 1.4);
+      everywhere((ox, oy) => {
+        g.fillStyle(color, alpha);
+        g.fillEllipse(x + ox, y + oy, r * 2 * stretch, r * 2);
+        g.fillStyle(color, alpha * 0.6);
+        g.fillEllipse(x + ox + r * 0.3, y + oy - r * 0.2, r * 1.3 * stretch, r * 1.2);
+      });
     }
-    const at = (i: number, j: number): [number, number] => {
-      const [dx, dy] = corner[i % A.slabs]![j % A.slabs]!;
-      return [i * cell + dx, j * cell + dy];
-    };
-    const missingLeft = new Set<number>();
-    const missingAbove = new Set<number>();
-    for (let i = 0; i < A.slabs; i++) {
-      for (let j = 0; j < A.slabs; j++) {
-        const quad = [at(i, j), at(i + 1, j), at(i + 1, j + 1), at(i, j + 1)];
-        const cx = quad.reduce((sum, p) => sum + p[0], 0) / 4;
-        const cy = quad.reduce((sum, p) => sum + p[1], 0) / 4;
-        // Pulled in toward the middle by the gap, so the ground shows between.
-        const inset = quad.map(([x, y]) => {
-          const d = Math.hypot(x - cx, y - cy) || 1;
-          return new Phaser.Math.Vector2(x - ((x - cx) / d) * A.gap, y - ((y - cy) / d) * A.gap);
-        });
-        // Never two gone side by side, or the tile repeats them as a band.
-        const gone = random.frac() < A.missing && !missingLeft.has(j) && !missingAbove.has(i);
-        if (gone) {
-          missingLeft.add(j);
-          missingAbove.add(i);
-        } else {
-          missingLeft.delete(j);
-          missingAbove.delete(i);
-        }
-        if (gone) {
-          // A slab gone: bare earth and a few stones.
-          everywhere((ox, oy) => {
-            g.fillStyle(A.dirt, 1);
-            g.fillPoints(inset.map((p) => new Phaser.Math.Vector2(p.x + ox, p.y + oy)), true);
-          });
-          for (let s = 0; s < 5; s++) {
-            const sx = cx + random.realInRange(-cell / 3, cell / 3);
-            const sy = cy + random.realInRange(-cell / 3, cell / 3);
-            const r = random.realInRange(1.5, 3.5);
-            everywhere((ox, oy) => {
-              g.fillStyle(A.pebble, 1);
-              g.fillEllipse(sx + ox, sy + oy, r * 2, r * 1.5);
-            });
-          }
-          continue;
-        }
-        const shade = A.slabShades[random.between(0, A.slabShades.length - 1)]!;
-        // A crack runs in from the middle of one edge, bending once, part way across.
-        const side = random.between(0, 3);
-        const from = [(quad[side]![0] + quad[(side + 1) % 4]![0]) / 2, (quad[side]![1] + quad[(side + 1) % 4]![1]) / 2] as const;
-        const reach = random.realInRange(0.35, 0.6);
-        const mid = [from[0] + (cx - from[0]) * reach * 0.5 + random.realInRange(-4, 4), from[1] + (cy - from[1]) * reach * 0.5 + random.realInRange(-4, 4)] as const;
-        const end = [from[0] + (cx - from[0]) * reach + random.realInRange(-6, 6), from[1] + (cy - from[1]) * reach + random.realInRange(-6, 6)] as const;
-        const crack = random.frac() < 0.3 ? [from, mid, end] : null;
-        everywhere((ox, oy) => {
-          const shifted = inset.map((p) => new Phaser.Math.Vector2(p.x + ox, p.y + oy));
-          g.fillStyle(shade, 1);
-          g.fillPoints(shifted, true);
-          // A lighter lip along the top and left edges, as if lit from there.
-          g.lineStyle(1.5, A.slabEdge, 0.9);
-          g.lineBetween(shifted[3]!.x, shifted[3]!.y, shifted[0]!.x, shifted[0]!.y);
-          g.lineBetween(shifted[0]!.x, shifted[0]!.y, shifted[1]!.x, shifted[1]!.y);
-          if (crack) {
-            g.lineStyle(1, A.crack, 0.75);
-            g.beginPath();
-            g.moveTo(crack[0]![0] + ox, crack[0]![1] + oy);
-            for (const [x, y] of crack.slice(1)) {
-              g.lineTo(x + ox, y + oy);
-            }
-            g.strokePath();
-          }
-        });
-      }
+    // Grit.
+    for (let n = 0; n < A.specks; n++) {
+      const x = random.realInRange(0, tile);
+      const y = random.realInRange(0, tile);
+      const r = random.realInRange(0.6, 1.6);
+      const light = random.frac() < 0.5;
+      everywhere((ox, oy) => {
+        g.fillStyle(light ? A.pebbleLight : A.crack, light ? 0.35 : 0.6);
+        g.fillCircle(x + ox, y + oy, r);
+      });
     }
-    // Grass in the joints.
-    for (let n = 0; n < 90; n++) {
-      const i = random.between(0, A.slabs - 1);
-      const j = random.between(0, A.slabs - 1);
-      const [x, y] = at(i, j);
-      const blades = random.between(3, 6);
-      const lines = Array.from({ length: blades }, () => {
+    // A few hairline cracks, each a short bent line.
+    for (let n = 0; n < A.cracks; n++) {
+      const points: [number, number][] = [[random.realInRange(0, tile), random.realInRange(0, tile)]];
+      let angle = random.realInRange(0, Math.PI * 2);
+      for (let k = 0; k < 3; k++) {
+        angle += random.realInRange(-0.7, 0.7);
+        const len = random.realInRange(8, 18);
+        const [px, py] = points[points.length - 1]!;
+        points.push([px + Math.cos(angle) * len, py + Math.sin(angle) * len]);
+      }
+      everywhere((ox, oy) => {
+        g.lineStyle(1, A.crack, 0.6);
+        g.beginPath();
+        g.moveTo(points[0]![0] + ox, points[0]![1] + oy);
+        for (const [x, y] of points.slice(1)) {
+          g.lineTo(x + ox, y + oy);
+        }
+        g.strokePath();
+      });
+    }
+    // Pebbles.
+    for (let n = 0; n < A.pebbles; n++) {
+      const x = random.realInRange(0, tile);
+      const y = random.realInRange(0, tile);
+      const r = random.realInRange(1.5, 3.2);
+      everywhere((ox, oy) => {
+        g.fillStyle(0x000000, 0.3);
+        g.fillEllipse(x + ox + 1, y + oy + 1.2, r * 2.2, r * 1.4);
+        g.fillStyle(A.pebble, 1);
+        g.fillEllipse(x + ox, y + oy, r * 2, r * 1.5);
+      });
+    }
+    // Grass, in little tufts.
+    for (let n = 0; n < A.tufts; n++) {
+      const x = random.realInRange(0, tile);
+      const y = random.realInRange(0, tile);
+      const blades = Array.from({ length: random.between(3, 6) }, () => {
         const bx = x + random.realInRange(-5, 5);
-        const by = y + random.realInRange(-3, 3);
+        const by = y + random.realInRange(-2, 2);
         return [bx, by, bx + random.realInRange(-3, 3), by - random.realInRange(4, 9), random.frac() < 0.5] as const;
       });
       everywhere((ox, oy) => {
-        for (const [x1, y1, x2, y2, light] of lines) {
-          g.lineStyle(1.2, light ? A.grassLight : A.grass, 0.85);
+        for (const [x1, y1, x2, y2, light] of blades) {
+          g.lineStyle(1.2, light ? A.grassLight : A.grass, 0.8);
           g.lineBetween(x1 + ox, y1 + oy, x2 + ox, y2 + oy);
         }
       });
@@ -1344,6 +1324,38 @@ export class BootScene extends Phaser.Scene {
   }
 
   /** 알수없는 룬, in each of its looks: a dark stone, its edge and its mark in its colour (as 0.79 drew its 룬). */
+  /**
+   * 재능의 파편 (TALENT_SHARD_FX, 0.102): a pale crystal stood on its point, tinted by its stat where drawn —
+   * a long diamond, its left facets lit, its right in shade, a glint near the
+   * top — on a 64-px square, drawn smaller where it lies.
+   */
+  private createTalentShardTexture(): void {
+    const size = 64;
+    const { body, light, dark } = TALENT_SHARD_FX;
+    const g = this.add.graphics();
+    g.fillStyle(light, 0.16);
+    g.fillCircle(32, 34, 26);
+    const top = [32, 4] as const;
+    const left = [18, 30] as const;
+    const right = [46, 30] as const;
+    const bottom = [32, 60] as const;
+    const waist = [33, 28] as const;
+    g.fillStyle(dark, 1);
+    g.fillTriangle(top[0], top[1], right[0], right[1], waist[0], waist[1]);
+    g.fillTriangle(waist[0], waist[1], right[0], right[1], bottom[0], bottom[1]);
+    g.fillStyle(body, 1);
+    g.fillTriangle(top[0], top[1], left[0], left[1], waist[0], waist[1]);
+    g.fillTriangle(left[0], left[1], bottom[0], bottom[1], waist[0], waist[1]);
+    g.fillStyle(light, 0.9);
+    g.fillTriangle(top[0], top[1], 24, 26, waist[0] - 1, waist[1] - 2);
+    g.lineStyle(2, 0x3a3a46, 1);
+    g.strokePoints([new Phaser.Math.Vector2(...top), new Phaser.Math.Vector2(...right), new Phaser.Math.Vector2(...bottom), new Phaser.Math.Vector2(...left)], true, true);
+    g.fillStyle(0xffffff, 0.95);
+    g.fillCircle(27, 17, 2.4);
+    g.generateTexture(TEXTURES.talentShard, size, size);
+    g.destroy();
+  }
+
   private createUnknownRuneTextures(): void {
     const size = 32;
     UNKNOWN_RUNE_LOOKS.forEach((look, i) => {

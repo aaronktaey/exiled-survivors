@@ -340,6 +340,10 @@ export const AUDIO = {
     // when 3–4 was 마법; 신화 has the loud one 희귀 had.
     rare: { key: "sfx-drop-magic", file: "assets/magicDrop.mp3", volume: 0.5 },
     mythic: { key: "sfx-drop-rare", file: "assets/rareDrop.mp3", volume: 0.6 },
+    // 0.102 (the user's ask): the rarest things there are — 재능의 파편, 하얀
+    // 망고, 망고의 구슬, 오니고로시 and a 키메라 제단 (each says so in its table:
+    // `extremeSound`). Cut from assets/extremeRareDrop1.ogg as an mp3.
+    extreme: { key: "sfx-drop-extreme", file: "assets/extremeRareDrop.mp3", volume: 0.6 },
   } as const,
   /**
    * How many 속성 a weapon needs to be the next rarity up. One ladder: it

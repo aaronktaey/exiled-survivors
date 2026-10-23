@@ -207,7 +207,8 @@ const fire = await run(`
   // mean the shot went through.
   const row = [50, 50 + window.config.SKILL_BASE.fireball.blastRadius * 2].map((dx) => {
     const e = s.spawner.group.get(p.x + dx, p.y);
-    e.spawn(p.x + dx, p.y, p);
+    // Tough enough to stand the hit, so what it left (냉각 or not) can be read.
+    e.spawn(p.x + dx, p.y, p, 'grunt', undefined, false, 20);
     e.body.stop();
     e.target = undefined;
     return e;
@@ -225,6 +226,7 @@ await sleep(700);
 const fireHit = await run(`
   s.choosing = false;
   const out = { hp: window.__row.map(e => (e.active ? e.hp : 0)),
+                max: window.__row.map(e => e.maxHp),
                 damage: s.damageOf('fireball'),
                 chilled: window.__row.map(e => (e.active ? e.isChilled : null)) };
   s.spawner.clear();
@@ -232,7 +234,7 @@ const fireHit = await run(`
 `);
 console.log('fireball row:', JSON.stringify(fireHit));
 check('화염구 still stops at the first enemy rather than passing through',
-  fireHit.hp[0] < FULL && fireHit.hp[1] === FULL,
+  fireHit.hp[0] < fireHit.max[0] && fireHit.hp[1] === fireHit.max[1],
   `hp: ${fireHit.hp.join(' / ')} after a ${fireHit.damage}-damage hit`);
 check('화염구 leaves no 냉각', fireHit.chilled[0] === false, `chilled=${fireHit.chilled[0]}`);
 

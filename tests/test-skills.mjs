@@ -330,7 +330,7 @@ const dials = await run(`
            fireStat: s.progression.statsFor('fireball').damage,
            meleeStat: s.progression.statsFor('meleeStrike').damage,
            sword: s.gearBonus.attack,
-           passive: s.mods.passive.damageScale,
+           passive: s.mods.shard.damage,
            fireBase: window.config.SKILL_BASE.fireball.damage,
            meleeBase: window.config.SKILL_BASE.meleeStrike.damage };
 `);

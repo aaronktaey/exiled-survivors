@@ -63,8 +63,9 @@ const kinds = await run(`
   }
   s.choosing = false;
   out.spec = Object.fromEntries(['grunt', 'brute', 'runner', 'shooter'].map((k) =>
-    [k, { hp: window.config.ENEMY_KINDS[k].maxHp, contact: window.config.ENEMY_KINDS[k].contactDamage,
-          speed: window.config.ENEMY_KINDS[k].speed, size: window.config.ENEMY_KINDS[k].size,
+    [k, { hp: Math.round(window.config.ENEMY_KINDS[k].maxHp * window.config.BALANCE.enemyHpScale * window.config.ENEMY_DAMPEN.hp),
+          contact: window.config.ENEMY_KINDS[k].contactDamage,
+          speed: window.config.ENEMY_KINDS[k].speed * window.config.ENEMY_DAMPEN.speed, size: window.config.ENEMY_KINDS[k].size,
           drawn: window.config.ENEMY_KINDS[k].drawn ?? window.config.ENEMY_KINDS[k].size }]));
   out.variance = window.config.ENEMY.speedVariance;
   return out;

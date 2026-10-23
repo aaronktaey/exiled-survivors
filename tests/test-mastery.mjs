@@ -350,7 +350,7 @@ check('both rings are drawn under the enemies, the inner one fainter (0.99, 0.10
 check('2차 각성 낙뢰: what stands round the strike takes its share, what stands further does not',
   second.splashPlain === 0 && second.splash.near === second.splash.want && second.splash.far === 0, JSON.stringify(second.splash));
 
-// --- 3b. a skill with every upgrade taken: a level is a potion ---
+// --- 3b. a skill with every upgrade taken: a level is 재능의 파편 cards (0.102; a potion before) ---
 const maxed = await run(`
   s.choosing = true;
   s.mainSkill = 'meleeStrike';
@@ -359,7 +359,7 @@ const maxed = await run(`
   // Take every upgrade there is.
   while (guard++ < 500) {
     const left = (() => { const q = []; const was = s.queueChoice; s.queueChoice = (r) => q.push(r); s.onLevelUp(2); s.queueChoice = was; return q; })();
-    if (left.length === 0) break;
+    if (left.every((r) => r.kind === 'shard')) break;
     for (const id of ['damage', 'attackSpeed', 'range']) s.progression.apply('meleeStrike', id);
   }
   s.player.hp = 10;
@@ -369,11 +369,11 @@ const maxed = await run(`
   s.onLevelUp(99);
   s.queueChoice = was;
   s.choosing = false;
-  return { hp: s.player.hp, queued: queued.length, want: Math.min(s.player.maxHp, 10 + Math.max(1, Math.round(s.player.maxHp * window.config.POTION.healFraction))) };
+  return { hp: s.player.hp, queued: queued.map((r) => r.kind) };
 `);
 console.log('maxed:', JSON.stringify(maxed));
-check('a level-up for a main skill with nothing left to take heals a potion’s worth instead',
-  maxed.queued === 0 && maxed.hp === maxed.want, JSON.stringify(maxed));
+check('a level-up for a main skill with nothing left to take queues 재능의 파편 cards, and heals nothing',
+  JSON.stringify(maxed.queued) === JSON.stringify(['shard']) && maxed.hp === 10, JSON.stringify(maxed));
 
 // --- 3c. 기행종: far hops; at you when you are within one, anywhere otherwise ---
 const odd = await run(`
@@ -505,7 +505,7 @@ const ceilings = await cdp.evaluate(`(() => {
 check('투사체 속도, 회전 속도 and 사정거리 stop at a number of picks too',
   ceilings.every(([, max]) => typeof max === 'number' && max > 0), JSON.stringify(ceilings));
 
-const potion = await run(`
+const potionStart = await run(`
   s.choosing = false; s.pendingChoices.length = 0;
   const p = s.player;
   p.setInvulnerable(true);
@@ -518,19 +518,26 @@ const potion = await run(`
   p.hp = Math.max(1, p.maxHp - 50);
   const hp = p.hp;
   s.damageNumbers.reset();
+  window.__hpBefore = hp;
   s.onLevelUp(s.progression.level + 1);
-  const floaters = s.damageNumbers.pool.filter((f) => f.remainingMs > 0).map((f) => f.text.text);
-  return { id, healed: p.hp - hp, upgradeOpen: window.game.scene.isActive('UpgradeScene'),
-           toast: s.toasts.lines.find((l) => /포션/.test(l)) ?? '', floaters,
-           name: s.hud.loadout?.find?.((e) => e.id === id)?.name ?? null };
+  return 1;
 `);
-console.log('maxed potion:', JSON.stringify(potion));
-check('a level-up on a skill with every upgrade taken heals instead of opening the cards',
-  potion.healed > 0 && potion.upgradeOpen === false, `+${potion.healed}`);
-check('and says so plainly: 포션 효과! over the survivor, and a toast naming the skill',
-  potion.floaters.includes('포션 효과!') && /강화 완료/.test(potion.toast) && /포션/.test(potion.toast) &&
-    potion.floaters.some((f) => /^\+\d+/.test(f)),
-  `${potion.toast} · ${potion.floaters.join(' ')}`);
+// The cards open on the scene's next step: read them after it.
+await sleep(600);
+const potionRead = await run(`
+  const p = s.player, up = window.game.scene.getScene('UpgradeScene');
+  const out = { id: s.mainSkill, healed: p.hp - window.__hpBefore, open: window.game.scene.isActive('UpgradeScene'), title: up.payload?.title,
+    ids: up.payload?.options?.map((o) => o.id) ?? [], stats: window.config.TALENT_SHARD.stats };
+  if (out.open) up.pick(up.payload.options[0].id);
+  return out;
+`);
+const potion = potionRead;
+void potionStart;
+console.log('maxed:', JSON.stringify(potion));
+// 0.102 (the user's ask): no potion any more — 재능의 파편 cards to choose from.
+check('a level-up on a skill with every upgrade taken opens 재능의 파편 cards, not its upgrades or a potion',
+  potion.healed === 0 && potion.open && potion.title === '재능의 파편' && potion.ids.every((id) => potion.stats.includes(id)),
+  JSON.stringify(potion));
 await run(`s.player.setInvulnerable(false); return 1;`);
 
 // --- 4. 척추 ---

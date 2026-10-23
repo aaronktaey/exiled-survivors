@@ -27,8 +27,6 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   private level = 1;
   /** What the carried weapon is worth to this survivor. */
   private gear: GearBonus = NO_BONUS;
-  /** The tree's 이동속도, layered under the weapon's 신속. */
-  private passiveSpeed = 1;
   /** Left of a 하얀 망고, in ms. Public for tests. */
   public mangoLeftMs = 0;
   /** The ring that shows how much of it is left. Public for tests. */
@@ -38,6 +36,8 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   private maxHpValue: number = PLAYER.maxHp;
   /** The held skills' 보유 효과 on the survivor (0.84): crit points, move speed and health. */
   private held = { critChance: 0, moveSpeedScale: 1, maxHpScale: 1, contactDamageScale: 1 };
+  /** What the run's 재능의 파편 give the survivor itself (0.102): move speed and max health, each an 증폭. */
+  private shards = { moveSpeedScale: 1, maxHpScale: 1 };
   private analog?: AnalogInput;
   private invulnerableUntil = 0;
   /** The look worn: a skill id from PLAYER_LOOK.bySkill, or `base`. Public for tests. */
@@ -221,9 +221,18 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     this.drawHealthBar();
   }
 
-  /** The full bar: balance.ts, then the weapon's 거대, then what the held skills give. */
+  /** The run's 재능의 파편: a bar that grows gives the health it gained, as a held skill's does. */
+  public applyShards(bonus: { readonly moveSpeedScale: number; readonly maxHpScale: number }): void {
+    this.shards = { moveSpeedScale: bonus.moveSpeedScale, maxHpScale: bonus.maxHpScale };
+    const was = this.maxHpValue;
+    this.maxHpValue = this.fullHp();
+    this.hp = Math.min(this.maxHpValue, Math.max(1, this.hp + Math.max(0, this.maxHpValue - was)));
+    this.drawHealthBar();
+  }
+
+  /** The full bar: balance.ts, then the weapon's 거대, then what the held skills and the shards give. */
   private fullHp(): number {
-    return Math.max(1, Math.round(PLAYER.maxHp * this.gear.maxHpScale * this.held.maxHpScale));
+    return Math.max(1, Math.round(PLAYER.maxHp * this.gear.maxHpScale * this.held.maxHpScale * this.shards.maxHpScale));
   }
 
   /** Keeps the nameplate's level in step with progression. */
@@ -232,16 +241,11 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     this.drawHealthBar();
   }
 
-  /** What the passive tree does to the survivor's own body. */
-  public applyPassives(bonus: { readonly moveSpeedScale: number }): void {
-    this.passiveSpeed = bonus.moveSpeedScale;
-  }
-
   /** Move speed right now, before a stick's tilt. Public for tests. */
   public get moveSpeed(): number {
     const mango = this.mangoActive ? MANGO.moveSpeedScale : 1;
     const web = this.webbed ? 1 - WEB.slow : 1;
-    return PLAYER.speed * this.passiveSpeed * this.gear.moveSpeedScale * this.held.moveSpeedScale * mango * web;
+    return PLAYER.speed * this.gear.moveSpeedScale * this.held.moveSpeedScale * this.shards.moveSpeedScale * mango * web;
   }
 
   /** True while a 하얀 망고 is working. */

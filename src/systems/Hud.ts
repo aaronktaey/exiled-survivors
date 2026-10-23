@@ -1,6 +1,14 @@
 import Phaser from 'phaser';
 
-import { COLORS, DEPTH, HUD, SKILL_ICONS, TEXT, TEXTURES } from '@/config';
+import {
+  COLORS,
+  DEPTH,
+  HUD,
+  SKILL_ICONS,
+  TEXT,
+  TEXTURES,
+  TALENT_SHARD_FX,
+} from '@/config';
 import { fill, heldBonusText, masteryText, t } from '@/i18n';
 import type { Progression } from '@/systems/Progression';
 import { SKILLS, type SkillId } from '@/weapons/skills';
@@ -93,6 +101,7 @@ export class Hud {
   /** The hover card, and what it says. Public for tests. */
   public readonly card: Phaser.GameObjects.Rectangle;
   public readonly cardText: Phaser.GameObjects.Text;
+  private readonly shardLabel: Phaser.GameObjects.Text;
   private readonly clockLabel: Phaser.GameObjects.Text;
   private readonly enemiesLabel: Phaser.GameObjects.Text;
   private readonly progression: Progression;
@@ -213,6 +222,21 @@ export class Hud {
       .setDepth(DEPTH.ui + 6)
       .setVisible(false);
 
+    // 재능의 파편 (0.102): what the run's shards add up to, under the icons on the left.
+    this.shardLabel = scene.add
+      .text(this.rowLeft, this.rowTop, '', {
+        fontFamily: 'system-ui, sans-serif',
+        fontSize: TEXT.size.small,
+        color: TALENT_SHARD_FX.text,
+        stroke: TEXT.outline.color,
+        strokeThickness: 3,
+        wordWrap: { width: Math.max(160, Math.min(this.viewWidth * 0.45, 360)) },
+        lineSpacing: 2,
+      })
+      .setScrollFactor(0)
+      .setDepth(DEPTH.ui)
+      .setVisible(false);
+
     this.clockLabel = scene.add
       .text(this.viewWidth / 2, HUD.margin - 4, '', {
         fontFamily: 'system-ui, sans-serif',
@@ -257,6 +281,16 @@ export class Hud {
   }
 
   /** Starts the clock partway in, when a saved run is resumed. */
+  /** The run's 재능의 파편 summed up, or nothing while it has none (0.102). */
+  public setShards(text: string): void {
+    this.shardLabel.setText(text).setVisible(text.length > 0);
+  }
+
+  /** The shard line, for tests. */
+  public get shardText(): string {
+    return this.shardLabel.visible ? this.shardLabel.text : '';
+  }
+
   public seed(elapsedMs: number): void {
     this.elapsedMs = elapsedMs;
   }
@@ -356,6 +390,9 @@ export class Hud {
       slot.plate.setPosition(x, effectY);
       slot.icon.setPosition(x, effectY);
     });
+    // Under whichever row is lowest; the skills' level numbers hang a little below theirs.
+    const bottom = beside || effects === 0 ? this.rowTop + SLOT : effectY + EFFECT / 2;
+    this.shardLabel.setPosition(this.rowLeft, bottom + 12);
   }
 
   /**

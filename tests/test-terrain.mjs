@@ -170,7 +170,8 @@ const chase = await run(`
 `);
 await sleep(1500);
 await shot('terrain-chase');
-await sleep(6500);
+// 0.102's enemies walk a tenth slower (ENEMY_DAMPEN.speed): more time to come round.
+await sleep(9000);
 const chased = await run(`
   clearInterval(window.__chaseTimer);
   const c = window.__chase;

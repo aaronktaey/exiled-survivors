@@ -321,7 +321,7 @@ const walked = await run(`
     const boss = s.spawner.group.get(600, 600);
     boss.spawn(600, 600, s.player, 'boss', undefined, false, s.spawner.hpScale);
     // What the clock says, read off the config rather than written here.
-    const scale = window.config.enemyHpScaleAt(minutes * 60000) * window.config.BALANCE.enemyHpScale;
+    const scale = window.config.enemyHpScaleAt(minutes * 60000) * window.config.BALANCE.enemyHpScale * window.config.ENEMY_DAMPEN.hp;
     const out = { minutes, grunt: e.hp, gruntMax: e.maxHp, boss: boss.hp, scale };
     s.spawner.clear();
     return out;

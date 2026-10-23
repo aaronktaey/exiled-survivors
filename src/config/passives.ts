@@ -1,19 +1,28 @@
+import type { ShardStat } from '@/config/balance';
+
 /**
  * ★ 패시브 — what carries over between runs. A point buys a rank of one
- * of the lines below, and the ranks stack. Points came from 신성한 조각
- * until 0.83; now every player holds enough to fill every line (0.81's
- * gift), and nothing else gives them.
+ * of the lines below, and the ranks stack.
  *
- * Health regeneration is not one of them, and no longer anywhere else
- * either: life comes back from potions.
+ * Since 0.102 (the user's ask) every line is a 재능의 파편 line: each rank
+ * raises its stat's shard's drop chance by `shardWeight` of it (ten ranks of
+ * +5%: 1.5 × TALENT_SHARD.chance). No line has a cap of its own
+ * (the user's word): any can take every point there is. Every player holds
+ * PASSIVE_POINTS in all, nothing earns more, and a tree from before is
+ * started over (PASSIVE_SCHEME): its damage, attack speed, move speed and
+ * 행운 lines went, and the enemies were dampened for it (ENEMY_DAMPEN).
  *
  * The lines make a tree: a line with `requires` hangs from another and
- * opens once that one holds enough ranks. Ranks already bought are never
- * taken away by it — a line that is shut only stops taking more. The screen
- * draws whatever shape this table gives, so a new line is a new entry.
+ * opens once that one holds enough ranks. The screen draws whatever shape
+ * this table gives, so a new line is a new entry.
  */
 
-export type PassiveId = 'attackSpeed' | 'damage' | 'moveSpeed' | 'luck';
+export type PassiveId = 'shardDamage' | 'shardAttackSpeed' | 'shardMoveSpeed' | 'shardMaxHp' | 'shardArea' | 'shardRegen';
+
+/** Every player's points, spent and not (0.102). */
+export const PASSIVE_POINTS = 30;
+/** The tree's shape: a stored tree without it is from before 0.102 and starts over at PASSIVE_POINTS. */
+export const PASSIVE_SCHEME = 2;
 
 export interface PassiveSpec {
   readonly id: PassiveId;
@@ -25,50 +34,28 @@ export interface PassiveSpec {
   readonly maxRank: number;
   /** The line it hangs from, and the ranks that one needs before this opens. Without it, it hangs from the root. */
   readonly requires?: { readonly id: PassiveId; readonly rank: number };
-  /** Multiplies every skill's attacks per second, per rank. */
-  readonly attackSpeedScale?: number;
-  /** Multiplies every skill's damage, per rank. */
-  readonly damageScale?: number;
-  /** Multiplies the survivor's move speed, per rank. */
-  readonly moveSpeedScale?: number;
-  /**
-   * 행운, per rank, as a share (0.83): every drop an enemy's 속성 raise is
-   * multiplied by 1 + the sum (CombatSystem.killEnemy).
-   */
-  readonly luck?: number;
+  /** The 재능의 파편 whose drop chance it raises, and by how much a rank (a share of that chance). */
+  readonly shardStat: ShardStat;
+  readonly shardWeight: number;
 }
 
+const shardLine = (id: PassiveId, stat: ShardStat, name: string): PassiveSpec => ({
+  id,
+  name: `${name} 파편`,
+  detail: `${name} 파편 드랍률 +5%`,
+  // No cap but the points themselves.
+  maxRank: PASSIVE_POINTS,
+  shardStat: stat,
+  shardWeight: 0.05,
+});
+
 export const PASSIVES: Record<PassiveId, PassiveSpec> = {
-  damage: {
-    id: 'damage',
-    name: '피해',
-    detail: '피해 증폭 +3%',
-    maxRank: 10,
-    damageScale: 1.03,
-  },
-  attackSpeed: {
-    id: 'attackSpeed',
-    name: '공격속도',
-    detail: '공격속도 +3%',
-    maxRank: 10,
-    requires: { id: 'damage', rank: 1 },
-    attackSpeedScale: 1.03,
-  },
-  moveSpeed: {
-    id: 'moveSpeed',
-    name: '이동속도',
-    detail: '이동속도 +1%',
-    maxRank: 10,
-    moveSpeedScale: 1.01,
-  },
-  luck: {
-    id: 'luck',
-    name: '행운',
-    detail: '아이템 드랍률 +1%',
-    maxRank: 10,
-    requires: { id: 'moveSpeed', rank: 1 },
-    luck: 0.01,
-  },
+  shardDamage: shardLine('shardDamage', 'damage', '피해량'),
+  shardAttackSpeed: shardLine('shardAttackSpeed', 'attackSpeed', '공격속도'),
+  shardMoveSpeed: shardLine('shardMoveSpeed', 'moveSpeed', '이동속도'),
+  shardMaxHp: shardLine('shardMaxHp', 'maxHp', '최대체력'),
+  shardArea: shardLine('shardArea', 'area', '효과범위'),
+  shardRegen: shardLine('shardRegen', 'regen', '체력회복'),
 };
 
 export const ALL_PASSIVES: readonly PassiveSpec[] = Object.values(PASSIVES);

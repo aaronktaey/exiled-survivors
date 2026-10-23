@@ -9,6 +9,7 @@ import {
   enemyPose,
   enemyWalk,
   ENEMY_WALK_STEPS,
+  ENEMY_DAMPEN,
   DEPTH,
   ENEMY,
   ENEMY_KINDS,
@@ -249,6 +250,16 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
     return this.isBoss || this.spec.guaranteedSkill === true;
   }
 
+  /** Its kill always leaves a 재능의 파편 (0.102: the 도망자, the 키메라). */
+  public get alwaysDropsShard(): boolean {
+    return this.spec.guaranteedShard === true;
+  }
+
+  /** Worth too much to be the one that gives way at the cap (SpawnDirector.makeRoom). */
+  public get precious(): boolean {
+    return this.alwaysDropsSkill || this.alwaysDropsShard;
+  }
+
   /** How many 거미 this one carries — how wide a web it leaves. */
   public get webStacks(): number {
     return this.affixes.filter((affix) => affix.enemy?.web === true).length;
@@ -291,7 +302,7 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
     // was born with, and how long the run has already lasted.
     this.hp = Math.max(
       1,
-      Math.round(spec.maxHp * this.hpScale * BALANCE.enemyHpScale * timeScale),
+      Math.round(spec.maxHp * this.hpScale * BALANCE.enemyHpScale * ENEMY_DAMPEN.hp * timeScale),
     );
     this.maxHp = this.hp;
     this.flashMs = 0;
@@ -317,7 +328,7 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
     // A little spread so a pack does not move as one rigid blob.
     // Only the roll is baked in here; the affix multiplier is applied when
     // the speed is read, so an affix can be added or dropped at any time.
-    this.speed = spec.speed * Phaser.Math.FloatBetween(1 - ENEMY.speedVariance, 1 + ENEMY.speedVariance);
+    this.speed = spec.speed * ENEMY_DAMPEN.speed * Phaser.Math.FloatBetween(1 - ENEMY.speedVariance, 1 + ENEMY.speedVariance);
     // Stagger the first shot, or a wave of shooters fires in one volley.
     this.shotCooldownMs = spec.shot ? Phaser.Math.Between(0, spec.shot.cooldownMs) : 0;
     // A ring, though, waits its full count: one the instant it walks in

@@ -15,6 +15,52 @@ export interface PatchNote {
 
 export const PATCH_NOTES: readonly PatchNote[] = [
   {
+    version: '0.102',
+    date: '2026-10-23',
+    changes: {
+      ko: [
+        '새 아이템 재능의 파편: 피해량 · 공격속도 · 이동속도 · 최대체력 · 효과범위 · 체력회복 파편 6종이 적을 처치할 때마다 각각 0.1% 확률로 따로 떨어집니다(확률을 나눠 갖지 않음). 다른 드랍률 증가의 영향은 받지 않습니다.',
+        '파편을 주우면 그 판 동안 해당 능력치가 1%씩 증폭됩니다(체력회복 파편은 5초마다 체력 1). 모은 파편 효과의 합계는 전투 화면 왼쪽 위에 표시됩니다. 파편은 끌려오지 않고 자석으로만 함께 모이며, 다른 아이템처럼 1분 뒤 사라집니다.',
+        '도망자와 키메라는 이제 스킬 대신 재능의 파편을 반드시 떨어뜨립니다.',
+        '메인 스킬이 최고 레벨이 되면 레벨업 때 포션 회복 대신 재능의 파편 3장 중 하나를 고릅니다. 무작위 스킬도 고를 수 있는 스킬이 모두 최고 레벨이면 같은 선택으로 바뀝니다. 이 선택에는 패시브가 적용되지 않습니다.',
+        '패시브 개편: 기존 피해 · 공격속도 · 이동속도 · 행운 패시브가 없어지고, 모든 플레이어가 30포인트로 다시 시작합니다. 새 패시브는 파편 종류별로 1포인트당 그 파편의 드랍률을 5% 높이며, 한 줄에 넣을 수 있는 포인트 제한은 없습니다.',
+        '패시브 화면이 트리 대신 다이얼 배치로 바뀌었고, 다이얼마다 지금 드랍률이 표시됩니다. − 버튼으로 하나씩 회수하거나 초기화로 모든 포인트를 돌려받을 수 있습니다.',
+        '패시브 개편에 맞춰 모든 적의 기본 체력이 30%, 이동속도가 10% 감폭됩니다.',
+        '재능의 파편, 하얀 망고, 망고의 구슬, 오니고로시는 떨어질 때 새 효과음과 붉은 빛기둥으로 표시됩니다. 키메라 제단도 새 효과음으로 내려옵니다.',
+      ],
+      en: [
+        'New item, Talent Shards: six kinds — Damage, Attack Speed, Move Speed, Max Health, Area and Regeneration — each drop on their own 0.1% roll off every kill (they do not share it). Other drop-rate bonuses do not raise them.',
+        'A shard amplifies its stat by 1% for the rest of the run (a Regeneration Shard gives 1 health every 5s). What your shards add up to is shown at the top left of the battle. Shards are never pulled to you — only a magnet gathers them — and like other items they vanish after a minute.',
+        'The Runaway and the Chimera now always drop a Talent Shard instead of a skill.',
+        'Once your main skill is at its top level, a level-up offers three Talent Shard cards to choose from instead of a potion’s heal. A Random Skill whose every skill on offer is at its top does the same. Passives do not weigh these cards.',
+        'Passives rebuilt: the Damage, Attack Speed, Move Speed and Luck lines are gone, and every player starts again with 30 points. Each new line raises one kind of shard’s drop rate by 5% a point, with no cap on how many points one line takes.',
+        'The Passives screen is now a set of dials instead of a tree, each showing its current drop rate. − takes a point back, and Reset returns every point.',
+        'To match, every enemy’s base health is amplified down by 30% and its move speed by 10%.',
+        'Talent Shards, White Mangoes, Mango Orbs and Onigoroshi now land with a new sound in a red light pillar. A Chimera altar comes down with the new sound too.',
+      ],
+      ja: [
+        '新アイテム「才能の欠片」：ダメージ・攻撃速度・移動速度・最大体力・効果範囲・体力回復の欠片6種が、敵を倒すたびにそれぞれ0.1%の確率で別々に落ちます（確率は分け合いません）。他のドロップ率上昇の影響は受けません。',
+        '欠片を拾うと、その回の間その能力値が1%ずつ増幅されます（体力回復の欠片は5秒ごとに体力1）。集めた欠片の効果の合計は戦闘画面の左上に表示されます。欠片は引き寄せられず磁石でのみまとめて集まり、他のアイテムと同じく1分後に消えます。',
+        '逃亡者とキメラは、スキルの代わりに才能の欠片を必ず落とすようになりました。',
+        'メインスキルが最大レベルになると、レベルアップ時にポーション回復の代わりに才能の欠片3枚から1つを選びます。ランダムスキルも、選べるスキルがすべて最大レベルなら同じ選択に変わります。この選択にはパッシブが適用されません。',
+        'パッシブ改編：これまでのダメージ・攻撃速度・移動速度・幸運のパッシブがなくなり、全プレイヤーが30ポイントで再スタートします。新しいパッシブは欠片の種類ごとに1ポイントにつきその欠片のドロップ率を5%上げ、1列に入れられるポイントに上限はありません。',
+        'パッシブ画面がツリーではなくダイヤル配置になり、ダイヤルごとに現在のドロップ率が表示されます。−ボタンで1つずつ回収、リセットで全ポイントを戻せます。',
+        'パッシブ改編に合わせて、すべての敵の基本体力が30%、移動速度が10%減少します。',
+        '才能の欠片・白いマンゴー・マンゴーのオーブ・鬼殺しは、落ちたときに新しい効果音と赤い光の柱で表示されます。キメラの祭壇も新しい効果音で降りてきます。',
+      ],
+      zh: [
+        '新物品“天赋碎片”：伤害、攻击速度、移动速度、最大生命、效果范围、生命恢复6种碎片，每次击杀敌人时各自以0.1%几率独立掉落（不共享几率），不受其他掉落率加成影响。',
+        '拾取碎片后，本局内对应能力增幅1%（生命恢复碎片为每5秒恢复1点生命）。已收集碎片效果的总和显示在战斗画面左上角。碎片不会被吸过来，只有磁铁能一起收集，与其他物品一样1分钟后消失。',
+        '逃亡者和奇美拉现在必定掉落天赋碎片，而不是技能。',
+        '主技能达到最高等级后，升级时不再回复药水，而是从3张天赋碎片中选择1张。随机技能若可选技能全部满级，也会变为同样的选择。该选择不受被动影响。',
+        '被动重做：原有的伤害、攻击速度、移动速度、幸运被动被移除，所有玩家以30点重新开始。新被动按碎片种类，每1点使该碎片掉落率提高5%，每一行可投入的点数没有上限。',
+        '被动界面改为拨盘布局，不再是树形，每个拨盘显示当前掉落率。可用 − 按钮逐点收回，或用重置返还全部点数。',
+        '配合被动重做，所有敌人的基础生命减少30%，移动速度减少10%。',
+        '天赋碎片、白芒果、芒果宝珠和鬼杀掉落时会有新的音效和红色光柱。奇美拉祭坛降下时也使用新音效。',
+      ],
+    },
+  },
+  {
     version: '0.101',
     date: '2026-10-23',
     changes: {

@@ -212,7 +212,7 @@ const ribbed = await run(`
   s.spawner.clear();
   const e = s.spawner.group.get(600, 600);
   e.spawn(600, 600, s.player, 'grunt', undefined, false, s.spawner.hpScale);
-  const base = window.config.ENEMY_KINDS.grunt.maxHp;
+  const base = window.config.ENEMY_KINDS.grunt.maxHp * window.config.BALANCE.enemyHpScale * window.config.ENEMY_DAMPEN.hp;
   const out = { hp: e.hp, base, scale: s.spawner.hpScale };
   s.spawner.clear();
   s.choosing = false;

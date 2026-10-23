@@ -39,7 +39,7 @@ wrong shape.
 | `src/config/balance.ts` | ★ the tuning file. Enemies, skills, 속성 and their tier ladders, the difficulty ramp. The user edits this directly. |
 | `src/config/equipment.ts` | weapons (장비) and the 구슬 that change them |
 | `src/config/bones.ts` | 뼈다귀 — what is spent before a run to change that run |
-| `src/config/passives.ts` | the passive tree (points come only as gifts since 0.83) |
+| `src/config/passives.ts` | the passive lines — 재능의 파편 drop rates, PASSIVE_POINTS each player holds (0.102) |
 | `src/config/visuals.ts` | colours, depths, text sizes, texture keys, label tiers |
 | `src/config/system.ts` | scene keys, storage keys, separation, tilt, timing |
 | `src/entities/` | Player, Enemy, and everything that lies on the ground |
@@ -88,7 +88,8 @@ node run-all.mjs test-full test-skills test-balance test-chain test-ice \
   test-altar test-slot test-inventory test-back test-fugitive \
   test-ranking test-skillpick test-mango test-web test-loadout \
   test-carry test-api test-account test-live test-filter test-mastery \
-  test-tuning test-terrain test-chimera test-seal test-gift test-held
+  test-tuning test-terrain test-chimera test-seal test-gift test-held \
+  test-shard
 ```
 
 test-i18n and test-locale are left out until the official release (the
@@ -298,8 +299,9 @@ Read `git log` for what changed and when. What is not in the log:
   gates only the floater in `CombatSystem.hit` — heals, 포션 효과!, 막음
   and the rune line still show. `window.settings` is the dev handle.
 - **전투 배경 (0.101, tried locally first).** `ARENA_LOOK` (visuals.ts):
-  `BootScene.createArenaFloorTexture` paints seamless flagstones
-  (`TEXTURES.arenaFloor`, `tile` px), `systems/Arena.drawArenaDecals` lays
+  `BootScene.createArenaFloorTexture` paints seamless dark ground — patches,
+  grit, hairline cracks, pebbles, grass; no slabs (0.101's flagstones read
+  as a dizzying grid, the user's word) — (`TEXTURES.arenaFloor`, `tile` px), `systems/Arena.drawArenaDecals` lays
   stains, moss, grass, rubble and bones from the run's terrain seed, and
   `Terrain.drawDetailed` gives rocks light, cracks, moss and loose stones.
   `arenaLookOn()` decides: `ARENA_LOOK.devOnly` (true) keeps it to the dev
@@ -465,7 +467,8 @@ Read `git log` for what changed and when. What is not in the log:
   off unless `window.__giftOn` (test-gift). 0.81 added passive points to
   it (`passivesToMax`: `passives.topUpToMax` fills held + spent up to
   `maxPoints`), under a mark of its own (`STORAGE.passiveGift`) so those
-  who had 0.80's gift got it too. A saved run with a `kit` (0.71–
+  who had 0.80's gift got it too — off since 0.102 (`passivesToMax` false:
+  every player holds PASSIVE_POINTS), so the gift gives nothing now. A saved run with a `kit` (0.71–
   0.79's) is thrown away by `saveGame.read`. The server's `tuning` row
   still holds `RUNE_*` paths: `Tuning.apply` lays over only dials and
   `publish` sends only dials, so they do nothing.
@@ -560,6 +563,44 @@ Read `git log` for what changed and when. What is not in the log:
   stays built for every language: every word through `t()`, all four
   locales kept in step with types.ts, patch notes in all four. Turning the
   flag on is the whole of putting it back.
+- **재능의 파편 (0.102, the user's design).** `TALENT_SHARD` (balance.ts):
+  one shard a stat (`stats`: 피해량 · 공격속도 · 이동속도 · 최대체력 ·
+  효과범위 · 체력회복), each its own roll off every kill at `chance` × the
+  passive tree's line for it (`CombatSystem.killEnemy`, `hooks.shardWeight`)
+  — no rare's or 우두머리's bonus. A 도망자 or 키메라 always leaves one
+  (`guaranteedShard`; their guaranteed skill went — `Enemy.precious` still
+  keeps them at the cap). `TalentShardDrop` carries its `stat`, tinted
+  (`TALENT_SHARD_FX.tint`); like every ground item it is never pulled in and
+  goes after GROUND_ITEM.lifespanMs; the 자석 takes it. `GameScene.gainShard`
+  adds it to `shards` (saved in `SavedRun.shards`) and `applyShards` folds
+  `shardBonusFor`: damage and attack speed as `RunModifiers.shard` (an 증폭,
+  where the tree's layer sat in Modifiers), move speed and max health on
+  `Player.applyShards`, area into `GameScene.areaScale`, regen in
+  `regenerate`; `Hud.setShards` writes the sum top left. A level-up with the
+  main skill maxed, or a 무작위 스킬 whose every option is maxed, is a
+  `'shard'` choice: `openShardPick` shows `choices` of the stats, evenly,
+  through UpgradeScene (its cards are any `ChoiceCard` since 0.102). The
+  potion heal for a maxed main skill is gone; a maxed skill picked up again
+  still heals.
+- **패시브 is 재능의 파편 lines (0.102, the user's ask).** passives.ts: six
+  lines, each +`shardWeight` (5%) of its shard's drop chance a point, no cap
+  but the points (`maxRank` = PASSIVE_POINTS). Every player holds
+  PASSIVE_POINTS (30): a stored tree without `scheme` 2 (`PASSIVE_SCHEME`) —
+  every tree from before — starts over at 30, and nothing stored is a fresh
+  tree in memory, not written (a write would read as a change to CloudSave).
+  `passives.refund` and `reset` give points back. ROLLBACK_GIFT's
+  `passivesToMax` is off. PassiveScene is a grid of dials (PASSIVE_DIALS),
+  the 밸런스 panel's way, each with its drop rate; the tree, its camera and
+  dragging went. The enemies were dampened for the lines that went:
+  `ENEMY_DAMPEN` (hp 0.7, speed 0.9) at spawn — XP still reads the kind's
+  own numbers — and `Progression.enemyHealth` includes it, which is what
+  the suites read a full plain enemy off. The title's 패시브 icon wears a
+  pulsing ring until `ICON_SPOTLIGHT.passives` (a day).
+- **Extreme-rare drops (0.102).** `extremeSound` on an orb (망고의 구슬), a
+  sword (오니고로시) or an altar offer (키메라), and always the 재능의 파편 and
+  하얀 망고: `CombatSystem.land(..., extreme)` plays `AUDIO.drops.extreme`
+  (assets/extremeRareDrop.mp3, cut from the .ogg the user added) and
+  `DropLabel.blaze` stands the pillar in red (`LIGHT_PILLAR.extremeTint`).
 - **A dial ships only when asked for.** The user had every dial taken off
   in the overhaul and asked for them back one by one; 0.80 keeps that set:
   a page a skill (every `SKILL_BASE` stat above zero and its
@@ -714,9 +755,9 @@ Read `git log` for what changed and when. What is not in the log:
   every kill. What only a 우두머리 leaves (its
   certain weapon, a `fromBossOnly` 구슬, a 뼈다귀 with `fromKill: 0`)
   and what is certain are not multiplied. A new drop should go through the
-  same `bonus` in `CombatSystem.killEnemy`. 행운 (the passive, 0.83) is
-  folded into `dropBonus` there (`hooks.luck`, 1 + `passives.bonus.luck`), so
-  it raises exactly what a rare's 속성 raise — the user's scope.
+  same `bonus` in `CombatSystem.killEnemy`. (행운, the passive that raised
+  it, went with the tree in 0.102.) The 재능의 파편 take no `bonus` either:
+  only the tree's line for each.
 - **알수없는 룬 (0.89, the user's ask).** `UNKNOWN_RUNE` (balance.ts): a
   kill of `from` (the 키메라) leaves one at a flat `chance`, nothing raising
   it. Picked up it does nothing yet — `GameScene.feelUnknownRune` shows
@@ -866,20 +907,6 @@ Read `git log` for what changed and when. What is not in the log:
   pauses physics until the pointer moves off. A touch shows the same without
   the hold — on a phone that finger is steering. A popup that closes while
   something is being read leaves the arena paused (`held`).
-- **패시브 is a tree drawn from its table.** A `PASSIVES` entry with
-  `requires: { id, rank }` hangs from that line and opens once it holds the
-  ranks (`passives.isOpen`, checked inside `passives.spend`, so the rule is
-  the store's, not the screen's); without it, it hangs from the root. Ranks
-  bought before a line was gated are kept. `PassiveScene.layOut` places
-  whatever shape the table gives — root on top, or on its side
-  (`sideways`) on a wide window — so a new line is a table entry. The
-  spacing shrinks to fit only down to `PASSIVE_TREE.minLevelGap` /
-  `minLeafGap`; a bigger tree runs off its window and is dragged. The tree
-  lives in its own container, drawn only by `treeCam` (a camera whose
-  viewport is the framed window — no `setMask` under WebGL), so its
-  coordinates are the window's own; a node is picked on the release of a
-  press that did not travel `DRAG_FROM_PX`, and `pan`/`scrollTo` keep some
-  of the tree in view (`dragMargin`).
 - **폭발의 구슬 climbs, or swaps at the top.** It picks among lines below
   tier 1, and the replacement comes only from 속성 that have the rung above.
   On a weapon whose every line is tier 1 it trades one for a different
