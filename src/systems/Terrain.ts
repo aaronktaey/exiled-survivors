@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 
 import { ARENA_LOOK, COLORS, DEPTH, PLAYER, TERRAIN, WORLD } from '@/config';
-import { arenaLookOn } from '@/systems/Arena';
+import { arenaLookOn, bake } from '@/systems/Arena';
 import type { Enemy } from '@/entities/Enemy';
 
 /** Points round each outline: enough to read smooth, few enough to test cheaply. */
@@ -47,7 +47,9 @@ export class Terrain {
   private readonly scene: Phaser.Scene;
   private readonly player: Phaser.Physics.Arcade.Sprite;
   private readonly enemies: Phaser.Physics.Arcade.Group;
+  /** The rocks as drawn: a Graphics, or (전투 배경) that drawing baked into one picture. */
   private readonly graphics: Phaser.GameObjects.Graphics;
+  private baked?: Phaser.GameObjects.Image;
 
   public constructor(
     scene: Phaser.Scene,
@@ -61,6 +63,10 @@ export class Terrain {
     this.rocks = Terrain.layOut(seed, player.x, player.y);
     this.graphics = scene.add.graphics().setDepth(DEPTH.terrain);
     this.draw(seed);
+    // The detailed rocks are 49,000 commands: drawn once, kept as a picture.
+    if (arenaLookOn()) {
+      this.baked = bake(scene, this.graphics, 'tex-terrain-rocks', DEPTH.terrain);
+    }
     scene.events.on(Phaser.Scenes.Events.POST_UPDATE, this.keepOut, this);
     scene.events.once(Phaser.Scenes.Events.SHUTDOWN, this.destroy, this);
   }
@@ -68,6 +74,7 @@ export class Terrain {
   public destroy(): void {
     this.scene.events.off(Phaser.Scenes.Events.POST_UPDATE, this.keepOut, this);
     this.graphics.destroy();
+    this.baked?.destroy();
   }
 
   /** A fresh field's seed. */

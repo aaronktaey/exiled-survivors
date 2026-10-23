@@ -308,6 +308,11 @@ Read `git log` for what changed and when. What is not in the log:
   server and off the harness and `#run` (the page is marked only after the
   first load, so `#run` counts as the harness, as in BootScene). The user
   decides whether it ships; `devOnly: false` is the whole of shipping it.
+  Both the decals and the detailed rocks are drawn once into a Graphics and
+  baked into one world-sized picture (`Arena.bake`): a Graphics replays every
+  command every frame, and these came to ~150,000 — 20 ms a frame against
+  7 (the user felt it stutter). Anything static and drawn in bulk should be
+  baked the same way.
 - **도망자 is table-driven.** `flee`, `lifespanMs`, `guaranteedSkill` and
   `flashy` on an `ENEMY_KINDS` entry give any kind that behaviour; the
   fugitive is the only one using them. It spawns on `FUGITIVE`'s clock.

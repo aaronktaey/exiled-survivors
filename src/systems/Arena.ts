@@ -21,11 +21,34 @@ export function arenaLookOn(): boolean {
 }
 
 /**
+ * A drawing that never changes, turned into one picture the size of the
+ * world: a Graphics replays every one of its commands every frame, and the
+ * decals and the rocks came to 150,000 of them (20 ms a frame, the user's
+ * stutter). The texture under `key` is replaced each run and dropped when
+ * the scene shuts down.
+ */
+export function bake(scene: Phaser.Scene, g: Phaser.GameObjects.Graphics, key: string, depth: number): Phaser.GameObjects.Image {
+  if (scene.textures.exists(key)) {
+    scene.textures.remove(key);
+  }
+  g.generateTexture(key, WORLD.width, WORLD.height);
+  g.destroy();
+  const image = scene.add.image(0, 0, key).setOrigin(0, 0).setDepth(depth);
+  scene.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+    image.destroy();
+    if (scene.textures.exists(key)) {
+      scene.textures.remove(key);
+    }
+  });
+  return image;
+}
+
+/**
  * What lies loose on the floor, so the tiled flagstones do not read as a
  * grid: dark stains, grass round the cracks, rubble and the odd bone —
  * laid from the run's terrain seed, so 불러오기 finds the same floor.
  */
-export function drawArenaDecals(scene: Phaser.Scene, seed: number): Phaser.GameObjects.Graphics {
+export function drawArenaDecals(scene: Phaser.Scene, seed: number): Phaser.GameObjects.Image {
   const random = seeded(seed ^ 0x2c1b3c6d);
   const g = scene.add.graphics().setDepth(DEPTH.ground + 1);
   const { decals } = ARENA_LOOK;
@@ -84,5 +107,5 @@ export function drawArenaDecals(scene: Phaser.Scene, seed: number): Phaser.GameO
       g.fillCircle(ex + 1.5, ey, 2);
     }
   }
-  return g;
+  return bake(scene, g, 'tex-arena-decals', DEPTH.ground + 1);
 }
