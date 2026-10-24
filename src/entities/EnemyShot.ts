@@ -49,6 +49,11 @@ export class EnemyShot extends Phaser.Physics.Arcade.Image {
   }
 
   public override update(_time: number, delta: number): void {
+    // Held with the world while a popup holds the run (0.114), the way the
+    // survivor's own shots are — not spent standing still.
+    if (this.scene.physics.world.isPaused) {
+      return;
+    }
     const step = Math.min(delta, TIMING.maxDeltaMs);
     this.remainingMs -= step;
     if (this.spins) {

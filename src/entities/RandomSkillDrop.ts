@@ -24,7 +24,7 @@ export class RandomSkillDrop extends GroundItem {
   public drop(x: number, y: number): void {
     this.begin(x, y, SKILL_ICON_SIZE.drop);
     // A choice of three is worth more than one skill, and reads louder.
-    this.nameplate.show(t().skillPick.drop, 'magic');
+    this.nameplate.show(t().skillPick.drop, 'normal');
     this.nameplate.place(x, y, SKILL_ICON_SIZE.drop);
     this.pop();
   }

@@ -38,9 +38,9 @@ export const ITEM_FILTER: readonly FilterSection[] = [
     entries: [
       { key: 'potion', texture: TEXTURES.potion, tier: 'normal' },
       { key: 'skill', texture: TEXTURES.skillOrb, tier: 'normal' },
-      { key: 'randomSkill', texture: TEXTURES.skillOrb, tier: 'magic' },
+      { key: 'randomSkill', texture: TEXTURES.skillOrb, tier: 'normal' },
       { key: 'mango', texture: TEXTURES.mango, tier: 'mythic' },
-      { key: 'magnet', texture: TEXTURES.magnet, tier: 'mythic' },
+      { key: 'magnet', texture: TEXTURES.magnet, tier: 'magic' },
       { key: 'unknownRune', texture: unknownRuneTexture(0), tier: 'mythic' },
       { key: 'talentShard', texture: TEXTURES.talentShard, tier: 'normal' },
       { key: 'talentLump', texture: TEXTURES.talentLump, tier: 'mythic' },

@@ -346,6 +346,38 @@ check('damage is the stat plus the sword, at a dial of 1',
     dials.melee === folded(dials.meleeBase, dials.meleeStat),
   `fireball ${dials.fireStat}+${dials.sword} -> ${dials.fire}, melee ${dials.meleeStat}+${dials.sword} -> ${dials.melee}`);
 
+// --- 8. a shot in the air outlasts a level-up's cards (0.114) ---
+// A popup holds the run by pausing the world; the shots' own clocks used to
+// run on, and they were gone — the survivor's and the enemies' — when it closed.
+await run(`
+  s.spawner.clear();
+  const fire = s.weapons.find((w) => w.definition.id === 'fireball') ?? (s.acquire('fireball'), s.weapons.find((w) => w.definition.id === 'fireball'));
+  const shot = fire.projectiles.get();
+  shot.launch(s.player.x, s.player.y, 0, { damage: 1, speed: 10, range: 30, pierce: 0, chillMs: 0 });
+  window.__heldShot = shot;
+  const bolt = s.combat.enemyShots.get(s.player.x + 400, s.player.y);
+  bolt.fire(s.player.x + 400, s.player.y, Math.PI, { ...window.config.ENEMY_KINDS.shooter.shot, speed: 1, lifespanMs: 2000 });
+  window.__heldBolt = bolt;
+  window.__heldLife = { shot: shot.remainingMs, bolt: bolt.remainingMs };
+  s.choosing = true;
+  s.physics.pause();
+  return 1;
+`);
+const life = await run(`return window.__heldLife;`);
+await sleep(Math.max(life.shot, life.bolt) + 800);
+const held = await run(`
+  const out = { shot: window.__heldShot.active, bolt: window.__heldBolt.active,
+    shotLeft: Math.round(window.__heldShot.remainingMs), boltLeft: Math.round(window.__heldBolt.remainingMs), life: window.__heldLife };
+  s.physics.resume();
+  s.choosing = false;
+  window.__heldShot.despawn();
+  window.__heldBolt.despawn();
+  return out;
+`);
+check('a shot in the air — the survivor’s or an enemy’s — waits out a popup longer than its life, its clock held',
+  held.shot && held.bolt && held.shotLeft === Math.round(held.life.shot) && held.boltLeft === Math.round(held.life.bolt),
+  JSON.stringify(held));
+
 console.log('\n=== SUMMARY ===');
 const failed = results.filter((r) => !r.p);
 console.log(`${results.length - failed.length}/${results.length} passed`);

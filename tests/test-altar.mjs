@@ -3,7 +3,7 @@ import { writeFileSync } from 'node:fs';
 
 // 제단: a 우두머리 always leaves one, it says what it will call up, and it
 // only wakes when the survivor walks up to it. Plus the two 속성 that were
-// taken off weapons in the same batch, and the 고대 두개골 never letting a
+// taken off weapons in the same batch, and the 두개골 never letting a
 // rare through.
 
 const cdp = await connect(9333);
@@ -285,7 +285,7 @@ check('it blinks its warning over the last stretch, like the rest',
 check('and then it is gone, its offer with it, having called nothing up',
   expiry.gone && expiry.plate === false && expiry.alive === 0);
 
-// --- 7. under a 고대 두개골, a rare pack still comes as it says ---
+// --- 7. under a 두개골, a rare pack still comes as it says ---
 const skulled = await run(`
   ${FREEZE}
   const was = s.boneBonus;
@@ -308,7 +308,7 @@ const skulled = await run(`
 `);
 console.log('rare pack under a skull:', JSON.stringify(skulled));
 // The skull turns the field's rares into 우두머리, not what a 제단 promised.
-check('a rare pack from a 제단 under a 고대 두개골 is every one of it rare, and no 우두머리',
+check('a rare pack from a 제단 under a 두개골 is every one of it rare, and no 우두머리',
   skulled.bosses === 0 && skulled.plain === 0 && skulled.rares === skulled.want,
   `${skulled.bosses} 우두머리 + ${skulled.plain} plain, ${skulled.rares} rare`);
 

@@ -104,6 +104,12 @@ export class Projectile extends Phaser.Physics.Arcade.Image {
   }
 
   public override update(_time: number, delta: number): void {
+    // A level-up or a pick holds the run by pausing the world, and the group
+    // still updates: the shot held still while its life ran out, and was gone
+    // when the cards closed (0.114). Its clock holds with the world now.
+    if (this.scene.physics.world.isPaused) {
+      return;
+    }
     this.remainingMs -= Math.min(delta, TIMING.maxDeltaMs);
     if (this.remainingMs <= 0) {
       this.despawn();

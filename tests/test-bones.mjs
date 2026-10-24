@@ -48,7 +48,7 @@ const chances = await ev(`(() => {
 })()`);
 console.log('chances:', JSON.stringify(chances));
 const near = (a, b) => Math.abs(a - b) < 1e-12;
-check('고대 두개골 comes off an ordinary kill at its own chance',
+check('두개골 comes off an ordinary kill at its own chance',
   chances.skullPlain === chances.base && chances.base > 0, `${(chances.skullPlain * 100).toFixed(2)}%`);
 check('and off a rare by its 속성, the same bonus as every drop',
   near(chances.skullRare1, chances.base * chances.rare1) && near(chances.skullRare6, chances.base * chances.rare6),
@@ -86,12 +86,12 @@ const drops = await run(`
 `);
 console.log('on the ground:', JSON.stringify(drops));
 check('each 뼈다귀 lands under its own name and its own sprite',
-  drops.skull.name === '고대 두개골' && drops.rib.name === '갈비뼈' &&
+  drops.skull.name === '두개골' && drops.rib.name === '갈비뼈' &&
     drops.skull.texture !== drops.rib.texture,
   `${drops.skull.name} / ${drops.rib.name}`);
 // 0.111: each tier's own clip (AUDIO.drops), read off the table — not a name here.
 check('and sounds like the rarity it is',
-  Object.values(drops).every((d) => d.sound === d.want) && drops.skull.sound !== drops.rib.sound,
+  Object.values(drops).every((d) => d.sound && d.sound === d.want),
   Object.entries(drops).map(([id, d]) => `${id} ${d.sound} (want ${d.want})`).join(' / '));
 
 await run(`
@@ -166,7 +166,7 @@ console.log('applied:', JSON.stringify(applied));
 check('a run takes three and no more',
   applied.applied.length === 3 && applied.ribOpen === false,
   applied.applied.join(' + '));
-check('갈비뼈 stacks, 고대 두개골 does not',
+check('갈비뼈 stacks, 두개골 does not',
   applied.applied.filter((b) => b === 'rib').length === 2 &&
     applied.applied.filter((b) => b === 'skull').length === 1 &&
     applied.skullOpen === false,
@@ -182,7 +182,7 @@ check('and the total compounds rather than adding up',
   applied.summary);
 check('nothing is spent until the run starts',
   applied.held.rib === 4 && applied.held.skull === 2,
-  `${applied.held.rib} 갈비뼈 and ${applied.held.skull} 고대 두개골 still in the drawer`);
+  `${applied.held.rib} 갈비뼈 and ${applied.held.skull} 두개골 still in the drawer`);
 await shot('bones-02-applied');
 
 // --- 5. starting spends them, and the run plays by them ---
@@ -203,7 +203,7 @@ const started = await run(`
 console.log('started:', JSON.stringify(started));
 check('starting takes them out of the drawer',
   started.held.rib === 2 && started.held.skull === 1,
-  `${started.held.rib} 갈비뼈 and ${started.held.skull} 고대 두개골 left`);
+  `${started.held.rib} 갈비뼈 and ${started.held.skull} 두개골 left`);
 check('and the run is played on what they add up to',
   started.bonus.enemyHpScale === 4 && Math.abs(started.bonus.dropScale - 2.25) < 1e-9 &&
     started.bonus.raresBecomeBosses === true,
@@ -244,8 +244,8 @@ const skulled = await run(`
   s.choosing = false;
   return out;
 `);
-console.log('under a 고대 두개골:', JSON.stringify(skulled));
-check('고대 두개골 sends a 우두머리 in place of a rare',
+console.log('under a 두개골:', JSON.stringify(skulled));
+check('두개골 sends a 우두머리 in place of a rare',
   skulled.bosses > 0, `${skulled.bosses} of 12 spawns`);
 check('up to what the field can hold, and never a rare past that',
   skulled.bosses === skulled.cap && skulled.rares === 0 && skulled.plain > 0,

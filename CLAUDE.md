@@ -180,7 +180,7 @@ Read `git log` for what changed and when. What is not in the log:
   number that would make something unplayable, implement it with a documented
   ceiling in config and say so in the report (that is why
   `BONE_RUN.maxBosses` exists).
-- **One rule for the 고대 두개골.** Every spawn that rolls rare goes through
+- **One rule for the 두개골.** Every spawn that rolls rare goes through
   `SpawnDirector.place`: under the skull it is a 우두머리 while fewer than
   `BONE_RUN.maxBosses` are up, and an ordinary enemy after — never a rare.
   The one exception is the 제단 (since 2026-10-18): its packs come exactly as
@@ -240,7 +240,7 @@ Read `git log` for what changed and when. What is not in the log:
   puts it there — stepped by `combat.update(dt)` from GameScene, so a pause
   holds it. `dropAltarAt` itself is still immediate (debug keys, tests).
 - **제단 chain on purpose.** A 우두머리 leaves a 제단 at `ALTAR.fromBoss` (a
-  tenth since 2026-10-18 — at every one, a 고대 두개골 run drowned in them),
+  tenth since 2026-10-18 — at every one, a 두개골 run drowned in them),
   ordinary kills leave one at `ALTAR.fromKill`, and a 제단 can call up 우두머리, which leave 제단. It is opt-in — nothing
   happens until the survivor walks up — so it is not capped. An altar arms only
   after the survivor has been outside its radius once.
@@ -261,6 +261,12 @@ Read `git log` for what changed and when. What is not in the log:
   (`items`, `selected`, `selectedId`, `focus`, `step`, `refresh`) — which is
   why most of test-gear survived the swap. A tap only picks a cell; acting is
   the buttons beside it or Space. The title icon's id is still `gear`.
+- **A popup holds the shots too (0.114).** A level-up or a pick holds the
+  run with `physics.pause()` only; groups with `runChildUpdate` still update.
+  `Projectile` and `EnemyShot` hold their clocks while
+  `scene.physics.world.isPaused` — they used to run out standing still and
+  be gone when the cards closed. Anything new with a life of its own in an
+  update should do the same (test-skills §8).
 - **Contact is per enemy.** A body hurts through `Player.takeContact` on its
   own `ENEMY.contactCooldownMs`, so a crowd all hurt at once; only thrown
   things (`takeDamage`) open the survivor's invulnerable window. The debug /
@@ -660,7 +666,13 @@ Read `git log` for what changed and when. What is not in the log:
   extremeRareDrop, a red pillar. `DropLabel.show(text, tier)` keeps the
   `tier` and stands the pillar; `CombatSystem.land(item, shown)` reads the
   item's `nameplate.tier` for the sound — a new drop needs only its label's
-  tier. No per-item exceptions (0.102's `extremeSound` went); a 제단 lands
+  tier. Which tier each item is (0.114, the user's): 신화 하얀 망고, 망고의
+  구슬, 재능의 덩어리, 룬, 5–6 속성 swords, a 우두머리/키메라/도망자 제단;
+  희귀 폭발의 구슬, 두개골 (고대 두개골 until 0.114), 갈비뼈, 척추, 3–4
+  속성; 마법 자석, 혼돈 · 각성의 구슬, 2 속성, a rare pack's 제단; 일반
+  변화의 구슬, 무작위 스킬, 스킬, 재능의 파편, 0–1 속성. Set in the item's
+  table (`ORBS`/`BONES` `tier`) or its drop entity (자석, 무작위 스킬) and its
+  필터 entry. No per-item exceptions (0.102's `extremeSound` went); a 제단 lands
   silent whatever it offers. The awakening flourish and a 합성 success play
   `AUDIO.drops.magic`, the clip they always had.
 - **A dial ships only when asked for.** The user had every dial taken off
@@ -877,7 +889,10 @@ Read `git log` for what changed and when. What is not in the log:
   0.88 also halved 거대 · 신속 · 자력 and added 반복 (prefix,
   `repeatChance`: `CastRepeat` in Weapon.ts sets a weapon's cast clock so
   it goes off again `AFFIX_TIMING.repeatDelayMs` later, never twice
-  running; 공허구체 re-arms the orb's hit on that enemy instead), 활력
+  running; 공허구체 re-arms the orb's hit on that enemy instead — its
+  ladder (0.114, the user's ask) matches 광포's at a 0.6s cooldown, so it
+  beats 광포 on slow skills and falls short on fast ones; test-balance
+  holds that), 활력
   (suffix, `regen` every `AFFIX_TIMING.regenEveryMs`, `GameScene.regenerate`)
   and 기교 (suffix, `projectileBlock` added to the base's own).
 - **Damage is 플랫 × 증가 × 증폭 (0.93, the user's rule).** `damageFor`

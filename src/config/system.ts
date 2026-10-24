@@ -345,7 +345,8 @@ export const AUDIO = {
     normal: { key: "sfx-drop-normal", file: "assets/normalDrop.mp3", volume: 0.55 },
     magic: { key: "sfx-drop-magic", file: "assets/magicDrop.mp3", volume: 0.5 },
     rare: { key: "sfx-drop-rare", file: "assets/rareDrop.mp3", volume: 0.6 },
-    mythic: { key: "sfx-drop-extreme", file: "assets/extremeRareDrop.mp3", volume: 0.6 },
+    // 20% down in 0.114 (the user found it too loud; 0.6 before).
+    mythic: { key: "sfx-drop-extreme", file: "assets/extremeRareDrop.mp3", volume: 0.48 },
   } as Record<DropTier, { readonly key: string; readonly file: string; readonly volume: number } | null>,
   /**
    * How many 속성 a weapon needs to be the next rarity up. One ladder: it

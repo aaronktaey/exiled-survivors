@@ -748,7 +748,7 @@ export const en: Strings = {
       mango: 'Puts a weapon in Mango state — the next Explosion Orb cannot destroy it, and spends the Mango whatever it rolls',
     },
     bones: {
-      skull: 'Ancient Skull',
+      skull: 'Skull',
       rib: 'Rib',
       spine: 'Spine',
     },
@@ -1093,7 +1093,7 @@ export const en: Strings = {
         {
           title: 'Altar',
           lines: [
-            'A Boss leaves one {altarBoss} of the time, other enemies {altarChance}. An Ancient Skull does not change what an altar calls up.',
+            'A Boss leaves one {altarBoss} of the time, other enemies {altarChance}. A Skull does not change what an altar calls up.',
             'It calls up the enemies written over it. It only wakes when you walk up to it, and you may walk past — you have to have been away from it once before it can wake.',
             'What it can call: {altarOffers}.',
           ],
@@ -1138,7 +1138,7 @@ export const en: Strings = {
             'Press a bone to drop it into a slot below; press a slot to take it back out. What it does, and what they add up to, is shown right under them.',
             'Both New Run and Run again go through the Bones screen; with none to spend it is skipped.',
             'A loaded run keeps the Bones it was started with.',
-            'Even with an Ancient Skull, only {maxBosses} Bosses are out at once; past that the rare spawns are ordinary enemies.',
+            'Even with a Skull, only {maxBosses} Bosses are out at once; past that the rare spawns are ordinary enemies.',
           ],
         },
       ],

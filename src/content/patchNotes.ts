@@ -15,6 +15,44 @@ export interface PatchNote {
 
 export const PATCH_NOTES: readonly PatchNote[] = [
   {
+    version: '0.114',
+    date: '2026-10-24',
+    changes: {
+      ko: [
+        '반복 속성을 상향했습니다(1티어 11.5% → 39%, 7티어 5% → 7%). 공격 간격이 0.6초보다 긴 느린 스킬에서는 광포보다 강하고, 빠른 스킬에서는 약합니다.',
+        '드랍 등급을 조정했습니다. 자석 · 혼돈의 구슬 · 각성의 구슬은 마법, 폭발의 구슬 · 두개골 · 갈비뼈 · 척추는 희귀, 변화의 구슬 · 무작위 스킬은 일반입니다.',
+        '고대 두개골의 이름이 두개골로 바뀌었습니다.',
+        '도망자의 이동속도와 한 번에 달아나는 거리가 1.5배가 되었습니다.',
+        '투사체가 레벨 업이나 스킬 선택 창이 열려 있는 동안 사라지던 문제를 고쳤습니다.',
+        '신화 등급 드랍 소리를 20% 줄였습니다.',
+      ],
+      en: [
+        'Echoing is stronger (tier 1 11.5% → 39%, tier 7 5% → 7%): better than Frenzied on a skill slower than one attack every 0.6s, weaker on a faster one.',
+        'Drop rarities moved: the Magnet, the Chaos Orb and the Awakening Orb are Magic; the Explosion Orb, the Skull, the Rib and the Spine are Rare; the Transmutation Orb and the Random Skill are Normal.',
+        'The Ancient Skull is now just the Skull.',
+        'Fugitives move 1.5× as fast and run 1.5× as far each time.',
+        'Fixed shots in the air vanishing while a level-up or skill choice was open.',
+        'The Mythic drop sound is 20% quieter.',
+      ],
+      ja: [
+        '反復属性を強化しました（1ティア 11.5% → 39%、7ティア 5% → 7%）。攻撃間隔が0.6秒より長い遅いスキルでは狂暴より強く、速いスキルでは弱くなります。',
+        'ドロップ等級を調整しました。磁石・混沌の球・覚醒の球はマジック、爆発の球・頭蓋骨・肋骨・脊椎はレア、変化の球・ランダムスキルはノーマルです。',
+        '古代の頭蓋骨の名前が頭蓋骨になりました。',
+        '逃亡者の移動速度と一度に逃げる距離が1.5倍になりました。',
+        'レベルアップやスキル選択の画面が開いている間に弾が消えていた問題を修正しました。',
+        '神話等級のドロップ音を20%小さくしました。',
+      ],
+      zh: [
+        '重复属性增强（1阶 11.5% → 39%，7阶 5% → 7%）。攻击间隔长于0.6秒的慢速技能上比狂暴更强，快速技能上则较弱。',
+        '调整了掉落等级：磁铁、混沌宝珠、觉醒宝珠为魔法；爆炸宝珠、头骨、肋骨、脊椎为稀有；变化宝珠、随机技能为普通。',
+        '远古头骨改名为头骨。',
+        '逃亡者的移动速度和每次逃跑的距离变为1.5倍。',
+        '修正了升级或技能选择窗口打开期间弹体消失的问题。',
+        '神话等级的掉落声音减小了20%。',
+      ],
+    },
+  },
+  {
     version: '0.113',
     date: '2026-10-24',
     changes: {

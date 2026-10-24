@@ -569,6 +569,21 @@ check('every ladder bends — each step up adds no more than the one below it',
   }),
   Object.entries(rungs.out).map(([id, l]) => `${id} ${l.map((r) => r.value).join('/')}`).join(' · '));
 
+// 반복 against 광포, rung for rung (0.114, the user's ask): better on a slow
+// skill, worse on a fast one. A repeat comes repeatDelayMs (or half the
+// cooldown) after its cast and the cooldown runs again from it, so what it
+// adds is (1 + p) / (1 + p × delay / cooldown) − 1.
+{
+  const delay = await cdp.evaluate(`window.config.AFFIX_TIMING.repeatDelayMs`);
+  const gain = (p, cd) => (1 + p) / (1 + p * Math.min(delay, cd / 2) / cd) - 1;
+  const rep = rungs.out.echoing.map((r) => r.value / 100);
+  const fren = rungs.out.frenzied.map((r) => r.value / 100);
+  const slow = 1600, fast = 250;
+  check('반복 beats 광포 at every rung on a slow skill (1.6s), and falls short on a fast one (0.25s)',
+    rep.every((p, i) => gain(p, slow) > fren[i] && gain(p, fast) < fren[i]),
+    rep.map((p, i) => `T${i + 1} ${(gain(p, slow) * 100).toFixed(1)}/${(gain(p, fast) * 100).toFixed(1)} vs ${(fren[i] * 100).toFixed(0)}`).join(' · '));
+}
+
 console.log('\n=== SUMMARY ===');
 const failed = results.filter((r) => !r.p);
 console.log(`${results.length - failed.length}/${results.length} passed`);

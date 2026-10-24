@@ -158,6 +158,9 @@ const effects = await run(`
   // twenty lands doubled and the 감전 figure below reads twice what it is.
   const heldCritWas = s.player.held.critChance;
   s.player.held.critChance = 0;
+  // And at the source, since acquiring 낙뢰 folds its 보유 효과 in again.
+  const heldCfgWas = window.config.SKILL_HELD_BONUS.thunderStrike.critChance;
+  window.config.SKILL_HELD_BONUS.thunderStrike.critChance = 0;
 
   // 얼음창: a chilled enemy struck again is frozen; an unchilled one is not.
   const cold = put(300, 0), warm = put(-300, 0);
@@ -215,6 +218,7 @@ const effects = await run(`
   out.shockLater = shockedOne.isShocked;
   window.config.PLAYER.critChance = critWas;
   s.player.held.critChance = heldCritWas;
+  window.config.SKILL_HELD_BONUS.thunderStrike.critChance = heldCfgWas;
   s.spawner.clear();
 
   // 공허구체: two orbs on the same enemy hit it twice; the same orb again, not at once.
@@ -274,6 +278,12 @@ const second = await run(`
   const weapon = (id) => { s.acquire(id); return s.weapons.find((w) => w.definition.id === id); };
   const critWas = window.config.PLAYER.critChance;
   window.config.PLAYER.critChance = 0;
+  // 낙뢰's 보유 효과 adds crit of its own: off too, or one hit in twenty reads doubled.
+  const heldCritWas = s.player.held.critChance;
+  s.player.held.critChance = 0;
+  // And at the source, since acquiring 낙뢰 folds its 보유 효과 in again.
+  const heldCfgWas = window.config.SKILL_HELD_BONUS.thunderStrike.critChance;
+  window.config.SKILL_HELD_BONUS.thunderStrike.critChance = 0;
   const out = {};
 
   // 타격: one standing off to the side, out of the old arc but inside 180°, is cut only at the second.
@@ -338,6 +348,8 @@ const second = await run(`
   s.spawner.clear();
 
   window.config.PLAYER.critChance = critWas;
+  s.player.held.critChance = heldCritWas;
+  window.config.SKILL_HELD_BONUS.thunderStrike.critChance = heldCfgWas;
   s.choosing = false;
   return out;
 `);

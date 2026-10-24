@@ -355,11 +355,12 @@ export const ENEMY_KINDS: Record<EnemyKind, EnemyKindSpec> = {
     size: 24,
     color: COLORS.enemyFugitive,
     maxHp: 2400,
-    speed: 300,
+    // 1.5× in 0.114 (the user's ask): 300 and 240 before.
+    speed: 450,
     contactDamage: 0,
-    flee: { distance: 240, arc: Math.PI * 0.9 },
+    flee: { distance: 360, arc: Math.PI * 0.9 },
     lifespanMs: 60_000,
-    // A 재능의 파편 every time, in place of the skill it left until 0.102 (the user's ask).
+    // A 재능의 덩어리 every time (0.111; a 파편 from 0.102, a skill before).
     guaranteedLump: true,
     flashy: true,
   },
@@ -695,9 +696,16 @@ export const AFFIXES: Record<AffixId, AffixSpec> = {
     detail: "공격이 한 번 더 나갈 확률",
     gearTiers: tiers(
       // Every skill's cast; 공허구체's orbs strike an enemy again instead.
+      // 0.114 (the user's ask): better than 광포 on a slow skill, worse on a
+      // fast one. A repeat comes AFFIX_TIMING.repeatDelayMs after its cast
+      // and the cooldown starts again from it, so it is worth less the
+      // shorter the cooldown: each rung matches 광포's at a 0.6s cooldown
+      // ((1 + p) / (1 + p × 150/600) − 1 = 광포), above it beats it, below
+      // it falls short (T1: +34% at 1.6s, +16% at 0.2s, against +27%).
+      // It was [11.5 … 5] — a third of 광포 at the top. test-balance holds it.
       (v) => `${v}% 확률로 공격 반복`,
       (v) => ({ repeatChance: v / 100 }),
-      [11.5, 11, 10, 9, 8, 6.5, 5],
+      [39, 34, 29, 23.5, 18, 12.5, 7],
     ),
   },
   volleying: {
