@@ -178,7 +178,7 @@ check('its colour keeps changing, and it wears no ring',
   new Set(look.tints).size >= 3 && !look.ring && look.tex === 'tex-enemy-fugitive',
   look.tints.map((c) => c.toString(16)).join(' '));
 
-// --- 7. killed, it always leaves a skill ---
+// --- 7. killed, it always leaves a 재능의 덩어리 (0.111; a 파편 from 0.102, a skill before) ---
 const killed = await run(`
   s.choosing = true;
   s.combat.talentShardDrops.getChildren().forEach((d) => d.active && d.collect());
@@ -189,14 +189,14 @@ const killed = await run(`
     const f = s.spawner.spawnFugitive();
     s.combat.hit(f, 1e9);
   }
-  drops = s.combat.talentShardDrops.countActive(true);
+  drops = s.combat.talentShardDrops.getChildren().filter((d) => d.active && d.lump).length;
   window.config.TALENT_SHARD.chance = was;
   s.combat.talentShardDrops.getChildren().forEach((d) => d.active && d.collect());
   s.combat.skillDrops.getChildren().forEach((d) => d.active && d.collect());
   s.choosing = false;
   return { drops };
 `);
-check('every 도망자 killed leaves a 재능의 파편 (0.102; a skill before), whatever the drop chance is', killed.drops === 5,
+check('every 도망자 killed leaves a 재능의 덩어리, whatever the drop chance is', killed.drops === 5,
   `${killed.drops} of 5`);
 
 // --- 8. a minute later it is gone, and leaves nothing ---

@@ -358,7 +358,10 @@ await run(`
   const bolt = s.combat.enemyShots.get(s.player.x + 400, s.player.y);
   bolt.fire(s.player.x + 400, s.player.y, Math.PI, { ...window.config.ENEMY_KINDS.shooter.shot, speed: 1, lifespanMs: 2000 });
   window.__heldBolt = bolt;
-  window.__heldLife = { shot: shot.remainingMs, bolt: bolt.remainingMs };
+  // And a drop on the ground (0.115): its minute holds too.
+  s.combat.dropPotionAt(s.player.x - 500, s.player.y);
+  window.__heldItem = s.combat.potions.getChildren().find((d) => d.active);
+  window.__heldLife = { shot: shot.remainingMs, bolt: bolt.remainingMs, item: window.__heldItem.remainingMs };
   s.choosing = true;
   s.physics.pause();
   return 1;
@@ -367,15 +370,18 @@ const life = await run(`return window.__heldLife;`);
 await sleep(Math.max(life.shot, life.bolt) + 800);
 const held = await run(`
   const out = { shot: window.__heldShot.active, bolt: window.__heldBolt.active,
-    shotLeft: Math.round(window.__heldShot.remainingMs), boltLeft: Math.round(window.__heldBolt.remainingMs), life: window.__heldLife };
+    shotLeft: Math.round(window.__heldShot.remainingMs), boltLeft: Math.round(window.__heldBolt.remainingMs),
+    itemLeft: Math.round(window.__heldItem.remainingMs), life: window.__heldLife };
   s.physics.resume();
   s.choosing = false;
   window.__heldShot.despawn();
   window.__heldBolt.despawn();
+  window.__heldItem.collect();
   return out;
 `);
-check('a shot in the air — the survivor’s or an enemy’s — waits out a popup longer than its life, its clock held',
-  held.shot && held.bolt && held.shotLeft === Math.round(held.life.shot) && held.boltLeft === Math.round(held.life.bolt),
+check('a shot in the air — the survivor’s or an enemy’s — waits out a popup longer than its life, its clock held, and a drop’s minute too',
+  held.shot && held.bolt && held.shotLeft === Math.round(held.life.shot) && held.boltLeft === Math.round(held.life.bolt) &&
+    held.itemLeft === Math.round(held.life.item),
   JSON.stringify(held));
 
 console.log('\n=== SUMMARY ===');

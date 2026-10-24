@@ -60,7 +60,9 @@ export abstract class GroundItem extends Phaser.Physics.Arcade.Image {
   }
 
   public override update(_time: number, delta: number): void {
-    if (!this.active) {
+    // Held with the world while a popup holds the run (0.115, the user's ask —
+    // as the shots were in 0.114): a level-up's cards no longer eat its minute.
+    if (!this.active || this.scene.physics.world.isPaused) {
       return;
     }
 

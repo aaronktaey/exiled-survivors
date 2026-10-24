@@ -15,6 +15,32 @@ export interface PatchNote {
 
 export const PATCH_NOTES: readonly PatchNote[] = [
   {
+    version: '0.115',
+    date: '2026-10-24',
+    changes: {
+      ko: [
+        '재능의 덩어리가 파편 3개 몫이 되었습니다(5개에서).',
+        '도망자의 체력이 2배가 되었습니다.',
+        '레벨 업이나 스킬 선택 창이 열려 있는 동안에는 바닥 아이템이 사라지기까지의 시간이 흐르지 않습니다.',
+      ],
+      en: [
+        'A Talent Chunk is now worth three shards (five before).',
+        'Fugitives have twice the health.',
+        'Items on the ground no longer count down toward vanishing while a level-up or skill choice is open.',
+      ],
+      ja: [
+        '才能の塊が欠片3個分になりました（5個から）。',
+        '逃亡者の体力が2倍になりました。',
+        'レベルアップやスキル選択の画面が開いている間は、床のアイテムが消えるまでの時間が進みません。',
+      ],
+      zh: [
+        '天赋晶块改为相当于3个碎片（原为5个）。',
+        '逃亡者的生命值变为2倍。',
+        '升级或技能选择窗口打开期间，地上物品的消失倒计时不再流逝。',
+      ],
+    },
+  },
+  {
     version: '0.114',
     date: '2026-10-24',
     changes: {

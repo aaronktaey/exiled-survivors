@@ -354,7 +354,8 @@ export const ENEMY_KINDS: Record<EnemyKind, EnemyKindSpec> = {
     texture: TEXTURES.enemyFugitive,
     size: 24,
     color: COLORS.enemyFugitive,
-    maxHp: 2400,
+    // Twice as hard to bring down in 0.115 (the user's ask; 2400 before).
+    maxHp: 4800,
     // 1.5× in 0.114 (the user's ask): 300 and 240 before.
     speed: 450,
     contactDamage: 0,
@@ -1538,7 +1539,8 @@ export const TALENT_SHARD = {
  * `shards` of that stat's shard at once. A 신화 drop; a 파편 is 일반.
  */
 export const TALENT_LUMP = {
-  shards: 5,
+  // 3 since 0.115 (the user's ask; 5 before).
+  shards: 3,
   /** How big it is drawn on the ground. */
   size: 30,
 } as const;

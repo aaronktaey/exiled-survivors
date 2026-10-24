@@ -265,7 +265,8 @@ Read `git log` for what changed and when. What is not in the log:
   run with `physics.pause()` only; groups with `runChildUpdate` still update.
   `Projectile` and `EnemyShot` hold their clocks while
   `scene.physics.world.isPaused` — they used to run out standing still and
-  be gone when the cards closed. Anything new with a life of its own in an
+  be gone when the cards closed — and so does every `GroundItem` (0.115:
+  a drop's minute, an altar's). Anything new with a life of its own in an
   update should do the same (test-skills §8).
 - **Contact is per enemy.** A body hurts through `Player.takeContact` on its
   own `ENEMY.contactCooldownMs`, so a crowd all hurt at once; only thrown
@@ -617,7 +618,7 @@ Read `git log` for what changed and when. What is not in the log:
   stat it is, `CombatSystem.rollShardStat` weighs by the passive tree's
   lines (`hooks.shardWeight`). An 일반 drop since 0.111. A 도망자 or 키메라
   always leaves a 재능의 덩어리 instead (`guaranteedLump`, TALENT_LUMP, 0.111:
-  one stat by the same weights, `shards` (5) of it, 신화, `talentLump` 필터
+  one stat by the same weights, `shards` (3 since 0.115) of it, 신화, `talentLump` 필터
   switch, its own cluster texture) — `Enemy.precious` still keeps them at
   the cap. Both are `TalentShardDrop` from one pool (`drop(x, y, stat,
   lump)`, `shards`, `lump`), so the 자석 and markers treat them alike;
