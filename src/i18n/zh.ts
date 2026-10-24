@@ -635,6 +635,7 @@ export const zh: Strings = {
 
   info: {
     patchTitle: '更新日志',
+    patchMore: '查看更早的更新日志（还有 {count} 条）',
     guideTitle: '游戏指南',
     hintKeyboard: '↑ ↓ 或滚轮滚动   ·   Esc 返回',
     hintTouch: '上下滑动   ·   点击关闭返回',

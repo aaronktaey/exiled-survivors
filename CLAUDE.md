@@ -1022,6 +1022,13 @@ Read `git log` for what changed and when. What is not in the log:
   (yellow) and 신화 (red) tiers (`LIGHT_PILLAR`, `TEXTURES.lightPillar`, tinted
   by `DROP_LABEL.tiers[tier].pillar`); the 제단 opts out with
   `{ pillar: false }` since it is walked up to, not picked up.
+- **패치노트 a page at a time (0.118).** Drawn whole, 112 versions came to
+  ~1,100 Text objects, each its own canvas and texture — about 2s blocked on
+  a desktop, a freeze on a phone. `InfoScene` draws the newest
+  `INFO.patchPage` (10) and a 더 보기 (`moreButton`, Enter/Space too) that
+  lays the next lot under them (`showMore`, `pending`). The guide's tabs are
+  short and still drawn whole. Anything that lists a growing history should
+  page the same way.
 - **The guide is chapters → tabs → cards** (`src/content/guide.ts`,
   `InfoScene`). Prose lives in each locale's `guide.cards[tab]` with
   `{placeholders}` that `values()` in guide.ts fills from config — a new

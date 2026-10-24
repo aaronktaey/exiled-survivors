@@ -635,6 +635,7 @@ export const en: Strings = {
 
   info: {
     patchTitle: 'Patch Notes',
+    patchMore: 'Older patch notes ({count} more)',
     guideTitle: 'How to Play',
     hintKeyboard: '↑ ↓ or the wheel to scroll   ·   Esc to go back',
     hintTouch: 'Swipe up and down   ·   Close to go back',

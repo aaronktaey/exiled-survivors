@@ -4,7 +4,7 @@ import { COLORS, DEPTH, GUIDE_TONES, INFO, SCENES, SCRIM, TEXT } from '@/config'
 import { fitText, fitWidth } from '@/systems/Layout';
 import { guideChapters, type GuideCard, type GuideChapter } from '@/content/guide';
 import { PATCH_NOTES } from '@/content/patchNotes';
-import { language, t } from '@/i18n';
+import { fill, language, t } from '@/i18n';
 import { prefersTouchControls } from '@/systems/VirtualJoystick';
 import { addBackButton, type BackButton } from '@/systems/BackButton';
 
@@ -78,6 +78,12 @@ export class InfoScene extends Phaser.Scene {
   public chapter = 0;
   public tab = 0;
   public maxScroll = 0;
+  /** Cards not drawn yet (패치노트's older versions), and where the page ends now. Public for tests. */
+  public pending: readonly GuideCard[] = [];
+  private pageEnd = 0;
+  /** 더 보기, while there is more. Public so a test can press it. */
+  public moreButton?: Phaser.GameObjects.Text;
+  private morePlate?: Phaser.GameObjects.Graphics;
 
   private tocPlates: Plate[] = [];
   private tabPlates: Plate[] = [];
@@ -329,8 +335,59 @@ export class InfoScene extends Phaser.Scene {
     this.scrollY = 0;
 
     this.page.removeAll(true);
-    const height = this.layout(tabs[this.tab]?.cards ?? []);
+    this.moreButton = undefined;
+    this.morePlate = undefined;
+    const cards = tabs[this.tab]?.cards ?? [];
+    // 패치노트 a page at a time (INFO.patchPage); the guide's tabs are short enough whole.
+    const first = this.payload.topic === 'patch' ? INFO.patchPage : cards.length;
+    this.pending = cards.slice(first);
+    this.pageEnd = this.layout(cards.slice(0, first), 0);
+    this.refit();
+  }
+
+  /** The next lot of 패치노트, under what is there, the page kept where it was. */
+  public showMore(): void {
+    if (this.pending.length === 0) {
+      return;
+    }
+    this.moreButton?.destroy();
+    this.morePlate?.destroy();
+    this.moreButton = undefined;
+    this.morePlate = undefined;
+    const next = this.pending.slice(0, INFO.patchPage);
+    this.pending = this.pending.slice(INFO.patchPage);
+    this.pageEnd = this.layout(next, this.pageEnd);
+    this.refit(this.scrollY);
+  }
+
+  /** 더 보기 under the page while there is more, the scroll bounds, the bar — after the page changed. */
+  private refit(keepScroll = 0): void {
+    let height = this.pageEnd;
+    if (this.pending.length > 0) {
+      const top = this.pageEnd + INFO.cardGap;
+      const width = this.contentWidth;
+      this.morePlate = this.add.graphics();
+      this.morePlate.fillStyle(INFO.cardFill, INFO.cardFillAlpha).fillRoundedRect(0, top, width, INFO.moreHeight, INFO.cardRadius);
+      this.morePlate.lineStyle(INFO.cardEdge, GUIDE_TONES.info.edge, 0.85).strokeRoundedRect(0, top, width, INFO.moreHeight, INFO.cardRadius);
+      this.moreButton = this.add
+        .text(width / 2, top + INFO.moreHeight / 2, fill(t().info.patchMore, { count: this.pending.length }), {
+          fontFamily: 'system-ui, sans-serif',
+          fontSize: INFO.lineSize,
+          color: COLORS.accent,
+        })
+        .setOrigin(0.5)
+        .setInteractive({ useHandCursor: true });
+      // A press that did not drag the page, so a scroll by finger never loads by accident.
+      this.moreButton.on(Phaser.Input.Events.GAMEOBJECT_POINTER_UP, (pointer: Phaser.Input.Pointer) => {
+        if (Math.abs(pointer.y - pointer.downY) < 8) {
+          this.showMore();
+        }
+      });
+      this.page.add([this.morePlate, this.moreButton]);
+      height = top + INFO.moreHeight;
+    }
     this.maxScroll = Math.max(0, height - this.viewHeight);
+    this.scrollY = Phaser.Math.Clamp(keepScroll, 0, this.maxScroll);
 
     // Everything but the page is drawn by the main camera only.
     this.pageCam.ignore(this.children.list.filter((child) => child !== this.page));
@@ -338,11 +395,11 @@ export class InfoScene extends Phaser.Scene {
     this.applyScroll();
   }
 
-  /** Stacks the cards into the page; returns how tall it came out. */
-  private layout(cards: readonly GuideCard[]): number {
-    let y = 0;
+  /** Stacks the cards into the page from `start`; returns where the page ends. */
+  private layout(cards: readonly GuideCard[], start: number): number {
+    let y = start;
     cards.forEach((card, index) => {
-      if (index > 0) {
+      if (index > 0 || start > 0) {
         y += INFO.cardGap;
       }
       y += this.drawCard(card, y);
@@ -502,6 +559,12 @@ export class InfoScene extends Phaser.Scene {
   private onKeyDown(event: KeyboardEvent): void {
     const chaptered = this.chapters.length > 1;
     const tabbed = (this.chapters[this.chapter]?.tabs.length ?? 0) > 1;
+
+    if ((event.code === 'Enter' || event.code === 'Space') && this.pending.length > 0) {
+      event.preventDefault();
+      this.showMore();
+      return;
+    }
 
     switch (event.code) {
       case 'ArrowUp':

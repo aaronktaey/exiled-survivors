@@ -810,6 +810,8 @@ export interface Strings {
 
   readonly info: {
     readonly patchTitle: string;
+    /** 패치노트's 더 보기 (0.118), with how many versions are still to come. */
+    readonly patchMore: string;
     readonly guideTitle: string;
     readonly hintKeyboard: string;
     readonly hintTouch: string;

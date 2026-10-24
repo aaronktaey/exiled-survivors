@@ -639,6 +639,7 @@ export const ko: Strings = {
 
   info: {
     patchTitle: '패치노트',
+    patchMore: '이전 패치노트 더 보기 ({count}개 남음)',
     guideTitle: '게임 가이드',
     hintKeyboard: '↑ ↓ 또는 휠로 스크롤   ·   Esc 로 돌아가기',
     hintTouch: '위아래로 쓸어 넘기기   ·   닫기를 눌러 돌아가기',

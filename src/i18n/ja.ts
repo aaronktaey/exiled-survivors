@@ -635,6 +635,7 @@ export const ja: Strings = {
 
   info: {
     patchTitle: 'パッチノート',
+    patchMore: '以前のパッチノートをもっと見る（残り {count} 件）',
     guideTitle: '遊び方',
     hintKeyboard: '↑ ↓ またはホイールでスクロール   ·   Esc で戻る',
     hintTouch: '上下にスワイプ   ·   閉じるで戻る',

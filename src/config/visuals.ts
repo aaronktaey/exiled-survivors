@@ -668,6 +668,15 @@ export const MENU = {
 
 /** 패치노트 and 게임 가이드: a long page that scrolls inside a window. */
 export const INFO = {
+  /**
+   * 패치노트 is drawn this many versions at a time, newest first, with a
+   * 더 보기 under them for the next lot (0.118): drawn whole — over a hundred
+   * versions, a thousand-odd labels each with its own texture — it froze the
+   * browser as it opened.
+   */
+  patchPage: 10,
+  /** The 더 보기 button's height. */
+  moreHeight: 44,
   titleY: 44,
   /** The scrolling window, measured from the top and bottom of the screen. */
   contentTop: 82,

@@ -15,6 +15,24 @@ export interface PatchNote {
 
 export const PATCH_NOTES: readonly PatchNote[] = [
   {
+    version: '0.118',
+    date: '2026-10-24',
+    changes: {
+      ko: [
+        '패치노트가 길어져 열 때 브라우저가 멈추던 문제를 고쳤습니다. 최신 10개 버전을 먼저 보여 주고, 아래의 「이전 패치노트 더 보기」로 10개씩 더 불러옵니다.',
+      ],
+      en: [
+        'Fixed the browser freezing when the long patch notes opened. The newest ten versions show first; “Older patch notes” below loads ten more at a time.',
+      ],
+      ja: [
+        'パッチノートが長くなり、開くとブラウザが固まっていた問題を修正しました。最新の10バージョンを先に表示し、下の「以前のパッチノートをもっと見る」で10件ずつ読み込みます。',
+      ],
+      zh: [
+        '修正了更新日志过长导致打开时浏览器卡死的问题。先显示最新的10个版本，点击下方的「查看更早的更新日志」每次再加载10个。',
+      ],
+    },
+  },
+  {
     version: '0.117',
     date: '2026-10-24',
     changes: {

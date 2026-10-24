@@ -114,6 +114,25 @@ check('it lists versions and changes',
   `${notes.blocks} blocks on the page`);
 await shot('info-02-patch');
 
+// 0.118: drawn whole, the notes froze the browser — a page of versions at a time now.
+const paged = await ev(`(() => {
+  const s = window.game.scene.getScene('InfoScene');
+  const total = s.chapters[0].tabs[0].cards.length, per = window.config.INFO.patchPage;
+  const heads = () => s.page.list.filter((o) => o.type === 'Text' && /^v\\d/.test(o.text)).length;
+  const out = { total, per, first: heads(), pending: s.pending.length, more: !!s.moreButton, label: s.moreButton?.text ?? '' };
+  const t0 = performance.now();
+  s.showMore();
+  out.ms = Math.round(performance.now() - t0);
+  out.second = heads(); out.pendingAfter = s.pending.length;
+  return out;
+})()`);
+check('패치노트 opens on the newest versions only, a 더 보기 under them for the rest',
+  paged.first === Math.min(paged.per, paged.total) && paged.pending === paged.total - paged.first && paged.more && /더 보기/.test(paged.label),
+  JSON.stringify(paged));
+check('and 더 보기 draws the next lot under them, quickly',
+  paged.second === Math.min(paged.per * 2, paged.total) && paged.pendingAfter === Math.max(0, paged.total - paged.per * 2) && paged.ms < 1500,
+  `${paged.second} shown, ${paged.pendingAfter} to come, in ${paged.ms}ms`);
+
 // --- 3. it scrolls, every way ---
 check('the page is longer than the window', notes.maxScroll > 0, `${notes.maxScroll}px of overflow`);
 await cdp.tap('ArrowDown', 40, 'ArrowDown');
