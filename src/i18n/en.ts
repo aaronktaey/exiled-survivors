@@ -388,7 +388,7 @@ export const en: Strings = {
     skillLine: '{skill} Lv {level} · {dps} DPS',
     scoreCaption: '{kills} kills',
     killsTitle: 'Kills and their share of the score',
-    skillsTitle: 'Skills · DPS',
+    skillsTitle: 'Skills · damage',
     tipTitle: 'TIP',
     tips: [
       'Your score is the health of every enemy you killed, added up. The longer you last, the tougher they get and the more each one is worth.',

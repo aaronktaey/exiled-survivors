@@ -631,7 +631,7 @@ export class GameScene extends Phaser.Scene {
         pierceCount: stats.pierceCount,
         orbCount: stats.orbCount,
         extraProjectiles: this.gearBonus.extraProjectiles,
-        hit: this.combat.hit,
+        hit: this.hitFor(id),
         mastered: this.masteryOf(id) >= 1,
         masteredTwice: this.masteryOf(id) >= 2,
         enemyShots: this.combat.enemyShots,
@@ -656,6 +656,17 @@ export class GameScene extends Phaser.Scene {
       this.sinceSaveMs = 0;
       this.writeSave();
     }
+  }
+
+  /** Each skill's way into CombatSystem.hit, naming itself so its damage counts to it (0.121). */
+  private readonly hitters = new Map<SkillId, (enemy: Enemy, amount: number) => void>();
+  private hitFor(id: SkillId): (enemy: Enemy, amount: number) => void {
+    let hitter = this.hitters.get(id);
+    if (!hitter) {
+      hitter = (enemy, amount) => this.combat.hit(enemy, amount, id);
+      this.hitters.set(id, hitter);
+    }
+    return hitter;
   }
 
   /** Puts a saved run back together: stats, skills, clocks and health. */
@@ -701,7 +712,7 @@ export class GameScene extends Phaser.Scene {
     this.hud.seed(run.elapsedMs);
     this.spawner.seed(run.spawnerMs);
     // What it had dealt and killed before the save still counts at the end.
-    this.stats.seed(run.damage ?? 0, run.kills ?? {}, run.scoreByKind ?? {});
+    this.stats.seed(run.damage ?? 0, run.kills ?? {}, run.scoreByKind ?? {}, run.damageBySkill ?? {});
     // And what it had counted gaining — or, from an older save, what it holds.
     runTally.begin(run.tally ?? { levelUps: run.level - 1, skillLevels: this.totalSkillLevels() });
   }
@@ -814,6 +825,7 @@ export class GameScene extends Phaser.Scene {
       damage: this.stats.damageExact,
       kills: this.stats.killsByKind,
       scoreByKind: this.stats.scoreByKind,
+      damageBySkill: this.stats.damageBySkill,
       terrainSeed: this.terrainSeed,
       shards: { ...this.shards },
     });
@@ -1821,7 +1833,7 @@ export class GameScene extends Phaser.Scene {
           id: line.id,
           name: line.name,
           level: line.level,
-          dps: line.dps,
+          damage: this.stats.damageOf(line.id),
         })),
         survivedMs: this.elapsedMs,
         level: this.progression.level,

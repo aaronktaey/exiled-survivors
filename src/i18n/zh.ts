@@ -388,7 +388,7 @@ export const zh: Strings = {
     skillLine: '{skill} Lv {level} · DPS {dps}',
     scoreCaption: '击杀 {kills}',
     killsTitle: '击杀的敌人与分数占比',
-    skillsTitle: '技能 · DPS',
+    skillsTitle: '技能 · 伤害',
     tipTitle: 'TIP',
     tips: [
       '分数是击杀的所有敌人生命值之和。坚持得越久，敌人越硬，每只的分数也越高。',

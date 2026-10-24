@@ -92,6 +92,7 @@ const over = await scene('GameOverScene', `
   const tips = s.allTips();
   return { summary: s.payload.summary,
            lines: s.table.list.filter(o => o.type === 'Text').map(o => o.text),
+           damageLabels: s.table.list.filter(o => o.type === 'Text' && /^damage:/.test(o.name)).map(o => o.name),
            images: s.table.list.filter(o => o.type === 'Image').length,
            tip: s.tipText.text, tips: tips.length, unfilled: tips.filter((x) => /[{}]/.test(x)) };
 `);
@@ -112,9 +113,11 @@ check('the screen shows the score and the kills, not the damage, and no gold',
 check('it breaks the kills down by kind, a picture and a count each',
   over.lines.includes('×120') && over.lines.includes('×8') && over.lines.includes('×2') && over.images >= 3,
   `${over.images} pictures · ${over.lines.filter((l) => l.startsWith('×')).join(' ')}`);
-check('and shows the skills as icons, with level and DPS',
-  over.lines.some((l) => /^Lv \d+$/.test(l)) && over.summary.skills.every((sk) => typeof sk.id === 'string'),
-  over.lines.filter((l) => /^Lv/.test(l)).join(' '));
+check('and shows the skills as icons, with level and what each dealt (0.121)',
+  over.lines.some((l) => /^Lv \d+$/.test(l)) &&
+    over.summary.skills.every((sk) => typeof sk.id === 'string' && typeof sk.damage === 'number' && !('dps' in sk)) &&
+    over.summary.skills.every((sk) => over.damageLabels.includes(`damage:${sk.id}`)),
+  `${over.lines.filter((l) => /^Lv/.test(l)).join(' ')} · ${over.damageLabels.join(' ')}`);
 check('and a tip at random, from a set whose every number is filled in',
   over.tip.length > 10 && !/[{}]/.test(over.tip) && over.tips >= 10 && over.unfilled.length === 0,
   `${over.tips} tips · ${over.unfilled.join(' | ')}`);
@@ -192,32 +195,56 @@ await ev(`(() => {
     for (let i = 0; i < 30; i++) s.progression.apply(id, 'damage');
   }
   s.stats.reset();
+  // No XP while measuring: a level-up's cards would hold the fight.
+  window.__addXp = s.progression.addXp;
+  s.progression.addXp = () => {};
+  // A crowd kept up all round, near and far, so every skill finds something to hit.
+  window.__feed = setInterval(() => {
+    const p = s.player;
+    for (let i = 0; i < 12; i++) {
+      const a = Math.random() * Math.PI * 2, r = 40 + Math.random() * 220;
+      const e = s.spawner.group.get(p.x, p.y);
+      if (e) e.spawn(p.x + Math.cos(a) * r, p.y + Math.sin(a) * r, p, 'brute', s.spawner.hooks);
+    }
+  }, 400);
   return 1;
 })()`);
 await sleep(9000);
+await ev(`(() => { clearInterval(window.__feed); const s = window.game.scene.getScene('GameScene'); s.progression.addXp = window.__addXp; return 1; })()`);
 const tally = await ev(`(() => {
   const s = window.game.scene.getScene('GameScene');
-  return { counted: s.stats.damageExact, lost: window.__lost, kills: s.stats.killCount };
+  return { counted: s.stats.damageExact, lost: window.__lost, kills: s.stats.killCount,
+           bySkill: s.stats.damageBySkill };
 })()`);
 console.log('damage tally:', JSON.stringify(tally));
 check('가한 피해 is exactly what enemies lost, from every skill at once, overkill left out',
   tally.lost > 0 && Math.abs(tally.counted - tally.lost) < 1e-6 * Math.max(1, tally.lost),
   `counted ${Math.round(tally.counted)} vs lost ${Math.round(tally.lost)}, ${tally.kills} kills`);
+// 0.121: the end screen shows what each skill dealt — every point is put to the skill it came from.
+const skillSum = Object.values(tally.bySkill).reduce((a, b) => a + b, 0);
+check('every point of it is put to the skill that dealt it, and every skill dealt some',
+  Object.keys(tally.bySkill).length === 6 && Object.values(tally.bySkill).every((v) => v > 0) &&
+    Math.abs(skillSum - tally.counted) < 1e-6 * Math.max(1, tally.counted),
+  `${Object.entries(tally.bySkill).map(([k, v]) => `${k} ${Math.round(v)}`).join(', ')} = ${Math.round(skillSum)} of ${Math.round(tally.counted)}`);
 
 const saved = await ev(`(() => {
   const s = window.game.scene.getScene('GameScene');
   s.writeSave();
   const save = JSON.parse(localStorage.getItem('exiled-survivors:save:v1'));
-  window.__resumeWant = { damage: s.stats.damage, kills: s.stats.killCount, score: s.stats.score };
+  window.__resumeWant = { damage: s.stats.damage, kills: s.stats.killCount, score: s.stats.score,
+                          fire: s.stats.damageOf('fireball') };
   s.scene.restart({ save });
   return window.__resumeWant;
 })()`);
 await sleep(2500);
 const resumed = await ev(`(() => {
   const s = window.game.scene.getScene('GameScene');
-  return { damage: s.stats.damage, kills: s.stats.killCount, score: s.stats.score };
+  return { damage: s.stats.damage, kills: s.stats.killCount, score: s.stats.score,
+           fire: s.stats.damageOf('fireball') };
 })()`);
 console.log('resumed:', JSON.stringify({ saved, resumed }));
+check('and each skill its own damage',
+  saved.fire > 0 && resumed.fire >= saved.fire, `화염구 saved ${saved.fire}, resumed at ${resumed.fire}`);
 check('a saved run picks its 가한 피해, kills and score back up when it is resumed',
   saved.damage > 0 && resumed.damage >= saved.damage && resumed.kills >= saved.kills &&
     saved.score > 0 && resumed.score >= saved.score,

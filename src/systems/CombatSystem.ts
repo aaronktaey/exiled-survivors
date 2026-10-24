@@ -523,8 +523,10 @@ export class CombatSystem {
    * Single entry point for damage, so every kill drops the same things —
    * and so 치명 on the carried weapon lands on everything the survivor
    * throws, the same way a rare's 치명 lands on everything it throws.
+   * `source` is the skill it came from, for the end screen's damage by
+   * skill (0.121); a hit without one counts only in the total.
    */
-  public hit = (enemy: Enemy, amount: number): void => {
+  public hit = (enemy: Enemy, amount: number, source?: SkillId): void => {
     if (!enemy.active) {
       return;
     }
@@ -546,7 +548,7 @@ export class CombatSystem {
     // What the enemy actually absorbed: a hit that kills something with two
     // health left is worth two, not whatever the number on the card said.
     const absorbed = Math.min(dealt, enemy.hp);
-    this.stats.recordDamage(absorbed);
+    this.stats.recordDamage(absorbed, source);
 
     if (enemy.takeDamage(dealt)) {
       this.killEnemy(enemy);
@@ -601,10 +603,10 @@ export class CombatSystem {
     // shot has to know whether it is done either way.
     const carriesOn = shot.consumePierce();
     const { x, y } = enemy;
-    this.hit(enemy, shot.damage);
+    this.hit(enemy, shot.damage, shot.skill);
 
     if (shot.blastRadius > 0) {
-      this.blast(x, y, shot.blastRadius, shot.damage, enemy);
+      this.blast(x, y, shot.blastRadius, shot.damage, enemy, shot.skill);
     }
 
     if (!carriesOn) {
@@ -618,7 +620,7 @@ export class CombatSystem {
    * victims are gathered before any of them is hit, because a kill recycles
    * a sprite and the pool could hand it straight back.
    */
-  public blast(x: number, y: number, radius: number, damage: number, spared?: Enemy): number {
+  public blast(x: number, y: number, radius: number, damage: number, spared?: Enemy, source?: SkillId): number {
     const caught: Enemy[] = [];
     for (const child of this.enemies.getChildren()) {
       const other = child as Enemy;
@@ -628,7 +630,7 @@ export class CombatSystem {
       }
     }
 
-    caught.forEach((other) => this.hit(other, damage));
+    caught.forEach((other) => this.hit(other, damage, source));
 
     const flash = this.scene.add
       .circle(x, y, radius, COLORS.fireBlast, 0.35)

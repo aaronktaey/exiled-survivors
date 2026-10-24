@@ -388,7 +388,7 @@ export const ja: Strings = {
     skillLine: '{skill} Lv {level} · DPS {dps}',
     scoreCaption: '撃破 {kills}',
     killsTitle: '倒した敵とスコアの割合',
-    skillsTitle: 'スキル · DPS',
+    skillsTitle: 'スキル · ダメージ',
     tipTitle: 'TIP',
     tips: [
       'スコアは倒した敵の体力をすべて足したものです。長く生き残るほど敵が硬くなり、1体のスコアも大きくなります。',

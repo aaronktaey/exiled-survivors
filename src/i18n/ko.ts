@@ -392,7 +392,7 @@ export const ko: Strings = {
     skillLine: '{skill} Lv {level} · DPS {dps}',
     scoreCaption: '처치 {kills}',
     killsTitle: '처치한 적과 점수 비중',
-    skillsTitle: '스킬 · DPS',
+    skillsTitle: '스킬 · 피해량',
     tipTitle: 'TIP',
     tips: [
       '점수는 처치한 적의 체력을 모두 더한 값입니다. 오래 버틸수록 적이 단단해져 한 마리의 점수도 커집니다.',

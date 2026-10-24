@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 
 import { DEPTH, TEXTURES, TIMING, WEAPON } from '@/config';
 import type { Enemy } from '@/entities/Enemy';
+import type { SkillId } from '@/weapons/skills';
 
 /** What a shot needs to know at launch, all of it from the skill's stats. */
 export interface LaunchSpec {
@@ -36,6 +37,8 @@ export class Projectile extends Phaser.Physics.Arcade.Image {
   public blastRadius = 0;
   /** How long a chilled enemy it strikes is frozen. 0 for none. */
   public freezeMs = 0;
+  /** The skill that threw it, so its damage counts to that skill. */
+  public skill?: SkillId;
 
   private remainingMs = 0;
   /** Enemies left to pass through before it fizzles. */

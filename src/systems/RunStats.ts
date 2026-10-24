@@ -1,4 +1,5 @@
 import { ENEMY_KINDS, SCORE, type EnemyKind } from '@/config';
+import type { SkillId } from '@/weapons/skills';
 
 /** One line of the loadout, as it stood when the run ended. */
 export interface RunSkillLine {
@@ -6,7 +7,8 @@ export interface RunSkillLine {
   readonly id: string;
   readonly name: string;
   readonly level: number;
-  readonly dps: number;
+  /** Everything it dealt this run (0.121; it was its DPS until then). */
+  readonly damage: number;
 }
 
 /** What a run amounted to, read out on the screen that ends it. */
@@ -35,9 +37,12 @@ export class RunStats {
   private readonly kills = new Map<EnemyKind, number>();
   /** The score each kind has added (SCORE), before rounding. */
   private readonly scored = new Map<EnemyKind, number>();
+  /** What each skill dealt (0.121), before rounding. */
+  private readonly bySkill = new Map<SkillId, number>();
 
   public reset(): void {
     this.damageDealt = 0;
+    this.bySkill.clear();
     this.kills.clear();
     this.scored.clear();
   }
@@ -51,8 +56,16 @@ export class RunStats {
     damage: number,
     kills: Partial<Record<EnemyKind, number>> = {},
     scored: Partial<Record<EnemyKind, number>> = {},
+    bySkill: Partial<Record<SkillId, number>> = {},
   ): void {
     this.damageDealt = Math.max(0, Number(damage) || 0);
+    // A save from before 0.121 has none: each skill counts from the resume.
+    this.bySkill.clear();
+    for (const [skill, value] of Object.entries(bySkill) as [SkillId, number][]) {
+      if (Number(value) > 0) {
+        this.bySkill.set(skill, Number(value));
+      }
+    }
     this.kills.clear();
     this.scored.clear();
     for (const [kind, count] of Object.entries(kills) as [EnemyKind, number][]) {
@@ -92,11 +105,24 @@ export class RunStats {
     return this.damageDealt;
   }
 
-  /** Every point of damage the survivor dealt, crits included. */
-  public recordDamage(amount: number): void {
+  /** Every point of damage the survivor dealt, crits included — and, given its skill, to that skill. */
+  public recordDamage(amount: number, source?: SkillId): void {
     if (amount > 0) {
       this.damageDealt += amount;
+      if (source) {
+        this.bySkill.set(source, (this.bySkill.get(source) ?? 0) + amount);
+      }
     }
+  }
+
+  /** What each skill dealt, as the save keeps it. */
+  public get damageBySkill(): Partial<Record<SkillId, number>> {
+    return Object.fromEntries(this.bySkill);
+  }
+
+  /** What one skill dealt, whole. */
+  public damageOf(skill: SkillId): number {
+    return Math.round(this.bySkill.get(skill) ?? 0);
   }
 
   /** A kill: counted, and its full health (as it spawned) scored at its kind's share. */

@@ -51,14 +51,23 @@ export interface GameOverData {
 /** "12,345" — thousands marked, because the score gets long. */
 const grouped = (value: number): string => Math.round(value).toLocaleString('en-US');
 
-/** Whole numbers where they are whole, one decimal where they are not. */
-const round = (value: number): string =>
-  Number.isInteger(value) ? String(value) : value.toFixed(1);
+/** "8,420", "12.3K", "4.56M" — short enough for a skill's cell. */
+const compact = (value: number): string => {
+  const whole = Math.round(value);
+  // From just under the next unit up, so 999,999 reads 1M, not 1000K.
+  for (const [size, unit, mark] of [[999.5e6, 1e9, 'B'], [999.5e3, 1e6, 'M'], [1e4, 1e3, 'K']] as const) {
+    if (whole >= size) {
+      const shown = whole / unit;
+      return `${shown >= 100 ? Math.round(shown) : Number(shown.toPrecision(3))}${mark}`;
+    }
+  }
+  return grouped(whole);
+};
 
 /**
  * End-of-run screen (0.116, the user's ask: fewer words, more to see): the
  * score large, what each enemy kind added to it as one bar with each kind's
- * picture and count under it, the skills as icons with a DPS bar each, a tip
+ * picture and count under it, the skills as icons with a bar of what each dealt, a tip
  * at random, and the ways on — another run, the title, the options, and the
  * ranking when the run made it.
  *
@@ -291,11 +300,11 @@ export class GameOverScene extends Phaser.Scene {
       y += GAME_OVER.blockGap;
     }
 
-    // The skills: an icon each, its level, and a bar for its DPS against the best of them.
+    // The skills: an icon each, its level, and a bar for what it dealt against the best of them.
     if (summary.skills.length > 0) {
       text(-half, y, copy.skillsTitle, TEXT.size.hint, COLORS.muted, 0);
       y += 22;
-      const best = Math.max(1, ...summary.skills.map((line) => line.dps));
+      const best = Math.max(1, ...summary.skills.map((line) => line.damage));
       const cell = GAME_OVER.skillCell;
       const perRow = Math.max(1, Math.floor(width / cell));
       const rowsOf = Math.ceil(summary.skills.length / perRow);
@@ -313,8 +322,8 @@ export class GameOverScene extends Phaser.Scene {
         this.table.add(graph);
         const by = cy + GAME_OVER.skillIcon + 22;
         graph.fillStyle(0x1b2230, 1).fillRect(cx - barWidth / 2, by, barWidth, barHeight);
-        graph.fillStyle(COLORS.accentFill, 1).fillRect(cx - barWidth / 2, by, barWidth * (line.dps / best), barHeight);
-        text(cx, by + barHeight + 2, round(line.dps), TEXT.size.hint, COLORS.muted).setName(`dps:${line.id}`);
+        graph.fillStyle(COLORS.accentFill, 1).fillRect(cx - barWidth / 2, by, barWidth * (line.damage / best), barHeight);
+        text(cx, by + barHeight + 2, compact(line.damage), TEXT.size.hint, COLORS.muted).setName(`damage:${line.id}`);
       });
       y += rowsOf * cellHeight;
     }

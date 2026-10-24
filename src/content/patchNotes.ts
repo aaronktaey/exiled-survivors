@@ -15,6 +15,24 @@ export interface PatchNote {
 
 export const PATCH_NOTES: readonly PatchNote[] = [
   {
+    version: '0.121',
+    date: '2026-10-24',
+    changes: {
+      ko: [
+        '전투 종료 화면의 스킬 막대가 DPS 대신 그 판에 각 스킬이 준 피해량을 보여 줍니다. 큰 수는 12.3K, 4.56M처럼 줄여 표시합니다.',
+      ],
+      en: [
+        'The end-of-run screen’s skill bars now show the damage each skill dealt that run instead of its DPS. Big numbers are shortened, like 12.3K or 4.56M.',
+      ],
+      ja: [
+        '戦闘終了画面のスキルのバーが、DPSの代わりにその回で各スキルが与えたダメージを表示します。大きな数は12.3K、4.56Mのように縮めて表示します。',
+      ],
+      zh: [
+        '战斗结束画面的技能条现在显示本局各技能造成的伤害，而不是DPS。较大的数字会缩写为12.3K、4.56M等。',
+      ],
+    },
+  },
+  {
     version: '0.120',
     date: '2026-10-24',
     changes: {

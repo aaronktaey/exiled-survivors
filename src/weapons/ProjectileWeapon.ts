@@ -84,6 +84,7 @@ export abstract class ProjectileWeapon implements Weapon {
         break;
       }
       shot.launch(x, y, angle, spec);
+      shot.skill = this.definition.id;
       launched = true;
     }
 

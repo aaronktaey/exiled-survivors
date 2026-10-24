@@ -382,7 +382,12 @@ Read `git log` for what changed and when. What is not in the log:
   가한 피해 says 점수. `GameScene.stats.damage` is still kept and saved.
 - **The end-of-run screen (0.116).** `GameOverScene` draws the score large,
   one bar of each kind's share of it (kind colour) with the kind's picture
-  and ×count under it, the skills as icons with a DPS bar against the best,
+  and ×count under it, the skills as icons with a bar of what each dealt
+  that run against the best (0.121, was DPS: `RunStats.recordDamage(amount,
+  source)` — every `CombatSystem.hit` names its skill through
+  `GameScene.hitFor(id)`, a shot carries `Projectile.skill`, a burst its
+  `blast(..., source)`; a new way to deal damage must pass its skill, or it
+  counts in the total only; `SavedRun.damageBySkill`),
   and one of `gameOver.tips` at random (filled from `guideValues()` in
   guide.ts — a tip's numbers come off the config like the guide's; test-stats
   fails on one left unfilled via `allTips()`). Lying down (`GAME_OVER.wideFrom`)
