@@ -124,6 +124,7 @@ import {
   prefersTouchControls,
   type AnalogInput,
 } from '@/systems/VirtualJoystick';
+import { TapMove } from '@/systems/TapMove';
 import {
   ChainLightning,
   DROPPABLE_SKILLS,
@@ -553,11 +554,15 @@ export class GameScene extends Phaser.Scene {
       return;
     }
 
-    // Tilt falls back to a pad on anything without the sensor.
+    // Tilt falls back to a pad on anything without the sensor; 탭으로 이동
+    // walks to where the screen is pressed.
+    const mode = settings.value.movementMode;
     this.analog =
-      settings.value.movementMode === 'tilt' && tiltAvailable()
+      mode === 'tilt' && tiltAvailable()
         ? new TiltInput(this)
-        : new VirtualJoystick(this);
+        : mode === 'tap'
+          ? new TapMove(this, () => this.player)
+          : new VirtualJoystick(this);
     this.player.attachAnalog(this.analog);
 
     // iOS hands out orientation only after a press, and 설정 is not the only

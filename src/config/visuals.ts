@@ -816,6 +816,12 @@ export const PAUSE_BUTTON = {
   margin: 10,
 } as const;
 
+/** 탭으로 이동 (설정): how close is there, and the ring marking where it is going. */
+export const TAP_MOVE = {
+  arriveRadius: 10,
+  markerRadius: 10,
+} as const;
+
 export const JOYSTICK = {
   /** Radius of the outer ring. */
   baseRadius: 56,

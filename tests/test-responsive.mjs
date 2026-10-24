@@ -223,7 +223,17 @@ check('and the pad is gone rather than left on screen',
   `${after.circles} circles, was ${before.circles}`);
 await shot('resp-04-tilt');
 
-// One more step wraps back round: there are only the two.
+// One more step is 탭으로 이동 (0.117), at once as well.
+await cdp.tap('ArrowRight', 39, 'ArrowRight');
+await sleep(700);
+const tapping = await ev(`(() => {
+  const raw = JSON.parse(localStorage.getItem('exiled-survivors:settings:v1'));
+  const a = window.game.scene.getScene('GameScene').player.analog;
+  return { mode: raw.movementMode, kind: a ? a.constructor.name : null };
+})()`);
+check('탭으로 이동 applies at once too', tapping.mode === 'tap' && tapping.kind === 'TapMove', `${tapping.mode} -> ${tapping.kind}`);
+
+// And one more wraps back round to the pad.
 await cdp.tap('ArrowRight', 39, 'ArrowRight');
 await sleep(700);
 const wrapped = await ev(`(() => {
@@ -234,7 +244,7 @@ const wrapped = await ev(`(() => {
            circles: s.children.list.filter(o => o.type === 'Arc').length };
 })()`);
 console.log('wrapped:', JSON.stringify(wrapped));
-check('and one more wraps back to the pad, there being only two',
+check('and one more wraps back to the pad, after the three',
   wrapped.mode === 'floating' && wrapped.kind === 'VirtualJoystick' &&
     wrapped.circles === before.circles,
   `${wrapped.mode} -> ${wrapped.kind}`);

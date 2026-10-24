@@ -435,10 +435,11 @@ const row = await ev(`(() => {
 console.log('settings row:', JSON.stringify(row));
 // Whichever way it is set to, the hint names the other one — that is the
 // whole point: a setting nobody can tell is there may as well not be.
+// Three ways since 0.117: the hint names the next one ▶ reaches, never the one it is on.
+const ways = ['터치 위치에 생성', '기울이기', '탭으로 이동'];
+const setTo = ways.findIndex((w) => row.detail.includes(w));
 check('the 모바일 이동 방식 row names the way it is not set to',
-  row.detail.includes('기울이기')
-    ? row.hint.includes('터치')
-    : row.hint.includes('기울이기'),
+  setTo >= 0 && row.hint.includes(ways[(setTo + 1) % ways.length]),
   `set to "${row.detail}", hint says: ${row.hint.split(String.fromCharCode(10))[1]}`);
 // A refusal used to put the setting back, which made the row look broken:
 // it would flick to 기울이기 and straight back to the pad with nothing said.
@@ -447,7 +448,7 @@ const refusal = await ev(`(() => {
   s.menu.focus('movement');
   // Start from the pad, whatever the screen was left on.
   const mode = () => s.menu.rows.find(r => r.item.id === 'movement').detail.text;
-  if (mode().includes('기울이기')) { s.cycleMode(1); }
+  for (let i = 0; i < 3 && !mode().includes('터치'); i++) s.cycleMode(1);
   return { from: mode() };
 })()`);
 await sleep(700);
@@ -475,6 +476,42 @@ check('and says why instead',
 check('and the hint fits across a phone instead of running off both sides',
   row.left >= 0 && row.right <= row.canvas,
   `${row.left}..${row.right} of ${row.canvas}`);
+
+// --- 탭으로 이동 (0.117): the survivor walks to where the screen was pressed ---
+await cdp.evaluate(`(() => {
+  const raw = localStorage.getItem('exiled-survivors:settings:v1');
+  localStorage.setItem('exiled-survivors:settings:v1', JSON.stringify({ ...(raw ? JSON.parse(raw) : {}), movementMode: 'tap' }));
+  return 1;
+})()`);
+await cdp.send('Page.navigate', { url: 'about:blank' });
+await cdp.send('Page.navigate', { url: 'http://localhost:5173/#run' });
+await cdp.until(`window.game?.scene.getScene('GameScene')?.player?.active`, 30000, 200);
+await sleep(1200);
+const where = await cdp.evaluate(`(() => {
+  const s = window.game.scene.getScene('GameScene');
+  s.player.setInvulnerable(true); s.spawner.update = () => {}; s.spawner.clear();
+  const cam = s.cameras.main;
+  return { kind: s.player.analog?.constructor.name, x: s.player.x - cam.worldView.x, y: s.player.y - cam.worldView.y, startX: s.player.x };
+})()`);
+await touch('touchStart', where.x + 160, where.y);
+await sleep(80);
+await touch('touchEnd', 0, 0);
+await sleep(250);
+const walking = await cdp.evaluate(`(() => {
+  const s = window.game.scene.getScene('GameScene');
+  return { vx: Math.round(s.player.body.velocity.x), marker: s.player.analog.marker.visible };
+})()`);
+await sleep(1500);
+const arrived = await cdp.evaluate(`(() => {
+  const s = window.game.scene.getScene('GameScene');
+  return { vx: Math.round(s.player.body.velocity.x), moved: Math.round(s.player.x), marker: s.player.analog.marker.visible };
+})()`);
+console.log('tap to move:', JSON.stringify({ where, walking, arrived }));
+check('탭으로 이동: a tap sends the survivor walking there, the spot marked, even after the finger lifts',
+  where.kind === 'TapMove' && walking.vx > 100 && walking.marker === true, JSON.stringify({ where, walking }));
+check('and it stops there, about where the tap was, the mark gone',
+  arrived.vx === 0 && arrived.marker === false && Math.abs(arrived.moved - (where.startX + 160)) < 30, JSON.stringify(arrived));
+await shot('touch-06-tap');
 
 console.log('\n=== SUMMARY ===');
 const failed = results.filter((r) => !r.p);

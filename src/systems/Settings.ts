@@ -6,9 +6,10 @@ import { LANGUAGES, detectLanguage, setLanguage, type Language } from '@/i18n';
  * whichever finger lands — a pad pinned to one spot asked the player to find
  * it before they could move, which on a phone is a hit they take for free.
  */
-export type MovementMode = 'floating' | 'tilt';
+export type MovementMode = 'floating' | 'tilt' | 'tap';
 
-export const MOVEMENT_MODES: readonly MovementMode[] = ['floating', 'tilt'];
+// 탭으로 이동 joined in 0.117 (the user's ask).
+export const MOVEMENT_MODES: readonly MovementMode[] = ['floating', 'tilt', 'tap'];
 
 /** Everything the options screen can change, as it is stored. */
 export interface GameSettings {

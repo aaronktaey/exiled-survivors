@@ -34,6 +34,7 @@ import {
 } from '@/config';
 import { enemyName } from '@/i18n';
 import { sfx } from '@/systems/Sfx';
+import { silhouetteOf } from '@/systems/Silhouette';
 
 /** Only the 속성 that mean something on an enemy. */
 const ENEMY_AFFIX_POOL = ENEMY_AFFIXES;
@@ -141,7 +142,11 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
   /** Countdown to the next shot, for the kinds that have one. */
   private shotCooldownMs = 0;
   /** The yellow ring, made on the first rare this sprite is used for. */
-  private outline?: Phaser.GameObjects.Rectangle;
+  /**
+   * A rare's mark (0.117): an outline the shape of its figure, under it,
+   * in its 속성 count's colour — a square round it before. Public for tests.
+   */
+  public outline?: Phaser.GameObjects.Image;
   /** A giant's gold ring under its feet, in place of the square one. Public for tests. */
   public footRing?: Phaser.GameObjects.Ellipse;
   /** A giant's walk: where it is in GIANT_STRIDE, and how long that step has shown. */
@@ -392,20 +397,31 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
       return;
     }
 
-    // Round the picture, not the body: a figure drawn wider than its body (0.99) is not cut through.
-    const side = this.shownRadius * 2 + RARE.outlinePadding * 2;
+    // The figure's own edge, in the 속성 count's colour; kept on its frame by placeOutline.
     if (!this.outline) {
-      this.outline = this.scene.add
-        .rectangle(this.x, this.y, side, side)
-        .setFillStyle(undefined, 0)
-        .setDepth(DEPTH.enemies - 1);
+      this.outline = this.scene.add.image(this.x, this.y, this.texture.key).setDepth(DEPTH.enemies - 1);
     }
+    this.outline.setTint(this.outlineColor).setVisible(true);
+    this.placeOutline();
+  }
 
-    this.outline
-      .setSize(side, side)
-      .setStrokeStyle(RARE.outlineWidth, this.outlineColor, 1)
-      .setPosition(this.x, this.y)
-      .setVisible(true);
+  /**
+   * The outline on the frame the figure is showing now — walking, casting,
+   * turned — at the figure's scale and where it stands. The outline texture
+   * is made the first time a frame is outlined (systems/Silhouette.ts),
+   * `RARE.outlineWidth` screen pixels out, whatever the picture's own scale.
+   */
+  private placeOutline(): void {
+    const outline = this.outline;
+    if (!outline?.visible) {
+      return;
+    }
+    const scale = Math.max(0.01, Math.abs(this.scaleX));
+    const key = silhouetteOf(this.scene, this.texture.key, Math.max(1, Math.round((RARE.outlineWidth + 0.5) / scale)));
+    if (key && outline.texture.key !== key) {
+      outline.setTexture(key);
+    }
+    outline.setPosition(this.x, this.y).setScale(this.scaleX, this.scaleY).setFlipX(this.flipX).setRotation(this.rotation);
   }
 
   /**
@@ -609,7 +625,7 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
     }
     this.drawShock(dt);
 
-    this.outline?.setPosition(this.x, this.y);
+    this.placeOutline();
     this.placeFootRing();
     if (this.isBoss) {
       this.drawHealthBar();

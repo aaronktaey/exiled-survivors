@@ -190,7 +190,9 @@ const ring = await run(`
   plain.spawn(s.player.x - 200, s.player.y, s.player, 'grunt');
   const out = {
     rareHasRing: !!rare.outline && rare.outline.visible,
-    colour: rare.outline ? rare.outline.strokeColor.toString(16) : null,
+    colour: rare.outline ? rare.outline.tintTopLeft.toString(16) : null,
+    // 0.117: an outline the figure's shape, on the frame it is showing — no square.
+    shaped: rare.outline ? rare.outline.texture.key === rare.texture.key + '~outline' && rare.outline.type === 'Image' : false,
     affixes: rare.affixes.length,
     expected: rare.outlineColor.toString(16),
     width: rare.outline ? rare.outline.width : null,
@@ -218,7 +220,7 @@ const tiers = await run(`
     e.spawn(p.x + 300, p.y, p, 'grunt', undefined, true);
     e.applyAffixes(Array.from({ length: n }, () => AFFIX));
     e.drawOutline();
-    shades.push(e.outline.strokeColor);
+    shades.push(e.outline.tintTopLeft);
     if (n === 3) stacked = { hpScale: e.hpScale, tally: e.affixTally.map(t => t.affix.name + " x" + t.count) };
     e.recycle();
   }
@@ -235,8 +237,8 @@ check('a repeated affix stacks rather than being ignored',
   `three 거대 -> hp x${tiers.stacked.hpScale.toFixed(3)}`);
 check('the tooltip folds repeats into a count',
   tiers.stacked.tally.join(' ') === '거대 x3', tiers.stacked.tally.join(' '));
-check('a rare wears a ring in its tier colour',
-  ring.rareHasRing === true && ring.colour === ring.expected,
+check('a rare wears an outline the shape of its figure, in its tier colour',
+  ring.rareHasRing === true && ring.colour === ring.expected && ring.shaped === true,
   `#${ring.colour} at ${ring.affixes} affix(es)`);
 check('an ordinary enemy wears none', ring.plainHasRing === false);
 check('the ring follows its enemy', ring.follows === 0, `${ring.follows}px apart after a jump`);

@@ -268,6 +268,22 @@ Read `git log` for what changed and when. What is not in the log:
   be gone when the cards closed — and so does every `GroundItem` (0.115:
   a drop's minute, an altar's). Anything new with a life of its own in an
   update should do the same (test-skills §8).
+- **Three ways to steer on a phone (0.117).** 설정's 모바일 이동 방식
+  cycles 터치 위치에 생성 (VirtualJoystick) · 기울이기 (TiltInput) · 탭으로
+  이동 (`systems/TapMove.ts`, the user's ask): it walks to where the screen
+  was pressed, follows a held finger (re-reading the world point each frame
+  as the camera moves), walks on to the last point when let go and stops
+  within `TAP_MOVE.arriveRadius`, a faint ring marking it. All three are
+  `AnalogInput`s built in `GameScene.buildAnalog`; the settings hint names
+  the next one ▶ reaches.
+- **A rare's mark follows its figure (0.117, the user's ask).** `Enemy.outline`
+  is an Image under the sprite, not a square: `systems/Silhouette.silhouetteOf`
+  makes each frame's outline texture once (the picture stamped round itself
+  `pad` pixels out, whitened, its inside cut away — `key~outline`), and
+  `Enemy.placeOutline` keeps it on the frame shown, flipped and scaled with
+  the figure, tinted by `RARE_OUTLINE_TIERS`. A 우두머리 still stands in its
+  `footRing`. No filter per enemy — the Glow filter was the other way, and
+  too heavy for a field of rares on a phone.
 - **Contact is per enemy.** A body hurts through `Player.takeContact` on its
   own `ENEMY.contactCooldownMs`, so a crowd all hurt at once; only thrown
   things (`takeDamage`) open the survivor's invulnerable window. The debug /

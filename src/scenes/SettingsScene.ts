@@ -35,12 +35,12 @@ const MOST_ROWS = 6;
 
 const modeName = (mode: MovementMode): string => {
   const copy = t().settings;
-  return mode === 'floating' ? copy.modeFloating : copy.modeTilt;
+  return mode === 'floating' ? copy.modeFloating : mode === 'tilt' ? copy.modeTilt : copy.modeTap;
 };
 
 const modeHint = (mode: MovementMode): string => {
   const copy = t().settings;
-  return mode === 'floating' ? copy.hintFloating : copy.hintTilt;
+  return mode === 'floating' ? copy.hintFloating : mode === 'tilt' ? copy.hintTilt : copy.hintTap;
 };
 
 /**
@@ -263,7 +263,8 @@ export class SettingsScene extends Phaser.Scene {
     const { joystickScale, movementMode } = settings.value;
 
     // Nothing to preview for tilt, nor off the 조작 tab.
-    const shown = movementMode !== 'tilt' && this.tab === 'controls';
+    // Only the pad has a size to show: tilt and 탭으로 이동 draw none.
+    const shown = movementMode === 'floating' && this.tab === 'controls';
     this.previewBase.setVisible(shown);
     this.previewThumb.setVisible(shown);
 
@@ -371,7 +372,9 @@ export class SettingsScene extends Phaser.Scene {
     // everywhere else. On the row that chooses it, say what the other way is
     // as well — a setting nobody can tell is there may as well not be.
     if (prefersTouchControls()) {
-      const other = MOVEMENT_MODES.find((mode) => mode !== settings.value.movementMode);
+      // The next one ▶ reaches, of the three.
+      const at = MOVEMENT_MODES.indexOf(settings.value.movementMode);
+      const other = MOVEMENT_MODES[(at + 1) % MOVEMENT_MODES.length];
       this.hint.setText(
         this.menu.selectedId === 'movement' && other
           ? `${modeHint(settings.value.movementMode)}

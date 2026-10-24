@@ -286,6 +286,7 @@ export interface Strings {
     readonly movement: string;
     readonly modeFloating: string;
     readonly modeTilt: string;
+    readonly modeTap: string;
     readonly bgm: string;
     /** 효과음 음량: every sound but the music. */
     readonly sfx: string;
@@ -299,6 +300,7 @@ export interface Strings {
     readonly hint: string;
     readonly hintFloating: string;
     readonly hintTilt: string;
+    readonly hintTap: string;
     readonly tiltRefused: string;
     /** Says the other way of steering exists. {mode} is its name. */
     readonly modeOther: string;

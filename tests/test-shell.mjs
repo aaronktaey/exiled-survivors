@@ -204,8 +204,17 @@ check('→ reaches 기울이기, and the pad preview goes with it',
 
 await cdp.tap('ArrowRight', 39, 'ArrowRight');
 await sleep(300);
+const tapMode = await stored('exiled-survivors:settings:v1');
+const tapRow = await scene('SettingsScene', `
+  return { mode: s.menu.rows.find(r => r.item.id === 'movement').item.detail(), preview: s.previewBase.visible };`);
+check('→ again reaches 탭으로 이동 (0.117), with no pad to preview either',
+  tapMode.movementMode === 'tap' && /탭으로 이동/.test(tapRow.mode) && tapRow.preview === false,
+  `mode=${tapMode.movementMode} "${tapRow.mode.trim()}"`);
+
+await cdp.tap('ArrowRight', 39, 'ArrowRight');
+await sleep(300);
 const wrapped = await stored('exiled-survivors:settings:v1');
-check('and it wraps straight back round, with no third option',
+check('and it wraps back round to the pad after the three',
   wrapped.movementMode === 'floating', `mode=${wrapped.movementMode}`);
 await shot('shell-03-settings-movement');
 

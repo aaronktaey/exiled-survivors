@@ -15,6 +15,28 @@ export interface PatchNote {
 
 export const PATCH_NOTES: readonly PatchNote[] = [
   {
+    version: '0.117',
+    date: '2026-10-24',
+    changes: {
+      ko: [
+        '모바일 설정의 이동 방식에 \'탭으로 이동\'을 추가했습니다. 화면을 누른 곳으로 걸어가고, 누른 채 움직이면 따라갑니다.',
+        '희귀 적의 표시가 네모 상자에서 적 모습을 따라 그린 테두리로 바뀌었습니다. 색은 이전처럼 속성 수에 따라 진해집니다.',
+      ],
+      en: [
+        'Mobile movement has a third way: Tap to move — the survivor walks to where you press, and follows the finger while held.',
+        'A rare enemy is now marked by an outline that follows its figure instead of a square. The colour still deepens with its modifiers.',
+      ],
+      ja: [
+        'モバイルの移動方式に「タップで移動」を追加しました。押した場所へ歩き、押したまま動かすとついてきます。',
+        'レア敵の目印が四角い枠から、敵の姿に沿った縁取りに変わりました。色は以前と同じく属性の数で濃くなります。',
+      ],
+      zh: [
+        '移动端移动方式新增「点按移动」：走向按下的位置，按住拖动则跟随手指。',
+        '稀有敌人的标记由方框改为沿着敌人轮廓的描边，颜色仍随属性数量加深。',
+      ],
+    },
+  },
+  {
     version: '0.116',
     date: '2026-10-24',
     changes: {
