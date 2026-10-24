@@ -223,8 +223,9 @@ export class PoisonNova implements Weapon {
         this.poisoned.delete(enemy);
         this.release(entry);
       }
+      // Poison wears on it quietly: a 도망자 does not run from it (0.124).
       if (amount > 0) {
-        context.hit(enemy, amount);
+        context.hit(enemy, amount, false);
       }
     }
   }

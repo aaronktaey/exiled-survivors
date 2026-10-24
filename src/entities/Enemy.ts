@@ -585,10 +585,14 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
   }
 
   /** Returns true when this hit killed it. */
-  public takeDamage(amount: number): boolean {
+  /**
+   * Takes a hit; true when it killed. `startles` false (독성폭발's poison
+   * ticking, 0.124) hurts without sending a 도망자 running.
+   */
+  public takeDamage(amount: number, startles = true): boolean {
     this.hp -= amount;
 
-    if (this.hp > 0 && this.spec.flee && !this.fleeTo) {
+    if (startles && this.hp > 0 && this.spec.flee && !this.fleeTo) {
       this.startFleeing(this.spec.flee);
     }
 

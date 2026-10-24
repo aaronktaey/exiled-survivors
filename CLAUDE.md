@@ -650,6 +650,8 @@ Read `git log` for what changed and when. What is not in the log:
   enemy). The weapon keeps the poison (`poisoned`, by enemy and its
   `lives`), not the Enemy, and draws it: green bubbles rising off the enemy
   and its stack count in green beside it (`POISON_NOVA_FX`, pooled Texts).
+  The poison ticks hit with `startles` false (0.124: `context.hit`'s third
+  argument, down to `Enemy.takeDamage`), so a 도망자 does not run from it.
   반복 is a second ring (CastRepeat). 각성: `stacksPerHitAwakened` (2) a hit.
   2차: a poisoned enemy that dies or reaches `maxStacks` bursts — its
   stacks × per-stack × durationMs at once on everything within the skill's

@@ -479,6 +479,28 @@ const novaDeath = await run(`
 check('awakened twice, a poisoned enemy that dies bursts where it fell, for the whole of its poison, poisoning none',
   novaDeath.burst === 1 && Math.abs(novaDeath.lost - novaDeath.want) <= 1 && !novaDeath.besidePoisoned,
   JSON.stringify(novaDeath));
+// 0.124: the poison wears on a 도망자 without sending it running; a hit still does.
+await run(`
+  const nova = window.__nova, p = s.player;
+  const f = s.spawner.group.get(p.x + 60, p.y);
+  f.spawn(p.x + 60, p.y, p, 'fugitive', s.spawner.hooks);
+  window.__fugitive = f;
+  nova.sinceCastMs = -1e9;
+  nova.poison(f, { ...window.__novaCtx, mastered: false, masteredTwice: false });
+  window.__fugitiveHp = f.hp;
+  return 1;
+`);
+await sleep(1200);
+const calm = await run(`
+  const f = window.__fugitive;
+  const out = { lost: window.__fugitiveHp - f.hp, fleeing: f.fleeTo !== undefined };
+  s.combat.hit(f, 1);
+  out.afterHit = f.fleeTo !== undefined;
+  f.recycle();
+  return out;
+`);
+check('a poisoned 도망자 takes the poison without running; a hit still sends it off',
+  calm.lost > 0 && !calm.fleeing && calm.afterHit, JSON.stringify(calm));
 check('holding it raises the potion’s drop chance',
   novaRules.potion === novaRules.potionWant && novaRules.potion > 1, `×${novaRules.potion}`);
 await run(`

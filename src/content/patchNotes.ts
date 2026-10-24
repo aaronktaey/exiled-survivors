@@ -15,6 +15,24 @@ export interface PatchNote {
 
 export const PATCH_NOTES: readonly PatchNote[] = [
   {
+    version: '0.124',
+    date: '2026-10-24',
+    changes: {
+      ko: [
+        '독성폭발의 중독 피해로는 도망자가 도망가지 않습니다. 고리 폭발에 맞으면 이전처럼 도망갑니다.',
+      ],
+      en: [
+        'A Runaway no longer flees from Toxic Burst’s poison damage. The burst itself still sends it running.',
+      ],
+      ja: [
+        '毒性爆発の毒ダメージでは逃亡者が逃げなくなりました。輪の爆発に当たると以前どおり逃げます。',
+      ],
+      zh: [
+        '逃亡者不再因毒性爆发的中毒伤害而逃跑。被毒环爆发命中时仍会像以前一样逃跑。',
+      ],
+    },
+  },
+  {
     version: '0.123',
     date: '2026-10-24',
     changes: {

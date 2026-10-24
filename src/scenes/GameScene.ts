@@ -662,11 +662,11 @@ export class GameScene extends Phaser.Scene {
   }
 
   /** Each skill's way into CombatSystem.hit, naming itself so its damage counts to it (0.121). */
-  private readonly hitters = new Map<SkillId, (enemy: Enemy, amount: number) => void>();
-  private hitFor(id: SkillId): (enemy: Enemy, amount: number) => void {
+  private readonly hitters = new Map<SkillId, (enemy: Enemy, amount: number, startles?: boolean) => void>();
+  private hitFor(id: SkillId): (enemy: Enemy, amount: number, startles?: boolean) => void {
     let hitter = this.hitters.get(id);
     if (!hitter) {
-      hitter = (enemy, amount) => this.combat.hit(enemy, amount, id);
+      hitter = (enemy, amount, startles) => this.combat.hit(enemy, amount, id, startles);
       this.hitters.set(id, hitter);
     }
     return hitter;

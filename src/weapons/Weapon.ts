@@ -46,8 +46,11 @@ export interface WeaponContext {
    * from one that orbits — the weapon's (룬 각인 검). Others ignore it.
    */
   readonly extraProjectiles: number;
-  /** Applies damage and resolves the kill (gem and skill drops). */
-  readonly hit: (enemy: Enemy, amount: number) => void;
+  /**
+   * Applies damage and resolves the kill (gem and skill drops). `startles`
+   * false (독성폭발's poison) does not send a 도망자 running.
+   */
+  readonly hit: (enemy: Enemy, amount: number, startles?: boolean) => void;
   /** The main skill at SKILL_MASTERY.level: its 각성 effect is on. */
   readonly mastered: boolean;
   /** The main skill at SKILL_MASTERY.second.level: its 2차 각성 is on too. */

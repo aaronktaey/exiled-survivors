@@ -526,9 +526,10 @@ export class CombatSystem {
    * and so 치명 on the carried weapon lands on everything the survivor
    * throws, the same way a rare's 치명 lands on everything it throws.
    * `source` is the skill it came from, for the end screen's damage by
-   * skill (0.121); a hit without one counts only in the total.
+   * skill (0.121); a hit without one counts only in the total. `startles`
+   * false hurts without sending a 도망자 running (poison, 0.124).
    */
-  public hit = (enemy: Enemy, amount: number, source?: SkillId): void => {
+  public hit = (enemy: Enemy, amount: number, source?: SkillId, startles = true): void => {
     if (!enemy.active) {
       return;
     }
@@ -552,7 +553,7 @@ export class CombatSystem {
     const absorbed = Math.min(dealt, enemy.hp);
     this.stats.recordDamage(absorbed, source);
 
-    if (enemy.takeDamage(dealt)) {
+    if (enemy.takeDamage(dealt, startles)) {
       this.killEnemy(enemy);
     }
   };
