@@ -383,7 +383,7 @@ check('a shot in the air — the survivor’s or an enemy’s — waits out a po
     held.itemLeft === Math.round(held.life.item),
   JSON.stringify(held));
 
-// --- 9. 포이즌 노바 (0.122): a ring out to its range, a hit and a dose of poison on all it reaches ---
+// --- 9. 독성폭발 (0.122): a ring out to its range, a hit and a stack of 중독 on all it reaches ---
 await run(`
   s.spawner.clear();
   s.choosing = false;
@@ -394,7 +394,7 @@ await run(`
   if (!s.owned.has('poisonNova')) s.acquire('poisonNova');
   window.__allWeapons = s.weapons.slice();
   const nova = s.weapons.find((w) => w.definition.id === 'poisonNova');
-  // Only the nova fights, so every point lost is its own.
+  // Only the burst fights, so every point lost is its own.
   s.weapons.splice(0, s.weapons.length, nova);
   const real = nova.update.bind(nova);
   nova.update = (d, c) => { window.__novaCtx = c; real(d, c); };
@@ -408,43 +408,79 @@ await run(`
   nova.sinceCastMs = 1e9;
   return 1;
 `);
-await cdp.until(`window.__nova && window.__nova.poisoned.size > 0`, 5000, 50);
-await shot('skills-09-nova');
-await sleep(250);
+await cdp.until(`window.__nova && window.__nova.poisoned.size > 1`, 5000, 20);
 const novaHit = await run(`
+  const nova = window.__nova;
   return { hit: window.__inside.map((e, i) => window.__full[i] - e.hp), outside: window.__outside.hp === window.__outside.maxHp,
-           poisoned: window.__nova.poisoned.size, onInside: window.__inside.every((e) => window.__nova.poisoned.has(e)),
+           stacks: window.__inside.map((e) => nova.poisoned.get(e)?.stacks ?? 0), outsidePoisoned: nova.poisoned.has(window.__outside),
            hp: window.__inside.map((e) => e.hp), damage: window.__novaCtx.damage };
 `);
-check('포이즌 노바: the ring hits and poisons everything within its range, and nothing past it',
-  novaHit.hit.every((h) => h >= Math.floor(novaHit.damage)) && novaHit.outside && novaHit.onInside && novaHit.poisoned === 2,
+check('독성폭발: the ring hits and poisons everything within its range, and nothing past it',
+  novaHit.hit.every((h) => h >= Math.floor(novaHit.damage)) && novaHit.outside && !novaHit.outsidePoisoned && novaHit.stacks.every((n) => n >= 1),
   JSON.stringify(novaHit));
-await sleep(1200);
+await run(`window.__inside.forEach((e) => { window.__nova.poisoned.get(e).stacks = 7; }); window.__nova.sinceCastMs = -1e9; return 1;`);
+await sleep(400);
+await shot('skills-09-nova-stacks');
+await sleep(800);
 const novaTick = await run(`return { hp: window.__inside.map((e) => e.hp), left: window.__nova.poisoned.size };`);
 check('and the poison keeps hurting them after the ring has gone',
-  novaTick.hp.every((h, i) => h < novaHit.hp[i]) && novaTick.left === 2,
+  novaTick.hp.every((h, i) => h < novaHit.hp[i]) && novaTick.left >= 2,
   `${novaHit.hp.join('/')} → ${novaTick.hp.join('/')}`);
 const novaRules = await run(`
-  const nova = window.__nova, C = window.config, e = window.__inside[0];
-  for (let i = 0; i < C.POISON_NOVA.maxStacks + 3; i++) nova.poison(e, 1);
-  const stacks = nova.poisoned.get(e).doses.length;
-  // 각성: a poisoned enemy that dies passes its doses on.
-  const ctx = { ...window.__novaCtx, mastered: true, masteredTwice: true };
-  const near = window.__inside[1];
-  near.x = e.x + C.SKILL_MASTERY.poisonSpread.radius * 0.5; near.y = e.y;
-  nova.poisoned.delete(near);
-  s.combat.hit(e, 1e9);
-  nova.sinceCastMs = 0;
-  nova.update(16, ctx);
-  const spread = nova.poisoned.has(near) && nova.poisoned.get(near).doses.length > 0;
-  // 2차 각성: a wider ring follows.
-  nova.cast(ctx);
-  const echo = nova.echo ? Math.round(nova.echo.radius) : 0;
-  return { stacks, max: C.POISON_NOVA.maxStacks, spread, echo, want: Math.round(ctx.range * C.SKILL_MASTERY.second.novaEcho.radiusScale) };
+  const nova = window.__nova, C = window.config, P = C.POISON_NOVA, e = window.__inside[0], near = window.__inside[1];
+  const plain = { ...window.__novaCtx, mastered: false, masteredTwice: false };
+  const fresh = (x) => { nova.poisoned.delete(x); };
+  // Stacks stop at maxStacks; every hit starts the whole poison's clock over.
+  fresh(e);
+  for (let i = 0; i < P.maxStacks + 3; i++) nova.poison(e, plain);
+  const entry = nova.poisoned.get(e);
+  const stacks = entry.stacks;
+  entry.leftMs = 100;
+  nova.poison(e, plain);
+  const refreshed = nova.poisoned.get(e).leftMs === P.durationMs;
+  // 각성: stacksPerHitAwakened a hit.
+  fresh(e);
+  nova.poison(e, { ...plain, mastered: true });
+  const awakened = nova.poisoned.get(e).stacks;
+  // 2차 각성: reaching the top, it bursts — its stacks gone — on all within range, poisoning none.
+  fresh(e); fresh(near);
+  near.x = e.x + plain.range * 0.5; near.y = e.y;
+  nova.poisoned.set(e, { ...nova.poisoned.get(e) ?? {}, enemy: e, lives: e.lives, stacks: P.maxStacks - 1, leftMs: P.durationMs, perStack: 0, sinceTickMs: 0, phase: 0 });
+  const nearHp = near.hp, bursts = nova.burstCount;
+  nova.poison(e, { ...plain, masteredTwice: true });
+  const want = P.maxStacks * plain.damage * P.poisonShare * (P.durationMs / 1000);
+  return { stacks, max: P.maxStacks, refreshed, awakened, perHit: P.stacksPerHitAwakened,
+           burst: nova.burstCount - bursts, cleared: !nova.poisoned.has(e), nearPoisoned: nova.poisoned.has(near),
+           nearLost: nearHp - near.hp, want: Math.round(want),
+           potion: s.heldBonus.potionChanceScale, potionWant: C.SKILL_HELD_BONUS.poisonNova.potionChanceScale };
 `);
-check('doses stop at maxStacks; awakened, a poisoned death passes the poison on; twice, a wider ring follows',
-  novaRules.stacks === novaRules.max && novaRules.spread && novaRules.echo === novaRules.want && novaRules.echo > 0,
+check('stacks stop at maxStacks and every hit starts the poison over; awakened, a hit adds stacksPerHitAwakened',
+  novaRules.stacks === novaRules.max && novaRules.refreshed && novaRules.awakened === novaRules.perHit,
   JSON.stringify(novaRules));
+check('awakened twice, reaching the top it bursts for the whole poison on all within range, its stacks gone, poisoning none',
+  novaRules.burst === 1 && novaRules.cleared && !novaRules.nearPoisoned && Math.abs(novaRules.nearLost - novaRules.want) <= 1,
+  `lost ${novaRules.nearLost} of ${novaRules.want}`);
+// 2차 각성: a poisoned enemy that dies bursts where it fell, for the whole of its poison.
+const novaDeath = await run(`
+  const nova = window.__nova, C = window.config, P = C.POISON_NOVA, p = s.player;
+  const twice = { ...window.__novaCtx, mastered: false, masteredTwice: true };
+  const put = (dx) => { const e = s.spawner.group.get(p.x + dx, p.y); e.spawn(p.x + dx, p.y, p, 'brute', s.spawner.hooks); return e; };
+  const dying = put(30), beside = put(30 + twice.range * 0.5);
+  nova.poisoned.delete(beside);
+  nova.poison(dying, twice);
+  nova.poisoned.get(dying).stacks = 4;
+  const besideHp = beside.hp, bursts = nova.burstCount;
+  s.combat.hit(dying, 1e9);
+  nova.sinceCastMs = -1e9;
+  nova.update(16, twice);
+  const want = 4 * twice.damage * P.poisonShare * (P.durationMs / 1000);
+  return { burst: nova.burstCount - bursts, lost: besideHp - beside.hp, want: Math.round(want), besidePoisoned: nova.poisoned.has(beside) };
+`);
+check('awakened twice, a poisoned enemy that dies bursts where it fell, for the whole of its poison, poisoning none',
+  novaDeath.burst === 1 && Math.abs(novaDeath.lost - novaDeath.want) <= 1 && !novaDeath.besidePoisoned,
+  JSON.stringify(novaDeath));
+check('holding it raises the potion’s drop chance',
+  novaRules.potion === novaRules.potionWant && novaRules.potion > 1, `×${novaRules.potion}`);
 await run(`
   s.weapons.splice(0, s.weapons.length, ...window.__allWeapons);
   s.progression.addXp = window.__addXp;

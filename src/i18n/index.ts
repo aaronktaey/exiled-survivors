@@ -18,6 +18,7 @@ import {
   type PassiveId,
   SKILL_MASTERY,
   SKILL_HELD_BONUS,
+  POISON_NOVA,
 } from '@/config';
 import { en } from '@/i18n/en';
 import { ja } from '@/i18n/ja';
@@ -136,7 +137,7 @@ export function masteryText(id: SkillId, tier: 1 | 2 = 1): string {
           splashShare: pct(thunderSplash.damageShare),
           bombEvery: droneBomb.every,
           bombShare: pct(droneBomb.damageShare),
-          echoScale: SKILL_MASTERY.second.novaEcho.radiusScale,
+          max: POISON_NOVA.maxStacks,
         })
       : '';
   }
@@ -154,7 +155,7 @@ export function masteryText(id: SkillId, tier: 1 | 2 = 1): string {
     heal: voidVortex.healPerEnemy,
     healSecs: voidVortex.healEveryMs / 1000,
     droneTimes,
-    spread: SKILL_MASTERY.poisonSpread.radius,
+    stacks: POISON_NOVA.stacksPerHitAwakened,
   });
 }
 
@@ -184,6 +185,9 @@ export function heldBonusText(id: SkillId): string {
   }
   if (bonus?.contactDamageScale) {
     lines.push(fill(copy.contactDamageScale, { n: Math.round((1 - bonus.contactDamageScale) * 100) }));
+  }
+  if (bonus?.potionChanceScale) {
+    lines.push(fill(copy.potionChanceScale, { n: raise(bonus.potionChanceScale) }));
   }
   return lines.length > 0 ? fill(copy.line, { effects: lines.join(' · ') }) : '';
 }

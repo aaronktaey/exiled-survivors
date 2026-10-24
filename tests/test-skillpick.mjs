@@ -104,10 +104,10 @@ check('a trial skill (SKILL_TRIAL) is never offered to a player without its acco
   // Holds with none listed too (0.97: the 드론 is open to all again).
   opened.trial.every((id) => !opened.options.includes(id)) && spread.trial.every((id) => !(spread.seen[id] > 0)),
   JSON.stringify({ trial: opened.trial, start: opened.options, seen: spread.seen }));
-// 0.122: a skill not shipped yet (SKILL_DEV_ONLY) — 포이즌 노바 — is the dev server's alone.
+// 0.122: a skill not shipped yet (SKILL_DEV_ONLY) is the dev server's alone — 독성폭발 was, until 0.123.
+// Holds with none listed too.
 check('a skill not shipped yet (SKILL_DEV_ONLY) is never offered outside the dev server — not at the start, not on the cards',
-  (await run(`return window.config.SKILL_DEV_ONLY.length;`)) > 0 &&
-    (await run(`return window.config.SKILL_DEV_ONLY.every((id) => !s.offeredSkills().some((k) => k.id === id));`)) &&
+  (await run(`return window.config.SKILL_DEV_ONLY.every((id) => !s.offeredSkills().some((k) => k.id === id));`)) &&
     (await run(`return window.config.SKILL_DEV_ONLY;`)).every((id) => !opened.options.includes(id) && !(spread.seen[id] > 0)),
   JSON.stringify({ start: opened.options, seen: spread.seen }));
 check('every skill turns up on the cards, at about even odds',

@@ -1206,8 +1206,6 @@ export const SKILL_MASTERY = {
    * over), taking `amplify` more from every hit while it lasts.
    */
   thunderShock: { durationMs: 2000, amplify: 0.3 },
-  /** 포이즌 노바 (0.122): a poisoned enemy that dies passes its doses to those within `radius`. */
-  poisonSpread: { radius: 70 },
   /** ★ 2차 각성 (0.83, the user's ask): the main skill's second effect, at `level`. */
   second: {
     level: 20,
@@ -1235,8 +1233,6 @@ export const SKILL_MASTERY = {
     droneBomb: { every: 5, radius: 50, damageShare: 1.5 },
     /** 낙뢰: every strike also hurts what stands within `radius` of it, for `damageShare`. */
     thunderSplash: { radius: 60, damageShare: 0.5 },
-    /** 포이즌 노바 (0.122): a second ring `delayMs` after the first, `radiusScale` × as wide. */
-    novaEcho: { delayMs: 400, radiusScale: 1.4 },
   },
 } as const;
 
@@ -1258,6 +1254,8 @@ export interface HeldSkillBonus {
   readonly maxHpScale?: number;
   /** What an enemy's body does to the survivor, multiplied (0.94: 공허구체's 접촉 피해 감폭). */
   readonly contactDamageScale?: number;
+  /** The 체력 포션's drop chance, multiplied (0.122: 독성폭발's 포션 드랍률 증폭). */
+  readonly potionChanceScale?: number;
 }
 
 export const SKILL_HELD_BONUS: Record<SkillId, HeldSkillBonus> = {
@@ -1270,12 +1268,12 @@ export const SKILL_HELD_BONUS: Record<SkillId, HeldSkillBonus> = {
   voidOrb: { contactDamageScale: 0.8 },
   meleeStrike: { maxHpScale: 1.2 },
   drone: { moveSpeedScale: 1.15 },
-  poisonNova: { damageScale: 1.1 },
+  poisonNova: { potionChanceScale: 1.2 },
 };
 
 /** Every 보유 효과 of the skills held, folded: points added, scales multiplied. */
 export function heldBonusFor(skills: Iterable<SkillId>): Required<HeldSkillBonus> {
-  const out = { critChance: 0, areaScale: 1, damageScale: 1, attackSpeedScale: 1, moveSpeedScale: 1, maxHpScale: 1, contactDamageScale: 1 };
+  const out = { critChance: 0, areaScale: 1, damageScale: 1, attackSpeedScale: 1, moveSpeedScale: 1, maxHpScale: 1, contactDamageScale: 1, potionChanceScale: 1 };
   for (const id of skills) {
     const bonus = SKILL_HELD_BONUS[id];
     if (!bonus) {
@@ -1288,6 +1286,7 @@ export function heldBonusFor(skills: Iterable<SkillId>): Required<HeldSkillBonus
     out.moveSpeedScale *= bonus.moveSpeedScale ?? 1;
     out.maxHpScale *= bonus.maxHpScale ?? 1;
     out.contactDamageScale *= bonus.contactDamageScale ?? 1;
+    out.potionChanceScale *= bonus.potionChanceScale ?? 1;
   }
   return out;
 }
@@ -1312,11 +1311,11 @@ export const SKILL_TRIAL: Partial<Record<SkillId, readonly string[]>> = {};
 
 /**
  * ★ Skills offered only on the dev server, for the user to tune there first
- * (0.122, the user's word: 포이즌 노바 is not to go live yet). The deployed
- * game and the harness never offer one; taking it out of this list is the
- * whole of shipping it.
+ * (0.122, the user's word: 독성폭발 was kept here until it went live in
+ * 0.123). The deployed game and the harness never offer one; taking it out
+ * of this list is the whole of shipping it.
  */
-export const SKILL_DEV_ONLY: readonly SkillId[] = ['poisonNova'];
+export const SKILL_DEV_ONLY: readonly SkillId[] = [];
 
 /** 낙뢰: a bolt out of the sky onto something near the survivor. */
 export const THUNDER = {
@@ -1330,16 +1329,20 @@ export const THUNDER = {
 } as const;
 
 /**
- * 포이즌 노바 (0.122): the ring takes `ringMs` to reach its edge. Each enemy
- * it reaches takes a dose: `poisonShare` of the hit a second, for
- * `durationMs`, in ticks of `tickMs`; at most `maxStacks` doses at once.
+ * 독성폭발 (0.122, the user's design): the ring takes `ringMs` to reach its
+ * edge. Each enemy it reaches takes the hit and a stack of 중독 —
+ * `poisonShare` of the hit a second a stack, in ticks of `tickMs` — and the
+ * whole poison's `durationMs` starts over. At most `maxStacks`. 각성:
+ * `stacksPerHitAwakened` a hit. 2차 각성: dying poisoned, or reaching the
+ * top, it bursts (weapons/PoisonNova.ts).
  */
 export const POISON_NOVA = {
   ringMs: 350,
-  poisonShare: 0.3,
+  poisonShare: 0.1,
   durationMs: 3000,
   tickMs: 500,
-  maxStacks: 5,
+  maxStacks: 10,
+  stacksPerHitAwakened: 2,
 } as const;
 
 /** The instant arc 연쇄번개 draws as it walks through a crowd. */
@@ -1792,10 +1795,11 @@ export const SKILL_BASE: Record<SkillId, SkillBaseStats> = {
     recastChance: 0,
     droneCount: 5,
   },
-  // 포이즌 노바 (0.122): `range` is how far the ring goes out, attackSpeed how
+  // 독성폭발 (0.122): `range` is how far the ring goes out, attackSpeed how
   // often one goes out; the hit is `damage`, the poison POISON_NOVA's share of it.
   poisonNova: {
-    damage: 60,
+    // The user's pick for its release (0.123); 144 · 0.7 while it was tried.
+    damage: 150,
     attackSpeed: 0.5,
     range: 110,
     projectileSpeed: 0,

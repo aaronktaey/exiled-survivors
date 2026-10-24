@@ -88,6 +88,7 @@ export const en: Strings = {
     moveSpeedScale: 'move speed +{n}%',
     maxHpScale: 'max health +{n}%',
     contactDamageScale: '{n}% less contact damage taken',
+    potionChanceScale: '{n}% more potion drops',
   },
   mastery: {
     title: '{skill} Awakened!',
@@ -100,7 +101,7 @@ export const en: Strings = {
       voidOrb: 'Opens a void where the enemies are thickest; every {healSecs}s it gives back {heal} health for each enemy inside',
       thunderStrike: 'What it hits is shocked for {shockSecs}s, taking {shockAmp} more damage',
       drone: '{droneTimes} times as many drones',
-      poisonNova: 'A poisoned enemy that dies passes its poison to enemies within {spread}px',
+      poisonNova: 'Poison stacks {stacks} at a time',
     },
     title2: '{skill} Awakened Again!',
     card2: 'Second awakening — {effect}',
@@ -112,7 +113,7 @@ export const en: Strings = {
       voidOrb: 'A second ring of orbs turns the other way inside the first ({innerShare} damage)',
       thunderStrike: 'Enemies around the strike take {splashShare} of its damage too',
       drone: 'Every {bombEvery}th shot of a drone drops a bomb on a small area for {bombShare} damage',
-      poisonNova: 'A second ring {echoScale}× as wide follows the first',
+      poisonNova: 'A poisoned enemy that dies or reaches {max} stacks bursts: the whole of its poison’s damage at once on every enemy in range of it, and its stacks are gone',
     },
   },
   tuning: {
@@ -690,7 +691,7 @@ export const en: Strings = {
       voidOrb: 'Void Orb',
       thunderStrike: 'Thunderstrike',
       drone: 'Drone',
-      poisonNova: 'Poison Nova',
+      poisonNova: 'Toxic Burst',
     },
     skillSummaries: {
       meleeStrike: 'A short swing at the nearest enemy, catching everything in the arc.',
@@ -700,7 +701,7 @@ export const en: Strings = {
       voidOrb: 'Orbs ride around you clockwise and hurt whatever they sweep through. No aiming.',
       thunderStrike: 'Calls a bolt out of the sky onto one enemy near you. If it dies, there is an even chance another bolt falls at once.',
       drone: 'Little remote robots fly up close to the enemies that come within range and shoot them with little guns. When one dies or strays out of range, a drone moves on to the next.',
-      poisonNova: 'A ring of poison spreads out from you, hurting and poisoning every enemy it reaches. Poisoned enemies keep taking damage for a few seconds, and the poison stacks if they are caught again.',
+      poisonNova: 'Poison bursts out from you in a ring, hurting every enemy it reaches and stacking poison on it. Each stack deals damage every second, and every new hit starts the whole poison over, so an enemy that stays close fills up with it.',
     },
     tags: {
       물리: 'physical',

@@ -164,6 +164,8 @@ export interface Strings {
     readonly maxHpScale: string;
     /** {n}% off what an enemy's body does (0.94: 공허구체). */
     readonly contactDamageScale: string;
+    /** The 체력 포션's drop chance {n}% amplified (0.122: 독성폭발). */
+    readonly potionChanceScale: string;
   };
   readonly mastery: {
     /** The banner when it happens: {skill}. */
@@ -179,7 +181,7 @@ export interface Strings {
       readonly voidOrb: string;
       readonly thunderStrike: string;
       readonly drone: string;
-      /** {spread} */
+      /** {stacks} */
       readonly poisonNova: string;
     };
     /** 2차 각성 (SKILL_MASTERY.second): its banner, its card line, and one line a skill. */
@@ -194,7 +196,7 @@ export interface Strings {
       readonly voidOrb: string;
       readonly thunderStrike: string;
       readonly drone: string;
-      /** {echoScale} */
+      /** {max} */
       readonly poisonNova: string;
     };
   };

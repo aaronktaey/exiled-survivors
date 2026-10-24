@@ -96,10 +96,10 @@ export const SKILLS: Record<SkillId, SkillDefinition> = {
   // 0.122 (the user's ask): a ring of poison out from the survivor.
   poisonNova: {
     id: 'poisonNova',
-    name: '포이즌 노바',
+    name: '독성폭발',
     tags: ['주문', '독', '범위'],
     upgrades: ['damage', 'attackSpeed', 'range'],
-    summary: '생존자를 중심으로 독의 고리가 퍼져 닿는 모든 적에게 피해를 주고 중독시킵니다. 중독된 적은 몇 초 동안 계속 피해를 받고, 여러 번 맞으면 독이 겹칩니다.',
+    summary: '생존자를 중심으로 독이 고리처럼 터져 퍼지며, 닿는 모든 적에게 피해를 주고 중독을 쌓습니다. 중독은 중첩마다 초당 피해를 주고, 다시 맞으면 전체 중독 시간이 처음부터 다시 흐릅니다. 곁에 오래 머무는 적일수록 독이 차오릅니다.',
   },
 };
 

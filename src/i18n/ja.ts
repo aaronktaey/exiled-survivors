@@ -88,6 +88,7 @@ export const ja: Strings = {
     moveSpeedScale: '移動速度 +{n}%',
     maxHpScale: '最大体力 +{n}%',
     contactDamageScale: '受ける接触ダメージ {n}% 減少',
+    potionChanceScale: 'ポーションのドロップ率 {n}% 増幅',
   },
   mastery: {
     title: '{skill} 覚醒!',
@@ -100,7 +101,7 @@ export const ja: Strings = {
       voidOrb: '敵が最も多い場所に虚空を生成し、虚空の中の敵1体につき{healSecs}秒ごとに体力を {heal} 回復',
       thunderStrike: '当たった敵が {shockSecs} 秒間感電し、受けるダメージが {shockAmp} 増えます',
       drone: 'ドローンの数が {droneTimes} 倍になります',
-      poisonNova: '毒状態の敵が倒れると、周囲 {spread}px の敵に毒が移ります',
+      poisonNova: '毒が {stacks} 重ずつ重なります',
     },
     title2: '{skill} 第二覚醒!',
     card2: '第二覚醒 — {effect}',
@@ -112,7 +113,7 @@ export const ja: Strings = {
       voidOrb: '内側に逆回りの球の輪がもう一つできます（ダメージ {innerShare}）',
       thunderStrike: '落ちた場所の周りの敵にもダメージの {splashShare} を与えます',
       drone: 'ドローンが {bombEvery} 回撃つたびに、小さな範囲に {bombShare} のダメージの爆弾を落とします',
-      poisonNova: '最初の輪の後に {echoScale} 倍広い輪がもう一度広がります',
+      poisonNova: '毒状態の敵が倒れるか {max} 重に達すると弾けます：その敵の毒のダメージすべてが周囲の範囲内の敵に一度に入り、重ねた数は消えます',
     },
   },
   tuning: {
@@ -690,7 +691,7 @@ export const ja: Strings = {
       voidOrb: '虚無球',
       thunderStrike: '落雷',
       drone: 'ドローン',
-      poisonNova: 'ポイズンノヴァ',
+      poisonNova: '毒性爆発',
     },
     skillSummaries: {
       meleeStrike: '最も近い敵へ短く振り抜き、範囲内の敵をまとめて叩きます。',
@@ -700,7 +701,7 @@ export const ja: Strings = {
       voidOrb: '球が時計回りに周回し、触れた敵を叩きます。狙いは不要です。',
       thunderStrike: '周囲の敵ひとりに空から雷を落とします。その敵が倒れると、半分の確率ですぐにもう一度落ちます。',
       drone: '小さな遠隔ロボットが範囲内に入った敵に近づき、小さな銃で撃ちます。敵が倒れるか範囲外に出ると、次の敵へ移ります。',
-      poisonNova: '生存者を中心に毒の輪が広がり、触れたすべての敵にダメージを与えて毒状態にします。毒状態の敵は数秒間ダメージを受け続け、何度も当たると毒が重なります。',
+      poisonNova: '生存者を中心に毒が輪となって弾け広がり、触れたすべての敵にダメージを与えて毒を重ねます。毒は重ねるごとに毎秒ダメージを与え、再び当たると毒全体の時間が最初から流れ直します。そばに長くいる敵ほど毒が溜まります。',
     },
     tags: {
       물리: '物理',

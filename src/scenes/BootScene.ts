@@ -1597,7 +1597,7 @@ export class BootScene extends Phaser.Scene {
     }
   }
 
-  /** 포이즌 노바 (0.122): a drop of poison inside a ring going out. */
+  /** 독성폭발 (0.122): a drop of poison inside a ring going out. */
   private createPoisonNovaIcon(): void {
     const key = SKILL_ICONS.poisonNova?.key;
     if (!key || this.textures.exists(key)) {

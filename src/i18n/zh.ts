@@ -88,6 +88,7 @@ export const zh: Strings = {
     moveSpeedScale: '移动速度 +{n}%',
     maxHpScale: '最大生命 +{n}%',
     contactDamageScale: '受到的接触伤害减少 {n}%',
+    potionChanceScale: '药水掉落率增幅 {n}%',
   },
   mastery: {
     title: '{skill} 觉醒！',
@@ -100,7 +101,7 @@ export const zh: Strings = {
       voidOrb: '在敌人最密集处生成虚空，虚空内每有1个敌人，每{healSecs}秒恢复 {heal} 点生命',
       thunderStrike: '被击中的敌人感电 {shockSecs} 秒，受到的伤害提高 {shockAmp}',
       drone: '无人机数量变为 {droneTimes} 倍',
-      poisonNova: '中毒的敌人死亡时，毒会传给周围 {spread}px 内的敌人',
+      poisonNova: '中毒每次叠加 {stacks} 层',
     },
     title2: '{skill} 二次觉醒！',
     card2: '二次觉醒 — {effect}',
@@ -112,7 +113,7 @@ export const zh: Strings = {
       voidOrb: '内侧多出一圈反向旋转的球体（伤害 {innerShare}）',
       thunderStrike: '落点周围的敌人也受到 {splashShare} 的伤害',
       drone: '无人机每射击 {bombEvery} 次，就会在小范围内投下造成 {bombShare} 伤害的炸弹',
-      poisonNova: '第一圈之后会再扩散一圈 {echoScale} 倍宽的毒环',
+      poisonNova: '中毒的敌人死亡或达到 {max} 层时会爆开：该敌人的全部中毒伤害一次性作用于周围范围内的敌人，层数清空',
     },
   },
   tuning: {
@@ -690,7 +691,7 @@ export const zh: Strings = {
       voidOrb: '虚空球',
       thunderStrike: '落雷',
       drone: '无人机',
-      poisonNova: '剧毒新星',
+      poisonNova: '毒性爆发',
     },
     skillSummaries: {
       meleeStrike: '朝最近的敌人短促挥击，范围内的敌人一并命中。',
@@ -700,7 +701,7 @@ export const zh: Strings = {
       voidOrb: '球体顺时针环绕你，扫到的敌人都会受伤，无需瞄准。',
       thunderStrike: '从天上降下一道雷劈向你周围的一名敌人。若其死亡，有一半概率立刻再落一道。',
       drone: '小型遥控机器人会贴近进入范围的敌人，用小枪射击。敌人死亡或离开范围后，无人机会转向下一个敌人。',
-      poisonNova: '以生存者为中心扩散出毒环，对触及的所有敌人造成伤害并使其中毒。中毒的敌人会在数秒内持续受到伤害，多次命中时毒会叠加。',
+      poisonNova: '以生存者为中心爆发出环状毒圈，对触及的所有敌人造成伤害并叠加中毒。每层中毒每秒造成伤害，再次命中时整个中毒时间会重新计算。越是久留身边的敌人，毒积得越多。',
     },
     tags: {
       물리: '物理',

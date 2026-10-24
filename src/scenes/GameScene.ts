@@ -379,6 +379,7 @@ export class GameScene extends Phaser.Scene {
         onTalentShardCollected: (stat, count) => this.gainShard(stat, count),
         shardWeight: (stat) => this.mods.passive.shardWeights[stat] ?? 1,
         dropScale: () => this.boneBonus.dropScale,
+        potionScale: () => this.heldBonus.potionChanceScale,
         shatter: () =>
           this.mainSkill === 'iceSpear' && this.masteryOf('iceSpear') >= 2
             ? { radius: SKILL_MASTERY.second.iceShatter.radius * this.heldBonus.areaScale }
@@ -622,7 +623,7 @@ export class GameScene extends Phaser.Scene {
         enemies: this.spawner.group,
         damage: this.damageOf(id),
         cooldownMs: this.cooldownOf(id),
-        // 타격's swing and 포이즌 노바's ring are areas too: the held 효과범위 widens them (0.84, 0.122).
+        // 타격's swing and 독성폭발's ring are areas too: the held 효과범위 widens them (0.84, 0.122).
         range: this.progression.rangeFor(id) * (id === 'meleeStrike' || id === 'poisonNova' ? this.areaScale : 1),
         projectileSpeed: stats.projectileSpeed,
         chainCount: stats.chainCount,

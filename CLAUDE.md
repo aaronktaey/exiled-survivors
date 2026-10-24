@@ -638,22 +638,32 @@ Read `git log` for what changed and when. What is not in the log:
   holds a `remote` (LookProp), and is drawn `DRONE.size` (12 since 0.100,
   18 before). Its shot borrows 얼음창's clip. F11 (debug)
   takes the main skill straight to its next 각성.
-- **포이즌 노바 (dev server only, the user's ask, 2026-10-24).**
-  `weapons/PoisonNova.ts`: every cooldown a ring goes out from the survivor
-  to the skill's `range` (× `areaScale`, like 타격's swing) over
-  `POISON_NOVA.ringMs`; each enemy it reaches takes the hit and a dose —
-  `poisonShare` of the hit a second for `durationMs`, ticking every
-  `tickMs` through `context.hit` (so the end screen counts it), at most
-  `maxStacks` doses (the one nearest its end gives way). The weapon keeps
-  the poison (`poisoned`, by enemy and its `lives`), not the Enemy. 각성:
-  a poisoned enemy that dies passes its doses on within
-  `SKILL_MASTERY.poisonSpread.radius`; 2차: a second ring
-  `second.novaEcho.radiusScale` × as wide follows. 보유 효과 damage ×1.1.
-  Upgrades 피해 · 공격속도 · 범위 (`range`). Its sound borrows 공허구체's.
-  The numbers are first guesses for the user to tune on the dev server:
-  `SKILL_DEV_ONLY` (balance.ts) keeps it there — `skillOffered` refuses it
-  on the deployed game and on the harness (test-skills §9 acquires it
-  directly). Shipping it is taking it out of that list, plus a patch note.
+- **독성폭발 (0.123, the user's design, 2026-10-24).** id
+  `poisonNova` (shown as 포이즌 노바 at first; tried as 독안개, an aura that
+  only poisoned, and taken back — its balance would not settle).
+  `weapons/PoisonNova.ts`: every cooldown a ring bursts out from the
+  survivor to the skill's `range` (× `areaScale`, like 타격's swing) over
+  `POISON_NOVA.ringMs`; each enemy it reaches takes the hit and a stack of
+  중독 — `poisonShare` of the hit a second a stack, ticking every `tickMs`
+  through `context.hit` (so the end screen counts it), at most `maxStacks`
+  (10). Every hit starts the whole poison's `durationMs` over (one clock an
+  enemy). The weapon keeps the poison (`poisoned`, by enemy and its
+  `lives`), not the Enemy, and draws it: green bubbles rising off the enemy
+  and its stack count in green beside it (`POISON_NOVA_FX`, pooled Texts).
+  반복 is a second ring (CastRepeat). 각성: `stacksPerHitAwakened` (2) a hit.
+  2차: a poisoned enemy that dies or reaches `maxStacks` bursts — its
+  stacks × per-stack × durationMs at once on everything within the skill's
+  range of where it stood (itself included), its stacks gone. A burst
+  poisons nothing; one that kills a poisoned enemy sets that one off a
+  frame later, and the chain ends since each dies once (a version that
+  added stacks with each burst chained without end in a crowd). 보유 효과: the 체력 포션's drop chance ×1.2
+  (`potionChanceScale`, through the `potionScale` combat hook). Picks 피해 ·
+  공격속도 · 범위. Its sound borrows 공허구체's. Shipped at 150 · 0.5 (the
+  user's pick; 144 · 0.7 while tried), poison 10% of the hit a second a
+  stack. The user compares skills one enemy at a time, not by crowds. It
+  was tried on the dev server behind `SKILL_DEV_ONLY` (balance.ts, empty
+  now): `skillOffered` refuses a listed skill on the deployed game and the
+  harness — the way to try the next new skill first.
 - **Trial skills (0.96).** `SKILL_TRIAL` (balance.ts) names skills offered
   only to listed account ids — the 드론, to the user's own (Taeyeon Kim,
   `mli6lWxFN7F41CC6`), while it was tried — empty since 0.97. `systems/SkillGate.skillOffered`

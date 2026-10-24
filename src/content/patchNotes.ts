@@ -15,6 +15,32 @@ export interface PatchNote {
 
 export const PATCH_NOTES: readonly PatchNote[] = [
   {
+    version: '0.123',
+    date: '2026-10-24',
+    changes: {
+      ko: [
+        '새 스킬 독성폭발: 2초마다 생존자를 중심으로 독이 고리처럼 터져 범위(110px) 안의 모든 적에게 피해 150을 주고 중독을 1중첩 쌓습니다.',
+        '중독은 중첩마다 초당 폭발 피해의 10%를 3초 동안 줍니다. 다시 맞으면 중독 시간 전체가 처음부터 다시 흐르고, 최대 10중첩까지 쌓입니다. 중독된 적은 초록 기포가 올라오고 옆에 중첩 수가 초록 숫자로 표시됩니다.',
+        '독성폭발 각성은 한 번 맞을 때 중독이 2중첩씩 쌓이고, 2차 각성은 중독된 적이 죽거나 10중첩에 도달하면 그 적의 중독 전체 피해가 주변 범위 안의 적에게 한 번에 터집니다. 보유 효과는 체력 포션 드랍률 20% 증폭입니다.',
+      ],
+      en: [
+        'New skill, Toxic Burst: every 2 seconds poison bursts out from you in a ring, dealing 150 damage to every enemy within 110px and stacking poison on it.',
+        'Each stack deals 10% of the burst’s damage every second for 3 seconds. A new hit starts the whole poison over, up to 10 stacks. A poisoned enemy bubbles green, its stacks shown beside it in green.',
+        'Its awakening stacks 2 a hit; its second awakening makes a poisoned enemy that dies or reaches 10 stacks burst, dealing the whole of its poison at once to every enemy in range of it. Holding it gives 20% more health potion drops.',
+      ],
+      ja: [
+        '新スキル「毒性爆発」：2秒ごとに生存者を中心に毒が輪となって弾け、範囲（110px）内のすべての敵に150のダメージを与えて毒を1重ねます。',
+        '毒は重ねるごとに爆発ダメージの10%を毎秒3秒間与えます。再び当たると毒全体の時間が最初から流れ直し、最大10重まで重なります。毒状態の敵からは緑の泡が上がり、横に重ねた数が緑の数字で表示されます。',
+        '覚醒で一度に2重ずつ重なり、2次覚醒では毒状態の敵が倒れるか10重に達すると、その敵の毒のダメージすべてが周囲の範囲内の敵に一度に弾けます。保有効果はポーションのドロップ率20%増幅です。',
+      ],
+      zh: [
+        '新技能「毒性爆发」：每2秒以生存者为中心爆发出环状毒圈，对范围（110px）内的所有敌人造成150点伤害并叠加1层中毒。',
+        '每层中毒每秒造成爆发伤害的10%，持续3秒。再次命中时整个中毒时间重新计算，最多叠加10层。中毒的敌人会冒出绿色气泡，旁边以绿色数字显示层数。',
+        '觉醒后每次命中叠加2层；二次觉醒后，中毒的敌人死亡或达到10层时，其全部中毒伤害会一次性作用于周围范围内的敌人。持有效果为体力药水掉落率增幅20%。',
+      ],
+    },
+  },
+  {
     version: '0.122',
     date: '2026-10-24',
     changes: {

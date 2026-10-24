@@ -76,6 +76,8 @@ export interface CombatHooks {
    * health it gives every enemy by making everything likelier to drop.
    */
   readonly dropScale: () => number;
+  /** What the held skills multiply the 체력 포션's chance by (0.122: 독성폭발's 보유 효과). */
+  readonly potionScale?: () => number;
   /**
    * 행운 (0.83): what the passive tree multiplies every drop an enemy's
    * 속성 raise by — 1 + its share. What only a 우두머리 leaves, what is
@@ -882,7 +884,7 @@ export class CombatSystem {
     }
 
     // Rolled on its own, so a kill can leave both a skill and a potion.
-    if (Math.random() < POTION.chance * bonus) {
+    if (Math.random() < POTION.chance * bonus * (this.hooks.potionScale?.() ?? 1)) {
       this.dropPotionAt(x, y);
     }
 

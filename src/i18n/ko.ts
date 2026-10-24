@@ -92,6 +92,7 @@ export const ko: Strings = {
     moveSpeedScale: '이동속도 +{n}%',
     maxHpScale: '최대 체력 +{n}%',
     contactDamageScale: '받는 접촉 피해 {n}% 감폭',
+    potionChanceScale: '포션 드랍률 {n}% 증폭',
   },
   mastery: {
     title: '{skill} 각성!',
@@ -104,7 +105,7 @@ export const ko: Strings = {
       voidOrb: '적이 가장 많은 곳에 공허 생성, 공허 안의 적 1마리당 {healSecs}초마다 체력 {heal} 회복',
       thunderStrike: '맞은 적이 {shockSecs}초 동안 감전되어 받는 피해가 {shockAmp} 늘어납니다',
       drone: '드론 수가 {droneTimes}배가 됩니다',
-      poisonNova: '중독된 적이 죽으면 주변 {spread}px 안의 적에게 독이 옮겨갑니다',
+      poisonNova: '중독이 {stacks}중첩씩 쌓입니다',
     },
     title2: '{skill} 2차 각성!',
     card2: '2차 각성 — {effect}',
@@ -116,7 +117,7 @@ export const ko: Strings = {
       voidOrb: '안쪽에 반대로 도는 구체 고리가 하나 더 생깁니다 (피해 {innerShare})',
       thunderStrike: '떨어진 자리 주변의 적에게도 피해의 {splashShare}를 줍니다',
       drone: '드론이 {bombEvery}번 쏠 때마다 작은 범위에 피해 {bombShare}의 폭탄을 떨어뜨립니다',
-      poisonNova: '첫 고리 뒤로 {echoScale}배 넓은 고리가 한 번 더 퍼집니다',
+      poisonNova: '중독된 적이 죽거나 {max}중첩에 도달하면 터집니다: 그 적의 중독 전체 피해가 주변 범위 안의 적에게 한 번에 들어가고, 중첩은 사라집니다',
     },
   },
   tuning: {

@@ -972,7 +972,7 @@ export const lookTexture = (id: string): string => lookFrame(id, 'idle');
 export const lookAnim = (id: string, kind: 'walk' | 'cast'): string => `look-${id}-${kind}`;
 
 /** 감전 (낙뢰 각성): the sparks that crackle round a shocked enemy. */
-/** 포이즌 노바's ring and the bubble over a poisoned enemy (0.122). */
+/** 독성폭발's ring and the bubble over a poisoned enemy (0.122). */
 export const POISON_NOVA_FX = {
   color: 0x6fd13a,
   edge: 0xb8ff7a,
@@ -980,8 +980,16 @@ export const POISON_NOVA_FX = {
   edgeWidth: 3,
   /** How long a ring takes to fade once it is out. */
   fadeMs: 220,
-  /** The bubble's radius with one dose. */
-  markSize: 2.4,
+  /** 2차 각성's burst: how long its flash lasts. */
+  burstMs: 420,
+  /** 중독's bubbles: how many rise off an enemy at once, how long one takes, how big. */
+  bubbles: 3,
+  bubbleRiseMs: 900,
+  bubbleSize: 3.2,
+  /** The stack count beside a poisoned enemy, in green. */
+  stackSize: 13,
+  stackColor: '#9be35a',
+  stackStroke: '#0b1a06',
 } as const;
 
 export const SHOCK_FX = {
