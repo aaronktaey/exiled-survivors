@@ -391,6 +391,8 @@ export const AUDIO = {
     thunderStrike: { files: ['assets/chainLightening1.mp3'], volume: 0.35, gapMs: 200 },
     // No clip of its own yet: 얼음창's, quiet and held apart, for a little gun.
     drone: { files: ['assets/iceSpear.mp3'], volume: 0.22, gapMs: 140 },
+    // No clip of its own yet: 공허구체's hum, quieter.
+    poisonNova: { files: ['assets/voidSphere.mp3'], volume: 0.3, gapMs: 300 },
   } as Partial<
     Record<
       SkillId,

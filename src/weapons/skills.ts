@@ -17,7 +17,9 @@ export type SkillTag =
   | '냉기'
   | '관통'
   | '공허'
-  | '오라';
+  | '오라'
+  | '독'
+  | '범위';
 
 export type SkillId =
   | 'meleeStrike'
@@ -26,7 +28,8 @@ export type SkillId =
   | 'iceSpear'
   | 'voidOrb'
   | 'thunderStrike'
-  | 'drone';
+  | 'drone'
+  | 'poisonNova';
 
 export interface SkillDefinition {
   readonly id: SkillId;
@@ -90,6 +93,14 @@ export const SKILLS: Record<SkillId, SkillDefinition> = {
     upgrades: ['damage', 'attackSpeed', 'droneCount'],
     summary: '작은 원격 로봇이 범위 안에 들어온 적에게 가까이 붙어 작은 총으로 쏩니다. 적이 죽거나 범위를 벗어나면 다음 적으로 옮겨 갑니다.',
   },
+  // 0.122 (the user's ask): a ring of poison out from the survivor.
+  poisonNova: {
+    id: 'poisonNova',
+    name: '포이즌 노바',
+    tags: ['주문', '독', '범위'],
+    upgrades: ['damage', 'attackSpeed', 'range'],
+    summary: '생존자를 중심으로 독의 고리가 퍼져 닿는 모든 적에게 피해를 주고 중독시킵니다. 중독된 적은 몇 초 동안 계속 피해를 받고, 여러 번 맞으면 독이 겹칩니다.',
+  },
 };
 
 /**
@@ -105,6 +116,7 @@ export const DROPPABLE_SKILLS: readonly SkillDefinition[] = [
   SKILLS.voidOrb,
   SKILLS.thunderStrike,
   SKILLS.drone,
+  SKILLS.poisonNova,
 ];
 
 export const ALL_SKILLS: readonly SkillDefinition[] = Object.values(SKILLS);

@@ -179,6 +179,8 @@ export interface Strings {
       readonly voidOrb: string;
       readonly thunderStrike: string;
       readonly drone: string;
+      /** {spread} */
+      readonly poisonNova: string;
     };
     /** 2차 각성 (SKILL_MASTERY.second): its banner, its card line, and one line a skill. */
     readonly title2: string;
@@ -192,6 +194,8 @@ export interface Strings {
       readonly voidOrb: string;
       readonly thunderStrike: string;
       readonly drone: string;
+      /** {echoScale} */
+      readonly poisonNova: string;
     };
   };
   /** 밸런스: the admin's dial panel. */
@@ -216,6 +220,7 @@ export interface Strings {
       readonly blastRadius: string;
       readonly recastChance: string;
       readonly droneCount: string;
+      readonly attackCoeff: string;
       readonly damageScale: string;
     };
     /** By dial path, for the dials that are not a skill's stat or a 구슬 · 뼈다귀 · 검. */
@@ -242,6 +247,8 @@ export interface Strings {
     readonly details: Readonly<Record<string, string>>;
     /** A skill's 피해 배율 — {skill}. */
     readonly detailDamageScale: string;
+    /** A skill's 무기 공격력 계수 dial (BALANCE.attackCoeff, 0.122): {skill}. */
+    readonly detailAttackCoeff: string;
     /** An 등장 시점 (SPAWN_TABLE) — {kind}. */
     readonly detailUnlock: string;
     /** A 구슬's, a 뼈다귀's and a sword's drop rate — {name}. */
@@ -911,6 +918,8 @@ export interface Strings {
       readonly skillUpgrades: string;
       /** When the per-skill balance dial is not 1. */
       readonly skillScale: string;
+      /** The share of the weapon's attack a skill takes (0.122): {coeff}. */
+      readonly skillCoeff: string;
       readonly enemyStats: string;
       readonly fromStart: string;
       readonly unlocksAt: string;

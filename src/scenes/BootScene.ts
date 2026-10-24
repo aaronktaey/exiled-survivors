@@ -14,6 +14,7 @@ import {
   PIXEL_ICONS,
   GEAR,
   SKILL_ICONS,
+  POISON_NOVA_FX,
   gearTexture,
   SKILL_PICK,
   RANKING,
@@ -103,6 +104,7 @@ export class BootScene extends Phaser.Scene {
     this.createBoneTextures();
     this.createAltarTexture();
     this.createThunderIcon();
+    this.createPoisonNovaIcon();
     this.createStrikeIcon();
     this.createTrophyTexture();
     this.createWebIcon();
@@ -1593,6 +1595,32 @@ export class BootScene extends Phaser.Scene {
       g.generateTexture(key, icon.rows[0]!.length * px, icon.rows.length * px);
       g.destroy();
     }
+  }
+
+  /** 포이즌 노바 (0.122): a drop of poison inside a ring going out. */
+  private createPoisonNovaIcon(): void {
+    const key = SKILL_ICONS.poisonNova?.key;
+    if (!key || this.textures.exists(key)) {
+      return;
+    }
+
+    const size = 32;
+    const c = size / 2;
+    const graphics = this.add.graphics();
+    graphics.fillStyle(0x1a2a14, 1);
+    graphics.fillCircle(c, c, size * 0.47);
+    graphics.lineStyle(2, POISON_NOVA_FX.edge, 1);
+    graphics.strokeCircle(c, c, size * 0.42);
+    graphics.lineStyle(1, POISON_NOVA_FX.color, 0.8);
+    graphics.strokeCircle(c, c, size * 0.32);
+    // The drop: a round belly and a point on top.
+    graphics.fillStyle(POISON_NOVA_FX.color, 1);
+    graphics.fillCircle(c, c + 3, 6);
+    graphics.fillTriangle(c, c - 8, c - 5.2, c + 0.5, c + 5.2, c + 0.5);
+    graphics.fillStyle(0xe8ffd0, 0.9);
+    graphics.fillCircle(c - 2, c + 1.5, 1.6);
+    graphics.generateTexture(key, size, size);
+    graphics.destroy();
   }
 
   private createThunderIcon(): void {

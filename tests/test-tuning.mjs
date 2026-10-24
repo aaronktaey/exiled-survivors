@@ -62,7 +62,7 @@ const shipped = await ev(`(() => {
     ...Object.keys(c.GEAR).filter((id) => c.GEAR[id].fromKill !== undefined).map((id) => 'GEAR.' + id + '.fromKill'),
     ...Object.keys(c.SKILL_BASE).flatMap((id) => [
       ...Object.keys(c.SKILL_BASE[id]).filter((stat) => c.SKILL_BASE[id][stat] > 0).map((stat) => 'SKILL_BASE.' + id + '.' + stat),
-      'BALANCE.damageScale.' + id])];
+      'BALANCE.attackCoeff.' + id, 'BALANCE.damageScale.' + id])];
   const value = (path) => path.split('.').reduce((o, k) => (o == null ? undefined : o[k]), c);
   return { missing: want.filter((p) => !paths.has(p)), loose: [...paths].filter((p) => typeof value(p) !== 'number'),
            extra: [...paths].filter((p) => !want.includes(p)) };

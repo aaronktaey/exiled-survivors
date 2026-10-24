@@ -224,6 +224,8 @@ export const SKILL_ICONS: Record<string, { readonly pixel?: PixelIconId; readonl
   thunderStrike: { key: 'tex-skill-thunderStrike' },
   // Drawn at boot: a little quadcopter (0.94).
   drone: { key: 'tex-skill-drone' },
+  // Drawn at boot: a drop of poison in a ring (0.122).
+  poisonNova: { key: 'tex-skill-poisonNova' },
 };
 
 /** How big a skill icon is drawn, on the ground and on a card. */
@@ -913,6 +915,8 @@ export const PLAYER_LOOK: {
     thunderStrike: { robe: 0x2a2f55, trim: 0xf0d050, hood: 0x1a1d38, prop: 'rod', glow: 0xf0d050 },
     // 0.94: an engineer in green, a remote in hand.
     drone: { robe: 0x3d5a4a, trim: 0x7fe0c0, hood: 0x24382e, prop: 'remote', glow: 0x7fe0c0 },
+    // 0.122: a poisoner in moss green, a sickly orb in hand.
+    poisonNova: { robe: 0x3a5a22, trim: 0x9be35a, hood: 0x22361a, prop: 'orb', glow: 0x9be35a },
   },
 };
 
@@ -968,6 +972,18 @@ export const lookTexture = (id: string): string => lookFrame(id, 'idle');
 export const lookAnim = (id: string, kind: 'walk' | 'cast'): string => `look-${id}-${kind}`;
 
 /** 감전 (낙뢰 각성): the sparks that crackle round a shocked enemy. */
+/** 포이즌 노바's ring and the bubble over a poisoned enemy (0.122). */
+export const POISON_NOVA_FX = {
+  color: 0x6fd13a,
+  edge: 0xb8ff7a,
+  fillAlpha: 0.18,
+  edgeWidth: 3,
+  /** How long a ring takes to fade once it is out. */
+  fadeMs: 220,
+  /** The bubble's radius with one dose. */
+  markSize: 2.4,
+} as const;
+
 export const SHOCK_FX = {
   color: 0xf0d050,
   sparks: 4,

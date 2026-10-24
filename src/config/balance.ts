@@ -29,6 +29,22 @@ export const BALANCE = {
     voidOrb: 1,
     thunderStrike: 0.8,
     drone: 1,
+    poisonNova: 1,
+  } as Record<SkillId, number>,
+  /**
+   * 무기 공격력 계수 (0.122, the user's ask): how much of the weapon's attack
+   * a skill takes into its flat damage — SKILL_BASE damage + attack × this,
+   * before 증가 and 증폭. All 1 shipped, which is the damage as it was.
+   */
+  attackCoeff: {
+    meleeStrike: 1,
+    fireball: 1,
+    chainLightning: 1,
+    iceSpear: 1,
+    voidOrb: 1,
+    thunderStrike: 1,
+    drone: 1,
+    poisonNova: 1,
   } as Record<SkillId, number>,
 };
 
@@ -1190,6 +1206,8 @@ export const SKILL_MASTERY = {
    * over), taking `amplify` more from every hit while it lasts.
    */
   thunderShock: { durationMs: 2000, amplify: 0.3 },
+  /** 포이즌 노바 (0.122): a poisoned enemy that dies passes its doses to those within `radius`. */
+  poisonSpread: { radius: 70 },
   /** ★ 2차 각성 (0.83, the user's ask): the main skill's second effect, at `level`. */
   second: {
     level: 20,
@@ -1217,6 +1235,8 @@ export const SKILL_MASTERY = {
     droneBomb: { every: 5, radius: 50, damageShare: 1.5 },
     /** 낙뢰: every strike also hurts what stands within `radius` of it, for `damageShare`. */
     thunderSplash: { radius: 60, damageShare: 0.5 },
+    /** 포이즌 노바 (0.122): a second ring `delayMs` after the first, `radiusScale` × as wide. */
+    novaEcho: { delayMs: 400, radiusScale: 1.4 },
   },
 } as const;
 
@@ -1250,6 +1270,7 @@ export const SKILL_HELD_BONUS: Record<SkillId, HeldSkillBonus> = {
   voidOrb: { contactDamageScale: 0.8 },
   meleeStrike: { maxHpScale: 1.2 },
   drone: { moveSpeedScale: 1.15 },
+  poisonNova: { damageScale: 1.1 },
 };
 
 /** Every 보유 효과 of the skills held, folded: points added, scales multiplied. */
@@ -1289,6 +1310,14 @@ export const SUB_SKILLS = { max: 3 } as const;
  */
 export const SKILL_TRIAL: Partial<Record<SkillId, readonly string[]>> = {};
 
+/**
+ * ★ Skills offered only on the dev server, for the user to tune there first
+ * (0.122, the user's word: 포이즌 노바 is not to go live yet). The deployed
+ * game and the harness never offer one; taking it out of this list is the
+ * whole of shipping it.
+ */
+export const SKILL_DEV_ONLY: readonly SkillId[] = ['poisonNova'];
+
 /** 낙뢰: a bolt out of the sky onto something near the survivor. */
 export const THUNDER = {
   // The chance a kill strikes again is the skill's own stat since 0.83
@@ -1298,6 +1327,19 @@ export const THUNDER = {
   /** How far above its target the bolt starts, in px. */
   height: 220,
   flashMs: 200,
+} as const;
+
+/**
+ * 포이즌 노바 (0.122): the ring takes `ringMs` to reach its edge. Each enemy
+ * it reaches takes a dose: `poisonShare` of the hit a second, for
+ * `durationMs`, in ticks of `tickMs`; at most `maxStacks` doses at once.
+ */
+export const POISON_NOVA = {
+  ringMs: 350,
+  poisonShare: 0.3,
+  durationMs: 3000,
+  tickMs: 500,
+  maxStacks: 5,
 } as const;
 
 /** The instant arc 연쇄번개 draws as it walks through a crowd. */
@@ -1749,6 +1791,21 @@ export const SKILL_BASE: Record<SkillId, SkillBaseStats> = {
     blastRadius: 0,
     recastChance: 0,
     droneCount: 5,
+  },
+  // 포이즌 노바 (0.122): `range` is how far the ring goes out, attackSpeed how
+  // often one goes out; the hit is `damage`, the poison POISON_NOVA's share of it.
+  poisonNova: {
+    damage: 60,
+    attackSpeed: 0.5,
+    range: 110,
+    projectileSpeed: 0,
+    chainCount: 0,
+    pierceCount: 0,
+    orbCount: 0,
+    orbitSpeed: 0,
+    blastRadius: 0,
+    recastChance: 0,
+    droneCount: 0,
   },
 };
 

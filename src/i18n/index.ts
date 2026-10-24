@@ -136,6 +136,7 @@ export function masteryText(id: SkillId, tier: 1 | 2 = 1): string {
           splashShare: pct(thunderSplash.damageShare),
           bombEvery: droneBomb.every,
           bombShare: pct(droneBomb.damageShare),
+          echoScale: SKILL_MASTERY.second.novaEcho.radiusScale,
         })
       : '';
   }
@@ -153,6 +154,7 @@ export function masteryText(id: SkillId, tier: 1 | 2 = 1): string {
     heal: voidVortex.healPerEnemy,
     healSecs: voidVortex.healEveryMs / 1000,
     droneTimes,
+    spread: SKILL_MASTERY.poisonSpread.radius,
   });
 }
 

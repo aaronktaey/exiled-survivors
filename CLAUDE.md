@@ -638,6 +638,22 @@ Read `git log` for what changed and when. What is not in the log:
   holds a `remote` (LookProp), and is drawn `DRONE.size` (12 since 0.100,
   18 before). Its shot borrows 얼음창's clip. F11 (debug)
   takes the main skill straight to its next 각성.
+- **포이즌 노바 (dev server only, the user's ask, 2026-10-24).**
+  `weapons/PoisonNova.ts`: every cooldown a ring goes out from the survivor
+  to the skill's `range` (× `areaScale`, like 타격's swing) over
+  `POISON_NOVA.ringMs`; each enemy it reaches takes the hit and a dose —
+  `poisonShare` of the hit a second for `durationMs`, ticking every
+  `tickMs` through `context.hit` (so the end screen counts it), at most
+  `maxStacks` doses (the one nearest its end gives way). The weapon keeps
+  the poison (`poisoned`, by enemy and its `lives`), not the Enemy. 각성:
+  a poisoned enemy that dies passes its doses on within
+  `SKILL_MASTERY.poisonSpread.radius`; 2차: a second ring
+  `second.novaEcho.radiusScale` × as wide follows. 보유 효과 damage ×1.1.
+  Upgrades 피해 · 공격속도 · 범위 (`range`). Its sound borrows 공허구체's.
+  The numbers are first guesses for the user to tune on the dev server:
+  `SKILL_DEV_ONLY` (balance.ts) keeps it there — `skillOffered` refuses it
+  on the deployed game and on the harness (test-skills §9 acquires it
+  directly). Shipping it is taking it out of that list, plus a patch note.
 - **Trial skills (0.96).** `SKILL_TRIAL` (balance.ts) names skills offered
   only to listed account ids — the 드론, to the user's own (Taeyeon Kim,
   `mli6lWxFN7F41CC6`), while it was tried — empty since 0.97. `systems/SkillGate.skillOffered`
@@ -969,6 +985,11 @@ Read `git log` for what changed and when. What is not in the log:
   weapon 증가. The skill's own `BALANCE.damageScale` stays a separate
   multiplier; 감전, 연쇄번개 각성 and 치명타 land on the hit after. A new
   damage source says 증가 or 증폭 in its text and goes in that layer.
+  Since 0.122 (the user's ask) the flat part is SKILL_BASE damage + the
+  weapon's attack × `BALANCE.attackCoeff[skill]` (the 무기 공격력 계수, a
+  dial on each skill page, shown on the HUD card and the guide). All 1
+  shipped — the damage as it was; the user chose this over making damage
+  attack × coefficient alone, which would have moved every weapon's worth.
   The user first had 강력 as a 증가 and every base damage +15% to make up
   for it, then asked for neither: 강력 as an 증폭 keeps the old difficulty
   (only the weapon's attack now takes the passive, +0–5%).

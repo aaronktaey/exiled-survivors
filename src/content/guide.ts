@@ -320,6 +320,7 @@ function skillCard(id: (typeof ALL_SKILLS)[number]['id']): GuideCard {
   const skill = ALL_SKILLS.find((candidate) => candidate.id === id) ?? ALL_SKILLS[0];
   const base = SKILL_BASE[skill.id];
   const scale = BALANCE.damageScale[skill.id] ?? 1;
+  const coeff = BALANCE.attackCoeff[skill.id] ?? 1;
   const picks = upgradeOptionsFor(skill).map((option) => option.label.replace(/\s*\+.*$/, ''));
 
   return {
@@ -335,6 +336,7 @@ function skillCard(id: (typeof ALL_SKILLS)[number]['id']): GuideCard {
       base.projectileSpeed > 0
         ? `${fill(g.skillRange, { range: base.range })} · ${fill(g.skillProjectile, { speed: base.projectileSpeed })}`
         : fill(g.skillRange, { range: base.range }),
+      fill(g.skillCoeff, { coeff: round(coeff) }),
       ...(scale === 1 ? [] : [fill(g.skillScale, { scale: round(scale) })]),
     ],
     lines: [

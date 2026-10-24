@@ -135,6 +135,7 @@ import {
   MeleeStrike,
   VoidOrb,
   Drone,
+  PoisonNova,
   ThunderStrike,
   UNSPUN_SKILL,
   type SkillDefinition,
@@ -150,6 +151,7 @@ const WEAPONS: Record<SkillId, (scene: Phaser.Scene) => Weapon> = {
   iceSpear: (scene) => new IceSpear(scene),
   voidOrb: (scene) => new VoidOrb(scene),
   drone: (scene) => new Drone(scene),
+  poisonNova: (scene) => new PoisonNova(scene),
   thunderStrike: (scene) => new ThunderStrike(scene),
 };
 
@@ -620,8 +622,8 @@ export class GameScene extends Phaser.Scene {
         enemies: this.spawner.group,
         damage: this.damageOf(id),
         cooldownMs: this.cooldownOf(id),
-        // 타격's swing is an area too: the held 효과범위 widens it (0.84).
-        range: this.progression.rangeFor(id) * (id === 'meleeStrike' ? this.areaScale : 1),
+        // 타격's swing and 포이즌 노바's ring are areas too: the held 효과범위 widens them (0.84, 0.122).
+        range: this.progression.rangeFor(id) * (id === 'meleeStrike' || id === 'poisonNova' ? this.areaScale : 1),
         projectileSpeed: stats.projectileSpeed,
         chainCount: stats.chainCount,
         orbitSpeed: stats.orbitSpeed,
@@ -1175,6 +1177,7 @@ export class GameScene extends Phaser.Scene {
         damage,
         base: num(layers.base),
         gear: num(layers.attack),
+        coeff: num(layers.coeff),
         increase: num(layers.increase),
         amplify: num(layers.amplify * this.heldBonus.damageScale),
       }) + (scale === 1 ? '' : fill(copy.formulaScale, { scale: num(scale) }));

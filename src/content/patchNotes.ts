@@ -15,6 +15,24 @@ export interface PatchNote {
 
 export const PATCH_NOTES: readonly PatchNote[] = [
   {
+    version: '0.122',
+    date: '2026-10-24',
+    changes: {
+      ko: [
+        '스킬마다 무기 공격력 계수가 생겼습니다. 스킬 피해는 「기본 피해 + 무기 공격력 × 계수」에 증가와 증폭이 곱해져 정해집니다. 지금은 모든 스킬이 계수 1이라 피해는 이전과 같고, 스킬 카드와 게임 가이드에 계수가 표시됩니다.',
+      ],
+      en: [
+        'Every skill now has a weapon attack coefficient: its damage is base damage + weapon attack × coefficient, then increased and amplified. Every skill is at 1 for now, so damage is unchanged; the skill card and the guide show the coefficient.',
+      ],
+      ja: [
+        'スキルごとに武器攻撃力係数ができました。スキルのダメージは「基本ダメージ + 武器攻撃力 × 係数」に増加と増幅が掛かって決まります。現在はすべてのスキルが係数1なのでダメージは以前と同じで、スキルカードとゲームガイドに係数が表示されます。',
+      ],
+      zh: [
+        '每个技能新增了武器攻击力系数：技能伤害为「基础伤害 + 武器攻击力 × 系数」，再乘以增加和增幅。目前所有技能的系数都是1，伤害与之前相同；技能卡和游戏指南中会显示系数。',
+      ],
+    },
+  },
+  {
     version: '0.121',
     date: '2026-10-24',
     changes: {

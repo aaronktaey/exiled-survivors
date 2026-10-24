@@ -67,7 +67,7 @@ interface Zoom {
 }
 /** The 스킬 tab's pages: the skills with dials, and 공통 only while some dial is on it. */
 const pageSkills = (): string[] =>
-  ['meleeStrike', 'fireball', 'chainLightning', 'iceSpear', 'voidOrb', 'thunderStrike', 'drone', 'common'].filter((page) =>
+  ['meleeStrike', 'fireball', 'chainLightning', 'iceSpear', 'voidOrb', 'thunderStrike', 'drone', 'poisonNova', 'common'].filter((page) =>
     DIALS.some((dial) => dial.tab === 'skills' && dial.skill === page),
   );
 
@@ -487,6 +487,9 @@ export class TuningScene extends Phaser.Scene {
     if (root === 'BALANCE' && a === 'damageScale' && b) {
       return fill(copy.detailDamageScale, { skill: skillName(b as SkillId) });
     }
+    if (root === 'BALANCE' && a === 'attackCoeff' && b) {
+      return fill(copy.detailAttackCoeff, { skill: skillName(b as SkillId) });
+    }
     if (root === 'SPAWN_TABLE') {
       const row = SPAWN_TABLE[Number(a)];
       return row ? fill(copy.detailUnlock, { kind: enemyName(row.kind) }) : '';
@@ -689,6 +692,9 @@ export class TuningScene extends Phaser.Scene {
     }
     if (root === 'BALANCE' && a === 'damageScale') {
       return copy.fields.damageScale;
+    }
+    if (root === 'BALANCE' && a === 'attackCoeff') {
+      return copy.fields.attackCoeff;
     }
     if (root === 'SPAWN_TABLE') {
       const row = SPAWN_TABLE[Number(a)];

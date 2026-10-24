@@ -35,7 +35,7 @@ export interface DialSpec {
   readonly maxFactor?: number;
 }
 
-const SKILL_IDS = ['meleeStrike', 'fireball', 'chainLightning', 'iceSpear', 'voidOrb', 'thunderStrike', 'drone'] as const;
+const SKILL_IDS = ['meleeStrike', 'fireball', 'chainLightning', 'iceSpear', 'voidOrb', 'thunderStrike', 'drone', 'poisonNova'] as const;
 
 /** What each skill's page holds, beyond damage, speed and reach. */
 const SKILL_EXTRAS: Record<(typeof SKILL_IDS)[number], readonly string[]> = {
@@ -46,6 +46,7 @@ const SKILL_EXTRAS: Record<(typeof SKILL_IDS)[number], readonly string[]> = {
   voidOrb: ['orbCount', 'orbitSpeed'],
   thunderStrike: ['recastChance'],
   drone: ['droneCount'],
+  poisonNova: [],
 };
 
 const skillDials: DialSpec[] = SKILL_IDS.flatMap((skill) => [
@@ -59,6 +60,7 @@ const skillDials: DialSpec[] = SKILL_IDS.flatMap((skill) => [
     skill,
     ...(field.endsWith('Count') ? { max: 10 } : field.endsWith('Chance') ? { max: 1 } : { min: 10 }),
   })),
+  { path: `BALANCE.attackCoeff.${skill}`, kind: 'scale' as const, tab: 'skills' as const, skill },
   { path: `BALANCE.damageScale.${skill}`, kind: 'scale' as const, tab: 'skills' as const, skill },
 ]);
 

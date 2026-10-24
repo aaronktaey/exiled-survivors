@@ -319,7 +319,6 @@ check('the readout shows the level and the DPS, and no single-hit number',
 await shot('skills-07-levels');
 
 
-console.log('\n=== SUMMARY ===');
 // --- 7. balance dials ---
 const dials = await run(`
   const probe = s.spawner.group.get(0, 0);
@@ -383,6 +382,76 @@ check('a shot in the air — the survivor’s or an enemy’s — waits out a po
   held.shot && held.bolt && held.shotLeft === Math.round(held.life.shot) && held.boltLeft === Math.round(held.life.bolt) &&
     held.itemLeft === Math.round(held.life.item),
   JSON.stringify(held));
+
+// --- 9. 포이즌 노바 (0.122): a ring out to its range, a hit and a dose of poison on all it reaches ---
+await run(`
+  s.spawner.clear();
+  s.choosing = false;
+  window.__crit = window.config.PLAYER.critChance;
+  window.config.PLAYER.critChance = 0;
+  window.__addXp = s.progression.addXp;
+  s.progression.addXp = () => {};
+  if (!s.owned.has('poisonNova')) s.acquire('poisonNova');
+  window.__allWeapons = s.weapons.slice();
+  const nova = s.weapons.find((w) => w.definition.id === 'poisonNova');
+  // Only the nova fights, so every point lost is its own.
+  s.weapons.splice(0, s.weapons.length, nova);
+  const real = nova.update.bind(nova);
+  nova.update = (d, c) => { window.__novaCtx = c; real(d, c); };
+  window.__nova = nova;
+  const p = s.player, range = s.progression.rangeFor('poisonNova');
+  p.setInvulnerable(true);
+  const put = (dx) => { const e = s.spawner.group.get(p.x + dx, p.y); e.spawn(p.x + dx, p.y, p, 'brute', s.spawner.hooks); return e; };
+  window.__inside = [put(range * 0.5), put(-range * 0.6)];
+  window.__outside = put(range * 3);
+  window.__full = window.__inside.map((e) => e.hp);
+  nova.sinceCastMs = 1e9;
+  return 1;
+`);
+await cdp.until(`window.__nova && window.__nova.poisoned.size > 0`, 5000, 50);
+await shot('skills-09-nova');
+await sleep(250);
+const novaHit = await run(`
+  return { hit: window.__inside.map((e, i) => window.__full[i] - e.hp), outside: window.__outside.hp === window.__outside.maxHp,
+           poisoned: window.__nova.poisoned.size, onInside: window.__inside.every((e) => window.__nova.poisoned.has(e)),
+           hp: window.__inside.map((e) => e.hp), damage: window.__novaCtx.damage };
+`);
+check('포이즌 노바: the ring hits and poisons everything within its range, and nothing past it',
+  novaHit.hit.every((h) => h >= Math.floor(novaHit.damage)) && novaHit.outside && novaHit.onInside && novaHit.poisoned === 2,
+  JSON.stringify(novaHit));
+await sleep(1200);
+const novaTick = await run(`return { hp: window.__inside.map((e) => e.hp), left: window.__nova.poisoned.size };`);
+check('and the poison keeps hurting them after the ring has gone',
+  novaTick.hp.every((h, i) => h < novaHit.hp[i]) && novaTick.left === 2,
+  `${novaHit.hp.join('/')} → ${novaTick.hp.join('/')}`);
+const novaRules = await run(`
+  const nova = window.__nova, C = window.config, e = window.__inside[0];
+  for (let i = 0; i < C.POISON_NOVA.maxStacks + 3; i++) nova.poison(e, 1);
+  const stacks = nova.poisoned.get(e).doses.length;
+  // 각성: a poisoned enemy that dies passes its doses on.
+  const ctx = { ...window.__novaCtx, mastered: true, masteredTwice: true };
+  const near = window.__inside[1];
+  near.x = e.x + C.SKILL_MASTERY.poisonSpread.radius * 0.5; near.y = e.y;
+  nova.poisoned.delete(near);
+  s.combat.hit(e, 1e9);
+  nova.sinceCastMs = 0;
+  nova.update(16, ctx);
+  const spread = nova.poisoned.has(near) && nova.poisoned.get(near).doses.length > 0;
+  // 2차 각성: a wider ring follows.
+  nova.cast(ctx);
+  const echo = nova.echo ? Math.round(nova.echo.radius) : 0;
+  return { stacks, max: C.POISON_NOVA.maxStacks, spread, echo, want: Math.round(ctx.range * C.SKILL_MASTERY.second.novaEcho.radiusScale) };
+`);
+check('doses stop at maxStacks; awakened, a poisoned death passes the poison on; twice, a wider ring follows',
+  novaRules.stacks === novaRules.max && novaRules.spread && novaRules.echo === novaRules.want && novaRules.echo > 0,
+  JSON.stringify(novaRules));
+await run(`
+  s.weapons.splice(0, s.weapons.length, ...window.__allWeapons);
+  s.progression.addXp = window.__addXp;
+  window.config.PLAYER.critChance = window.__crit;
+  s.spawner.clear();
+  return 1;
+`);
 
 console.log('\n=== SUMMARY ===');
 const failed = results.filter((r) => !r.p);

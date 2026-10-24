@@ -207,8 +207,9 @@ const coverage = await scene('InfoScene', `
     missing,
     skillTabs: skillChapter.tabs.length,
     skillCards: skillChapter.tabs.every(tb => tb.cards.length > 0 && tb.cards[0].title === tb.title),
-    // A trial skill (SKILL_TRIAL) is hidden from a player not trying it — the harness has no account.
-    skills: Object.keys(c.SKILL_BASE).filter((id) => !c.SKILL_TRIAL?.[id]).length,
+    // A trial skill (SKILL_TRIAL) is hidden from a player not trying it — the harness has no account —
+    // and one not shipped yet (SKILL_DEV_ONLY) is the dev server's only.
+    skills: Object.keys(c.SKILL_BASE).filter((id) => !c.SKILL_TRIAL?.[id] && !c.SKILL_DEV_ONLY?.includes(id)).length,
     unfilled: words.filter(w => /[{}]/.test(w)).slice(0, 5),
     broken: words.filter(w => /undefined|NaN/.test(w)).slice(0, 5),
     emptyTabs: s.chapters.flatMap(ch => ch.tabs.filter(tb => tb.cards.length === 0).map(tb => tb.id)),

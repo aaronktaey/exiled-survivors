@@ -61,6 +61,8 @@ const start = await run(`
     hp: s.player.hp, max: s.player.maxHp,
     melee: s.damageOf('meleeStrike'),
     stat: s.progression.statsFor('meleeStrike').damage,
+    coeff: window.config.BALANCE.attackCoeff.meleeStrike,
+    scale: window.config.BALANCE.damageScale.meleeStrike,
     loadout: s.hud.loadoutText,
     first: window.config.attackForTier(window.config.GEAR[window.config.STARTING_GEAR].tier),
     lowest: window.config.GEAR_BASE.lowestAttack,
@@ -69,9 +71,22 @@ const start = await run(`
 console.log('starter:', JSON.stringify(start));
 check('the starting sword is the weakest tier, worth the lowest attack power',
   start.bonus.attack === start.first && start.first === start.lowest, `+${start.bonus.attack}`);
-check('and it lands on what a skill hits for',
-  start.melee === start.stat + start.bonus.attack,
-  `${start.stat} + ${start.bonus.attack} = ${start.melee}`);
+check('and it lands on what a skill hits for, times the skill’s 무기 공격력 계수',
+  start.melee === Math.round((start.stat + start.bonus.attack * start.coeff) * start.scale),
+  `(${start.stat} + ${start.bonus.attack} × ${start.coeff}) × ${start.scale} = ${start.melee}`);
+// 0.122: the coefficient is the share of the weapon's attack a skill takes — and only that.
+const coeffed = await run(`
+  const C = window.config.BALANCE, was = C.attackCoeff.meleeStrike;
+  C.attackCoeff.meleeStrike = was * 3;
+  const tripled = s.damageOf('meleeStrike');
+  C.attackCoeff.meleeStrike = was;
+  return { tripled, back: s.damageOf('meleeStrike'), stat: s.progression.statsFor('meleeStrike').damage,
+           attack: s.gearBonus.attack, was, scale: C.damageScale.meleeStrike };
+`);
+check('a skill’s 무기 공격력 계수 scales the weapon’s attack in its damage, and nothing else',
+  coeffed.tripled === Math.round((coeffed.stat + coeffed.attack * coeffed.was * 3) * coeffed.scale) &&
+    coeffed.back === start.melee && coeffed.tripled > coeffed.back,
+  JSON.stringify(coeffed));
 check('a plain sword changes nothing else',
   start.bonus.maxHpScale === 1 && start.bonus.moveSpeedScale === 1 && start.bonus.critChanceIncrease === 0,
   JSON.stringify(start.bonus));

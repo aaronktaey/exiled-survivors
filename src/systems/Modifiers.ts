@@ -1,4 +1,4 @@
-import { PLAYER, SKILL_BASE } from '@/config';
+import { BALANCE, PLAYER, SKILL_BASE } from '@/config';
 import type { SkillId } from '@/weapons/skills';
 import { NO_BONUS, type GearBonus } from '@/systems/Gear';
 import { NO_PASSIVES, type PassiveBonus } from '@/systems/Passives';
@@ -60,12 +60,21 @@ export function damageParts(
   skill: SkillId,
   upgraded: number,
   mods: RunModifiers,
-): { readonly base: number; readonly attack: number; readonly flat: number; readonly increase: number; readonly amplify: number } {
+): {
+  readonly base: number;
+  readonly attack: number;
+  /** BALANCE.attackCoeff: the share of the weapon's attack this skill takes (0.122). */
+  readonly coeff: number;
+  readonly flat: number;
+  readonly increase: number;
+  readonly amplify: number;
+} {
   const base = SKILL_BASE[skill].damage;
-  const flat = base + mods.gear.attack;
+  const coeff = BALANCE.attackCoeff[skill] ?? 1;
+  const flat = base + mods.gear.attack * coeff;
   const increase = 1 + (runScale(base, upgraded) - 1) + mods.gear.damageIncrease;
   const amplify = mods.shard.damage * mods.gear.damageAmplify;
-  return { base, attack: mods.gear.attack, flat, increase, amplify };
+  return { base, attack: mods.gear.attack, coeff, flat, increase, amplify };
 }
 
 /** One skill's attacks per second, folded the same way. */
