@@ -30,6 +30,7 @@ import {
   TEXTURES,
   TIMING,
   WORLD,
+  XP,
   SKILL_MASTERY,
   SUB_SKILLS,
   NO_HELD_BONUS,
@@ -660,7 +661,8 @@ export class GameScene extends Phaser.Scene {
   /** Puts a saved run back together: stats, skills, clocks and health. */
   private restore(run: SavedRun): void {
     this.progression.level = run.level;
-    this.progression.xp = run.xp;
+    // A save from before 0.120 counted XP in units ten times coarser.
+    this.progression.xp = run.xpUnit === XP.unit ? run.xp : run.xp * XP.unit;
 
     // The main skill first, so it is the one held first again.
     if (run.main && run.skills[run.main]) {
@@ -805,6 +807,7 @@ export class GameScene extends Phaser.Scene {
       tally: runTally.value,
       level: this.progression.level,
       xp: this.progression.xp,
+      xpUnit: XP.unit,
       hp: this.player.hp,
       skills,
       spawnerMs: this.spawner.clockMs,

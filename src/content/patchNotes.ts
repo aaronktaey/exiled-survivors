@@ -15,6 +15,28 @@ export interface PatchNote {
 
 export const PATCH_NOTES: readonly PatchNote[] = [
   {
+    version: '0.120',
+    date: '2026-10-24',
+    changes: {
+      ko: [
+        '경험치 단위를 10배로 키웠습니다. 적이 주는 경험치와 레벨업에 필요한 경험치가 함께 10배가 되어 레벨업 속도는 그대로입니다. 일반 적은 10, 질주는 10, 사수는 32, 거구는 57, 우두머리는 200을 줍니다.',
+        '단위가 세밀해지면서 반올림으로 깎이던 몫이 사라져, 기행종의 경험치가 약 30%, 사수가 약 7% 늘고 거구는 약 5% 줄었습니다.',
+      ],
+      en: [
+        'XP now comes in units ten times finer. What enemies give and what a level needs both grew tenfold, so levelling keeps its pace. A Grunt gives 10, a Runner 10, a Shooter 32, a Brute 57 and a Boss 200.',
+        'With finer units nothing is rounded away any more: Oddities give about 30% more XP, Shooters about 7% more, and Brutes about 5% less.',
+      ],
+      ja: [
+        '経験値の単位を10倍にしました。敵がくれる経験値とレベルアップに必要な経験値が共に10倍になり、レベルアップの速さは変わりません。雑兵は10、俊足は10、射手は32、巨漢は57、ボスは200をくれます。',
+        '単位が細かくなり四捨五入で削られていた分がなくなったため、奇行種の経験値が約30%、射手が約7%増え、巨漢は約5%減りました。',
+      ],
+      zh: [
+        '经验值单位扩大为10倍。敌人给予的经验和升级所需经验同时变为10倍，升级速度不变。杂兵给10，疾走者10，射手32，巨汉57，首领200。',
+        '单位变细后不再因四舍五入而损失：奇行种的经验约增加30%，射手约增加7%，巨汉约减少5%。',
+      ],
+    },
+  },
+  {
     version: '0.119',
     date: '2026-10-24',
     changes: {

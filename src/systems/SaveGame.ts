@@ -16,6 +16,8 @@ export interface SavedRun {
   readonly wallMs?: number;
   readonly level: number;
   readonly xp: number;
+  /** XP.unit when written (0.120); absent before, when XP came in tenths of today's. */
+  readonly xpUnit?: number;
   readonly hp: number;
   /** Owned skills and where each one's stats stand. */
   readonly skills: Partial<Record<SkillId, SkillStats>>;

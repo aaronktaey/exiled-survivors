@@ -845,6 +845,16 @@ Read `git log` for what changed and when. What is not in the log:
   (`DIFFICULTY.hpStepTiers.0.multiplier`). `lateFromMinute`/`lateMultiplier`
   now move only the rare chance. The user asked for this on 2026-10-18:
   minutes 5–10 were too easy and the ×5 step at ten a wall.
+- **XP in finer units (0.120, the user's ask).** `XP.scale` and
+  `XP_CURVE.A` are both ten times 0.119's — the same pace, but a kind no
+  longer loses its fraction to rounding (the 기행종 gained ~30%). Only the
+  kinds in `XP.roundTo` round coarser: the 일반 to 10, its old 1. A save
+  carries `xpUnit`; one without it has its XP × `XP.unit` on resume. A
+  kill's XP does **not** follow the clock: `xpFor` reads the kind's numbers
+  and a rare's 속성 (`Enemy.hpScale` is the 속성's only), never
+  `enemyHpScaleAt` — a 10-minute enemy pays what a first-minute one does.
+  The user knows (2026-10-24); scaling it is an open question, not a bug
+  to fix quietly. XP_CURVE is R 1.015 since 0.119 (PoE's 1.0483 before).
 - **Upgrade cards carry their numbers.** `upgradeOptionsFor(skill, stats)`
   adds `now`/`next` (the skill's own stat, before its folds — capped at
   `UPGRADE_CAP`) and `taken`/`maxPicks` (`maxPicksFor`: the pick limit or

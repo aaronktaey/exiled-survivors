@@ -188,12 +188,17 @@ await choose('MenuScene', 'load');
 await sleep(2600);
 const resumed = await scene('GameScene', `
   return { elapsed: Math.round(s.elapsedMs / 1000), level: s.progression.level,
-           spawner: Math.round(s.spawner.clockMs / 1000) };
+           spawner: Math.round(s.spawner.clockMs / 1000),
+           xp: s.progression.xp, unit: window.config.XP.unit };
 `);
 console.log('resumed:', JSON.stringify(resumed));
 check('불러오기 picks the run up where it was left',
   resumed.level === 9 && resumed.elapsed >= 475,
   `lv ${resumed.level} at ${resumed.elapsed}s`);
+// 0.120 counts XP in finer units: a save without `xpUnit` is from before.
+check('a save from before the finer XP units has its XP scaled up',
+  resumed.unit > 1 && resumed.xp === 5 * resumed.unit,
+  `xp ${resumed.xp} (saved 5, unit ${resumed.unit})`);
 
 await scene('GameScene', `s.player.invulnerableUntil = 0; s.player.takeDamage(99999); return 1;`);
 await sleep(1600);

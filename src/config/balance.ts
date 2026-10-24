@@ -1867,17 +1867,29 @@ export const STATS = {
 export const XP = {
   size: 8,
   /**
-   * Multiplies the whole thing. The dial to turn for levelling pace. A
-   * tenth of what it was when health was written ten times smaller, so
-   * levelling keeps its pace.
+   * Multiplies the whole thing. The dial to turn for levelling pace. Ten
+   * times 0.119's since 0.120 (the user's ask), with XP_CURVE.A ten times
+   * too: the same curve in finer units, so a kind is no longer rounded
+   * from 1.34 down to 1 — only those in `roundTo` are.
    */
-  scale: 0.0035,
+  scale: 0.035,
   /** One point of contact damage, counted as this much health. */
   contactWeight: 12,
   /** And one point of ranged damage, which costs you more to avoid. */
   shotWeight: 16,
   /** Even the frailest thing is worth something. */
-  minimum: 1,
+  minimum: 10,
+  /**
+   * Kinds whose XP is rounded to a multiple of this, not to one. The
+   * 일반 stays at 10 — the 1 it gave before the units grew, kept on the
+   * user's word — where finer units would have made it 13 (0.120).
+   */
+  roundTo: { grunt: 10 } as Partial<Record<EnemyKind, number>>,
+  /**
+   * What one point of XP saved before 0.120 is worth now. A saved run
+   * carries `xpUnit`; one without it has its XP multiplied by this.
+   */
+  unit: 10,
 } as const;
 
 /**
@@ -1894,19 +1906,20 @@ export function xpFor(
     spec.contactDamage * XP.contactWeight * damageScale +
     (spec.shot ? spec.shot.damage * XP.shotWeight * damageScale : 0);
 
-  return Math.max(XP.minimum, Math.round(power * XP.scale));
+  const step = XP.roundTo[spec.id] ?? 1;
+  return Math.max(XP.minimum, Math.round((power * XP.scale) / step) * step);
 }
 
 /** PoE 경험치 곡선 근사식 (모양 유지, 크기는 SCALE로 조절) */
 export const XP_CURVE = {
-  A: 41.5,
+  A: 415, // 0.120: ×10 with XP.scale — the same curve in finer units
   K: 1.75,
   B: 2.41,
   R: 1.015, // 0.119: 1.0483 (PoE) → 1.015, 후반 레벨업을 완만하게 (사용자 선택)
   SCALE: 0.01, // 1.0 = PoE 원본 수치
 } as const;
 
-/** XP needed to leave `level`: 5, 10, 19, 30, 45, ... (R 1.015). */
+/** XP needed to leave `level`: 48, 103, 185, 298, 446, ... */
 export function xpToNextLevel(level: number): number {
   const { A, K, B, R, SCALE } = XP_CURVE;
   return Math.max(

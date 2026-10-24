@@ -100,6 +100,22 @@ check('사수: its own stat line and texture',
   kinds.shooter.hp === SPEC.shooter.hp && kinds.shooter.tex === 'tex-enemy-shooter' &&
   kinds.shooter.xp >= kinds.grunt.xp,
   `hp=${kinds.shooter.hp} xp=${kinds.shooter.xp} ${kinds.shooter.tex}`);
+// XP comes off the kind's numbers; a kind in XP.roundTo (the 일반, 0.120) to a multiple of its step.
+const xpRule = await cdp.evaluate(`(() => {
+  const { XP, ENEMY_KINDS } = window.config;
+  const out = {};
+  for (const id of ['grunt', 'brute', 'runner', 'shooter']) {
+    const k = ENEMY_KINDS[id];
+    const power = k.maxHp + k.contactDamage * XP.contactWeight + (k.shot ? k.shot.damage * XP.shotWeight : 0);
+    const step = XP.roundTo[id] ?? 1;
+    out[id] = { want: Math.max(XP.minimum, Math.round(power * XP.scale / step) * step), step };
+  }
+  return out;
+})()`);
+check('each kind pays its XP by the rule, the 일반 rounded to its step',
+  ['grunt', 'brute', 'runner', 'shooter'].every((k) => kinds[k].xp === xpRule[k].want) &&
+    xpRule.grunt.step > 1 && kinds.grunt.xp % xpRule.grunt.step === 0,
+  ['grunt', 'brute', 'runner', 'shooter'].map((k) => `${k} ${kinds[k].xp}/${xpRule[k].want}`).join(', '));
 check('each kind draws its own texture',
   new Set(['grunt', 'brute', 'runner', 'shooter'].map(k => kinds[k].tex)).size === 4,
   ['grunt', 'brute', 'runner', 'shooter'].map(k => kinds[k].tex.replace('tex-enemy', '')).join(' '));
@@ -535,16 +551,21 @@ check('but still close enough that the bodies touch',
 // The kills above can have earned a level, and an open level-up popup holds
 // the fight — which once made this check fail now and then for no reason of
 // its own. Any popup is answered first, and no XP is taken while measuring.
-for (let i = 0; i < 6; i++) {
-  if (!(await cdp.evaluate(`window.game.scene.isActive('UpgradeScene')`))) break;
-  await sleep(400);
-  await cdp.tap('Space', 32, ' ');
-  await sleep(400);
+// XP is shut off first, then popups are answered until none has come for a
+// while — one level can queue the next a moment after the first closes.
+await run(`window.__addXp = s.progression.addXp; s.progression.addXp = () => {}; return 1;`);
+for (let i = 0, quiet = 0; i < 12 && quiet < 3; i++) {
+  if (await cdp.evaluate(`window.game.scene.isActive('UpgradeScene') || window.game.scene.getScene('GameScene').choosing`)) {
+    quiet = 0;
+    await sleep(400);
+    await cdp.tap('Space', 32, ' ');
+  } else {
+    quiet += 1;
+  }
+  await sleep(300);
 }
 const hurt = await run(`
   s.spawner.clear();
-  window.__addXp = s.progression.addXp;
-  s.progression.addXp = () => {};
   const p = s.player;
   p.setInvulnerable(false);
   p.invulnerableUntil = 0;
