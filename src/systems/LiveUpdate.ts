@@ -15,6 +15,7 @@
 import type Phaser from 'phaser';
 
 import { LIVE_UPDATE, SCENES } from '@/config';
+import { ranking } from '@/systems/Ranking';
 
 declare const __BUILD_ID__: string;
 
@@ -86,7 +87,8 @@ class LiveUpdateStore {
       return false;
     }
     const running = game.scene.getScenes(true).map((scene) => scene.scene.key);
-    return running.length === 1 && running[0] === SCENES.menu;
+    // Not while a run is on its way to the ranking (0.113): a reload under it lost it.
+    return running.length === 1 && running[0] === SCENES.menu && !ranking.busy;
   }
 
   /** Reloads onto the new version, remembering it so a stale copy cannot bring it back here. */

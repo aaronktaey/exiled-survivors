@@ -15,6 +15,24 @@ export interface PatchNote {
 
 export const PATCH_NOTES: readonly PatchNote[] = [
   {
+    version: '0.113',
+    date: '2026-10-24',
+    changes: {
+      ko: [
+        '랭킹에 등록한 기록이 업데이트 직후 랭킹표에서 잠시 빠져 보이던 문제를 고쳤습니다. 등록이 끝나기 전에 업데이트가 적용되지 않고, 전송이 끊긴 기록은 다음 접속 때 다시 보냅니다.',
+      ],
+      en: [
+        'Fixed a run you put on the ranking briefly disappearing from the board after an update. An update now waits until the run is in, and a run whose sending was cut off is sent again next time.',
+      ],
+      ja: [
+        'ランキングに登録した記録がアップデート直後にランキング表から一時的に消えて見えた問題を修正しました。登録が終わるまでアップデートは適用されず、送信が途切れた記録は次回の接続時に送り直されます。',
+      ],
+      zh: [
+        '修正了登记到排行榜的记录在更新后暂时从排行榜上消失的问题。登记完成前不会应用更新，发送中断的记录会在下次进入时重新发送。',
+      ],
+    },
+  },
+  {
     version: '0.112',
     date: '2026-10-24',
     changes: {

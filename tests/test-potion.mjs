@@ -125,7 +125,10 @@ const floater = await run(`
   s.combat.dropPotionAt(s.player.x, s.player.y);
   return { active: s.damageNumbers.activeCount };
 `);
-await sleep(600);
+// Until it is picked up and said, not a fixed wait: with four Chromes at once
+// the pickup's frame came later than 600ms, and the check read a heal still to come.
+await cdp.until(`(() => { const s = window.game.scene.getScene('GameScene');
+  return s.damageNumbers.pool.some((f) => f.remainingMs > 0 && f.text.text === '+1'); })()`, 5000, 100);
 const shown = await run(`
   const live = s.damageNumbers.pool.filter(f => f.remainingMs > 0).map(f => ({ text: f.text.text, color: f.text.style.color }));
   return { live, hp: s.player.hp };

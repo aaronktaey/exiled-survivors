@@ -370,6 +370,24 @@ Read `git log` for what changed and when. What is not in the log:
   three once (`tallyWins`, claiming `tally.through_day` before crediting, so
   two looks cannot count a day twice; migrations 0006, 0007 — 0007 filled in
   second and third for the days already counted).
+  **A run that went in is never lost (0.113).** A player's run vanished
+  from their own board after a reload onto a new version. Two causes: the
+  edge's copy of the board is per data centre (and a look already under way
+  could put back a board read before the run), so one from before the run
+  could come back for `RULES.cacheSeconds` and the client let it replace its
+  board outright; and the title reloaded onto a new version while the run
+  was still on its way. Now every board carries `asOf` (server time it was
+  read; a submission writes its colo's copy fresh rather than only dropping
+  it); the client keeps the account's run the server took
+  (`STORAGE.rankMine`) on any board read before it (`keepMine`) — a board
+  read after it is believed; a run is written to `STORAGE.rankOutbox`
+  before it is sent, cleared when the server answers, and sent again by the
+  next `refresh` for the same account (same day only); `ranking.busy`
+  holds `liveUpdate.safeNow` back and the title re-offers the update when
+  the ranking changes; and the server answers the same run again (same
+  account, damage, level, time within a day) as taken (`again: true`), never
+  entering it twice. Both keys are `ACCOUNT.localOnly`. test-ranking 9b and
+  test-api cover it.
   **No cached answer is kept by the browser** (`unstored` in server/http.ts,
   and the client fetches with `cache: 'no-store'`): a copy out of the
   Workers cache comes back from Cloudflare re-marked `max-age=14400` (the

@@ -245,6 +245,18 @@ try {
     JSON.stringify(first.body));
   const again = await read(await alice.send('/api/ranking', 'POST', run({ name: 'ALI', damage: 90000 })));
   check('the same account handing in again at once is told to slow down', again.status === 429, `${again.status}`);
+  // 0.113: a run handed in again (the page reloaded before hearing back) is
+  // answered as taken — inside the cooldown and all — and not entered twice.
+  const resent = await read(await alice.send('/api/ranking', 'POST', run({ name: 'ALI', damage: 50000.4, survivedMs: 600016.67 })));
+  const onceBoard = await read(await fetch(`${BASE}/api/ranking`));
+  check('the same run handed in again is answered as taken, not entered twice and not told to slow down',
+    resent.status === 200 && resent.body?.again === true && resent.body?.place === 1 &&
+      onceBoard.body?.entries?.filter((e) => e.name === 'ALI').length === 1,
+    JSON.stringify({ status: resent.status, again: resent.body?.again, board: onceBoard.body?.entries?.map((e) => e.name) }));
+  check('every board says when the server read it (asOf), the one a run comes back with too',
+    Number.isFinite(first.body?.asOf) && first.body.asOf > 0 && Number.isFinite(onceBoard.body?.asOf) &&
+      onceBoard.body.asOf >= first.body.asOf - 1000,
+    JSON.stringify({ posted: first.body?.asOf, got: onceBoard.body?.asOf }));
 
   const bob = browser();
   await bob.signIn('bob');

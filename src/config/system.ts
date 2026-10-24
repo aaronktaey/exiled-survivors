@@ -106,6 +106,14 @@ export const STORAGE = {
   personal: "exiled-survivors:personal:v1",
   /** The name, emoji and flag last entered on the ranking, to start on next time. */
   rankName: "exiled-survivors:rank-name:v1",
+  /**
+   * A run handed in to the ranking and not yet answered (0.113): written
+   * before the request goes, cleared when the server answers, handed in
+   * again on the next look at the board if the page went first.
+   */
+  rankOutbox: "exiled-survivors:rank-outbox:v1",
+  /** The account's run the server last took today, and when (0.113): kept on any board read before it. */
+  rankMine: "exiled-survivors:rank-mine:v1",
   /** 아이템 필터: the drops switched off. */
   itemFilter: "exiled-survivors:item-filter:v1",
   /** Which account this browser's records were last synced with, and when. */
@@ -240,6 +248,9 @@ export const ACCOUNT = {
   // The admin's 밸런스 draft is this browser's experiment, not a record.
   localOnly: [
     "exiled-survivors:ranking:v1",
+    // This device's run in flight, and the run it saw taken: neither is a record.
+    "exiled-survivors:rank-outbox:v1",
+    "exiled-survivors:rank-mine:v1",
     "exiled-survivors:sync:v1",
     "exiled-survivors:tuning-draft:v1",
     // Written by every device each morning: synced, it would set them at odds.

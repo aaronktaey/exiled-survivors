@@ -370,6 +370,98 @@ check('a run the server turns down does not stay on the board',
 check('and when it cannot be reached, this device’s board stays and says so',
   sh.offline === 'offline' && sh.kept >= 2);
 
+// --- 9b. a run that went in is never lost to a stale board or a reload (0.113) ---
+// The edge's copy of the board is per data centre: one read before a run went
+// in can come back for a few seconds. And a page reloaded onto a new version
+// while the run was on its way never heard back.
+const keptRun = await cdp.send('Runtime.evaluate', { awaitPromise: true, returnByValue: true, expression: `(async () => {
+  const R = window.config.RANKING, S = window.config.STORAGE;
+  const realFetch = window.fetch;
+  localStorage.removeItem(S.rankMine);
+  localStorage.removeItem(S.rankOutbox);
+  const others = [{ name: 'OTH', emoji: '', flag: '', damage: 10, level: 1, survivedMs: 9000, at: new Date().toISOString(), skill: '' }];
+  const board = [...others];
+  let staleAsOf = 0, hang = null, posts = 0;
+  const reply = (body, status = 200) => new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
+  window.fetch = async (url, init) => {
+    if (String(url) !== R.shared.url) return reply({ error: 'not found' }, 404);
+    if (init?.method === 'POST') {
+      posts += 1;
+      if (hang) await hang;
+      const run = JSON.parse(init.body);
+      if (!board.some((e) => e.name === run.name && e.damage === run.damage)) board.push({ ...run, at: new Date().toISOString() });
+      board.sort((a, b) => b.damage - a.damage);
+      return reply({ ok: true, place: 1, entries: board, asOf: Date.now() });
+    }
+    // The stale copy: the board from before, read at staleAsOf.
+    return reply({ entries: others, asOf: staleAsOf });
+  };
+  R.shared.enabled = true;
+  // Signed in as one account the whole way: a run waiting goes again only for its own account.
+  const userWas = window.account.user;
+  window.account.user = { id: 'acct-1', provider: 'test', name: 'tester', rank: { name: '', emoji: '', flag: '' } };
+  const out = {};
+  const names = () => window.ranking.top.map((e) => e.name);
+  try {
+    window.ranking.submit({ name: 'MEE', emoji: '', flag: '', damage: 5000, level: 3, survivedMs: 60000 });
+    await new Promise((r) => setTimeout(r, 300));
+    out.taken = names();
+    out.outboxAfter = localStorage.getItem(S.rankOutbox);
+    staleAsOf = Date.now() - 5000;
+    await window.ranking.refresh();
+    out.onStale = names();
+    staleAsOf = Date.now() + 5000;
+    await window.ranking.refresh();
+    out.onNewer = names();
+
+    // A run on its way: written down first, the page held; never answered (the page went): sent again.
+    let fail;
+    hang = new Promise((_, reject) => { fail = reject; });
+    window.ranking.submit({ name: 'OUT', emoji: '', flag: '', damage: 7000, level: 3, survivedMs: 61000 });
+    await new Promise((r) => setTimeout(r, 200));
+    out.busy = window.ranking.busy;
+    out.waiting = JSON.parse(localStorage.getItem(S.rankOutbox) ?? 'null')?.run?.name ?? null;
+    // On the title with nothing else open — only the run on its way stands in the way.
+    const onTitle = { scene: { getScenes: () => [{ scene: { key: window.config.SCENES.menu } }] } };
+    window.liveUpdate.latest = 'newer-build';
+    out.safe = window.liveUpdate.safeNow(onTitle);
+    fail(new TypeError('the page went'));
+    hang = null;
+    await new Promise((r) => setTimeout(r, 200));
+    out.stillWaiting = !!localStorage.getItem(S.rankOutbox);
+    const before = posts;
+    staleAsOf = Date.now();
+    await window.ranking.refresh();
+    await new Promise((r) => setTimeout(r, 300));
+    out.resent = posts - before;
+    out.cleared = localStorage.getItem(S.rankOutbox) === null;
+    out.after = names();
+    out.busyAfter = window.ranking.busy;
+    out.safeAfter = window.liveUpdate.safeNow(onTitle);
+  } finally {
+    window.fetch = realFetch;
+    R.shared.enabled = false;
+    window.liveUpdate.latest = null;
+    window.account.user = userWas;
+    localStorage.removeItem(S.rankMine);
+    localStorage.removeItem(S.rankOutbox);
+  }
+  return out;
+})()` });
+const kp = keptRun.result?.result?.value ?? { err: keptRun.result?.exceptionDetails?.exception?.description };
+console.log('kept:', JSON.stringify(kp));
+check('a run the server took stays on a board read before it (an edge copy from before), and its outbox is cleared',
+  kp.taken?.includes('MEE') && kp.outboxAfter === null && kp.onStale?.includes('MEE') && kp.onStale?.includes('OTH'),
+  JSON.stringify({ taken: kp.taken, onStale: kp.onStale, outbox: kp.outboxAfter }));
+check('a board read after it is believed: a run not on it was taken off',
+  kp.onNewer?.includes('OTH') && !kp.onNewer?.includes('MEE'), JSON.stringify(kp.onNewer));
+check('a run on its way is written down first, and the title holds a new version back meanwhile',
+  kp.busy === true && kp.waiting === 'OUT' && kp.safe === false, JSON.stringify({ busy: kp.busy, waiting: kp.waiting, safe: kp.safe }));
+check('a run never answered is handed in again on the next look at the board, and then let go',
+  kp.stillWaiting === true && kp.resent === 1 && kp.cleared && kp.after?.includes('OUT') && kp.busyAfter === false,
+  JSON.stringify({ stillWaiting: kp.stillWaiting, resent: kp.resent, cleared: kp.cleared, after: kp.after }));
+check('once it is answered, the new version is free to load', kp.safeAfter === true, JSON.stringify(kp.safeAfter));
+
 // --- 10. 랭킹 검토: the admin sees which runs look out of line, reads each
 // one's 판 내역, and takes one off the board only after being askedTwice twice ---
 // A stand-in for /api/ranking, /review and /remove, kept on the page across

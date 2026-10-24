@@ -167,7 +167,15 @@ async function tallyWins(env: Env, today: number): Promise<void> {
   }
 }
 
-/** The board, from the edge's copy when it has a fresh one. */
+/**
+ * The board, from the edge's copy when it has a fresh one. Every board says
+ * when it was read (`asOf`, server time): the edge's copy is per data centre
+ * and a submission can only refresh its own, so a copy read before a run
+ * went in can still be handed out for RULES.cacheSeconds. The client that
+ * entered that run knows when it was taken, and keeps it on any board read
+ * before (systems/Ranking.ts) — 0.113, after a run vanished from its own
+ * player's board on a reload.
+ */
 export async function board(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
   const cache = caches.default;
   const now = Date.now();
@@ -180,13 +188,17 @@ export async function board(request: Request, env: Env, ctx: ExecutionContext): 
 
   // A new day: yesterday's (and any before it not yet counted) first place is credited.
   await tallyWins(env, day);
-  // Never kept past the reset.
-  const untilReset = Math.max(1, Math.floor((nextRankingReset(now) - now) / 1000));
-  const response = json({ entries: publicRows(await topRows(env, day)) }, 200, {
-    'Cache-Control': `public, max-age=${Math.min(RULES.cacheSeconds, untilReset)}`,
-  });
+  const response = boardResponse(publicRows(await topRows(env, day)), now);
   ctx.waitUntil(cache.put(key, response.clone()));
   return unstored(response);
+}
+
+/** A board as the edge keeps it: the rows, when they were read, and never past the reset. */
+function boardResponse(entries: RankRow[], asOf: number): Response {
+  const untilReset = Math.max(1, Math.floor((nextRankingReset(asOf) - asOf) / 1000));
+  return json({ entries, asOf }, 200, {
+    'Cache-Control': `public, max-age=${Math.min(RULES.cacheSeconds, untilReset)}`,
+  });
 }
 
 /** The signed-in account's best run, and its place: 0 off the board, null signed out. */
@@ -421,10 +433,28 @@ export async function submit(request: Request, env: Env, ctx: ExecutionContext):
     return json({ error: 'challenge' }, 403);
   }
 
-  // How many this account, and this address, have handed in lately.
-  const address = await addressOf(request, env);
   const now = Date.now();
   const dayAgo = now - 86_400_000;
+  const damage = Math.floor(Number(run.damage));
+  const level = Math.floor(Number(run.level));
+  const survivedMs = Math.floor(Number(run.survivedMs));
+
+  // The same run again — the client hands a run in again when it never heard
+  // back (a reload mid-request, 0.113) — is answered as taken, not entered twice.
+  const again = await env.DB.prepare(
+    `SELECT id FROM entries WHERE user_id = ?1 AND at_ms > ?2 AND damage = ?3 AND survived_ms = ?4 AND level = ?5
+       AND removed_at IS NULL LIMIT 1`,
+  )
+    .bind(user.id, dayAgo, damage, survivedMs, level)
+    .first<{ id: number }>();
+  if (again) {
+    const rows = await topRows(env, rankingDayStart(now));
+    const place = rows.findIndex((row) => row.userId === user.id) + 1;
+    return json({ ok: true, place, entries: publicRows(rows), asOf: Date.now(), again: true });
+  }
+
+  // How many this account, and this address, have handed in lately.
+  const address = await addressOf(request, env);
   // Two lookups, each on its own index, rather than one OR that reads the table.
   const [mineRow, hereRow] = await env.DB.batch<{ burst: number | null; day: number }>([
     env.DB.prepare(
@@ -453,9 +483,6 @@ export async function submit(request: Request, env: Env, ctx: ExecutionContext):
   // into the history, and onto today's board only if it beats the account's
   // best today.
   const at = new Date(now).toISOString();
-  const damage = Math.floor(Number(run.damage));
-  const level = Math.floor(Number(run.level));
-  const survivedMs = Math.floor(Number(run.survivedMs));
   const skill = SKILL_ID.test(String(run.skill ?? '')) ? String(run.skill) : '';
   const detail = cleanDetail(run.detail);
   const inserted = await env.DB.batch([
@@ -482,12 +509,17 @@ export async function submit(request: Request, env: Env, ctx: ExecutionContext):
     .bind(user.id, entryId, damage, level, survivedMs, at, day, skill)
     .run();
 
-  // The board this run is on, straight from the database, and the edge's
-  // copy here dropped so the next look sees it too.
+  // The board this run is on, straight from the database — and written over
+  // the edge's copy here, so the next look in this data centre sees it too
+  // (0.113: only dropped before, which left a look already under way free to
+  // put back the board from before the run).
   const rows = await topRows(env, day);
   const place = rows.findIndex((row) => row.userId === user.id) + 1;
-  ctx.waitUntil(caches.default.delete(boardKey(request, day)));
-  return json({ ok: true, place, entries: publicRows(rows) });
+  const asOf = Date.now();
+  ctx.waitUntil(
+    caches.default.put(new Request(boardKey(request, day), { method: 'GET' }), boardResponse(publicRows(rows), asOf)),
+  );
+  return json({ ok: true, place, entries: publicRows(rows), asOf });
 }
 
 /** The middle of a list of numbers. */

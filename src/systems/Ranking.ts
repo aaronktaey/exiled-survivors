@@ -155,6 +155,52 @@ function entriesOf(body: unknown): RankEntry[] | null {
   return entries.map(cleanRankEntry).filter((entry): entry is RankEntry => entry !== null);
 }
 
+/** When the server read the board it sent (server time), or null from a server before 0.113. */
+function asOfOf(body: unknown): number | null {
+  const asOf = Number((body as { asOf?: unknown } | null)?.asOf);
+  return Number.isFinite(asOf) && asOf > 0 ? asOf : null;
+}
+
+/** The same run: what the player did, whatever time either side stamped on it. */
+const sameRun = (a: RankEntry, b: { name: string; damage: number; level: number; survivedMs: number }): boolean =>
+  a.name === b.name && a.damage === b.damage && a.level === b.level && a.survivedMs === b.survivedMs;
+
+/** A run handed in and not yet answered: what was sent, the board's day, and whose it was. */
+interface Outbox {
+  readonly run: RankSubmission;
+  readonly day: number;
+  readonly user: string;
+}
+
+/** The account's run the server took, as the board shows it, and when the server had it. */
+interface Mine {
+  readonly entry: RankEntry;
+  readonly asOf: number;
+  readonly day: number;
+  readonly user: string;
+}
+
+function readJson<T>(key: string): T | null {
+  try {
+    const raw = localStorage.getItem(key);
+    return raw ? (JSON.parse(raw) as T) : null;
+  } catch {
+    return null;
+  }
+}
+
+function writeJson(key: string, value: unknown): void {
+  try {
+    if (value === null) {
+      localStorage.removeItem(key);
+    } else {
+      localStorage.setItem(key, JSON.stringify(value));
+    }
+  } catch {
+    // Kept for this visit only, then.
+  }
+}
+
 type Listener = (entries: readonly RankEntry[]) => void;
 
 /**
@@ -170,6 +216,15 @@ type Listener = (entries: readonly RankEntry[]) => void;
  *
  * The screens only ever touch `top`, `placeFor`, `submit`, `refresh` and
  * `source`, which is what lets the store change underneath them.
+ *
+ * Two things keep a run that went in from going missing (0.113 — a run
+ * vanished from its own player's board after a reload onto a new version):
+ * it waits in an outbox (STORAGE.rankOutbox) until the server answers, so a
+ * page that went first hands it in again, and the title holds a new version
+ * back while one is waiting (`busy`); and once the server has it, the run is
+ * kept (STORAGE.rankMine) on any board read before it — the edge's copy of
+ * the board is per data centre, so one from before the run can still come
+ * back for a few seconds, and it used to replace the board here outright.
  */
 class RankingStore {
   private current: RankEntry[] = [];
@@ -189,6 +244,13 @@ class RankingStore {
   /** The board's day `myBest` was read on (rankingDayStart). */
   private myBestDay = 0;
   private namesLoaded = false;
+  /** A run being handed in right now. */
+  private inFlight = false;
+
+  /** A run is on its way, or waiting to go again: the page should not reload under it. */
+  public get busy(): boolean {
+    return this.inFlight || this.outbox() !== null;
+  }
 
   /**
    * The board, best first — today's only. The shared board starts over at
@@ -285,7 +347,7 @@ class RankingStore {
     this.commit(ordered([...this.top, entry]));
     // Handed in as the cleaned entry: whole numbers, the way the server
     // takes them. A run's time is a sum of frame times, never a whole one.
-    void this.push({
+    const handed: RankSubmission = {
       name: entry.name,
       emoji: entry.emoji,
       flag: entry.flag,
@@ -294,7 +356,12 @@ class RankingStore {
       survivedMs: entry.survivedMs,
       skill: entry.skill,
       detail: run.detail,
-    });
+    };
+    // Written down before it goes, so a page that reloads first sends it again.
+    if (RANKING.shared.enabled) {
+      writeJson(STORAGE.rankOutbox, { run: handed, day: rankingDayStart(Date.now()), user: account.user?.id ?? '' } satisfies Outbox);
+    }
+    void this.push(handed);
     return place;
   }
 
@@ -313,9 +380,45 @@ class RankingStore {
     }
 
     this.source = 'shared';
-    this.commit(ordered(remote));
+    this.commit(ordered(this.keepMine(remote.entries, remote.asOf)));
     await this.lookUpMine();
+    // A run the page went before hearing back about: handed in again now.
+    const waiting = this.outbox();
+    if (waiting && !this.inFlight && account.signedIn && (account.user?.id ?? '') === waiting.user) {
+      void this.push(waiting.run);
+    }
     return this.source;
+  }
+
+  /** Today's run waiting to be handed in by this account, or null (one from another day is let go). */
+  private outbox(): Outbox | null {
+    const waiting = readJson<Outbox>(STORAGE.rankOutbox);
+    if (!waiting || !waiting.run || waiting.day !== rankingDayStart(Date.now())) {
+      if (waiting) {
+        writeJson(STORAGE.rankOutbox, null);
+      }
+      return null;
+    }
+    return waiting;
+  }
+
+  /**
+   * A board, with this account's run that the server took kept on it when the
+   * board was read before the server had it (an edge copy from before) — in
+   * place of whatever row this account had there. A board read after it is
+   * left as it is: if the run is not there, it was taken off.
+   */
+  private keepMine(entries: RankEntry[], asOf: number | null): RankEntry[] {
+    const mine = readJson<Mine>(STORAGE.rankMine);
+    const today = rankingDayStart(Date.now());
+    if (!mine || !mine.entry || mine.day !== today || (account.user?.id ?? '') !== mine.user) {
+      return entries;
+    }
+    if (entries.some((entry) => sameRun(entry, mine.entry)) || (asOf !== null && asOf >= mine.asOf)) {
+      return entries;
+    }
+    const entry = cleanRankEntry(mine.entry);
+    return entry ? [...entries.filter((row) => row.name !== entry.name), entry] : entries;
   }
 
   /** The signed-in account's own best on the shared board, or null. */
@@ -346,21 +449,43 @@ class RankingStore {
       return;
     }
 
-    const token = await turnstileToken(RANKING.shared.turnstileSiteKey, RANKING.shared.timeoutMs);
-    const reply = await this.request('POST', { ...run, token: token ?? '' });
+    this.inFlight = true;
+    let reply: { ok: boolean; status: number; body: unknown };
+    try {
+      const token = await turnstileToken(RANKING.shared.turnstileSiteKey, RANKING.shared.timeoutMs);
+      reply = await this.request('POST', { ...run, token: token ?? '' });
+    } finally {
+      this.inFlight = false;
+    }
     if (reply.status === 0) {
-      // No connection: the run stays on this device's board.
+      // No connection: the run stays on this device's board, and in the outbox.
       this.source = 'offline';
       this.notify();
       return;
+    }
+    // Answered — taken or turned down — so it does not go again. Signed out,
+    // it waits for the account to come back.
+    if (reply.status !== 401) {
+      writeJson(STORAGE.rankOutbox, null);
     }
 
     const entries = reply.ok ? entriesOf(reply.body) : null;
     if (entries) {
       this.source = 'shared';
-      const today = this.myBestDay === rankingDayStart(Date.now()) ? this.myBest : null;
+      const now = Date.now();
+      const today = this.myBestDay === rankingDayStart(now) ? this.myBest : null;
       this.myBest = Math.max(today ?? 0, run.damage);
-      this.myBestDay = rankingDayStart(Date.now());
+      this.myBestDay = rankingDayStart(now);
+      // The run as the board shows it, if it is this account's row there now.
+      const shown = entries.find((entry) => sameRun(entry, run));
+      if (shown) {
+        writeJson(STORAGE.rankMine, {
+          entry: shown,
+          asOf: asOfOf(reply.body) ?? now,
+          day: rankingDayStart(now),
+          user: account.user?.id ?? '',
+        } satisfies Mine);
+      }
       this.commit(ordered(entries));
       return;
     }
@@ -368,10 +493,11 @@ class RankingStore {
     await this.refresh();
   }
 
-  /** The server's board, or null when it cannot be reached. */
-  private async pull(): Promise<RankEntry[] | null> {
+  /** The server's board and when it was read, or null when it cannot be reached. */
+  private async pull(): Promise<{ entries: RankEntry[]; asOf: number | null } | null> {
     const reply = await this.request('GET');
-    return reply.ok ? entriesOf(reply.body) : null;
+    const entries = reply.ok ? entriesOf(reply.body) : null;
+    return entries ? { entries, asOf: asOfOf(reply.body) } : null;
   }
 
   /**

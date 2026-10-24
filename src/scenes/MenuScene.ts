@@ -235,9 +235,12 @@ export class MenuScene extends Phaser.Scene {
       }
     };
     const unwatchUpdate = liveUpdate.onPending(offerUpdate);
+    // A run answered by the ranking frees a version held back for it (0.113).
+    const unwatchRanking = ranking.onChange(offerUpdate);
     this.events.on(Phaser.Scenes.Events.RESUME, offerUpdate);
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       unwatchUpdate();
+      unwatchRanking();
       this.events.off(Phaser.Scenes.Events.RESUME, offerUpdate);
     });
     this.time.delayedCall(0, offerUpdate);
