@@ -4,6 +4,7 @@
  * screen; they do not change how the game plays.
  */
 import type { PixelIconId } from '@/config/pixelIcons';
+import type { DropTier } from '@/config/system';
 
 export const COLORS = {
   background: "#0b0d12",
@@ -157,6 +158,7 @@ export const TEXTURES = {
   tuning: "tex-tuning",
   grid: "tex-grid",
   talentShard: "tex-talent-shard",
+  talentLump: "tex-talent-lump",
   player: "tex-player",
   enemy: "tex-enemy",
   enemyBrute: "tex-enemy-brute",
@@ -300,8 +302,8 @@ export const ICONS = {
   gem: { pixel: 'xp-gem', size: 14 },
   projectile: { pixel: 'fireball', size: 16 },
   skillOrb: { pixel: 'skill-orb', size: 22 },
-  // Shown at POTION.size: a cell a pixel, so the flask stays crisp.
-  potion: { pixel: 'potion', size: 16 },
+  // Shown at POTION.size (24 since 0.111, the user's ask; 16 before).
+  potion: { pixel: 'potion', size: 24 },
 } as const satisfies Record<string, { readonly pixel: PixelIconId; readonly size: number }>;
 
 /** How each projectile skill's shot is drawn. Width runs along its flight. */
@@ -330,10 +332,16 @@ export const DROP_LABEL = {
   paddingX: 6,
   paddingY: 3,
   /**
-   * No tier wears a plate any more: a slab behind the words covered the floor
-   * the drop was lying on, and three slabs at once covered the fight. What
-   * tells them apart is the size, the colour and — on the loudest — the slow
-   * swell. Every one of them leans on its outline to stay readable.
+   * ★ What every drop looks like by its tier (0.111, the user's ladder) —
+   * one table, so a drop never says one tier and sounds or shines another.
+   * 일반: a white name and its sound. 마법: blue, and its sound. 희귀: yellow,
+   * its sound and a yellow pillar. 신화: red, the loudest sound, a red pillar,
+   * and the name swelling forever. The sound is AUDIO.drops by the same tier;
+   * `pillar` is the tint of LIGHT_PILLAR, or null for none.
+   *
+   * No tier wears a plate: a slab behind the words covered the floor the
+   * drop was lying on, and three slabs at once covered the fight. Every one
+   * leans on its outline to stay readable.
    */
   tiers: {
     normal: {
@@ -347,18 +355,19 @@ export const DROP_LABEL = {
       /** Dark text on a pale plate needs no outline; bare text does. */
       outlined: true,
       pulse: 0,
+      pillar: null,
     },
     magic: {
       fontSize: "22px",
-      text: "#cfe8ff",
+      text: "#5fb0ff",
       plate: 0x000000,
       plateAlpha: 0,
       border: 0x000000,
       borderWidth: 0,
       outlined: true,
       pulse: 0,
+      pillar: null,
     },
-    /** 희귀 (0.91): a yellow name, a size up from 마법, no pillar. */
     rare: {
       fontSize: "23px",
       text: "#ffd84a",
@@ -368,8 +377,8 @@ export const DROP_LABEL = {
       borderWidth: 0,
       outlined: true,
       pulse: 0,
+      pillar: 0xffd84a,
     },
-    /** 신화 (0.91): what 희귀 looked like before — the loudest there is. */
     mythic: {
       fontSize: "24px",
       text: "#FE0000",
@@ -386,11 +395,12 @@ export const DROP_LABEL = {
       outline: "#ffffff",
       /** How far the words swell and settle again, forever. */
       pulse: 0.06,
+      pillar: 0xff2a2a,
     },
-  },
+  } satisfies Record<DropTier, { readonly pillar: number | null } & Record<string, unknown>>,
   /** How long the label takes to pop in, before it starts breathing. */
   popMs: 180,
-  /** One full breath of the 희귀 plate. */
+  /** One full breath of the 신화 name. */
   pulseMs: 900,
 } as const;
 
@@ -405,11 +415,7 @@ export const ACCOUNT_BUTTONS: Record<string, { readonly fill: number; readonly t
   test: { fill: 0x2b3445, text: '#f4f1e8', edge: 0x5ea8ff },
 };
 
-/**
- * A pillar of pale light standing on a 희귀 drop, the way a rare item is
- * marked in a loot game: seen from anywhere on the screen, before the label
- * is. Only the drops whose label is the 희귀 tier stand in one.
- */
+
 /** 하얀 망고's clock: a ring round the survivor that runs down as it does. */
 export const MANGO_RING = {
   /** Its radius, from the survivor's middle. */
@@ -419,6 +425,11 @@ export const MANGO_RING = {
   trackAlpha: 0.25,
 } as const;
 
+/**
+ * A pillar of light standing on a 희귀 or 신화 drop, the way a rare item is
+ * marked in a loot game: seen from anywhere on the screen, before the label
+ * is. Its colour is the tier's (DROP_LABEL.tiers[tier].pillar).
+ */
 export const LIGHT_PILLAR = {
   /** Drawn size; the texture is soft at its edges and fades to its top. */
   width: 34,
@@ -430,8 +441,6 @@ export const LIGHT_PILLAR = {
   pulseMs: 1400,
   /** How far below the item's centre its foot is. */
   footOffset: 6,
-  /** An extreme-rare drop's (AUDIO.drops.extreme, 0.102): the pillar in red. */
-  extremeTint: 0xff2a2a,
 } as const;
 
 /**

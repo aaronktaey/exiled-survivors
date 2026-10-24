@@ -591,9 +591,14 @@ Read `git log` for what changed and when. What is not in the log:
   by every stat — 0.102–0.103 rolled each stat on its own; the user asked
   for the shared roll back in 0.104), no rare's or 우두머리's bonus; which
   stat it is, `CombatSystem.rollShardStat` weighs by the passive tree's
-  lines (`hooks.shardWeight`). A 도망자 or 키메라 always leaves one
-  (`guaranteedShard`; their guaranteed skill went — `Enemy.precious` still
-  keeps them at the cap). `TalentShardDrop` carries its `stat`, tinted
+  lines (`hooks.shardWeight`). An 일반 drop since 0.111. A 도망자 or 키메라
+  always leaves a 재능의 덩어리 instead (`guaranteedLump`, TALENT_LUMP, 0.111:
+  one stat by the same weights, `shards` (5) of it, 신화, `talentLump` 필터
+  switch, its own cluster texture) — `Enemy.precious` still keeps them at
+  the cap. Both are `TalentShardDrop` from one pool (`drop(x, y, stat,
+  lump)`, `shards`, `lump`), so the 자석 and markers treat them alike;
+  `onTalentShardCollected(stat, count)` → `gainShard(stat, count)`.
+  `TalentShardDrop` carries its `stat`, tinted
   (`TALENT_SHARD_FX.tint`); like every ground item it is never pulled in and
   goes after GROUND_ITEM.lifespanMs; the 자석 takes it. `GameScene.gainShard`
   adds it to `shards` (saved in `SavedRun.shards`) and `applyShards` folds
@@ -625,11 +630,17 @@ Read `git log` for what changed and when. What is not in the log:
   own numbers — and `Progression.enemyHealth` includes it, which is what
   the suites read a full plain enemy off. The title's 패시브 icon wears a
   pulsing ring until `ICON_SPOTLIGHT.passives` (a day).
-- **Extreme-rare drops (0.102).** `extremeSound` on an orb (망고의 구슬), a
-  sword (오니고로시) or an altar offer (키메라), and always the 재능의 파편 and
-  하얀 망고: `CombatSystem.land(..., extreme)` plays `AUDIO.drops.extreme`
-  (assets/extremeRareDrop.mp3, cut from the .ogg the user added) and
-  `DropLabel.blaze` stands the pillar in red (`LIGHT_PILLAR.extremeTint`).
+- **One ladder of drop effects (0.111, the user's).** A drop's tier alone
+  decides how it looks, shines and sounds — `DROP_LABEL.tiers[tier]` (label
+  colour, size, `pulse`, `pillar` tint or null) and `AUDIO.drops[tier]`
+  (null would be silent): 일반 a white name and normalDrop; 마법 blue and
+  magicDrop; 희귀 yellow, rareDrop, a yellow pillar; 신화 red and swelling,
+  extremeRareDrop, a red pillar. `DropLabel.show(text, tier)` keeps the
+  `tier` and stands the pillar; `CombatSystem.land(item, shown)` reads the
+  item's `nameplate.tier` for the sound — a new drop needs only its label's
+  tier. No per-item exceptions (0.102's `extremeSound` went); a 제단 lands
+  silent whatever it offers. The awakening flourish and a 합성 success play
+  `AUDIO.drops.magic`, the clip they always had.
 - **A dial ships only when asked for.** The user had every dial taken off
   in the overhaul and asked for them back one by one; 0.80 keeps that set:
   a page a skill (every `SKILL_BASE` stat above zero and its
@@ -922,7 +933,8 @@ Read `git log` for what changed and when. What is not in the log:
   the ground, the 합성 result and the 필터 all draw it. `TEXTURES.gear` is
   left for the title's 인벤토리 icon and the 필터's rarity switches.
 - **Rare drops stand in a light pillar.** `DropLabel` draws it for the 희귀
-  tier (`LIGHT_PILLAR`, `TEXTURES.lightPillar`); the 제단 opts out with
+  (yellow) and 신화 (red) tiers (`LIGHT_PILLAR`, `TEXTURES.lightPillar`, tinted
+  by `DROP_LABEL.tiers[tier].pillar`); the 제단 opts out with
   `{ pillar: false }` since it is walked up to, not picked up.
 - **The guide is chapters → tabs → cards** (`src/content/guide.ts`,
   `InfoScene`). Prose lives in each locale's `guide.cards[tab]` with

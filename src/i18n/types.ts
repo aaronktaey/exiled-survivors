@@ -125,6 +125,10 @@ export interface Strings {
     readonly short: { readonly damage: string; readonly attackSpeed: string; readonly moveSpeed: string; readonly maxHp: string; readonly area: string; readonly regen: string; };
     readonly hud: string;
     readonly toast: string;
+    /** 재능의 덩어리 (0.111): its name, its name on the ground ({stat}), and the line when it is taken. */
+    readonly lumpName: string;
+    readonly lumpDrop: string;
+    readonly lumpToast: string;
   };
   readonly filter: {
     readonly title: string;
@@ -132,9 +136,9 @@ export interface Strings {
     readonly icon: string;
     readonly lead: string;
     readonly sections: { readonly supplies: string; readonly orbs: string; readonly bones: string; readonly rarity: string; readonly bases: string };
-    readonly items: { readonly potion: string; readonly skill: string; readonly randomSkill: string; readonly mango: string; readonly magnet: string; readonly unknownRune: string; readonly talentShard: string };
+    readonly items: { readonly potion: string; readonly skill: string; readonly randomSkill: string; readonly mango: string; readonly magnet: string; readonly unknownRune: string; readonly talentShard: string; readonly talentLump: string };
     /** The same, short enough to sit under an icon. */
-    readonly itemsShort: { readonly potion: string; readonly skill: string; readonly randomSkill: string; readonly mango: string; readonly magnet: string; readonly unknownRune: string; readonly talentShard: string };
+    readonly itemsShort: { readonly potion: string; readonly skill: string; readonly randomSkill: string; readonly mango: string; readonly magnet: string; readonly unknownRune: string; readonly talentShard: string; readonly talentLump: string };
     readonly rarity: { readonly normal: string; readonly magic: string; readonly rare: string; readonly mythic: string };
     readonly shown: string;
     readonly hidden: string;

@@ -17,11 +17,13 @@ export class DropLabel {
   public readonly plate: Phaser.GameObjects.Rectangle;
   public readonly label: Phaser.GameObjects.Text;
   /**
-   * The column of light a 희귀 drop stands in. Public so a test can see it.
-   * Absent on a label that asked for none — a 제단 is not something to pick
-   * up, however loud its offer is.
+   * The column of light a 희귀 or 신화 drop stands in, in its tier's colour.
+   * Public so a test can see it. Absent on a label that asked for none — a
+   * 제단 is not something to pick up, however loud its offer is.
    */
   public readonly pillar?: Phaser.GameObjects.Image;
+  /** The tier it was last shown as: what CombatSystem.land sounds by. */
+  public tier: DropTier = 'normal';
   private readonly scene: Phaser.Scene;
   private pulse?: Phaser.Tweens.Tween;
   private glow?: Phaser.Tweens.Tween;
@@ -103,16 +105,10 @@ export class DropLabel {
     this.plate.setVisible(style.plateAlpha > 0 || style.borderWidth > 0);
     this.label.setVisible(true);
 
+    this.tier = tier;
     this.pop(style.pulse);
-    this.light(tier === 'mythic');
-  }
-
-  /**
-   * An extreme-rare drop (0.102, the user's ask): the pillar stands whatever
-   * the tier, in red. Called after `show`, by CombatSystem.land.
-   */
-  public blaze(): void {
-    this.light(true, LIGHT_PILLAR.extremeTint);
+    // 0.111's ladder: 희귀 in a yellow pillar, 신화 in a red one, the rest in none.
+    this.light(style.pillar !== null, style.pillar ?? undefined);
   }
 
   /** Centres the plate and its words just above an item of `size` at (x, y). */

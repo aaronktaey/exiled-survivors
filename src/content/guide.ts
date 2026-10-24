@@ -42,6 +42,7 @@ import {
   MAGNET,
   PASSIVE_POINTS,
   TALENT_SHARD,
+  TALENT_LUMP,
 } from '@/config';
 import {
   affixDetail,
@@ -144,6 +145,7 @@ function values(): Record<string, string | number> {
     shardAmplify: percent(TALENT_SHARD.amplify),
     shardRegenSecs: seconds(TALENT_SHARD.regenEveryMs),
     shardRegenHeal: TALENT_SHARD.regen,
+    lumpShards: TALENT_LUMP.shards,
     choices: SKILL_PICK.choices,
     bossFirst: seconds(BOSS.firstMs),
     bossEvery: seconds(BOSS.intervalMs),

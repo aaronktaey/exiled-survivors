@@ -22,13 +22,13 @@ await sleep(1500);
 await run(`s.player.setInvulnerable(true); s.spawner.update = () => {}; s.spawner.clear(); return 1;`);
 
 try {
-  // --- 1. the drop: flat, a red pillar, taken by touch or 자석 ---
+  // --- 1. the drop: an 일반 one (0.111) — a white name, no pillar — taken by touch or 자석 ---
   const dropped = await run(`
     const C = window.config, c = s.combat, p = s.player;
     c.dropTalentShardAt(p.x + 200, p.y, 'area');
     const d = c.talentShardDrops.getChildren().find((x) => x.active);
-    const out = { active: !!d, stat: d?.stat, name: d?.nameplate.label.text, pillar: d?.nameplate.pillar?.visible, tint: d?.nameplate.pillar?.tintTopLeft,
-      red: C.LIGHT_PILLAR.extremeTint, own: d?.tintTopLeft === C.TALENT_SHARD_FX.tint.area, filter: C.ALL_FILTER_KEYS.includes('talentShard') };
+    const out = { active: !!d, stat: d?.stat, name: d?.nameplate.label.text, tier: d?.nameplate.tier, pillar: d?.nameplate.pillar?.visible,
+      own: d?.tintTopLeft === C.TALENT_SHARD_FX.tint.area, filter: C.ALL_FILTER_KEYS.includes('talentShard') };
     // Stood beside it a while: nothing pulls it in.
     const x0 = d.x, y0 = d.y;
     p.setPosition(d.x - 60, d.y);
@@ -43,9 +43,34 @@ try {
     return out;
   `);
   console.log('dropped:', JSON.stringify(dropped));
-  check('a 재능의 파편 lands named for its stat, in its colour, in a red pillar, with its 필터 switch, and the 자석 takes it',
-    dropped.active && dropped.stat === 'area' && dropped.name === '효과범위 파편' && dropped.own && dropped.pillar === true &&
-      dropped.tint === dropped.red && dropped.filter && dropped.taken && dropped.gained === 1, JSON.stringify(dropped));
+  check('a 재능의 파편 lands named for its stat, in its colour, as an 일반 drop (no pillar), with its 필터 switch, and the 자석 takes it',
+    dropped.active && dropped.stat === 'area' && dropped.name === '효과범위 파편' && dropped.own && dropped.tier === 'normal' &&
+      dropped.pillar === false && dropped.filter && dropped.taken && dropped.gained === 1, JSON.stringify(dropped));
+
+  // --- 1b. the 재능의 덩어리 (0.111): one stat, TALENT_LUMP.shards of it, a 신화 drop ---
+  const lump = await run(`
+    const C = window.config, c = s.combat, p = s.player;
+    c.dropTalentShardAt(p.x + 200, p.y, 'maxHp', true);
+    const d = c.talentShardDrops.getChildren().find((x) => x.active);
+    const out = { name: d?.nameplate.label.text, tier: d?.nameplate.tier, lump: d?.lump, texture: d?.texture.key,
+      pillar: d?.nameplate.pillar?.visible, red: d?.nameplate.pillar?.tintTopLeft === C.DROP_LABEL.tiers.mythic.pillar,
+      filter: C.ALL_FILTER_KEYS.includes('talentLump'), want: C.TALENT_LUMP.shards };
+    const before = s.shards.maxHp;
+    c.collectEverything();
+    out.gained = s.shards.maxHp - before;
+    out.toast = s.toasts.lines.some((line) => /재능의 덩어리/.test(line));
+    // The pool hands the same sprite back: a 파편 after a 덩어리 is a 파편 again.
+    c.dropTalentShardAt(p.x + 200, p.y, 'maxHp');
+    const again = c.talentShardDrops.getChildren().find((x) => x.active);
+    out.after = { lump: again?.lump, texture: again?.texture.key, tier: again?.nameplate.tier };
+    again?.collect();
+    return out;
+  `);
+  check('a 재능의 덩어리 lands named for its stat, 신화 in a red pillar, with a 필터 switch, and gives that stat TALENT_LUMP.shards shards',
+    lump.name === '최대체력 덩어리' && lump.tier === 'mythic' && lump.lump === true && lump.pillar === true && lump.red &&
+      lump.filter && lump.gained === lump.want && lump.toast && lump.texture !== lump.after.texture &&
+      lump.after.lump === false && lump.after.tier === 'normal',
+    JSON.stringify(lump));
   check('like any item it lasts GROUND_ITEM.lifespanMs on the ground', dropped.life > 0 && dropped.life <= dropped.lifespan,
     JSON.stringify({ life: dropped.life, lifespan: dropped.lifespan }));
 
@@ -73,7 +98,7 @@ try {
   check('one roll off a kill, shared by every stat: at a chance of 1, one shard of some stat; at 0, none',
     flat.sure === 1 && flat.all.includes(flat.stats[0]) && flat.never === 0, JSON.stringify(flat));
 
-  // --- 2. the 도망자 and the 키메라 leave a shard every time, and no skill ---
+  // --- 2. the 도망자 and the 키메라 leave a 재능의 덩어리 every time, and no skill ---
   const certain = await run(`
     const c = s.combat, p = s.player, g = s.spawner.group;
     const out = {};
@@ -83,7 +108,7 @@ try {
       const e = g.get(p.x + 300, p.y); e.spawn(p.x + 300, p.y, p, kind, s.spawner.hooks);
       const precious = e.precious;
       c.hit(e, 1e9);
-      out[kind] = { shards: c.talentShardDrops.getChildren().filter((x) => x.active).length,
+      out[kind] = { lumps: c.talentShardDrops.getChildren().filter((x) => x.active && x.lump).length,
         skills: c.skillDrops.getChildren().filter((x) => x.active).length, precious };
     }
     c.talentShardDrops.getChildren().forEach((x) => x.active && x.collect());
@@ -91,8 +116,8 @@ try {
     s.spawner.clear();
     return out;
   `);
-  check('a 도망자 and a 키메라 always leave a 재능의 파편 in place of their skill, and are still kept at the cap',
-    ['fugitive', 'chimera'].every((k) => certain[k].shards >= 1 && certain[k].skills === 0 && certain[k].precious),
+  check('a 도망자 and a 키메라 always leave one 재능의 덩어리, no skill, and are still kept at the cap',
+    ['fugitive', 'chimera'].every((k) => certain[k].lumps === 1 && certain[k].skills === 0 && certain[k].precious),
     JSON.stringify(certain));
 
   // --- 3. which stat a shard lands as: even, or as the tree weighs it (the others less) ---

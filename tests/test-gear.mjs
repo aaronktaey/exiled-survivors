@@ -417,11 +417,13 @@ console.log('ladder:', JSON.stringify(ladder, null, 1));
 // No tier wears a plate any more: a slab behind the words covered the floor
 // the drop was lying on. What tells them apart is the size, the colour and
 // — on the loudest — the slow swell, every one of them over an outline.
+// Each tier's colour read off DROP_LABEL.tiers (0.111 made 마법 a plainer blue).
+const tierText = await ev(`(() => Object.fromEntries(Object.entries(window.config.DROP_LABEL.tiers).map(([k, v]) => [k, v.text])))()`);
 const bare = (l) => l.plateShown === false && l.plateAlpha === 0 && l.outline >= 2;
-const isNormal = (l) => bare(l) && l.colour === '#e8edf7';
-const isMagic = (l) => bare(l) && l.colour === '#cfe8ff';
-const isRare = (l) => bare(l) && l.colour === '#ffd84a';
-const isMythic = (l) => bare(l) && l.colour === '#FE0000' && l.outlineColour === '#ffffff';
+const isNormal = (l) => bare(l) && l.colour === tierText.normal;
+const isMagic = (l) => bare(l) && l.colour === tierText.magic;
+const isRare = (l) => bare(l) && l.colour === tierText.rare;
+const isMythic = (l) => bare(l) && l.colour === tierText.mythic && l.outlineColour === '#ffffff';
 
 check('a skill is an ordinary drop, however good the skill is',
   isNormal(ladder.skill), `${ladder.skill.text} ${ladder.skill.colour}`);
@@ -759,7 +761,8 @@ const orbDrops = await run(`
     window.__played.length = 0;
     s.combat.dropOrbAt(-900, -900, id);
     const d = s.combat.orbDrops.getChildren().find(x => x.active && x.orb === id);
-    out[id] = { name: d.nameplate.text, sound: window.__played[0],
+    const clip = window.config.AUDIO.drops[window.config.ORBS[id].tier];
+    out[id] = { name: d.nameplate.text, sound: window.__played[0], want: clip ? clip.key : undefined,
                 texture: d.texture.key };
   }
   mgr.play = orig;
@@ -773,10 +776,10 @@ check('each 구슬 lands under its own name',
   orbDrops.transmute.name === '변화의 구슬' && orbDrops.chaos.name === '혼돈의 구슬' &&
     orbDrops.awaken.name === '각성의 구슬',
   Object.values(orbDrops).map((o) => o.name).join(' / '));
+// 0.111: each tier's own clip (AUDIO.drops), read off the table.
 check('and sounds like the rarity it is labelled',
-  orbDrops.transmute.sound === 'sfx-drop-magic' &&
-    orbDrops.chaos.sound === 'sfx-drop-rare' && orbDrops.awaken.sound === 'sfx-drop-rare',
-  Object.values(orbDrops).map((o) => String(o.sound).replace('sfx-drop-', '')).join(' / '));
+  Object.values(orbDrops).every((o) => o.sound === o.want) && orbDrops.transmute.sound !== orbDrops.chaos.sound,
+  Object.entries(orbDrops).map(([id, o]) => `${id} ${o.sound} (want ${o.want})`).join(' / '));
 // Three spheres in three colours are one dark floor away from being the
 // same thing, so each carries its own mark as well.
 check('and wears a sprite of its own',
@@ -1516,7 +1519,7 @@ check('pressing 합성 on the sword in hand says why it cannot',
 await cdp.tap('Escape', 27, 'Escape');
 await sleep(500);
 
-// --- 희귀 drops stand in a pillar of light ---
+// --- 희귀 and 신화 drops stand in a pillar of light, in their tier's colour (0.111) ---
 // By way of a blank page: a reload of the page in hand could still be on its
 // old run when the wait below first looks, and the probe then lands mid-load.
 await cdp.send('Page.navigate', { url: 'about:blank' });
@@ -1537,11 +1540,22 @@ const pillars = await run(`
     suffixes: [{ id: 'giant', tier: 1 }, { id: 'swift', tier: 1 }, { id: 'magnetic', tier: 1 }] };
   s.combat.dropGearAt(p.x - 300, p.y, { uid: 'loud', id: 'runedSword', ...full });
   s.combat.dropGearAt(p.x + 300, p.y, { uid: 'plain', id: 'ironSword', prefixes: [], suffixes: [] });
+  // 희귀 at three lines, 마법 at two (AUDIO.dropTiers).
+  s.combat.dropGearAt(p.x, p.y + 200, { uid: 'yellow', id: 'ironSword',
+    prefixes: full.prefixes.slice(0, 2), suffixes: full.suffixes.slice(0, 1) });
+  s.combat.dropGearAt(p.x + 200, p.y + 200, { uid: 'blue', id: 'ironSword',
+    prefixes: full.prefixes.slice(0, 1), suffixes: full.suffixes.slice(0, 1) });
   const drops = s.combat.gearDrops.getChildren().filter(d => d.active);
   const loud = drops.find(d => d.item.uid === 'loud'), plain = drops.find(d => d.item.uid === 'plain');
+  const yellow = drops.find(d => d.item.uid === 'yellow'), blue = drops.find(d => d.item.uid === 'blue');
+  const tiers = window.config.DROP_LABEL.tiers;
   const out = {
     loud: { on: loud.nameplate.pillar.visible, x: Math.round(loud.nameplate.pillar.x - loud.x),
-      under: loud.nameplate.pillar.depth < loud.depth, alpha: loud.nameplate.pillar.alpha },
+      under: loud.nameplate.pillar.depth < loud.depth, alpha: loud.nameplate.pillar.alpha,
+      red: loud.nameplate.tier === 'mythic' && loud.nameplate.pillar.tintTopLeft === tiers.mythic.pillar },
+    yellow: { tier: yellow.nameplate.tier, on: yellow.nameplate.pillar.visible,
+      tinted: yellow.nameplate.pillar.tintTopLeft === tiers.rare.pillar },
+    blue: { tier: blue.nameplate.tier, on: blue.nameplate.pillar.visible },
     plain: plain.nameplate.pillar.visible,
   };
   s.combat.dropMangoAt(p.x, p.y - 300);
@@ -1555,10 +1569,14 @@ const pillars = await run(`
   return out;
 `);
 console.log('pillars:', JSON.stringify(pillars));
-check('a 희귀 drop stands in a pale pillar of light, under it and centred on it',
-  pillars.loud.on === true && pillars.loud.x === 0 && pillars.loud.under && pillars.loud.alpha > 0 && pillars.loud.alpha < 1 &&
-    pillars.mango === true,
+check('a 신화 drop stands in a red pillar of light, see-through, under it and centred on it',
+  pillars.loud.on === true && pillars.loud.red && pillars.loud.x === 0 && pillars.loud.under &&
+    pillars.loud.alpha > 0 && pillars.loud.alpha < 1 && pillars.mango === true,
   JSON.stringify(pillars.loud));
+check('a 희귀 one in a yellow pillar; a 마법 one in none',
+  pillars.yellow.tier === 'rare' && pillars.yellow.on === true && pillars.yellow.tinted &&
+    pillars.blue.tier === 'magic' && pillars.blue.on === false,
+  JSON.stringify({ yellow: pillars.yellow, blue: pillars.blue }));
 check('an ordinary drop has none, and a picked-up one takes its pillar with it',
   pillars.plain === false && pillars.gone === false, JSON.stringify({ plain: pillars.plain, gone: pillars.gone }));
 check('an altar, which is not picked up, stands in none', pillars.altar === true);

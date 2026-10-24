@@ -57,6 +57,9 @@ export const zh: Strings = {
     short: { damage: '伤害 +{n}%', attackSpeed: '攻速 +{n}%', moveSpeed: '移速 +{n}%', maxHp: '生命 +{n}%', area: '范围 +{n}%', regen: '恢复 +{heal}/{secs}秒' },
     hud: '天赋碎片 {count}个 · {list}',
     toast: '天赋碎片：{line}',
+    lumpName: '天赋晶块',
+    lumpDrop: '{stat}晶块',
+    lumpToast: '天赋晶块：{line}',
   },
 
   filter: {
@@ -64,8 +67,8 @@ export const zh: Strings = {
     icon: '过滤',
     lead: '关闭的物品在地上不显示，但走过去照样拾取 · 装备需等级和种类都开启才会显示',
     sections: { supplies: '消耗品', orbs: '宝珠', bones: '骨头', rarity: '装备等级', bases: '装备种类' },
-    items: { potion: '生命药水', skill: '技能', randomSkill: '随机技能', mango: '白芒果', magnet: '磁铁', unknownRune: '未知符文', talentShard: '天赋碎片' },
-    itemsShort: { potion: '药水', skill: '技能', randomSkill: '随机', mango: '芒果', magnet: '磁铁', unknownRune: '符文', talentShard: '碎片' },
+    items: { potion: '生命药水', skill: '技能', randomSkill: '随机技能', mango: '白芒果', magnet: '磁铁', unknownRune: '未知符文', talentShard: '天赋碎片', talentLump: '天赋晶块' },
+    itemsShort: { potion: '药水', skill: '技能', randomSkill: '随机', mango: '芒果', magnet: '磁铁', unknownRune: '符文', talentShard: '碎片', talentLump: '晶块' },
     rarity: { normal: '普通', magic: '魔法', rare: '稀有', mythic: '神话' },
     shown: '显示',
     hidden: '隐藏',
@@ -927,7 +930,7 @@ export const zh: Strings = {
         {
           title: '技能掉落',
           lines: [
-            '敌人有 {skillChance} 几率掉落技能。首领和逃亡者必定掉落。',
+            '敌人有 {skillChance} 几率掉落技能。首领必定掉落。',
             '第一次拾取的技能以基础属性加入，已持有的技能则会打开它的强化选项。',
           ],
         },
@@ -1037,8 +1040,9 @@ export const zh: Strings = {
           title: '掉在地上的东西',
           lines: [
             '除经验外的掉落物会在 {life} 秒后消失，最后 {warning} 秒内会越闪越快。',
-            '掉落物按等级有不同的名牌颜色和落地声音。',
-            '稀有等级的掉落物会立在半透明的白色光柱中，远处也很显眼。',
+            '掉落物按等级决定名牌颜色、落地声音和光柱。',
+            '普通是白色名牌和声音；魔法是蓝色名牌和声音；稀有是黄色名牌和声音，外加黄色光柱；神话是忽大忽小的红色名牌、最响的声音和红色光柱。',
+            '祭坛落地时没有声音。',
           ],
         },
       ],
@@ -1136,7 +1140,7 @@ export const zh: Strings = {
           title: '天赋',
           lines: [
             '每位玩家都有 {passivePoints} 点天赋点数，在标题画面的天赋中分配到想要的属性上。',
-            '天赋碎片会以 {shardChance} 的概率从被击败的敌人身上掉落，逃亡者和奇美拉必定留下一个。碎片是哪种属性由天赋决定——某项属性投入越多，它的碎片出现得越频繁，其余的相应减少。',
+            '天赋碎片会以 {shardChance} 的概率从被击败的敌人身上掉落。逃亡者和奇美拉会留下天赋晶块，相当于同一属性的 {lumpShards} 个碎片。是哪种属性由天赋决定——某项属性投入越多，它的碎片出现得越频繁，其余的相应减少。',
             '每个碎片使该属性增幅 {shardAmplify}（生命恢复为每 {shardRegenSecs} 秒恢复 {shardRegenHeal} 点生命），本局结束后消失。',
             '投入的点数随时可以通过重置收回。',
           ],

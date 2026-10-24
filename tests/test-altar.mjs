@@ -359,7 +359,7 @@ const newOffers = await run(`
     const came = s.spawner.summon(altar.x, altar.y, id);
     const alive = s.spawner.group.getChildren().filter((e) => e.active);
     out[id] = { label, came, want: O[id].count, kinds: [...new Set(alive.map((e) => e.kind))],
-                skills: alive.every((e) => e.alwaysDropsShard === true) };
+                lumps: alive.every((e) => e.alwaysDropsLump === true) };
   }
   s.spawner.clear();
   s.combat.altars.getChildren().forEach((a) => a.active && a.collect());
@@ -370,10 +370,25 @@ check('a 기행종 altar offers its swarm by name and calls it all up',
   /기행종/.test(newOffers.erraticSwarm.label) && newOffers.erraticSwarm.came === newOffers.erraticSwarm.want &&
     JSON.stringify(newOffers.erraticSwarm.kinds) === JSON.stringify(['erratic']),
   JSON.stringify(newOffers.erraticSwarm));
-check('a 도망자 altar calls up 도망자, each sure to leave a 재능의 파편 (0.102)',
-  /도망자/.test(newOffers.fugitives.label) && newOffers.fugitives.came === newOffers.fugitives.want &&
-    JSON.stringify(newOffers.fugitives.kinds) === JSON.stringify(['fugitive']) && newOffers.fugitives.skills,
+check('a 도망자 altar calls up one 도망자 (0.111), sure to leave a 재능의 덩어리',
+  /도망자/.test(newOffers.fugitives.label) && newOffers.fugitives.want === 1 && newOffers.fugitives.came === 1 &&
+    JSON.stringify(newOffers.fugitives.kinds) === JSON.stringify(['fugitive']) && newOffers.fugitives.lumps,
   JSON.stringify(newOffers.fugitives));
+
+// --- a 제단 lands without a sound, whatever it offers (0.111, the user's ask) ---
+const quiet = await run(`
+  const mgr = s.sound, orig = mgr.play.bind(mgr), played = [];
+  mgr.play = (key, cfg) => { played.push(key); return orig(key, cfg); };
+  for (const id of Object.keys(window.config.ALTAR_OFFERS)) {
+    s.combat.altars.getChildren().forEach((a) => a.active && a.collect());
+    s.combat.dropAltarAt(s.player.x + 160, s.player.y, id);
+  }
+  mgr.play = orig;
+  s.combat.altars.getChildren().forEach((a) => a.active && a.collect());
+  return { played, offers: Object.keys(window.config.ALTAR_OFFERS).length };
+`);
+check('a 제단 lands silent, whatever it offers — the 키메라 and 우두머리 ones too',
+  quiet.offers > 0 && quiet.played.length === 0, JSON.stringify(quiet));
 await run(`s.choosing = false; return 1;`);
 
 console.log('\n=== SUMMARY ===');

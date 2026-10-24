@@ -15,6 +15,44 @@ export interface PatchNote {
 
 export const PATCH_NOTES: readonly PatchNote[] = [
   {
+    version: '0.111',
+    date: '2026-10-24',
+    changes: {
+      ko: [
+        '드랍 연출을 등급별로 통일했습니다. 일반은 흰 이름표와 소리, 마법은 파란 이름표와 소리, 희귀는 노란 이름표 · 소리 · 노란 빛기둥, 신화는 커졌다 작아지는 빨간 이름표 · 가장 큰 소리 · 붉은 빛기둥입니다.',
+        '재능의 파편이 일반 등급이 되었습니다.',
+        '새 아이템 재능의 덩어리(신화): 한 능력치의 파편 5개와 같은 효과입니다. 도망자와 키메라는 이제 재능의 덩어리를 떨어뜨립니다.',
+        '도망자 제단은 도망자를 1마리만 부릅니다.',
+        '제단이 나타날 때 소리가 나지 않습니다.',
+        '체력 포션을 더 크게 그리고 병에 + 표시를 넣었습니다.',
+      ],
+      en: [
+        'Drop effects now follow rarity alone. Normal: a white label and its sound. Magic: a blue label and its sound. Rare: a yellow label, its sound and a yellow pillar. Mythic: a red label that swells, the loudest sound and a red pillar.',
+        'Talent Shards are now a Normal drop.',
+        'New: the Talent Chunk (Mythic), worth five shards of one stat. Fugitives and Chimeras now drop a Talent Chunk.',
+        'A Fugitive altar now calls up a single Fugitive.',
+        'Altars appear without a sound.',
+        'The health potion is bigger, with a + on the flask.',
+      ],
+      ja: [
+        'ドロップの演出を等級ごとに統一しました。ノーマルは白い名札と音、マジックは青い名札と音、レアは黄色い名札・音・黄色い光の柱、神話は大きくなったり小さくなったりする赤い名札・一番大きな音・赤い光の柱です。',
+        '才能の欠片がノーマル等級になりました。',
+        '新アイテム「才能の塊」（神話）：ひとつの能力値の欠片5個分の効果です。逃亡者とキメラは才能の塊を落とすようになりました。',
+        '逃亡者の祭壇は逃亡者を1体だけ呼びます。',
+        '祭壇が現れるときに音が鳴らなくなりました。',
+        '体力ポーションを大きくし、瓶に＋印を付けました。',
+      ],
+      zh: [
+        '掉落效果统一按等级区分：普通是白色名牌和声音；魔法是蓝色名牌和声音；稀有是黄色名牌、声音和黄色光柱；神话是忽大忽小的红色名牌、最响的声音和红色光柱。',
+        '天赋碎片改为普通等级。',
+        '新物品「天赋晶块」（神话）：相当于同一属性的5个碎片。逃亡者和奇美拉现在掉落天赋晶块。',
+        '逃亡者祭坛只会召唤1个逃亡者。',
+        '祭坛出现时不再有声音。',
+        '生命药水变大了，瓶身加上了＋标记。',
+      ],
+    },
+  },
+  {
     version: '0.110',
     date: '2026-10-23',
     changes: {

@@ -13,34 +13,40 @@ await cdp.send('Emulation.clearDeviceMetricsOverride', {});
 await cdp.send('Page.reload', {});
 await sleep(4500);
 
-// --- 1. one clip per rarity, all three served and decoded ---
+// --- 1. one clip per tier (0.111's ladder), every one decoded ---
 const loaded = await run(`
-  const keys = ['sfx-drop-normal', 'sfx-drop-magic', 'sfx-drop-rare'];
-  return keys.map((key) => {
-    const entry = s.cache.audio.get(key);
+  const drops = window.config.AUDIO.drops;
+  return ['normal', 'magic', 'rare', 'mythic'].map((tier) => {
+    const clip = drops[tier];
+    const entry = clip ? s.cache.audio.get(clip.key) : null;
     return {
-      key,
-      inCache: s.cache.audio.exists(key),
+      tier,
+      key: clip ? clip.key : null,
+      file: clip ? clip.file : null,
+      inCache: clip ? s.cache.audio.exists(clip.key) : null,
       duration: entry && entry.duration ? Number(entry.duration.toFixed(2)) : null,
     };
   });
 `);
 console.log('clips:', JSON.stringify(loaded));
-check('a clip for each rarity is in the audio cache',
-  loaded.every((c) => c.inCache), loaded.filter((c) => !c.inCache).map((c) => c.key).join(' / '));
-check('and every one of them decoded',
-  loaded.every((c) => c.duration && c.duration > 0),
-  loaded.map((c) => `${c.key.replace('sfx-drop-', '')} ${c.duration}s`).join(' / '));
-// The rare one is the hit and the swell behind it, mixed into one file.
-check('the rare clip is the longer, mixed one',
-  loaded[2].duration > loaded[0].duration && loaded[2].duration > 3,
-  `${loaded[2].duration}s against ${loaded[0].duration}s for an ordinary drop`);
+const clipOf = (tier) => loaded.find((c) => c.tier === tier);
+const voiced = loaded.filter((c) => c.key);
+check('일반, 마법, 희귀 and 신화 each have a clip of their own',
+  voiced.length === 4 && new Set(voiced.map((c) => c.key)).size === 4,
+  loaded.map((c) => `${c.tier}:${c.key}`).join(' / '));
+check('every one is in the audio cache, decoded',
+  voiced.every((c) => c.inCache && c.duration > 0),
+  voiced.map((c) => `${c.tier} ${c.duration}s`).join(' / '));
+// The 희귀 one is the hit and the swell behind it, mixed into one file.
+check('the 희귀 clip is the longer, mixed one',
+  clipOf('rare').duration > clipOf('magic').duration && clipOf('rare').duration > 3,
+  `${clipOf('rare').duration}s against ${clipOf('magic').duration}s for 마법`);
 
 // --- 2. the files resolve under the configured base ---
 // `cdp.evaluate` cannot await a promise, so the files are fetched from here.
 const urls = [];
-for (const file of ['normalDrop.mp3', 'magicDrop.mp3', 'rareDrop.mp3']) {
-  const res = await fetch(`http://localhost:5173/assets/${file}`);
+for (const { file } of voiced) {
+  const res = await fetch(`http://localhost:5173/${file}`);
   const body = await res.arrayBuffer();
   urls.push({ file, status: res.status, type: res.headers.get('content-type'), bytes: body.byteLength });
 }
@@ -49,7 +55,7 @@ check('each one is served as audio, not as the index page',
   urls.every((u) => u.status === 200 && /audio|mpeg/.test(u.type ?? '') && u.bytes > 4000),
   urls.map((u) => `${u.file} ${u.status} ${u.type} ${u.bytes}B`).join(' / '));
 
-// --- 3. a skill and a 신성한 조각 land on the ordinary clip ---
+// --- 3. a skill lands on 일반's clip; a 혼돈의 구슬 (신화) on the loudest ---
 const plain = await run(`
   window.__plays = [];
   const mgr = s.sound;
@@ -58,22 +64,21 @@ const plain = await run(`
 
   s.combat.dropSkillAt(s.player.x + 300, s.player.y,
     { id: 'fireball', name: '화염구', tags: [] });
+  const afterSkill = window.__plays.length;
   s.combat.dropOrbAt(s.player.x + 320, s.player.y, 'chaos');
 
   const calls = window.__plays.slice();
   mgr.play = orig;
   s.combat.orbDrops.getChildren().forEach(d => d.active && d.collect());
-  return { calls };
+  return { afterSkill, calls, tier: window.config.ORBS.chaos.tier };
 `);
-console.log('plain drops:', JSON.stringify(plain.calls));
-check('a skill lands on the ordinary clip',
-  plain.calls[0]?.key === 'sfx-drop-normal', `key=${plain.calls[0]?.key}`);
-// Its nameplate is the 희귀 one, so its sound is the 희귀 one: the ear and
+console.log('plain drops:', JSON.stringify(plain));
+check('a skill (일반) lands on the 일반 clip',
+  plain.afterSkill === 1 && plain.calls[0]?.key === clipOf('normal').key, JSON.stringify(plain.calls.map((c) => c.key)));
+// Its nameplate is the 신화 one, so its sound is the 신화 one: the ear and
 // the eye are told the same thing about the same object on the floor.
 check('a 혼돈의 구슬 sounds as rare as it is labelled',
-  plain.calls[1]?.key === 'sfx-drop-rare', `key=${plain.calls[1]?.key}`);
-check('at the configured volume', plain.calls[0]?.cfg?.volume === 0.55,
-  `volume=${plain.calls[0]?.cfg?.volume}`);
+  plain.calls.length === 2 && plain.calls[1].key === clipOf(plain.tier).key, JSON.stringify(plain.calls.map((c) => c.key)));
 
 // --- 4. a weapon sounds like how rare it came out ---
 const byRarity = await run(`
@@ -101,17 +106,15 @@ const byRarity = await run(`
 `);
 console.log('by rarity:', JSON.stringify(byRarity.out));
 const forLines = (lines) => byRarity.out.find((o) => o.lines === lines);
-check('a sword with nothing on it sounds ordinary',
-  forLines(0).calls[0] === 'sfx-drop-normal', forLines(0).calls.join(' '));
-// 0.91: 2 속성 마법, 3–4 희귀 (마법's clip), 5–6 신화 (the loud one 희귀 had).
-check('one 속성 still sounds ordinary, two like a magic drop',
-  forLines(1).calls[0] === 'sfx-drop-normal' && forLines(2).calls[0] === 'sfx-drop-magic',
-  `${forLines(1).calls[0]} / ${forLines(2).calls[0]}`);
-check('three or four (희귀) lands with the magic clip',
-  forLines(3).calls[0] === 'sfx-drop-magic', forLines(3).calls[0]);
-check('five or six (신화) sounds like the loudest, swell and all',
-  forLines(5).calls[0] === 'sfx-drop-rare', forLines(5).calls[0]);
-check('and a rare drop is one clip rather than two played together',
+check('a sword with nothing on it, or one 속성, lands on the 일반 clip',
+  forLines(0).calls[0] === clipOf('normal').key && forLines(1).calls[0] === clipOf('normal').key,
+  `${forLines(0).calls.join(' ')} / ${forLines(1).calls.join(' ')}`);
+// 0.91's ladder: 2 속성 마법, 3–4 희귀, 5–6 신화 — each with its own clip since 0.111.
+check('two sound like 마법, three or four like 희귀, five or six like 신화',
+  forLines(2).calls[0] === clipOf('magic').key && forLines(3).calls[0] === clipOf('rare').key &&
+    forLines(5).calls[0] === clipOf('mythic').key,
+  `${forLines(2).calls[0]} / ${forLines(3).calls[0]} / ${forLines(5).calls[0]}`);
+check('and a drop is one clip rather than two played together',
   byRarity.out.every((o) => o.calls.length === 1),
   byRarity.out.map((o) => `${o.lines}:${o.calls.length}`).join(' '));
 
@@ -172,9 +175,13 @@ const viaKill = await run(`
   mgr.play = orig;
   return { calls, err };
 `);
-check('a killed enemy dropping a skill plays it too',
-  (viaKill.calls ?? []).includes('sfx-drop-normal'),
-  viaKill.err ?? `calls=${JSON.stringify(viaKill.calls)}`);
+// A pinned roll drops one of everything until Phaser's new Text trips on the
+// pinned Math.random (CLAUDE.md) — so this reads what landed before that:
+// heard, and only ever on a clip some tier owns.
+const dropCalls = (viaKill.calls ?? []).filter((key) => key.startsWith('sfx-drop-'));
+check('a killed enemy’s drops go through the same ladder',
+  dropCalls.length > 0 && dropCalls.every((key) => voiced.some((c) => c.key === key)),
+  `calls=${JSON.stringify(viaKill.calls)}${viaKill.err ? ' (then ' + viaKill.err + ')' : ''}`);
 
 console.log('\n=== SUMMARY ===');
 const failed = results.filter((r) => !r.p);

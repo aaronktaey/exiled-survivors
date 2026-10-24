@@ -47,8 +47,6 @@ export interface GearImplicit {
 
 export interface GearSpec {
   readonly id: GearId;
-  /** Lands with AUDIO.drops.extreme (0.102, the 오니고로시's). */
-  readonly extremeSound?: boolean;
   readonly slot: GearSlot;
   /**
    * 1 is the best, the way an affix's tier 1 is. Each step down the ladder
@@ -105,7 +103,6 @@ export const GEAR_BASE = {
 export const GEAR: Record<GearId, GearSpec> = {
   onigoroshi: {
     id: 'onigoroshi',
-    extremeSound: true,
     combineInto: false,
     salvageOre: 50,
     icon: 'gear-onigoroshi',
@@ -284,8 +281,6 @@ export type OrbId = 'transmute' | 'chaos' | 'awaken' | 'explode' | 'mango';
 
 export interface OrbSpec {
   readonly id: OrbId;
-  /** Lands with AUDIO.drops.extreme (0.102, 망고의 구슬's). */
-  readonly extremeSound?: boolean;
   /** Korean name; a locale renames it through `names.orbs`. */
   readonly name: string;
   /** The one word that fits on a button beside a count. */
@@ -375,7 +370,6 @@ export const ORBS: Record<OrbId, OrbSpec> = {
   // A tenth as common as the 폭발의 구슬 it guards against.
   mango: {
     id: 'mango',
-    extremeSound: true,
     name: '망고의 구슬',
     short: '망고',
     detail: '장비를 망고 상태로 — 다음 폭발의 구슬 한 번은 장비를 파괴하지 못하고, 그 구슬에 망고 상태가 사라집니다',

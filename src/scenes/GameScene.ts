@@ -372,7 +372,7 @@ export class GameScene extends Phaser.Scene {
           this.announce(fill(t().game.mangoEaten, { seconds: Math.round(MANGO.durationMs / 1000) })),
         onMagnetCollected: () => this.announce(t().game.magnetPulled),
         onUnknownRuneCollected: () => this.feelUnknownRune(),
-        onTalentShardCollected: (stat) => this.gainShard(stat),
+        onTalentShardCollected: (stat, count) => this.gainShard(stat, count),
         shardWeight: (stat) => this.mods.passive.shardWeights[stat] ?? 1,
         dropScale: () => this.boneBonus.dropScale,
         shatter: () =>
@@ -1487,11 +1487,11 @@ export class GameScene extends Phaser.Scene {
   }
 
   /** One 재능의 파편 more of `stat`: folded in at once, said over the survivor. */
-  private gainShard(stat: ShardStat): void {
-    this.shards[stat] += 1;
+  private gainShard(stat: ShardStat, count = 1): void {
+    this.shards[stat] += count;
     this.applyShards();
     const { x, y } = this.player;
-    const line = fill(t().shard.gain[stat], GameScene.shardValues(1));
+    const line = fill(t().shard.gain[stat], GameScene.shardValues(count));
     const tint = TALENT_SHARD_FX.tint[stat];
     this.damageNumbers.spawn(x, y - 70, 0, { text: line, color: Phaser.Display.Color.IntegerToColor(tint).rgba, crit: true });
     const glow = this.add
@@ -1508,7 +1508,7 @@ export class GameScene extends Phaser.Scene {
       ease: 'Quad.easeOut',
       onComplete: () => glow.destroy(),
     });
-    this.announce(fill(t().shard.toast, { line }), 'heal');
+    this.announce(fill(count > 1 ? t().shard.lumpToast : t().shard.toast, { line }), 'heal');
   }
 
   /** What the run's shards add up to, everywhere they act, and the line on the HUD. */
@@ -1703,8 +1703,10 @@ export class GameScene extends Phaser.Scene {
       });
     }
     // Stay quiet rather than warn if the clip failed to load.
-    if (this.cache.audio.exists(AUDIO.drops.rare.key)) {
-      this.sound.play(AUDIO.drops.rare.key, { volume: effectVolume(AUDIO.drops.rare.volume) });
+    // The clip it has always had (마법's, which 희귀 borrowed until 0.111).
+    const clip = AUDIO.drops.magic;
+    if (clip && this.cache.audio.exists(clip.key)) {
+      this.sound.play(clip.key, { volume: effectVolume(clip.volume) });
     }
   }
 

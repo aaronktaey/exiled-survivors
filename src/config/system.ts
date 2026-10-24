@@ -323,28 +323,19 @@ export type DropTier = 'normal' | 'magic' | 'rare' | 'mythic';
 
 export const AUDIO = {
   /**
-   * What a drop sounds like, by how rare it is — Path of Exile's own ladder.
-   * A weapon is normal up to two 속성, magic at three or four, rare at five
-   * or six. A 신성한 조각 is rare whatever else is on the floor; a skill and
-   * a potion are normal. It is the same ladder the nameplates use, so what
-   * a drop looks like and what it sounds like can never disagree.
-   *
-   * The rare one is a single file: the hit and the swell behind it were two
-   * recordings, mixed down to one so there is nothing to keep in step at
-   * playback time. Where every clip comes from: assets/CREDITS.txt.
+   * What a drop sounds like, by its tier (0.111, the user's ladder — see
+   * DROP_LABEL.tiers): 일반 its clip, 마법 its own, 희귀 the hit with its
+   * swell behind (one mixed file, nothing to keep in step), 신화 the
+   * extreme-rare clip (cut from assets-src/drops/extremeRareDrop.ogg). A
+   * 제단 is silent whatever it offers. Where every clip comes from:
+   * assets/CREDITS.txt.
    */
   drops: {
     normal: { key: "sfx-drop-normal", file: "assets/normalDrop.mp3", volume: 0.55 },
     magic: { key: "sfx-drop-magic", file: "assets/magicDrop.mp3", volume: 0.5 },
-    // 희귀 (a weapon with 3–4 속성, 0.91) lands with 마법's clip, as it did
-    // when 3–4 was 마법; 신화 has the loud one 희귀 had.
-    rare: { key: "sfx-drop-magic", file: "assets/magicDrop.mp3", volume: 0.5 },
-    mythic: { key: "sfx-drop-rare", file: "assets/rareDrop.mp3", volume: 0.6 },
-    // 0.102 (the user's ask): the rarest things there are — 재능의 파편, 하얀
-    // 망고, 망고의 구슬, 오니고로시 and a 키메라 제단 (each says so in its table:
-    // `extremeSound`). Cut from assets-src/drops/extremeRareDrop.ogg as an mp3.
-    extreme: { key: "sfx-drop-extreme", file: "assets/extremeRareDrop.mp3", volume: 0.6 },
-  } as const,
+    rare: { key: "sfx-drop-rare", file: "assets/rareDrop.mp3", volume: 0.6 },
+    mythic: { key: "sfx-drop-extreme", file: "assets/extremeRareDrop.mp3", volume: 0.6 },
+  } as Record<DropTier, { readonly key: string; readonly file: string; readonly volume: number } | null>,
   /**
    * How many 속성 a weapon needs to be the next rarity up. One ladder: it
    * is what the drop is labelled as and what it sounds like when it lands,

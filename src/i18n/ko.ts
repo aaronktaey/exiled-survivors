@@ -61,6 +61,9 @@ export const ko: Strings = {
     short: { damage: '피해 +{n}%', attackSpeed: '공속 +{n}%', moveSpeed: '이속 +{n}%', maxHp: '체력 +{n}%', area: '범위 +{n}%', regen: '회복 +{heal}/{secs}초' },
     hud: '재능의 파편 {count}개 · {list}',
     toast: '재능의 파편: {line}',
+    lumpName: '재능의 덩어리',
+    lumpDrop: '{stat} 덩어리',
+    lumpToast: '재능의 덩어리: {line}',
   },
 
   filter: {
@@ -68,8 +71,8 @@ export const ko: Strings = {
     icon: '필터',
     lead: '눌러서 끈 아이템은 바닥에서 보이지 않지만 밟으면 그대로 얻습니다 · 장비는 등급과 종류가 모두 켜져 있어야 보입니다',
     sections: { supplies: '소모품', orbs: '구슬', bones: '뼈다귀', rarity: '장비 등급', bases: '장비 종류' },
-    items: { potion: '체력 포션', skill: '스킬', randomSkill: '무작위 스킬', mango: '하얀 망고', magnet: '자석', unknownRune: '알수없는 룬', talentShard: '재능의 파편' },
-    itemsShort: { potion: '포션', skill: '스킬', randomSkill: '무작위', mango: '망고', magnet: '자석', unknownRune: '룬', talentShard: '파편' },
+    items: { potion: '체력 포션', skill: '스킬', randomSkill: '무작위 스킬', mango: '하얀 망고', magnet: '자석', unknownRune: '알수없는 룬', talentShard: '재능의 파편', talentLump: '재능의 덩어리' },
+    itemsShort: { potion: '포션', skill: '스킬', randomSkill: '무작위', mango: '망고', magnet: '자석', unknownRune: '룬', talentShard: '파편', talentLump: '덩어리' },
     rarity: { normal: '일반', magic: '마법', rare: '희귀', mythic: '신화' },
     shown: '보임',
     hidden: '숨김',
@@ -794,7 +797,7 @@ export const ko: Strings = {
         {
           title: '스킬 드랍',
           lines: [
-            '적은 {skillChance} 확률로 스킬을 떨어뜨립니다. 우두머리와 도망자는 반드시 떨어뜨립니다.',
+            '적은 {skillChance} 확률로 스킬을 떨어뜨립니다. 우두머리는 반드시 떨어뜨립니다.',
             '처음 줍는 스킬은 기본 스펙으로 들어오고, 이미 가진 스킬이면 그 스킬의 강화 선택지가 열립니다.',
           ],
         },
@@ -906,8 +909,9 @@ export const ko: Strings = {
           title: '바닥에 떨어진 것',
           lines: [
             '경험치를 제외한 드랍은 {life}초 뒤에 사라집니다. 마지막 {warning}초 동안 점점 빠르게 깜빡입니다.',
-            '드랍은 등급에 따라 이름표 색과 떨어지는 소리가 다릅니다.',
-            '희귀 등급의 드랍은 반투명한 흰 빛기둥 안에 놓여, 멀리서도 눈에 띕니다.',
+            '드랍은 등급마다 이름표 색, 떨어지는 소리, 빛기둥이 정해져 있습니다.',
+            '일반은 흰 이름표와 소리, 마법은 파란 이름표와 소리, 희귀는 노란 이름표와 소리에 노란 빛기둥, 신화는 커졌다 작아지는 빨간 이름표와 가장 큰 소리에 붉은 빛기둥입니다.',
+            '제단은 소리 없이 놓입니다.',
           ],
         },
       ],
@@ -1007,7 +1011,7 @@ export const ko: Strings = {
           title: '재능',
           lines: [
             '모든 플레이어는 재능 포인트 {passivePoints}점을 가집니다. 시작 화면의 재능에서 원하는 능력치에 나눠 넣습니다.',
-            '재능의 파편은 처치한 적에게서 {shardChance} 확률로 떨어지고, 도망자와 키메라는 반드시 하나를 남깁니다. 어떤 능력치의 파편인지는 재능을 따릅니다 — 한 능력치에 많이 넣을수록 그 파편이 자주 나오고, 나머지는 그만큼 덜 나옵니다.',
+            '재능의 파편은 처치한 적에게서 {shardChance} 확률로 떨어집니다. 도망자와 키메라는 재능의 덩어리를 남기는데, 한 능력치의 파편 {lumpShards}개와 같습니다. 어떤 능력치인지는 재능을 따릅니다 — 한 능력치에 많이 넣을수록 그 파편이 자주 나오고, 나머지는 그만큼 덜 나옵니다.',
             '파편 하나는 그 능력치를 {shardAmplify} 증폭합니다(체력회복은 {shardRegenSecs}초마다 체력 +{shardRegenHeal}). 판이 끝나면 사라집니다.',
             '넣은 포인트는 초기화로 언제든 되돌릴 수 있습니다.',
           ],

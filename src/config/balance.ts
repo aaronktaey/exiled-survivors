@@ -145,8 +145,8 @@ export interface EnemyKindSpec {
   readonly lifespanMs?: number;
   /** Killing it always leaves a skill, the way a 우두머리 does. */
   readonly guaranteedSkill?: boolean;
-  /** Its kill always leaves a 재능의 파편 (0.102: the 도망자 and the 키메라). */
-  readonly guaranteedShard?: boolean;
+  /** Its kill always leaves a 재능의 덩어리 (TALENT_LUMP, 0.111: the 도망자 and the 키메라). */
+  readonly guaranteedLump?: boolean;
   /** Drawn to be seen: a colour that cycles, and a body that breathes. */
   readonly flashy?: boolean;
   /** Only a 기행종 has one: it does not walk, it hops (EnemyHopSpec). */
@@ -360,7 +360,7 @@ export const ENEMY_KINDS: Record<EnemyKind, EnemyKindSpec> = {
     flee: { distance: 240, arc: Math.PI * 0.9 },
     lifespanMs: 60_000,
     // A 재능의 파편 every time, in place of the skill it left until 0.102 (the user's ask).
-    guaranteedShard: true,
+    guaranteedLump: true,
     flashy: true,
   },
   /**
@@ -395,7 +395,7 @@ export const ENEMY_KINDS: Record<EnemyKind, EnemyKindSpec> = {
     unstoppable: true,
     // Always leaves a skill (0.85), as a 도망자 does.
     // A 재능의 파편 every time, in place of the skill it left until 0.102 (the user's ask).
-    guaranteedShard: true,
+    guaranteedLump: true,
   },
   shooter: {
     id: "shooter",
@@ -992,8 +992,6 @@ export interface AltarOfferSpec {
   readonly weight: number;
   /** They arrive throwing their ring (Enemy.castVolleyNow) — 0.86, the user's ask for the 키메라. */
   readonly castOnArrival?: boolean;
-  /** Its 제단 lands with AUDIO.drops.extreme (0.102, the 키메라's). */
-  readonly extremeSound?: boolean;
 }
 
 export type AltarOfferId =
@@ -1015,9 +1013,10 @@ export const ALTAR_OFFERS: Record<AltarOfferId, AltarOfferSpec> = {
   // Added 2026-10-17 on the user's ask; the counts and weights are a first guess.
   erraticSwarm: { kind: "erratic", count: 20, rare: false, weight: 2 },
   // Each one always leaves a skill, as a 도망자 does — a prize worth the chase.
-  fugitives: { kind: "fugitive", count: 3, rare: false, weight: 1 },
+  // One 도망자 since 0.111 (the user's ask; three before).
+  fugitives: { kind: "fugitive", count: 1, rare: false, weight: 1 },
   // One 키메라 (0.85, the user's ask); its weight is a first guess.
-  chimera: { kind: "chimera", count: 1, rare: false, weight: 1, castOnArrival: true, extremeSound: true },
+  chimera: { kind: "chimera", count: 1, rare: false, weight: 1, castOnArrival: true },
 };
 
 export const ALTAR = {
@@ -1505,8 +1504,8 @@ export type ShardStat = 'damage' | 'attackSpeed' | 'moveSpeed' | 'maxHp' | 'area
  * (0.104: shared by every stat again, and 0.5%) — nothing raises it — and
  * when it lands, which stat's shard it is (피해량 파편, 공격속도 파편 …) is
  * weighed by the passive tree's lines (passives.ts: each rank +5% of that
- * stat's weight, so the others come up less). A 도망자 or a 키메라 always
- * leaves one (`guaranteedShard`), weighed the same. Each gives the run `amplify` more damage, attack speed,
+ * stat's weight, so the others come up less). A 도망자 or a 키메라 leaves a
+ * 재능의 덩어리 instead (TALENT_LUMP). Each gives the run `amplify` more damage, attack speed,
  * move speed, max health or area (each an 증폭, its shards added), or
  * `regen` health every `regenEveryMs`. Once the main skill (a level-up) or
  * every skill on offer (a 무작위 스킬) is maxed, `choices` cards of the
@@ -1523,6 +1522,17 @@ export const TALENT_SHARD = {
   choices: 3,
   /** How big it is drawn on the ground. */
   size: 22,
+} as const;
+
+/**
+ * ★ 재능의 덩어리 (0.111, the user's ask): what a 도망자 or a 키메라 leaves
+ * (`guaranteedLump`) — one stat, weighed the way a 재능의 파편's is, and
+ * `shards` of that stat's shard at once. A 신화 drop; a 파편 is 일반.
+ */
+export const TALENT_LUMP = {
+  shards: 5,
+  /** How big it is drawn on the ground. */
+  size: 30,
 } as const;
 
 /** What a run's shards add up to: an 증폭 per stat (1 + shards × amplify), and health a tick. */
@@ -1544,7 +1554,8 @@ export const POTION = {
   chance: 0.02,
   /** Fraction of max HP it restores. */
   healFraction: 0.2,
-  size: 16,
+  /** Drawn size, and the size it is picked up at (24 since 0.111, the user's ask). */
+  size: 24,
 } as const;
 
 /** A skill's stat line. Upgrades move these; BALANCE scales damage on top. */

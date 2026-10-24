@@ -174,14 +174,14 @@ const prize = await run(`
   const e = s.spawner.group.get(p.x + 300, p.y);
   e.spawn(p.x + 300, p.y, p, 'chimera');
   s.combat.hit(e, 1e12);
-  const dropped = s.combat.talentShardDrops.countActive(true);
+  const dropped = s.combat.talentShardDrops.getChildren().filter((d) => d.active && d.lump).length;
   s.combat.talentShardDrops.getChildren().forEach((d) => d.active && d.collect());
   s.combat.skillDrops.getChildren().forEach((d) => d.active && d.collect());
   s.combat.gems.getChildren().forEach((g) => g.active && g.collect());
   const offer = window.config.ALTAR_OFFERS.chimera;
-  return { dropped, guaranteed: window.config.ENEMY_KINDS.chimera.guaranteedShard, offer };
+  return { dropped, guaranteed: window.config.ENEMY_KINDS.chimera.guaranteedLump, offer };
 `);
-check('a 키메라 killed always leaves a 재능의 파편 (0.102; a skill before)', prize.dropped >= 1 && prize.guaranteed === true, JSON.stringify(prize));
+check('a 키메라 killed always leaves a 재능의 덩어리 (0.111; a 파편 from 0.102, a skill before)', prize.dropped === 1 && prize.guaranteed === true, JSON.stringify(prize));
 check('a 제단 can offer one 키메라', prize.offer?.kind === 'chimera' && prize.offer.count === 1 && prize.offer.weight > 0, JSON.stringify(prize.offer));
 
 // --- 5. a 제단's 키메라 arrives throwing its ring (0.86) ---

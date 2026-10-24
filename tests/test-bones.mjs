@@ -76,7 +76,8 @@ const drops = await run(`
     window.__played.length = 0;
     s.combat.dropBoneAt(-900, -900, id);
     const d = s.combat.boneDrops.getChildren().find(x => x.active && x.bone === id);
-    out[id] = { name: d.nameplate.text, sound: window.__played[0], texture: d.texture.key };
+    const clip = window.config.AUDIO.drops[window.config.BONES[id].tier];
+    out[id] = { name: d.nameplate.text, sound: window.__played[0], want: clip ? clip.key : undefined, texture: d.texture.key };
   }
   mgr.play = orig;
   s.combat.boneDrops.getChildren().forEach(d => d.active && d.collect());
@@ -88,9 +89,10 @@ check('each 뼈다귀 lands under its own name and its own sprite',
   drops.skull.name === '고대 두개골' && drops.rib.name === '갈비뼈' &&
     drops.skull.texture !== drops.rib.texture,
   `${drops.skull.name} / ${drops.rib.name}`);
+// 0.111: each tier's own clip (AUDIO.drops), read off the table — not a name here.
 check('and sounds like the rarity it is',
-  drops.skull.sound === 'sfx-drop-rare' && drops.rib.sound === 'sfx-drop-magic',
-  `${drops.skull.sound} / ${drops.rib.sound}`);
+  Object.values(drops).every((d) => d.sound === d.want) && drops.skull.sound !== drops.rib.sound,
+  Object.entries(drops).map(([id, d]) => `${id} ${d.sound} (want ${d.want})`).join(' / '));
 
 await run(`
   const p = s.player;

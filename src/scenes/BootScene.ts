@@ -66,7 +66,7 @@ export class BootScene extends Phaser.Scene {
     // Two tiers may share a clip: each file is loaded once.
     const dropKeys = new Set<string>();
     for (const clip of Object.values(AUDIO.drops)) {
-      if (!dropKeys.has(clip.key)) {
+      if (clip && !dropKeys.has(clip.key)) {
         dropKeys.add(clip.key);
         this.load.audio(clip.key, `${base}${clip.file}`);
       }
@@ -116,6 +116,7 @@ export class BootScene extends Phaser.Scene {
     this.createLockTexture();
     this.createUnknownRuneTextures();
     this.createTalentShardTexture();
+    this.createTalentLumpTexture();
     this.createLightPillarTexture();
     this.createGlowTexture();
     this.createAccountTexture();
@@ -1240,6 +1241,41 @@ export class BootScene extends Phaser.Scene {
     g.fillStyle(0xffffff, 0.95);
     g.fillCircle(27, 17, 2.4);
     g.generateTexture(TEXTURES.talentShard, size, size);
+    g.destroy();
+  }
+
+  /**
+   * The 재능의 덩어리 (0.111): three of the shard's crystals grown together —
+   * a tall one in the middle, two leaning off it — grey-white like the
+   * shard, so the drop's tint gives it its stat's colour.
+   */
+  private createTalentLumpTexture(): void {
+    const size = 64;
+    const { body, light, dark } = TALENT_SHARD_FX;
+    const g = this.add.graphics();
+    g.fillStyle(light, 0.18);
+    g.fillCircle(32, 36, 28);
+    const crystal = (cx: number, top: number, bottom: number, half: number, lean: number): void => {
+      const t = new Phaser.Math.Vector2(cx + lean, top);
+      const l = new Phaser.Math.Vector2(cx - half, (top + bottom) / 2);
+      const r = new Phaser.Math.Vector2(cx + half, (top + bottom) / 2);
+      const b = new Phaser.Math.Vector2(cx, bottom);
+      g.fillStyle(dark, 1);
+      g.fillTriangle(t.x, t.y, r.x, r.y, b.x, b.y);
+      g.fillStyle(body, 1);
+      g.fillTriangle(t.x, t.y, l.x, l.y, b.x, b.y);
+      g.fillStyle(light, 0.85);
+      g.fillTriangle(t.x, t.y, l.x + 3, l.y - 2, cx, (top + bottom) / 2 - 2);
+      g.lineStyle(2, 0x3a3a46, 1);
+      g.strokePoints([t, r, b, l], true, true);
+    };
+    crystal(17, 20, 58, 9, -6);
+    crystal(47, 22, 58, 9, 6);
+    crystal(32, 4, 60, 12, 0);
+    g.fillStyle(0xffffff, 0.95);
+    g.fillCircle(27, 18, 2.6);
+    g.fillCircle(13, 31, 1.6);
+    g.generateTexture(TEXTURES.talentLump, size, size);
     g.destroy();
   }
 

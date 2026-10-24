@@ -57,6 +57,9 @@ export const ja: Strings = {
     short: { damage: 'ダメ +{n}%', attackSpeed: '攻速 +{n}%', moveSpeed: '移速 +{n}%', maxHp: '体力 +{n}%', area: '範囲 +{n}%', regen: '回復 +{heal}/{secs}秒' },
     hud: '才能の欠片 {count}個 · {list}',
     toast: '才能の欠片：{line}',
+    lumpName: '才能の塊',
+    lumpDrop: '{stat}の塊',
+    lumpToast: '才能の塊：{line}',
   },
 
   filter: {
@@ -64,8 +67,8 @@ export const ja: Strings = {
     icon: 'フィルター',
     lead: 'オフにしたアイテムは床に表示されませんが、踏めばそのまま拾えます · 装備は等級と種類の両方がオンのときだけ表示されます',
     sections: { supplies: '消耗品', orbs: '球', bones: '骨', rarity: '装備の等級', bases: '装備の種類' },
-    items: { potion: '回復ポーション', skill: 'スキル', randomSkill: 'ランダムスキル', mango: '白いマンゴー', magnet: '磁石', unknownRune: '謎のルーン', talentShard: '才能の欠片' },
-    itemsShort: { potion: 'ポーション', skill: 'スキル', randomSkill: 'ランダム', mango: 'マンゴー', magnet: '磁石', unknownRune: 'ルーン', talentShard: '欠片' },
+    items: { potion: '回復ポーション', skill: 'スキル', randomSkill: 'ランダムスキル', mango: '白いマンゴー', magnet: '磁石', unknownRune: '謎のルーン', talentShard: '才能の欠片', talentLump: '才能の塊' },
+    itemsShort: { potion: 'ポーション', skill: 'スキル', randomSkill: 'ランダム', mango: 'マンゴー', magnet: '磁石', unknownRune: 'ルーン', talentShard: '欠片', talentLump: '塊' },
     rarity: { normal: 'ノーマル', magic: 'マジック', rare: 'レア', mythic: '神話' },
     shown: '表示',
     hidden: '非表示',
@@ -929,7 +932,7 @@ export const ja: Strings = {
         {
           title: 'スキルのドロップ',
           lines: [
-            '敵は {skillChance} の確率でスキルを落とします。ボスと逃亡者は必ず落とします。',
+            '敵は {skillChance} の確率でスキルを落とします。ボスは必ず落とします。',
             '初めて拾うスキルは基本性能で入り、持っているスキルならそのスキルの強化の選択肢が開きます。',
           ],
         },
@@ -1041,8 +1044,9 @@ export const ja: Strings = {
           title: '地面に落ちたもの',
           lines: [
             '経験値以外のドロップは {life} 秒後に消えます。最後の {warning} 秒間はだんだん速く点滅します。',
-            'ドロップは等級によって名札の色と落ちる音が違います。',
-            'レア等級のドロップは半透明の白い光の柱の中に置かれ、遠くからでも目立ちます。',
+            'ドロップは等級ごとに名札の色、落ちる音、光の柱が決まっています。',
+            'ノーマルは白い名札と音、マジックは青い名札と音、レアは黄色い名札と音に黄色い光の柱、神話は大きくなったり小さくなったりする赤い名札と一番大きな音に赤い光の柱です。',
+            '祭壇は音を立てずに置かれます。',
           ],
         },
       ],
@@ -1142,7 +1146,7 @@ export const ja: Strings = {
           title: '才能',
           lines: [
             'すべてのプレイヤーは才能ポイントを {passivePoints} 点持っています。タイトル画面の才能で、好きな能力値に振り分けます。',
-            '才能の欠片は倒した敵から {shardChance} の確率で落ち、逃亡者とキメラは必ず1つ残します。どの能力値の欠片かは才能で決まります — ひとつの能力値に多く振るほどその欠片がよく出て、ほかはその分出にくくなります。',
+            '才能の欠片は倒した敵から {shardChance} の確率で落ちます。逃亡者とキメラは才能の塊を残し、ひとつの能力値の欠片 {lumpShards} 個分になります。どの能力値かは才能で決まります — ひとつの能力値に多く振るほどその欠片がよく出て、ほかはその分出にくくなります。',
             '欠片1つでその能力値が {shardAmplify} 増幅されます（体力回復は {shardRegenSecs} 秒ごとに体力 +{shardRegenHeal}）。その回が終わると消えます。',
             '振ったポイントはリセットでいつでも戻せます。',
           ],

@@ -1371,7 +1371,8 @@ export class InventoryScene extends Phaser.Scene {
       sword.setScale(settled * 0.2);
       this.tweens.add({ targets: sword, scale: settled, duration: fx.popMs, ease: 'Back.easeOut' });
       this.tweens.add({ targets: backing, alpha: 0.35, duration: fx.holdMs / 2, yoyo: true });
-      this.play(AUDIO.drops.rare.key, AUDIO.drops.rare.volume);
+      // The clip it has always had (마법's, which 희귀 borrowed until 0.111).
+      this.play(AUDIO.drops.magic!.key, AUDIO.drops.magic!.volume);
       this.time.delayedCall(fx.flashMs + fx.holdMs, done);
     };
   }

@@ -250,14 +250,14 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
     return this.isBoss || this.spec.guaranteedSkill === true;
   }
 
-  /** Its kill always leaves a 재능의 파편 (0.102: the 도망자, the 키메라). */
-  public get alwaysDropsShard(): boolean {
-    return this.spec.guaranteedShard === true;
+  /** Its kill always leaves a 재능의 덩어리 (0.111: the 도망자, the 키메라). */
+  public get alwaysDropsLump(): boolean {
+    return this.spec.guaranteedLump === true;
   }
 
   /** Worth too much to be the one that gives way at the cap (SpawnDirector.makeRoom). */
   public get precious(): boolean {
-    return this.alwaysDropsSkill || this.alwaysDropsShard;
+    return this.alwaysDropsSkill || this.alwaysDropsLump;
   }
 
   /** How many 거미 this one carries — how wide a web it leaves. */

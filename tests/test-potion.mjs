@@ -84,7 +84,7 @@ await run(`
 await sleep(350);
 const healing = await run(`
   const far = s.combat.potions.getChildren().find(x => x.active);
-  const out = { size: Math.round(far.displayWidth), tex: far.texture.key,
+  const out = { size: Math.round(far.displayWidth), want: window.config.POTION.size, tex: far.texture.key,
                 life: Math.round(far.timeLeftMs), before: 10 };
   far.collect();
   s.player.hp = 10;
@@ -93,7 +93,7 @@ const healing = await run(`
 `);
 console.log('potion:', JSON.stringify(healing));
 check('it is drawn from its own texture at the configured size',
-  healing.tex === 'tex-potion' && healing.size === 16, `${healing.tex} at ${healing.size}px`);
+  healing.tex === 'tex-potion' && healing.size === healing.want, `${healing.tex} at ${healing.size}px (want ${healing.want})`);
 check('it lies there for a minute like any other drop',
   healing.life > 59000 && healing.life <= 60000,
   `${(healing.life / 1000).toFixed(1)}s left of 60s, a moment after dropping`);

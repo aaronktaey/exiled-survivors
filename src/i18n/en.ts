@@ -57,6 +57,9 @@ export const en: Strings = {
     short: { damage: 'Dmg +{n}%', attackSpeed: 'AS +{n}%', moveSpeed: 'MS +{n}%', maxHp: 'HP +{n}%', area: 'Area +{n}%', regen: 'Regen +{heal}/{secs}s' },
     hud: 'Talent Shards ×{count} · {list}',
     toast: 'Talent Shard: {line}',
+    lumpName: 'Talent Chunk',
+    lumpDrop: '{stat} Chunk',
+    lumpToast: 'Talent Chunk: {line}',
   },
 
   filter: {
@@ -64,8 +67,8 @@ export const en: Strings = {
     icon: 'Filter',
     lead: 'Anything switched off is hidden on the ground but still picked up by walking over it · a weapon shows only when both its rarity and its kind are on',
     sections: { supplies: 'Supplies', orbs: 'Orbs', bones: 'Bones', rarity: 'Rarity', bases: 'Weapons' },
-    items: { potion: 'Potion', skill: 'Skill', randomSkill: 'Random Skill', mango: 'White Mango', magnet: 'Magnet', unknownRune: 'Unknown Rune', talentShard: 'Talent Shard' },
-    itemsShort: { potion: 'Potion', skill: 'Skill', randomSkill: 'Random', mango: 'Mango', magnet: 'Magnet', unknownRune: 'Rune', talentShard: 'Shard' },
+    items: { potion: 'Potion', skill: 'Skill', randomSkill: 'Random Skill', mango: 'White Mango', magnet: 'Magnet', unknownRune: 'Unknown Rune', talentShard: 'Talent Shard', talentLump: 'Talent Chunk' },
+    itemsShort: { potion: 'Potion', skill: 'Skill', randomSkill: 'Random', mango: 'Mango', magnet: 'Magnet', unknownRune: 'Rune', talentShard: 'Shard', talentLump: 'Chunk' },
     rarity: { normal: 'Normal', magic: 'Magic', rare: 'Rare', mythic: 'Mythic' },
     shown: 'shown',
     hidden: 'hidden',
@@ -929,7 +932,7 @@ export const en: Strings = {
         {
           title: 'Skill drops',
           lines: [
-            'Enemies drop a skill {skillChance} of the time. Bosses and Runaways always drop one.',
+            'Enemies drop a skill {skillChance} of the time. Bosses always drop one.',
             'A skill you do not have comes in at its base stats; one you have opens its upgrade choice.',
           ],
         },
@@ -1041,8 +1044,9 @@ export const en: Strings = {
           title: 'On the ground',
           lines: [
             'Everything but XP disappears after {life}s, blinking faster and faster for the last {warning}s.',
-            'A drop’s rarity shows in the colour of its label and the sound it lands with.',
-            'A rare drop stands in a pale pillar of white light, so it can be seen from across the field.',
+            'Each rarity has its own label colour, landing sound and pillar of light.',
+            'Normal: a white label and its sound. Magic: a blue label and its sound. Rare: a yellow label, its sound and a yellow pillar. Mythic: a red label that swells and settles, the loudest sound and a red pillar.',
+            'An altar lands without a sound.',
           ],
         },
       ],
@@ -1142,7 +1146,7 @@ export const en: Strings = {
           title: 'Talents',
           lines: [
             'Every player holds {passivePoints} talent points. Share them out among the stats from Talents on the title screen.',
-            'A Talent Shard drops off {shardChance} of kills, and a Fugitive or a Chimera always leaves one. Which stat it carries follows your talents: the more points in a stat, the more often its shard comes, and the others that much less.',
+            'A Talent Shard drops off {shardChance} of kills. A Fugitive or a Chimera leaves a Talent Chunk instead, worth {lumpShards} shards of one stat. Which stat it carries follows your talents: the more points in a stat, the more often its shard comes, and the others that much less.',
             'Each shard amplifies its stat by {shardAmplify} (regeneration: +{shardRegenHeal} health every {shardRegenSecs}s) until the run ends.',
             'Reset gives every point back, at any time.',
           ],

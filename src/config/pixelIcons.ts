@@ -3,7 +3,8 @@
  * 보석, the 화염구 shot, the plain skill orb and four skills' icons. They took
  * the place of the Raven Fantasy pack, whose free version was for games that
  * earn nothing. The 체력 포션 joined in 0.110: a green flask, where the red
- * square with a white cross it was read as one more red enemy bolt. Each is a 16x16 grid, one character a pixel ('.' is clear),
+ * square with a white cross it was read as one more red enemy bolt; the
+ * cross came back on the flask in 0.111. Each is a 16x16 grid, one character a pixel ('.' is clear),
  * coloured by its own palette and painted at boot `PIXEL_ICON_SCALE` times
  * over (BootScene.createPixelIcons) — 32x32, the size the pack's were.
  *
@@ -305,10 +306,10 @@ export const PIXEL_ICONS = {
       '....oggggggo....',
       '...oggggggggo...',
       '..ogllllllllgo..',
-      '..ogLwwLLLLDgo..',
-      '..ogLwLLLLLDgo..',
-      '..ogLLLLLLLDgo..',
-      '..ogLLLLLLDDgo..',
+      '..ogwLLwwLLDgo..',
+      '..ogLLwwwwLDgo..',
+      '..ogLLwwwwLDgo..',
+      '..ogLLLwwLDDgo..',
       '...ogLLLDDDgo...',
       '....oggLDggo....',
       '.....oooooo.....',
