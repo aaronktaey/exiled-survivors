@@ -358,6 +358,25 @@ export const ja: Strings = {
     hint: 'Esc または戻るでつづける   ·   レア敵を指すと属性が見えます',
   },
 
+  village: {
+    stations: {
+      portal: '出陣の門',
+      stash: '保管箱',
+      anvil: '鍛冶場',
+      obelisk: '才能の碑',
+      board: '栄誉の掲示板',
+      sieve: '仕分け台',
+      shelf: '書斎',
+      notice: 'お知らせ掲示板',
+    },
+    useKey: 'Space',
+    useTap: 'タップ',
+    hintKeyboard: 'WASD・方向キーで移動   Space で開く   クリックでそこへ',
+    hintTouch: '床をタップして移動・物をタップして開く',
+    savedRun: '続きの回あり',
+    champion: '1位 {name}',
+  },
+
   gameOver: {
     devRunDebug: '開発者ツール（F キー）を使った回のため、ランキングと自分の記録に載りません',
     devRunDraft: 'バランス実験中の回のため、ランキングと自分の記録に載りません · バランス画面で実験を取り消すか全体に適用',

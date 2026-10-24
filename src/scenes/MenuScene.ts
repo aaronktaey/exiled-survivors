@@ -35,6 +35,7 @@ import { devToolsAllowed } from '@/systems/DevAccess';
 import { tuning } from '@/systems/Tuning';
 import { podium } from '@/systems/Podium';
 import { givePassivePoints, giveRollbackGift } from '@/systems/Gift';
+import { Village, VILLAGE_TEXTURE, villageOn } from '@/systems/Village';
 
 /** Syncing starts once per page, the first time the title finds someone signed in. */
 let syncStarted = false;
@@ -49,7 +50,9 @@ const PODIUM_CUP = 16;
 export class MenuScene extends Phaser.Scene {
   public static readonly KEY = SCENES.menu;
 
-  private menu!: MenuList;
+  private menu?: MenuList;
+  /** 생존자 마을, when the title is one (villageOn). Public for tests. */
+  public village?: Village;
   /** The corner icons. Public so a test can press one. */
   public icons!: IconBar;
   /** First place under the logo, when there is one. Public for tests. */
@@ -80,11 +83,67 @@ export class MenuScene extends Phaser.Scene {
     this.podiumFlags = [];
     this.podiumCups = [];
     this.sparks = undefined;
+    this.menu = undefined;
+    this.village = undefined;
   }
 
   public create(): void {
     const { width, height } = this.scale;
 
+    // 생존자 마을 on the dev server (VILLAGE.devOnly); the menu everywhere else.
+    if (villageOn()) {
+      this.buildVillage();
+    } else {
+      this.buildMenu(width, height);
+    }
+
+    // The title is drawn before the account is known; when it turns out to be
+    // the admin's (or stops being), the 밸런스 icon comes or goes.
+    const admin = devToolsAllowed();
+    const unwatchAccount = account.onChange(() => {
+      if (devToolsAllowed() !== admin && this.scene.isActive()) {
+        this.scene.restart();
+        return;
+      }
+      this.icons.refresh();
+    });
+    // Everyone's newest 밸런스 values are taken here, between runs.
+    tuning.settle();
+    void tuning.load(this.game);
+    const unwatchSync = cloudSave.onChange(() => this.icons.refresh());
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      unwatchAccount();
+      unwatchSync();
+    });
+    // Who is signed in first: an account that saw 어제의 랭킹 elsewhere is not shown it again.
+    void this.settleAccount().then(() => {
+      this.giveGift();
+      return this.showPodium();
+    });
+
+    // A newer version: taken here, on the title with nothing open, never mid-run.
+    const offerUpdate = (): void => {
+      if (!this.updating && liveUpdate.safeNow(this.game)) {
+        this.applyUpdate();
+      }
+    };
+    const unwatchUpdate = liveUpdate.onPending(offerUpdate);
+    // A run answered by the ranking frees a version held back for it (0.113).
+    const unwatchRanking = ranking.onChange(offerUpdate);
+    this.events.on(Phaser.Scenes.Events.RESUME, offerUpdate);
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      unwatchUpdate();
+      unwatchRanking();
+      this.events.off(Phaser.Scenes.Events.RESUME, offerUpdate);
+    });
+    this.time.delayedCall(0, offerUpdate);
+
+    // The track is multi-megabyte, so it arrives a moment after the menu.
+    bgm.start(this);
+  }
+
+  /** The title as a list under the logo, with the corner icons — the title everywhere but the village. */
+  private buildMenu(width: number, height: number): void {
     this.add.tileSprite(0, 0, width, height, TEXTURES.grid).setOrigin(0, 0).setDepth(DEPTH.ground);
     this.add.rectangle(0, 0, width, height, 0x05070b, SCRIM.title).setOrigin(0, 0).setDepth(DEPTH.ground + 1);
 
@@ -203,50 +262,97 @@ export class MenuScene extends Phaser.Scene {
           ]
         : []),
     ]);
+  }
 
-    // The title is drawn before the account is known; when it turns out to be
-    // the admin's (or stops being), the 밸런스 icon comes or goes.
-    const admin = devToolsAllowed();
-    const unwatchAccount = account.onChange(() => {
-      if (devToolsAllowed() !== admin && this.scene.isActive()) {
-        this.scene.restart();
-        return;
-      }
-      this.icons.refresh();
-    });
-    // Everyone's newest 밸런스 values are taken here, between runs.
-    tuning.settle();
-    void tuning.load(this.game);
-    const unwatchSync = cloudSave.onChange(() => this.icons.refresh());
-    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
-      unwatchAccount();
-      unwatchSync();
-    });
-    // Who is signed in first: an account that saw 어제의 랭킹 elsewhere is not shown it again.
-    void this.settleAccount().then(() => {
-      this.giveGift();
-      return this.showPodium();
-    });
+  /**
+   * 생존자 마을 (dev server only for now, the user's ask): the title as a yard
+   * with what the menu and the corner icons opened standing in it. Only the
+   * account, 밸런스 and 설정 stay in the corner — they are not places.
+   */
+  private buildVillage(): void {
+    const { width } = this.scale;
+    const copy = t().village;
+    const saved = saveGame.read();
+    this.village = new Village(
+      this,
+      [
+        { id: 'portal', label: () => copy.stations.portal, note: () => (saved ? copy.savedRun : ''), open: () => this.onStart() },
+        { id: 'stash', label: () => copy.stations.stash, badge: () => orbs.total > 0, open: () => this.openOverlay(SCENES.inventory) },
+        { id: 'anvil', label: () => copy.stations.anvil, open: () => this.openOverlay(SCENES.forge) },
+        {
+          id: 'obelisk',
+          label: () => copy.stations.obelisk,
+          badge: () => passives.value.points > 0,
+          open: () => this.openOverlay(SCENES.passives),
+        },
+        {
+          id: 'board',
+          label: () => copy.stations.board,
+          note: () => (ranking.first ? fill(copy.champion, { name: ranking.first.name }) : ''),
+          open: () => this.openOverlay(SCENES.ranking),
+        },
+        { id: 'sieve', label: () => copy.stations.sieve, open: () => this.openOverlay(SCENES.filter) },
+        { id: 'shelf', label: () => copy.stations.shelf, open: () => this.openOverlay(SCENES.info, { topic: 'guide' }) },
+        {
+          id: 'notice',
+          label: () => copy.stations.notice,
+          note: () => `v${PATCH_NOTES[0]?.version ?? ''}`,
+          open: () => this.openOverlay(SCENES.info, { topic: 'patch' }),
+        },
+      ],
+      () => this.icons?.hasFocus === true,
+    );
 
-    // A newer version: taken here, on the title with nothing open, never mid-run.
-    const offerUpdate = (): void => {
-      if (!this.updating && liveUpdate.safeNow(this.game)) {
-        this.applyUpdate();
-      }
-    };
-    const unwatchUpdate = liveUpdate.onPending(offerUpdate);
-    // A run answered by the ranking frees a version held back for it (0.113).
-    const unwatchRanking = ranking.onChange(offerUpdate);
-    this.events.on(Phaser.Scenes.Events.RESUME, offerUpdate);
-    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
-      unwatchUpdate();
-      unwatchRanking();
-      this.events.off(Phaser.Scenes.Events.RESUME, offerUpdate);
-    });
-    this.time.delayedCall(0, offerUpdate);
+    // The logo, small, in the strip above the yard: centred lying down, to the left upright.
+    const wide = width >= this.scale.height;
+    const logo = this.add.image(0, 0, TEXTURES.logo).setDepth(DEPTH.ui);
+    logo.setScale(Math.min(0.5, (width * (wide ? 0.4 : 0.5)) / logo.width));
+    logo.setPosition(wide ? width / 2 : 16 + logo.displayWidth / 2, 12 + logo.displayHeight / 2);
 
-    // The track is multi-megabyte, so it arrives a moment after the menu.
-    bgm.start(this);
+    fitText(
+      this.add
+        .text(width / 2, this.scale.height - 26, prefersTouchControls() ? copy.hintTouch : copy.hintKeyboard, {
+          fontFamily: 'system-ui, sans-serif',
+          fontSize: TEXT.size.hint,
+          color: COLORS.muted,
+        })
+        .setOrigin(0.5)
+        .setDepth(DEPTH.ui),
+      width,
+      8,
+    );
+
+    this.icons = new IconBar(this, [
+      {
+        id: 'settings',
+        texture: VILLAGE_TEXTURE.cog,
+        label: () => (LOCALE.choosable ? 'Settings' : t().menu.settings),
+        onSelect: () => this.openOverlay(SCENES.settings, { allowLanguage: true }),
+      },
+      ...(devToolsAllowed()
+        ? [{ id: 'tuning', texture: TEXTURES.tuning, label: () => t().tuning.icon, onSelect: () => this.openOverlay(SCENES.tuning) }]
+        : []),
+      ...(ACCOUNT.enabled
+        ? [
+            {
+              id: 'account',
+              texture: TEXTURES.account,
+              label: () => (account.signedIn ? t().account.iconSignedIn : t().account.iconSignedOut),
+              badge: () => cloudSave.conflict !== null,
+              onSelect: () => this.openOverlay(SCENES.account),
+            },
+          ]
+        : []),
+    ]);
+
+    // First place's name on the board, and the dots, kept current.
+    const unwatch = ranking.onChange(() => this.village?.refresh());
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, unwatch);
+    void ranking.refresh();
+  }
+
+  public override update(_time: number, delta: number): void {
+    this.village?.update(delta);
   }
 
   /** Says so, takes no more input, and reloads onto the new version. */
@@ -513,7 +619,8 @@ export class MenuScene extends Phaser.Scene {
       },
       onCancel: () => {
         this.scene.resume();
-        this.menu.refresh();
+        this.menu?.refresh();
+        this.village?.refresh();
       },
     });
   }
@@ -532,7 +639,7 @@ export class MenuScene extends Phaser.Scene {
     BoneScene.before(
       this,
       (applied) => this.scene.start(SCENES.game, { save: null, bones: applied, startPick: true }),
-      () => this.menu.refresh(),
+      () => this.menu?.refresh(),
     );
   }
 
@@ -672,7 +779,8 @@ export class MenuScene extends Phaser.Scene {
           this.scene.restart();
           return;
         }
-        this.menu.refresh();
+        this.menu?.refresh();
+        this.village?.refresh();
         this.icons.refresh();
       },
     });

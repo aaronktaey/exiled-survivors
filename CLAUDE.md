@@ -89,7 +89,7 @@ node run-all.mjs test-full test-skills test-balance test-chain test-ice \
   test-ranking test-skillpick test-mango test-web test-loadout \
   test-carry test-api test-account test-live test-filter test-mastery \
   test-tuning test-terrain test-chimera test-seal test-gift test-held \
-  test-shard
+  test-shard test-village
 ```
 
 test-i18n and test-locale are left out until the official release (the
@@ -340,6 +340,20 @@ Read `git log` for what changed and when. What is not in the log:
 - **도망자 is table-driven.** `flee`, `lifespanMs`, `guaranteedSkill` and
   `flashy` on an `ENEMY_KINDS` entry give any kind that behaviour; the
   fugitive is the only one using them. It spawns on `FUGITIVE`'s clock.
+- **생존자 마을 (dev server only, the user's ask, 2026-10-24).** The title
+  as a yard to walk, like Path of Exile's hideout: `systems/Village.ts`,
+  built by `MenuScene.buildVillage` when `villageOn()` (VILLAGE.devOnly keeps
+  it to the dev server; the harness and `#run` see the menu unless a page
+  sets `window.__villageOn`). Eight places (`VILLAGE.layout`, shares of the
+  yard, lying down and upright): 출정의 문 → `onStart` (asks about a save),
+  보관함 → 인벤토리, 대장간 → 분해·제작, 재능의 비석 → 재능, 명예의 게시판 →
+  랭킹 (first place under it), 분류대 → 필터, 서재 → 가이드, 소식 게시판 →
+  패치노트. Walked by WASD/arrows or by pressing the ground; pressing a place
+  walks to it and opens it; Space/Enter at one opens it. The corner keeps
+  only 설정 (a cog), 밸런스 and the account. Everything else the title does
+  (account, podium, live update, gift) is unchanged — `buildMenu` is the
+  old title. Pictures are painted in code (`Village.paint`). Taking it live
+  is `VILLAGE.devOnly: false`. test-village covers it.
 - **랭킹 점수 (0.116, the user's).** The board ranks by score, not damage
   dealt: every kill's full health as it spawned (`Enemy.maxHp`: the clock,
   a rare's 속성) × `SCORE.byKind` (balance.ts), counted in

@@ -362,6 +362,25 @@ export const ko: Strings = {
     hint: 'Esc 또는 뒤로가기로 이어서 진행   ·   희귀 적을 가리키면 속성이 보입니다',
   },
 
+  village: {
+    stations: {
+      portal: '출정의 문',
+      stash: '보관함',
+      anvil: '대장간',
+      obelisk: '재능의 비석',
+      board: '명예의 게시판',
+      sieve: '분류대',
+      shelf: '서재',
+      notice: '소식 게시판',
+    },
+    useKey: 'Space',
+    useTap: '탭',
+    hintKeyboard: 'WASD · 방향키 이동   Space 열기   클릭하면 그곳으로',
+    hintTouch: '바닥을 탭해 이동 · 사물을 탭해 열기',
+    savedRun: '이어할 판 있음',
+    champion: '1위 {name}',
+  },
+
   gameOver: {
     devRunDebug: '개발자 도구(F키)를 쓴 판이라 랭킹과 내 기록에 오르지 않습니다',
     devRunDraft: '밸런스 실험 중인 판이라 랭킹과 내 기록에 오르지 않습니다 · 밸런스 화면에서 실험 취소 또는 전체 적용',

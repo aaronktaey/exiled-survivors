@@ -1223,3 +1223,44 @@ export const UNKNOWN_RUNE_LOOKS: readonly {
 
 /** The picture of one of those looks. */
 export const unknownRuneTexture = (look: number): string => `tex-unknown-rune-${look}`;
+
+/** What stands in 생존자 마을, each opening a screen (systems/Village.ts). */
+export type VillageStationId = 'portal' | 'stash' | 'anvil' | 'obelisk' | 'board' | 'sieve' | 'shelf' | 'notice';
+
+/**
+ * ★ 생존자 마을 (the user's ask, 2026-10-24): the title as a yard to walk,
+ * like Path of Exile's hideout, with the screens as things standing in it.
+ * `devOnly` keeps it to the dev server while it is tried — the live title
+ * is the menu as before; the harness never sees it unless a page sets
+ * `window.__villageOn` (test-village).
+ */
+export const VILLAGE = {
+  devOnly: true,
+  /** The survivor's pace in the yard, px a second, and its drawn size. */
+  walkSpeed: 230,
+  survivorSize: 52,
+  /** How close the survivor stands to use a thing; how big each is drawn. */
+  reach: 74,
+  stationSize: 64,
+  /** The yard's edges: under the logo strip, off the sides, over the hint. */
+  margin: { side: 40, bottom: 84 },
+  /** Lying down, the logo strip's height above the yard; upright, likewise. */
+  top: { wide: 92, tall: 110 },
+  /**
+   * Where each thing stands, as shares of the yard — lying down, and upright.
+   * The gate out on top; the stash and the anvil on the left; the talents'
+   * stone and the ranking board on the right; books, sorting and news below.
+   */
+  layout: {
+    wide: {
+      portal: [0.5, 0.06], stash: [0.14, 0.26], anvil: [0.14, 0.64], obelisk: [0.86, 0.26],
+      board: [0.86, 0.64], shelf: [0.3, 0.86], sieve: [0.5, 0.9], notice: [0.7, 0.86],
+    },
+    tall: {
+      portal: [0.5, 0.05], stash: [0.18, 0.24], obelisk: [0.82, 0.24], anvil: [0.18, 0.47],
+      board: [0.82, 0.47], shelf: [0.18, 0.72], notice: [0.82, 0.72], sieve: [0.5, 0.9],
+    },
+  } as Record<'wide' | 'tall', Record<VillageStationId, readonly [number, number]>>,
+  /** The fire in the middle, where the survivor starts. */
+  campfire: { wide: [0.5, 0.45], tall: [0.5, 0.58] } as Record<'wide' | 'tall', readonly [number, number]>,
+};

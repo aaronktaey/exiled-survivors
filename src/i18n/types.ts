@@ -456,6 +456,27 @@ export interface Strings {
     readonly hint: string;
   };
 
+  /** 생존자 마을 (dev server only for now): its things' names and how to use them. */
+  readonly village: {
+    readonly stations: {
+      readonly portal: string;
+      readonly stash: string;
+      readonly anvil: string;
+      readonly obelisk: string;
+      readonly board: string;
+      readonly sieve: string;
+      readonly shelf: string;
+      readonly notice: string;
+    };
+    readonly useKey: string;
+    readonly useTap: string;
+    readonly hintKeyboard: string;
+    readonly hintTouch: string;
+    /** Under the gate, when a run is saved. */
+    readonly savedRun: string;
+    /** Under the ranking board, first place today. */
+    readonly champion: string;
+  };
   readonly gameOver: {
     /** Why a run is on neither board: the F keys were used, or a 밸런스 experiment was on. */
     readonly devRunDebug: string;

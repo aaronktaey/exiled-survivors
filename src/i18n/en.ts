@@ -358,6 +358,25 @@ export const en: Strings = {
     hint: 'Esc or Back to carry on   ·   point at a rare to see what it carries',
   },
 
+  village: {
+    stations: {
+      portal: 'Departure Gate',
+      stash: 'Stash',
+      anvil: 'Forge',
+      obelisk: 'Talent Stone',
+      board: 'Hall of Fame',
+      sieve: 'Sorting Table',
+      shelf: 'Library',
+      notice: 'Notice Board',
+    },
+    useKey: 'Space',
+    useTap: 'Tap',
+    hintKeyboard: 'WASD · arrows to walk   Space to open   click to go there',
+    hintTouch: 'Tap the ground to walk · tap a thing to open it',
+    savedRun: 'a run to carry on',
+    champion: '#1 {name}',
+  },
+
   gameOver: {
     devRunDebug: 'Developer tools (F keys) were used: this run goes on neither the ranking nor My runs',
     devRunDraft: 'A balance experiment was on: this run goes on neither the ranking nor My runs · Drop experiment or Apply to all in Balance',

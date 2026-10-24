@@ -358,6 +358,25 @@ export const zh: Strings = {
     hint: 'Esc 或返回键继续   ·   指向稀有敌人可查看属性',
   },
 
+  village: {
+    stations: {
+      portal: '出征之门',
+      stash: '储物箱',
+      anvil: '铁匠铺',
+      obelisk: '天赋石碑',
+      board: '荣誉榜',
+      sieve: '分拣台',
+      shelf: '书房',
+      notice: '公告栏',
+    },
+    useKey: 'Space',
+    useTap: '点按',
+    hintKeyboard: 'WASD・方向键移动   Space 打开   点击即前往',
+    hintTouch: '点按地面移动・点按物件打开',
+    savedRun: '有可继续的对局',
+    champion: '第1名 {name}',
+  },
+
   gameOver: {
     devRunDebug: '本局使用了开发者工具（F 键），不会登上排行榜和我的记录',
     devRunDraft: '本局处于平衡实验中，不会登上排行榜和我的记录 · 请在平衡界面取消实验或应用到全部',
