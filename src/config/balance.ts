@@ -1902,11 +1902,11 @@ export const XP_CURVE = {
   A: 41.5,
   K: 1.75,
   B: 2.41,
-  R: 1.0483,
+  R: 1.015, // 0.119: 1.0483 (PoE) → 1.015, 후반 레벨업을 완만하게 (사용자 선택)
   SCALE: 0.01, // 1.0 = PoE 원본 수치
 } as const;
 
-/** XP needed to leave `level`. Grows ~geometrically: 5, 11, 20, 34, 52, ... */
+/** XP needed to leave `level`: 5, 10, 19, 30, 45, ... (R 1.015). */
 export function xpToNextLevel(level: number): number {
   const { A, K, B, R, SCALE } = XP_CURVE;
   return Math.max(

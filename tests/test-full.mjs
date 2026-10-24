@@ -82,15 +82,21 @@ const open = await read();
 check('level-up popup opens', open.levelUp === true, `level ${pre.level} -> ${open.level}`);
 const curveCheck = await cdp.evaluate(`(() => {
   const p = window.game.scene.getScene('GameScene').progression;
+  const { A, K, B, R, SCALE } = window.config.XP_CURVE;
   const seen = [];
+  const want = [];
   const real = p.level;
-  for (let lv = 1; lv <= 6; lv++) { p.level = lv; seen.push(p.xpToNext); }
+  for (let lv = 1; lv <= 6; lv++) {
+    p.level = lv;
+    seen.push(p.xpToNext);
+    want.push(Math.max(1, Math.round(A * Math.pow(lv + K, B) * Math.pow(R, lv) * SCALE)));
+  }
   p.level = real;
-  return { seen };
+  return { seen, want };
 })()`);
-check('xpToNext follows the PoE curve',
-  JSON.stringify(curveCheck.seen) === JSON.stringify([5, 11, 20, 34, 52, 77]),
-  `thresholds=${JSON.stringify(curveCheck.seen)}`);
+check('xpToNext follows XP_CURVE',
+  JSON.stringify(curveCheck.seen) === JSON.stringify(curveCheck.want) && curveCheck.seen[0] < curveCheck.seen[5],
+  `thresholds=${JSON.stringify(curveCheck.seen)} want=${JSON.stringify(curveCheck.want)}`);
 check('physics paused while choosing', open.physicsPaused === true && open.choosing === true);
 
 // --- 3. input lock right after opening ---

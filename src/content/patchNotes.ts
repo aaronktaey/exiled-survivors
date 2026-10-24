@@ -15,6 +15,24 @@ export interface PatchNote {
 
 export const PATCH_NOTES: readonly PatchNote[] = [
   {
+    version: '0.119',
+    date: '2026-10-24',
+    changes: {
+      ko: [
+        '레벨이 오를수록 가파르던 필요 경험치 증가를 완만하게 했습니다. 초반은 거의 그대로이고, 1차 각성(Lv10)까지 약 20%, 2차 각성(Lv20)까지 약 39% 적은 경험치로 도달합니다. Lv30 무렵에는 한 레벨에 필요한 경험치가 이전의 약 40%입니다.',
+      ],
+      en: [
+        'The XP needed per level no longer climbs as steeply. The first levels are nearly unchanged; the first awakening (Lv10) takes about 20% less XP to reach and the second (Lv20) about 39% less. Around Lv30 a level needs about 40% of what it did.',
+      ],
+      ja: [
+        'レベルが上がるほど急だった必要経験値の伸びを緩やかにしました。序盤はほぼそのままで、1次覚醒（Lv10）までは約20%、2次覚醒（Lv20）までは約39%少ない経験値で到達します。Lv30前後では1レベルに必要な経験値が以前の約40%です。',
+      ],
+      zh: [
+        '放缓了随等级急剧上升的升级所需经验。前期几乎不变；到达一次觉醒（Lv10）所需经验减少约20%，到达二次觉醒（Lv20）减少约39%。Lv30左右每级所需经验约为以前的40%。',
+      ],
+    },
+  },
+  {
     version: '0.118',
     date: '2026-10-24',
     changes: {
