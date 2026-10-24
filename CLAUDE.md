@@ -610,7 +610,11 @@ Read `git log` for what changed and when. What is not in the log:
   total on its card; 0.102's line of text went in 0.106). A level-up with the
   main skill maxed, or a 무작위 스킬 whose every option is maxed, is a
   `'shard'` choice: `openShardPick` shows `choices` of the stats, evenly,
-  through UpgradeScene (its cards are any `ChoiceCard` since 0.102). The
+  through UpgradeScene (its cards are any `ChoiceCard` since 0.102), its
+  subtitle saying why (`shard.mainMaxed` for a level-up, `shard.allMaxed`
+  for a 무작위 스킬, 0.112). A held skill at its top is never a 무작위 스킬
+  card (`randomSkills` leaves it out, 0.112), so the cards come when there is
+  nothing left to offer. The
   potion heal for a maxed main skill is gone; a maxed skill picked up again
   still heals.
 - **패시브 is 재능의 파편 lines (0.102, the user's ask) — shown as 재능 since

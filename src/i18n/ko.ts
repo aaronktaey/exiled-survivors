@@ -55,6 +55,7 @@ export const ko: Strings = {
     name: '재능의 파편',
     pickTitle: '재능의 파편',
     allMaxed: '모든 스킬 최고 레벨',
+    mainMaxed: '메인 스킬 최고 레벨',
     stats: { damage: '피해량', attackSpeed: '공격속도', moveSpeed: '이동속도', maxHp: '최대체력', area: '효과범위', regen: '체력회복' },
     drops: { damage: '피해량 파편', attackSpeed: '공격속도 파편', moveSpeed: '이동속도 파편', maxHp: '최대체력 파편', area: '효과범위 파편', regen: '체력회복 파편' },
     gain: { damage: '피해량 증폭 +{n}%', attackSpeed: '공격속도 증폭 +{n}%', moveSpeed: '이동속도 증폭 +{n}%', maxHp: '최대체력 증폭 +{n}%', area: '효과범위 증폭 +{n}%', regen: '{secs}초마다 체력 +{heal}' },

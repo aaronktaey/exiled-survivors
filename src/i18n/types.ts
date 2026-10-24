@@ -114,7 +114,10 @@ export interface Strings {
     readonly name: string;
     /** The cards' head, and why they came instead of a skill. */
     readonly pickTitle: string;
+    /** Why a 무작위 스킬 opened shard cards: every skill it could offer is at its top. */
     readonly allMaxed: string;
+    /** Why a level-up opened shard cards: the main skill is at its top (0.112). */
+    readonly mainMaxed: string;
     /** Each stat's name on its card. */
     readonly stats: { readonly damage: string; readonly attackSpeed: string; readonly moveSpeed: string; readonly maxHp: string; readonly area: string; readonly regen: string; };
     /** Each stat's shard, by name, on the ground and in the 필터's sense. */

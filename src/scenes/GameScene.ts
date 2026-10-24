@@ -496,11 +496,16 @@ export class GameScene extends Phaser.Scene {
 
   /**
    * SKILL_PICK.choices different skills, at even odds, from every skill
-   * there is — held ones included, which come up as 강화.
+   * there is — held ones included, which come up as 강화, but never one held
+   * at its top (0.112, the user's ask): it would have nothing to give. With
+   * nothing left, none — and openPick offers 재능의 파편 cards instead.
    */
   public randomSkills(): SkillId[] {
     // With every 보조 스킬 slot taken, only the skills held come up (0.84).
-    const pool = this.offeredSkills().map((skill) => skill.id).filter((id) => !this.subSkillsFull || this.owned.has(id));
+    const pool = this.offeredSkills()
+      .map((skill) => skill.id)
+      .filter((id) => !this.subSkillsFull || this.owned.has(id))
+      .filter((id) => !(this.owned.has(id) && this.maxed(id)));
     for (let i = pool.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
       [pool[i], pool[j]] = [pool[j]!, pool[i]!];
@@ -1294,9 +1299,10 @@ export class GameScene extends Phaser.Scene {
     if (!skill) {
       return;
     }
-    // Nothing left to take: the level is a 재능의 파편 to choose instead (0.102; a potion before).
+    // Nothing left to take: the level is a 재능의 파편 to choose instead (0.102; a potion
+    // before), and the cards say why — the main skill, not every skill, is at its top (0.112).
     if (this.maxed(skill)) {
-      this.queueChoice({ kind: 'shard', subtitle: `${fill(t().upgrade.level, { level })} · ${t().shard.allMaxed}` });
+      this.queueChoice({ kind: 'shard', subtitle: `${fill(t().upgrade.level, { level })} · ${t().shard.mainMaxed}` });
       return;
     }
 
@@ -1362,8 +1368,8 @@ export class GameScene extends Phaser.Scene {
    */
   private openPick(): void {
     const options = this.randomSkills();
-    // Every skill it could offer at its top: 재능의 파편 cards instead (0.102).
-    if (options.every((skill) => this.owned.has(skill) && this.maxed(skill))) {
+    // Every skill it could offer at its top — none left to offer: 재능의 파편 cards instead (0.102).
+    if (options.length === 0 || options.every((skill) => this.owned.has(skill) && this.maxed(skill))) {
       this.openShardPick(`${t().skillPick.dropTitle} · ${t().shard.allMaxed}`);
       return;
     }

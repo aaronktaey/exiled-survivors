@@ -51,6 +51,7 @@ export const zh: Strings = {
     name: '天赋碎片',
     pickTitle: '天赋碎片',
     allMaxed: '所有技能已满级',
+    mainMaxed: '主技能已满级',
     stats: { damage: '伤害', attackSpeed: '攻击速度', moveSpeed: '移动速度', maxHp: '最大生命', area: '效果范围', regen: '生命恢复' },
     drops: { damage: '伤害碎片', attackSpeed: '攻击速度碎片', moveSpeed: '移动速度碎片', maxHp: '最大生命碎片', area: '效果范围碎片', regen: '生命恢复碎片' },
     gain: { damage: '伤害增幅 +{n}%', attackSpeed: '攻击速度增幅 +{n}%', moveSpeed: '移动速度增幅 +{n}%', maxHp: '最大生命增幅 +{n}%', area: '效果范围增幅 +{n}%', regen: '每{secs}秒恢复生命 +{heal}' },

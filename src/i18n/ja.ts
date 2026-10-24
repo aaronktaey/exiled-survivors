@@ -51,6 +51,7 @@ export const ja: Strings = {
     name: '才能の欠片',
     pickTitle: '才能の欠片',
     allMaxed: '全スキル最大レベル',
+    mainMaxed: 'メインスキル最大レベル',
     stats: { damage: 'ダメージ', attackSpeed: '攻撃速度', moveSpeed: '移動速度', maxHp: '最大体力', area: '効果範囲', regen: '体力回復' },
     drops: { damage: 'ダメージの欠片', attackSpeed: '攻撃速度の欠片', moveSpeed: '移動速度の欠片', maxHp: '最大体力の欠片', area: '効果範囲の欠片', regen: '体力回復の欠片' },
     gain: { damage: 'ダメージ増幅 +{n}%', attackSpeed: '攻撃速度増幅 +{n}%', moveSpeed: '移動速度増幅 +{n}%', maxHp: '最大体力増幅 +{n}%', area: '効果範囲増幅 +{n}%', regen: '{secs}秒ごとに体力 +{heal}' },

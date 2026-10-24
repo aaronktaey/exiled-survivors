@@ -184,10 +184,10 @@ try {
     return { maxed: s.maxed(skill), level: s.progression.level };
   `);
   await sleep(700);
-  const shown = await scene('UpgradeScene', `return { active: s.scene.isActive(), title: s.payload.title, ids: s.payload.options.map((o) => o.id),
+  const shown = await scene('UpgradeScene', `return { active: s.scene.isActive(), title: s.payload.title, subtitle: s.payload.subtitle, ids: s.payload.options.map((o) => o.id),
     count: window.config.TALENT_SHARD.choices, stats: window.config.TALENT_SHARD.stats };`);
   check('with the main skill at its top, a level-up offers TALENT_SHARD.choices 재능의 파편 cards, no potion',
-    cards.maxed && shown.active && shown.title === '재능의 파편' && shown.ids.length === shown.count &&
+    cards.maxed && shown.active && shown.title === '재능의 파편' && /메인 스킬 최고 레벨/.test(shown.subtitle) && shown.ids.length === shown.count &&
       new Set(shown.ids).size === shown.count && shown.ids.every((id) => shown.stats.includes(id)),
     JSON.stringify({ cards, shown }));
   await shot('shard-02-cards');
@@ -200,17 +200,26 @@ try {
   await sleep(400);
   check('taking a card is one shard of that stat, and the run goes on', !!taken.id && shown.ids[0] === taken.id, JSON.stringify(taken));
 
-  // --- 6. a 무작위 스킬 with nothing on offer left to raise is the cards too ---
+  // --- 6. a held skill at its top is never a 무작위 스킬 card (0.112) ---
+  const carded = await run(`
+    const seen = new Set();
+    for (let i = 0; i < 300; i++) s.randomSkills().forEach((id) => seen.add(id));
+    return { main: s.mainSkill, maxed: s.maxed(s.mainSkill), carded: seen.has(s.mainSkill), others: seen.size };
+  `);
+  check('a held skill at its top never comes up on a 무작위 스킬 card; the others still do',
+    carded.maxed && !carded.carded && carded.others > 0, JSON.stringify(carded));
+
+  // --- 6b. with nothing left to offer, the 무작위 스킬 is the cards, saying every skill is at its top ---
   const random = await run(`
-    s.randomSkills = () => [s.mainSkill];
+    s.randomSkills = () => [];
     s.queueChoice({ kind: 'pick' });
     return 1;
   `);
   void random;
   await sleep(700);
-  const viaPick = await scene('UpgradeScene', `const out = { active: s.scene.isActive(), title: s.payload.title }; s.pick(s.payload.options[0].id); return out;`);
-  check('a 무작위 스킬 whose every skill on offer is maxed opens the same cards',
-    viaPick.active && viaPick.title === '재능의 파편', JSON.stringify(viaPick));
+  const viaPick = await scene('UpgradeScene', `const out = { active: s.scene.isActive(), title: s.payload.title, subtitle: s.payload.subtitle }; s.pick(s.payload.options[0].id); return out;`);
+  check('a 무작위 스킬 with every skill at its top opens the same cards, saying so',
+    viaPick.active && viaPick.title === '재능의 파편' && /모든 스킬 최고 레벨/.test(viaPick.subtitle), JSON.stringify(viaPick));
   await sleep(400);
 
   // --- 7. the save carries them ---

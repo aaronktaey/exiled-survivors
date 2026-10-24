@@ -15,6 +15,28 @@ export interface PatchNote {
 
 export const PATCH_NOTES: readonly PatchNote[] = [
   {
+    version: '0.112',
+    date: '2026-10-24',
+    changes: {
+      ko: [
+        '최고 레벨인 스킬은 무작위 스킬 선택지에 나오지 않습니다.',
+        '메인 스킬이 최고 레벨일 때 레벨 업하면 재능의 파편 선택에 \'메인 스킬 최고 레벨\'이라고 표시됩니다. 모든 스킬이 최고 레벨일 때 무작위 스킬을 얻으면 \'모든 스킬 최고 레벨\'이라고 표시됩니다.',
+      ],
+      en: [
+        'A skill at its top level no longer comes up on a Random Skill card.',
+        'A level-up with the main skill at its top now says “main skill at its top” over the Talent Shard cards; a Random Skill with every skill at its top says “every skill at its top”.',
+      ],
+      ja: [
+        '最大レベルのスキルはランダムスキルの選択肢に出なくなりました。',
+        'メインスキルが最大レベルのときにレベルアップすると、才能の欠片の選択に「メインスキル最大レベル」と表示されます。すべてのスキルが最大レベルのときにランダムスキルを取ると「全スキル最大レベル」と表示されます。',
+      ],
+      zh: [
+        '已满级的技能不再出现在随机技能的选项中。',
+        '主技能满级时升级，天赋碎片选择会显示“主技能已满级”；所有技能满级时获得随机技能，会显示“所有技能已满级”。',
+      ],
+    },
+  },
+  {
     version: '0.111',
     date: '2026-10-24',
     changes: {

@@ -51,6 +51,7 @@ export const en: Strings = {
     name: 'Talent Shard',
     pickTitle: 'Talent Shard',
     allMaxed: 'every skill at its top',
+    mainMaxed: 'main skill at its top',
     stats: { damage: 'Damage', attackSpeed: 'Attack speed', moveSpeed: 'Move speed', maxHp: 'Max health', area: 'Area', regen: 'Regeneration' },
     drops: { damage: 'Damage Shard', attackSpeed: 'Attack Speed Shard', moveSpeed: 'Move Speed Shard', maxHp: 'Max Health Shard', area: 'Area Shard', regen: 'Regeneration Shard' },
     gain: { damage: 'Amplified damage +{n}%', attackSpeed: 'Amplified attack speed +{n}%', moveSpeed: 'Amplified move speed +{n}%', maxHp: 'Amplified max health +{n}%', area: 'Amplified area +{n}%', regen: '+{heal} health every {secs}s' },
