@@ -1333,8 +1333,8 @@ export const THUNDER = {
  * edge. Each enemy it reaches takes the hit and a stack of 중독 —
  * `poisonShare` of the hit a second a stack, in ticks of `tickMs` — and the
  * whole poison's `durationMs` starts over. At most `maxStacks`. 각성:
- * `stacksPerHitAwakened` a hit. 2차 각성: dying poisoned, or reaching the
- * top, it bursts (weapons/PoisonNova.ts).
+ * `stacksPerHitAwakened` a hit. 2차 각성: reaching the top, it bursts
+ * (weapons/PoisonNova.ts).
  */
 export const POISON_NOVA = {
   ringMs: 350,

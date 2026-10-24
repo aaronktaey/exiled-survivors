@@ -409,6 +409,9 @@ await run(`
   return 1;
 `);
 await cdp.until(`window.__nova && window.__nova.poisoned.size > 1`, 5000, 20);
+await shot('skills-09-blast-mid');
+await sleep(260);
+await shot('skills-09-blast-late');
 const novaHit = await run(`
   const nova = window.__nova;
   return { hit: window.__inside.map((e, i) => window.__full[i] - e.hp), outside: window.__outside.hp === window.__outside.maxHp,
@@ -460,7 +463,7 @@ check('stacks stop at maxStacks and every hit starts the poison over; awakened, 
 check('awakened twice, reaching the top it bursts for the whole poison on all within range, its stacks gone, poisoning none',
   novaRules.burst === 1 && novaRules.cleared && !novaRules.nearPoisoned && Math.abs(novaRules.nearLost - novaRules.want) <= 1,
   `lost ${novaRules.nearLost} of ${novaRules.want}`);
-// 2차 각성: a poisoned enemy that dies bursts where it fell, for the whole of its poison.
+// 2차 각성: only reaching the top bursts — a poisoned enemy that dies short of it does not (0.125).
 const novaDeath = await run(`
   const nova = window.__nova, C = window.config, P = C.POISON_NOVA, p = s.player;
   const twice = { ...window.__novaCtx, mastered: false, masteredTwice: true };
@@ -476,8 +479,11 @@ const novaDeath = await run(`
   const want = 4 * twice.damage * P.poisonShare * (P.durationMs / 1000);
   return { burst: nova.burstCount - bursts, lost: besideHp - beside.hp, want: Math.round(want), besidePoisoned: nova.poisoned.has(beside) };
 `);
-check('awakened twice, a poisoned enemy that dies bursts where it fell, for the whole of its poison, poisoning none',
-  novaDeath.burst === 1 && Math.abs(novaDeath.lost - novaDeath.want) <= 1 && !novaDeath.besidePoisoned,
+await run(`window.__nova.poison(window.__inside[1], { ...window.__novaCtx, masteredTwice: true }); window.__nova.poisoned.get(window.__inside[1]) && (window.__nova.poisoned.get(window.__inside[1]).stacks = 9); window.__nova.poison(window.__inside[1], { ...window.__novaCtx, masteredTwice: true }); return 1;`);
+await sleep(90);
+await shot('skills-09-burst');
+check('awakened twice, a poisoned enemy that dies short of the top does not burst',
+  novaDeath.burst === 0 && novaDeath.lost === 0 && !novaDeath.besidePoisoned,
   JSON.stringify(novaDeath));
 // 0.124: the poison wears on a 도망자 without sending it running; a hit still does.
 await run(`

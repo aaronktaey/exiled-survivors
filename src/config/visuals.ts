@@ -976,12 +976,25 @@ export const lookAnim = (id: string, kind: 'walk' | 'cast'): string => `look-${i
 export const POISON_NOVA_FX = {
   color: 0x6fd13a,
   edge: 0xb8ff7a,
-  fillAlpha: 0.18,
-  edgeWidth: 3,
-  /** How long a ring takes to fade once it is out. */
-  fadeMs: 220,
-  /** 2차 각성's burst: how long its flash lasts. */
-  burstMs: 420,
+  /** The blast (0.125: drawn as an explosion): the white-hot core, and the smoke it throws. */
+  core: 0xeaffd0,
+  smoke: 0x3f8f22,
+  /** How thick the smoke is: thin enough to see the survivor and the enemies through. */
+  smokeAlpha: 0.2,
+  /** The gas inside the blast, densest at the middle. */
+  fillAlpha: 0.13,
+  /** The shock front's rim, thick as it leaves and thinning as it goes. */
+  edgeWidth: 5,
+  /** How long the core flashes. */
+  flashMs: 150,
+  /** How long a blast takes to fade once it is out. */
+  fadeMs: 280,
+  /** Droplets thrown out past the front, and smoke puffs left in the blast. */
+  sparks: 14,
+  puffs: 6,
+  /** 2차 각성's burst: how fast it reaches its edge (the cast's ring takes POISON_NOVA.ringMs), and how much more it throws. */
+  burstGrowMs: 180,
+  burstSparkScale: 1.4,
   /** 중독's bubbles: how many rise off an enemy at once, how long one takes, how big. */
   bubbles: 3,
   bubbleRiseMs: 900,

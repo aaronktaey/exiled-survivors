@@ -652,13 +652,17 @@ Read `git log` for what changed and when. What is not in the log:
   and its stack count in green beside it (`POISON_NOVA_FX`, pooled Texts).
   The poison ticks hit with `startles` false (0.124: `context.hit`'s third
   argument, down to `Enemy.takeDamage`), so a 도망자 does not run from it.
+  The cast and the burst are drawn as explosions (0.125, the user's ask:
+  `PoisonNova.drawBlast` — a core flash, gas densest at the middle, a shock
+  front thinning as it spreads, droplets and smoke rolled per blast); the
+  ring that does the hitting is only logic now.
   반복 is a second ring (CastRepeat). 각성: `stacksPerHitAwakened` (2) a hit.
-  2차: a poisoned enemy that dies or reaches `maxStacks` bursts — its
-  stacks × per-stack × durationMs at once on everything within the skill's
-  range of where it stood (itself included), its stacks gone. A burst
-  poisons nothing; one that kills a poisoned enemy sets that one off a
-  frame later, and the chain ends since each dies once (a version that
-  added stacks with each burst chained without end in a crowd). 보유 효과: the 체력 포션's drop chance ×1.2
+  2차: an enemy that reaches `maxStacks` bursts — its stacks × per-stack ×
+  durationMs at once on everything within the skill's range of it (itself
+  included), its stacks gone. A burst poisons nothing, so one never sets
+  off another (a version that added stacks with each burst chained without
+  end in a crowd; 0.123–0.124 also burst a poisoned enemy as it died, taken
+  out in 0.125 on the user's word). 보유 효과: the 체력 포션's drop chance ×1.2
   (`potionChanceScale`, through the `potionScale` combat hook). Picks 피해 ·
   공격속도 · 범위. Its sound borrows 공허구체's. Shipped at 150 · 0.5 (the
   user's pick; 144 · 0.7 while tried), poison 10% of the hit a second a

@@ -113,7 +113,7 @@ export const en: Strings = {
       voidOrb: 'A second ring of orbs turns the other way inside the first ({innerShare} damage)',
       thunderStrike: 'Enemies around the strike take {splashShare} of its damage too',
       drone: 'Every {bombEvery}th shot of a drone drops a bomb on a small area for {bombShare} damage',
-      poisonNova: 'A poisoned enemy that dies or reaches {max} stacks bursts: the whole of its poison’s damage at once on every enemy in range of it, and its stacks are gone',
+      poisonNova: 'At {max} stacks the poison bursts and its stacks are gone: the whole {max}-stack poison’s damage at once on every enemy in range of it',
     },
   },
   tuning: {

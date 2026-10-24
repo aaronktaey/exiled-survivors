@@ -26,7 +26,7 @@ interface Poisoned {
   /** Damage a second for each stack — the last hit's share. */
   perStack: number;
   sinceTickMs: number;
-  /** Where it was last seen: a death bursts there, after the sprite has gone back to the pool. */
+  /** Where it was last seen, for its burst (2차 각성). */
   x: number;
   y: number;
   /** Where its bubbles start their loop, so a crowd does not bubble in step. */
@@ -35,11 +35,34 @@ interface Poisoned {
   label?: Phaser.GameObjects.Text;
 }
 
-/** A flash where a poison burst (2차 각성), fading over POISON_NOVA_FX.burstMs. */
-interface Burst {
+/** A droplet thrown out of a blast: its way, how far past the front it flies, how big. */
+interface Spark {
+  readonly angle: number;
+  readonly reach: number;
+  readonly size: number;
+}
+
+/** A smoke puff left inside a blast. */
+interface Puff {
+  readonly angle: number;
+  readonly at: number;
+  readonly size: number;
+}
+
+/**
+ * How a blast looks (0.125, the user's ask: an explosion, not a circle): a
+ * white-hot core that flashes, gas densest at the middle, a shock front
+ * that thins as it spreads, droplets thrown out past it and smoke left
+ * behind. The cast's ring and 2차 각성's burst both draw one.
+ */
+interface Blast {
   readonly x: number;
   readonly y: number;
   readonly radius: number;
+  /** How long it takes to reach its edge. */
+  readonly growMs: number;
+  readonly sparks: readonly Spark[];
+  readonly puffs: readonly Puff[];
   ageMs: number;
 }
 
@@ -51,13 +74,13 @@ interface Burst {
  * hit starts the whole poison's `durationMs` over, so an enemy that stays
  * near keeps stacking, and one that gets away loses it all at once.
  *
- * 각성: `stacksPerHitAwakened` stacks a hit. 2차 각성: a poisoned enemy
- * that dies, or reaches `maxStacks`, bursts — the whole of its poison
- * (every stack it holds for a whole `durationMs`) at once on everything
- * within the skill's range of where it stood, itself included, and its
- * stacks gone. A burst poisons nothing; one that kills a poisoned enemy sets
- * that one off in turn, a frame later, and the chain ends because each
- * enemy dies once (a version that spread stacks chained without end).
+ * 각성: `stacksPerHitAwakened` stacks a hit. 2차 각성: an enemy that
+ * reaches `maxStacks` bursts — the whole of its poison (every stack for a
+ * whole `durationMs`) at once on everything within the skill's range of it,
+ * itself included, and its stacks gone. A burst poisons nothing, so one
+ * never sets off another (a version that spread stacks chained without end;
+ * 0.123–0.124 also burst a poisoned enemy as it died — 0.125 took that out,
+ * the user's ask).
  *
  * A poisoned enemy bubbles green, its stacks counted beside it in green.
  *
@@ -72,7 +95,7 @@ export class PoisonNova implements Weapon {
   private sinceCastMs = 0;
   private readonly repeat = new CastRepeat();
   private readonly rings: Ring[] = [];
-  private readonly bursts: Burst[] = [];
+  private readonly blasts: Blast[] = [];
   /** Stack counts not in use, for the next poisoned enemy. */
   private readonly spareLabels: Phaser.GameObjects.Text[] = [];
   private clockMs = 0;
@@ -110,6 +133,7 @@ export class PoisonNova implements Weapon {
   private cast(context: WeaponContext): void {
     const { x, y } = context.origin;
     this.rings.push({ x, y, radius: context.range, ageMs: 0, struck: new Set() });
+    this.blast(x, y, context.range, POISON_NOVA.ringMs, 1);
     sfx.playSkill(this.scene, this.definition.id);
   }
 
@@ -142,7 +166,7 @@ export class PoisonNova implements Weapon {
           this.poison(enemy, context);
         }
       }
-      if (ring.ageMs >= POISON_NOVA.ringMs + POISON_NOVA_FX.fadeMs) {
+      if (ring.ageMs >= POISON_NOVA.ringMs) {
         this.rings.splice(i, 1);
       }
     }
@@ -192,7 +216,7 @@ export class PoisonNova implements Weapon {
         context.hit(other, damage);
       }
     });
-    this.bursts.push({ x, y, radius: context.range, ageMs: 0 });
+    this.blast(x, y, context.range, POISON_NOVA_FX.burstGrowMs, POISON_NOVA_FX.burstSparkScale);
     this.burstCount += 1;
   }
 
@@ -200,13 +224,8 @@ export class PoisonNova implements Weapon {
   private tickPoison(delta: number, context: WeaponContext): void {
     for (const [enemy, entry] of this.poisoned) {
       if (!enemy.active || enemy.lives !== entry.lives) {
-        // 2차 각성: a poisoned enemy that died bursts where it fell.
-        if (context.masteredTwice && entry.stacks > 0) {
-          this.burst(entry, context);
-        } else {
-          this.poisoned.delete(enemy);
-          this.release(entry);
-        }
+        this.poisoned.delete(enemy);
+        this.release(entry);
         continue;
       }
       entry.x = enemy.x;
@@ -258,26 +277,74 @@ export class PoisonNova implements Weapon {
     return entry.label;
   }
 
+  /** A blast to draw: its droplets and smoke rolled now, so each one looks its own. */
+  private blast(x: number, y: number, radius: number, growMs: number, sparkScale: number): void {
+    const sparks: Spark[] = [];
+    const count = Math.round(POISON_NOVA_FX.sparks * sparkScale);
+    for (let i = 0; i < count; i++) {
+      sparks.push({
+        angle: ((i + Math.random() * 0.8) / count) * Math.PI * 2,
+        reach: 0.75 + Math.random() * 0.5,
+        size: 1.6 + Math.random() * 1.8,
+      });
+    }
+    const puffs: Puff[] = [];
+    for (let i = 0; i < POISON_NOVA_FX.puffs; i++) {
+      puffs.push({ angle: Math.random() * Math.PI * 2, at: 0.2 + Math.random() * 0.55, size: 0.16 + Math.random() * 0.12 });
+    }
+    this.blasts.push({ x, y, radius, growMs, sparks, puffs, ageMs: 0 });
+  }
+
+  private drawBlast(blast: Blast): void {
+    const fx = POISON_NOVA_FX;
+    const grow = Math.min(1, blast.ageMs / blast.growMs);
+    const out = 1 - (1 - grow) * (1 - grow);
+    const fade = blast.ageMs <= blast.growMs ? 1 : Math.max(0, 1 - (blast.ageMs - blast.growMs) / fx.fadeMs);
+    const r = blast.radius * out;
+    const { x, y } = blast;
+
+    // The gas, densest at the middle.
+    this.fx.fillStyle(fx.color, fx.fillAlpha * fade).fillCircle(x, y, r);
+    this.fx.fillStyle(fx.color, fx.fillAlpha * 1.2 * fade).fillCircle(x, y, r * 0.66);
+    this.fx.fillStyle(fx.edge, fx.fillAlpha * 1.4 * fade).fillCircle(x, y, r * 0.33);
+    // Smoke left where it passed, swelling as it thins.
+    for (const puff of blast.puffs) {
+      const d = r * puff.at;
+      const size = blast.radius * puff.size * (0.6 + 0.6 * out);
+      this.fx.fillStyle(fx.smoke, fx.smokeAlpha * fade).fillCircle(x + Math.cos(puff.angle) * d, y + Math.sin(puff.angle) * d, size);
+    }
+    // The white-hot core, only for an instant.
+    if (blast.ageMs < fx.flashMs) {
+      const t = blast.ageMs / fx.flashMs;
+      this.fx.fillStyle(fx.edge, 0.7 * (1 - t)).fillCircle(x, y, blast.radius * (0.22 + 0.18 * t));
+      this.fx.fillStyle(fx.core, 0.95 * (1 - t)).fillCircle(x, y, blast.radius * (0.12 + 0.1 * t));
+    }
+    // The shock front: thick as it leaves, thin as it spreads, a faint echo inside it.
+    this.fx.lineStyle(Math.max(1, fx.edgeWidth * (1.4 - out)), fx.edge, 0.95 * fade).strokeCircle(x, y, r);
+    this.fx.lineStyle(1, fx.core, 0.45 * fade).strokeCircle(x, y, r * 0.86);
+    // Droplets thrown out past the front, each with a short streak behind it.
+    for (const spark of blast.sparks) {
+      const d = r * spark.reach;
+      const cos = Math.cos(spark.angle);
+      const sin = Math.sin(spark.angle);
+      const sx = x + cos * d;
+      const sy = y + sin * d;
+      const tail = Math.min(d, blast.radius * 0.18) * (1 - grow * 0.5);
+      this.fx.lineStyle(spark.size * 0.8, fx.color, 0.7 * fade).lineBetween(sx - cos * tail, sy - sin * tail, sx, sy);
+      this.fx.fillStyle(fx.edge, fade).fillCircle(sx, sy, spark.size * (1 - 0.4 * grow));
+    }
+  }
+
   private draw(delta: number): void {
     this.fx.clear();
-    for (const ring of this.rings) {
-      const grow = Math.min(1, ring.ageMs / POISON_NOVA.ringMs);
-      const fade = ring.ageMs <= POISON_NOVA.ringMs ? 1 : 1 - (ring.ageMs - POISON_NOVA.ringMs) / POISON_NOVA_FX.fadeMs;
-      const r = ring.radius * grow;
-      this.fx.fillStyle(POISON_NOVA_FX.color, POISON_NOVA_FX.fillAlpha * fade).fillCircle(ring.x, ring.y, r);
-      this.fx.lineStyle(POISON_NOVA_FX.edgeWidth, POISON_NOVA_FX.edge, fade).strokeCircle(ring.x, ring.y, r);
-    }
-    for (let i = this.bursts.length - 1; i >= 0; i--) {
-      const burst = this.bursts[i]!;
-      burst.ageMs += delta;
-      const left = 1 - burst.ageMs / POISON_NOVA_FX.burstMs;
-      if (left <= 0) {
-        this.bursts.splice(i, 1);
+    for (let i = this.blasts.length - 1; i >= 0; i--) {
+      const blast = this.blasts[i]!;
+      blast.ageMs += delta;
+      if (blast.ageMs >= blast.growMs + POISON_NOVA_FX.fadeMs) {
+        this.blasts.splice(i, 1);
         continue;
       }
-      const r = burst.radius * (1 - left * 0.4);
-      this.fx.fillStyle(POISON_NOVA_FX.edge, 0.35 * left).fillCircle(burst.x, burst.y, r);
-      this.fx.lineStyle(3, POISON_NOVA_FX.color, left).strokeCircle(burst.x, burst.y, r);
+      this.drawBlast(blast);
     }
 
     // 중독: green bubbles rising off it, and its stacks in green beside it.

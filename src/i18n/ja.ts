@@ -113,7 +113,7 @@ export const ja: Strings = {
       voidOrb: '内側に逆回りの球の輪がもう一つできます（ダメージ {innerShare}）',
       thunderStrike: '落ちた場所の周りの敵にもダメージの {splashShare} を与えます',
       drone: 'ドローンが {bombEvery} 回撃つたびに、小さな範囲に {bombShare} のダメージの爆弾を落とします',
-      poisonNova: '毒状態の敵が倒れるか {max} 重に達すると弾けます：その敵の毒のダメージすべてが周囲の範囲内の敵に一度に入り、重ねた数は消えます',
+      poisonNova: '{max} 重に達すると重ねた数が消えて弾けます：{max} 重すべてのダメージが周囲の範囲内の敵に一度に入ります',
     },
   },
   tuning: {

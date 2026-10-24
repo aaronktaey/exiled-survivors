@@ -117,7 +117,7 @@ export const ko: Strings = {
       voidOrb: '안쪽에 반대로 도는 구체 고리가 하나 더 생깁니다 (피해 {innerShare})',
       thunderStrike: '떨어진 자리 주변의 적에게도 피해의 {splashShare}를 줍니다',
       drone: '드론이 {bombEvery}번 쏠 때마다 작은 범위에 피해 {bombShare}의 폭탄을 떨어뜨립니다',
-      poisonNova: '중독된 적이 죽거나 {max}중첩에 도달하면 터집니다: 그 적의 중독 전체 피해가 주변 범위 안의 적에게 한 번에 들어가고, 중첩은 사라집니다',
+      poisonNova: '{max}중첩에 도달하면 중첩이 사라지며 터집니다: {max}중첩 전체 피해가 주변 범위 안의 적에게 한 번에 들어갑니다',
     },
   },
   tuning: {

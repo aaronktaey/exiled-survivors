@@ -113,7 +113,7 @@ export const zh: Strings = {
       voidOrb: '内侧多出一圈反向旋转的球体（伤害 {innerShare}）',
       thunderStrike: '落点周围的敌人也受到 {splashShare} 的伤害',
       drone: '无人机每射击 {bombEvery} 次，就会在小范围内投下造成 {bombShare} 伤害的炸弹',
-      poisonNova: '中毒的敌人死亡或达到 {max} 层时会爆开：该敌人的全部中毒伤害一次性作用于周围范围内的敌人，层数清空',
+      poisonNova: '达到 {max} 层时层数清空并爆开：{max} 层的全部伤害一次性作用于周围范围内的敌人',
     },
   },
   tuning: {

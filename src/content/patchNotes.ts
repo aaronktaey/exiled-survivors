@@ -15,6 +15,28 @@ export interface PatchNote {
 
 export const PATCH_NOTES: readonly PatchNote[] = [
   {
+    version: '0.125',
+    date: '2026-10-24',
+    changes: {
+      ko: [
+        '독성폭발의 2차 각성 폭발은 이제 10중첩에 도달했을 때만 일어납니다. 중독된 적이 죽을 때는 터지지 않습니다.',
+        '독성폭발과 2차 각성 폭발이 폭발처럼 보이도록 바뀌었습니다. 가운데가 번쩍이고, 충격파가 퍼지며 독 방울이 튀고 연기가 남습니다.',
+      ],
+      en: [
+        'Toxic Burst’s second awakening now bursts only at 10 stacks; a poisoned enemy no longer bursts as it dies.',
+        'Toxic Burst and its second awakening’s burst now look like explosions: a flash at the middle, a spreading shockwave, flying droplets and lingering smoke.',
+      ],
+      ja: [
+        '毒性爆発の2次覚醒の爆発は、10重に達した時だけ起こるようになりました。毒状態の敵が倒れても弾けません。',
+        '毒性爆発と2次覚醒の爆発が爆発らしく見えるようになりました。中心が閃き、衝撃波が広がって毒の滴が飛び、煙が残ります。',
+      ],
+      zh: [
+        '毒性爆发的二次觉醒爆发现在只在达到10层时触发，中毒的敌人死亡时不再爆开。',
+        '毒性爆发及其二次觉醒爆发的表现更像爆炸：中心闪光，冲击波扩散，毒滴飞溅并留下烟雾。',
+      ],
+    },
+  },
+  {
     version: '0.124',
     date: '2026-10-24',
     changes: {
