@@ -43,6 +43,8 @@ export interface SavedRun {
    */
   readonly damage?: number;
   readonly kills?: Partial<Record<EnemyKind, number>>;
+  /** The score by kind so far (SCORE, 0.116); absent before, and starts at zero then. */
+  readonly scoreByKind?: Partial<Record<EnemyKind, number>>;
   /** The 지형지물 field's seed, so a resumed run finds its rocks where they were. */
   readonly terrainSeed?: number;
   /** The run's 재능의 파편, by stat (0.102). */

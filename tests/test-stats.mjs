@@ -85,36 +85,43 @@ check('damage is what the enemies actually absorbed, overkill aside',
 const died = await run(`
   s.player.invulnerableUntil = 0;
   s.player.takeDamage(99999);
-  return { damage: s.stats.damage };
+  return { damage: s.stats.damage, score: s.stats.score };
 `);
 await sleep(1400);
 const over = await scene('GameOverScene', `
+  const tips = s.allTips();
   return { summary: s.payload.summary,
-           lines: s.table.list.map(o => o.text) };
+           lines: s.table.list.filter(o => o.type === 'Text').map(o => o.text),
+           images: s.table.list.filter(o => o.type === 'Image').length,
+           tip: s.tipText.text, tips: tips.length, unfilled: tips.filter((x) => /[{}]/.test(x)) };
 `);
 console.log('summary:', JSON.stringify({ ...over.summary, skills: over.summary.skills.length }));
 check('the end-of-run screen is handed the run it just played',
-  over.summary.damage === died.damage && over.summary.kills === planned,
-  `${over.summary.damage} damage, ${over.summary.kills} kills`);
+  over.summary.damage === died.damage && over.summary.score === died.score && over.summary.score > 0 && over.summary.kills === planned,
+  `${over.summary.damage} damage, ${over.summary.score} score, ${over.summary.kills} kills`);
 check('and pays nothing out — there is no gold in it', !('gold' in over.summary), JSON.stringify(Object.keys(over.summary)));
 
 // --- 4. and reads it out ---
 const table = over.lines.join(' | ');
 console.log('table:', table);
-check('the table shows what was dealt and killed, and no gold',
-  /가한 피해/.test(table) && /처치/.test(table) && !/골드/.test(table) &&
-    table.includes(over.summary.damage.toLocaleString('en-US')),
+// 0.116: the score, not the damage — and only the score (the user's choice).
+check('the screen shows the score and the kills, not the damage, and no gold',
+  /점수/.test(table) && /처치/.test(table) && !/가한 피해/.test(table) && !/골드/.test(table) &&
+    table.includes(over.summary.score.toLocaleString('en-US')),
   table);
-check('it breaks the kills down by kind',
-  /일반 120/.test(table) && /거구 8/.test(table) && /우두머리 2/.test(table),
-  over.lines.find((l) => /일반/.test(l)) ?? 'no kind line');
-check('and lists the skills as they stood, with level and DPS',
-  /타격 Lv \d+ · DPS/.test(table),
-  over.lines.find((l) => /타격/.test(l)) ?? 'no skill line');
+check('it breaks the kills down by kind, a picture and a count each',
+  over.lines.includes('×120') && over.lines.includes('×8') && over.lines.includes('×2') && over.images >= 3,
+  `${over.images} pictures · ${over.lines.filter((l) => l.startsWith('×')).join(' ')}`);
+check('and shows the skills as icons, with level and DPS',
+  over.lines.some((l) => /^Lv \d+$/.test(l)) && over.summary.skills.every((sk) => typeof sk.id === 'string'),
+  over.lines.filter((l) => /^Lv/.test(l)).join(' '));
+check('and a tip at random, from a set whose every number is filled in',
+  over.tip.length > 10 && !/[{}]/.test(over.tip) && over.tips >= 10 && over.unfilled.length === 0,
+  `${over.tips} tips · ${over.unfilled.join(' | ')}`);
 check('nothing in the table runs off the screen',
   await scene('GameOverScene', `
     const w = s.scale.width;
-    return s.table.list.every(o => {
+    return s.table.list.filter(o => o.type === 'Text' || o.type === 'Image').every(o => {
       const half = (o.width * o.scaleX) / 2;
       const x = s.table.x + o.x + (o.originX === 0 ? half : o.originX === 1 ? -half : 0);
       return x - half >= -2 && x + half <= w + 2;
@@ -201,20 +208,48 @@ const saved = await ev(`(() => {
   const s = window.game.scene.getScene('GameScene');
   s.writeSave();
   const save = JSON.parse(localStorage.getItem('exiled-survivors:save:v1'));
-  window.__resumeWant = { damage: s.stats.damage, kills: s.stats.killCount };
+  window.__resumeWant = { damage: s.stats.damage, kills: s.stats.killCount, score: s.stats.score };
   s.scene.restart({ save });
   return window.__resumeWant;
 })()`);
 await sleep(2500);
 const resumed = await ev(`(() => {
   const s = window.game.scene.getScene('GameScene');
-  return { damage: s.stats.damage, kills: s.stats.killCount };
+  return { damage: s.stats.damage, kills: s.stats.killCount, score: s.stats.score };
 })()`);
 console.log('resumed:', JSON.stringify({ saved, resumed }));
-check('a saved run picks its 가한 피해 and kills back up when it is resumed',
-  saved.damage > 0 && resumed.damage >= saved.damage && resumed.kills >= saved.kills,
+check('a saved run picks its 가한 피해, kills and score back up when it is resumed',
+  saved.damage > 0 && resumed.damage >= saved.damage && resumed.kills >= saved.kills &&
+    saved.score > 0 && resumed.score >= saved.score,
   `saved ${saved.damage} / ${saved.kills} kills, resumed at ${resumed.damage} / ${resumed.kills}`);
 await ev(`(() => { localStorage.removeItem('exiled-survivors:save:v1'); return 1; })()`);
+
+// --- 0.116: the score is each kill's full health, times its kind's share (SCORE) ---
+await cdp.send('Page.navigate', { url: 'about:blank' });
+await cdp.send('Page.navigate', { url: 'http://localhost:5173/#run' });
+await cdp.until(`window.game?.scene.getScene('GameScene')?.player?.active`, 30000, 200);
+await sleep(800);
+const scoring = await ev(`(() => {
+  const s = window.game.scene.getScene('GameScene'), p = s.player, g = s.spawner.group, C = window.config;
+  p.setInvulnerable(true);
+  s.spawner.clear();
+  const before = s.stats.score;
+  let want = 0;
+  const worth = {};
+  for (const kind of Object.keys(C.SCORE.byKind)) {
+    const e = g.get(p.x + 300, p.y); e.spawn(p.x + 300, p.y, p, kind, s.spawner.hooks);
+    // Wounded first: the score is its full health all the same, never what the last hit took.
+    s.combat.hit(e, Math.floor(e.maxHp / 2));
+    want += e.maxHp * C.SCORE.byKind[kind];
+    worth[kind] = C.SCORE.byKind[kind];
+    s.combat.hit(e, 1e12);
+  }
+  s.spawner.clear();
+  return { got: s.stats.score - before, want: Math.round(want), worth };
+})()`);
+check('the score is every kill’s full health times its kind’s share (SCORE), overkill aside',
+  Math.abs(scoring.got - scoring.want) <= 1 && scoring.worth.chimera === 2 && scoring.worth.grunt === 1,
+  JSON.stringify(scoring));
 
 // --- 0.91: levels the run did not count gaining keep it off the ranking, unsaid ---
 const runAndDie = async (tamper) => {

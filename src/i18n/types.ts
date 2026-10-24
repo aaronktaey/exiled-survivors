@@ -471,6 +471,14 @@ export interface Strings {
     readonly toTitle: string;
     readonly hintKeyboard: string;
     readonly hintTouch: string;
+    /** Under the score: how many were killed (0.116). */
+    readonly scoreCaption: string;
+    /** Over the kills' bar, and over the skills' row (0.116). */
+    readonly killsTitle: string;
+    readonly skillsTitle: string;
+    /** The tip's head, and the tips themselves — one at random a run (0.116), placeholders from the guide's numbers. */
+    readonly tipTitle: string;
+    readonly tips: readonly string[];
   };
 
   /** 랭킹 — the board, the line under the logo, and entering a name. */

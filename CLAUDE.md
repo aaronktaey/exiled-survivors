@@ -340,6 +340,24 @@ Read `git log` for what changed and when. What is not in the log:
 - **도망자 is table-driven.** `flee`, `lifespanMs`, `guaranteedSkill` and
   `flashy` on an `ENEMY_KINDS` entry give any kind that behaviour; the
   fugitive is the only one using them. It spawns on `FUGITIVE`'s clock.
+- **랭킹 점수 (0.116, the user's).** The board ranks by score, not damage
+  dealt: every kill's full health as it spawned (`Enemy.maxHp`: the clock,
+  a rare's 속성) × `SCORE.byKind` (balance.ts), counted in
+  `RunStats.recordKill(kind, maxHp)` — overkill and what got away count for
+  nothing. The board's number travels and is stored as `damage` still (no
+  migration; the user chose to let today's damage runs and score runs stand
+  side by side). `RunSummary.score`, `SavedRun.scoreByKind` (a save from
+  before starts the score at zero), `PersonalRun.score` (내 기록 sorts by it;
+  one from before has none and shows a dash), and every label that said
+  가한 피해 says 점수. `GameScene.stats.damage` is still kept and saved.
+- **The end-of-run screen (0.116).** `GameOverScene` draws the score large,
+  one bar of each kind's share of it (kind colour) with the kind's picture
+  and ×count under it, the skills as icons with a DPS bar against the best,
+  and one of `gameOver.tips` at random (filled from `guideValues()` in
+  guide.ts — a tip's numbers come off the config like the guide's; test-stats
+  fails on one left unfilled via `allTips()`). Lying down (`GAME_OVER.wideFrom`)
+  the figures are on the left, the tip and buttons on the right. A new tip is
+  a line in all four locales.
 - **랭킹 is the Worker's.** `GET/POST /api/ranking` (server/index.ts, D1
   table `entries`). The server's board replaces the device's on `refresh`; a
   submission is shown at once, handed in with a Turnstile token, and

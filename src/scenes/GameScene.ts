@@ -694,7 +694,7 @@ export class GameScene extends Phaser.Scene {
     this.hud.seed(run.elapsedMs);
     this.spawner.seed(run.spawnerMs);
     // What it had dealt and killed before the save still counts at the end.
-    this.stats.seed(run.damage ?? 0, run.kills ?? {});
+    this.stats.seed(run.damage ?? 0, run.kills ?? {}, run.scoreByKind ?? {});
     // And what it had counted gaining — or, from an older save, what it holds.
     runTally.begin(run.tally ?? { levelUps: run.level - 1, skillLevels: this.totalSkillLevels() });
   }
@@ -805,6 +805,7 @@ export class GameScene extends Phaser.Scene {
       spawnerMs: this.spawner.clockMs,
       damage: this.stats.damageExact,
       kills: this.stats.killsByKind,
+      scoreByKind: this.stats.scoreByKind,
       terrainSeed: this.terrainSeed,
       shards: { ...this.shards },
     });
@@ -1790,11 +1791,13 @@ export class GameScene extends Phaser.Scene {
     saveGame.clear();
 
     const damage = this.stats.damage;
+    const score = this.stats.score;
     // Every run goes on 내 기록, entered on the shared board or not — but
-    // not one the developer tools played a part in.
+    // not one the developer tools played a part in. Ranked by its score (0.116).
     if (!this.devRun) {
       personal.record({
         damage: Math.floor(damage),
+        score,
         level: this.progression.level,
         survivedMs: Math.floor(this.elapsedMs),
       });
@@ -1803,9 +1806,11 @@ export class GameScene extends Phaser.Scene {
     const data: GameOverData = {
       summary: {
         damage,
+        score,
         kills: this.stats.killCount,
         byKind: this.stats.byKind,
         skills: this.loadout().map((line) => ({
+          id: line.id,
           name: line.name,
           level: line.level,
           dps: line.dps,

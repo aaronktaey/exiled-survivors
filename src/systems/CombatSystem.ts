@@ -814,7 +814,7 @@ export class CombatSystem {
   private killEnemy(enemy: Enemy): void {
     const { x, y } = enemy;
     // Read the rewards before recycling, which resets the kind and affixes.
-    this.stats.recordKill(enemy.kind);
+    this.stats.recordKill(enemy.kind, enemy.maxHp);
     sfx.playEnemy(this.scene, enemy.kind, 'death');
     const worth = enemy.xpValue;
     const dropBonus = enemy.dropBonus;

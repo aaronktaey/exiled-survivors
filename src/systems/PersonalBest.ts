@@ -6,7 +6,10 @@
 import { RANKING, STORAGE } from '@/config';
 
 export interface PersonalRun {
+  /** The damage it dealt — what 내 기록 went by before 0.116. */
   readonly damage: number;
+  /** Its score (SCORE, 0.116): what it is ranked by now. Absent on a run from before. */
+  readonly score?: number;
   readonly level: number;
   readonly survivedMs: number;
   /** When it ended, as an ISO string. */
@@ -15,6 +18,10 @@ export interface PersonalRun {
 
 type Listener = () => void;
 
+/** Scored runs first, best first; runs from before 0.116 (no score) after them, by damage. */
+const byRank = (a: PersonalRun, b: PersonalRun): number =>
+  (b.score ?? -1) - (a.score ?? -1) || b.damage - a.damage || a.at.localeCompare(b.at);
+
 /** A stored run, trusting nothing about it. */
 function clean(raw: unknown): PersonalRun | null {
   const r = raw as Partial<PersonalRun> | null;
@@ -22,8 +29,10 @@ function clean(raw: unknown): PersonalRun | null {
   if (!r || !Number.isFinite(damage) || damage <= 0) {
     return null;
   }
+  const score = Math.floor(Number(r.score));
   return {
     damage,
+    ...(Number.isFinite(score) && score >= 0 ? { score } : {}),
     level: Math.max(1, Math.floor(Number(r.level) || 1)),
     survivedMs: Math.max(0, Math.floor(Number(r.survivedMs) || 0)),
     at: String(r.at ?? ''),
@@ -43,9 +52,9 @@ class PersonalStore {
     return this.current;
   }
 
-  /** Where a run of this much damage stands among this player's own, from 1. */
-  public placeFor(damage: number): number {
-    return this.runs.filter((run) => run.damage >= damage).length + 1;
+  /** Where a run of this score stands among this player's own, from 1. */
+  public placeFor(score: number): number {
+    return this.runs.filter((run) => (run.score ?? -1) >= score).length + 1;
   }
 
   /** A run that ended. Kept if it is among the best RANKING.size. */
@@ -55,7 +64,7 @@ class PersonalStore {
       return 0;
     }
     const next = [...this.runs, entry]
-      .sort((a, b) => b.damage - a.damage || a.at.localeCompare(b.at))
+      .sort(byRank)
       .slice(0, RANKING.size);
     this.current = next;
     try {
@@ -89,7 +98,7 @@ class PersonalStore {
       this.current = (Array.isArray(parsed) ? parsed : [])
         .map(clean)
         .filter((run): run is PersonalRun => run !== null)
-        .sort((a, b) => b.damage - a.damage || a.at.localeCompare(b.at))
+        .sort(byRank)
         .slice(0, RANKING.size);
     } catch {
       this.current = [];

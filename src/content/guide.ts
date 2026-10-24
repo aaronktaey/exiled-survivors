@@ -43,6 +43,8 @@ import {
   PASSIVE_POINTS,
   TALENT_SHARD,
   TALENT_LUMP,
+  SCORE,
+  SUB_SKILLS,
 } from '@/config';
 import {
   affixDetail,
@@ -132,7 +134,8 @@ const unlockOf = (kind: EnemyKind): string =>
  * Every number a prose card can ask for, read off the live config. One
  * table for all of them, so a locale can use any number on any card.
  */
-function values(): Record<string, string | number> {
+/** Every number the guide (and 0.116's end-of-run tips) fills in, read off the config. */
+export function guideValues(): Record<string, string | number> {
   const affixTierCount = Math.max(
     ...Object.values(AFFIXES).map((affix) => affix.gearTiers?.length ?? 0),
   );
@@ -146,6 +149,9 @@ function values(): Record<string, string | number> {
     shardRegenSecs: seconds(TALENT_SHARD.regenEveryMs),
     shardRegenHeal: TALENT_SHARD.regen,
     lumpShards: TALENT_LUMP.shards,
+    // 랭킹 점수 (0.116): each kind and its share, in the roster's order.
+    scoreKinds: (Object.keys(SCORE.byKind) as EnemyKind[]).map((kind) => `${enemyName(kind)} ×${SCORE.byKind[kind]}`).join(' · '),
+    subSkillsMax: SUB_SKILLS.max,
     choices: SKILL_PICK.choices,
     bossFirst: seconds(BOSS.firstMs),
     bossEvery: seconds(BOSS.intervalMs),
@@ -250,7 +256,7 @@ function prose(tab: GuideTabId, numbers: Record<string, string | number>): Guide
  * copy being written for it.
  */
 export function guideChapters(): readonly GuideChapter[] {
-  const numbers = values();
+  const numbers = guideValues();
   const chapters = t().guideChapters;
   const tabTitles = t().guideTabs;
   const tab = (id: GuideTabId, cards: readonly GuideCard[]): GuideTab => ({

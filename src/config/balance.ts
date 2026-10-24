@@ -1505,6 +1505,27 @@ export const UNKNOWN_RUNE: { readonly from: EnemyKind; readonly chance: number; 
   size: 22,
 };
 
+/**
+ * ★ 랭킹 점수 (0.116, the user's ask): what a run is ranked by — the health of
+ * every enemy it killed, as that enemy spawned (the clock, a rare's 속성,
+ * all of it), times its kind's share here. Overkill, and damage to what got
+ * away, count for nothing. The board's number is this; on the wire and in D1
+ * the field is still `damage`, and runs from before 0.116 there are the
+ * damage they dealt (the user chose to let the two stand side by side).
+ */
+export const SCORE: { readonly byKind: Readonly<Record<EnemyKind, number>> } = {
+  byKind: {
+    grunt: 1,
+    runner: 1.1,
+    shooter: 1.2,
+    brute: 1,
+    erratic: 1.2,
+    boss: 1.5,
+    chimera: 2,
+    fugitive: 1.5,
+  },
+};
+
 /** What a 재능의 파편 can give, one of them a shard (TALENT_SHARD). */
 export type ShardStat = 'damage' | 'attackSpeed' | 'moveSpeed' | 'maxHp' | 'area' | 'regen';
 

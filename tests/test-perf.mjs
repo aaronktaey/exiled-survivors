@@ -197,7 +197,7 @@ check('an account the server names as admin opens it', adminOpened.shown === tru
 const died = async () => {
   const before = await cdp.evaluate(`(() => window.personal.runs.length)()`);
   await cdp.evaluate(`(() => { window.ranking.reset(); window.config.RANKING.promptOnDeath = true; return 1; })()`);
-  await run(`s.stats.recordDamage(5000); s.player.setInvulnerable(false); s.player.invulnerableUntil = 0;
+  await run(`s.stats.recordDamage(5000); s.stats.recordKill('grunt', 5000); s.player.setInvulnerable(false); s.player.invulnerableUntil = 0;
     s.player.takeDamage(1e9); return 1;`);
   await sleep(2200);
   const out = await cdp.evaluate(`(() => ({ asked: window.game.scene.isActive('RankEntryScene'),

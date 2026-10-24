@@ -511,7 +511,8 @@ export class RankingScene extends Phaser.Scene {
       const place = index + 1;
       const y = this.rowY(index);
       const color = place === 1 ? COLORS.gearText : COLORS.text;
-      const cells = [String(place), day(run.at), String(run.level), clock(run.survivedMs), grouped(run.damage)].map(
+      // A run from before 0.116 has no score: its cell is left as a dash (the user's choice).
+      const cells = [String(place), day(run.at), String(run.level), clock(run.survivedMs), run.score === undefined ? '—' : grouped(run.score)].map(
         (value) => this.cellText(y, value, fontSize, color),
       );
       this.rows.push(cells.map((cell) => cell.parts[0]!.obj as Phaser.GameObjects.Text));

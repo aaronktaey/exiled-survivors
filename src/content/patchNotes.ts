@@ -15,6 +15,36 @@ export interface PatchNote {
 
 export const PATCH_NOTES: readonly PatchNote[] = [
   {
+    version: '0.116',
+    date: '2026-10-24',
+    changes: {
+      ko: [
+        '랭킹 점수가 가한 피해에서 처치한 적의 체력 합으로 바뀌었습니다. 적 종류마다 배율이 붙습니다: 일반 ×1, 질주 ×1.1, 사수 ×1.2, 거구 ×1, 기행종 ×1.2, 우두머리 ×1.5, 키메라 ×2, 도망자 ×1.5. 오늘 랭킹에는 이전 방식의 기록도 함께 남아 있습니다.',
+        '전투 종료 화면을 새로 꾸몄습니다. 점수를 크게, 적 종류별 점수 비중을 그래프와 아이콘으로, 스킬을 아이콘과 DPS 막대로 보여 줍니다.',
+        '전투 종료 화면에 성장과 점수에 도움이 되는 팁이 무작위로 하나씩 나옵니다.',
+        '내 기록도 점수로 정렬하며, 점수가 없는 이전 기록은 점수 칸이 비어 있습니다.',
+      ],
+      en: [
+        'The ranking now goes by score instead of damage dealt: the health of every enemy killed, times its kind’s share — Grunt ×1, Runner ×1.1, Shooter ×1.2, Brute ×1, Oddity ×1.2, Boss ×1.5, Chimera ×2, Runaway ×1.5. Today’s board still holds runs from the old way.',
+        'A new end-of-run screen: the score large, each enemy kind’s share of it as a bar with its picture, and your skills as icons with a DPS bar.',
+        'The end-of-run screen shows a tip at random, on growing stronger and scoring more.',
+        'My records go by score too; a record from before the score leaves that cell empty.',
+      ],
+      ja: [
+        'ランキングのスコアが与ダメージから倒した敵の体力の合計に変わりました。敵の種類ごとに倍率が付きます：雑兵 ×1、俊足 ×1.1、射手 ×1.2、巨漢 ×1、奇行種 ×1.2、ボス ×1.5、キメラ ×2、逃亡者 ×1.5。今日のランキングには以前の方式の記録も残っています。',
+        '戦闘終了画面を新しくしました。スコアを大きく、敵の種類ごとのスコアの割合をグラフとアイコンで、スキルをアイコンと DPS バーで表示します。',
+        '戦闘終了画面に、成長とスコアに役立つヒントがランダムに1つ表示されます。',
+        '自分の記録もスコア順になり、スコアのない以前の記録はスコア欄が空になります。',
+      ],
+      zh: [
+        '排行榜分数由造成伤害改为击杀敌人的生命值之和，每种敌人有倍率：杂兵 ×1、疾走者 ×1.1、射手 ×1.2、巨汉 ×1、奇行种 ×1.2、首领 ×1.5、奇美拉 ×2、逃亡者 ×1.5。今天的排行榜上仍保留着旧方式的记录。',
+        '战斗结束画面焕然一新：分数大字显示，各类敌人的分数占比以图表和图标呈现，技能以图标和 DPS 条显示。',
+        '战斗结束画面会随机显示一条有助于成长和得分的提示。',
+        '我的记录也按分数排序，没有分数的旧记录分数栏为空。',
+      ],
+    },
+  },
+  {
     version: '0.115',
     date: '2026-10-24',
     changes: {

@@ -764,14 +764,39 @@ export const RARE_OUTLINE_TIERS: readonly number[] = [
 /** The table the end-of-run screen reads the run out in. */
 export const GAME_OVER = {
   /** Title and the line under it, before the table starts. */
-  headHeight: 104,
+  headHeight: 96,
   /** One label-and-figure row. */
   lineHeight: 24,
   /** Air under a wrapped line, which may be one row tall or three. */
   wrapGap: 10,
   /** Between the table and the first button. */
-  tableGap: 24,
+  tableGap: 20,
   tableWidth: 420,
+  /**
+   * 0.116 (the user's ask): the run read at a glance — the score large, a bar
+   * of what each enemy kind added to it with each kind's picture and count
+   * under it, the skills as icons with a DPS bar each, and a tip. Lying
+   * down, the run's figures sit on the left and the tip and buttons on the
+   * right; upright, one under the other.
+   */
+  wideFrom: 700,
+  /** Between the two columns lying down. */
+  columnGap: 36,
+  /** The bar of the score's share by kind. */
+  barHeight: 14,
+  /** A kind's picture under the bar, its count beside it. */
+  kindIcon: 24,
+  kindGap: 14,
+  /** A skill's icon, and its DPS bar under it. */
+  skillIcon: 30,
+  skillCell: 66,
+  skillBar: { width: 46, height: 5 },
+  /** Between the blocks of the run's figures. */
+  blockGap: 14,
+  /** The tip's panel. */
+  tipPadding: 12,
+  tipFill: 0x111725,
+  tipEdge: 0x2f3a52,
 } as const;
 
 /** The panel that lists a rare's affixes when it is hovered or tapped. */

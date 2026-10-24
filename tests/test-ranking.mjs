@@ -125,7 +125,7 @@ check('its back button returns to the title', (await active('MenuScene')) && !(a
 await ev(`(() => { window.ranking.reset(); window.config.RANKING.promptOnDeath = true;
   window.game.scene.getScene('MenuScene').scene.start('GameScene', { save: null }); return 1; })()`);
 await sleep(1500);
-await scene('GameScene', `s.stats.recordDamage(4321); s.player.invulnerableUntil = 0; s.player.takeDamage(1e9); return 1;`);
+await scene('GameScene', `s.stats.recordDamage(4321); s.stats.recordKill('grunt', 4321); s.player.invulnerableUntil = 0; s.player.takeDamage(1e9); return 1;`);
 await sleep(2200);
 const asked = await ev(`(() => ({
   entry: window.game.scene.isActive('RankEntryScene'),
@@ -163,7 +163,7 @@ check('and the end screen says where it landed, and cannot enter it twice',
 await ev(`(() => { const g = window.game.scene.getScene('GameOverScene');
   g.scene.stop(); window.game.scene.getScene('GameScene').scene.restart({ save: null }); return 1; })()`);
 await sleep(1500);
-await scene('GameScene', `s.stats.recordDamage(99); s.player.invulnerableUntil = 0; s.player.takeDamage(1e9); return 1;`);
+await scene('GameScene', `s.stats.recordDamage(99); s.stats.recordKill('grunt', 99); s.player.invulnerableUntil = 0; s.player.takeDamage(1e9); return 1;`);
 await sleep(2200);
 await scene('RankEntryScene', `s.backButton.press(); return 1;`);
 await sleep(600);
@@ -190,7 +190,7 @@ check('first place under the logo is the run just entered', /ZED/.test(champ ?? 
 await ev(`(() => { for (let i = 0; i < 20; i++) window.ranking.submit({ name: 'AAA', emoji: '', flag: '', damage: 1e7 + i, level: 1, survivedMs: 1 });
   window.game.scene.getScene('MenuScene').scene.start('GameScene', { save: null }); return 1; })()`);
 await sleep(1500);
-await scene('GameScene', `s.stats.recordDamage(10); s.player.invulnerableUntil = 0; s.player.takeDamage(1e9); return 1;`);
+await scene('GameScene', `s.stats.recordDamage(10); s.stats.recordKill('grunt', 10); s.player.invulnerableUntil = 0; s.player.takeDamage(1e9); return 1;`);
 await sleep(2200);
 const quiet = await ev(`(() => ({ entry: window.game.scene.isActive('RankEntryScene'),
   row: !!window.game.scene.getScene('GameOverScene').menu.items.find((i) => i.id === 'rank') }))()`);
@@ -223,7 +223,7 @@ check('and an arrow hands the keyboard back to the list, where Enter starts a ru
 await ev(`(() => { window.ranking.reset(); window.ranking.lastFlag = ''; window.config.RANKING.promptOnDeath = true;
   window.game.scene.getScene('GameScene').scene.start('GameScene', { save: null }); return 1; })()`);
 await sleep(1500);
-await scene('GameScene', `s.stats.recordDamage(777); s.player.invulnerableUntil = 0; s.player.takeDamage(1e9); return 1;`);
+await scene('GameScene', `s.stats.recordDamage(777); s.stats.recordKill('grunt', 777); s.player.invulnerableUntil = 0; s.player.takeDamage(1e9); return 1;`);
 await sleep(2200);
 const flagged = await scene('RankEntryScene', `return { flag: s.flag, slots: s.picks.length };`);
 check('the name entry has a flag slot, starting on the game’s own language',
@@ -253,7 +253,7 @@ await sleep(400);
 await ev(`(() => { window.personal.reset(); window.config.RANKING.promptOnDeath = false;
   window.game.scene.getScene('MenuScene').scene.start('GameScene', { save: null }); return 1; })()`);
 await sleep(1500);
-await scene('GameScene', `s.stats.recordDamage(777.6); s.player.invulnerableUntil = 0; s.player.takeDamage(1e9); return 1;`);
+await scene('GameScene', `s.stats.recordDamage(777.6); s.stats.recordKill('grunt', 777.6); s.player.invulnerableUntil = 0; s.player.takeDamage(1e9); return 1;`);
 await sleep(2200);
 const kept = await ev(`(() => window.personal.runs.map((r) => ({ damage: r.damage, ms: r.survivedMs, at: r.at })))()`);
 check('a run that ends goes on 내 기록 in whole numbers, with when it ended',
@@ -261,7 +261,9 @@ check('a run that ends goes on 내 기록 in whole numbers, with when it ended',
   JSON.stringify(kept));
 await ev(`(() => { window.game.scene.getScene('GameOverScene').toTitle(); return 1; })()`);
 await sleep(1200);
-await ev(`(() => { for (let i = 1; i <= 3; i++) window.personal.record({ damage: i * 1000, level: i + 4, survivedMs: 65000 * i }); return 1; })()`);
+// Scored runs (0.116), and one from before the score — which keeps a dash where the score goes.
+await ev(`(() => { for (let i = 1; i <= 3; i++) window.personal.record({ damage: i * 1000, score: i * 1000, level: i + 4, survivedMs: 65000 * i });
+  window.personal.record({ damage: 9e9, level: 1, survivedMs: 1000 }); return 1; })()`);
 await scene('MenuScene', `s.icons.press('ranking'); return 1;`);
 await sleep(800);
 const opened = await scene('RankingScene', `return { tab: s.tab, tabs: s.tabs.size,
@@ -278,10 +280,10 @@ const mineTab = await scene('RankingScene', `
 `);
 check('내 기록 does not start over, so the countdown is not on it',
   (await scene('RankingScene', `return s.resetLine.visible;`)) === false);
-check('pressing it lists this player’s own runs, best first, with level and time',
-  mineTab.tab === 'personal' && mineTab.rows.length === 4 && mineTab.rows[0][0] === '1' &&
+check('pressing it lists this player’s own runs, best score first, with level and time — one from before the score last, with a dash',
+  mineTab.tab === 'personal' && mineTab.rows.length === 5 && mineTab.rows[0][0] === '1' &&
     mineTab.rows[0][2] === '7' && mineTab.rows[0][3] === '3:15' && mineTab.rows[0][4] === '3,000' &&
-    /^\d+\/\d+$/.test(mineTab.rows[0][1]) && mineTab.rows.length === 4,
+    /^\d+\/\d+$/.test(mineTab.rows[0][1]) && mineTab.rows[4][4] === '—',
   mineTab.rows.map((r) => r.join(' ')).join(' | '));
 await shot('ranking-03-personal');
 await cdp.send('Input.dispatchKeyEvent', { type: 'keyDown', key: 'ArrowLeft', code: 'ArrowLeft', windowsVirtualKeyCode: 37 });
