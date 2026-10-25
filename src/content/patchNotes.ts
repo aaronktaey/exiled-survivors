@@ -15,6 +15,32 @@ export interface PatchNote {
 
 export const PATCH_NOTES: readonly PatchNote[] = [
   {
+    version: '0.127',
+    date: '2026-10-25',
+    changes: {
+      ko: [
+        '오늘의 규칙의 이름이 「오늘의 예언」으로 바뀌었습니다. 메인 화면에 예언이 테두리 있는 판으로 크게 보이고, 첫 스킬 선택 화면에는 금지된 스킬의 카드가 회색으로 나오며 그 위에 오늘의 예언이 적힙니다.',
+        '좋은 순간에 연출이 붙었습니다. 신화 아이템이 떨어지거나, 우두머리 · 키메라 · 도망자를 잡거나, 각성하거나, 재능의 덩어리를 줍거나, 내 최고 기록을 세우면 금화가 쏟아지고 반짝입니다. 희귀 아이템과 재능의 파편은 짧게 반짝입니다.',
+        '자주 반복되는 연출은 아주 짧게 바꿨습니다. 장비 합성은 1초 안에 끝나고, 구슬 사용과 스킬 강화 선택은 눈 깜짝할 사이의 반짝임만 남겼습니다.',
+      ],
+      en: [
+        'Today’s rules are now Today’s prophecy. The main screen shows it large in a framed plate, and the first skill’s cards show the banned skill greyed out with the prophecy written over it.',
+        'Good moments now celebrate: a mythic drop, a Boss, Chimera or Runaway down, an awakening, a talent lump picked up or a new personal best throw gold coins and sparkles. Rare drops and talent shards sparkle briefly.',
+        'Moments that come round often are now very short: a gear merge is over in under a second, and using an orb or picking an upgrade only blinks.',
+      ],
+      ja: [
+        '今日のルールは「今日の予言」になりました。メイン画面に枠付きのパネルで大きく表示され、最初のスキル選択画面では禁止スキルのカードが灰色で表示され、その上に今日の予言が書かれます。',
+        '良い瞬間に演出が付きました。神話アイテムのドロップ、ボス・キメラ・逃亡者の撃破、覚醒、才能の塊の取得、自己ベスト更新で金貨が降り注ぎ、きらめきます。レアアイテムと才能の欠片は短くきらめきます。',
+        'よく繰り返す演出はとても短くしました。装備の合成は1秒以内に終わり、オーブの使用とスキル強化の選択は一瞬のきらめきだけになりました。',
+      ],
+      zh: [
+        '今日规则更名为「今日预言」。主界面以带框的面板醒目显示，首个技能选择画面会以灰色显示被禁用的技能卡，并在其上写出今日预言。',
+        '精彩时刻加入了演出：掉落神话物品、击败首领·奇美拉·逃亡者、觉醒、拾取天赋块或创下个人新纪录时，会洒下金币并闪耀光芒。稀有物品和天赋碎片会短暂闪光。',
+        '频繁重复的演出改得非常短：装备合成在1秒内结束，使用宝珠和选择技能强化只剩一瞬间的闪光。',
+      ],
+    },
+  },
+  {
     version: '0.126',
     date: '2026-10-25',
     changes: {

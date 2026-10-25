@@ -107,6 +107,36 @@ check('the HUD carries the day’s three rules, dated', !!inRun.hud && inRun.hud
 check('the save keeps the day the run began on', inRun.savedDay === inRun.day, `${inRun.savedDay}`);
 await shot('daily-01-run');
 
+// 0.127: the first skill's cards show the banned one, greyed, with the prophecy over it.
+await run(`s.openStartPick(); return 1;`);
+await cdp.until(`window.game.scene.isActive('SkillPickScene')`, 10000, 100);
+await sleep(400);
+const pickView = await ev(`(() => {
+  const sp = window.game.scene.getScene('SkillPickScene'), rules = window.dailyRules.active;
+  const b = sp.bannedCard;
+  return { banned: rules.bannedSkill, card: b?.skill, words: b?.words.text ?? '', takeable: sp.cards.map((c) => c.skill),
+           inside: b ? b.panel.y + b.panel.height / 2 <= sp.scale.height : false };
+})()`);
+check('the first skill’s screen shows the banned skill’s card with the prophecy over it, and it cannot be taken',
+  pickView.card === pickView.banned && pickView.words.split('\n').length >= 2 && !pickView.takeable.includes(pickView.banned) && pickView.inside,
+  JSON.stringify(pickView));
+await shot('daily-01b-pick');
+await ev(`(() => { const sp = window.game.scene.getScene('SkillPickScene'); sp.pick(0); return 1; })()`);
+await cdp.until(`!window.game.scene.isActive('SkillPickScene')`, 5000, 100);
+
+// 0.127 (도파민): a 재능의 덩어리 throws coins and sparkles; a single 파편 only a blink of sparkles.
+const fx = await run(`
+  const count = (key) => s.children.list.filter((o) => o.texture && o.texture.key === key).length;
+  const before = { coins: count('tex-coin'), stars: count('tex-sparkle') };
+  s.gainShard('damage', 3);
+  const lump = { coins: count('tex-coin') - before.coins, stars: count('tex-sparkle') - before.stars };
+  s.gainShard('damage', 1);
+  const one = { coins: count('tex-coin') - before.coins - lump.coins, stars: count('tex-sparkle') - before.stars - lump.stars };
+  return { lump, one, want: window.config.CELEBRATE.coins.count };
+`);
+check('a 재능의 덩어리 throws gold and sparkles; a single 파편 only sparkles',
+  fx.lump.coins === fx.want && fx.lump.stars > 0 && fx.one.coins === 0 && fx.one.stars > 0, JSON.stringify(fx));
+
 // A run resumed on another day keeps the rules it began with.
 const resumed = await run(`
   const save = JSON.parse(localStorage.getItem('exiled-survivors:save:v1'));
@@ -124,7 +154,7 @@ await ev(`(() => { localStorage.removeItem('exiled-survivors:save:v1'); window._
 await cdp.until(`window.game.scene.isActive('MenuScene')`, 10000, 100);
 await sleep(600);
 const title = await ev(`(() => { const m = window.game.scene.getScene('MenuScene'); const l = m.dailyLine;
-  return l ? { text: l.text, inside: l.x - l.displayWidth / 2 >= 0 && l.x + l.displayWidth / 2 <= m.scale.width } : null; })()`);
+  return l ? { text: l.text, heading: m.prophecyTitle?.text ?? '', inside: l.x - l.displayWidth / 2 >= 0 && l.x + l.displayWidth / 2 <= m.scale.width } : null; })()`);
 check('the title shows today’s rules in one line, inside the screen', !!title && title.inside && title.text.length > 10,
   JSON.stringify(title));
 // Turned on the panel, the number players read on the title follows (0.127).
@@ -140,6 +170,33 @@ const shown = await ev(`(() => {
 check('the title’s number follows the 적 강화 dial', /\+120%/.test(shown.after) && !/\+120%/.test(shown.before) && shown.back === shown.before,
   JSON.stringify(shown));
 await shot('daily-02-title');
+
+// On an upright phone the prophecy is a plate over the menu, clear of it (0.127).
+await cdp.send('Emulation.setDeviceMetricsOverride', { width: 420, height: 860, deviceScaleFactor: 2, mobile: false });
+await cdp.send('Page.navigate', { url: 'about:blank' });
+await cdp.send('Page.navigate', { url: 'http://localhost:5173/' });
+await cdp.until(`window.game?.scene.isActive('MenuScene') && window.dailyRules`, 30000, 200);
+await ev(`(() => { window.__dailyOn = true; window.__dailyDay = ${pick.day}; window.game.scene.getScene('MenuScene').scene.restart(); return 1; })()`);
+await sleep(900);
+const upright = await ev(`(() => {
+  const m = window.game.scene.getScene('MenuScene');
+  const start = m.children.list.find((o) => o.type === 'Text' && o.text === '게임 시작');
+  const frame = m.children.list.find((o) => o.type === 'Rectangle' && o.strokeColor === window.config.COLORS.dailyFill);
+  if (!frame) return null;
+  const bottom = frame.y + frame.height / 2, left = frame.x - frame.width / 2, right = frame.x + frame.width / 2;
+  return { bottom, firstRow: start ? start.y - start.displayHeight / 2 : null, left, right, width: m.scale.width,
+           heading: m.prophecyTitle?.text ?? '' };
+})()`);
+check('upright, the prophecy is a plate over the menu, inside the screen and clear of the first row',
+  !!upright && upright.left >= 0 && upright.right <= upright.width && upright.firstRow !== null && upright.bottom < upright.firstRow,
+  JSON.stringify(upright));
+await shot('daily-02b-upright');
+await cdp.send('Emulation.clearDeviceMetricsOverride', {});
+await cdp.send('Page.navigate', { url: 'about:blank' });
+await cdp.send('Page.navigate', { url: 'http://localhost:5173/' });
+await cdp.until(`window.game?.scene.isActive('MenuScene') && window.dailyRules`, 30000, 200);
+await ev(`(() => { window.__dailyOn = true; window.__dailyDay = ${pick.day}; window.game.scene.getScene('MenuScene').scene.restart(); return 1; })()`);
+await sleep(700);
 
 // --- 4. the 적 강화 tab: a knob each, a switch that flips on a press ---
 await ev(`(() => { const m = window.game.scene.getScene('MenuScene'); m.openOverlay('TuningScene', { tab: 'daily' }); return 1; })()`);
@@ -164,6 +221,28 @@ check('the 적 강화 tab has a multiplier and a switch for every strengthened e
 check('a press flips a switch, and it reads off', tab.was === 1 && tab.flipped === 0 && tab.back === 1 && tab.reads.length > 0,
   JSON.stringify({ was: tab.was, flipped: tab.flipped, back: tab.back, reads: tab.reads }));
 await shot('daily-03-tab');
+
+// --- 5. 도파민 on the end screen (0.127): a new personal best ---
+await ev(`(() => { const t = window.game.scene.getScene('TuningScene'); if (t?.scene.isActive()) t.close?.(); return 1; })()`);
+await cdp.send('Page.navigate', { url: 'about:blank' });
+await cdp.send('Page.navigate', { url: 'http://localhost:5173/#run' });
+await cdp.until(`window.game?.scene.getScene('GameScene')?.player?.active`, 30000, 200);
+await sleep(500);
+await run(`
+  localStorage.removeItem('exiled-survivors:personal:v1');
+  const p = s.player, e = s.spawner.group.get(p.x + 300, p.y);
+  e.spawn(p.x + 300, p.y, p, 'brute', s.spawner.hooks); s.combat.hit(e, 1e9);
+  p.invulnerableUntil = 0; p.takeDamage(99999);
+  return 1;
+`);
+await cdp.until(`window.game.scene.isActive('GameOverScene')`, 10000, 100);
+await sleep(600);
+const record = await ev(`(() => { const g = window.game.scene.getScene('GameOverScene');
+  return { newBest: g.payload.newBest, label: g.recordLabel?.text ?? null,
+           coins: g.children.list.filter((o) => o.texture && o.texture.key === 'tex-coin').length }; })()`);
+check('a run that beats every run on 내 기록 is celebrated: a badge by the score and gold over it',
+  record.newBest === true && !!record.label && record.coins > 0, JSON.stringify(record));
+await shot('daily-04-record');
 
 console.log('\n=== SUMMARY ===');
 const failed = results.filter((r) => !r.p);

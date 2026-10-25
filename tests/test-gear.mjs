@@ -1483,7 +1483,8 @@ const combineScreen = async (roll) => {
   // Keys are ignored while it plays out.
   await cdp.tap('Escape', 27, 'Escape');
   const fx = await ev(`window.config.COMBINE_FX`);
-  await sleep(fx.gatherMs + 900);
+  // Halfway through the shine — 0.127 made the whole of it short (under a second).
+  await sleep(fx.gatherMs + fx.chargeMs / 2);
   const mid = await scene('InventoryScene', `return { busy: s.busy, open: window.game.scene.isActive('InventoryScene') };`);
   await sleep(fx.chargeMs + Math.max(fx.flashMs, fx.burstMs) + fx.holdMs);
   const after = await scene('InventoryScene', `return { busy: s.busy, note: s.orbHint?.text ?? '',

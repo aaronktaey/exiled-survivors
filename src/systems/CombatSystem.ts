@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 
-import {
+import { CELEBRATE,
   ALTAR,
   ALTAR_SUMMON_FX,
   TEXTURES,
@@ -55,6 +55,7 @@ import { XpGem } from '@/entities/XpGem';
 import type { DamageNumbers } from '@/systems/DamageNumbers';
 import type { Progression } from '@/systems/Progression';
 import type { SkillDefinition, SkillId } from '@/weapons/skills';
+import { coinShower, jackpot, sparkleBurst } from '@/systems/Celebrate';
 import { effectVolume, sfx } from '@/systems/Sfx';
 
 export interface CombatHooks {
@@ -510,6 +511,12 @@ export class CombatSystem {
     if (tier) {
       this.playDropSound(tier);
     }
+    // 도파민 (0.127): a 신화 drop lands in a shower of gold; a 희귀 one sparkles.
+    if (tier === 'mythic') {
+      jackpot(this.scene, { x: item.x, y: item.y }, CELEBRATE.mythicColor);
+    } else if (tier === 'rare') {
+      sparkleBurst(this.scene, { x: item.x, y: item.y }, CELEBRATE.sparkles.color);
+    }
   }
 
   /** A tier's sound (AUDIO.drops). */
@@ -825,6 +832,10 @@ export class CombatSystem {
     const dropBonus = enemy.dropBonus;
     const wasBoss = enemy.isBoss;
     const kind = enemy.kind;
+    // 도파민 (0.127): a 우두머리, 키메라 or 도망자 goes down in a shower of gold.
+    if (wasBoss || kind === 'chimera' || kind === 'fugitive') {
+      coinShower(this.scene, { x, y }, CELEBRATE.bossCoins);
+    }
     const certainSkill = enemy.alwaysDropsSkill;
     const certainLump = enemy.alwaysDropsLump;
     const webStacks = enemy.webStacks;

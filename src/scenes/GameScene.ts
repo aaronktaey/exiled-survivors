@@ -25,6 +25,7 @@ import {
   SKILL_BASE,
   SKILL_DROP,
   SKILL_PICK,
+  CELEBRATE,
   MANGO,
   TEXT,
   TEXTURES,
@@ -86,6 +87,7 @@ import { RareTooltip } from '@/systems/RareTooltip';
 import { sfx, effectVolume } from '@/systems/Sfx';
 import { saveGame, type SavedRun } from '@/systems/SaveGame';
 import { runLedger } from '@/systems/RunLedger';
+import { jackpot, sparkleBurst } from '@/systems/Celebrate';
 import { dailyRules } from '@/systems/DailyRules';
 import { runTally } from '@/systems/RunTally';
 import { skillOffered } from '@/systems/SkillGate';
@@ -491,7 +493,11 @@ export class GameScene extends Phaser.Scene {
     this.physics.pause();
 
     const banned = dailyRules.active?.bannedSkill;
+    const rules = dailyRules.active;
+    const prophecyText = rules ? dailyRuleText(rules) : null;
     const data: SkillPickData = {
+      // 예언 (0.127): the banned skill's card, the day's prophecy written over it.
+      prophecy: rules && prophecyText ? { skill: rules.bannedSkill, title: prophecyText.title, lines: prophecyText.lines } : undefined,
       title: t().skillPick.startTitle,
       // 오늘의 규칙: the skill missing from the cards, named.
       subtitle: banned
@@ -1454,6 +1460,8 @@ export class GameScene extends Phaser.Scene {
   }
 
   private onUpgradePicked(skill: SkillId, upgrade: UpgradeId): void {
+    // A pick comes round every level: a blink of sparkles, nothing that holds the run (0.127).
+    sparkleBurst(this, { x: this.player.x, y: this.player.y, depth: DEPTH.player + 2 }, CELEBRATE.sparkles.color, true);
     const before = this.progression.levelFor(skill);
     this.progression.apply(skill, upgrade);
     runTally.skillLevel(this.progression.levelFor(skill) - before);
@@ -1572,6 +1580,12 @@ export class GameScene extends Phaser.Scene {
       onComplete: () => glow.destroy(),
     });
     this.announce(fill(count > 1 ? t().shard.lumpToast : t().shard.toast, { line }), 'heal');
+    // 도파민 (0.127): a 재능의 덩어리 is a jackpot; a single 파편 only sparkles.
+    if (count > 1) {
+      jackpot(this, { x, y, depth: DEPTH.player + 2 }, tint, CELEBRATE.coins.count);
+    } else {
+      sparkleBurst(this, { x, y, depth: DEPTH.player + 2 }, tint, true);
+    }
   }
 
   /** What the run's shards add up to, everywhere they act, and the line on the HUD. */
@@ -1668,6 +1682,8 @@ export class GameScene extends Phaser.Scene {
    * on underneath.
    */
   public celebrateMastery(skill: SkillId, tier: 1 | 2 = 1): void {
+    // 도파민 (0.127): gold round the survivor as the banner comes up.
+    jackpot(this, { x: this.player.x, y: this.player.y, depth: DEPTH.player + 2 }, 0xffc43a, CELEBRATE.bossCoins);
     const camera = this.cameras.main;
     const { width, height } = camera;
     const depth = DEPTH.ui + 30;
@@ -1850,6 +1866,8 @@ export class GameScene extends Phaser.Scene {
     const score = this.stats.score;
     // Every run goes on 내 기록, entered on the shared board or not — but
     // not one the developer tools played a part in. Ranked by its score (0.116).
+    // Better than every run on 내 기록 so far (0.127: the end screen celebrates it).
+    const newBest = !this.devRun && score > 0 && personal.placeFor(score) === 1;
     if (!this.devRun) {
       personal.record({
         damage: Math.floor(damage),
@@ -1860,6 +1878,7 @@ export class GameScene extends Phaser.Scene {
     }
 
     const data: GameOverData = {
+      newBest,
       summary: {
         damage,
         score,

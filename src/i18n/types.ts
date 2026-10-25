@@ -545,6 +545,8 @@ export interface Strings {
     /** Over the kills' bar, and over the skills' row (0.116). */
     readonly killsTitle: string;
     readonly skillsTitle: string;
+    /** Over the score when it beats every run on 내 기록 (0.127). */
+    readonly newBest: string;
     /** The tip's head, and the tips themselves — one at random a run (0.116), placeholders from the guide's numbers. */
     readonly tipTitle: string;
     readonly tips: readonly string[];

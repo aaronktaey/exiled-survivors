@@ -109,6 +109,7 @@ export class BootScene extends Phaser.Scene {
     this.createTrophyTexture();
     this.createWebIcon();
     this.createDailyRulesIcon();
+    this.createCelebrateTextures();
     this.createFlagTextures();
     this.createLookTextures();
     this.createDroneTextures();
@@ -1430,6 +1431,28 @@ export class BootScene extends Phaser.Scene {
       }
 
       g.generateTexture(giantFrame(texture, frame), size, size);
+      g.destroy();
+    }
+  }
+
+  /** 도파민 (0.127): a gold coin with a rim and a shine, and a four-point sparkle. */
+  private createCelebrateTextures(): void {
+    if (!this.textures.exists(TEXTURES.coin)) {
+      const g = this.add.graphics();
+      g.fillStyle(0xb8860b, 1).fillCircle(16, 16, 15);
+      g.fillStyle(0xffd23f, 1).fillCircle(16, 16, 12);
+      g.fillStyle(0xfff3b0, 1).fillCircle(12, 11, 4);
+      g.lineStyle(2, 0xd9a520, 1).strokeCircle(16, 16, 8);
+      g.generateTexture(TEXTURES.coin, 32, 32);
+      g.destroy();
+    }
+    if (!this.textures.exists(TEXTURES.sparkle)) {
+      const g = this.add.graphics();
+      g.fillStyle(0xffffff, 1);
+      g.fillPoints([new Phaser.Math.Vector2(16, 0), new Phaser.Math.Vector2(19, 13), new Phaser.Math.Vector2(32, 16),
+        new Phaser.Math.Vector2(19, 19), new Phaser.Math.Vector2(16, 32), new Phaser.Math.Vector2(13, 19),
+        new Phaser.Math.Vector2(0, 16), new Phaser.Math.Vector2(13, 13)], true);
+      g.generateTexture(TEXTURES.sparkle, 32, 32);
       g.destroy();
     }
   }

@@ -14,6 +14,7 @@ export const COLORS = {
   muted: "#a9b3c9",
   /** 오늘의 규칙 (0.126): a warning amber, so the day's line reads as a condition, not a menu item. */
   daily: "#f0a24a",
+  dailyFill: 0xf0a24a,
   accent: "#e0564a",
   /** Same accent as a number, for shapes (text takes the string form). */
   accentFill: 0xe0564a,
@@ -199,6 +200,9 @@ export const TEXTURES = {
   trophy: "tex-trophy",
   /** 거미줄's slow, as an icon among the survivor's effects. */
   webIcon: "tex-web-icon",
+  /** 도파민 (0.127): a spinning gold coin and a four-point sparkle (systems/Celebrate.ts). */
+  coin: "tex-coin",
+  sparkle: "tex-sparkle",
   /** 오늘의 규칙 among the survivor's effects (0.126): a no-entry sign. */
   dailyRules: "tex-daily-rules",
   /** 2위 and 3위: the same cup in silver and bronze. */
@@ -455,20 +459,21 @@ export const LIGHT_PILLAR = {
  */
 export const COMBINE_FX = {
   /** How long the light takes to travel from the swords to the meeting point. */
-  gatherMs: 300,
+  gatherMs: 140,
   /**
    * How long it shines there before the result. Three seconds at first; the
-   * user found the whole thing far too long (2026-10-16), so all of it is
-   * under half what it was — about two seconds from press to result.
+   * user found it far too long (2026-10-16) and cut it to about two; a 합성
+   * comes round again and again, so since 0.127 (the user's ask: repeated
+   * moments very short) the whole thing is under a second.
    */
-  chargeMs: 1100,
+  chargeMs: 260,
   /** The burst on a failure, and the flash on a success. */
-  burstMs: 400,
-  flashMs: 380,
+  burstMs: 220,
+  flashMs: 200,
   /** How the new sword pops in on a success. */
-  popMs: 280,
+  popMs: 160,
   /** How long the result is held on screen before the inventory comes back. */
-  holdMs: 350,
+  holdMs: 200,
   /** The light's colours: a warm white while it shines, gold when it takes. */
   light: 0xfff4d6,
   success: 0xffe066,
@@ -479,11 +484,32 @@ export const COMBINE_FX = {
 } as const;
 
 /** A 구슬 spent in the 인벤토리: it flies into the weapon and the weapon answers. */
+/**
+ * 도파민 (0.127, the user's ask): what a good moment throws — systems/Celebrate.ts.
+ * The big ones (a 신화 drop, a 우두머리 down, a 각성, a record) get coins,
+ * sparkles and a glow; the ones that come round again and again (an upgrade
+ * picked, a 합성, a 구슬) only the `quick` sparkle, over in a blink.
+ */
+export const CELEBRATE = {
+  coins: { count: 18, lifeMs: 900, rise: 90, spread: 70, fall: 40, size: 14, staggerMs: 120 },
+  sparkles: { count: 12, lifeMs: 520, radius: 70, size: 14, color: 0xffe27a },
+  quick: { count: 8, lifeMs: 220, radius: 38, size: 10 },
+  glowMs: 600,
+  jackpotGlow: 120,
+  /** A 신화 drop's sparkles: red, like its label and pillar. */
+  mythicColor: 0xff6a5a,
+  /** A 우두머리, 키메라 or 도망자 down: this many coins. */
+  bossCoins: 24,
+  /** A new best on 내 기록: coins over the score, a moment after the screen opens. */
+  recordCoins: 30,
+  recordDelayMs: 250,
+} as const;
+
 export const ORB_FX = {
-  /** How long the 구슬 takes to reach the weapon's cell. */
-  flyMs: 220,
+  /** How long the 구슬 takes to reach the weapon's cell (0.127: shorter — a 구슬 is used again and again). */
+  flyMs: 120,
   /** The burst where it lands, in the 구슬's own colour. */
-  burstMs: 300,
+  burstMs: 160,
   /** How long the lines it changed stay lit once the screen is drawn again. */
   highlightMs: 1500,
   /** How strongly they are lit to begin with. */
@@ -640,9 +666,16 @@ export const MENU = {
   /** Six rows have to fit under the logo, so the buttons are compact. */
   buttonHeight: 40,
   buttonGap: 8,
-  /** 오늘의 규칙's line (0.126): over the first row on the title, this far above it; in the village, this far above the bottom. */
+  /** 예언's line (0.126) where there is no room for its plate: over the first row, this far above it; in the village, this far above the bottom. */
   dailyLineAboveRows: 16,
   dailyLineFromBottom: 50,
+  /**
+   * 예언's plate (0.127, the user's ask: easy to see on the main screen): a
+   * framed card with the date and a line a rule. Over the menu when the
+   * screen is tall enough, else in the top-left corner beside the logo
+   * when that leaves `minCornerWidth`, else the one line above.
+   */
+  prophecy: { width: 420, height: 104, gap: 10, minCornerWidth: 230, pad: 8, pulseMs: 900 },
   /** Side of one logo pixel, in screen px. */
   logoPixel: 6,
   /** Roughly how tall the baked logo comes out, for centring the title. */

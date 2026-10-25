@@ -92,13 +92,13 @@ export class MenuScene extends Phaser.Scene {
     const { width, height } = this.scale;
 
     // 생존자 마을 on the dev server (VILLAGE.devOnly); the menu everywhere else.
-    this.dailyLineY = undefined;
+    this.prophecySpot = undefined;
     if (villageOn()) {
       this.buildVillage();
     } else {
       this.buildMenu(width, height);
     }
-    this.addDailyLine(width, this.dailyLineY ?? height - MENU.dailyLineFromBottom);
+    this.addProphecy(width, height);
 
     // The title is drawn before the account is known; when it turns out to be
     // the admin's (or stops being), the 밸런스 icon comes or goes.
@@ -149,36 +149,82 @@ export class MenuScene extends Phaser.Scene {
     bgm.start(this);
   }
 
-  /** 오늘의 규칙 (0.126): what a run started now plays under, one line over the hint. Public for tests. */
+  /**
+   * 예언 (0.126; a plate since 0.127): what a run started now plays under.
+   * `dailyLine` is its words — the plate's rules, or the one line where
+   * there is no room for a plate. Public for tests.
+   */
   public dailyLine?: Phaser.GameObjects.Text;
-  /** Today's rules redrawn and reworded, after the dials they read have moved. */
+  public prophecyTitle?: Phaser.GameObjects.Text;
+  private prophecyFrame?: Phaser.GameObjects.Rectangle;
+  /** Where the screen leaves room for it, worked out while the menu is laid. */
+  private prophecySpot?: { readonly x: number; readonly y: number; readonly w: number; readonly plate: boolean };
+
+  /** The prophecy reworded, after the dials it reads have moved. */
   private refreshDailyLine(): void {
     const rules = dailyRules.today();
-    if (this.dailyLine && rules) {
-      this.dailyLine.setScale(1).setText(dailyRuleText(rules).short);
-      fitText(this.dailyLine, this.scale.width);
-    }
-  }
-
-  /** Where the menu leaves room for it: just over the first row (the village puts it at the bottom). */
-  private dailyLineY?: number;
-  private addDailyLine(width: number, y: number): void {
-    const rules = dailyRules.today();
-    if (!rules) {
-      this.dailyLine = undefined;
+    if (!this.dailyLine || !rules) {
       return;
     }
+    const text = dailyRuleText(rules);
+    const room = this.prophecySpot?.plate ? this.prophecySpot.w - MENU.prophecy.pad * 2 : this.scale.width - 40;
+    this.dailyLine.setScale(1).setText(this.prophecySpot?.plate ? text.lines.join('\n') : text.short);
+    fitText(this.dailyLine, room, 0);
+  }
+
+  private addProphecy(width: number, height: number): void {
+    this.dailyLine = undefined;
+    this.prophecyTitle = undefined;
+    this.prophecyFrame = undefined;
+    const rules = dailyRules.today();
+    if (!rules) {
+      return;
+    }
+    const spot = this.prophecySpot ?? { x: width / 2, y: height - MENU.dailyLineFromBottom, w: width - 32, plate: false };
+    const text = dailyRuleText(rules);
+    if (!spot.plate) {
+      this.dailyLine = fitText(
+        this.add
+          .text(spot.x, spot.y, text.short, { fontFamily: 'system-ui, sans-serif', fontSize: TEXT.size.hint, color: COLORS.daily })
+          .setOrigin(0.5)
+          .setDepth(DEPTH.ui),
+        width,
+      );
+      return;
+    }
+    const { height: h, pad, pulseMs } = MENU.prophecy;
+    const top = spot.y - h / 2;
+    this.prophecyFrame = this.add
+      .rectangle(spot.x, spot.y, spot.w, h, COLORS.panel, 0.9)
+      .setStrokeStyle(2, COLORS.dailyFill, 1)
+      .setDepth(DEPTH.ui);
+    // A slow glow on the frame, so the eye finds it.
+    this.tweens.add({ targets: this.prophecyFrame, strokeAlpha: 0.35, duration: pulseMs, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+    this.prophecyTitle = fitText(
+      this.add
+        .text(spot.x, top + pad, text.title, { fontFamily: 'system-ui, sans-serif', fontSize: TEXT.size.label, color: COLORS.daily })
+        .setOrigin(0.5, 0)
+        .setDepth(DEPTH.ui + 1),
+      spot.w - pad * 2,
+      0,
+    );
     this.dailyLine = fitText(
       this.add
-        .text(width / 2, y, dailyRuleText(rules).short, {
+        .text(spot.x, top + pad + this.prophecyTitle.displayHeight + 4, text.lines.join('\n'), {
           fontFamily: 'system-ui, sans-serif',
           fontSize: TEXT.size.hint,
-          color: COLORS.daily,
+          color: COLORS.text,
+          align: 'center',
         })
-        .setOrigin(0.5)
-        .setDepth(DEPTH.ui),
-      width,
+        .setOrigin(0.5, 0)
+        .setDepth(DEPTH.ui + 1),
+      spot.w - pad * 2,
+      0,
     );
+    // The frame is as tall as what it holds (a font's lines run taller than
+    // their size), its top where the screen left room for it.
+    const held = this.dailyLine.y + this.dailyLine.displayHeight + pad - top;
+    this.prophecyFrame.setSize(spot.w, held).setPosition(spot.x, top + held / 2);
   }
 
   /** The title as a list under the logo, with the corner icons — the title everywhere but the village. */
@@ -194,12 +240,28 @@ export class MenuScene extends Phaser.Scene {
     // First place on the board takes a line under the byline, once there is one.
     // The line is kept even before anyone is on the board: the shared board
     // arrives a moment later, and the menu must not jump when it does.
-    const blockHeight = MENU.logoBlockHeight + MENU.championGap + MENU.podiumGap;
+    // 예언 (0.127): on a tall screen its plate joins the block, over the rows.
+    const prophesied = dailyRules.today() !== null;
+    const tall = height >= MENU.shortHeight;
+    const plateRoom = prophesied && tall ? MENU.prophecy.height + MENU.prophecy.gap : 0;
+    const blockHeight = MENU.logoBlockHeight + MENU.championGap + MENU.podiumGap + plateRoom;
     const top = centredTop(height, blockHeight + gap + listHeight);
 
-    this.addLogo(width, top + MENU.logoHeight / 2);
-    // 오늘의 규칙 sits in the gap over the first row, clear of the first-place line.
-    this.dailyLineY = top + blockHeight + gap - MENU.dailyLineAboveRows;
+    const logo = this.addLogo(width, top + MENU.logoHeight / 2);
+    if (prophesied) {
+      const { width: plateW, height: plateH, minCornerWidth } = MENU.prophecy;
+      const side = (width - logo.displayWidth) / 2 - 24;
+      if (tall) {
+        this.prophecySpot = { x: width / 2, y: top + blockHeight - plateH / 2, w: Math.min(width - 32, plateW), plate: true };
+      } else if (side >= minCornerWidth) {
+        // Short and wide: beside the logo, in the top-left corner.
+        const w = Math.min(side, plateW);
+        this.prophecySpot = { x: 16 + w / 2, y: 16 + plateH / 2, w, plate: true };
+      } else {
+        // No room for a plate: one line in the gap over the first row.
+        this.prophecySpot = { x: width / 2, y: top + blockHeight + gap - MENU.dailyLineAboveRows, w: width - 32, plate: false };
+      }
+    }
 
     const saved = saveGame.read();
     this.menu = new MenuList(this, {
@@ -418,7 +480,7 @@ export class MenuScene extends Phaser.Scene {
   }
 
   /** The pixel logo, drifting slowly up and down. */
-  private addLogo(width: number, y: number): void {
+  private addLogo(width: number, y: number): Phaser.GameObjects.Image {
     const logo = this.add.image(width / 2, y, TEXTURES.logo).setDepth(DEPTH.ui);
 
     // It is baked at a fixed pixel size, which is wider than a phone.
@@ -447,6 +509,7 @@ export class MenuScene extends Phaser.Scene {
       .setDepth(DEPTH.ui);
 
     this.addChampion(width, bylineY + MENU.championGap);
+    return logo;
   }
 
   /**

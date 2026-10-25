@@ -29,6 +29,11 @@ export interface SkillPickData {
    * of them: a 룬 found is let go (0.79).
    */
   readonly discard?: { readonly label: string; readonly onDiscard: () => void };
+  /**
+   * 예언 (0.127, the user's ask): the day's banned skill, shown as a card of
+   * its own after the rest — greyed, never taken — with the prophecy over it.
+   */
+  readonly prophecy?: { readonly skill: SkillId; readonly title: string; readonly lines: readonly string[] };
 }
 
 const LEFT_CODES = ['KeyA', 'ArrowLeft'];
@@ -77,6 +82,8 @@ export class SkillPickScene extends Phaser.Scene {
   public columns = 1;
   /** The 버리기 button, when the choice offers one. Public for tests. */
   public discardButton?: Phaser.GameObjects.Rectangle;
+  /** The banned skill's card and the prophecy written over it (예언). Public for tests. */
+  public bannedCard?: { readonly skill: SkillId; readonly panel: Phaser.GameObjects.Rectangle; readonly words: Phaser.GameObjects.Text };
   private unlocked = false;
   private picked = false;
 
@@ -91,6 +98,7 @@ export class SkillPickScene extends Phaser.Scene {
     this.picked = false;
     this.unlocked = false;
     this.discardButton = undefined;
+    this.bannedCard = undefined;
   }
 
   public create(): void {
@@ -107,7 +115,8 @@ export class SkillPickScene extends Phaser.Scene {
     // As many across as fit at 150 wide (at most three, the way the cards
     // read best), in as many rows as that takes; a card too short for its
     // picture over its words lays them side by side instead.
-    const count = this.payload.options.length;
+    // The prophecy's card takes a place in the grid, after the cards that can be taken.
+    const count = this.payload.options.length + (this.payload.prophecy ? 1 : 0);
     const usable = width - SIDE_MARGIN * 2;
     const columns = Math.max(1, Math.min(3, count, Math.floor((usable + CARD_GAP) / (150 + CARD_GAP))));
     const rows = Math.ceil(count / columns);
@@ -152,10 +161,21 @@ export class SkillPickScene extends Phaser.Scene {
       const y = firstY + row * (cardHeight + CARD_GAP);
       return this.buildCard(index, skill, x, y, cardWidth, cardHeight, compact);
     });
+    const slotOf = (index: number): { x: number; y: number } => {
+      const row = Math.floor(index / columns);
+      const inRow = Math.min(columns, count - row * columns);
+      return {
+        x: centerX + ((index % columns) - (inRow - 1) / 2) * (cardWidth + CARD_GAP),
+        y: firstY + row * (cardHeight + CARD_GAP),
+      };
+    };
+    const { prophecy } = this.payload;
+    if (prophecy) {
+      const at = slotOf(this.payload.options.length);
+      this.buildBannedCard(prophecy, at.x, at.y, cardWidth, cardHeight);
+    }
 
-    let lastBottom = this.cards.length
-      ? this.cards[this.cards.length - 1]!.y + cardHeight / 2
-      : firstY;
+    let lastBottom = count > 0 ? slotOf(count - 1).y + cardHeight / 2 : firstY;
     if (this.payload.discard) {
       lastBottom = this.addDiscard(centerX, lastBottom + 12 + DISCARD_H / 2, this.payload.discard.label) + DISCARD_H / 2;
     }
@@ -222,6 +242,65 @@ export class SkillPickScene extends Phaser.Scene {
     plate.on(Phaser.Input.Events.GAMEOBJECT_POINTER_DOWN, () => this.discard());
     this.discardButton = plate;
     return y;
+  }
+
+  /**
+   * The day's banned skill (예언): its card dimmed under a red edge, its
+   * picture greyed, and the prophecy laid over it in a framed note.
+   */
+  private buildBannedCard(
+    prophecy: NonNullable<SkillPickData['prophecy']>,
+    x: number,
+    y: number,
+    w: number,
+    h: number,
+  ): void {
+    const panel = this.add
+      .rectangle(x, y, w, h, COLORS.panel, 0.6)
+      .setStrokeStyle(2, COLORS.accentFill, 0.9)
+      .setDepth(DEPTH.ui);
+    // The prophecy fills the card in a framed note; the skill's picture,
+    // greyed, sits in its corner so the card still says whose it is.
+    const noteTop = y - h / 2 + 6;
+    const noteH = h - 12;
+    this.add
+      .rectangle(x, noteTop + noteH / 2, w - 12, noteH, 0x1a1208, 0.92)
+      .setStrokeStyle(2, COLORS.dailyFill, 1)
+      .setDepth(DEPTH.ui + 2);
+    const icon = SKILL_ICONS[prophecy.skill];
+    const iconSize = Math.min(SKILL_ICON_SIZE.drop, 28);
+    if (icon && this.textures.exists(icon.key)) {
+      this.add
+        .image(x - w / 2 + 12 + iconSize / 2, noteTop + 6 + iconSize / 2, icon.key)
+        .setDisplaySize(iconSize, iconSize)
+        .setTint(0x8a8f9c)
+        .setAlpha(0.7)
+        .setDepth(DEPTH.ui + 3);
+    }
+    const title = fitText(
+      this.add
+        .text(x, noteTop + 8, prophecy.title, { fontFamily: 'system-ui, sans-serif', fontSize: TEXT.size.hint, color: COLORS.daily })
+        .setOrigin(0.5, 0)
+        .setDepth(DEPTH.ui + 3),
+      w - 24 - iconSize * 2,
+      0,
+    );
+    const words = this.add
+      .text(x, Math.max(noteTop + 12 + title.displayHeight, noteTop + 8 + iconSize), prophecy.lines.join('\n'), {
+        fontFamily: 'system-ui, sans-serif',
+        fontSize: TEXT.size.small,
+        color: COLORS.text,
+        align: 'center',
+        wordWrap: { width: w - 24 },
+      })
+      .setOrigin(0.5, 0)
+      .setDepth(DEPTH.ui + 3);
+    // Shrunk to the note if the card is short (a phone lying down).
+    const room = noteTop + noteH - 4 - words.y;
+    if (words.displayHeight > room && words.displayHeight > 0) {
+      words.setScale(Math.max(0.5, room / words.displayHeight));
+    }
+    this.bannedCard = { skill: prophecy.skill, panel, words };
   }
 
   /** Takes a card. Public so a test can take one without hunting for it. */

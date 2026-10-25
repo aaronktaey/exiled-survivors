@@ -456,7 +456,9 @@ Read `git log` for what changed and when. What is not in the log:
   To look at the live database: `npm run db -- "SELECT * FROM daily_best"`
   (read-only queries only, unless the user asks; the dashboard's D1 console
   works too).
-- **오늘의 규칙 (0.126, the user's design, 2026-10-25).** Every ranking day
+- **예언 — 오늘의 규칙 until 0.127 (0.126, the user's design, 2026-10-25).**
+  Shown as 오늘의 예언 (Today's prophecy · 今日の予言 · 今日预言); the code
+  still says daily rules. Every ranking day
   from `DAILY_RULES.since` (2026-10-26 05:00 KST) lays three rules on every
   run started that day: one banned skill (never offered — `offeredSkills`),
   one banned 재능 (its 파편 never drop — weight 0 in the `shardWeight` hook,
@@ -476,9 +478,15 @@ Read `git log` for what changed and when. What is not in the log:
   run's set (module scope): GameScene.init `begin`s it with the day the run
   started (`SavedRun.rulesDay`, so a run crossing 05:00 keeps its rules), and
   Enemy (hp, speed at spawn; contact; the 사수's shot speed; hop distance) and
-  SpawnDirector (rare chance) ask `enemyScale(kind, stat)`. Shown on the title
-  (`MenuScene.dailyLine`, over the first row; the village's at the bottom),
-  the first skill's subtitle, and a HUD debuff icon (`TEXTURES.dailyRules`).
+  SpawnDirector (rare chance) ask `enemyScale(kind, stat)`. Shown (0.127,
+  the user's ask: easy to see) on the title as a framed plate (`MENU.prophecy`:
+  over the menu when the screen is `shortHeight` or taller, else in the
+  top-left corner beside the logo, else one line over the first row; the
+  village's at the bottom; `dailyLine` is its words, the frame grows to
+  fit), on the first skill's screen as the banned skill's own card, greyed
+  and not takeable, with the prophecy written over it
+  (`SkillPickData.prophecy`, `SkillPickScene.bannedCard`), in the start
+  pick's subtitle, and as a HUD debuff icon (`TEXTURES.dailyRules`).
   The run hands in `RunDetail.rules`; the Worker refuses one that held that
   day's banned skill (`brokeDailyRules`: the run's day if today or
   yesterday, else today's). test-api pins the day with the test-only
@@ -486,6 +494,18 @@ Read `git log` for what changed and when. What is not in the log:
   a page sets `window.__dailyOn` (`__dailyDay` picks the day); the dev
   server shows the first day's rules before it starts. `window.dailyRules`
   is the dev handle.
+- **도파민 (0.127, the user's ask).** `systems/Celebrate.ts`: `coinShower`,
+  `sparkleBurst`, `glowPulse` and `jackpot` (all three), short-lived Images
+  on tweens, numbers in `CELEBRATE` (visuals.ts), textures `TEXTURES.coin` and
+  `sparkle` drawn at boot. Big moments: a 신화 drop lands (`CombatSystem.land`
+  — a 희귀 one only sparkles), a 우두머리 · 키메라 · 도망자 down
+  (`killEnemy`), a 각성 (`celebrateMastery`), a 재능의 덩어리
+  (`gainShard`, count > 1), a new best on 내 기록 (`GameOverData.newBest`:
+  the badge takes the score caption's place, coins over it). Moments that
+  come round again and again get only the `quick` sparkle and short
+  timings — the user's rule: an upgrade picked (`onUpgradePicked`), a 파편,
+  a 합성 (COMBINE_FX under a second in all) and a 구슬 (ORB_FX). A new
+  exciting moment should use these, and a new repeated one stay quick.
 - **랭킹 검토 (the admin's, 0.62).** Every run handed in carries a 판 내역
   (`RunDetail`, built by `GameScene.runDetail`: build, version, kills by
   kind, 뼈다귀, weapon, skills, 패시브, resumed), kept by the Worker in

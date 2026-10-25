@@ -37,6 +37,7 @@ import {
   orbShort,
   t,
 } from '@/i18n';
+import { sparkleBurst } from '@/systems/Celebrate';
 import { bones } from '@/systems/Bones';
 import {
   dropTierFor,
@@ -1278,6 +1279,8 @@ export class InventoryScene extends Phaser.Scene {
         rays.destroy();
         if (outcome.success) {
           succeed(core, halo);
+          // A 합성 that took: a blink of gold sparkles (0.127 — short, it comes round often).
+          sparkleBurst(this, { x: target.x, y: target.y, depth: DEPTH.ui + 30 }, fx.success, true);
         } else {
           fail(core, halo);
         }

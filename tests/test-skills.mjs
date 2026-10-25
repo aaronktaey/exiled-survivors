@@ -496,7 +496,8 @@ await run(`
   window.__fugitiveHp = f.hp;
   return 1;
 `);
-await sleep(1200);
+// Until a tick has landed (or three seconds): a fixed wait came up short with four Chromes running.
+await cdp.until(`window.__fugitive.hp < window.__fugitiveHp`, 3000, 50);
 const calm = await run(`
   const f = window.__fugitive;
   const out = { lost: window.__fugitiveHp - f.hp, fleeing: f.fleeTo !== undefined };

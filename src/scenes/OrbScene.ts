@@ -16,6 +16,7 @@ import {
   type OrbSpec,
 } from '@/config';
 import { fill, gearTitle, orbDetail, orbName, orbShort, t } from '@/i18n';
+import { sparkleBurst } from '@/systems/Celebrate';
 import { InventoryScene } from '@/scenes/InventoryScene';
 import { addBackButton, type BackButton } from '@/systems/BackButton';
 import { MAX_AFFIX_LINES, gear, orbApplied, type GearItem } from '@/systems/Gear';
@@ -425,6 +426,9 @@ export class OrbScene extends Phaser.Scene {
     });
     if (this.destroyed) {
       this.cameras.main.shake(180, 0.006);
+    } else {
+      // A blink of sparkles in the 구슬's colour (0.127 — short, a 구슬 is used again and again).
+      sparkleBurst(this, { x: at.x, y: at.y, depth: DEPTH.ui + 6 }, tint, true);
     }
   }
 

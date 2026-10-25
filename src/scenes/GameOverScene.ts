@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 
-import {
+import { CELEBRATE,
   COLORS,
   DEPTH,
   ENEMY_KINDS,
@@ -17,6 +17,7 @@ import {
 import { guideValues } from '@/content/guide';
 import { BoneScene } from '@/scenes/BoneScene';
 import { fill, t } from '@/i18n';
+import { jackpot } from '@/systems/Celebrate';
 import { centredTop, fitText, fitWidth } from '@/systems/Layout';
 import { MenuList } from '@/systems/MenuList';
 import { ranking } from '@/systems/Ranking';
@@ -29,6 +30,8 @@ import type { RunDetail } from '@/systems/Ranking';
 export interface GameOverData {
   /** What the run amounted to, read out as a table. */
   readonly summary: RunSummary;
+  /** Better than every run on 내 기록 before it (0.127): coins over the score. */
+  readonly newBest?: boolean;
   readonly level: number;
   readonly survivedMs: number;
   /** The developer tools changed this run: it is not offered to the ranking. */
@@ -104,6 +107,36 @@ export class GameOverScene extends Phaser.Scene {
     this.payload = data;
   }
 
+  /** A new best on 내 기록 (0.127, 도파민): a badge by the score and gold thrown over it. */
+  private celebrateRecord(): void {
+    this.recordLabel = undefined;
+    const score = this.scoreText;
+    if (!this.payload.newBest || !score) {
+      return;
+    }
+    const x = this.table.x + score.x;
+    const y = this.table.y + score.y + score.displayHeight / 2;
+    // The badge takes the caption's place over the score.
+    const caption = this.scoreCaption;
+    caption?.setVisible(false);
+    this.recordLabel = this.add
+      .text(x, this.table.y + (caption?.y ?? score.y - 22) - 2, t().gameOver.newBest, {
+        fontFamily: 'system-ui, sans-serif',
+        fontSize: TEXT.size.label,
+        color: '#ffd23f',
+        stroke: '#3a2600',
+        strokeThickness: 4,
+      })
+      .setOrigin(0.5, 0)
+      .setDepth(DEPTH.ui + 6);
+    this.tweens.add({ targets: this.recordLabel, scale: 1.12, duration: 420, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+    this.time.delayedCall(CELEBRATE.recordDelayMs, () => jackpot(this, { x, y, depth: DEPTH.ui + 5 }, 0xffd23f, CELEBRATE.recordCoins));
+  }
+
+  /** The score, big; a new best throws coins over it (0.127). Public for tests. */
+  public scoreText?: Phaser.GameObjects.Text;
+  public recordLabel?: Phaser.GameObjects.Text;
+  private scoreCaption?: Phaser.GameObjects.Text;
   public create(): void {
     this.backButton = addBackButton(this, () => this.toTitle());
     const { width, height } = this.scale;
@@ -156,6 +189,7 @@ export class GameOverScene extends Phaser.Scene {
       .setDepth(DEPTH.ui + 1);
 
     this.table.setPosition(figuresX, wide ? bodyTop + Math.max(0, (sideHeight - figuresHeight) / 2) : bodyTop);
+    this.celebrateRecord();
     const sideTop = wide ? bodyTop + Math.max(0, (figuresHeight - sideHeight) / 2) : bodyTop + figuresHeight + GAME_OVER.tableGap;
     tip.setPosition(sideX, sideTop);
 
@@ -262,10 +296,11 @@ export class GameOverScene extends Phaser.Scene {
     let y = 0;
 
     // The score, large, with its label and the kills under it.
-    text(0, y, copy.damageDealt, TEXT.size.small, COLORS.muted);
+    this.scoreCaption = text(0, y, copy.damageDealt, TEXT.size.small, COLORS.muted);
     y += 20;
     const score = text(0, y, `★ ${grouped(summary.score)}`, TEXT.size.banner, COLORS.gearText);
     fitText(score, width, 0);
+    this.scoreText = score;
     y += score.displayHeight + 2;
     text(0, y, fill(copy.scoreCaption, { kills: grouped(summary.kills) }), TEXT.size.hint, COLORS.muted);
     y += 22 + GAME_OVER.blockGap;
