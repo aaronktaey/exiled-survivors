@@ -466,7 +466,13 @@ Read `git log` for what changed and when. What is not in the log:
   day's own hash, never the day before's pick; the pools are listed there
   (test-daily checks they match SKILL_BASE and TALENT_SHARD.stats — a new
   skill goes in `DAILY_RULES.skills`). The enemy buffs are only the eight the
-  user picked; a new one needs their say. `systems/DailyRules.ts` holds the
+  user picked; a new one needs their say. Each buff's `scale` and `on` are dials on the
+  밸런스 panel's 적 강화 tab (0.127, the user's ask; tab `daily`, kind
+  `toggle` — a press flips it, 켬/끔): the draw skips a buff that is off (the
+  days it fell on draw again from the rest; none on → no enemy rule) and
+  every text players read is built from the live `scale`. The title's line
+  redraws when the shared values arrive. The Worker reads the table without
+  the overrides — it only checks the banned skill, which is drawn apart. `systems/DailyRules.ts` holds the
   run's set (module scope): GameScene.init `begin`s it with the day the run
   started (`SavedRun.rulesDay`, so a run crossing 05:00 keeps its rules), and
   Enemy (hp, speed at spawn; contact; the 사수's shot speed; hop distance) and
@@ -805,6 +811,7 @@ Read `git log` for what changed and when. What is not in the log:
   the admin's draft (`TUNING.draftKey`, in `ACCOUNT.localOnly`, applied at
   once). `PUT /api/balance` is admin-only (`ADMIN_USERS`) and checks paths and
   ranges (server/tuning.ts, D1 table `tuning`, migration 0005).
+  Four tabs since 0.127: 스킬 · 적 · 드랍 · 적 강화 (오늘의 규칙's buffs).
   `TuningScene` is the panel: the title's 밸런스 icon and a pause row, both
   only when `devToolsAllowed()`. Most numbers are read where used, so a turn
   needs nothing more; a skill's stats were copied on pickup, so

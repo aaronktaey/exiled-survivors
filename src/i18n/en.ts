@@ -98,6 +98,7 @@ export const en: Strings = {
     bannedTalent: 'Banned talent: {talent} (its shards do not drop)',
     enemy: 'Stronger enemy: {enemy}',
     titleLine: 'Today’s rules {date} · no {skill} · no {talent} talent · {enemy}',
+    titleLineNoEnemy: 'Today’s rules {date} · no {skill} · no {talent} talent',
     startBanned: 'Banned today: {skill}',
     buffs: {
       hp: '{kind} health +{n}%',
@@ -137,7 +138,7 @@ export const en: Strings = {
   tuning: {
     title: 'Balance',
     icon: 'Balance',
-    tabs: { skills: 'Skills', enemies: 'Enemies', drops: 'Drops' },
+    tabs: { skills: 'Skills', enemies: 'Enemies', drops: 'Drops', daily: 'Enemy buffs' },
     common: 'Every skill',
     unlockAt: '{kind} appears',
     fields: { damage: 'Damage', attackSpeed: 'Attacks/s', range: 'Range', projectileSpeed: 'Shot speed', chainCount: 'Chains', pierceCount: 'Pierce', orbCount: 'Orbs', orbitSpeed: 'Orbit speed', blastRadius: 'Blast radius', recastChance: 'Recast chance', droneCount: 'Drones', attackCoeff: 'Weapon attack coeff.', damageScale: 'Damage ×' },
@@ -225,6 +226,11 @@ export const en: Strings = {
     },
     detailDamageScale: 'A damage multiplier on {skill} alone: makes this one skill stronger or weaker without touching its base damage. 1 is neutral.',
     detailAttackCoeff: 'How much of the weapon’s attack {skill} takes. Its damage is base damage + weapon attack × this, then increased and amplified. At 1 it takes the weapon’s attack whole.',
+    detailDailyScale: 'What the stat is multiplied by on a day whose rules draw “{buff}”. 1.5 is +50%. The number players see on the title and in battle follows it.',
+    detailDailyOn: 'Whether today’s rules may draw “{buff}”. Off, no day gets it, and those days draw again from the ones that are on.',
+    dailyOn: '{buff} · in use',
+    on: 'On',
+    off: 'Off',
     detailUnlock: 'When {kind} first appears: it joins the spawn list once the run clock passes this.',
     detailOrb: '{name} — the chance an ordinary kill drops one. A rare raises it by its affixes, a Boss by its bonus.',
     detailBone: '{name} — the chance an ordinary kill drops one. Rares and Bosses multiply it by their bonus.',

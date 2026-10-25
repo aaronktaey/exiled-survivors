@@ -18,6 +18,7 @@ import {
   ALTAR,
   BALANCE,
   BONES,
+  DAILY_RULES,
   BOSS,
   DIALS,
   DIAL_PATHS,
@@ -46,7 +47,7 @@ import { devToolsAllowed } from '@/systems/DevAccess';
 type Listener = (path: string, was: number, now: number) => void;
 
 const ROOTS: Record<string, unknown> = {
-  ALTAR, BALANCE, BONES, BOSS, DIFFICULTY, ENEMY_KINDS, GEAR, MAGNET, MANGO, ORBS, PLAYER, POTION, RARE,
+  ALTAR, BALANCE, BONES, BOSS, DAILY_RULES, DIFFICULTY, ENEMY_KINDS, GEAR, MAGNET, MANGO, ORBS, PLAYER, POTION, RARE,
   SKILL_BASE, SKILL_DROP, SKILL_PICK, SPAWN, SPAWN_TABLE, UPGRADE_PERCENT,
 };
 
@@ -122,7 +123,7 @@ class TuningStore {
     const max = Math.max(min + 1e-9, dial.max ?? Math.max(base * (dial.maxFactor ?? 3), min + 1));
     // A round notch — 1, 0.01, 0.0001 — about a two-hundredth of the sweep,
     // so a turned value reads as a number someone would type.
-    const step = dial.kind === 'count' ? 1 : Math.max(dial.kind === 'ms' ? 10 : 1e-6, 10 ** Math.floor(Math.log10((max - min) / 200)));
+    const step = dial.kind === 'count' || dial.kind === 'toggle' ? 1 : Math.max(dial.kind === 'ms' ? 10 : 1e-6, 10 ** Math.floor(Math.log10((max - min) / 200)));
     return { min, max, step };
   }
 
@@ -134,7 +135,7 @@ class TuningStore {
     const dial = DIALS.find((d) => d.path === path)!;
     const { min, max, step } = this.range(dial);
     let next = Math.min(max, Math.max(min, value));
-    next = dial.kind === 'count' ? Math.round(next) : Math.round(next / step) * step;
+    next = dial.kind === 'count' || dial.kind === 'toggle' ? Math.round(next) : Math.round(next / step) * step;
     next = Number(next.toPrecision(6));
     if (Math.abs(next - this.sharedOf(path)) < 1e-12) {
       delete this.draft[path];

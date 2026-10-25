@@ -182,11 +182,17 @@ export function dailyRuleText(rules: DailyRuleSet): { title: string; lines: stri
   const copy = t().daily;
   const skill = skillName(rules.bannedSkill);
   const talent = t().shard.stats[rules.bannedTalent];
-  const enemy = dailyEnemyText(rules.enemyBuff);
+  const enemy = rules.enemyBuff ? dailyEnemyText(rules.enemyBuff) : null;
   return {
     title: fill(copy.title, { date: dailyDate(rules.day) }),
-    lines: [fill(copy.bannedSkill, { skill }), fill(copy.bannedTalent, { talent }), fill(copy.enemy, { enemy })],
-    short: fill(copy.titleLine, { date: dailyDate(rules.day), skill, talent, enemy }),
+    lines: [
+      fill(copy.bannedSkill, { skill }),
+      fill(copy.bannedTalent, { talent }),
+      ...(enemy ? [fill(copy.enemy, { enemy })] : []),
+    ],
+    short: enemy
+      ? fill(copy.titleLine, { date: dailyDate(rules.day), skill, talent, enemy })
+      : fill(copy.titleLineNoEnemy, { date: dailyDate(rules.day), skill, talent }),
   };
 }
 

@@ -102,6 +102,7 @@ export const ko: Strings = {
     bannedTalent: '금지 재능: {talent} (파편이 나오지 않음)',
     enemy: '강화된 적: {enemy}',
     titleLine: '오늘의 규칙 {date} · 금지 {skill} · 금지 재능 {talent} · {enemy}',
+    titleLineNoEnemy: '오늘의 규칙 {date} · 금지 {skill} · 금지 재능 {talent}',
     startBanned: '오늘 금지: {skill}',
     buffs: {
       hp: '{kind} 체력 +{n}%',
@@ -141,7 +142,7 @@ export const ko: Strings = {
   tuning: {
     title: '밸런스',
     icon: '밸런스',
-    tabs: { skills: '스킬', enemies: '적', drops: '드랍' },
+    tabs: { skills: '스킬', enemies: '적', drops: '드랍', daily: '적 강화' },
     common: '모든 스킬 공통',
     unlockAt: '{kind} 등장',
     fields: { damage: '피해', attackSpeed: '초당 공격', range: '사거리', projectileSpeed: '투사체 속도', chainCount: '연쇄', pierceCount: '관통', orbCount: '구체 수', orbitSpeed: '회전 속도', blastRadius: '폭발 범위', recastChance: '재시전 확률', droneCount: '드론 수', attackCoeff: '무기 공격력 계수', damageScale: '피해 배율' },
@@ -229,6 +230,11 @@ export const ko: Strings = {
     },
     detailDamageScale: '{skill}에만 곱해지는 피해 배율입니다. 기본 피해는 그대로 두고 이 스킬만 강하게 또는 약하게 만들 때 씁니다. 1이 기본입니다.',
     detailAttackCoeff: '{skill}{이가} 무기 공격력을 얼마나 받는지 정하는 계수입니다. 스킬 피해는 기본 피해 + 무기 공격력 × 이 값이고, 그 위에 증가와 증폭이 곱해집니다. 1이면 무기 공격력을 그대로 받습니다.',
+    detailDailyScale: '오늘의 규칙에서 「{buff}」 강화가 뽑힌 날 그 능력치에 곱해지는 배율입니다. 1.5면 +50%입니다. 타이틀과 전투 아이콘에 보이는 수치도 이 값을 따릅니다.',
+    detailDailyOn: '「{buff}」 강화를 오늘의 규칙에서 뽑을지 정합니다. 끄면 이 강화는 어떤 날에도 나오지 않고, 그 날들은 켜진 것 중에서 다시 뽑힙니다.',
+    dailyOn: '{buff} · 사용',
+    on: '켬',
+    off: '끔',
     detailUnlock: '{kind}의 등장 시각입니다. 판 시간이 이만큼 지나야 스폰 목록에 들어갑니다.',
     detailOrb: '{name} — 일반 적을 처치했을 때 떨어질 확률입니다. 희귀 적은 속성 수만큼, 우두머리는 우두머리 보너스만큼 이 확률이 커집니다.',
     detailBone: '{name} — 일반 적을 처치했을 때 떨어질 확률입니다. 희귀 적과 우두머리는 보너스 배수가 곱해집니다.',

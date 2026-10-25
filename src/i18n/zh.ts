@@ -98,6 +98,7 @@ export const zh: Strings = {
     bannedTalent: '禁用天赋：{talent}（不掉落碎片）',
     enemy: '强化敌人：{enemy}',
     titleLine: '今日规则 {date} · 禁用 {skill} · 禁用天赋 {talent} · {enemy}',
+    titleLineNoEnemy: '今日规则 {date} · 禁用 {skill} · 禁用天赋 {talent}',
     startBanned: '今日禁用：{skill}',
     buffs: {
       hp: '{kind} 生命 +{n}%',
@@ -137,7 +138,7 @@ export const zh: Strings = {
   tuning: {
     title: '平衡',
     icon: '平衡',
-    tabs: { skills: '技能', enemies: '敌人', drops: '掉落' },
+    tabs: { skills: '技能', enemies: '敌人', drops: '掉落', daily: '敌人强化' },
     common: '所有技能通用',
     unlockAt: '{kind} 出现',
     fields: { damage: '伤害', attackSpeed: '每秒攻击', range: '射程', projectileSpeed: '投射物速度', chainCount: '连锁', pierceCount: '贯穿', orbCount: '球数', orbitSpeed: '旋转速度', blastRadius: '爆炸范围', recastChance: '重施几率', droneCount: '无人机数', attackCoeff: '武器攻击力系数', damageScale: '伤害倍率' },
@@ -225,6 +226,11 @@ export const zh: Strings = {
     },
     detailDamageScale: '只作用于{skill}的伤害倍率。在不改动基础伤害的情况下单独加强或削弱这个技能。1为基准。',
     detailAttackCoeff: '决定{skill}吸收多少武器攻击力的系数。技能伤害为基础伤害 + 武器攻击力 × 此值，之后再乘以增加和增幅。为1时完整吸收武器攻击力。',
+    detailDailyScale: '今日规则抽中「{buff}」的那天，该属性所乘的倍率。1.5 即 +50%。标题画面和战斗中显示的数值也随此值变化。',
+    detailDailyOn: '决定今日规则是否可以抽中「{buff}」。关闭后任何一天都不会出现，那些天会从开启的项目中重新抽取。',
+    dailyOn: '{buff} · 使用',
+    on: '开',
+    off: '关',
     detailUnlock: '{kind}的出现时间：对局时间超过这个值后，{kind}才会进入刷怪列表。',
     detailOrb: '{name} — 击杀普通敌人时掉落的几率。稀有敌人按属性数量提高，首领按首领加成提高。',
     detailBone: '{name} — 击杀普通敌人时掉落的几率。稀有敌人和首领会乘以加成倍率。',

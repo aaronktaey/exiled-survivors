@@ -22,8 +22,10 @@ export interface DailyEnemyBuff {
   /** The kind it lays on; `all` for every kind (the rare chance). */
   readonly kind: EnemyKind | 'all';
   readonly stat: DailyEnemyStat;
-  /** What that stat is multiplied by. */
+  /** What that stat is multiplied by — a dial on the 밸런스 panel's 적 강화 tab (0.127). */
   readonly scale: number;
+  /** 1 to be drawn, 0 never (the 적 강화 tab's switch, 0.127). */
+  readonly on: number;
 }
 
 export const DAILY_RULES = {
@@ -33,16 +35,22 @@ export const DAILY_RULES = {
   skills: ['meleeStrike', 'fireball', 'chainLightning', 'iceSpear', 'voidOrb', 'thunderStrike', 'drone', 'poisonNova'] as readonly SkillId[],
   /** The 재능 a day can ban: its 파편 stop dropping (TALENT_SHARD.stats). */
   talents: ['damage', 'attackSpeed', 'moveSpeed', 'maxHp', 'area', 'regen'] as readonly ShardStat[],
-  /** The strengthened enemies a day draws from — only the ones the user picked (2026-10-25). */
+  /**
+   * The strengthened enemies a day draws from — only the ones the user picked
+   * (2026-10-25). Each one's `scale` and `on` are dials (DIAL tab 'daily'),
+   * laid over these by everyone's 밸런스 values: what a day draws and the
+   * number players are shown both follow them. Switching one off redraws
+   * the days it would have fallen on. Keep the order — dials name them by index.
+   */
   enemyBuffs: [
-    { id: 'runnerContact', kind: 'runner', stat: 'contact', scale: 1.5 },
-    { id: 'gruntHp', kind: 'grunt', stat: 'hp', scale: 1.3 },
-    { id: 'gruntSpeed', kind: 'grunt', stat: 'speed', scale: 1.15 },
-    { id: 'bruteContact', kind: 'brute', stat: 'contact', scale: 1.5 },
-    { id: 'bruteHp', kind: 'brute', stat: 'hp', scale: 1.5 },
-    { id: 'shooterShotSpeed', kind: 'shooter', stat: 'shotSpeed', scale: 1.3 },
-    { id: 'erraticHop', kind: 'erratic', stat: 'hopDistance', scale: 1.3 },
-    { id: 'rareChance', kind: 'all', stat: 'rareChance', scale: 1.5 },
+    { id: 'runnerContact', kind: 'runner', stat: 'contact', scale: 1.5, on: 1 },
+    { id: 'gruntHp', kind: 'grunt', stat: 'hp', scale: 1.3, on: 1 },
+    { id: 'gruntSpeed', kind: 'grunt', stat: 'speed', scale: 1.15, on: 1 },
+    { id: 'bruteContact', kind: 'brute', stat: 'contact', scale: 1.5, on: 1 },
+    { id: 'bruteHp', kind: 'brute', stat: 'hp', scale: 1.5, on: 1 },
+    { id: 'shooterShotSpeed', kind: 'shooter', stat: 'shotSpeed', scale: 1.3, on: 1 },
+    { id: 'erraticHop', kind: 'erratic', stat: 'hopDistance', scale: 1.3, on: 1 },
+    { id: 'rareChance', kind: 'all', stat: 'rareChance', scale: 1.5, on: 1 },
   ] as readonly DailyEnemyBuff[],
 } as const;
 
@@ -52,7 +60,8 @@ export interface DailyRuleSet {
   readonly day: number;
   readonly bannedSkill: SkillId;
   readonly bannedTalent: ShardStat;
-  readonly enemyBuff: DailyEnemyBuff;
+  /** None when every one is switched off. */
+  readonly enemyBuff: DailyEnemyBuff | null;
 }
 
 const DAY_MS = 86_400_000;
@@ -76,10 +85,14 @@ export function dailyRulesFor(dayStart: number): DailyRuleSet | null {
   }
   const first = Math.round(DAILY_RULES.since / DAY_MS);
   const last = Math.round(dayStart / DAY_MS);
-  const pools = [DAILY_RULES.skills.length, DAILY_RULES.talents.length, DAILY_RULES.enemyBuffs.length];
+  const buffs = DAILY_RULES.enemyBuffs.filter((buff) => buff.on !== 0);
+  const pools = [DAILY_RULES.skills.length, DAILY_RULES.talents.length, buffs.length];
   let picks = [-1, -1, -1];
   for (let day = first; day <= last; day++) {
     picks = pools.map((size, i) => {
+      if (size === 0) {
+        return -1;
+      }
       let index = Math.floor(roll(day, i) * size);
       if (size > 1 && index === picks[i]) {
         index = (index + 1) % size;
@@ -91,6 +104,6 @@ export function dailyRulesFor(dayStart: number): DailyRuleSet | null {
     day: dayStart,
     bannedSkill: DAILY_RULES.skills[picks[0]!]!,
     bannedTalent: DAILY_RULES.talents[picks[1]!]!,
-    enemyBuff: DAILY_RULES.enemyBuffs[picks[2]!]!,
+    enemyBuff: buffs[picks[2]!] ?? null,
   };
 }

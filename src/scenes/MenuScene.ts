@@ -110,9 +110,13 @@ export class MenuScene extends Phaser.Scene {
       }
       this.icons.refresh();
     });
-    // Everyone's newest 밸런스 values are taken here, between runs.
+    // Everyone's newest 밸런스 values are taken here, between runs — and
+    // 오늘의 규칙's line follows them (its 적 강화 are dials, 0.127).
     tuning.settle();
     void tuning.load(this.game);
+    this.refreshDailyLine();
+    const unwatchTuning = tuning.onChange(() => this.refreshDailyLine());
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, unwatchTuning);
     const unwatchSync = cloudSave.onChange(() => this.icons.refresh());
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       unwatchAccount();
@@ -147,6 +151,15 @@ export class MenuScene extends Phaser.Scene {
 
   /** 오늘의 규칙 (0.126): what a run started now plays under, one line over the hint. Public for tests. */
   public dailyLine?: Phaser.GameObjects.Text;
+  /** Today's rules redrawn and reworded, after the dials they read have moved. */
+  private refreshDailyLine(): void {
+    const rules = dailyRules.today();
+    if (this.dailyLine && rules) {
+      this.dailyLine.setScale(1).setText(dailyRuleText(rules).short);
+      fitText(this.dailyLine, this.scale.width);
+    }
+  }
+
   /** Where the menu leaves room for it: just over the first row (the village puts it at the bottom). */
   private dailyLineY?: number;
   private addDailyLine(width: number, y: number): void {

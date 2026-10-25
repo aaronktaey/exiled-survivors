@@ -40,6 +40,30 @@ check('a day never repeats the day before’s pick, and over forty days every po
 check('the pools are the game’s own skills and 재능', draw.poolSkills === draw.tableSkills && draw.poolTalents === draw.tableTalents,
   `${draw.poolSkills} / ${draw.tableSkills}`);
 
+// --- 1b. 적 강화 on the 밸런스 panel (0.127): the number shown follows the dial; a switched-off one is never drawn ---
+const dials = await ev(`(() => {
+  const C = window.config, T = window.tuning, DAY = 86400000, first = C.rankingDayStart(C.DAILY_RULES.since);
+  const days = () => Array.from({ length: 60 }, (_, i) => C.dailyRulesFor(first + i * DAY));
+  const i = C.DAILY_RULES.enemyBuffs.findIndex((b) => b.id === 'runnerContact');
+  const buff = C.DAILY_RULES.enemyBuffs[i];
+  T.set('DAILY_RULES.enemyBuffs.' + i + '.scale', 1.8);
+  const day = days().find((r) => r.enemyBuff?.id === 'runnerContact');
+  const turned = { scale: day?.enemyBuff.scale, said: day ? window.config && day.enemyBuff.scale : null };
+  T.set('DAILY_RULES.enemyBuffs.' + i + '.on', 0);
+  const offDrawn = days().filter((r) => r.enemyBuff?.id === 'runnerContact').length;
+  const stillDrawn = days().filter((r) => r.enemyBuff).length;
+  C.DAILY_RULES.enemyBuffs.forEach((_, k) => T.set('DAILY_RULES.enemyBuffs.' + k + '.on', 0));
+  const none = C.dailyRulesFor(first);
+  T.clearDraft();
+  return { turned, offDrawn, stillDrawn, noneBuff: none ? none.enemyBuff : 'x', noneSkill: none?.bannedSkill, back: buff.scale, backOn: buff.on };
+})()`);
+check('a 적 강화 dial sets the multiplier a day lays on', dials.turned.scale === 1.8, JSON.stringify(dials.turned));
+check('a switched-off one is never drawn, and the days it fell on draw another', dials.offDrawn === 0 && dials.stillDrawn === 60,
+  `drawn ${dials.offDrawn}, days with one ${dials.stillDrawn}`);
+check('with every one off a day has no strengthened enemy, and still bans a skill', dials.noneBuff === null && !!dials.noneSkill,
+  JSON.stringify({ buff: dials.noneBuff, skill: dials.noneSkill }));
+check('and clearing the draft puts them back', dials.back !== 1.8 && dials.backOn === 1, `${dials.back} ${dials.backOn}`);
+
 // --- 2. a run under a day's rules ---
 // A day whose strengthened enemy can be read straight off a spawn: its health.
 const pick = await ev(`(() => {
@@ -103,7 +127,43 @@ const title = await ev(`(() => { const m = window.game.scene.getScene('MenuScene
   return l ? { text: l.text, inside: l.x - l.displayWidth / 2 >= 0 && l.x + l.displayWidth / 2 <= m.scale.width } : null; })()`);
 check('the title shows today’s rules in one line, inside the screen', !!title && title.inside && title.text.length > 10,
   JSON.stringify(title));
+// Turned on the panel, the number players read on the title follows (0.127).
+const shown = await ev(`(() => {
+  const C = window.config, T = window.tuning, rules = window.dailyRules.today(), m = window.game.scene.getScene('MenuScene');
+  const i = C.DAILY_RULES.enemyBuffs.indexOf(rules.enemyBuff);
+  const before = m.dailyLine.text;
+  T.set('DAILY_RULES.enemyBuffs.' + i + '.scale', 2.2);
+  const after = m.dailyLine.text;
+  T.clearDraft();
+  return { before, after, back: m.dailyLine.text };
+})()`);
+check('the title’s number follows the 적 강화 dial', /\+120%/.test(shown.after) && !/\+120%/.test(shown.before) && shown.back === shown.before,
+  JSON.stringify(shown));
 await shot('daily-02-title');
+
+// --- 4. the 적 강화 tab: a knob each, a switch that flips on a press ---
+await ev(`(() => { const m = window.game.scene.getScene('MenuScene'); m.openOverlay('TuningScene', { tab: 'daily' }); return 1; })()`);
+await cdp.until(`window.game.scene.isActive('TuningScene') && window.game.scene.getScene('TuningScene').knobs?.length > 0`, 10000, 100);
+await sleep(400);
+const tab = await ev(`(() => {
+  const s = window.game.scene.getScene('TuningScene'), C = window.config, T = window.tuning;
+  const switches = s.knobs.filter((k) => k.dial.kind === 'toggle');
+  const sw = switches[0];
+  const was = T.valueOf(sw.dial.path);
+  s.press(sw.dial);
+  const flipped = T.valueOf(sw.dial.path);
+  const reads = sw.value.text;
+  s.press(sw.dial);
+  const back = T.valueOf(sw.dial.path);
+  T.clearDraft();
+  return { knobs: s.knobs.length, want: C.DAILY_RULES.enemyBuffs.length * 2, switches: switches.length, was, flipped, back, reads,
+           labels: s.knobs.slice(0, 4).map((k) => k.label.text) };
+})()`);
+check('the 적 강화 tab has a multiplier and a switch for every strengthened enemy', tab.knobs === tab.want && tab.switches === tab.want / 2,
+  `${tab.knobs} knobs · ${tab.labels.join(' | ')}`);
+check('a press flips a switch, and it reads off', tab.was === 1 && tab.flipped === 0 && tab.back === 1 && tab.reads.length > 0,
+  JSON.stringify({ was: tab.was, flipped: tab.flipped, back: tab.back, reads: tab.reads }));
+await shot('daily-03-tab');
 
 console.log('\n=== SUMMARY ===');
 const failed = results.filter((r) => !r.p);

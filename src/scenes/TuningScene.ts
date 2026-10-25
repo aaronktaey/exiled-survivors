@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 
-import {
+import { DAILY_RULES,
   BALANCE,
   COLORS,
   DEPTH,
@@ -18,7 +18,7 @@ import {
   type GearId,
   type OrbId,
 } from '@/config';
-import { boneName, boneShort, enemyName, fill, gearName, orbName, orbShort, skillName, t } from '@/i18n';
+import { dailyEnemyText, boneName, boneShort, enemyName, fill, gearName, orbName, orbShort, skillName, t } from '@/i18n';
 import { addBackButton, type BackButton } from '@/systems/BackButton';
 import { fitText } from '@/systems/Layout';
 import { dpsFromStats } from '@/systems/Progression';
@@ -141,10 +141,12 @@ export class TuningScene extends Phaser.Scene {
     );
 
     // 스킬 · 적 · 드랍.
-    const tabs: DialTab[] = ['skills', 'enemies', 'drops'];
+    // 스킬 · 적 · 드랍 · 적 강화 (0.127).
+    const tabs: DialTab[] = ['skills', 'enemies', 'drops', 'daily'];
+    const tabGap = Math.min(104, (width - 24) / tabs.length);
     tabs.forEach((tab, i) => {
-      const x = width / 2 + (i - 1) * 104;
-      this.tabButton(`tab:${tab}`, x, 66, 96, 28, copy.tabs[tab], () => this.reopen({ tab, page: this.page }));
+      const x = width / 2 + (i - (tabs.length - 1) / 2) * tabGap;
+      this.tabButton(`tab:${tab}`, x, 66, tabGap - 8, 28, copy.tabs[tab], () => this.reopen({ tab, page: this.page }));
     });
     let y = 94;
     if (this.tab === 'skills') {
@@ -220,7 +222,11 @@ export class TuningScene extends Phaser.Scene {
     this.grid = this.add.container(0, 0).setDepth(DEPTH.ui + 1);
     this.knobs = [];
     const dials = this.dialsShown();
-    const cols = Math.max(1, Math.min(dials.length, Math.floor((width - 24) / CELL_W)));
+    let cols = Math.max(1, Math.min(dials.length, Math.floor((width - 24) / CELL_W)));
+    // 적 강화 come in pairs, a multiplier and its switch: a row holds whole pairs.
+    if (this.tab === 'daily' && cols > 1 && cols % 2 === 1) {
+      cols -= 1;
+    }
     const rows = Math.max(1, Math.floor((height - this.gridTop - 96) / CELL_H));
     // Too many for the window: drawn smaller rather than off the edge.
     const scale = Math.min(1, rows / Math.ceil(dials.length / cols));
@@ -248,7 +254,7 @@ export class TuningScene extends Phaser.Scene {
       const knob: Knob = { dial, x, y, arc, value, label, hit };
       hit.on(Phaser.Input.Events.GAMEOBJECT_POINTER_DOWN, () => {
         this.focused = i;
-        this.openZoom(dial);
+        this.press(dial);
       });
       hit.on(Phaser.Input.Events.GAMEOBJECT_POINTER_WHEEL, (_p: unknown, _dx: number, dy: number) => {
         this.focused = i;
@@ -258,6 +264,15 @@ export class TuningScene extends Phaser.Scene {
       this.grid!.add([arc, value, label, hit]);
       this.knobs.push(knob);
     });
+  }
+
+  /** A knob pressed: a switch flips (켬/끔, 0.127); any other opens magnified. Public so a test can. */
+  public press(dial: DialSpec): void {
+    if (dial.kind === 'toggle') {
+      this.turn(dial.path, tuning.valueOf(dial.path) >= 0.5 ? 0 : 1);
+      return;
+    }
+    this.openZoom(dial);
   }
 
   /** Where a value sits on the magnified dial, 0–100. */
@@ -490,6 +505,11 @@ export class TuningScene extends Phaser.Scene {
     if (root === 'BALANCE' && a === 'attackCoeff' && b) {
       return fill(copy.detailAttackCoeff, { skill: skillName(b as SkillId) });
     }
+    if (root === 'DAILY_RULES') {
+      const buff = DAILY_RULES.enemyBuffs[Number(b)];
+      const name = buff ? dailyEnemyText(buff) : dial.path;
+      return fill(dial.kind === 'toggle' ? copy.detailDailyOn : copy.detailDailyScale, { buff: name });
+    }
     if (root === 'SPAWN_TABLE') {
       const row = SPAWN_TABLE[Number(a)];
       return row ? fill(copy.detailUnlock, { kind: enemyName(row.kind) }) : '';
@@ -549,7 +569,7 @@ export class TuningScene extends Phaser.Scene {
       switch (event.code) {
         case 'Enter':
         case 'Space':
-          if (knob) this.openZoom(knob.dial);
+          if (knob) this.press(knob.dial);
           break;
         case 'ArrowLeft':
           this.focused = Math.max(0, this.focused - 1);
@@ -673,6 +693,8 @@ export class TuningScene extends Phaser.Scene {
       }
       case 'scale':
         return `×${value.toFixed(2)}`;
+      case 'toggle':
+        return value >= 0.5 ? t().tuning.on : t().tuning.off;
       case 'ms':
         return `${(value / 1000).toFixed(2)}s`;
       case 'count':
@@ -695,6 +717,13 @@ export class TuningScene extends Phaser.Scene {
     }
     if (root === 'BALANCE' && a === 'attackCoeff') {
       return copy.fields.attackCoeff;
+    }
+    // 적 강화: the buff as players read it — its number follows the dial.
+    if (root === 'DAILY_RULES') {
+      const buff = DAILY_RULES.enemyBuffs[Number(b)];
+      const name = buff ? dailyEnemyText(buff) : dial.path;
+      // The switch sits beside its multiplier: its name without the number.
+      return parts[3] === 'on' ? fill(copy.dailyOn, { buff: name.replace(/\s*\+\d+%/, '') }) : name;
     }
     if (root === 'SPAWN_TABLE') {
       const row = SPAWN_TABLE[Number(a)];

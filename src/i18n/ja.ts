@@ -98,6 +98,7 @@ export const ja: Strings = {
     bannedTalent: '禁止才能：{talent}（欠片が出ない）',
     enemy: '強化された敵：{enemy}',
     titleLine: '今日のルール {date} · 禁止 {skill} · 禁止才能 {talent} · {enemy}',
+    titleLineNoEnemy: '今日のルール {date} · 禁止 {skill} · 禁止才能 {talent}',
     startBanned: '今日の禁止：{skill}',
     buffs: {
       hp: '{kind} 体力 +{n}%',
@@ -137,7 +138,7 @@ export const ja: Strings = {
   tuning: {
     title: 'バランス',
     icon: 'バランス',
-    tabs: { skills: 'スキル', enemies: '敵', drops: 'ドロップ' },
+    tabs: { skills: 'スキル', enemies: '敵', drops: 'ドロップ', daily: '敵の強化' },
     common: '全スキル共通',
     unlockAt: '{kind} 出現',
     fields: { damage: 'ダメージ', attackSpeed: '毎秒攻撃', range: '射程', projectileSpeed: '投射物速度', chainCount: '連鎖', pierceCount: '貫通', orbCount: '球の数', orbitSpeed: '回転速度', blastRadius: '爆発範囲', recastChance: '再発動確率', droneCount: 'ドローン数', attackCoeff: '武器攻撃力係数', damageScale: 'ダメージ倍率' },
@@ -225,6 +226,11 @@ export const ja: Strings = {
     },
     detailDamageScale: '{skill}だけに掛かるダメージ倍率です。基本ダメージはそのままにこのスキルだけを強く・弱くする時に使います。1が基準です。',
     detailAttackCoeff: '{skill}が武器の攻撃力をどれだけ受け取るかを決める係数です。スキルのダメージは基本ダメージ + 武器攻撃力 × この値で、その上に増加と増幅が掛かります。1なら武器攻撃力をそのまま受け取ります。',
+    detailDailyScale: '今日のルールで「{buff}」が選ばれた日に、その能力値に掛かる倍率です。1.5なら +50%。タイトルや戦闘中に表示される数値もこの値に従います。',
+    detailDailyOn: '「{buff}」を今日のルールで選ぶかどうかを決めます。オフにするとどの日にも出ず、その日は有効なものから選び直されます。',
+    dailyOn: '{buff} · 使用',
+    on: 'オン',
+    off: 'オフ',
     detailUnlock: '{kind}の出現時刻です。プレイ時間がこれを過ぎると{kind}がスポーン表に入ります。',
     detailOrb: '{name} — 通常の敵を倒した時に落ちる確率です。レア敵は属性の数だけ、ボスはボーナス分この確率が上がります。',
     detailBone: '{name} — 通常の敵を倒した時に落ちる確率です。レア敵とボスはボーナス倍率が掛かります。',

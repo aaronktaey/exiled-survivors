@@ -2,16 +2,20 @@
  * ★ 밸런스 다이얼 — the numbers the admin's in-game panel can turn, by path
  * into the config tables (balance.ts, equipment.ts, bones.ts, passives.ts).
  *
- * Pure data, no imports: the Worker reads this too, to accept only these
+ * Pure data, importing only other pure tables (config/daily.ts): the Worker reads this too, to accept only these
  * paths when the panel's values are made everyone's (server/tuning.ts).
  * Adding a dial is a line here and its label in the locales' `tuning.labels`.
  *
  * A dial's range runs from 0 (or `min`) to `max`, or to `maxFactor` × the
  * value balance.ts gives it (3 when unset); `kind` says how it reads.
  */
+import { DAILY_RULES } from './daily';
+
 export type DialKind =
   /** A share, read as a percentage: 0.015 → 1.5%. */
   | 'chance'
+  /** On (1) or off (0): pressed, it flips (0.127). */
+  | 'toggle'
   /** A multiplier: 1.2 → ×1.20. */
   | 'scale'
   /** Milliseconds, read as seconds. */
@@ -21,7 +25,7 @@ export type DialKind =
   /** Anything else, as it is. */
   | 'number';
 
-export type DialTab = 'skills' | 'enemies' | 'drops';
+export type DialTab = 'skills' | 'enemies' | 'drops' | 'daily';
 
 export interface DialSpec {
   /** Where the value lives: `SKILL_BASE.fireball.damage`. */
@@ -72,6 +76,16 @@ const skillDials: DialSpec[] = SKILL_IDS.flatMap((skill) => [
  * common page, the 기행종, 키메라 러시, drop bonuses) stay off — a dial
  * comes back only when the user asks for that one.
  */
+/**
+ * 적 강화 (0.127, the user's ask): each of 오늘의 규칙's strengthened enemies,
+ * its multiplier and whether a day may draw it, by index into
+ * DAILY_RULES.enemyBuffs (config/daily.ts — pure, so the Worker can read it).
+ */
+const dailyDials: DialSpec[] = DAILY_RULES.enemyBuffs.flatMap((_, i) => [
+  { path: `DAILY_RULES.enemyBuffs.${i}.scale`, kind: 'scale' as const, tab: 'daily' as const, min: 1, max: 3 },
+  { path: `DAILY_RULES.enemyBuffs.${i}.on`, kind: 'toggle' as const, tab: 'daily' as const, min: 0, max: 1 },
+]);
+
 export const DIALS: readonly DialSpec[] = [
   ...skillDials,
 
@@ -120,6 +134,8 @@ export const DIALS: readonly DialSpec[] = [
   { path: 'GEAR.rustySword.fromKill', kind: 'chance', tab: 'drops', max: 0.05 },
   { path: 'GEAR.ironSword.fromKill', kind: 'chance', tab: 'drops', max: 0.05 },
   { path: 'GEAR.steelSword.fromKill', kind: 'chance', tab: 'drops', max: 0.05 },
+
+  ...dailyDials,
 ];
 
 /** Every path the panel may set — what the Worker accepts and nothing else. */

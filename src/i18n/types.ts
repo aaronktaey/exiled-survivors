@@ -183,6 +183,8 @@ export interface Strings {
     readonly enemy: string;
     /** One line for the title: {date} {skill} {talent} {enemy}. */
     readonly titleLine: string;
+    /** The same, on a day with every strengthened enemy switched off: {date} {skill} {talent}. */
+    readonly titleLineNoEnemy: string;
     /** On the first skill's cards: {skill}. */
     readonly startBanned: string;
     /** A strengthened enemy by stat: {kind} {n}. */
@@ -233,7 +235,7 @@ export interface Strings {
     readonly title: string;
     /** Under the title icon and on the pause menu. */
     readonly icon: string;
-    readonly tabs: { readonly skills: string; readonly enemies: string; readonly drops: string };
+    readonly tabs: { readonly skills: string; readonly enemies: string; readonly drops: string; readonly daily: string };
     /** The page that holds the dials for every skill at once. */
     readonly common: string;
     /** A kind's 등장 시점 dial (SPAWN_TABLE): {kind}. */
@@ -279,6 +281,13 @@ export interface Strings {
     readonly detailDamageScale: string;
     /** A skill's 무기 공격력 계수 dial (BALANCE.attackCoeff, 0.122): {skill}. */
     readonly detailAttackCoeff: string;
+    /** 적 강화 (0.127): {buff}. */
+    readonly detailDailyScale: string;
+    readonly detailDailyOn: string;
+    /** A switch's knob label: {buff}. */
+    readonly dailyOn: string;
+    readonly on: string;
+    readonly off: string;
     /** An 등장 시점 (SPAWN_TABLE) — {kind}. */
     readonly detailUnlock: string;
     /** A 구슬's, a 뼈다귀's and a sword's drop rate — {name}. */
