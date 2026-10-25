@@ -15,6 +15,32 @@ export interface PatchNote {
 
 export const PATCH_NOTES: readonly PatchNote[] = [
   {
+    version: '0.131',
+    date: '2026-10-25',
+    changes: {
+      ko: [
+        '투사체나 고리에 맞은 뒤의 무적 시간이 0.6초에서 0.2초로 줄었습니다. 회피 속성은 이 0.2초를 늘립니다.',
+        '재능 「체력회복」을 없앴습니다. 체력회복 파편은 더 이상 나오지 않고, 체력회복 재능에 쓴 포인트는 모두 돌려받아 다른 재능에 다시 쓸 수 있습니다.',
+        '보유 효과 조정: 독성폭발 포션 드랍률 20% → 10% 증폭, 공허구체 받는 접촉 피해 20% → 10% 감폭, 타격 최대 체력 +20% → +10%.',
+      ],
+      en: [
+        'The invulnerable window after a shot or ring hits you is 0.2s, down from 0.6s. Evasive still lengthens it.',
+        'The Regeneration talent is gone. Regeneration shards no longer drop, and every point spent on that talent comes back to spend on another.',
+        'Held effects: Toxic Burst potion drops +20% → +10%, Void Orb contact damage taken −20% → −10%, Strike max health +20% → +10%.',
+      ],
+      ja: [
+        '投射体や輪に当たった後の無敵時間が0.6秒から0.2秒になりました。回避の属性はこの0.2秒を延ばします。',
+        '才能「体力回復」をなくしました。体力回復の欠片はもう出ず、体力回復の才能に使ったポイントはすべて戻り、別の才能に使い直せます。',
+        '保有効果の調整：毒性爆発のポーションドロップ率 20% → 10% 増幅、虚空球の受ける接触ダメージ 20% → 10% 減少、打撃の最大体力 +20% → +10%。',
+      ],
+      zh: [
+        '被投射物或环形弹命中后的无敌时间从0.6秒缩短为0.2秒。闪避属性会延长这0.2秒。',
+        '移除了天赋「生命恢复」。生命恢复碎片不再掉落，投入该天赋的点数全部返还，可重新分配给其他天赋。',
+        '持有效果调整：毒性爆发药水掉落率增幅 20% → 10%，虚空球受到的接触伤害减少 20% → 10%，打击最大生命 +20% → +10%。',
+      ],
+    },
+  },
+  {
     version: '0.130',
     date: '2026-10-25',
     changes: {

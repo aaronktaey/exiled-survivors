@@ -228,6 +228,26 @@ check('damage is 플랫 × 증가 × 증폭: the picks and 강력 add, the shard
   `(${stacked.base} + ${stacked.gear}) x ${2 + stacked.increase} x ${stacked.shard} x ${stacked.amplify} = ${stacked.after}`);
 await shot('passive-04-run');
 
+// --- 0.131: 체력회복 went; points spent on it come back as the tree loads ---
+await ev(`(() => {
+  const C = window.config;
+  localStorage.setItem(C.STORAGE.passives, window.sealRecord(C.STORAGE.passives,
+    { scheme: C.PASSIVE_SCHEME, points: 20, ranks: { shardDamage: 4, shardRegen: 6 } }));
+  return 1;
+})()`);
+await cdp.send('Page.navigate', { url: 'about:blank' });
+await cdp.send('Page.navigate', { url: 'http://localhost:5173/#run' });
+await cdp.until(`window.passives && window.game?.scene.getScene('GameScene')?.player?.active`, 30000, 200);
+const returned = await ev(`(() => {
+  const v = window.passives.value, C = window.config;
+  const stored = window.openRecord(C.STORAGE.passives, localStorage.getItem(C.STORAGE.passives)).value;
+  return { points: v.points, ranks: v.ranks, all: C.PASSIVE_POINTS, stored: stored.points, line: 'shardRegen' in C.PASSIVES };
+})()`);
+check('a tree with points on 체력회복 gets them back to spend, and the line is gone',
+  returned.points === 26 && returned.ranks.shardDamage === 4 && returned.ranks.shardRegen === undefined &&
+    returned.stored === 26 && returned.line === false,
+  JSON.stringify(returned));
+
 console.log('\n=== SUMMARY ===');
 const failed = results.filter((r) => !r.p);
 console.log(`${results.length - failed.length}/${results.length} passed`);

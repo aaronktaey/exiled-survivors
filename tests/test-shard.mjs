@@ -153,8 +153,9 @@ try {
     const after = { speed: p.moveSpeed, maxHp: p.maxHp, area: s.areaScale, cd: s.cooldownOf('meleeStrike'), dmg: s.damageOf('meleeStrike') };
     p.hp = p.maxHp - 50;
     const hp0 = p.hp;
-    for (let t = 0; t < C.TALENT_SHARD.regenEveryMs + 100; t += 50) s.regenerate(50);
-    return { before, after, healed: p.hp - hp0, amp: C.TALENT_SHARD.amplify, regen: C.TALENT_SHARD.regen,
+    // No shard heals since 0.131 (체력회복 went): five seconds on, nothing back.
+    for (let t = 0; t < 5100; t += 50) s.regenerate(50);
+    return { before, after, healed: p.hp - hp0, amp: C.TALENT_SHARD.amplify, stats: C.TALENT_SHARD.stats,
       shards: s.shards,
       // 0.106: an icon on the left of the HUD, the count in its corner, the card listing each stat — and no 패시브 icon.
       icon: (() => { s.hud.update(0, 0, s.loadout(), s.effectsNow()); const effects = s.effectsNow(); const e = effects.find((x) => x.id === 'shard');
@@ -167,11 +168,12 @@ try {
     near(acts.after.speed / acts.before.speed, 1 + acts.amp) && Math.abs(acts.after.maxHp - acts.before.maxHp * (1 + acts.amp)) <= 1 &&
       near(acts.after.area / acts.before.area, 1 + 2 * acts.amp) && acts.after.cd < acts.before.cd && acts.after.dmg >= acts.before.dmg,
     JSON.stringify({ before: acts.before, after: acts.after }));
-  check('체력회복 gives its health back every TALENT_SHARD.regenEveryMs', acts.healed === acts.regen, `healed ${acts.healed}`);
+  check('there is no 체력회복 재능 any more (0.131): no such shard, and no health back from shards',
+    !acts.stats.includes('regen') && acts.healed === 0, `${acts.stats.join(',')} · healed ${acts.healed}`);
   const held = Object.values(acts.shards).reduce((sum, n) => sum + n, 0);
   check('the HUD shows them as one icon on the left, the count in its corner, its card each stat’s total — no 패시브 icon',
     !!acts.icon && acts.icon.count === held && acts.icon.shown && acts.icon.corner === String(held) && !acts.icon.passive &&
-      acts.icon.lines.some((l) => /효과범위 증폭 \+2%/.test(l)) && acts.icon.lines.some((l) => /체력 \+1/.test(l)),
+      acts.icon.lines.some((l) => /효과범위 증폭 \+2%/.test(l)) && acts.icon.lines.length === acts.stats.length,
     JSON.stringify(acts.icon));
   await shot('shard-01-hud');
 

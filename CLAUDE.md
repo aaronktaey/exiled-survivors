@@ -286,7 +286,10 @@ Read `git log` for what changed and when. What is not in the log:
   too heavy for a field of rares on a phone.
 - **Contact is per enemy.** A body hurts through `Player.takeContact` on its
   own `ENEMY.contactCooldownMs`, so a crowd all hurt at once; only thrown
-  things (`takeDamage`) open the survivor's invulnerable window. The debug /
+  things (`takeDamage`) open the survivor's invulnerable window
+  (`PLAYER.invulnerableMs`, 200 since 0.131, 600 before; 회피 lengthens it).
+  Besides that and the debug switch, only a 하얀 망고 makes the survivor
+  untouchable. The debug /
   test switch `setInvulnerable(true)` still holds off both.
 - **기행종 is table-driven too.** `hop` on an `ENEMY_KINDS` entry
   (`EnemyHopSpec`: distance a hop carries, rest, and — out of one hop's
@@ -718,8 +721,9 @@ Read `git log` for what changed and when. What is not in the log:
   included), its stacks gone. A burst poisons nothing, so one never sets
   off another (a version that added stacks with each burst chained without
   end in a crowd; 0.123–0.124 also burst a poisoned enemy as it died, taken
-  out in 0.125 on the user's word). 보유 효과: the 체력 포션's drop chance ×1.2
-  (`potionChanceScale`, through the `potionScale` combat hook). Picks 피해 ·
+  out in 0.125 on the user's word). 보유 효과: the 체력 포션's drop chance ×1.1
+  since 0.131, ×1.2 before (`potionChanceScale`, through the `potionScale`
+  combat hook). Picks 피해 ·
   공격속도 · 범위. Its sound borrows 공허구체's. Shipped at 150 · 0.5 (the
   user's pick; 144 · 0.7 while tried), poison 10% of the hit a second a
   stack. The user compares skills one enemy at a time, not by crowds. It
@@ -735,7 +739,8 @@ Read `git log` for what changed and when. What is not in the log:
   account there), so suites see the shipped rule. Taking the 드론 out of
   `SKILL_TRIAL` is the whole of turning it back on.
 - **공허구체 changed with it (0.95).** Its 보유 효과 is
-  `contactDamageScale` 0.8 (받는 접촉 피해 20% 감폭, `Player.takeContact`),
+  `contactDamageScale` (받는 접촉 피해 감폭, `Player.takeContact`; 0.8, then 0.9
+  since 0.131),
   the move speed went to the 드론. 0.95–0.97 its 1차 각성 healed a point a
   hit; 0.98 put the 공허 back (below), now healing by the head
   (`WeaponContext.heal`), uncapped.
@@ -753,7 +758,8 @@ Read `git log` for what changed and when. What is not in the log:
   flag on is the whole of putting it back.
 - **재능의 파편 (0.102, the user's design).** `TALENT_SHARD` (balance.ts):
   one shard a stat (`stats`: 피해량 · 공격속도 · 이동속도 · 최대체력 ·
-  효과범위 · 체력회복). One roll off every kill at `chance` (0.5%, shared
+  효과범위; 체력회복 was one too until the user took it out in 0.131 — a
+  tree's points on its line come back as it loads, `Passives.sanitise`). One roll off every kill at `chance` (0.5%, shared
   by every stat — 0.102–0.103 rolled each stat on its own; the user asked
   for the shared roll back in 0.104), no rare's or 우두머리's bonus; which
   stat it is, `CombatSystem.rollShardStat` weighs by the passive tree's
@@ -770,8 +776,7 @@ Read `git log` for what changed and when. What is not in the log:
   adds it to `shards` (saved in `SavedRun.shards`) and `applyShards` folds
   `shardBonusFor`: damage and attack speed as `RunModifiers.shard` (an 증폭,
   where the tree's layer sat in Modifiers), move speed and max health on
-  `Player.applyShards`, area into `GameScene.areaScale`, regen in
-  `regenerate`; the HUD shows them as one effect icon (`effectsNow`, id
+  `Player.applyShards`, area into `GameScene.areaScale`; the HUD shows them as one effect icon (`effectsNow`, id
   `shard`: the count in its corner — `EffectEntry.count` — and each stat's
   total on its card; 0.102's line of text went in 0.106). A level-up with the
   main skill maxed, or a 무작위 스킬 whose every option is maxed, is a

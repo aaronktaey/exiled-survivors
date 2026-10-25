@@ -1223,8 +1223,7 @@ export const TALENT_SHARD_FX = {
     attackSpeed: 0xffd34d,
     moveSpeed: 0x6fd8ff,
     maxHp: 0x7ef0a0,
-    area: 0xc08cff,
-    regen: 0xff9fd0,
+    area: 0xc08cff,
   },
 } as const;
 

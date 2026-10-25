@@ -34,7 +34,7 @@ export const DAILY_RULES = {
   /** The skills a day can ban — every one a player can pick. A new skill goes here too. */
   skills: ['meleeStrike', 'fireball', 'chainLightning', 'iceSpear', 'voidOrb', 'thunderStrike', 'drone', 'poisonNova'] as readonly SkillId[],
   /** The 재능 a day can ban: its 파편 stop dropping (TALENT_SHARD.stats). */
-  talents: ['damage', 'attackSpeed', 'moveSpeed', 'maxHp', 'area', 'regen'] as readonly ShardStat[],
+  talents: ['damage', 'attackSpeed', 'moveSpeed', 'maxHp', 'area'] as readonly ShardStat[],
   /**
    * The strengthened enemies a day draws from — only the ones the user picked
    * (2026-10-25). Each one's `scale` and `on` are dials (DIAL tab 'daily'),

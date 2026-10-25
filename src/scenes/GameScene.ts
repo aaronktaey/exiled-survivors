@@ -278,7 +278,6 @@ export class GameScene extends Phaser.Scene {
   /** The run's 재능의 파편, by stat, what they add up to, and the clock on their health (0.102). */
   private shards: Record<ShardStat, number> = GameScene.noShards();
   private shardBonus = shardBonusFor({});
-  private shardRegenMs = 0;
   /** Round-robin cursor for the debug drop key. */
   private nextDebugDrop = 0;
 
@@ -320,7 +319,6 @@ export class GameScene extends Phaser.Scene {
     this.regenMs = 0;
     this.shards = GameScene.noShards();
     this.shardBonus = shardBonusFor({});
-    this.shardRegenMs = 0;
     this.weapons = [];
     this.owned = new Set<SkillId>();
     this.mainSkill = null;
@@ -1549,11 +1547,9 @@ export class GameScene extends Phaser.Scene {
   }
 
   /** The numbers a shard line fills in, for `count` shards. */
-  private static shardValues(count: number): { n: number; heal: number; secs: number } {
+  private static shardValues(count: number): { n: number } {
     return {
       n: Math.round(count * TALENT_SHARD.amplify * 100),
-      heal: count * TALENT_SHARD.regen,
-      secs: TALENT_SHARD.regenEveryMs / 1000,
     };
   }
 
@@ -1598,21 +1594,10 @@ export class GameScene extends Phaser.Scene {
   /**
    * 활력 (a weapon 속성, 0.88): every AFFIX_TIMING.regenEveryMs of the run's
    * own clock the survivor gets the weapon's health back, shown in green
-   * over them when it filled anything. The 재능의 파편's 체력회복 (0.102)
-   * runs on its own clock beside it.
+   * over them when it filled anything. (The 재능의 파편's 체력회복 ran
+   * beside it, 0.102–0.130.)
    */
   private regenerate(dt: number): void {
-    const fromShards = this.shardBonus.regen;
-    if (fromShards > 0) {
-      this.shardRegenMs += dt;
-      if (this.shardRegenMs >= TALENT_SHARD.regenEveryMs) {
-        this.shardRegenMs -= TALENT_SHARD.regenEveryMs;
-        const healed = this.player.heal(fromShards);
-        if (healed > 0) {
-          this.damageNumbers.spawn(this.player.x, this.player.y - 46, healed, { prefix: '+', color: COLORS.healText });
-        }
-      }
-    }
     const amount = this.gearBonus.regen;
     if (amount <= 0) {
       return;

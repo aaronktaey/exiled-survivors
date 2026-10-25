@@ -109,7 +109,7 @@ export interface Strings {
   };
 
   /** 아이템 필터: the switches for what drops, reached from the title. */
-  /** 재능의 파편 (0.102). {n} a percentage, {heal} health, {secs} seconds; {count} shards, {list} the short lines. */
+  /** 재능의 파편 (0.102). {n} a percentage; {count} shards, {list} the short lines. */
   readonly shard: {
     readonly name: string;
     /** The cards' head, and why they came instead of a skill. */
@@ -119,13 +119,13 @@ export interface Strings {
     /** Why a level-up opened shard cards: the main skill is at its top (0.112). */
     readonly mainMaxed: string;
     /** Each stat's name on its card. */
-    readonly stats: { readonly damage: string; readonly attackSpeed: string; readonly moveSpeed: string; readonly maxHp: string; readonly area: string; readonly regen: string; };
+    readonly stats: { readonly damage: string; readonly attackSpeed: string; readonly moveSpeed: string; readonly maxHp: string; readonly area: string; };
     /** Each stat's shard, by name, on the ground and in the 필터's sense. */
-    readonly drops: { readonly damage: string; readonly attackSpeed: string; readonly moveSpeed: string; readonly maxHp: string; readonly area: string; readonly regen: string };
+    readonly drops: { readonly damage: string; readonly attackSpeed: string; readonly moveSpeed: string; readonly maxHp: string; readonly area: string; };
     /** What one gives, over the survivor and on its card. */
-    readonly gain: { readonly damage: string; readonly attackSpeed: string; readonly moveSpeed: string; readonly maxHp: string; readonly area: string; readonly regen: string; };
+    readonly gain: { readonly damage: string; readonly attackSpeed: string; readonly moveSpeed: string; readonly maxHp: string; readonly area: string; };
     /** The HUD's short form, for what they add up to. */
-    readonly short: { readonly damage: string; readonly attackSpeed: string; readonly moveSpeed: string; readonly maxHp: string; readonly area: string; readonly regen: string; };
+    readonly short: { readonly damage: string; readonly attackSpeed: string; readonly moveSpeed: string; readonly maxHp: string; readonly area: string; };
     readonly hud: string;
     readonly toast: string;
     /** 재능의 덩어리 (0.111): its name, its name on the ground ({stat}), and the line when it is taken. */

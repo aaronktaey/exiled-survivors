@@ -151,7 +151,8 @@ class PassiveStore {
       this.current = current ? this.sanitise({ ...fresh(), ...opened.value }) : fresh();
       // Nothing stored is a fresh tree in memory, and nothing is written for
       // it — a write here would read as a change to the records (CloudSave).
-      if (opened && (opened.state !== 'sealed' || !current)) {
+      // A tree that had points on a line since taken out is written back with them returned.
+      if (opened && (opened.state !== 'sealed' || !current || this.returned > 0)) {
         this.save();
       }
     } catch {
@@ -167,7 +168,14 @@ class PassiveStore {
     }
   }
 
-  /** A hand-edited payload cannot buy a rank that does not exist. */
+  /** Points that sat on a line since taken out, given back by the last load (0.131: 체력회복). */
+  private returned = 0;
+
+  /**
+   * A hand-edited payload cannot buy a rank that does not exist — and the
+   * points on a line that no longer exists (shardRegen, 0.131) come back to
+   * be spent again.
+   */
   private sanitise(raw: PassiveState): PassiveState {
     const ranks: Partial<Record<PassiveId, number>> = {};
     for (const spec of Object.values(PASSIVES)) {
@@ -176,12 +184,15 @@ class PassiveStore {
         ranks[spec.id] = Math.min(spec.maxRank, rank);
       }
     }
+    this.returned = Object.entries(raw.ranks ?? {})
+      .filter(([id]) => !(id in PASSIVES))
+      .reduce((sum, [, rank]) => sum + Math.max(0, Math.floor(Number(rank) || 0)), 0);
 
     // Never more than PASSIVE_POINTS, spent and held together.
     const spent = Object.values(ranks).reduce((sum, rank) => sum + (rank ?? 0), 0);
     return {
       scheme: PASSIVE_SCHEME,
-      points: Math.max(0, Math.min(PASSIVE_POINTS - spent, Math.floor(Number(raw.points) || 0))),
+      points: Math.max(0, Math.min(PASSIVE_POINTS - spent, Math.floor(Number(raw.points) || 0) + this.returned)),
       ranks,
     };
   }

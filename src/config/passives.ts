@@ -18,7 +18,8 @@ import type { ShardStat } from '@/config/balance';
  * this table gives, so a new line is a new entry.
  */
 
-export type PassiveId = 'shardDamage' | 'shardAttackSpeed' | 'shardMoveSpeed' | 'shardMaxHp' | 'shardArea' | 'shardRegen';
+/** shardRegen (체력회복) was a line too, 0.102–0.130; its points are given back as a tree loads (Passives.sanitise). */
+export type PassiveId = 'shardDamage' | 'shardAttackSpeed' | 'shardMoveSpeed' | 'shardMaxHp' | 'shardArea';
 
 /** Every player's points, spent and not (0.102). */
 export const PASSIVE_POINTS = 30;
@@ -56,7 +57,6 @@ export const PASSIVES: Record<PassiveId, PassiveSpec> = {
   shardMoveSpeed: shardLine('shardMoveSpeed', 'moveSpeed', '이동속도'),
   shardMaxHp: shardLine('shardMaxHp', 'maxHp', '최대체력'),
   shardArea: shardLine('shardArea', 'area', '효과범위'),
-  shardRegen: shardLine('shardRegen', 'regen', '체력회복'),
 };
 
 export const ALL_PASSIVES: readonly PassiveSpec[] = Object.values(PASSIVES);

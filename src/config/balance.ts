@@ -56,8 +56,11 @@ export const PLAYER = {
    * was, so a tuning step of 1 is a tenth of what it used to be.
    */
   maxHp: 200,
-  /** Invulnerability after taking a hit, so contact does not drain instantly. */
-  invulnerableMs: 600,
+  /**
+   * Invulnerability after a thrown hit (a bolt, a ring), so a volley landing
+   * at once is one hit. 600 until 0.131; the user cut it to 200.
+   */
+  invulnerableMs: 200,
   /**
    * Every survivor crits sometimes, with or without 치명 on the weapon. The
    * 치명 속성 adds to this rather than being the only way to have any, so a
@@ -1263,12 +1266,14 @@ export const SKILL_HELD_BONUS: Record<SkillId, HeldSkillBonus> = {
   fireball: { areaScale: 1.2 },
   iceSpear: { damageScale: 1.2 },
   chainLightning: { attackSpeedScale: 1.2 },
-  // 0.94 (the user's ask): 공허구체 now takes 20% off what bodies do; its
-  // move speed went to the 드론.
-  voidOrb: { contactDamageScale: 0.8 },
-  meleeStrike: { maxHpScale: 1.2 },
+  // 0.94 (the user's ask): 공허구체 takes some off what bodies do (20%, 10%
+  // since 0.131); its move speed went to the 드론.
+  voidOrb: { contactDamageScale: 0.9 },
+  // +20% until 0.131.
+  meleeStrike: { maxHpScale: 1.1 },
   drone: { moveSpeedScale: 1.15 },
-  poisonNova: { potionChanceScale: 1.2 },
+  // ×1.2 until 0.131.
+  poisonNova: { potionChanceScale: 1.1 },
 };
 
 /** Every 보유 효과 of the skills held, folded: points added, scales multiplied. */
@@ -1572,7 +1577,8 @@ export const SCORE: { readonly byKind: Readonly<Record<EnemyKind, number>> } = {
 };
 
 /** What a 재능의 파편 can give, one of them a shard (TALENT_SHARD). */
-export type ShardStat = 'damage' | 'attackSpeed' | 'moveSpeed' | 'maxHp' | 'area' | 'regen';
+/** 체력회복 (`regen`) was one too, 0.102–0.130; the user took it out in 0.131. */
+export type ShardStat = 'damage' | 'attackSpeed' | 'moveSpeed' | 'maxHp' | 'area';
 
 /**
  * ★ 재능의 파편 (0.102, the user's ask): one roll off every kill at `chance`
@@ -1590,10 +1596,8 @@ export type ShardStat = 'damage' | 'attackSpeed' | 'moveSpeed' | 'maxHp' | 'area
  */
 export const TALENT_SHARD = {
   chance: 0.005,
-  stats: ['damage', 'attackSpeed', 'moveSpeed', 'maxHp', 'area', 'regen'] as readonly ShardStat[],
+  stats: ['damage', 'attackSpeed', 'moveSpeed', 'maxHp', 'area'] as readonly ShardStat[],
   amplify: 0.01,
-  regen: 1,
-  regenEveryMs: 5000,
   choices: 3,
   /** How big it is drawn on the ground. */
   size: 22,
@@ -1611,7 +1615,7 @@ export const TALENT_LUMP = {
   size: 30,
 } as const;
 
-/** What a run's shards add up to: an 증폭 per stat (1 + shards × amplify), and health a tick. */
+/** What a run's shards add up to: an 증폭 per stat (1 + shards × amplify). */
 export function shardBonusFor(counts: Partial<Record<ShardStat, number>>): Record<ShardStat, number> {
   const n = (stat: ShardStat): number => Math.max(0, Math.floor(counts[stat] ?? 0));
   return {
@@ -1620,7 +1624,6 @@ export function shardBonusFor(counts: Partial<Record<ShardStat, number>>): Recor
     moveSpeed: 1 + n('moveSpeed') * TALENT_SHARD.amplify,
     maxHp: 1 + n('maxHp') * TALENT_SHARD.amplify,
     area: 1 + n('area') * TALENT_SHARD.amplify,
-    regen: n('regen') * TALENT_SHARD.regen,
   };
 }
 
