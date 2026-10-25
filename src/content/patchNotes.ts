@@ -15,6 +15,32 @@ export interface PatchNote {
 
 export const PATCH_NOTES: readonly PatchNote[] = [
   {
+    version: '0.129',
+    date: '2026-10-25',
+    changes: {
+      ko: [
+        '스킬 선택 카드가 TCG 카드 모양으로 바뀌었습니다. 카드마다 스킬 일러스트, 이름 띠, 유형 줄, 보유 효과와 설명 칸이 있습니다. 세로로 든 휴대폰처럼 카드가 너무 작아지는 화면에서는 이전 카드 모양을 씁니다.',
+        '스킬 선택 카드가 뒷면으로 나와 차례로 뒤집히며 내용이 드러납니다. 짧게 끝나며, 모두 뒤집힌 뒤에 고를 수 있습니다.',
+        '오늘의 예언으로 금지된 스킬 카드는 일러스트가 회색으로 바뀌고 「금지」 도장이 찍힙니다.',
+      ],
+      en: [
+        'The skill cards are now TCG cards: each has the skill’s illustration, a name banner, a type line and a box with what holding it gives and what it does. Where the cards would come out too small, such as a phone held upright with every skill on offer, the old cards are used.',
+        'The skill cards are dealt face down and turn over one after another. It is quick, and a card can be taken once all are up.',
+        'The skill banned by today’s prophecy shows its illustration greyed out under a BANNED stamp.',
+      ],
+      ja: [
+        'スキル選択のカードがTCGカードの形になりました。カードごとにスキルのイラスト、名前の帯、タイプ行、保有効果と説明の欄があります。縦向きの携帯のようにカードが小さくなりすぎる画面では、以前のカードを使います。',
+        'スキル選択のカードは裏向きで配られ、順にめくれて内容が現れます。短く終わり、すべてめくれた後に選べます。',
+        '今日の予言で禁止されたスキルのカードは、イラストが灰色になり「禁止」の判が押されます。',
+      ],
+      zh: [
+        '技能选择卡改为TCG卡牌样式：每张卡有技能插画、名称条、类型行，以及持有效果与说明栏。在卡牌会变得过小的画面（如竖握手机且所有技能可选时）使用以前的卡片样式。',
+        '技能选择卡会背面朝上发出，依次翻开显示内容。动画很短，全部翻开后即可选择。',
+        '被今日预言禁用的技能卡，插画变为灰色并盖上「禁用」印章。',
+      ],
+    },
+  },
+  {
     version: '0.128',
     date: '2026-10-25',
     changes: {

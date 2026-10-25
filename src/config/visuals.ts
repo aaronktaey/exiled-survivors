@@ -235,6 +235,29 @@ export const SKILL_ICONS: Record<string, { readonly pixel?: PixelIconId; readonl
   poisonNova: { key: 'tex-skill-poisonNova' },
 };
 
+/**
+ * 스킬 일러스트 (0.129): the picture on a skill's TCG card, painted at boot
+ * (systems/SkillArt.ts) at this size and drawn scaled to the card.
+ */
+export const SKILL_ART = { width: 200, height: 124 } as const;
+export const skillArtTexture = (id: string): string => `tex-art-${id}`;
+
+/**
+ * The skill pick's cards (0.129, the user's ask): TCG cards — a name banner,
+ * the skill's picture, a type line, a text box — where the screen leaves
+ * them at least `minWidth` × `minHeight` at `aspect` (width ÷ height), else
+ * the plain cards (an upright phone with every skill on offer). They come
+ * face down and turn over one after another, `staggerMs` apart, each turn
+ * `flipMs` — quick, a pick comes round often.
+ */
+export const SKILL_CARD = {
+  tcg: { aspect: 0.7, minWidth: 128, minHeight: 184, maxHeight: 300 },
+  flip: { staggerMs: 55, flipMs: 240 },
+  /** The text box's print: smaller than any other text, it has a card's worth of room. */
+  textPx: '12px',
+  back: { fill: 0x161b26, edge: 0xc9a24a, mark: 0x3a3f55 },
+} as const;
+
 /** How big a skill icon is drawn, on the ground and on a card. */
 export const SKILL_ICON_SIZE = {
   drop: 24,

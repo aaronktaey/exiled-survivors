@@ -64,6 +64,30 @@ check('the first skill is chosen from every skill, each once',
     opened.options.every((id) => opened.all.includes(id)),
   opened.options.join(' / '));
 await shot('skillpick-01-start');
+// 0.129: TCG cards where there is room, each with its own picture, dealt face down and turned over.
+const tcg = await pick(`
+  return { tcg: s.tcg, faces: s.faces.length, cards: s.cards.length, turned: s.faces.every((f) => f.scaleX === 1),
+           art: s.payload.options.every((id) => s.textures.exists(window.config.skillArtTexture(id))),
+           size: s.cards.length ? { w: s.cards[0].panel.width, h: s.cards[0].panel.height } : null };
+`);
+check('on this screen the cards are TCG cards, each skill with its own picture, every one turned face up',
+  tcg.tcg && tcg.faces === tcg.cards && tcg.turned && tcg.art, JSON.stringify(tcg));
+
+// The deal: face down at first, turned over within the flip's time (0.129).
+const dealt = await ev(`(() => {
+  const p = window.game.scene.getScene('SkillPickScene');
+  p.scene.restart(p.payload);
+  return 1;
+})()`);
+void dealt;
+await sleep(30);
+const early = await pick(`return { down: s.faces.filter((f) => f.scaleX < 1).length, all: s.faces.length, unlocked: s.unlocked };`);
+const flip = await ev(`window.config.SKILL_CARD.flip`);
+await sleep((early.all - 1) * flip.staggerMs + flip.flipMs + 200);
+const late = await pick(`return { up: s.faces.filter((f) => f.scaleX === 1).length, all: s.faces.length, unlocked: s.unlocked };`);
+check('the cards are dealt face down and turned over one after another, quickly, taking no pick meanwhile',
+  early.down === early.all && early.unlocked === false && late.up === late.all && late.unlocked === true,
+  JSON.stringify({ early, late, flip }));
 
 // With a real mouse: the page is a scaled canvas, so a card's place in the
 // game is turned into where it is on the page before the pointer goes there.
@@ -260,6 +284,33 @@ await sleep(900);
 const keyed = await run(`return [...s.owned];`);
 check('and 2 on the keyboard takes the second card',
   JSON.stringify(keyed) === JSON.stringify([again[1]]), `took ${keyed.join(', ')}`);
+
+// --- 0.129: an upright phone has no room for eight TCG cards — the plain ones then — but does for three ---
+await cdp.send('Emulation.setDeviceMetricsOverride', { width: 420, height: 860, deviceScaleFactor: 2, mobile: false });
+await cdp.send('Page.navigate', { url: 'about:blank' });
+await cdp.send('Page.navigate', { url: 'http://localhost:5173/#run' });
+await cdp.until(`window.game?.scene.getScene('GameScene')?.player?.active`, 30000, 200);
+await sleep(600);
+const phone = {};
+for (const n of [8, 3]) {
+  await ev(`(() => {
+    const g = window.game.scene.getScene('GameScene');
+    const ids = Object.keys(window.config.SKILL_BASE).slice(0, ${n});
+    g.scene.launch('SkillPickScene', { title: 't', subtitle: 's', options: ids, owned: [], onPick: () => {} });
+    return 1;
+  })()`);
+  await cdp.until(`window.game.scene.isActive('SkillPickScene')`, 5000, 100);
+  await sleep(900);
+  phone[n] = await ev(`(() => { const p = window.game.scene.getScene('SkillPickScene');
+    const c = p.cards[0].panel; const out = { tcg: p.tcg, w: Math.round(c.width), h: Math.round(c.height), bottom: Math.round(p.cards[p.cards.length - 1].y + c.height / 2), screen: p.scale.height };
+    return out; })()`);
+  if (n === 3) await shot('skillpick-03-phone-three');
+  await ev(`(() => { window.game.scene.getScene('SkillPickScene').scene.stop(); return 1; })()`);
+}
+check('upright, eight cards fall back to the plain ones; three are TCG cards, all inside the screen',
+  phone[8].tcg === false && phone[3].tcg === true && phone[3].bottom <= phone[3].screen && phone[8].bottom <= phone[8].screen,
+  JSON.stringify(phone));
+await cdp.send('Emulation.clearDeviceMetricsOverride', {});
 
 console.log('\n=== SUMMARY ===');
 const failed = results.filter((r) => !r.p);

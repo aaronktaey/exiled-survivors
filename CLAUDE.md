@@ -655,6 +655,20 @@ Read `git log` for what changed and when. What is not in the log:
   and GameScene hands it only to the main skill's weapon (공허구체 calls it
   once a lap). `tests/look-sheet.mjs` (not a suite) draws every look in
   every pose to `shots/look-sheet.png` for a look by eye.
+- **TCG skill cards (0.129, the user's ask).** `SkillPickScene` lays TCG
+  cards — name banner with the icon, the skill's picture
+  (`skillArtTexture(id)`, painted at boot by `systems/SkillArt.ts`, one
+  painter a skill: a new skill needs one), a type line, a text box with the
+  held effect in gold and the summary in `SKILL_CARD.textPx` — whenever
+  `tcgLayout` finds a grid leaving them `SKILL_CARD.tcg.minWidth` ×
+  `minHeight` at `aspect`; elsewhere (an upright phone with every skill on
+  offer) the plain cards, as the user allowed. `tcg` says which. Every card
+  — plain, TCG or the banned one — is gathered into a Container (`wrap`,
+  `faces`) and dealt face down, turned over `SKILL_CARD.flip.staggerMs`
+  apart in `flipMs` (`dealFaceDown`); no pick until all are up. `CardView.x/y`
+  stay the screen's, which the suites click by. The banned card on a TCG
+  screen keeps its picture, greyed under a 금지 stamp (`daily.banned`).
+  The upgrade cards (`UpgradeScene`) are not TCG cards.
 - **The first skill is chosen from every skill (0.82).** `openStartPick`
   offers `DROPPABLE_SKILLS` whole; `SkillPickScene` lays the cards in rows
   of up to three (0.79's layout). The 무작위 스킬 drop still offers

@@ -100,6 +100,7 @@ export const ja: Strings = {
     titleLine: '今日の予言 {date} · 禁止 {skill} · 禁止才能 {talent} · {enemy}',
     titleLineNoEnemy: '今日の予言 {date} · 禁止 {skill} · 禁止才能 {talent}',
     startBanned: '今日の予言：{skill} 禁止',
+    banned: '禁止',
     buffs: {
       hp: '{kind} 体力 +{n}%',
       speed: '{kind} 移動速度 +{n}%',
