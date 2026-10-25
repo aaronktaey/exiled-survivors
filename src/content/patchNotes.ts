@@ -15,6 +15,24 @@ export interface PatchNote {
 
 export const PATCH_NOTES: readonly PatchNote[] = [
   {
+    version: '0.130',
+    date: '2026-10-25',
+    changes: {
+      ko: [
+        '0.129의 스킬 선택 TCG 카드(스킬 일러스트, 카드가 뒤집히며 나오는 연출, 금지 카드의 「금지」 도장)를 되돌렸습니다. 스킬 선택 카드는 0.128의 모양으로 돌아갑니다.',
+      ],
+      en: [
+        '0.129’s TCG skill cards — the skill illustrations, the cards turning over as they are dealt and the BANNED stamp — are rolled back. The skill cards are as they were in 0.128.',
+      ],
+      ja: [
+        '0.129のスキル選択TCGカード（スキルのイラスト、カードがめくれて現れる演出、禁止カードの「禁止」の判）を元に戻しました。スキル選択カードは0.128の形に戻ります。',
+      ],
+      zh: [
+        '撤回了0.129的技能选择TCG卡牌（技能插画、卡牌翻开登场的演出、禁用卡的「禁用」印章）。技能选择卡恢复为0.128的样式。',
+      ],
+    },
+  },
+  {
     version: '0.129',
     date: '2026-10-25',
     changes: {

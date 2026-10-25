@@ -100,7 +100,6 @@ export const zh: Strings = {
     titleLine: '今日预言 {date} · 禁用 {skill} · 禁用天赋 {talent} · {enemy}',
     titleLineNoEnemy: '今日预言 {date} · 禁用 {skill} · 禁用天赋 {talent}',
     startBanned: '今日预言：禁用 {skill}',
-    banned: '禁用',
     buffs: {
       hp: '{kind} 生命 +{n}%',
       speed: '{kind} 移动速度 +{n}%',

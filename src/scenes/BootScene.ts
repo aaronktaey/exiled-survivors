@@ -45,7 +45,6 @@ import {
 import { MENU, SCENES } from '@/config';
 import type { EnemyKindSpec, PixelIcon, PixelIconId } from '@/config';
 import { createPixelTextTexture } from '@/systems/PixelFont';
-import { createSkillArt } from '@/systems/SkillArt';
 import { sfx } from '@/systems/Sfx';
 
 
@@ -105,7 +104,6 @@ export class BootScene extends Phaser.Scene {
     this.createBoneTextures();
     this.createAltarTexture();
     this.createThunderIcon();
-    createSkillArt(this);
     this.createPoisonNovaIcon();
     this.createStrikeIcon();
     this.createTrophyTexture();

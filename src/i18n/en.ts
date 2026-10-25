@@ -100,7 +100,6 @@ export const en: Strings = {
     titleLine: 'Today’s prophecy {date} · no {skill} · no {talent} talent · {enemy}',
     titleLineNoEnemy: 'Today’s prophecy {date} · no {skill} · no {talent} talent',
     startBanned: 'Today’s prophecy: no {skill}',
-    banned: 'BANNED',
     buffs: {
       hp: '{kind} health +{n}%',
       speed: '{kind} move speed +{n}%',

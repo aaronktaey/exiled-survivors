@@ -187,8 +187,6 @@ export interface Strings {
     readonly titleLineNoEnemy: string;
     /** On the first skill's cards: {skill}. */
     readonly startBanned: string;
-    /** The stamp across a banned skill's picture on its TCG card (0.129). */
-    readonly banned: string;
     /** A strengthened enemy by stat: {kind} {n}. */
     readonly buffs: {
       readonly hp: string;

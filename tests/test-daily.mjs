@@ -110,8 +110,7 @@ await shot('daily-01-run');
 // 0.127: the first skill's cards show the banned one, greyed, with the prophecy over it.
 await run(`s.openStartPick(); return 1;`);
 await cdp.until(`window.game.scene.isActive('SkillPickScene')`, 10000, 100);
-// Every card turned over (0.129 deals them face down).
-await cdp.until(`window.game.scene.getScene('SkillPickScene').faces.every((f) => f.scaleX === 1)`, 5000, 50);
+await sleep(400);
 const pickView = await ev(`(() => {
   const sp = window.game.scene.getScene('SkillPickScene'), rules = window.dailyRules.active;
   const b = sp.bannedCard;

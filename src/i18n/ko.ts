@@ -104,7 +104,6 @@ export const ko: Strings = {
     titleLine: '오늘의 예언 {date} · 금지 {skill} · 금지 재능 {talent} · {enemy}',
     titleLineNoEnemy: '오늘의 예언 {date} · 금지 {skill} · 금지 재능 {talent}',
     startBanned: '오늘의 예언: {skill} 금지',
-    banned: '금지',
     buffs: {
       hp: '{kind} 체력 +{n}%',
       speed: '{kind} 이동속도 +{n}%',
