@@ -16,4 +16,10 @@ export interface Env extends ProviderEnv {
    * public, and the list is nobody else's business.
    */
   readonly ADMIN_USERS?: string;
+  /**
+   * test-api only (honoured with AUTH_TEST): the day 오늘의 규칙 are read for,
+   * in place of today, and a run's own `rules` day taken as it says — so the
+   * suite does not change with the calendar.
+   */
+  readonly DAILY_DAY?: string;
 }

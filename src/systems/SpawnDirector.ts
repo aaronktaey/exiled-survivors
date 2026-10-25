@@ -17,6 +17,7 @@ import {
   type BoneBonus,
   type EnemyKind,
 } from '@/config';
+import { dailyRules } from '@/systems/DailyRules';
 import { Enemy, type EnemyHooks } from '@/entities/Enemy';
 
 /**
@@ -81,7 +82,8 @@ export class SpawnDirector {
 
   /** The share of spawns coming up rare right now, after the same clock and a 척추. */
   public get rareChance(): number {
-    return Math.min(1, rareChanceAt(this.elapsedMs) * this.bones().rareChanceScale);
+    // 오늘의 규칙 can raise it for every kind (0.126).
+    return Math.min(1, rareChanceAt(this.elapsedMs) * this.bones().rareChanceScale * dailyRules.enemyScale('all', 'rareChance'));
   }
 
   /** Puts the clock back where a saved run left it. */

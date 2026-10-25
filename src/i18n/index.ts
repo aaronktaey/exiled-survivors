@@ -19,6 +19,9 @@ import {
   SKILL_MASTERY,
   SKILL_HELD_BONUS,
   POISON_NOVA,
+  RANKING,
+  type DailyEnemyBuff,
+  type DailyRuleSet,
 } from '@/config';
 import { en } from '@/i18n/en';
 import { ja } from '@/i18n/ja';
@@ -157,6 +160,34 @@ export function masteryText(id: SkillId, tier: 1 | 2 = 1): string {
     droneTimes,
     stacks: POISON_NOVA.stacksPerHitAwakened,
   });
+}
+
+/** A ranking day as the board writes it: "10/26(월)", in its own time zone (RANKING.dailyReset). */
+export function dailyDate(day: number): string {
+  const local = new Date(day + RANKING.dailyReset.utcOffsetHours * 3_600_000);
+  const weekday = t().daily.weekdays[local.getUTCDay()] ?? '';
+  return fill(t().daily.date, { month: local.getUTCMonth() + 1, day: local.getUTCDate(), weekday });
+}
+
+/** Today's strengthened enemy, in words: "질주 접촉 피해 +50%". */
+export function dailyEnemyText(buff: DailyEnemyBuff): string {
+  return fill(t().daily.buffs[buff.stat], {
+    kind: buff.kind === 'all' ? '' : enemyName(buff.kind),
+    n: Math.round((buff.scale - 1) * 100),
+  });
+}
+
+/** 오늘의 규칙 written out: a heading with the date, and a line each. */
+export function dailyRuleText(rules: DailyRuleSet): { title: string; lines: string[]; short: string } {
+  const copy = t().daily;
+  const skill = skillName(rules.bannedSkill);
+  const talent = t().shard.stats[rules.bannedTalent];
+  const enemy = dailyEnemyText(rules.enemyBuff);
+  return {
+    title: fill(copy.title, { date: dailyDate(rules.day) }),
+    lines: [fill(copy.bannedSkill, { skill }), fill(copy.bannedTalent, { talent }), fill(copy.enemy, { enemy })],
+    short: fill(copy.titleLine, { date: dailyDate(rules.day), skill, talent, enemy }),
+  };
 }
 
 /** What holding a skill gives every skill and the survivor (SKILL_HELD_BONUS), as one line. */

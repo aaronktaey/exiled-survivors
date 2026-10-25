@@ -90,6 +90,24 @@ export const ja: Strings = {
     contactDamageScale: '受ける接触ダメージ {n}% 減少',
     potionChanceScale: 'ポーションのドロップ率 {n}% 増幅',
   },
+  daily: {
+    title: '今日のルール · {date}',
+    date: '{month}/{day}（{weekday}）',
+    weekdays: ['日', '月', '火', '水', '木', '金', '土'],
+    bannedSkill: '禁止スキル：{skill}',
+    bannedTalent: '禁止才能：{talent}（欠片が出ない）',
+    enemy: '強化された敵：{enemy}',
+    titleLine: '今日のルール {date} · 禁止 {skill} · 禁止才能 {talent} · {enemy}',
+    startBanned: '今日の禁止：{skill}',
+    buffs: {
+      hp: '{kind} 体力 +{n}%',
+      speed: '{kind} 移動速度 +{n}%',
+      contact: '{kind} 接触ダメージ +{n}%',
+      shotSpeed: '{kind} 投射体速度 +{n}%',
+      hopDistance: '{kind} 跳躍距離 +{n}%',
+      rareChance: 'レア敵の出現率 +{n}%',
+    },
+  },
   mastery: {
     title: '{skill} 覚醒!',
     card: '覚醒 — {effect}',
@@ -1228,6 +1246,7 @@ export const ja: Strings = {
           lines: [
             'ランキングに登録できるのはログインしたアカウントだけで、倒した敵の体力の合計に敵の種類ごとの倍率（{scoreKinds}）を掛けたスコアで順位が決まります。名前 {nameLength} 文字とアイコン · 国旗を選び、アカウントごとに名前 1 つと最高記録 1 つだけが載ります。',
             '上位 {rankSize} 人まで表示し、ほかのプレイヤーと共有する順位表です。毎日 {rankResetHour}:00（韓国時間）に新しく始まり、ログインすると今日の自分の最高記録と順位も表示されます。',
+            '今日のルール：ランキングが新しく始まるたびに、その日のルールが3つ決まります — 禁止スキル1つ（出てこない）、禁止才能1つ（その才能の欠片が出ない）、強化された敵1つ。その日に始めたすべての回に適用され、回が翌日にまたがっても始めた日のルールが続きます。タイトル画面と戦闘中の効果アイコンで確認できます。',
             '自分の記録タブには、ログインの有無に関係なく自分の上位 {rankSize} 回が日付・レベル・生存時間とともに残ります。← → でタブを切り替えます。',
           ],
         },

@@ -108,6 +108,7 @@ export class BootScene extends Phaser.Scene {
     this.createStrikeIcon();
     this.createTrophyTexture();
     this.createWebIcon();
+    this.createDailyRulesIcon();
     this.createFlagTextures();
     this.createLookTextures();
     this.createDroneTextures();
@@ -1431,6 +1432,18 @@ export class BootScene extends Phaser.Scene {
       g.generateTexture(giantFrame(texture, frame), size, size);
       g.destroy();
     }
+  }
+
+  /** 오늘의 규칙 (0.126), as an icon among the survivor's effects: a red no-entry sign. */
+  private createDailyRulesIcon(): void {
+    const size = 32;
+    const c = size / 2;
+    const g = this.add.graphics();
+    g.fillStyle(0x2a1416, 1).fillCircle(c, c, 14);
+    g.lineStyle(4, 0xe0564a, 1).strokeCircle(c, c, 12);
+    g.lineBetween(c - 8, c + 8, c + 8, c - 8);
+    g.generateTexture(TEXTURES.dailyRules, size, size);
+    g.destroy();
   }
 
   /** 거미줄, as an icon among the survivor's effects: spokes and two rings. */

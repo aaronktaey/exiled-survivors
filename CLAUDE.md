@@ -89,7 +89,7 @@ node run-all.mjs test-full test-skills test-balance test-chain test-ice \
   test-ranking test-skillpick test-mango test-web test-loadout \
   test-carry test-api test-account test-live test-filter test-mastery \
   test-tuning test-terrain test-chimera test-seal test-gift test-held \
-  test-shard test-village
+  test-shard test-village test-daily
 ```
 
 test-i18n and test-locale are left out until the official release (the
@@ -456,6 +456,30 @@ Read `git log` for what changed and when. What is not in the log:
   To look at the live database: `npm run db -- "SELECT * FROM daily_best"`
   (read-only queries only, unless the user asks; the dashboard's D1 console
   works too).
+- **오늘의 규칙 (0.126, the user's design, 2026-10-25).** Every ranking day
+  from `DAILY_RULES.since` (2026-10-26 05:00 KST) lays three rules on every
+  run started that day: one banned skill (never offered — `offeredSkills`),
+  one banned 재능 (its 파편 never drop — weight 0 in the `shardWeight` hook,
+  and off the shard-pick cards) and one strengthened enemy. No good effects,
+  and the same three every day of it (the user's word). `config/daily.ts` is
+  pure (the Worker imports it): `dailyRulesFor(dayStart)` draws from the
+  day's own hash, never the day before's pick; the pools are listed there
+  (test-daily checks they match SKILL_BASE and TALENT_SHARD.stats — a new
+  skill goes in `DAILY_RULES.skills`). The enemy buffs are only the eight the
+  user picked; a new one needs their say. `systems/DailyRules.ts` holds the
+  run's set (module scope): GameScene.init `begin`s it with the day the run
+  started (`SavedRun.rulesDay`, so a run crossing 05:00 keeps its rules), and
+  Enemy (hp, speed at spawn; contact; the 사수's shot speed; hop distance) and
+  SpawnDirector (rare chance) ask `enemyScale(kind, stat)`. Shown on the title
+  (`MenuScene.dailyLine`, over the first row; the village's at the bottom),
+  the first skill's subtitle, and a HUD debuff icon (`TEXTURES.dailyRules`).
+  The run hands in `RunDetail.rules`; the Worker refuses one that held that
+  day's banned skill (`brokeDailyRules`: the run's day if today or
+  yesterday, else today's). test-api pins the day with the test-only
+  `DAILY_DAY` var (honoured with AUTH_TEST). The harness sees no rules unless
+  a page sets `window.__dailyOn` (`__dailyDay` picks the day); the dev
+  server shows the first day's rules before it starts. `window.dailyRules`
+  is the dev handle.
 - **랭킹 검토 (the admin's, 0.62).** Every run handed in carries a 판 내역
   (`RunDetail`, built by `GameScene.runDetail`: build, version, kills by
   kind, 뼈다귀, weapon, skills, 패시브, resumed), kept by the Worker in

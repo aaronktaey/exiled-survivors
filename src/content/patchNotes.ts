@@ -15,6 +15,32 @@ export interface PatchNote {
 
 export const PATCH_NOTES: readonly PatchNote[] = [
   {
+    version: '0.126',
+    date: '2026-10-25',
+    changes: {
+      ko: [
+        '오늘의 규칙: 10/26(월) 오전 5시부터 랭킹이 새로 시작할 때마다 그날의 규칙 세 가지가 모든 판에 적용됩니다 — 금지 스킬 하나(선택지와 드랍에 나오지 않음), 금지 재능 하나(그 재능의 파편이 나오지 않음), 강화된 적 하나. 판이 다음 날로 넘어가도 시작한 날의 규칙이 유지됩니다.',
+        '강화된 적은 매일 다음 중 하나입니다: 질주 접촉 피해 +50%, 일반 체력 +30%, 일반 이동속도 +15%, 거구 접촉 피해 +50%, 거구 체력 +50%, 사수 투사체 속도 +30%, 기행종 도약 거리 +30%, 희귀 적 등장 확률 +50%.',
+        '오늘의 규칙은 타이틀 화면, 첫 스킬 선택 화면, 전투 중 효과 아이콘(빨간 금지 표시)에서 확인할 수 있습니다. 금지 스킬을 쓴 판은 랭킹에 오르지 않습니다.',
+      ],
+      en: [
+        'Today’s rules: from 10/26 (Mon) 05:00, each time the board starts over the day lays three rules on every run — one banned skill (never offered or dropped), one banned talent (its shards do not drop) and one stronger enemy. A run that goes past the reset keeps the rules it began with.',
+        'The stronger enemy is one of these each day: Runner contact damage +50%, Grunt health +30%, Grunt move speed +15%, Brute contact damage +50%, Brute health +50%, Shooter shot speed +30%, Oddity hop distance +30%, rare enemies 50% more often.',
+        'The title screen, the first skill’s cards and an effect icon in battle (a red no-entry sign) show the day’s rules. A run that used the banned skill does not go on the ranking.',
+      ],
+      ja: [
+        '今日のルール：10/26（月）5:00から、ランキングが新しく始まるたびにその日のルール3つがすべての回に適用されます — 禁止スキル1つ（選択肢やドロップに出ない）、禁止才能1つ（その才能の欠片が出ない）、強化された敵1つ。回が翌日にまたがっても始めた日のルールが続きます。',
+        '強化された敵は毎日次のいずれかです：俊足の接触ダメージ +50%、雑兵の体力 +30%、雑兵の移動速度 +15%、巨漢の接触ダメージ +50%、巨漢の体力 +50%、射手の投射体速度 +30%、奇行種の跳躍距離 +30%、レア敵の出現率 +50%。',
+        '今日のルールはタイトル画面、最初のスキル選択画面、戦闘中の効果アイコン（赤い禁止マーク）で確認できます。禁止スキルを使った回はランキングに載りません。',
+      ],
+      zh: [
+        '今日规则：自10/26（周一）5:00起，每次排行榜重新开始时，当天的三条规则会作用于所有对局——禁用技能一个（不会出现在选项和掉落中）、禁用天赋一个（不掉落该天赋的碎片）、强化敌人一种。对局跨过重置时间时，仍保持开始那天的规则。',
+        '强化敌人每天为以下之一：疾走者接触伤害 +50%、杂兵生命 +30%、杂兵移动速度 +15%、巨汉接触伤害 +50%、巨汉生命 +50%、射手投射物速度 +30%、奇行种跳跃距离 +30%、稀有敌人出现率 +50%。',
+        '可在标题画面、首个技能选择画面和战斗中的效果图标（红色禁止标志）查看今日规则。使用了禁用技能的对局不会进入排行榜。',
+      ],
+    },
+  },
+  {
     version: '0.125',
     date: '2026-10-24',
     changes: {

@@ -12,6 +12,8 @@ export const COLORS = {
   /** Same ink as a number, for shapes. */
   textFill: 0xf4f1e8,
   muted: "#a9b3c9",
+  /** 오늘의 규칙 (0.126): a warning amber, so the day's line reads as a condition, not a menu item. */
+  daily: "#f0a24a",
   accent: "#e0564a",
   /** Same accent as a number, for shapes (text takes the string form). */
   accentFill: 0xe0564a,
@@ -197,6 +199,8 @@ export const TEXTURES = {
   trophy: "tex-trophy",
   /** 거미줄's slow, as an icon among the survivor's effects. */
   webIcon: "tex-web-icon",
+  /** 오늘의 규칙 among the survivor's effects (0.126): a no-entry sign. */
+  dailyRules: "tex-daily-rules",
   /** 2위 and 3위: the same cup in silver and bronze. */
   trophySilver: "tex-trophy-silver",
   trophyBronze: "tex-trophy-bronze",
@@ -636,6 +640,9 @@ export const MENU = {
   /** Six rows have to fit under the logo, so the buttons are compact. */
   buttonHeight: 40,
   buttonGap: 8,
+  /** 오늘의 규칙's line (0.126): over the first row on the title, this far above it; in the village, this far above the bottom. */
+  dailyLineAboveRows: 16,
+  dailyLineFromBottom: 50,
   /** Side of one logo pixel, in screen px. */
   logoPixel: 6,
   /** Roughly how tall the baked logo comes out, for centring the title. */

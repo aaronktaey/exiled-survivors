@@ -92,9 +92,15 @@ const logoTex = await scene('MenuScene', `
 check('the logo is baked from the pixel font', logoTex.w > 200 && logoTex.h > 60,
   `${logoTex.w}x${logoTex.h}px texture`);
 
-const bobA = await scene('MenuScene', `return { y: s.children.list.find(o => o.texture && o.texture.key === 'tex-logo').y };`);
-await sleep(900);
-const bobB = await scene('MenuScene', `return { y: s.children.list.find(o => o.texture && o.texture.key === 'tex-logo').y };`);
+// Sampled a few times over a couple of seconds: two samples alone can land
+// on the same height of the swing when the machine is busy.
+const bobs = [];
+for (let i = 0; i < 6; i++) {
+  bobs.push((await scene('MenuScene', `return s.children.list.find(o => o.texture && o.texture.key === 'tex-logo').y;`)));
+  await sleep(330);
+}
+const bobA = { y: Math.min(...bobs) };
+const bobB = { y: Math.max(...bobs) };
 check('the logo bobs up and down', Math.abs(bobA.y - bobB.y) > 1.5,
   `y ${bobA.y.toFixed(1)} -> ${bobB.y.toFixed(1)}`);
 

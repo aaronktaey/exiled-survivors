@@ -33,6 +33,7 @@ import {
   type EnemyGiantSpec,
 } from '@/config';
 import { enemyName } from '@/i18n';
+import { dailyRules } from '@/systems/DailyRules';
 import { sfx } from '@/systems/Sfx';
 import { silhouetteOf } from '@/systems/Silhouette';
 
@@ -174,7 +175,8 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
 
   /** Contact damage before a rare's own multipliers. */
   public get contactDamage(): number {
-    return this.spec.contactDamage;
+    // 오늘의 규칙: a strengthened kind may hit harder (0.126).
+    return Math.round(this.spec.contactDamage * dailyRules.enemyScale(this.kind, 'contact'));
   }
 
   /**
@@ -304,10 +306,13 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
     this.target = target;
     this.applyAffixes(rare ? rollAffixes(kind) : []);
     // Three things decide what it walks in with: the kind, whatever 속성 it
-    // was born with, and how long the run has already lasted.
+    // was born with, and how long the run has already lasted — and, if it is
+    // today's strengthened kind, 오늘의 규칙 (0.126).
     this.hp = Math.max(
       1,
-      Math.round(spec.maxHp * this.hpScale * BALANCE.enemyHpScale * ENEMY_DAMPEN.hp * timeScale),
+      Math.round(
+        spec.maxHp * this.hpScale * BALANCE.enemyHpScale * ENEMY_DAMPEN.hp * timeScale * dailyRules.enemyScale(kind, 'hp'),
+      ),
     );
     this.maxHp = this.hp;
     this.flashMs = 0;
@@ -333,7 +338,11 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
     // A little spread so a pack does not move as one rigid blob.
     // Only the roll is baked in here; the affix multiplier is applied when
     // the speed is read, so an affix can be added or dropped at any time.
-    this.speed = spec.speed * ENEMY_DAMPEN.speed * Phaser.Math.FloatBetween(1 - ENEMY.speedVariance, 1 + ENEMY.speedVariance);
+    this.speed =
+      spec.speed *
+      ENEMY_DAMPEN.speed *
+      dailyRules.enemyScale(kind, 'speed') *
+      Phaser.Math.FloatBetween(1 - ENEMY.speedVariance, 1 + ENEMY.speedVariance);
     // Stagger the first shot, or a wave of shooters fires in one volley.
     this.shotCooldownMs = spec.shot ? Phaser.Math.Between(0, spec.shot.cooldownMs) : 0;
     // A ring, though, waits its full count: one the instant it walks in
@@ -820,11 +829,13 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
     this.hopLeftMs -= dt;
     if (this.hopLeftMs <= 0) {
       this.hopping = !this.hopping;
-      this.hopLeftMs = this.hopping ? (hop.distance / Math.max(1, this.currentSpeed)) * 1000 : hop.restMs;
+      // 오늘의 규칙 can carry a hop further (0.126).
+      const distance = hop.distance * dailyRules.enemyScale(this.kind, 'hopDistance');
+      this.hopLeftMs = this.hopping ? (distance / Math.max(1, this.currentSpeed)) * 1000 : hop.restMs;
       if (this.hopping) {
         const target = this.target;
         const inReach =
-          target !== undefined && Phaser.Math.Distance.Between(this.x, this.y, target.x, target.y) <= hop.distance;
+          target !== undefined && Phaser.Math.Distance.Between(this.x, this.y, target.x, target.y) <= distance;
         this.hopAngle =
           target && (inReach || Math.random() < hop.lungeChance)
             ? Phaser.Math.Angle.Between(this.x, this.y, target.x, target.y)
@@ -910,6 +921,7 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
         this.hooks?.fireShot(this.x, this.y, angle + offset, {
           ...shot,
           damage: this.rollDamage(shot.damage),
+          speed: shot.speed * dailyRules.enemyScale(this.kind, 'shotSpeed'),
         });
       }
     }

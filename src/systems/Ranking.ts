@@ -51,6 +51,8 @@ export interface RunDetail {
   readonly resumed: boolean;
   /** The run's second clock, in ms (systems/RunLedger.ts): the server weighs it against the shown one. */
   readonly wall: number;
+  /** The ranking day whose 오늘의 규칙 it played under (0.126): the server checks its banned skill. */
+  readonly rules?: number | null;
 }
 
 /** What a run hands in to be ranked. */

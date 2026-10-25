@@ -80,7 +80,7 @@ const worker = spawn(
     // dresses every request as the production domain the routes name.
     'wrangler', 'dev', '--port', String(PORT), '--ip', '127.0.0.1', '--local-upstream', `127.0.0.1:${PORT}`,
     '--persist-to', `"${state}"`,
-    '--var', 'AUTH_TEST:1', '--var', 'AUTH_SECRET:local-test-secret', '--var', 'ADMIN_USERS:admin-user', '--var', `FACEBOOK_CLIENT_SECRET:${FB_SECRET}`,
+    '--var', 'AUTH_TEST:1', '--var', 'DAILY_DAY:0', '--var', 'AUTH_SECRET:local-test-secret', '--var', 'ADMIN_USERS:admin-user', '--var', `FACEBOOK_CLIENT_SECRET:${FB_SECRET}`,
   ],
   { cwd: ROOT, env, shell: true, stdio: 'ignore' },
 );
@@ -221,6 +221,18 @@ try {
     edited.status === 400 && bare.status === 400, `${edited.status} ${bare.status}`);
   check('and is told nothing of why', edited.body?.error === 'refused' && bare.body?.error === 'refused' &&
     !/skill|upgrade|level|kill/i.test(JSON.stringify(edited.body)), JSON.stringify(edited.body));
+
+  // 오늘의 규칙 (0.126): a run that held the day's banned skill is refused the
+  // same way. Every skill at level 1 (nothing out of reach) on the first day
+  // the rules ran — one of them is that day's banned one. (DAILY_DAY:0 keeps
+  // every other run here free of rules, whatever the calendar says.)
+  const everySkill = ['meleeStrike', 'fireball', 'chainLightning', 'iceSpear', 'voidOrb', 'thunderStrike', 'drone', 'poisonNova']
+    .map((id) => ({ id, level: 1 }));
+  const banned = await read(await alice.send('/api/ranking', 'POST', run({
+    detail: { ...honest, skills: everySkill, rules: Date.UTC(2026, 9, 25, 20) },
+  })));
+  check('a run that held the day’s banned skill is turned down, saying nothing (오늘의 규칙)',
+    banned.status === 400 && banned.body?.error === 'refused', JSON.stringify(banned.body));
 
   // The shown clock against the second one (0.71): pushed on, held back, or
   // with no second clock at all — refused the same way, saying nothing.

@@ -21,6 +21,7 @@
  * rules a run has to pass are the game's own (RANKING) plus RULES.
  */
 import { RANKING, nextRankingReset, rankingDayStart } from '../src/config/system';
+import { dailyRulesFor } from '../src/config/daily';
 import { isAdmin, sessionUser } from './auth';
 import type { Env } from './env';
 import { hex, json, readJson, sameOrigin, sha256, unstored } from './http';
@@ -290,8 +291,32 @@ export function cleanDetail(raw: unknown): string {
     passives: counts(d.passives, 999, 30),
     resumed: d.resumed === true,
     wall: whole(d.wall, 1e9) ?? 0,
+    rules: whole(d.rules, 1e14),
   };
   return JSON.stringify(detail);
+}
+
+/**
+ * 오늘의 규칙 (0.126): a run that held the day's banned skill. Its day is
+ * the one it says it started on, when that is today or yesterday (a run can
+ * cross 05:00); otherwise — none given, or out of reach — today's. A run
+ * from before the rules began has none to break.
+ */
+export function brokeDailyRules(raw: unknown, now: number, env?: Env): boolean {
+  const detail = (raw as { detail?: { rules?: unknown; skills?: unknown } } | null)?.detail;
+  const said = Number(detail?.rules);
+  const testDay = String(env?.AUTH_TEST ?? '') === '1' && env?.DAILY_DAY !== undefined ? Number(env.DAILY_DAY) : null;
+  if (testDay !== null) {
+    const rules = dailyRulesFor(Number.isFinite(said) && detail?.rules !== undefined ? said : testDay);
+    return !!rules && Array.isArray(detail?.skills) && detail.skills.some((skill: { id?: unknown }) => skill?.id === rules.bannedSkill);
+  }
+  const today = rankingDayStart(now);
+  const day = said === today || said === today - 86_400_000 ? said : today;
+  const rules = dailyRulesFor(day);
+  if (!rules || !Array.isArray(detail?.skills)) {
+    return false;
+  }
+  return detail.skills.some((skill: { id?: unknown }) => skill?.id === rules.bannedSkill);
 }
 
 /** Why a run was refused, or null when it is a run. */
@@ -423,8 +448,9 @@ export async function submit(request: Request, env: Env, ctx: ExecutionContext):
   if (problem) {
     return json({ error: problem }, 400);
   }
-  // Out of reach of the run itself: turned down like any other, with no reason given.
-  if (implausible(raw)) {
+  // Out of reach of the run itself, or played against the day's rules: turned
+  // down like any other, with no reason given.
+  if (implausible(raw) || brokeDailyRules(raw, Date.now(), env)) {
     return json({ error: 'refused' }, 400);
   }
   const run = raw as Record<string, unknown>;

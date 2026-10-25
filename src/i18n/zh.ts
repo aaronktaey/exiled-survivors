@@ -90,6 +90,24 @@ export const zh: Strings = {
     contactDamageScale: '受到的接触伤害减少 {n}%',
     potionChanceScale: '药水掉落率增幅 {n}%',
   },
+  daily: {
+    title: '今日规则 · {date}',
+    date: '{month}/{day}（{weekday}）',
+    weekdays: ['日', '一', '二', '三', '四', '五', '六'],
+    bannedSkill: '禁用技能：{skill}',
+    bannedTalent: '禁用天赋：{talent}（不掉落碎片）',
+    enemy: '强化敌人：{enemy}',
+    titleLine: '今日规则 {date} · 禁用 {skill} · 禁用天赋 {talent} · {enemy}',
+    startBanned: '今日禁用：{skill}',
+    buffs: {
+      hp: '{kind} 生命 +{n}%',
+      speed: '{kind} 移动速度 +{n}%',
+      contact: '{kind} 接触伤害 +{n}%',
+      shotSpeed: '{kind} 投射物速度 +{n}%',
+      hopDistance: '{kind} 跳跃距离 +{n}%',
+      rareChance: '稀有敌人出现率 +{n}%',
+    },
+  },
   mastery: {
     title: '{skill} 觉醒！',
     card: '觉醒 — {effect}',
@@ -1222,6 +1240,7 @@ export const zh: Strings = {
           lines: [
             '只有已登录的账号可以登上排行榜，按分数排名：击杀敌人的生命值之和乘以各类敌人的倍率（{scoreKinds}）。选择 {nameLength} 个字母的名字和图标 · 国旗，每个账号在榜上只有一个名字和一条最佳记录。',
             '显示前 {rankSize} 名，是与其他玩家共享的排行榜。每天 {rankResetHour}:00（韩国时间）重新开始，登录后还会显示自己今天的最佳记录和名次。',
+            '今日规则：每次排行榜重新开始时，会决定当天的三条规则——禁用技能一个（不会出现）、禁用天赋一个（不掉落该天赋的碎片）、强化敌人一种。适用于当天开始的所有对局，即使对局跨过重置时间，也会保持开始那天的规则。可在标题画面和战斗中的效果图标中查看。',
             '我的记录标签页无论是否登录，都会保留自己前 {rankSize} 局，附带日期、等级与存活时间。用 ← → 切换标签页。',
           ],
         },

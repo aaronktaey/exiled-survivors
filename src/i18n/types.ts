@@ -167,6 +167,34 @@ export interface Strings {
     /** The 체력 포션's drop chance {n}% amplified (0.122: 독성폭발). */
     readonly potionChanceScale: string;
   };
+  /** 오늘의 규칙 (0.126): a ranking day's banned skill, banned 재능 and strengthened enemy. */
+  readonly daily: {
+    /** {date} */
+    readonly title: string;
+    /** {month} {day} {weekday} */
+    readonly date: string;
+    /** Sunday first. */
+    readonly weekdays: readonly string[];
+    /** {skill} */
+    readonly bannedSkill: string;
+    /** {talent} */
+    readonly bannedTalent: string;
+    /** {enemy} */
+    readonly enemy: string;
+    /** One line for the title: {date} {skill} {talent} {enemy}. */
+    readonly titleLine: string;
+    /** On the first skill's cards: {skill}. */
+    readonly startBanned: string;
+    /** A strengthened enemy by stat: {kind} {n}. */
+    readonly buffs: {
+      readonly hp: string;
+      readonly speed: string;
+      readonly contact: string;
+      readonly shotSpeed: string;
+      readonly hopDistance: string;
+      readonly rareChance: string;
+    };
+  };
   readonly mastery: {
     /** The banner when it happens: {skill}. */
     readonly title: string;

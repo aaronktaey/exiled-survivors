@@ -94,6 +94,24 @@ export const ko: Strings = {
     contactDamageScale: '받는 접촉 피해 {n}% 감폭',
     potionChanceScale: '포션 드랍률 {n}% 증폭',
   },
+  daily: {
+    title: '오늘의 규칙 · {date}',
+    date: '{month}/{day}({weekday})',
+    weekdays: ['일', '월', '화', '수', '목', '금', '토'],
+    bannedSkill: '금지 스킬: {skill}',
+    bannedTalent: '금지 재능: {talent} (파편이 나오지 않음)',
+    enemy: '강화된 적: {enemy}',
+    titleLine: '오늘의 규칙 {date} · 금지 {skill} · 금지 재능 {talent} · {enemy}',
+    startBanned: '오늘 금지: {skill}',
+    buffs: {
+      hp: '{kind} 체력 +{n}%',
+      speed: '{kind} 이동속도 +{n}%',
+      contact: '{kind} 접촉 피해 +{n}%',
+      shotSpeed: '{kind} 투사체 속도 +{n}%',
+      hopDistance: '{kind} 도약 거리 +{n}%',
+      rareChance: '희귀 적 등장 확률 +{n}%',
+    },
+  },
   mastery: {
     title: '{skill} 각성!',
     card: '각성 — {effect}',
@@ -1089,6 +1107,7 @@ export const ko: Strings = {
           lines: [
             '랭킹에는 로그인한 계정만 올릴 수 있고, 처치한 적의 체력 합에 적 종류별 배율({scoreKinds})을 곱한 점수로 순위를 매깁니다. 이름 {nameLength}글자와 아이콘 · 국기를 고르며, 계정마다 이름 하나와 최고 기록 하나만 올라갑니다.',
             '상위 {rankSize}명까지 보여 주며, 다른 플레이어와 함께 쓰는 순위표입니다. 매일 오전 {rankResetHour}시(한국 시간)에 새로 시작하고, 로그인하면 오늘의 내 최고 기록과 순위도 보입니다.',
+            '오늘의 규칙: 랭킹이 새로 시작할 때마다 그날의 규칙 세 가지가 정해집니다 — 금지 스킬 하나(나오지 않음), 금지 재능 하나(그 재능의 파편이 나오지 않음), 강화된 적 하나. 그날 시작한 모든 판에 적용되며, 판이 다음 날로 넘어가도 시작한 날의 규칙이 유지됩니다. 타이틀 화면과 전투 중 효과 아이콘에서 확인할 수 있습니다.',
             '내 기록 탭에는 로그인과 상관없이 내가 끝낸 판 중 상위 {rankSize}개가 날짜 · 레벨 · 버틴 시간과 함께 남습니다. ← → 로 탭을 바꿉니다.',
           ],
         },

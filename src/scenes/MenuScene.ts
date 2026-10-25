@@ -16,7 +16,8 @@ import {
   ICON_SPOTLIGHT,
 } from '@/config';
 import { PATCH_NOTES } from '@/content/patchNotes';
-import { fill, gearName, t } from '@/i18n';
+import { dailyRuleText, fill, gearName, t } from '@/i18n';
+import { dailyRules } from '@/systems/DailyRules';
 import { bgm } from '@/systems/Bgm';
 import { IconBar } from '@/systems/IconBar';
 import { BoneScene } from '@/scenes/BoneScene';
@@ -91,11 +92,13 @@ export class MenuScene extends Phaser.Scene {
     const { width, height } = this.scale;
 
     // 생존자 마을 on the dev server (VILLAGE.devOnly); the menu everywhere else.
+    this.dailyLineY = undefined;
     if (villageOn()) {
       this.buildVillage();
     } else {
       this.buildMenu(width, height);
     }
+    this.addDailyLine(width, this.dailyLineY ?? height - MENU.dailyLineFromBottom);
 
     // The title is drawn before the account is known; when it turns out to be
     // the admin's (or stops being), the 밸런스 icon comes or goes.
@@ -142,6 +145,29 @@ export class MenuScene extends Phaser.Scene {
     bgm.start(this);
   }
 
+  /** 오늘의 규칙 (0.126): what a run started now plays under, one line over the hint. Public for tests. */
+  public dailyLine?: Phaser.GameObjects.Text;
+  /** Where the menu leaves room for it: just over the first row (the village puts it at the bottom). */
+  private dailyLineY?: number;
+  private addDailyLine(width: number, y: number): void {
+    const rules = dailyRules.today();
+    if (!rules) {
+      this.dailyLine = undefined;
+      return;
+    }
+    this.dailyLine = fitText(
+      this.add
+        .text(width / 2, y, dailyRuleText(rules).short, {
+          fontFamily: 'system-ui, sans-serif',
+          fontSize: TEXT.size.hint,
+          color: COLORS.daily,
+        })
+        .setOrigin(0.5)
+        .setDepth(DEPTH.ui),
+      width,
+    );
+  }
+
   /** The title as a list under the logo, with the corner icons — the title everywhere but the village. */
   private buildMenu(width: number, height: number): void {
     this.add.tileSprite(0, 0, width, height, TEXTURES.grid).setOrigin(0, 0).setDepth(DEPTH.ground);
@@ -159,6 +185,8 @@ export class MenuScene extends Phaser.Scene {
     const top = centredTop(height, blockHeight + gap + listHeight);
 
     this.addLogo(width, top + MENU.logoHeight / 2);
+    // 오늘의 규칙 sits in the gap over the first row, clear of the first-place line.
+    this.dailyLineY = top + blockHeight + gap - MENU.dailyLineAboveRows;
 
     const saved = saveGame.read();
     this.menu = new MenuList(this, {

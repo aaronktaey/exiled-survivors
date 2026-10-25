@@ -51,6 +51,7 @@ import {
   altarOfferText,
   boneDetail,
   boneName,
+  dailyRuleText,
   fill,
   gearImplicitText,
   gearTitle,
@@ -85,6 +86,7 @@ import { RareTooltip } from '@/systems/RareTooltip';
 import { sfx, effectVolume } from '@/systems/Sfx';
 import { saveGame, type SavedRun } from '@/systems/SaveGame';
 import { runLedger } from '@/systems/RunLedger';
+import { dailyRules } from '@/systems/DailyRules';
 import { runTally } from '@/systems/RunTally';
 import { skillOffered } from '@/systems/SkillGate';
 import { arenaLookOn, drawArenaDecals, ensureArenaFloor, themeFor } from '@/systems/Arena';
@@ -252,6 +254,8 @@ export class GameScene extends Phaser.Scene {
   private elapsedMs = 0;
   private sinceSaveMs = 0;
   private resuming: SavedRun | null = null;
+  /** The ranking day whose 오늘의 규칙 this run plays under, or null for none (0.126). */
+  private rulesDay: number | null = null;
   /** A resumed run the developer tools had already changed. */
   private devUsedBefore = false;
   /** The admin's 밸런스 draft was on during this run. */
@@ -289,6 +293,10 @@ export class GameScene extends Phaser.Scene {
     // once, at the start, and the save remembers them.
     this.bones = [...(data?.save?.bones ?? data?.bones ?? [])];
     this.boneBonus = boneBonusFor(this.bones);
+    // 오늘의 규칙 (0.126): the day a run was started on, kept by its save, so
+    // one that crosses 05:00 plays to the end under the rules it began with.
+    this.rulesDay = this.resuming ? (this.resuming.rulesDay ?? null) : dailyRules.dayNow();
+    dailyRules.begin(this.rulesDay);
   }
 
   public create(): void {
@@ -377,7 +385,8 @@ export class GameScene extends Phaser.Scene {
         onMagnetCollected: () => this.announce(t().game.magnetPulled),
         onUnknownRuneCollected: () => this.feelUnknownRune(),
         onTalentShardCollected: (stat, count) => this.gainShard(stat, count),
-        shardWeight: (stat) => this.mods.passive.shardWeights[stat] ?? 1,
+        // 오늘의 규칙: a banned 재능's 파편 never drop (0.126).
+        shardWeight: (stat) => (dailyRules.talentBanned(stat) ? 0 : (this.mods.passive.shardWeights[stat] ?? 1)),
         dropScale: () => this.boneBonus.dropScale,
         potionScale: () => this.heldBonus.potionChanceScale,
         shatter: () =>
@@ -460,9 +469,14 @@ export class GameScene extends Phaser.Scene {
    * attack. The arena is frozen while the choice is open, the same hold an
    * upgrade puts on it, and the title card waits until the skill is in hand.
    */
-  /** What this player may be offered (SkillGate): every skill but a trial one, and any already held. */
+  /**
+   * What this player may be offered (SkillGate): every skill but a trial one
+   * and today's banned one (오늘의 규칙, 0.126), and any already held.
+   */
   private offeredSkills(): readonly SkillDefinition[] {
-    return DROPPABLE_SKILLS.filter((skill) => skillOffered(skill.id) || this.owned.has(skill.id));
+    return DROPPABLE_SKILLS.filter(
+      (skill) => (skillOffered(skill.id) && !dailyRules.skillBanned(skill.id)) || this.owned.has(skill.id),
+    );
   }
 
   private openStartPick(): void {
@@ -476,9 +490,13 @@ export class GameScene extends Phaser.Scene {
     this.choosing = true;
     this.physics.pause();
 
+    const banned = dailyRules.active?.bannedSkill;
     const data: SkillPickData = {
       title: t().skillPick.startTitle,
-      subtitle: t().skillPick.startSubtitle,
+      // 오늘의 규칙: the skill missing from the cards, named.
+      subtitle: banned
+        ? `${t().skillPick.startSubtitle} · ${fill(t().daily.startBanned, { skill: skillName(banned) })}`
+        : t().skillPick.startSubtitle,
       options,
       owned: [...this.owned],
       onPick: (skill) => {
@@ -790,6 +808,15 @@ export class GameScene extends Phaser.Scene {
       ].filter(Boolean);
       out.push({ id: 'gear', kind: 'gear', icon: gearTexture(item.id), title: gearTitle(item), lines });
     }
+    // 오늘의 규칙 (0.126): one no-entry icon, all three rules on its card.
+    const rules = dailyRules.active;
+    if (rules) {
+      const text = dailyRuleText(rules);
+      out.push({
+        id: 'daily', kind: 'debuff', icon: TEXTURES.dailyRules,
+        title: text.title, lines: text.lines,
+      });
+    }
     // No 패시브 icon since 0.106 (the user's ask): the tree only weighs the shards now.
     for (const id of this.bones) {
       const bone = BONES[id];
@@ -830,6 +857,7 @@ export class GameScene extends Phaser.Scene {
       scoreByKind: this.stats.scoreByKind,
       damageBySkill: this.stats.damageBySkill,
       terrainSeed: this.terrainSeed,
+      rulesDay: this.rulesDay,
       shards: { ...this.shards },
     });
   }
@@ -1489,7 +1517,11 @@ export class GameScene extends Phaser.Scene {
    */
   private openShardPick(subtitle: string): void {
     const copy = t().shard;
-    const picks = Phaser.Utils.Array.Shuffle([...TALENT_SHARD.stats]).slice(0, TALENT_SHARD.choices);
+    // Today's banned 재능 is not on the cards either (오늘의 규칙, 0.126).
+    const picks = Phaser.Utils.Array.Shuffle(TALENT_SHARD.stats.filter((stat) => !dailyRules.talentBanned(stat))).slice(
+      0,
+      TALENT_SHARD.choices,
+    );
     const data: UpgradeChoiceData = {
       title: copy.pickTitle,
       subtitle,
@@ -1877,6 +1909,7 @@ export class GameScene extends Phaser.Scene {
       passives: { ...passives.value.ranks } as Record<string, number>,
       resumed: this.resuming !== null,
       wall: runLedger.ms,
+      rules: this.rulesDay,
     };
   }
 

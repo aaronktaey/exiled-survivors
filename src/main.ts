@@ -8,6 +8,7 @@ import './style.css';
 import * as balance from '@/config';
 import { COLORS, RETIRED_STORAGE } from '@/config';
 import { settings } from '@/systems/Settings';
+import { dailyRules } from '@/systems/DailyRules';
 import { registerSharpText } from '@/systems/SharpText';
 import { loadGameFonts, useGameFont } from '@/systems/Fonts';
 import { gear, gearBonusFor, orbApplied } from '@/systems/Gear';
@@ -173,6 +174,7 @@ if (import.meta.env.DEV) {
     cloudSave?: typeof cloudSave;
     podium?: typeof podium;
     settings?: typeof settings;
+    dailyRules?: typeof dailyRules;
   };
   dev.game = game;
   // So a test can read a tuned number instead of carrying a copy of it.
@@ -196,4 +198,5 @@ if (import.meta.env.DEV) {
   dev.cloudSave = cloudSave;
   dev.podium = podium;
   dev.settings = settings;
+  dev.dailyRules = dailyRules;
 }

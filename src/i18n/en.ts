@@ -90,6 +90,24 @@ export const en: Strings = {
     contactDamageScale: '{n}% less contact damage taken',
     potionChanceScale: '{n}% more potion drops',
   },
+  daily: {
+    title: 'Today’s rules · {date}',
+    date: '{month}/{day} ({weekday})',
+    weekdays: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
+    bannedSkill: 'Banned skill: {skill}',
+    bannedTalent: 'Banned talent: {talent} (its shards do not drop)',
+    enemy: 'Stronger enemy: {enemy}',
+    titleLine: 'Today’s rules {date} · no {skill} · no {talent} talent · {enemy}',
+    startBanned: 'Banned today: {skill}',
+    buffs: {
+      hp: '{kind} health +{n}%',
+      speed: '{kind} move speed +{n}%',
+      contact: '{kind} contact damage +{n}%',
+      shotSpeed: '{kind} shot speed +{n}%',
+      hopDistance: '{kind} hop distance +{n}%',
+      rareChance: 'Rare enemies +{n}% more often',
+    },
+  },
   mastery: {
     title: '{skill} Awakened!',
     card: 'Awakened — {effect}',
@@ -1228,6 +1246,7 @@ export const en: Strings = {
           lines: [
             'Only signed-in accounts can put runs on the ranking, ranked by a score: the health of every enemy killed, times its kind’s share ({scoreKinds}). Pick a {nameLength}-letter name, an icon and a flag; each account has one name and one best run on the board.',
             'It shows the top {rankSize}, and the board is shared with other players. It starts over every day at {rankResetHour}:00 Korea time; signed in, you also see your own best today and where it stands.',
+            'Today’s rules: each time the board starts over, the day draws three rules — one banned skill (never offered), one banned talent (its shards do not drop) and one stronger enemy. They apply to every run started that day, and a run that goes past the reset keeps the rules it began with. The title screen and an effect icon in battle show them.',
             'The My runs tab keeps your own top {rankSize} runs, signed in or not, with the date, level and time survived. ← → switches tabs.',
           ],
         },
