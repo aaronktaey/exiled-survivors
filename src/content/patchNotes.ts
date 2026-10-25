@@ -15,6 +15,24 @@ export interface PatchNote {
 
 export const PATCH_NOTES: readonly PatchNote[] = [
   {
+    version: '0.128',
+    date: '2026-10-25',
+    changes: {
+      ko: [
+        '금화가 쏟아지던 연출을 없앴습니다. 신화 아이템 드랍, 우두머리 · 키메라 · 도망자 처치, 각성, 재능의 덩어리, 내 최고 기록에는 빛과 넓게 퍼지는 반짝임만 남습니다.',
+      ],
+      en: [
+        'The gold coin showers are gone. A mythic drop, a Boss, Chimera or Runaway down, an awakening, a talent lump and a new personal best now glow and burst into a wide ring of sparkles.',
+      ],
+      ja: [
+        '金貨が降り注ぐ演出をなくしました。神話アイテムのドロップ、ボス・キメラ・逃亡者の撃破、覚醒、才能の塊、自己ベスト更新には、光と大きく広がるきらめきだけが残ります。',
+      ],
+      zh: [
+        '移除了金币洒落的演出。掉落神话物品、击败首领·奇美拉·逃亡者、觉醒、天赋块和个人新纪录时，只保留光芒和大范围扩散的闪光。',
+      ],
+    },
+  },
+  {
     version: '0.127',
     date: '2026-10-25',
     changes: {

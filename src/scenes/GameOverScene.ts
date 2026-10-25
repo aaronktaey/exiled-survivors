@@ -30,7 +30,7 @@ import type { RunDetail } from '@/systems/Ranking';
 export interface GameOverData {
   /** What the run amounted to, read out as a table. */
   readonly summary: RunSummary;
-  /** Better than every run on 내 기록 before it (0.127): coins over the score. */
+  /** Better than every run on 내 기록 before it (0.127): a burst over the score. */
   readonly newBest?: boolean;
   readonly level: number;
   readonly survivedMs: number;
@@ -107,7 +107,7 @@ export class GameOverScene extends Phaser.Scene {
     this.payload = data;
   }
 
-  /** A new best on 내 기록 (0.127, 도파민): a badge by the score and gold thrown over it. */
+  /** A new best on 내 기록 (0.127, 도파민): a badge by the score and a burst over it. */
   private celebrateRecord(): void {
     this.recordLabel = undefined;
     const score = this.scoreText;
@@ -130,10 +130,10 @@ export class GameOverScene extends Phaser.Scene {
       .setOrigin(0.5, 0)
       .setDepth(DEPTH.ui + 6);
     this.tweens.add({ targets: this.recordLabel, scale: 1.12, duration: 420, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
-    this.time.delayedCall(CELEBRATE.recordDelayMs, () => jackpot(this, { x, y, depth: DEPTH.ui + 5 }, 0xffd23f, CELEBRATE.recordCoins));
+    this.time.delayedCall(CELEBRATE.recordDelayMs, () => jackpot(this, { x, y, depth: DEPTH.ui + 5 }, 0xffd23f));
   }
 
-  /** The score, big; a new best throws coins over it (0.127). Public for tests. */
+  /** The score, big; a new best bursts over it (0.127). Public for tests. */
   public scoreText?: Phaser.GameObjects.Text;
   public recordLabel?: Phaser.GameObjects.Text;
   private scoreCaption?: Phaser.GameObjects.Text;

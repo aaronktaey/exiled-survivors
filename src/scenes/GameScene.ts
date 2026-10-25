@@ -1582,7 +1582,7 @@ export class GameScene extends Phaser.Scene {
     this.announce(fill(count > 1 ? t().shard.lumpToast : t().shard.toast, { line }), 'heal');
     // 도파민 (0.127): a 재능의 덩어리 is a jackpot; a single 파편 only sparkles.
     if (count > 1) {
-      jackpot(this, { x, y, depth: DEPTH.player + 2 }, tint, CELEBRATE.coins.count);
+      jackpot(this, { x, y, depth: DEPTH.player + 2 }, tint);
     } else {
       sparkleBurst(this, { x, y, depth: DEPTH.player + 2 }, tint, true);
     }
@@ -1682,8 +1682,8 @@ export class GameScene extends Phaser.Scene {
    * on underneath.
    */
   public celebrateMastery(skill: SkillId, tier: 1 | 2 = 1): void {
-    // 도파민 (0.127): gold round the survivor as the banner comes up.
-    jackpot(this, { x: this.player.x, y: this.player.y, depth: DEPTH.player + 2 }, 0xffc43a, CELEBRATE.bossCoins);
+    // 도파민 (0.127): a glow and a wide burst round the survivor as the banner comes up.
+    jackpot(this, { x: this.player.x, y: this.player.y, depth: DEPTH.player + 2 }, 0xffc43a);
     const camera = this.cameras.main;
     const { width, height } = camera;
     const depth = DEPTH.ui + 30;

@@ -200,8 +200,7 @@ export const TEXTURES = {
   trophy: "tex-trophy",
   /** 거미줄's slow, as an icon among the survivor's effects. */
   webIcon: "tex-web-icon",
-  /** 도파민 (0.127): a spinning gold coin and a four-point sparkle (systems/Celebrate.ts). */
-  coin: "tex-coin",
+  /** 도파민 (0.127): a four-point sparkle (systems/Celebrate.ts). */
   sparkle: "tex-sparkle",
   /** 오늘의 규칙 among the survivor's effects (0.126): a no-entry sign. */
   dailyRules: "tex-daily-rules",
@@ -486,22 +485,20 @@ export const COMBINE_FX = {
 /** A 구슬 spent in the 인벤토리: it flies into the weapon and the weapon answers. */
 /**
  * 도파민 (0.127, the user's ask): what a good moment throws — systems/Celebrate.ts.
- * The big ones (a 신화 drop, a 우두머리 down, a 각성, a record) get coins,
- * sparkles and a glow; the ones that come round again and again (an upgrade
+ * The big ones (a 신화 drop, a 우두머리 down, a 각성, a record) get a glow
+ * and a wide burst of sparkles (0.127's gold coins went in 0.128); the ones that come round again and again (an upgrade
  * picked, a 합성, a 구슬) only the `quick` sparkle, over in a blink.
  */
 export const CELEBRATE = {
-  coins: { count: 18, lifeMs: 900, rise: 90, spread: 70, fall: 40, size: 14, staggerMs: 120 },
   sparkles: { count: 12, lifeMs: 520, radius: 70, size: 14, color: 0xffe27a },
+  /** The biggest moments' burst: more sparkles, further out (0.128 — in place of the coins). */
+  big: { count: 22, lifeMs: 700, radius: 110, size: 16 },
   quick: { count: 8, lifeMs: 220, radius: 38, size: 10 },
   glowMs: 600,
   jackpotGlow: 120,
   /** A 신화 drop's sparkles: red, like its label and pillar. */
   mythicColor: 0xff6a5a,
-  /** A 우두머리, 키메라 or 도망자 down: this many coins. */
-  bossCoins: 24,
-  /** A new best on 내 기록: coins over the score, a moment after the screen opens. */
-  recordCoins: 30,
+  /** A new best on 내 기록: the burst over the score, a moment after the screen opens. */
   recordDelayMs: 250,
 } as const;
 

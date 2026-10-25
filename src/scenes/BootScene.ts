@@ -1435,17 +1435,8 @@ export class BootScene extends Phaser.Scene {
     }
   }
 
-  /** 도파민 (0.127): a gold coin with a rim and a shine, and a four-point sparkle. */
+  /** 도파민 (0.127): a four-point sparkle. */
   private createCelebrateTextures(): void {
-    if (!this.textures.exists(TEXTURES.coin)) {
-      const g = this.add.graphics();
-      g.fillStyle(0xb8860b, 1).fillCircle(16, 16, 15);
-      g.fillStyle(0xffd23f, 1).fillCircle(16, 16, 12);
-      g.fillStyle(0xfff3b0, 1).fillCircle(12, 11, 4);
-      g.lineStyle(2, 0xd9a520, 1).strokeCircle(16, 16, 8);
-      g.generateTexture(TEXTURES.coin, 32, 32);
-      g.destroy();
-    }
     if (!this.textures.exists(TEXTURES.sparkle)) {
       const g = this.add.graphics();
       g.fillStyle(0xffffff, 1);

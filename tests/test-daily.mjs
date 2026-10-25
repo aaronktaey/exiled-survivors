@@ -124,18 +124,19 @@ await shot('daily-01b-pick');
 await ev(`(() => { const sp = window.game.scene.getScene('SkillPickScene'); sp.pick(0); return 1; })()`);
 await cdp.until(`!window.game.scene.isActive('SkillPickScene')`, 5000, 100);
 
-// 0.127 (도파민): a 재능의 덩어리 throws coins and sparkles; a single 파편 only a blink of sparkles.
+// 0.127 (도파민): a 재능의 덩어리 bursts wide; a single 파편 only a blink of sparkles. No coins since 0.128.
 const fx = await run(`
   const count = (key) => s.children.list.filter((o) => o.texture && o.texture.key === key).length;
-  const before = { coins: count('tex-coin'), stars: count('tex-sparkle') };
+  const before = count('tex-sparkle');
   s.gainShard('damage', 3);
-  const lump = { coins: count('tex-coin') - before.coins, stars: count('tex-sparkle') - before.stars };
+  const lump = count('tex-sparkle') - before;
   s.gainShard('damage', 1);
-  const one = { coins: count('tex-coin') - before.coins - lump.coins, stars: count('tex-sparkle') - before.stars - lump.stars };
-  return { lump, one, want: window.config.CELEBRATE.coins.count };
+  const one = count('tex-sparkle') - before - lump;
+  const C = window.config.CELEBRATE;
+  return { lump, one, big: C.big.count, quick: C.quick.count, coins: s.textures.exists('tex-coin') };
 `);
-check('a 재능의 덩어리 throws gold and sparkles; a single 파편 only sparkles',
-  fx.lump.coins === fx.want && fx.lump.stars > 0 && fx.one.coins === 0 && fx.one.stars > 0, JSON.stringify(fx));
+check('a 재능의 덩어리 bursts wide; a single 파편 only blinks; nothing throws coins',
+  fx.lump === fx.big && fx.one === fx.quick && !fx.coins, JSON.stringify(fx));
 
 // A run resumed on another day keeps the rules it began with.
 const resumed = await run(`
@@ -239,9 +240,9 @@ await cdp.until(`window.game.scene.isActive('GameOverScene')`, 10000, 100);
 await sleep(600);
 const record = await ev(`(() => { const g = window.game.scene.getScene('GameOverScene');
   return { newBest: g.payload.newBest, label: g.recordLabel?.text ?? null,
-           coins: g.children.list.filter((o) => o.texture && o.texture.key === 'tex-coin').length }; })()`);
-check('a run that beats every run on 내 기록 is celebrated: a badge by the score and gold over it',
-  record.newBest === true && !!record.label && record.coins > 0, JSON.stringify(record));
+           stars: g.children.list.filter((o) => o.texture && o.texture.key === 'tex-sparkle').length }; })()`);
+check('a run that beats every run on 내 기록 is celebrated: a badge by the score and a burst over it',
+  record.newBest === true && !!record.label && record.stars > 0, JSON.stringify(record));
 await shot('daily-04-record');
 
 console.log('\n=== SUMMARY ===');

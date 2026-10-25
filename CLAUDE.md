@@ -494,14 +494,15 @@ Read `git log` for what changed and when. What is not in the log:
   a page sets `window.__dailyOn` (`__dailyDay` picks the day); the dev
   server shows the first day's rules before it starts. `window.dailyRules`
   is the dev handle.
-- **도파민 (0.127, the user's ask).** `systems/Celebrate.ts`: `coinShower`,
-  `sparkleBurst`, `glowPulse` and `jackpot` (all three), short-lived Images
-  on tweens, numbers in `CELEBRATE` (visuals.ts), textures `TEXTURES.coin` and
-  `sparkle` drawn at boot. Big moments: a 신화 drop lands (`CombatSystem.land`
+- **도파민 (0.127, the user's ask).** `systems/Celebrate.ts`: `sparkleBurst`,
+  `glowPulse` and `jackpot` (a glow and the `big` burst), short-lived Images
+  on tweens, numbers in `CELEBRATE` (visuals.ts), the `TEXTURES.sparkle`
+  drawn at boot. No coins: 0.127 threw gold coins and the user found them
+  odd (0.128) — do not bring them back. Big moments: a 신화 drop lands (`CombatSystem.land`
   — a 희귀 one only sparkles), a 우두머리 · 키메라 · 도망자 down
   (`killEnemy`), a 각성 (`celebrateMastery`), a 재능의 덩어리
   (`gainShard`, count > 1), a new best on 내 기록 (`GameOverData.newBest`:
-  the badge takes the score caption's place, coins over it). Moments that
+  the badge takes the score caption's place, a burst over it). Moments that
   come round again and again get only the `quick` sparkle and short
   timings — the user's rule: an upgrade picked (`onUpgradePicked`), a 파편,
   a 합성 (COMBINE_FX under a second in all) and a 구슬 (ORB_FX). A new

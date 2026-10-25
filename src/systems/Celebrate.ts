@@ -3,8 +3,9 @@ import Phaser from 'phaser';
 import { CELEBRATE, DEPTH, TEXTURES } from '@/config';
 
 /**
- * 도파민 (0.127, the user's ask): what a good moment looks like — gold coins
- * thrown up and falling, sparkles flying out, a glow that swells and fades.
+ * 도파민 (0.127, the user's ask): what a good moment looks like — sparkles
+ * flying out and a glow that swells and fades. (0.127 threw gold coins too;
+ * the user found them odd, and they went in 0.128.)
  * Every piece is a short-lived Image on a tween, nothing pooled and nothing
  * left behind; the numbers are CELEBRATE's (visuals.ts). Moments that come
  * round again and again (an upgrade picked, a 합성, a 구슬) use the `quick`
@@ -18,45 +19,15 @@ interface At {
   readonly depth?: number;
 }
 
-/** Gold coins thrown up from a point, spinning, falling past it and fading. */
-export function coinShower(scene: Phaser.Scene, at: At, count: number = CELEBRATE.coins.count): void {
-  const { lifeMs, rise, spread, fall, size } = CELEBRATE.coins;
-  for (let i = 0; i < count; i++) {
-    const coin = scene.add
-      .image(at.x, at.y, TEXTURES.coin)
-      .setDisplaySize(size, size)
-      .setDepth(at.depth ?? DEPTH.vfx + 2);
-    const dx = Phaser.Math.FloatBetween(-spread, spread);
-    const up = Phaser.Math.FloatBetween(rise * 0.6, rise);
-    const life = lifeMs * Phaser.Math.FloatBetween(0.8, 1.15);
-    const spin = Phaser.Math.FloatBetween(3, 6);
-    const start = coin.scaleX;
-    const delay = Phaser.Math.Between(0, CELEBRATE.coins.staggerMs);
-    scene.tweens.addCounter({
-      from: 0,
-      to: 1,
-      delay,
-      duration: life,
-      onUpdate: (tween) => {
-        const t = tween.getValue() ?? 0;
-        // Up and over: a parabola that comes back down `fall` past where it began.
-        coin.setPosition(at.x + dx * t, at.y - up * 4 * t * (1 - t) + fall * t * t);
-        coin.scaleX = start * Math.cos(t * spin * Math.PI);
-        coin.setAlpha(t < 0.75 ? 1 : 1 - (t - 0.75) / 0.25);
-      },
-      onComplete: () => coin.destroy(),
-    });
-  }
-}
-
 /** Sparkles flying out from a point in a ring, shrinking as they go. */
 export function sparkleBurst(
   scene: Phaser.Scene,
   at: At,
   color: number = CELEBRATE.sparkles.color,
   quick = false,
+  big = false,
 ): void {
-  const spec = quick ? CELEBRATE.quick : CELEBRATE.sparkles;
+  const spec = quick ? CELEBRATE.quick : big ? CELEBRATE.big : CELEBRATE.sparkles;
   for (let i = 0; i < spec.count; i++) {
     const angle = (i / spec.count) * Math.PI * 2 + Phaser.Math.FloatBetween(-0.2, 0.2);
     const reach = spec.radius * Phaser.Math.FloatBetween(0.6, 1);
@@ -97,9 +68,8 @@ export function glowPulse(scene: Phaser.Scene, at: At, color: number, size: numb
   });
 }
 
-/** The full show — glow, sparkles and coins — for the biggest moments. */
-export function jackpot(scene: Phaser.Scene, at: At, color: number = CELEBRATE.sparkles.color, coins: number = CELEBRATE.coins.count): void {
+/** The full show — a glow and a wide burst of sparkles — for the biggest moments. */
+export function jackpot(scene: Phaser.Scene, at: At, color: number = CELEBRATE.sparkles.color): void {
   glowPulse(scene, at, color, CELEBRATE.jackpotGlow);
-  sparkleBurst(scene, at, color);
-  coinShower(scene, at, coins);
+  sparkleBurst(scene, at, color, false, true);
 }
