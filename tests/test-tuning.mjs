@@ -307,6 +307,19 @@ check('a player who is not the admin plays on everyone’s values, never a draft
   pl.potion === 0.25 && !pl.icons?.includes('tuning'), JSON.stringify(pl));
 await ev(`(() => { window.config.DEBUG.gatedInDev = false; window.tuning.draft = {}; localStorage.removeItem('exiled-survivors:tuning-draft:v1'); return 1; })()`);
 
+// --- 5. everyone's values as last heard play on even when the server does not answer (0.133) ---
+// The dev server has no /api here: the load fails, and the values section 4
+// settled must still be the ones the game plays on.
+const heard = await ev(`(() => JSON.parse(localStorage.getItem(window.config.TUNING.sharedKey) ?? 'null'))()`);
+await cdp.send('Page.navigate', { url: 'about:blank' });
+await cdp.send('Page.navigate', { url: 'http://localhost:5173/' });
+await cdp.until(`window.tuning && window.game?.scene.isActive('MenuScene')`, 30000, 200);
+const offline = await ev(`(() => ({ potion: window.config.POTION.chance, shared: window.tuning.shared['POTION.chance'] }))()`);
+check('everyone’s values are kept on the device and laid over at boot, so a run before (or without) the server’s answer plays on them',
+  heard?.overrides?.['POTION.chance'] === 0.25 && offline.potion === 0.25 && offline.shared === 0.25,
+  JSON.stringify({ heard, offline }));
+await ev(`(() => { localStorage.removeItem(window.config.TUNING.sharedKey); return 1; })()`);
+
 console.log('\n=== SUMMARY ===');
 const failed = results.filter((r) => !r.p);
 console.log(`${results.length - failed.length}/${results.length} passed`);

@@ -15,6 +15,24 @@ export interface PatchNote {
 
 export const PATCH_NOTES: readonly PatchNote[] = [
   {
+    version: '0.133',
+    date: '2026-10-26',
+    changes: {
+      ko: [
+        '드랍률·제단 확률이 판마다 다르게 적용되던 문제를 고쳤습니다. 게임을 켜자마자 시작한 판이나 서버의 밸런스 값을 받지 못한 판은 예전 기본값(일부 드랍률이 지금의 2배)으로 진행되었는데, 이제는 마지막으로 받은 값으로 진행됩니다.',
+      ],
+      en: [
+        'Fixed drop and altar chances differing from run to run. A run started right after opening the game, or one that never received the server’s balance values, played on old defaults (some drop rates twice today’s); it now plays on the values last received.',
+      ],
+      ja: [
+        'ドロップ率・祭壇の確率がプレイごとに違って適用されていた問題を修正しました。ゲームを開いてすぐ始めたプレイや、サーバーのバランス値を受け取れなかったプレイは古い既定値（一部のドロップ率が今の2倍）で進んでいましたが、今は最後に受け取った値で進みます。',
+      ],
+      zh: [
+        '修复了掉落率与祭坛概率每局不同的问题。打开游戏后立即开始的对局，或未能收到服务器平衡数值的对局，会按旧的默认值进行（部分掉落率是现在的2倍）；现在会按最后收到的数值进行。',
+      ],
+    },
+  },
+  {
     version: '0.132',
     date: '2026-10-26',
     changes: {

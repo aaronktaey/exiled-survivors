@@ -175,6 +175,16 @@ Read `git log` for what changed and when. What is not in the log:
   `npm run db -- "SELECT overrides FROM tuning"` as well as the config; a
   dial path listed there wins. When the user asks to fold the live values
   back into balance.ts, copy them over and clear the row.
+  Folded on 2026-10-26 (0.133, the user's ask): all 38 live values went into
+  balance.ts, equipment.ts and bones.ts. The row was not cleared — `npm run
+  db` failed that day on Cloudflare auth (7403), so the live values were read
+  off `GET /api/balance` instead; the row now equals the defaults and does
+  nothing, and the panel's 전체 적용 drops any value equal to its default.
+  Each device keeps everyone's values as last heard (`TUNING.sharedKey`,
+  `ACCOUNT.localOnly`) and lays them over at boot (0.133): before, a run
+  started before /api/balance answered — or one where it never did, like
+  the dev server without `dev:api` — played on balance.ts, with drop rates
+  up to twice the live ones, and the user felt drops come and go.
 - **The user's numbers are theirs.** Tier values, drop rates, enemy health,
   potion strength — propose, do not quietly re-tune. When a request implies a
   number that would make something unplayable, implement it with a documented
@@ -1120,6 +1130,16 @@ Read `git log` for what changed and when. What is not in the log:
   nor swaps it and is refused with nothing else to work on (the destroy roll
   and the 망고 as ever), 각성 adds as usual, a 합성 comes out bare. The
   인벤토리 read-out ends the line with `gear.engravedMark`. test-gear §14c.
+- **초월의 구슬 — planned, not built (the user's spec, 2026-10-26: "추후
+  적용, 지금은 추가하지 마").** A 구슬 that gives a weapon one skill-enhancing
+  effect: the skill and effect are random; it sits in a slot of its own (not
+  a 속성 slot); once a weapon, never changed; no tiers. The effects, as the
+  user set them: 타격 4번째 휘두름마다 피해 ×1.8 · 체력 30% 이하 적에게 피해
+  +100%; 화염구 20% 확률로 1발 더 · 잔불 (2초, 초당 폭발 피해의 12%, 중첩 X);
+  연쇄번개 연쇄 +1 · 첫 대상 피해 ×1.6; 얼음창 냉각된 적에게 +30% · 관통 +1;
+  낙뢰 감전 효과 +15% · 사거리 +10%; 공허구체 사거리 +20% · 구체로 적 처치 시
+  체력 1 회복; 드론 드론 +2 · 폭탄 범위 +20%; 독성폭발 중독 피해 +30% · 사거리
+  +20%. Ask the user for its drop rate when it is built.
 - **Swords are taken apart, not sold (0.90, the user's ask).** Selling and
   gold went. The 인벤토리's top-right 분해 · 제작 button (`forgeButton`,
   `openForge`, key F — 0.91 moved it there from the weapon's own row, the

@@ -71,7 +71,7 @@ export const BONES: Record<BoneId, BoneSpec> = {
     // Two of them would do nothing a third time: rares are already all
     // 우두머리 with one.
     stackable: false,
-    fromKill: 0.001,
+    fromKill: 0.0005,
     fromBoss: 0,
     run: { raresBecomeBosses: true },
   },
@@ -86,7 +86,7 @@ export const BONES: Record<BoneId, BoneSpec> = {
     /** Three of them is a real decision: x8 health for x3.4 the drops. */
     stackable: true,
     // The same as a 혼돈의 구슬: off any kill, raised like any other drop.
-    fromKill: 0.001,
+    fromKill: 0.0005,
     fromBoss: 0,
     run: { enemyHpScale: 2, dropScale: 1.5 },
   },
@@ -102,7 +102,7 @@ export const BONES: Record<BoneId, BoneSpec> = {
     // eight — a run of nothing but rares. One a run.
     stackable: false,
     // Off any kill, as rare as a 갈비뼈.
-    fromKill: 0.001,
+    fromKill: 0.0005,
     fromBoss: 0,
     run: { rareChanceScale: 2 },
   },

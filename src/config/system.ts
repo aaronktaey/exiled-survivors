@@ -253,6 +253,7 @@ export const ACCOUNT = {
     "exiled-survivors:rank-mine:v1",
     "exiled-survivors:sync:v1",
     "exiled-survivors:tuning-draft:v1",
+    "exiled-survivors:tuning-shared:v1",
     // Written by every device each morning: synced, it would set them at odds.
     // The account keeps its own (users.podium_seen).
     "exiled-survivors:podium-seen:v1",

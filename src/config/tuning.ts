@@ -145,6 +145,12 @@ export const DIAL_PATHS: ReadonlySet<string> = new Set(DIALS.map((dial) => dial.
 export const TUNING = {
   /** Where the panel's own, not-yet-shared values wait (this browser only — not synced). */
   draftKey: 'exiled-survivors:tuning-draft:v1',
+  /**
+   * Everyone's values as this device last heard them (0.133): laid over at
+   * boot, so a run started before /api/balance answers — or when it never
+   * does — plays on them rather than on balance.ts. Not synced.
+   */
+  sharedKey: 'exiled-survivors:tuning-shared:v1',
   /** How long the edge keeps everyone's values before asking the database again. */
   cacheSeconds: 60,
   /** Anything bigger than this is not a value a dial can reach. */

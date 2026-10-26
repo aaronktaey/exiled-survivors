@@ -51,9 +51,13 @@ const fireDownTheLine = async (offsets) => {
     s.choosing = true;
     s.spawner.clear();
     const p = s.player;
+    // Sturdy enough to outlive a few spears, whatever the tuning: a row that
+    // dies to the first one (0.133's numbers did) shows nothing about 냉각.
+    const sturdy = Math.max(${FULL}, Math.ceil(s.damageOf('iceSpear') * 4));
     window.__row = ${JSON.stringify(offsets)}.map((dx) => {
       const e = s.spawner.group.get(p.x + dx, p.y);
       e.spawn(p.x + dx, p.y, p);
+      e.hp = sturdy;
       e.body.stop();
       e.target = undefined;   // hold still so the row stays a row
       return e;
@@ -72,6 +76,7 @@ const fireDownTheLine = async (offsets) => {
     s.choosing = false;
     const row = window.__row;
     const out = {
+      full: Math.max(${FULL}, Math.ceil(s.damageOf('iceSpear') * 4)),
       hp: row.map(e => (e.active ? e.hp : 0)),
       chilled: row.map(e => (e.active ? e.isChilled : null)),
       shotAlive: window.__shot.active,
@@ -134,17 +139,17 @@ const ICE = await run(`return { damage: s.damageOf('iceSpear') };`);
 // How far down the row the spear reached, not what each one was hit for:
 // every survivor crits some of the time now, so an exact figure here would
 // fail one run in four for a reason that has nothing to do with piercing.
-const struck = (hp, pierce) => {
+const struck = (hp, pierce, full) => {
   const hit = Math.min(hp.length, 1 + pierce);
-  return hp.every((one, i) => (i < hit ? one < FULL : one === FULL));
+  return hp.every((one, i) => (i < hit ? one < full : one === full));
 };
 const line = await fireDownTheLine([60, 100, 140, 180]);
 console.log('row of 4:', JSON.stringify(line));
-check('a spear runs through its pierces and stops', struck(line.hp, 2),
-  `hp down the row: ${line.hp.join(' / ')} (${FULL} = never touched)`);
+check('a spear runs through its pierces and stops', struck(line.hp, 2, line.full),
+  `hp down the row: ${line.hp.join(' / ')} (${line.full} = never touched)`);
 check('that enemy is damaged once, not once per frame of overlap',
-  line.hp[0] < FULL && line.hp[0] >= FULL - ICE.damage * 2,
-  `hp: ${line.hp.join(' / ')} (a second tick would read ${FULL - 2 * ICE.damage})`);
+  line.hp[0] < line.full && line.hp[0] >= line.full - ICE.damage * 2,
+  `hp: ${line.hp.join(' / ')} (a second tick would read ${line.full - 2 * ICE.damage})`);
 check('the spear is spent on it', line.shotAlive === false);
 
 // --- 4. everything it passes through is chilled ---
@@ -273,7 +278,7 @@ check('관통 횟수 +1 touches nothing else',
 
 const deeper = await fireDownTheLine([60, 100, 140, 180]);
 console.log('row of 4 after the upgrade:', JSON.stringify(deeper));
-check('and the next spear reaches one enemy further', struck(deeper.hp, 3),
+check('and the next spear reaches one enemy further', struck(deeper.hp, 3, deeper.full),
   `hp down the row: ${deeper.hp.join(' / ')}`);
 
 // --- 10. it joins the same drop roll as the rest ---

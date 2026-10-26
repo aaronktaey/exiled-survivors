@@ -94,6 +94,23 @@ class TuningStore {
     } catch {
       // No draft.
     }
+    // Everyone's values as last heard, at once: what a run plays on until
+    // the server answers, and if it never does (0.133 — before, such a run
+    // played on balance.ts, with drop rates up to twice the live ones).
+    try {
+      const kept = JSON.parse(localStorage.getItem(TUNING.sharedKey) ?? 'null') as
+        | { overrides?: Record<string, unknown>; updatedAt?: unknown }
+        | null;
+      for (const [path, value] of Object.entries(kept?.overrides ?? {})) {
+        if (DEFAULTS.has(path) && typeof value === 'number' && Number.isFinite(value)) {
+          this.shared[path] = value;
+        }
+      }
+      this.sharedAt = Number(kept?.updatedAt) || 0;
+    } catch {
+      // Nothing heard yet.
+    }
+    this.apply(Object.keys(this.shared));
   }
 
   /** The admin is trying values no one else has. */
@@ -175,6 +192,7 @@ class TuningStore {
       this.shared = { ...this.incoming.overrides };
       this.sharedAt = this.incoming.updatedAt;
       this.incoming = null;
+      this.saveShared();
       this.apply([...paths, ...Object.keys(this.draft)]);
       return;
     }
@@ -202,6 +220,7 @@ class TuningStore {
     }
     this.shared = body.overrides;
     this.sharedAt = Number(body.updatedAt) || Date.now();
+    this.saveShared();
     this.draft = {};
     this.saveDraft();
     this.apply(DIALS.map((d) => d.path));
@@ -229,6 +248,14 @@ class TuningStore {
         spot.holder[spot.key] = want;
         this.listeners.forEach((listener) => listener(path, was, want));
       }
+    }
+  }
+
+  private saveShared(): void {
+    try {
+      localStorage.setItem(TUNING.sharedKey, JSON.stringify({ overrides: this.shared, updatedAt: this.sharedAt }));
+    } catch {
+      // Heard again on the next visit.
     }
   }
 

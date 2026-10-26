@@ -18,16 +18,16 @@ import { COLORS, TEXTURES } from "@/config/visuals";
  */
 export const BALANCE = {
   /** Multiplies every enemy's max HP. */
-  enemyHpScale: 1,
+  enemyHpScale: 0.85,
   /** Multiplies each skill's damage, on top of its upgraded value. */
   damageScale: {
     meleeStrike: 1,
     fireball: 1,
-    chainLightning: 0.8,
-    iceSpear: 0.8,
+    chainLightning: 1,
+    iceSpear: 1,
     // 1.2 until 2026-10-16.
     voidOrb: 1,
-    thunderStrike: 0.8,
+    thunderStrike: 1,
     drone: 1,
     poisonNova: 1,
   } as Record<SkillId, number>,
@@ -902,7 +902,7 @@ export const RARE = {
  * 우두머리 walks in and everything behind it is tougher than it was.
  */
 export const DIFFICULTY = {
-  hpScalePerMinute: 1.154,
+  hpScalePerMinute: 1.225,
   /**
    * Past `afterMinute` minutes, each minute's health step is `multiplier`
    * times the base one (hpScalePerMinute − 1): with ×1.1, +10% a minute,
@@ -912,8 +912,8 @@ export const DIFFICULTY = {
    * the middle of a run was too easy and the end a wall.
    */
   hpStepTiers: [
-    { afterMinute: 3, multiplier: 2 },
-    { afterMinute: 6, multiplier: 3 },
+    { afterMinute: 3, multiplier: 4 },
+    { afterMinute: 6, multiplier: 1.5 },
   ],
   rareChancePerMinute: 0.01,
   /**
@@ -1050,12 +1050,12 @@ export const ALTAR_OFFERS: Record<AltarOfferId, AltarOfferSpec> = {
 export const ALTAR = {
   /** Share of 우두머리 kills that leave one. 1 is every one of them. */
   // Every one of them until 2026-10-18; a 고대 두개골 run, all 우두머리, drowned in them.
-  fromBoss: 0.1,
+  fromBoss: 0.06,
   /**
    * Share of every other kill that leaves one, rares included. A 갈비뼈
    * raises it the way it raises every other drop.
    */
-  fromKill: 0.02,
+  fromKill: 0.015,
   /**
    * How far from the kill it lands. Far enough that picking up what the
    * 우두머리 dropped does not set it off by accident.
@@ -1117,9 +1117,9 @@ export const CHIMERA = {
 } as const;
 
 export const SPAWN = {
-  startIntervalMs: 900,
-  minIntervalMs: 180,
-  rampPerMinute: 0.55,
+  startIntervalMs: 1200,
+  minIntervalMs: 120,
+  rampPerMinute: 0.503,
   /**
    * The cap on ordinary spawns. At it, the weakest enemy on the field — the
    * least health left, not a 우두머리, 키메라 or 도망자 (anything that always
@@ -1465,7 +1465,7 @@ export const SKILL_DROP = {
    * handing one out on the 슬롯머신, so the field is not where most of them
    * come from any more.
    */
-  chance: 0.013,
+  chance: 0.007,
 } as const;
 
 /**
@@ -1477,7 +1477,7 @@ export const SKILL_PICK = {
   /** How many cards are offered. */
   choices: 3,
   /** Share of kills that leave a 무작위 스킬. A 갈비뼈 raises it. */
-  dropChance: 0.008,
+  dropChance: 0.013,
   /**
    * Whether a fresh run opens on the choice at all. On the dev server the
    * test harness and `#run` turn it off, so they land in play holding
@@ -1513,7 +1513,7 @@ export const SLOT = {
  */
 export const MANGO = {
   /** Share of kills that leave one, whatever was killed. */
-  chance: 0.0009,
+  chance: 0.001,
   /** How long it lasts once eaten. */
   durationMs: 5000,
   /** Multiplies every skill's attacks per second while it lasts (+100%). */
@@ -1688,8 +1688,8 @@ export const SKILL_BASE: Record<SkillId, SkillBaseStats> = {
   // 180 damage once a second: three-quarters of a plain enemy per second
   // (it was 150, half of one, before the across-the-board +20%).
   meleeStrike: {
-    damage: 201,
-    attackSpeed: 1,
+    damage: 180,
+    attackSpeed: 0.61,
     range: 71.2,
     projectileSpeed: 0,
     chainCount: 0,
@@ -1701,11 +1701,11 @@ export const SKILL_BASE: Record<SkillId, SkillBaseStats> = {
     droneCount: 0,
   },
   fireball: {
-    damage: 180,
-    attackSpeed: 0.7,
+    damage: 176,
+    attackSpeed: 0.6,
     // Speed and range are where eight picks of +15% 투사체 속도 took them
     // (0.83, the user's ask: the pick was taken out) — 120 and 250 before.
-    range: 120 * 2.2,
+    range: 240,
     projectileSpeed: 250 * 2.2,
     chainCount: 0,
     pierceCount: 0,
@@ -1734,7 +1734,7 @@ export const SKILL_BASE: Record<SkillId, SkillBaseStats> = {
   // It stops at the first body now; what it leaves behind is the 냉각.
   iceSpear: {
     damage: 120,
-    attackSpeed: 0.6,
+    attackSpeed: 0.504,
     // Eight picks of +15% 투사체 속도 in (0.83), as for 화염구 — 144 and 290 before.
     range: 144 * 2.2,
     projectileSpeed: 290 * 2.2,
@@ -1750,7 +1750,7 @@ export const SKILL_BASE: Record<SkillId, SkillBaseStats> = {
   // A bolt out of the sky once a second onto something nearby.
   thunderStrike: {
     damage: 105,
-    attackSpeed: 1.2,
+    attackSpeed: 0.9,
     range: 200,
     projectileSpeed: 0,
     chainCount: 0,
@@ -1766,7 +1766,7 @@ export const SKILL_BASE: Record<SkillId, SkillBaseStats> = {
   // orbitSpeed how fast they travel around, and attackSpeed how often one
   // orb may hit the same enemy again.
   voidOrb: {
-    damage: 60,
+    damage: 54,
     attackSpeed: 1.5,
     range: 90,
     projectileSpeed: 0,
@@ -1802,9 +1802,9 @@ export const SKILL_BASE: Record<SkillId, SkillBaseStats> = {
   // often one goes out; the hit is `damage`, the poison POISON_NOVA's share of it.
   poisonNova: {
     // The user's pick for its release (0.123); 144 · 0.7 while it was tried.
-    damage: 150,
-    attackSpeed: 0.5,
-    range: 110,
+    damage: 109,
+    attackSpeed: 0.311,
+    range: 100,
     projectileSpeed: 0,
     chainCount: 0,
     pierceCount: 0,
