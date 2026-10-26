@@ -657,6 +657,7 @@ export const en: Strings = {
     unknownRune: 'Unknown Rune',
     unknownRuneFelt: 'An immense power stirs...',
     boneFound: 'Found {bone}',
+    lootWithheld: '{item} — not kept: this run goes on no ranking',
     pickedUp: '{skill} acquired',
     enhancedPickup: '{skill} upgraded',
     altarOffer: 'Altar · {enemies}',

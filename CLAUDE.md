@@ -237,8 +237,10 @@ Read `git log` for what changed and when. What is not in the log:
   Esc takes; `test-back` checks each one sits clear and goes where it
   should. A new screen should do the same.
 - **At the cap the weakest gives way (0.86).** A spawn due with
-  `SPAWN.maxAlive` reached calls `SpawnDirector.makeRoom`: the active enemy
-  with the least health left that does not `alwaysDropsSkill` (so never a
+  `SPAWN.maxAlive` reached picks its kind first and calls
+  `SpawnDirector.makeRoom(kind)`: of that kind (0.134, the user's ask — the
+  weakest of any kind left only 거구), else of any, the active enemy with the
+  least health left that does not `alwaysDropsSkill` (so never a
   우두머리, 키메라 or 도망자) is recycled — no kill, no gem, no drop — and the
   newcomer takes its place. The pool often hands that very sprite back:
   compare `Enemy.lives`, not `active`, to tell. An `ALTAR_OFFERS` entry with
@@ -636,6 +638,15 @@ Read `git log` for what changed and when. What is not in the log:
   0.79's) is thrown away by `saveGame.read`. The server's `tuning` row
   still holds `RUNE_*` paths: `Tuning.apply` lays over only dials and
   `publish` sends only dials, so they do nothing.
+- **A run off the ranking keeps no loot (0.134, the user's ask).** What a
+  run puts in the drawers that outlive it — swords, 구슬, 뼈다귀 — is counted
+  in `GameScene.runLoot` (kept in the save as `SavedRun.loot`). While
+  `devRun` (F-keys, a 밸런스 draft) a pickup is not stored (`game.lootWithheld`
+  toast); the frame a run becomes one, and at death when `devRun` or the
+  tally is `refused`, `forfeitLoot` takes back what it counted
+  (`gear.discardAnyway`, `orbs/bones.takeBack`; what was spent since stays
+  spent). The server's own refusals (pace, `implausible`, the day's banned
+  skill) come after the run and do not take anything back.
 - **The run counts what it gains (0.91, the user's ask).** `systems/RunTally.ts`
   (module scope, like the second clock) counts each level-up
   (`onLevelUp`) and each skill level (`acquire`, and an upgrade that raised

@@ -85,7 +85,7 @@ import { WebField } from '@/systems/WebField';
 import { Terrain } from '@/systems/Terrain';
 import { RareTooltip } from '@/systems/RareTooltip';
 import { sfx, effectVolume } from '@/systems/Sfx';
-import { saveGame, type SavedRun } from '@/systems/SaveGame';
+import { saveGame, type SavedRun, type RunLoot } from '@/systems/SaveGame';
 import { runLedger } from '@/systems/RunLedger';
 import { jackpot, sparkleBurst } from '@/systems/Celebrate';
 import { dailyRules } from '@/systems/DailyRules';
@@ -280,6 +280,12 @@ export class GameScene extends Phaser.Scene {
   private shardBonus = shardBonusFor({});
   /** Round-robin cursor for the debug drop key. */
   private nextDebugDrop = 0;
+  /**
+   * What this run has put in the drawers that outlive it (0.134, the user's
+   * ask): a run that ends off the ranking — the developer tools, a 밸런스
+   * draft, levels that do not add up — keeps none of it.
+   */
+  private runLoot: RunLoot = GameScene.noLoot();
 
   public constructor() {
     super(GameScene.KEY);
@@ -307,6 +313,7 @@ export class GameScene extends Phaser.Scene {
     this.elapsedMs = 0;
     runLedger.begin(0);
     runTally.begin();
+    this.runLoot = GameScene.noLoot();
     // Back from the pause menu: the wait there is not play.
     this.events.off(Phaser.Scenes.Events.RESUME, runLedger.hold);
     this.events.on(Phaser.Scenes.Events.RESUME, runLedger.hold);
@@ -612,6 +619,10 @@ export class GameScene extends Phaser.Scene {
   public override update(_time: number, delta: number): void {
     // The overlay wants the real cost of the frame, not the clamped value.
     this.debug.update(delta);
+    // A key or a dial that has just put the run off the ranking takes back what it gained.
+    if (this.devRun && GameScene.hasLoot(this.runLoot)) {
+      this.forfeitLoot();
+    }
 
     if (this.over || this.choosing) {
       runLedger.hold();
@@ -740,6 +751,12 @@ export class GameScene extends Phaser.Scene {
     this.stats.seed(run.damage ?? 0, run.kills ?? {}, run.scoreByKind ?? {}, run.damageBySkill ?? {});
     // And what it had counted gaining — or, from an older save, what it holds.
     runTally.begin(run.tally ?? { levelUps: run.level - 1, skillLevels: this.totalSkillLevels() });
+    // What it had put in the drawers, still to be taken back if it ends off the ranking.
+    this.runLoot = {
+      gear: [...(run.loot?.gear ?? [])],
+      orbs: { ...(run.loot?.orbs ?? {}) },
+      bones: { ...(run.loot?.bones ?? {}) },
+    };
   }
 
   /**
@@ -850,6 +867,7 @@ export class GameScene extends Phaser.Scene {
       elapsedMs: this.elapsedMs,
       wallMs: runLedger.ms,
       tally: runTally.value,
+      loot: this.runLoot,
       level: this.progression.level,
       xp: this.progression.xp,
       xpUnit: XP.unit,
@@ -1104,7 +1122,12 @@ export class GameScene extends Phaser.Scene {
    * it on is the title screen's business, so a run is never interrupted.
    */
   private onGearCollected(found: GearItem): void {
+    if (this.devRun) {
+      this.announce(fill(t().game.lootWithheld, { item: gearTitle(found) }));
+      return;
+    }
     gear.add(found);
+    this.runLoot.gear.push(found.uid);
     this.announce(fill(t().game.gearFound, { gear: gearTitle(found) }), dropTierFor(found) === 'rare' ? 'rare' : 'normal');
   }
 
@@ -1113,7 +1136,12 @@ export class GameScene extends Phaser.Scene {
    * a decision, and the 인벤토리 is where the weapons are.
    */
   private onOrbCollected(id: OrbId): void {
+    if (this.devRun) {
+      this.announce(fill(t().game.lootWithheld, { item: orbName(id) }));
+      return;
+    }
     orbs.add(id);
+    this.runLoot.orbs[id] = (this.runLoot.orbs[id] ?? 0) + 1;
     this.announce(fill(t().game.orbFound, { orb: orbName(id) }));
   }
 
@@ -1122,7 +1150,12 @@ export class GameScene extends Phaser.Scene {
    * decided before a run starts, which is the whole of what it is for.
    */
   private onBoneCollected(id: BoneId): void {
+    if (this.devRun) {
+      this.announce(fill(t().game.lootWithheld, { item: boneName(id) }));
+      return;
+    }
     bones.add(id);
+    this.runLoot.bones[id] = (this.runLoot.bones[id] ?? 0) + 1;
     this.announce(fill(t().game.boneFound, { bone: boneName(id) }));
   }
 
@@ -1790,6 +1823,28 @@ export class GameScene extends Phaser.Scene {
     }
   }
 
+  private static noLoot(): RunLoot {
+    return { gear: [], orbs: {}, bones: {} };
+  }
+
+  private static hasLoot(loot: RunLoot): boolean {
+    return loot.gear.length > 0 || Object.keys(loot.orbs).length > 0 || Object.keys(loot.bones).length > 0;
+  }
+
+  /** Takes back what this run put in the drawers: it ends off the ranking (0.134). */
+  private forfeitLoot(): void {
+    for (const uid of this.runLoot.gear) {
+      gear.discardAnyway(uid);
+    }
+    for (const [id, count] of Object.entries(this.runLoot.orbs)) {
+      orbs.takeBack(id as OrbId, count ?? 0);
+    }
+    for (const [id, count] of Object.entries(this.runLoot.bones)) {
+      bones.takeBack(id as BoneId, count ?? 0);
+    }
+    this.runLoot = GameScene.noLoot();
+  }
+
   /** Whether the developer tools changed this run, now or before it was saved. */
   private get devRun(): boolean {
     return this.devUsedBefore || this.debug.used || this.tunedRun;
@@ -1849,6 +1904,12 @@ export class GameScene extends Phaser.Scene {
 
     const damage = this.stats.damage;
     const score = this.stats.score;
+    // Levels that do not come to what was counted: off the board, no reason given.
+    const refused = !runTally.matches(this.progression.level, this.totalSkillLevels());
+    // Off the ranking either way: what it put in the drawers goes back (0.134).
+    if (refused || this.devRun) {
+      this.forfeitLoot();
+    }
     // Every run goes on 내 기록, entered on the shared board or not — but
     // not one the developer tools played a part in. Ranked by its score (0.116).
     // Better than every run on 내 기록 so far (0.127: the end screen celebrates it).
@@ -1881,8 +1942,7 @@ export class GameScene extends Phaser.Scene {
       level: this.progression.level,
       survivedMs: this.elapsedMs,
       devRun: this.devRun,
-      // Levels that do not come to what was counted: off the board, no reason given.
-      refused: !runTally.matches(this.progression.level, this.totalSkillLevels()),
+      refused,
       devReason: this.devUsedBefore || this.debug.used ? 'debug' : this.tunedRun ? 'draft' : undefined,
       mainSkill: this.mainSkill ?? undefined,
       detail: this.runDetail(),

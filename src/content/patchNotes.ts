@@ -15,6 +15,28 @@ export interface PatchNote {
 
 export const PATCH_NOTES: readonly PatchNote[] = [
   {
+    version: '0.134',
+    date: '2026-10-26',
+    changes: {
+      ko: [
+        '적이 최대 수에 이르러 새 적이 나올 때, 이제는 새로 나오는 적과 같은 종류 중 체력이 가장 적은 적이 사라집니다 (같은 종류가 없으면 전체에서 체력이 가장 적은 적). 전에는 종류와 상관없이 체력이 가장 적은 적이 사라져서 거구만 남았습니다.',
+        '랭킹에 오르지 않는 판에서는 구슬·뼈다귀·장비를 얻지 못합니다. 판 도중에 그런 판이 되면 그 판에서 얻은 것도 회수됩니다.',
+      ],
+      en: [
+        'When the field is full and a new enemy arrives, the one that gives way is now the weakest of the newcomer’s own kind (or the weakest of any, if none of its kind is there). Before, the weakest of any kind went, and only Brutes were left.',
+        'A run that goes on no ranking keeps no orbs, bones or weapons. If a run becomes one partway through, what it had found is taken back.',
+      ],
+      ja: [
+        '敵が上限数に達して新しい敵が出るとき、新しく出る敵と同じ種類のうち体力が最も少ない敵が消えるようになりました（同じ種類がいなければ全体で体力が最も少ない敵）。以前は種類に関係なく体力が最も少ない敵が消え、巨体ばかりが残っていました。',
+        'ランキングに載らないプレイでは球・骨・装備を得られません。プレイの途中でそうなった場合、そのプレイで得たものも回収されます。',
+      ],
+      zh: [
+        '敌人数量达到上限并有新敌人出现时，现在消失的是与新敌人同种类中生命最少的敌人（若场上没有同种类，则为全场生命最少的敌人）。以前不分种类，生命最少的敌人消失，最后只剩下巨躯。',
+        '不计入排行榜的对局无法获得宝珠、骨头和装备。若对局中途变为此类对局，该局已获得的物品也会被收回。',
+      ],
+    },
+  },
+  {
     version: '0.133',
     date: '2026-10-26',
     changes: {

@@ -227,6 +227,27 @@ check('a spawn at the cap takes the weakest ordinary enemy off and comes in — 
   cap.after === cap.before && cap.weak === false && cap.mid === true && cap.strong === true, JSON.stringify(cap));
 check('a 우두머리 is never the one taken, however low its health', cap.boss === true, JSON.stringify(cap));
 
+// 0.134: the one that gives way is the newcomer's own kind — else 거구 were all that was left.
+const ofKind = await run(`
+  s.spawner.clear();
+  const p = s.player;
+  const put = (kind, hp, dx) => { const e = s.spawner.group.get(p.x + dx, p.y + 500); e.spawn(p.x + dx, p.y + 500, p, kind); e.hp = hp; return e; };
+  const grunt = put('grunt', 5, 0), brute = put('brute', 400, 40), bigger = put('brute', 600, 80);
+  const lives = [grunt, brute, bigger].map((e) => e.lives);
+  const same = (e, i) => e.active && e.lives === lives[i];
+  s.spawner.makeRoom('brute');
+  const byKind = { grunt: same(grunt, 0), brute: same(brute, 1), bigger: same(bigger, 2) };
+  // None of the newcomer's kind there: the weakest of any goes, as before.
+  s.spawner.makeRoom('runner');
+  const none = { grunt: same(grunt, 0), bigger: same(bigger, 2) };
+  s.spawner.clear();
+  return { byKind, none };
+`);
+check('at the cap the weakest of the newcomer’s own kind gives way, not a weaker one of another kind',
+  ofKind.byKind.brute === false && ofKind.byKind.grunt === true && ofKind.byKind.bigger === true, JSON.stringify(ofKind));
+check('with none of its kind on the field, the weakest of any gives way',
+  ofKind.none.grunt === false && ofKind.none.bigger === true, JSON.stringify(ofKind));
+
 // --- 7. as big as a 우두머리, and posed: leaping mid-hop, casting as it throws (0.87) ---
 const posed = await run(`
   s.spawner.clear();

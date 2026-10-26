@@ -172,9 +172,11 @@ export class SpawnDirector {
     // Catch up if a long frame swallowed several spawn windows.
     while (this.sinceSpawnMs >= interval) {
       this.sinceSpawnMs -= interval;
-      // At the cap the weakest makes room (0.86); with no one to give way, none comes.
-      if (this.alive < SPAWN.maxAlive || this.makeRoom()) {
-        this.spawnOne();
+      // At the cap the weakest of the newcomer's own kind makes room (0.134);
+      // with no one to give way, none comes.
+      const kind = this.pickKind();
+      if (this.alive < SPAWN.maxAlive || this.makeRoom(kind)) {
+        this.spawnOne(kind);
       }
     }
   }
@@ -195,20 +197,31 @@ export class SpawnDirector {
   }
 
   /**
-   * The field is full: the enemy with the least health left goes — not one
-   * that always leaves a skill (우두머리, 키메라, 도망자). Taken off without a
-   * kill: no gem, no drop. False when there is no one to take. Public for tests.
+   * The field is full: of the newcomer's own kind, the one with the least
+   * health left goes (0.134, the user's ask — taking the weakest of any kind
+   * left the field to 거구, the kind with the most health); with none of its
+   * kind there, the weakest of any. Never one that always leaves a skill
+   * (우두머리, 키메라, 도망자). Taken off without a kill: no gem, no drop.
+   * False when there is no one to take. Public for tests.
    */
-  public makeRoom(): boolean {
+  public makeRoom(kind?: EnemyKind): boolean {
     let weakest: Enemy | undefined;
+    let weakestOfKind: Enemy | undefined;
     for (const child of this.group.getChildren()) {
       const enemy = child as Enemy;
-      if (enemy.active && !enemy.precious && (!weakest || enemy.hp < weakest.hp)) {
+      if (!enemy.active || enemy.precious) {
+        continue;
+      }
+      if (!weakest || enemy.hp < weakest.hp) {
         weakest = enemy;
       }
+      if (enemy.kind === kind && (!weakestOfKind || enemy.hp < weakestOfKind.hp)) {
+        weakestOfKind = enemy;
+      }
     }
-    weakest?.recycle();
-    return weakest !== undefined;
+    const goes = weakestOfKind ?? weakest;
+    goes?.recycle();
+    return goes !== undefined;
   }
 
   /** Milliseconds until the next 키메라. Public for tests. */

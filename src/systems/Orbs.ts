@@ -36,6 +36,17 @@ class OrbStore {
     return ALL_ORBS.reduce((sum, orb) => sum + this.count(orb.id), 0);
   }
 
+  /**
+   * Takes back up to `amount` that a run put in (0.134: a run off the
+   * ranking keeps nothing). What was spent since stays spent.
+   */
+  public takeBack(id: OrbId, amount: number): void {
+    if (!ORBS[id] || amount <= 0) {
+      return;
+    }
+    this.commit({ ...this.value, [id]: Math.max(0, this.count(id) - amount) });
+  }
+
   public add(id: OrbId, amount = 1): number {
     if (!ORBS[id] || amount <= 0) {
       return this.count(id);

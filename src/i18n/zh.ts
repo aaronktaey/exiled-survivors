@@ -657,6 +657,7 @@ export const zh: Strings = {
     unknownRune: '未知符文',
     unknownRuneFelt: '感受到一股强大的力量……',
     boneFound: '获得{bone}',
+    lootWithheld: '{item} — 此局不计入排行榜，不会保留',
     pickedUp: '获得 {skill}',
     enhancedPickup: '强化 {skill}',
     altarOffer: '祭坛 · {enemies}',

@@ -1,4 +1,4 @@
-import { STORAGE, type BoneId } from '@/config';
+import { STORAGE, type BoneId, type OrbId } from '@/config';
 import type { ShardStat } from '@/config';
 import { gearTitle } from '@/i18n';
 import { openRecord, sealRecord } from '@/systems/Seal';
@@ -60,6 +60,15 @@ export interface SavedRun {
    * on an older save, which takes what it holds as counted.
    */
   readonly tally?: { readonly levelUps: number; readonly skillLevels: number };
+  /** What the run has put in the drawers so far (0.134): taken back if it ends off the ranking. */
+  readonly loot?: RunLoot;
+}
+
+/** What one run put in the drawers that outlive it: swords by uid, 구슬 and 뼈다귀 by count. */
+export interface RunLoot {
+  gear: string[];
+  orbs: Partial<Record<OrbId, number>>;
+  bones: Partial<Record<BoneId, number>>;
 }
 
 /**

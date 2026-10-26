@@ -38,6 +38,17 @@ class BoneStore {
     return ALL_BONES.reduce((sum, bone) => sum + this.count(bone.id), 0);
   }
 
+  /**
+   * Takes back up to `amount` that a run put in (0.134: a run off the
+   * ranking keeps nothing). What was spent since stays spent.
+   */
+  public takeBack(id: BoneId, amount: number): void {
+    if (!BONES[id] || amount <= 0) {
+      return;
+    }
+    this.commit({ ...this.value, [id]: Math.max(0, this.count(id) - amount) });
+  }
+
   public add(id: BoneId, amount = 1): number {
     if (!BONES[id] || amount <= 0) {
       return this.count(id);

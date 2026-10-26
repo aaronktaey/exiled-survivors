@@ -1845,6 +1845,42 @@ for (const [w, h, shape] of [[0, 0, 'landscape'], [360, 740, 'narrow phone']]) {
 }
 await cdp.send('Emulation.clearDeviceMetricsOverride', {});
 
+// --- 0.134: a run off the ranking keeps nothing it finds ---
+await cdp.send('Page.navigate', { url: 'about:blank' });
+await cdp.send('Page.navigate', { url: 'http://localhost:5173/#run' });
+await cdp.until(`window.game?.scene.getScene('GameScene')?.player?.active`, 30000, 200);
+const forfeit = await ev(`(() => {
+  const s = window.game.scene.getScene('GameScene');
+  const sword = { uid: 'loot1', id: 'ironSword', prefixes: [{ id: 'mighty', tier: 3 }], suffixes: [], rungs: window.config.AFFIX_RUNGS };
+  const held = () => ({ chaos: window.orbs.count('chaos'), skull: window.bones.count('skull'),
+                        sword: window.gear.value.items.some((i) => i.uid === 'loot1') });
+  const before = held();
+  // An honest run keeps what it picks up, and remembers it got it.
+  s.debug.used = false;
+  s.onOrbCollected('chaos'); s.onBoneCollected('skull'); s.onGearCollected(sword);
+  const kept = held();
+  // A debug key pressed later: the next frame takes it all back.
+  s.debug.used = true;
+  s.update(0, 16);
+  const taken = held();
+  // And from then on it is not kept at all.
+  s.onOrbCollected('chaos'); s.onBoneCollected('skull');
+  const after = held();
+  const toast = s.toasts?.lines?.at(-1) ?? '';
+  s.debug.used = false;
+  return { before, kept, taken, after, toast };
+})()`);
+console.log('forfeit:', JSON.stringify(forfeit));
+check('an honest run keeps the 구슬, 뼈다귀 and sword it picks up',
+  forfeit.kept.chaos === forfeit.before.chaos + 1 && forfeit.kept.skull === forfeit.before.skull + 1 && forfeit.kept.sword === true,
+  JSON.stringify(forfeit.kept));
+check('once a run is off the ranking, what it put in the drawers is taken back',
+  forfeit.taken.chaos === forfeit.before.chaos && forfeit.taken.skull === forfeit.before.skull && forfeit.taken.sword === false,
+  JSON.stringify(forfeit.taken));
+check('and what it finds after that is not kept, and says so',
+  forfeit.after.chaos === forfeit.before.chaos && forfeit.after.skull === forfeit.before.skull && /보관되지 않습니다/.test(forfeit.toast),
+  JSON.stringify({ after: forfeit.after, toast: forfeit.toast }));
+
 console.log('\n=== SUMMARY ===');
 const failed = results.filter((r) => !r.p);
 console.log(`${results.length - failed.length}/${results.length} passed`);
