@@ -663,7 +663,6 @@ export const ko: Strings = {
     unknownRuneFelt: '엄청난 힘이 느껴진다...',
     boneFound: '{bone} 획득',
     lootWithheld: '{item} — 랭킹에 오르지 않는 판이라 보관되지 않습니다',
-    lifeLeft: '{seconds}초 남음',
     pickedUp: '{skill} 획득',
     enhancedPickup: '{skill} 강화',
     altarOffer: '제단 · {enemies}',

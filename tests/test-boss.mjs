@@ -299,11 +299,11 @@ console.log('boss plate:', JSON.stringify(plate));
 check('a 우두머리 carries a bar and a line, the way the survivor does',
   plate.full.plate === true && plate.full.bar === true && plate.full.above === true,
   `"${plate.full.text}" above it`);
-check('which reads its name and what is left of it',
-  plate.full.text === `우두머리  ${plate.full.max}/${plate.full.max}`,
+check('which reads its name, and only that — the bar says what is left (0.139)',
+  plate.full.text === '우두머리',
   plate.full.text);
 check('and empties as it is worn down',
-  plate.hurt.text === `우두머리  ${plate.hurt.hp}/${plate.hurt.max}` &&
+  plate.hurt.text === '우두머리' &&
     plate.hurt.hp < plate.full.hp,
   `${plate.full.hp} -> ${plate.hurt.hp} of ${plate.hurt.max}`);
 check('nothing below that rank carries one',
@@ -379,7 +379,7 @@ check('and faces front again once the turn is done',
   settled.spinning === false && !/-stride-[34]$/.test(settled.key) && settled.flip === false, JSON.stringify(settled));
 await shot('boss-05-giant');
 
-// --- its health reads in whole numbers, whatever fraction a hit took off ---
+// --- its line is its name alone, whatever a hit took off (0.139: no count) ---
 const wholeHp = await run(`
   s.choosing = true;
   s.spawner.clear();
@@ -391,7 +391,7 @@ const wholeHp = await run(`
   s.choosing = false;
   return { text, hp: boss.hp };
 `);
-check('the 우두머리’s health count shows no decimal point', /\d+\/\d+$/.test(wholeHp.text) && !/\./.test(wholeHp.text),
+check('the 우두머리’s line shows no number, however its health stands', wholeHp.text === '우두머리' && !/\d/.test(wholeHp.text),
   wholeHp.text);
 
 // --- 타격 reaches what is drawn: a 우두머리's picture is far wider than its

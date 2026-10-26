@@ -659,7 +659,6 @@ export const en: Strings = {
     unknownRuneFelt: 'An immense power stirs...',
     boneFound: 'Found {bone}',
     lootWithheld: '{item} — not kept: this run goes on no ranking',
-    lifeLeft: '{seconds}s left',
     pickedUp: '{skill} acquired',
     enhancedPickup: '{skill} upgraded',
     altarOffer: 'Altar · {enemies}',

@@ -35,7 +35,7 @@ import {
   giantFrame,
   type EnemyGiantSpec,
 } from '@/config';
-import { enemyName, fill, t } from '@/i18n';
+import { enemyName } from '@/i18n';
 import { dailyRules } from '@/systems/DailyRules';
 import { sfx } from '@/systems/Sfx';
 import { silhouetteOf } from '@/systems/Silhouette';
@@ -459,9 +459,9 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
 
   /**
    * The bar a 우두머리 wears, drawn the way the survivor's own is: a track,
-   * the fill over it, and its name and count on a line above — and, for one
-   * that leaves on its own, the seconds it has left. Nothing below that rank
-   * gets one — a field of forty bars would say nothing at all.
+   * the fill over it, and its name on a line above — and, for one that leaves
+   * on its own, the seconds it has left. Nothing below that rank gets one — a
+   * field of forty bars would say nothing at all.
    */
   private drawHealthBar(): void {
     if (!this.wearsBar) {
@@ -496,10 +496,10 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
     }
     this.healthBar.setVisible(true);
 
-    // Whole numbers: a hit can take off a fraction (연쇄번개 각성, a crit), the count shows none.
-    const count = `${enemyName(this.kind)}  ${Math.max(0, Math.ceil(this.hp))}/${Math.ceil(this.maxHp)}`;
-    const leaving = this.lifeLeftMs === Infinity ? '' : `  ${fill(t().game.lifeLeft, { seconds: Math.max(0, Math.ceil(this.lifeLeftMs / 1000)) })}`;
-    this.plate?.setText(count + leaving);
+    // The name over the bar, nothing more (0.139, the user's ask: the bar says
+    // how much is left); one that leaves on its own, the seconds it has, bare.
+    const leaving = this.lifeLeftMs === Infinity ? '' : `  ${Math.max(0, Math.ceil(this.lifeLeftMs / 1000))}`;
+    this.plate?.setText(enemyName(this.kind) + leaving);
     this.plate?.setPosition(this.x, top - HUD.nameplateGap);
     this.plate?.setVisible(true);
   }

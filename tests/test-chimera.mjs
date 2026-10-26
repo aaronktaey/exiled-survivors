@@ -265,10 +265,11 @@ const bars = await run(`
   return out;
 `);
 check('the 키메라 and the 도망자 wear a health bar with their name and health, as a 우두머리 does',
-  bars.chimera.bar && bars.fugitive.bar && /키메라\s+\d+\/\d+/.test(bars.chimera.plate) && /도망자\s+\d+\/\d+/.test(bars.fugitive.plate),
+  bars.chimera.bar && bars.fugitive.bar && bars.chimera.plate === '키메라' && bars.fugitive.plate.startsWith('도망자') &&
+    !/\d+\/\d+/.test(bars.chimera.plate + bars.fugitive.plate),
   JSON.stringify(bars));
-check('the 도망자’s says the seconds before it leaves; the 키메라’s, which stays, says none; a plain enemy has no bar',
-  bars.fugitive.plate.includes(bars.seconds + '초 남음') && !/남음/.test(bars.chimera.plate) && bars.grunt.bar === false,
+check('the 도망자’s says the seconds before it leaves, as a bare number; the 키메라’s says none; a plain enemy has no bar',
+  bars.fugitive.plate === '도망자  ' + bars.seconds && bars.grunt.bar === false,
   JSON.stringify(bars));
 
 // --- 7. as big as a 우두머리, and posed: leaping mid-hop, casting as it throws (0.87) ---

@@ -659,7 +659,6 @@ export const ja: Strings = {
     unknownRuneFelt: 'とてつもない力を感じる…',
     boneFound: '{bone} 入手',
     lootWithheld: '{item} — ランキングに載らないプレイのため保管されません',
-    lifeLeft: '残り{seconds}秒',
     pickedUp: '{skill} 習得',
     enhancedPickup: '{skill} 強化',
     altarOffer: '祭壇 · {enemies}',

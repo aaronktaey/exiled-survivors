@@ -15,6 +15,24 @@ export interface PatchNote {
 
 export const PATCH_NOTES: readonly PatchNote[] = [
   {
+    version: '0.139',
+    date: '2026-10-26',
+    changes: {
+      ko: [
+        '우두머리·키메라·도망자의 머리 위에는 이름과 체력바만 나오고, 체력 숫자는 나오지 않습니다. 도망자가 사라지기까지 남은 시간은 숫자로만 나옵니다.',
+      ],
+      en: [
+        'Bosses, Chimeras and Fugitives now show only their name and health bar overhead, without the health numbers. A Fugitive’s time left shows as a bare number.',
+      ],
+      ja: [
+        'ボス・キメラ・逃亡者の頭上には名前と体力バーだけが表示され、体力の数値は表示されません。逃亡者が消えるまでの残り時間は数字だけで表示されます。',
+      ],
+      zh: [
+        '首领、奇美拉和逃亡者头顶现在只显示名字和生命条，不再显示生命数值。逃亡者离开前的剩余时间只显示数字。',
+      ],
+    },
+  },
+  {
     version: '0.138',
     date: '2026-10-26',
     changes: {

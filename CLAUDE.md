@@ -382,8 +382,9 @@ Read `git log` for what changed and when. What is not in the log:
   `flashy` on an `ENEMY_KINDS` entry give any kind that behaviour; the
   fugitive is the only one using them. `healthBar` (0.136, the user's ask:
   키메라 and 도망자) gives a kind the 우두머리's bar and nameplate
-  (`Enemy.wearsBar`); a kind with `lifespanMs` adds the seconds it has left
-  (`game.lifeLeft`). A 우두머리 never leaves on its own, so it shows none —
+  (`Enemy.wearsBar`); a kind with `lifespanMs` adds the seconds it has left,
+  as a bare number. The line is the name alone since 0.139 (the user's ask:
+  no health count — the bar says it). A 우두머리 never leaves on its own, so it shows none —
   the user asked for one on the 우두머리, read as the 도망자 (2026-10-26). It spawns on `FUGITIVE`'s clock.
 - **생존자 마을 (dev server only, the user's ask, 2026-10-24).** The title
   as a yard to walk, like Path of Exile's hideout: `systems/Village.ts`,
