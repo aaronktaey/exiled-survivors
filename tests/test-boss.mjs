@@ -462,12 +462,12 @@ const casts = await run(`
     K.casts = { ring: 0, laser: 1, leap: 0 };
     let b = put(300, 0);
     b.volleyCooldownMs = 0; b.update(0, 40);
-    const at = { x: b.x, y: b.y };
     out.laser = { cast: b.cast?.kind };
     step(b, K.laser.aimMs - 200);
     out.laser.shown = b.castFx?.visible === true;
     out.laser.early = struck.length;
-    out.laser.stood = Math.hypot(b.x - at.x, b.y - at.y) < 1;
+    // It walks on while it aims (0.138): stepped by hand, no physics frame passes, so read its pace.
+    out.laser.walked = Math.hypot(b.body.velocity.x, b.body.velocity.y) > 0;
     out.laser.bolts = s.combat.enemyShots.countActive(true);
     step(b, 400);
     out.laser.hit = struck.splice(0);
@@ -482,15 +482,19 @@ const casts = await run(`
     // The leap: where the survivor stood, shown for its aim; then it lands there and hits round it.
     K.casts = { ring: 0, laser: 0, leap: 1 };
     b = put(250, 0);
-    const from = { x: b.x, y: b.y };
     b.volleyCooldownMs = 0; b.update(0, 40);
     const spot = { x: b.cast?.toX, y: b.cast?.toY };
     out.leap = { cast: b.cast?.kind, onSurvivor: Math.hypot(spot.x - p.x, spot.y - p.y) < 1 };
     step(b, K.leap.aimMs - 200);
     out.leap.shown = b.castFx?.visible === true;
     out.leap.early = struck.length;
-    out.leap.waited = Math.hypot(b.x - from.x, b.y - from.y) < 1;
-    step(b, 200 + K.leap.leapMs + 120);
+    out.leap.walked = Math.hypot(b.body.velocity.x, b.body.velocity.y) > 0;
+    // Halfway through the jump it is up in its arc, above the straight line, and its body hurts no one.
+    step(b, 200 + K.leap.leapMs / 2);
+    out.leap.midair = b.airborne === true;
+    const groundY = b.cast ? b.cast.fromY + (b.cast.toY - b.cast.fromY) * 0.5 : b.y;
+    out.leap.above = groundY - b.y > K.leap.height * 0.5;
+    step(b, K.leap.leapMs / 2 + 120);
     out.leap.landed = Math.hypot(b.x - spot.x, b.y - spot.y) < 2;
     out.leap.hit = struck.splice(0);
     b.recycle();
@@ -511,14 +515,15 @@ console.log('casts:', JSON.stringify(casts));
 check('a 우두머리 picks the ring, the laser or the leap, each as likely',
   casts.weights.ring > 0 && casts.weights.ring === casts.weights.laser && casts.weights.laser === casts.weights.leap,
   JSON.stringify(casts.weights));
-check('its laser shows its line while it aims, standing, hitting nothing yet',
-  casts.laser.cast === 'laser' && casts.laser.shown && casts.laser.early === 0 && casts.laser.stood && casts.laser.bolts === 0,
+check('its laser shows its line while it aims, walking on, hitting nothing yet',
+  casts.laser.cast === 'laser' && casts.laser.shown && casts.laser.early === 0 && casts.laser.walked && casts.laser.bolts === 0,
   JSON.stringify(casts.laser));
 check('then hits all along it at once for the ring’s damage — and misses one who stepped aside',
   casts.laser.hit.length === 1 && casts.laser.hit[0] === casts.wantLaser && casts.laser.dodged === 0,
   JSON.stringify(casts.laser));
-check('its leap marks where the survivor stands and waits out its aim',
-  casts.leap.cast === 'leap' && casts.leap.shown && casts.leap.onSurvivor && casts.leap.early === 0 && casts.leap.waited,
+check('its leap marks where the survivor stands, walking on while it aims, then rises in an arc that touches no one',
+  casts.leap.cast === 'leap' && casts.leap.shown && casts.leap.onSurvivor && casts.leap.early === 0 && casts.leap.walked &&
+    casts.leap.midair && casts.leap.above,
   JSON.stringify(casts.leap));
 check('then lands there, hitting round it for twice its contact damage',
   casts.leap.landed && casts.leap.hit.length === 1 && casts.leap.hit[0] === casts.wantLeap, JSON.stringify(casts.leap));

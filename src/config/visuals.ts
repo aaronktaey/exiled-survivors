@@ -123,6 +123,8 @@ export const BOSS_CAST_FX = {
   beam: 0xffe0d8,
   /** A landing's dust ring, and how long it is seen. */
   landMs: 260,
+  /** The shadow a leaping 우두머리 casts on the ground beneath its arc (0.138). */
+  shadowAlpha: 0.5,
   landColor: 0xf2e6d0,
 } as const;
 

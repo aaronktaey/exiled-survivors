@@ -1088,12 +1088,15 @@ Read `git log` for what changed and when. What is not in the log:
   부수는 검 is drawn as a thick black 도 (the user's ask).
 - **A 우두머리 picks one of three (0.137, the user's design).** Each time its
   ring comes round, `Enemy.pickCast` weighs `ENEMY_KINDS.boss.casts` (1/1/1):
-  the ring; a `laser` (its line shown `aimMs` 2s, fixed as it aims, then the
-  ring's damage to the survivor anywhere along `width` 50 × `length`); a
-  `leap` (only with the survivor within `maxDistance` 400 — the user's —
-  the spot the survivor stood on shown 2s, then it is carried there over
-  `leapMs` and deals `contactTimes` 2 × contact within `areaOfBody` 2 × its
-  body's width). Hits go through `EnemyHooks.strikeSurvivor` →
+  the ring; a `laser` (its line shown `aimMs` 1s, its direction fixed as it
+  aims, then the ring's damage to the survivor anywhere along `width` 50 ×
+  `length` from where it has walked to); a `leap` (only with the survivor
+  within `maxDistance` 400 — the user's — the spot the survivor stood on
+  shown 1s, then it is carried there over `leapMs` in a parabola `height`
+  high, `airborne` — its body hurts no one, `onEnemyTouch` — its gold ring
+  and shadow on the ground beneath (`leapLift`), and deals `contactTimes` 2
+  × contact within `areaOfBody` 4 × its body's width). It keeps walking
+  while it aims (0.138, the user's ask; it stood in 0.137). Hits go through `EnemyHooks.strikeSurvivor` →
   `Player.takeDamage`. Warnings are faint red (`BOSS_CAST_FX`, the user:
   "visibility must not drop much"). test-boss pins `casts` to the ring for
   its ring checks. The 키메라 has no `casts`: always its ring.

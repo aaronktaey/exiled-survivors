@@ -538,7 +538,12 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
     return 'ring';
   }
 
-  /** One frame of an aimed laser or leap: standing, or carried through the air, until it goes off. */
+  /** In the air on a leap (0.138): its body does not hurt, and it is not walking. */
+  public get airborne(): boolean {
+    return this.cast?.kind === 'leap' && this.cast.jumping;
+  }
+
+  /** One frame of an aimed laser or leap: walking on while it aims, carried through the air, until it goes off. */
   private stepCast(dt: number): void {
     const cast = this.cast;
     if (!cast) {
@@ -546,7 +551,6 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
     }
     cast.leftMs -= dt;
     if (cast.kind === 'laser') {
-      this.setVelocity(0, 0);
       if (cast.leftMs <= 0) {
         this.cast = undefined;
         this.fireLaser(cast.angle);
@@ -559,18 +563,21 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
       return;
     }
     if (!cast.jumping) {
-      this.setVelocity(0, 0);
       if (cast.leftMs <= 0) {
         cast.jumping = true;
         cast.leftMs = leap.leapMs;
         cast.fromX = this.x;
         cast.fromY = this.y;
+        this.setVelocity(0, 0);
       }
       return;
     }
+    // Along the ground from where it stood to the marked spot, and up and
+    // down over it in a parabola, highest halfway (0.138).
     const along = Phaser.Math.Clamp(1 - cast.leftMs / leap.leapMs, 0, 1);
+    const lift = leap.height * 4 * along * (1 - along);
     const body = this.body as Phaser.Physics.Arcade.Body | null;
-    body?.reset(Phaser.Math.Linear(cast.fromX, cast.toX, along), Phaser.Math.Linear(cast.fromY, cast.toY, along));
+    body?.reset(Phaser.Math.Linear(cast.fromX, cast.toX, along), Phaser.Math.Linear(cast.fromY, cast.toY, along) - lift);
     if (cast.leftMs <= 0) {
       this.cast = undefined;
       this.land(cast.toX, cast.toY, leap);
@@ -635,13 +642,25 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
       g.fillStyle(fx.warn, fx.areaAlpha).fillPoints(beamCorners(this.x, this.y, cast.angle, laser.length, laser.width), true);
       g.fillStyle(fx.warn, fx.fillAlpha).fillPoints(beamCorners(this.x, this.y, cast.angle, laser.length * filled, laser.width), true);
       g.lineStyle(fx.edgeWidth, fx.warn, fx.edgeAlpha).strokePoints(beamCorners(this.x, this.y, cast.angle, laser.length, laser.width), true);
-    } else if (cast?.kind === 'leap' && !cast.jumping && this.spec.leap) {
+    } else if (cast?.kind === 'leap' && this.spec.leap) {
       const leap = this.spec.leap;
       const radius = (this.spec.size * leap.areaOfBody) / 2;
-      const filled = 1 - Math.max(0, cast.leftMs) / leap.aimMs;
+      // Full once it has left the ground; its shadow runs along beneath it.
+      const filled = cast.jumping ? 1 : 1 - Math.max(0, cast.leftMs) / leap.aimMs;
       g.fillStyle(fx.warn, fx.areaAlpha).fillCircle(cast.toX, cast.toY, radius);
       g.fillStyle(fx.warn, fx.fillAlpha).fillCircle(cast.toX, cast.toY, radius * filled);
       g.lineStyle(fx.edgeWidth, fx.warn, fx.edgeAlpha).strokeCircle(cast.toX, cast.toY, radius);
+      if (cast.jumping) {
+        // Its shadow on the ground beneath the arc, smaller the higher it is.
+        const height = this.leapLift / leap.height;
+        const shadow = this.spec.size * (0.55 - 0.2 * height);
+        g.fillStyle(0x000000, fx.shadowAlpha).fillEllipse(
+          this.x,
+          this.y + this.leapLift + (this.spec.giant?.drawn ?? this.spec.size) * 0.4,
+          shadow * 2,
+          shadow,
+        );
+      }
     }
     const flash = this.castFlash;
     if (flash?.kind === 'laser' && this.spec.laser) {
@@ -855,14 +874,16 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
       return;
     }
 
-    // A 우두머리 aiming its laser stands; one leaping is carried to where it lands.
+    // A 우두머리 walks on while it aims (0.138); one in the air is carried to where it lands.
     if (this.cast) {
       this.stepCast(dt);
-      return;
+      if (this.airborne) {
+        return;
+      }
     }
 
     // The ring goes off whatever else it is doing — a 키메라 throws it mid-hop.
-    if (this.spec.volley) {
+    if (this.spec.volley && !this.cast) {
       this.throwRing(dt, this.spec.volley);
     }
 
@@ -971,8 +992,20 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
   private placeFootRing(): void {
     const giant = this.spec.giant;
     if (this.footRing?.visible && giant) {
-      this.footRing.setPosition(this.x, this.y + giant.drawn * 0.4);
+      // Mid-leap it stays on the ground beneath the arc (0.138), where the shadow is.
+      this.footRing.setPosition(this.x, this.y + this.leapLift + giant.drawn * 0.4);
     }
+  }
+
+  /** How high a leaping 우두머리 is above the ground beneath it, px; 0 on the ground. */
+  private get leapLift(): number {
+    const cast = this.cast;
+    const leap = this.spec.leap;
+    if (cast?.kind !== 'leap' || !cast.jumping || !leap) {
+      return 0;
+    }
+    const along = Phaser.Math.Clamp(1 - cast.leftMs / leap.leapMs, 0, 1);
+    return leap.height * 4 * along * (1 - along);
   }
 
   /**
@@ -1068,12 +1101,10 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
     const pick = this.pickCast();
     if (pick === 'laser' && this.spec.laser && this.target) {
       this.cast = { kind: 'laser', leftMs: this.spec.laser.aimMs, angle: Phaser.Math.Angle.Between(this.x, this.y, this.target.x, this.target.y) };
-      this.setVelocity(0, 0);
       return;
     }
     if (pick === 'leap' && this.spec.leap && this.target) {
       this.cast = { kind: 'leap', jumping: false, leftMs: this.spec.leap.aimMs, fromX: this.x, fromY: this.y, toX: this.target.x, toY: this.target.y };
-      this.setVelocity(0, 0);
       return;
     }
     sfx.playEnemy(this.scene, this.kind, 'cast');

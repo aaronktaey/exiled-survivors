@@ -15,6 +15,28 @@ export interface PatchNote {
 
 export const PATCH_NOTES: readonly PatchNote[] = [
   {
+    version: '0.138',
+    date: '2026-10-26',
+    changes: {
+      ko: [
+        '우두머리의 레이저와 점프 경고가 2초에서 1초로 줄었고, 경고하는 동안에도 우두머리가 계속 걸어옵니다. 레이저는 조준할 때 정한 방향 그대로, 그 사이 걸어간 자리에서 나갑니다.',
+        '우두머리의 점프가 높이 뛰어올라 포물선을 그리며 떨어집니다. 공중에 있는 동안 그림자가 땅을 따라오고, 몸에 닿아도 피해를 입지 않습니다. 착지 피해 범위는 2배(우두머리 몸 지름의 4배)가 되었습니다.',
+      ],
+      en: [
+        'The Boss’s laser and leap now warn for 1 second instead of 2, and the Boss keeps walking while it warns. The laser fires along the direction set as it aimed, from wherever it has walked to.',
+        'The Boss’s leap now rises high and comes down in an arc. Its shadow runs along the ground beneath it, and its body does not hurt while it is in the air. The landing hits twice the area it did (4× the Boss’s body).',
+      ],
+      ja: [
+        'ボスのレーザーとジャンプの警告が2秒から1秒になり、警告中もボスは歩き続けます。レーザーは狙った時に決めた方向のまま、その間に歩いた位置から放たれます。',
+        'ボスのジャンプが高く跳び上がり、放物線を描いて落ちるようになりました。空中にいる間は影が地面をついて行き、体に触れてもダメージを受けません。着地のダメージ範囲は2倍（ボスの体の直径の4倍）になりました。',
+      ],
+      zh: [
+        '首领的激光和跳跃预警从2秒缩短为1秒，预警期间首领也会继续走动。激光沿瞄准时确定的方向，从首领走到的位置射出。',
+        '首领的跳跃会高高跃起，沿抛物线落下。在空中时影子会沿地面跟随，碰到它的身体也不会受伤。落地伤害范围扩大为2倍（首领身体直径的4倍）。',
+      ],
+    },
+  },
+  {
     version: '0.137',
     date: '2026-10-26',
     changes: {

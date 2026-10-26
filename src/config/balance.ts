@@ -158,9 +158,11 @@ export interface EnemyLeapSpec {
   readonly aimMs: number;
   /** How long the jump takes. */
   readonly leapMs: number;
+  /** How high its arc rises at the top, px (0.138: it falls in a curve). */
+  readonly height: number;
   /** The hit, as times its contact damage (the user's 2). */
   readonly contactTimes: number;
-  /** The landing's width, as times its body's (the user's 2). */
+  /** The landing's width, as times its body's (the user's 2, then 4 in 0.138). */
   readonly areaOfBody: number;
   /** Only chosen with the survivor this close (the user's 400). */
   readonly maxDistance: number;
@@ -399,11 +401,12 @@ export const ENEMY_KINDS: Record<EnemyKind, EnemyKindSpec> = {
       lifespanMs: 4000,
     },
     // 0.137 (the user's design): each ring is one of three, at random — the
-    // ring, a laser shown for two seconds and then all at once, or a leap
-    // onto a spot shown for two seconds.
+    // ring, a laser shown first and then all at once, or a leap onto a spot
+    // shown first. 0.138: shown for one second (two before), walking on
+    // meanwhile; the leap arcs up and falls, onto twice the area it had.
     casts: { ring: 1, laser: 1, leap: 1 },
-    laser: { aimMs: 2000, width: 50, length: 1000, flashMs: 220 },
-    leap: { aimMs: 2000, leapMs: 380, contactTimes: 2, areaOfBody: 2, maxDistance: 400 },
+    laser: { aimMs: 1000, width: 50, length: 1000, flashMs: 220 },
+    leap: { aimMs: 1000, leapMs: 520, height: 110, contactTimes: 2, areaOfBody: 4, maxDistance: 400 },
   },
   /**
    * 도망자. Not in the spawn table: one turns up on its own clock (FUGITIVE)

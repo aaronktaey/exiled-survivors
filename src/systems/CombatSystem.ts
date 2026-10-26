@@ -671,7 +671,8 @@ export class CombatSystem {
 
   private onEnemyTouch: Phaser.Types.Physics.Arcade.ArcadePhysicsCallback = (_player, b) => {
     const enemy = b as unknown as Enemy;
-    if (!enemy.active) {
+    // A 우두머리 in the air passes over (0.138): its landing is what hurts.
+    if (!enemy.active || enemy.airborne) {
       return;
     }
 
