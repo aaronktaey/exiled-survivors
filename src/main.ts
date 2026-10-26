@@ -10,6 +10,7 @@ import { COLORS, RETIRED_STORAGE } from '@/config';
 import { settings } from '@/systems/Settings';
 import { dailyRules } from '@/systems/DailyRules';
 import { registerSharpText } from '@/systems/SharpText';
+import { installButtonLook } from '@/systems/ButtonLook';
 import { loadGameFonts, useGameFont } from '@/systems/Fonts';
 import { gear, gearBonusFor, orbApplied } from '@/systems/Gear';
 import { ranking } from '@/systems/Ranking';
@@ -67,6 +68,8 @@ for (const key of RETIRED_STORAGE) {
 settings.prime();
 // And every label it builds renders at more than one pixel per pixel.
 registerSharpText();
+// Every clickable rectangle with a hand cursor looks like a button (0.141).
+installButtonLook();
 
 // The page first — on a phone, the height actually shown and an inset from
 // the glass — then the canvas, the shape of what is left, so a phone is not

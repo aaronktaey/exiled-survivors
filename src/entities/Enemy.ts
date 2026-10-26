@@ -600,7 +600,7 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
       const dy = target.y - this.y;
       const along = dx * Math.cos(angle) + dy * Math.sin(angle);
       const across = Math.abs(dy * Math.cos(angle) - dx * Math.sin(angle));
-      if (along >= -reach && along <= laser.length + reach && across <= reach) {
+      if (along >= -reach && along <= beamLength(laser) + reach && across <= reach) {
         this.hooks?.strikeSurvivor?.(this.rollDamage(volley.damage));
       }
     }
@@ -639,9 +639,9 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
     if (cast?.kind === 'laser' && this.spec.laser) {
       const laser = this.spec.laser;
       const filled = 1 - Math.max(0, cast.leftMs) / laser.aimMs;
-      g.fillStyle(fx.warn, fx.areaAlpha).fillPoints(beamCorners(this.x, this.y, cast.angle, laser.length, laser.width), true);
-      g.fillStyle(fx.warn, fx.fillAlpha).fillPoints(beamCorners(this.x, this.y, cast.angle, laser.length * filled, laser.width), true);
-      g.lineStyle(fx.edgeWidth, fx.warn, fx.edgeAlpha).strokePoints(beamCorners(this.x, this.y, cast.angle, laser.length, laser.width), true);
+      g.fillStyle(fx.warn, fx.areaAlpha).fillPoints(beamCorners(this.x, this.y, cast.angle, beamLength(laser), laser.width), true);
+      g.fillStyle(fx.warn, fx.fillAlpha).fillPoints(beamCorners(this.x, this.y, cast.angle, beamLength(laser) * filled, laser.width), true);
+      g.lineStyle(fx.edgeWidth, fx.warn, fx.edgeAlpha).strokePoints(beamCorners(this.x, this.y, cast.angle, beamLength(laser), laser.width), true);
     } else if (cast?.kind === 'leap' && this.spec.leap) {
       const leap = this.spec.leap;
       const radius = (this.spec.size * leap.areaOfBody) / 2;
@@ -665,8 +665,8 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
     const flash = this.castFlash;
     if (flash?.kind === 'laser' && this.spec.laser) {
       const fade = flash.leftMs / this.spec.laser.flashMs;
-      g.fillStyle(fx.beam, 0.85 * fade).fillPoints(beamCorners(flash.x, flash.y, flash.angle, this.spec.laser.length, this.spec.laser.width), true);
-      g.fillStyle(fx.warn, 0.5 * fade).fillPoints(beamCorners(flash.x, flash.y, flash.angle, this.spec.laser.length, this.spec.laser.width * 1.4), true);
+      g.fillStyle(fx.beam, 0.85 * fade).fillPoints(beamCorners(flash.x, flash.y, flash.angle, beamLength(this.spec.laser), this.spec.laser.width), true);
+      g.fillStyle(fx.warn, 0.5 * fade).fillPoints(beamCorners(flash.x, flash.y, flash.angle, beamLength(this.spec.laser), this.spec.laser.width * 1.4), true);
     } else if (flash?.kind === 'leap') {
       const fade = flash.leftMs / fx.landMs;
       g.fillStyle(fx.landColor, 0.35 * fade).fillCircle(flash.x, flash.y, flash.radius);
@@ -1244,4 +1244,9 @@ function beamCorners(x: number, y: number, angle: number, length: number, width:
     new Phaser.Math.Vector2(ex + uy * half, ey - ux * half),
     new Phaser.Math.Vector2(x + uy * half, y - ux * half),
   ];
+}
+
+/** How far a 우두머리's laser is drawn and hits: its length, or the world's diagonal when it has none (0.141). */
+function beamLength(laser: { readonly length: number }): number {
+  return Number.isFinite(laser.length) ? laser.length : Math.hypot(WORLD.width, WORLD.height);
 }

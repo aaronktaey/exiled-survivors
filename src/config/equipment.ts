@@ -218,7 +218,7 @@ export const GEAR: Record<GearId, GearSpec> = {
     weight: 0,
     fromKind: { kind: 'chimera', chance: 0.02 },
     implicit: {
-      detail: '적 처치 시 {value} 확률로 가시 폭발 (가시 하나당 메인 스킬 DPS의 {share})',
+      detail: '적 처치 시 {value} 확률로 가시 폭발',
       thornBurst: { chance: 0.1, dpsShare: 0.5 },
     },
   },

@@ -479,6 +479,12 @@ const casts = await run(`
     out.laser.dodged = struck.splice(0).length;
     p.body.reset(home.x, home.y);
     b.recycle();
+    // No end to it (0.141): from far off the screen it still reaches.
+    b = put(1400, 0);
+    b.volleyCooldownMs = 0; b.update(0, 40);
+    step(b, K.laser.aimMs + 200);
+    out.laser.far = struck.splice(0).length;
+    b.recycle();
     // The leap: where the survivor stood, shown for its aim; then it lands there and hits round it.
     K.casts = { ring: 0, laser: 0, leap: 1 };
     b = put(250, 0);
@@ -519,7 +525,7 @@ check('its laser shows its line while it aims, walking on, hitting nothing yet',
   casts.laser.cast === 'laser' && casts.laser.shown && casts.laser.early === 0 && casts.laser.walked && casts.laser.bolts === 0,
   JSON.stringify(casts.laser));
 check('then hits all along it at once for the ring’s damage — and misses one who stepped aside',
-  casts.laser.hit.length === 1 && casts.laser.hit[0] === casts.wantLaser && casts.laser.dodged === 0,
+  casts.laser.hit.length === 1 && casts.laser.hit[0] === casts.wantLaser && casts.laser.dodged === 0 && casts.laser.far === 1,
   JSON.stringify(casts.laser));
 check('its leap marks where the survivor stands, walking on while it aims, then rises in an arc that touches no one',
   casts.leap.cast === 'leap' && casts.leap.shown && casts.leap.onSurvivor && casts.leap.early === 0 && casts.leap.walked &&

@@ -590,15 +590,18 @@ const gearScene = (body) => scene('InventoryScene', body);
 const forge = (body) => scene('ForgeScene', body);
 const forgeOpened = await gearScene(`
   s.menu.focus('l1'); s.showDetails();
+  // 분해 and 제작 are two buttons since 0.141, 제작 at the edge and 분해 beside it.
   const b = s.forgeButton.getBounds();
-  const label = s.children.list.find((o) => o.type === 'Text' && o.text === '분해 · 제작')?.text ?? null;
-  const topRight = b.right > s.scale.width - 20 && b.top < 20;
+  const c = s.craftButton.getBounds();
+  const texts = s.children.list.filter((o) => o.type === 'Text').map((o) => o.text);
+  const label = texts.includes('분해') && texts.includes('제작') ? '분해 · 제작' : null;
+  const topRight = c.right > s.scale.width - 20 && c.top < 20 && b.right <= c.left && b.top < 20;
   s.forgeButton.emit('pointerdown');
   return { label, topRight };
 `);
 await sleep(900);
 const atForge = await forge(`return { active: s.scene.isActive(), tab: s.tab, on: s.menu?.selectedId, back: !!s.backButton };`);
-check('the 인벤토리’s top-right 분해 · 제작 button opens that screen on the weapon under the cursor',
+check('the 인벤토리’s top-right 분해 button (제작 beside it) opens 분해 on the weapon under the cursor',
   forgeOpened.label === '분해 · 제작' && forgeOpened.topRight && atForge.active && atForge.tab === 'single' && atForge.on === 'l1' && atForge.back, JSON.stringify({ forgeOpened, atForge }));
 
 const asked = await forge(`
@@ -876,11 +879,12 @@ const orbScreen = await scene('InventoryScene', `
            bottom: Math.round(s.orbHint.y + s.orbHint.height), canvas: s.scale.height };
 `);
 console.log('구슬 buttons:', JSON.stringify(orbScreen));
-check('the 장비창 has a button per 구슬, each with its count',
+// Its picture and its count, nothing more (0.141, the user's ask).
+check('the 장비창 has a button per 구슬, each its picture and how many',
   orbScreen.buttons.length === orbScreen.kinds &&
-    orbScreen.buttons[0].text.includes('변화 x3') &&
-    orbScreen.buttons[1].text.includes('혼돈 x1') &&
-    orbScreen.buttons[2].text.includes('각성 x0'),
+    orbScreen.buttons[0].text === '3' &&
+    orbScreen.buttons[1].text === '1' &&
+    orbScreen.buttons[2].text === '0',
   orbScreen.buttons.map((b) => b.text).join(' / '));
 check('one the drawer holds none of is dead on the screen',
   orbScreen.buttons[2].alpha < 1 && orbScreen.buttons[0].alpha === 1,
@@ -2020,6 +2024,77 @@ check('a 구슬 cannot go on the weapon in hand — on any other it can',
 check('the 구슬 popup on it is off and says why; pressing 사용 changes nothing and spends nothing',
   popup.usable === false && popup.said && popup.same && popup.chaos === 2, JSON.stringify(popup));
 await ev(`(() => { window.game.scene.getScene('OrbScene').scene.stop(); window.gear.discard('spare1'); return 1; })()`);
+
+// --- 0.141: pages by button, 구슬 사용, 분해 and 제작 apart, the read-out framed ---
+await cdp.send('Page.navigate', { url: 'about:blank' });
+await cdp.send('Page.navigate', { url: 'http://localhost:5173/' });
+await cdp.until(`window.game?.scene.isActive('MenuScene')`, 30000, 200);
+await ev(`(() => {
+  const C = window.config;
+  for (let i = 0; i < 80; i++) {
+    window.gear.add({ uid: 'pg' + i, id: 'ironSword', prefixes: [{ id: 'mighty', tier: 4 }], suffixes: [], rungs: C.AFFIX_RUNGS });
+  }
+  window.orbs.add('chaos', 1);
+  window.game.scene.getScene('MenuScene').icons.press('gear');
+  return 1;
+})()`);
+await cdp.until(`window.game.scene.isActive('InventoryScene')`, 10000, 100);
+const paging = await ev(`(() => {
+  const s = window.game.scene.getScene('InventoryScene');
+  const first = { page: s.menu.page, back: s.pageButtons[0].plate.alpha, on: s.pageButtons[1].plate.alpha, shown: s.pageButtons[0].plate.visible };
+  s.pageButtons[1].plate.emit('pointerdown');
+  const next = { page: s.menu.page, label: s.pageLabel.text };
+  s.pageButtons[0].plate.emit('pointerdown');
+  return { first, next, back: s.menu.page, pages: s.menu.pages, cells: s.menu.cells[0].plate?.getData?.('flat') ?? s.menu.cells[0].getData?.('flat') };
+})()`);
+console.log('paging:', JSON.stringify(paging));
+check('◀ ▶ beside the page count turn the grid’s pages — a phone has no keys for it',
+  paging.pages > 1 && paging.first.shown && paging.first.page === 0 && paging.first.back < 1 && paging.first.on === 1 &&
+    paging.next.page === 1 && paging.next.label.startsWith('2 /') && paging.back === 0, JSON.stringify(paging));
+
+const orbUse = await ev(`(() => {
+  const s = window.game.scene.getScene('InventoryScene');
+  const worn = window.gear.value.equipped;
+  s.menu.focus(worn); s.showDetails();
+  const onWorn = s.orbUsePlate.alpha;
+  s.menu.focus('pg3'); s.showDetails();
+  const onSpare = s.orbUsePlate.alpha;
+  const label = s.orbUseLabel.text;
+  s.orbUsePlate.emit('pointerdown');
+  return { onWorn, onSpare, label };
+})()`);
+await cdp.until(`window.game.scene.isActive('OrbScene')`, 10000, 100);
+const orbPopup = await ev(`(() => { const o = window.game.scene.getScene('OrbScene'); const out = { orb: o.orb, uid: o.payload.uid, held: window.orbs.count(o.orb), usable: o.usable }; o.scene.stop(); window.game.scene.getScene('InventoryScene').scene.resume(); return out; })()`);
+check('구슬 사용, between 착용 and 합성, opens the 구슬 popup on this weapon — off on the one in hand',
+  orbUse.label === '구슬 사용' && orbUse.onWorn < 1 && orbUse.onSpare === 1 && orbPopup.uid === 'pg3' && orbPopup.held > 0 && orbPopup.usable,
+  JSON.stringify({ orbUse, orbPopup }));
+
+const framed = await ev(`(() => {
+  const s = window.game.scene.getScene('InventoryScene');
+  s.menu.focus('pg3'); s.showDetails();
+  return { frames: s.readFrames.commandBuffer.length > 0 };
+})()`);
+check('the read-out is framed in its three parts', framed.frames === true, JSON.stringify(framed));
+
+await ev(`(() => { window.game.scene.getScene('InventoryScene').openCraft(); return 1; })()`);
+await cdp.until(`window.game.scene.isActive('ForgeScene')`, 10000, 100);
+const craftScreen = await ev(`(() => {
+  const f = window.game.scene.getScene('ForgeScene');
+  const texts = f.children.list.filter((o) => o.type === 'Text').map((o) => o.text);
+  return { tab: f.tab, title: texts.includes('제작'), tabs: ['낱개 분해', '일괄 분해'].filter((x) => texts.includes(x)).length, crafts: f.craftButtons.size };
+})()`);
+await ev(`(() => { window.game.scene.getScene('ForgeScene').openTab('single'); return 1; })()`);
+await sleep(600);
+const salvageScreen = await ev(`(() => {
+  const f = window.game.scene.getScene('ForgeScene');
+  const texts = f.children.list.filter((o) => o.type === 'Text').map((o) => o.text);
+  return { tab: f.tab, title: texts.includes('분해'), tabs: ['낱개 분해', '일괄 분해', '제작'].filter((x) => texts.includes(x)) };
+})()`);
+check('제작 is a screen of its own, with no tabs; 분해 has its two',
+  craftScreen.tab === 'craft' && craftScreen.title && craftScreen.tabs === 0 && craftScreen.crafts > 0 &&
+    salvageScreen.title && JSON.stringify(salvageScreen.tabs) === JSON.stringify(['낱개 분해', '일괄 분해']),
+  JSON.stringify({ craftScreen, salvageScreen }));
+await ev(`(() => { for (let i = 0; i < 80; i++) window.gear.discard('pg' + i); return 1; })()`);
 
 console.log('\n=== SUMMARY ===');
 const failed = results.filter((r) => !r.p);

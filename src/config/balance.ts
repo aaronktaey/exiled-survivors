@@ -145,9 +145,9 @@ export interface EnemyVolleySpec extends EnemyShotSpec {
 /** A 우두머리's laser (0.137): its line shown `aimMs`, then a hit all along it at once. */
 export interface EnemyLaserSpec {
   readonly aimMs: number;
-  /** Across the beam, px (the user's 50). */
+  /** Across the beam, px (the user's 50, ×1.3 in 0.141). */
   readonly width: number;
-  /** How far it reaches from the 우두머리, px. */
+  /** How far it reaches from the 우두머리, px — Infinity for no end (0.141, the user's ask), drawn and hit to the world's far side. */
   readonly length: number;
   /** How long the beam is seen once it fires. */
   readonly flashMs: number;
@@ -162,7 +162,7 @@ export interface EnemyLeapSpec {
   readonly height: number;
   /** The hit, as times its contact damage (the user's 2). */
   readonly contactTimes: number;
-  /** The landing's width, as times its body's (the user's 2, then 4 in 0.138). */
+  /** The landing's width, as times its body's (the user's 2, then 4 in 0.138, ×1.3 in 0.141). */
   readonly areaOfBody: number;
   /** Only chosen with the survivor this close (the user's 400). */
   readonly maxDistance: number;
@@ -405,8 +405,9 @@ export const ENEMY_KINDS: Record<EnemyKind, EnemyKindSpec> = {
     // shown first. 0.138: shown for one second (two before), walking on
     // meanwhile; the leap arcs up and falls, onto twice the area it had.
     casts: { ring: 1, laser: 1, leap: 1 },
-    laser: { aimMs: 1000, width: 50, length: 1000, flashMs: 220 },
-    leap: { aimMs: 1000, leapMs: 520, height: 110, contactTimes: 2, areaOfBody: 4, maxDistance: 400 },
+    // 0.141: both areas ×1.3, and the laser with no end.
+    laser: { aimMs: 1000, width: 65, length: Infinity, flashMs: 220 },
+    leap: { aimMs: 1000, leapMs: 520, height: 110, contactTimes: 2, areaOfBody: 5.2, maxDistance: 400 },
   },
   /**
    * 도망자. Not in the spawn table: one turns up on its own clock (FUGITIVE)

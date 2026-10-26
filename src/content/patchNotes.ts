@@ -15,6 +15,48 @@ export interface PatchNote {
 
 export const PATCH_NOTES: readonly PatchNote[] = [
   {
+    version: '0.141',
+    date: '2026-10-26',
+    changes: {
+      ko: [
+        '인벤토리: 장비 정보가 공격력·고정 속성, 접두어, 접미어 세 칸으로 테두리가 나뉘어 보입니다. 구슬 보유 현황은 아이콘과 숫자만 나오고, 착용과 합성 사이에 「구슬 사용」 버튼이 생겼습니다.',
+        '인벤토리 칸 아래 쪽수 양옆의 ◀ ▶ 버튼으로 장비 페이지를 넘길 수 있습니다(모바일에서도).',
+        '분해와 제작이 따로 된 버튼과 화면이 되었습니다. 일괄 분해 화면에서 넓은 화면일 때 글씨가 겹치던 문제를 고쳤습니다(무기 종류가 두 줄로 놓입니다).',
+        '게임 안의 모든 버튼이 그림자와 음영이 있는 입체 버튼으로 바뀌었습니다.',
+        '타이틀 배경이 전투처럼 무작위 바닥 디자인으로 나옵니다(설정의 맵 디자인이 켜져 있을 때).',
+        '「오늘의 예언」을 「예언」으로 부릅니다. 척추 검의 고정 속성 설명이 짧아졌습니다.',
+        '우두머리의 레이저 폭(50 → 65)과 점프 착지 범위가 30% 넓어졌고, 레이저는 끝없이 뻗어 나갑니다.',
+      ],
+      en: [
+        'Inventory: a weapon’s details are framed in three parts — attack and implicit, prefixes, suffixes. Orb counts show only the icon and the number, and a Use orb button sits between Equip and Combine.',
+        'The ◀ ▶ buttons either side of the page count turn the weapon pages (on phones too).',
+        'Salvage and Craft are separate buttons and screens. Fixed text overlapping on the bulk salvage screen on wide screens (the weapon types now sit in two columns).',
+        'Every button in the game now looks raised, with a shadow and shading.',
+        'The title background is a random floor design, as in battle (while Map design is on in Settings).',
+        '“Today’s prophecy” is now called “Prophecy”. The Spine Sword’s implicit reads shorter.',
+        'The Boss’s laser width (50 → 65) and leap landing area are 30% larger, and the laser now reaches without end.',
+      ],
+      ja: [
+        'インベントリ：装備の情報が、攻撃力・固定属性、接頭辞、接尾辞の3つの枠に分かれて表示されます。球の所持数はアイコンと数字だけになり、装備と合成の間に「球を使う」ボタンができました。',
+        'インベントリのページ数の両側にある ◀ ▶ ボタンで装備のページをめくれます（モバイルでも）。',
+        '分解と製作が別々のボタンと画面になりました。一括分解画面で広い画面のとき文字が重なっていた問題を修正しました（武器の種類が2列に並びます）。',
+        'ゲーム内のすべてのボタンが、影と陰影のある立体的なボタンになりました。',
+        'タイトルの背景が、戦闘と同じく無作為な床のデザインになります（設定のマップデザインがオンのとき）。',
+        '「今日の予言」を「予言」と呼ぶようになりました。脊椎の剣の固定属性の説明が短くなりました。',
+        'ボスのレーザーの幅（50 → 65）とジャンプの着地範囲が30%広がり、レーザーは果てしなく伸びます。',
+      ],
+      zh: [
+        '背包：装备信息分为攻击力·固定属性、前缀、后缀三个带边框的区域。宝珠持有情况只显示图标和数字，装备与合成之间新增「使用宝珠」按钮。',
+        '可用背包页数两侧的 ◀ ▶ 按钮翻页（手机上也可以）。',
+        '分解和制作分为各自的按钮和界面。修复了宽屏下批量分解界面文字重叠的问题（武器种类改为两列排列）。',
+        '游戏内所有按钮都改为带阴影和明暗的立体按钮。',
+        '标题背景会像战斗时一样随机采用一种地面设计（设置中的地图设计开启时）。',
+        '「今日预言」改称「预言」。脊椎剑的固定属性说明变短了。',
+        '首领激光的宽度（50 → 65）和跳跃落地范围扩大30%，激光会无限延伸。',
+      ],
+    },
+  },
+  {
     version: '0.140',
     date: '2026-10-26',
     changes: {

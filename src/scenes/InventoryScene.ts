@@ -34,7 +34,6 @@ import {
   gearTitle,
   orbDetail,
   orbName,
-  orbShort,
   t,
 } from '@/i18n';
 import { sparkleBurst } from '@/systems/Celebrate';
@@ -92,6 +91,20 @@ const MARGIN = 16;
 const TITLE_BLOCK = 54;
 /** A 구슬 button's icon and the gap after it, before the word. */
 const ORB_ICON_ROOM = 20;
+/** The read-out's three framed parts (0.141): base, 접두어, 접미어. */
+const READ_FRAME = {
+  pad: 8,
+  gap: 3,
+  radius: 6,
+  baseFill: 0x2a2416,
+  fill: 0x151c29,
+  fillAlpha: 0.85,
+  edge: 0x3a4a66,
+  edgeAlpha: 1,
+} as const;
+/** ◀ ▶ beside the page count: their size, and how far either side of it. */
+const PAGE_BUTTON = 26;
+const PAGE_BUTTON_OFFSET = 54;
 const TAB_HEIGHT = 30;
 const TAB_WIDTH = 96;
 const FOOTER = 34;
@@ -147,6 +160,8 @@ export class InventoryScene extends Phaser.Scene {
   public stateLine?: Phaser.GameObjects.Text;
   /** The lines of whatever is under the cursor. Public for tests. */
   public lines!: Phaser.GameObjects.Text;
+  /** The edges round the read-out's three parts (0.141). */
+  private readFrames?: Phaser.GameObjects.Graphics;
   /** 착용, 버리기, and the plates behind them. Public so a test can press them. */
   public equip?: Phaser.GameObjects.Text;
   private equipPlate?: Phaser.GameObjects.Rectangle;
@@ -178,6 +193,13 @@ export class InventoryScene extends Phaser.Scene {
   public orbHint?: Phaser.GameObjects.Text;
   /** "1 / 2" under the grid, when a tab holds more than one grid's worth. */
   public pageLabel!: Phaser.GameObjects.Text;
+  /** ◀ and ▶ beside the page count (0.141). */
+  public pageButtons: { plate: Phaser.GameObjects.Rectangle; label: Phaser.GameObjects.Text }[] = [];
+  /** 제작, beside 분해 in the top-right corner (0.141). */
+  public craftButton?: Phaser.GameObjects.Rectangle;
+  /** 구슬 사용, between 착용 and 합성 (0.141). */
+  public orbUsePlate?: Phaser.GameObjects.Rectangle;
+  public orbUseLabel?: Phaser.GameObjects.Text;
   /**
    * What has been pressed once and is waiting to be pressed again: 'discard',
    * a 구슬's id, or nothing. Everything here that cannot be undone asks
@@ -217,7 +239,7 @@ export class InventoryScene extends Phaser.Scene {
 
   public create(): void {
     this.backButton = addBackButton(this, () => this.close());
-    this.forgeButton = this.addForgeButton();
+    this.addForgeButtons();
     const { width, height } = this.scale;
     const copy = t().inventory;
 
@@ -302,6 +324,21 @@ export class InventoryScene extends Phaser.Scene {
       })
       .setOrigin(0.5)
       .setDepth(DEPTH.ui + 1);
+    // ◀ ▶ either side of it (0.141): a phone has no keys or wheel to turn a page with.
+    this.pageButtons = [-1, 1].map((by) => {
+      const x = gridLeft + gridWidth / 2 + by * PAGE_BUTTON_OFFSET;
+      const plate = this.add
+        .rectangle(x, this.pageLabel.y, PAGE_BUTTON, PAGE_BUTTON - 4, COLORS.panel, 1)
+        .setStrokeStyle(1, COLORS.panelEdge, 1)
+        .setDepth(DEPTH.ui + 1)
+        .setInteractive({ useHandCursor: true });
+      const label = this.add
+        .text(x, this.pageLabel.y, by < 0 ? '◀' : '▶', { fontFamily: 'system-ui, sans-serif', fontSize: TEXT.size.hint, color: COLORS.text })
+        .setOrigin(0.5)
+        .setDepth(DEPTH.ui + 2);
+      plate.on(Phaser.Input.Events.GAMEOBJECT_POINTER_DOWN, () => this.turnPage(by));
+      return { plate, label };
+    });
 
     // The details pane: beside the grid, or under it.
     const paneLeft = stacked ? MARGIN : gridLeft + gridWidth + GUTTER;
@@ -346,6 +383,8 @@ export class InventoryScene extends Phaser.Scene {
       .text(paneX, y, '', { ...linesStyle, wordWrap: { width: paneWidth } })
       .setOrigin(0.5, 0)
       .setDepth(DEPTH.ui + 1);
+    // Behind it, the edges of its three parts (0.141).
+    this.readFrames = this.add.graphics().setDepth(DEPTH.ui + 0.5);
 
     if (this.tab === 'gear') {
       y += linesHeight + this.rowGap;
@@ -511,6 +550,11 @@ export class InventoryScene extends Phaser.Scene {
           this.openForge();
         }
         return;
+      case 'KeyR':
+        if (!event.repeat) {
+          this.openCraft();
+        }
+        return;
       case 'KeyC':
         if (!event.repeat && this.tab === 'gear') {
           this.pressCombine();
@@ -549,6 +593,11 @@ export class InventoryScene extends Phaser.Scene {
   private showDetails(): void {
     const pages = this.menu.pages;
     this.pageLabel.setText(pages > 1 ? `${this.menu.page + 1} / ${pages}` : '');
+    this.pageButtons.forEach(({ plate, label }, i) => {
+      const open = pages > 1 && (i === 0 ? this.menu.page > 0 : this.menu.page < pages - 1);
+      plate.setVisible(pages > 1).setAlpha(open ? 1 : 0.35);
+      label.setVisible(pages > 1).setAlpha(open ? 1 : 0.35);
+    });
 
     // A question asked about one thing does not carry over to the next.
     this.armed = null;
@@ -563,12 +612,14 @@ export class InventoryScene extends Phaser.Scene {
         fitText(this.stateLine.setScale(1), this.lines.style.wordWrapWidth ?? this.scale.width / 2, 0);
       }
       this.lines.setText(item ? InventoryScene.describe(item) : '');
+      this.frameReadOut();
       this.refreshEquip();
       this.refreshOrbs();
       this.refreshCombine();
       return;
     }
 
+    this.readFrames?.clear();
     const id = this.menu.selectedId;
     const copy = t().inventory;
     this.heading.setColor(COLORS.text);
@@ -602,6 +653,44 @@ export class InventoryScene extends Phaser.Scene {
     );
   }
 
+  /**
+   * Edges round the read-out's three parts — what the base gives (attack and
+   * 고정 속성), the 접두어, the 접미어 (0.141, the user's ask) — found in the
+   * lines as they wrap, so a 고정 속성 that takes two lines on a phone is
+   * still framed whole.
+   */
+  private frameReadOut(): void {
+    const g = this.readFrames;
+    if (!g) {
+      return;
+    }
+    g.clear();
+    const text = this.lines.text;
+    if (!text) {
+      return;
+    }
+    const copy = t().gear;
+    const wrapped = this.lines.getWrappedText(text).map((line) => line.trim());
+    const prefix = wrapped.indexOf(copy.prefix);
+    const suffix = wrapped.indexOf(copy.suffix);
+    if (prefix <= 0 || suffix <= prefix) {
+      return;
+    }
+    const lineH = this.lines.height / wrapped.length;
+    const w = this.lines.width + READ_FRAME.pad * 2;
+    const x = this.lines.x - w / 2;
+    [
+      [0, prefix],
+      [prefix, suffix],
+      [suffix, wrapped.length],
+    ].forEach(([from, to], part) => {
+      const y = this.lines.y + from! * lineH - READ_FRAME.pad / 2;
+      const h = (to! - from!) * lineH + READ_FRAME.pad - READ_FRAME.gap;
+      g.fillStyle(part === 0 ? READ_FRAME.baseFill : READ_FRAME.fill, READ_FRAME.fillAlpha).fillRoundedRect(x, y, w, h, READ_FRAME.radius);
+      g.lineStyle(1, READ_FRAME.edge, READ_FRAME.edgeAlpha).strokeRoundedRect(x, y, w, h, READ_FRAME.radius);
+    });
+  }
+
   private refreshWearing(): void {
     const copy = t().gear;
     const parts = [`${copy.wearing}  ${gearTitle(gear.equipped)}`];
@@ -625,9 +714,9 @@ export class InventoryScene extends Phaser.Scene {
     return gear.items.find((held) => held.uid === this.menu.selectedId);
   }
 
-  /** 착용 and 합성, side by side (분해 · 제작 is top-right since 0.91). Returns the bottom of the row. */
+  /** 착용, 구슬 사용 and 합성, side by side (분해 and 제작 are top-right). Returns the bottom of the row. */
   private buildActions(x: number, y: number, paneWidth: number): number {
-    const width = Math.min(150, (paneWidth - 12) / 2);
+    const width = Math.min(130, (paneWidth - 24) / 3);
     const make = (cx: number, onPress: () => void) => {
       const plate = this.add
         .rectangle(cx, y, width, BUTTON_HEIGHT, COLORS.panelActive, 0)
@@ -646,7 +735,7 @@ export class InventoryScene extends Phaser.Scene {
       return { plate, label };
     };
 
-    const equip = make(x - width / 2 - 6, () => {
+    const equip = make(x - width - 12, () => {
       const item = this.selected();
       if (item) {
         this.wear(item.uid);
@@ -655,7 +744,13 @@ export class InventoryScene extends Phaser.Scene {
     this.equip = equip.label;
     this.equipPlate = equip.plate;
 
-    const combine = make(x + width / 2 + 6, () => this.pressCombine());
+    // 구슬 사용 (0.141, the user's ask): the popup on this weapon, on the first 구슬 that would do something.
+    const orbUse = make(x, () => this.pressOrbUse());
+    orbUse.label.setText(t().gear.useOrb);
+    this.orbUsePlate = orbUse.plate;
+    this.orbUseLabel = orbUse.label;
+
+    const combine = make(x + width + 12, () => this.pressCombine());
     this.combineButton = combine.label;
     this.combinePlate = combine.plate;
 
@@ -724,6 +819,27 @@ export class InventoryScene extends Phaser.Scene {
     }
 
     return orbApplied(item, spec) !== null;
+  }
+
+  /** 구슬 사용: the popup on the first 구슬 that would do something to this weapon, else the first held. */
+  public pressOrbUse(): void {
+    const item = this.selected();
+    if (!item || !canTakeOrb(item, gear.value.equipped)) {
+      return;
+    }
+    const pick = ALL_ORBS.find((orb) => this.canUse(orb.id)) ?? ALL_ORBS.find((orb) => orbs.count(orb.id) > 0);
+    if (pick) {
+      this.pressOrb(pick.id);
+    }
+  }
+
+  /** A whole page of the grid on or back. Public so a test can. */
+  public turnPage(by: number): void {
+    if (this.combining || this.busy) {
+      return;
+    }
+    this.menu.turnPage(by);
+    this.showDetails();
   }
 
   /**
@@ -810,7 +926,6 @@ export class InventoryScene extends Phaser.Scene {
   }
 
   private refreshOrbs(): void {
-    const copy = t().gear;
     ALL_ORBS.forEach((orb) => {
       const label = this.orbButtons.get(orb.id);
       const plate = this.orbPlates.get(orb.id);
@@ -821,7 +936,8 @@ export class InventoryScene extends Phaser.Scene {
       const held = orbs.count(orb.id);
       const live = this.canUse(orb.id);
 
-      label.setText(fill(copy.orbCount, { orb: orbShort(orb.id), count: held })).setScale(1);
+      // Its picture and how many, nothing more (0.141, the user's ask).
+      label.setText(String(held)).setScale(1);
       // Icon, a gap, the word: shrunk to the slot (an upright phone's is
       // narrow) and centred on it, so the icon never sits on the word.
       fitText(label, this.orbSlot - 6 - ORB_ICON_ROOM, 2);
@@ -835,6 +951,11 @@ export class InventoryScene extends Phaser.Scene {
       this.orbIcons.get(orb.id)?.setAlpha(live ? 1 : 0.3);
     });
 
+    // 구슬 사용: live when one would do something here.
+    const usable = ALL_ORBS.some((orb) => this.canUse(orb.id));
+    this.orbUsePlate?.setAlpha(usable ? 1 : 0.35);
+    this.orbUseLabel?.setColor(usable ? COLORS.text : COLORS.muted).setAlpha(usable ? 1 : 0.35);
+
     if (!this.orbHint) {
       return;
     }
@@ -845,35 +966,49 @@ export class InventoryScene extends Phaser.Scene {
   }
 
   /**
-   * 분해 · 제작, in the top-right corner — the 인벤토리 is the only way in
-   * (0.91, the user's ask: the 분해 button among the weapon's own buttons
-   * read as if 제작 lived inside 분해). Mirrors the back button opposite.
+   * 분해 and 제작, in the top-right corner — the 인벤토리 is the only way in
+   * (0.91), two buttons and two screens since 0.141 (the user's ask). They
+   * mirror the back button opposite, 제작 at the edge.
    */
-  private addForgeButton(): Phaser.GameObjects.Rectangle {
+  private addForgeButtons(): void {
     const { size, margin } = PAUSE_BUTTON;
     const y = margin + size / 2;
-    const label = this.add
-      .text(0, y, t().forge.title, { fontFamily: 'system-ui, sans-serif', fontSize: TEXT.size.body, color: COLORS.text })
-      .setOrigin(0.5)
-      .setDepth(DEPTH.ui + 21);
-    const width = Math.max(size, Math.ceil(label.width) + 24);
-    const x = this.scale.width - margin - width / 2;
-    label.setX(x);
-    const plate = this.add
-      .rectangle(x, y, width, size, COLORS.panel, 0.85)
-      .setStrokeStyle(2, COLORS.panelEdge, 1)
-      .setDepth(DEPTH.ui + 20)
-      .setInteractive({ useHandCursor: true });
-    plate.on(Phaser.Input.Events.GAMEOBJECT_POINTER_DOWN, () => this.openForge());
-    return plate;
+    let right = this.scale.width - margin;
+    const make = (text: string, onPress: () => void): Phaser.GameObjects.Rectangle => {
+      const label = this.add
+        .text(0, y, text, { fontFamily: 'system-ui, sans-serif', fontSize: TEXT.size.body, color: COLORS.text })
+        .setOrigin(0.5)
+        .setDepth(DEPTH.ui + 21);
+      const width = Math.max(size, Math.ceil(label.width) + 24);
+      const x = right - width / 2;
+      right -= width + 8;
+      label.setX(x);
+      const plate = this.add
+        .rectangle(x, y, width, size, COLORS.panel, 0.85)
+        .setStrokeStyle(2, COLORS.panelEdge, 1)
+        .setDepth(DEPTH.ui + 20)
+        .setInteractive({ useHandCursor: true });
+      plate.on(Phaser.Input.Events.GAMEOBJECT_POINTER_DOWN, onPress);
+      return plate;
+    };
+    this.craftButton = make(t().forge.craftTitle, () => this.openCraft());
+    this.forgeButton = make(t().forge.salvageTitle, () => this.openForge());
   }
 
-  /** Opens 분해 · 제작, on the weapon under the cursor when there is one. Public so a test can. */
+  /** Opens 분해, on the weapon under the cursor when there is one. Public so a test can. */
   public openForge(): void {
     if (this.combining || this.busy) {
       return;
     }
     this.scene.start(SCENES.forge, { onClose: this.payload.onClose, focus: this.selected()?.uid });
+  }
+
+  /** Opens 제작. Public so a test can. */
+  public openCraft(): void {
+    if (this.combining || this.busy) {
+      return;
+    }
+    this.scene.start(SCENES.forge, { onClose: this.payload.onClose, tab: 'craft', focus: this.selected()?.uid });
   }
 
   private refreshEquip(): void {

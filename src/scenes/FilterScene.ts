@@ -137,7 +137,8 @@ export class FilterScene extends Phaser.Scene {
           .rectangle(x, y, cell, cell, INVENTORY.empty, 1)
           .setStrokeStyle(2, INVENTORY.border[entry.tier], 1)
           .setDepth(DEPTH.ui + 1)
-          .setInteractive({ useHandCursor: true });
+          .setInteractive({ useHandCursor: true })
+          .setData('flat', true);
         const icon = this.add
           .image(x, y, entry.texture)
           .setDisplaySize(cell - 12, cell - 12)

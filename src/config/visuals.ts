@@ -128,6 +128,29 @@ export const BOSS_CAST_FX = {
   landColor: 0xf2e6d0,
 } as const;
 
+/**
+ * How every button is raised (0.141, the user's ask: buttons that look like
+ * buttons) — systems/ButtonLook.ts lays it on.
+ */
+export const BUTTON_LOOK = {
+  /** Its body, where the button's own fill is see-through. */
+  body: 0x1f2a3d,
+  bodyAlpha: 0.92,
+  /** The light along its top. */
+  light: 0xffffff,
+  lightAlpha: 0.09,
+  /** The shade along its bottom, and over it while pressed. */
+  shade: 0x000000,
+  shadeAlpha: 0.32,
+  pressAlpha: 0.2,
+  /** Its shadow on what is under it. */
+  shadow: 0x000000,
+  shadowAlpha: 0.5,
+  shadowDrop: 3,
+  /** How long a press shows. */
+  pressMs: 120,
+} as const;
+
 export const DEPTH = {
   ground: 0,
   /** 지형지물, on the floor and under everything that moves over it. */

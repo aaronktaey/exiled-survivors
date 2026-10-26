@@ -17,6 +17,7 @@ import {
 } from '@/config';
 import { PATCH_NOTES } from '@/content/patchNotes';
 import { dailyRuleText, fill, gearName, t } from '@/i18n';
+import { arenaLookOn, ensureArenaFloor, themeFor } from '@/systems/Arena';
 import { dailyRules } from '@/systems/DailyRules';
 import { bgm } from '@/systems/Bgm';
 import { IconBar } from '@/systems/IconBar';
@@ -229,7 +230,10 @@ export class MenuScene extends Phaser.Scene {
 
   /** The title as a list under the logo, with the corner icons — the title everywhere but the village. */
   private buildMenu(width: number, height: number): void {
-    this.add.tileSprite(0, 0, width, height, TEXTURES.grid).setOrigin(0, 0).setDepth(DEPTH.ground);
+    // One of the battle grounds at random each time, as a run lays one (0.141,
+    // the user's ask) — the old grid where 맵 디자인 is off, and on the harness.
+    const floor = arenaLookOn() ? ensureArenaFloor(this, themeFor(Math.floor(Math.random() * 0xffffffff))) : TEXTURES.grid;
+    this.add.tileSprite(0, 0, width, height, floor).setOrigin(0, 0).setDepth(DEPTH.ground);
     this.add.rectangle(0, 0, width, height, 0x05070b, SCRIM.title).setOrigin(0, 0).setDepth(DEPTH.ground + 1);
 
     // Logo, byline and rows are one block, centred in whatever is there.

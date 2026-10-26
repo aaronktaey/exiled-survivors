@@ -1090,13 +1090,14 @@ Read `git log` for what changed and when. What is not in the log:
 - **A 우두머리 picks one of three (0.137, the user's design).** Each time its
   ring comes round, `Enemy.pickCast` weighs `ENEMY_KINDS.boss.casts` (1/1/1):
   the ring; a `laser` (its line shown `aimMs` 1s, its direction fixed as it
-  aims, then the ring's damage to the survivor anywhere along `width` 50 ×
-  `length` from where it has walked to); a `leap` (only with the survivor
+  aims, then the ring's damage to the survivor anywhere along `width` 65 ×
+  `length` — Infinity since 0.141, drawn and hit to the world's diagonal,
+  `beamLength` — from where it has walked to); a `leap` (only with the survivor
   within `maxDistance` 400 — the user's — the spot the survivor stood on
   shown 1s, then it is carried there over `leapMs` in a parabola `height`
   high, `airborne` — its body hurts no one, `onEnemyTouch` — its gold ring
   and shadow on the ground beneath (`leapLift`), and deals `contactTimes` 2
-  × contact within `areaOfBody` 4 × its body's width). It keeps walking
+  × contact within `areaOfBody` 5.2 × its body's width). It keeps walking
   while it aims (0.138, the user's ask; it stood in 0.137). Hits go through `EnemyHooks.strikeSurvivor` →
   `Player.takeDamage`. Warnings are faint red (`BOSS_CAST_FX`, the user:
   "visibility must not drop much"). test-boss pins `casts` to the ring for
@@ -1213,6 +1214,28 @@ Read `git log` for what changed and when. What is not in the log:
   `canTakeOrb` beside `canSalvage`: the 인벤토리's buttons and `OrbScene`
   (`orbUse.equipped` says why). The one in hand still goes into nothing a
   구슬 or 분해 could take from it.
+- **Buttons look like buttons (0.141, the user's ask).** `systems/ButtonLook`
+  (installed in main.ts) wraps `Rectangle.setInteractive`: any rectangle
+  made clickable with `useHandCursor` is raised — a body where its fill is
+  see-through, light along its top, shade along its bottom, a shadow, a dip
+  while pressed (`BUTTON_LOOK`, visuals.ts) — by two Graphics that follow it
+  each POST_UPDATE and copy its `cameraFilter`. A clickable rectangle that is
+  not a button opts out with `setData('flat', true)` (ItemGrid cells, the
+  filter's tiles, the HUD's slots); one in a container or covering 40% of the
+  screen is left alone. A new button needs nothing.
+- **The 인벤토리 since 0.141 (the user's asks).** The read-out stays one Text
+  (`lines`, which tests read); `frameReadOut` draws the edges of its three
+  parts (base · 접두어 · 접미어) behind it, found in `getWrappedText`. ◀ ▶
+  beside the page count (`pageButtons`, `ItemGrid.turnPage`) — a phone had
+  no way to turn a page. 착용 · 구슬 사용 (`pressOrbUse`: the popup on the
+  first 구슬 that would do something) · 합성. 구슬 counts are the icon and a
+  number. 분해 and 제작 are two corner buttons (`forgeButton`, `craftButton`;
+  keys F and R) and two screens: `ForgeScene` reads its mode off its tab —
+  `craft` alone, or 낱개/일괄 분해 (`tabs`). 일괄 분해 lays the bases in two
+  columns when one would run into the bottom.
+- **The title stands on a battle floor (0.141, the user's ask):** one of
+  `ARENA_THEMES` at random each visit (`ensureArenaFloor`), while
+  `arenaLookOn()` — the grid on the harness.
 - **Swords are taken apart, not sold (0.90, the user's ask).** Selling and
   gold went. The 인벤토리's top-right 분해 · 제작 button (`forgeButton`,
   `openForge`, key F — 0.91 moved it there from the weapon's own row, the

@@ -150,6 +150,7 @@ export class Hud {
         .setScrollFactor(0)
         .setDepth(DEPTH.ui)
         .setInteractive({ useHandCursor: true })
+        .setData('flat', true)
         .setVisible(false);
       const icon = scene.add
         .image(x, y, TEXTURES.skillOrb)
@@ -188,6 +189,7 @@ export class Hud {
         .setScrollFactor(0)
         .setDepth(DEPTH.ui)
         .setInteractive({ useHandCursor: true })
+        .setData('flat', true)
         .setVisible(false);
       const icon = scene.add
         .image(0, top + SLOT / 2, TEXTURES.skillOrb)

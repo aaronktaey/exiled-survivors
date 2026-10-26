@@ -384,6 +384,8 @@ export interface Strings {
     readonly orbDestroyed: string;
     /** {orb}: the weapon is now in 망고 상태. */
     readonly orbWarded: string;
+    /** 착용 · 구슬 사용 · 합성's middle one (0.141). */
+    readonly useOrb: string;
     /** 각인의 구슬 (0.132): {orb} {affix}. */
     readonly orbEngraved: string;
     /** After the engraved line in the read-out. */
@@ -431,6 +433,9 @@ export interface Strings {
   /** 분해 (0.90): take swords apart one by one or in bulk, and make bare ones. */
   readonly forge: {
     readonly title: string;
+    /** The two screens' own titles and the 인벤토리's buttons for them (0.141). */
+    readonly salvageTitle: string;
+    readonly craftTitle: string;
     readonly tabs: { readonly single: string; readonly bulk: string; readonly craft: string };
     /** {count} 철광석 held, under the title. */
     readonly ore: string;

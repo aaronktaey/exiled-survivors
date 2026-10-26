@@ -74,7 +74,8 @@ export class ItemGrid {
         .rectangle(x, y, cell, cell, INVENTORY.empty, 1)
         .setStrokeStyle(1, COLORS.panelEdge, 1)
         .setDepth(depth)
-        .setInteractive({ useHandCursor: true });
+        .setInteractive({ useHandCursor: true })
+        .setData('flat', true);
       const icon = scene.add
         .image(x, y, '__DEFAULT')
         .setDisplaySize(cell * 0.86, cell * 0.86)
@@ -150,6 +151,15 @@ export class ItemGrid {
     if (this.items.length > 0) {
       this.moveTo(Phaser.Math.Clamp(index, 0, this.items.length - 1));
     }
+  }
+
+  /** A whole page on or back (0.141: the 인벤토리's ◀ ▶), onto its first cell. */
+  public turnPage(by: number): void {
+    if (this.items.length === 0) {
+      return;
+    }
+    const page = Phaser.Math.Clamp(this.page + by, 0, this.pages - 1);
+    this.moveTo(Math.min(page * this.perPage, this.items.length - 1));
   }
 
   /** Steps the cursor through the items in reading order. */

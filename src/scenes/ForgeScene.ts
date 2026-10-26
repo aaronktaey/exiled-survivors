@@ -132,7 +132,7 @@ export class ForgeScene extends Phaser.Scene {
     this.add.rectangle(0, 0, width, height, 0x05070b, SCRIM.reading).setOrigin(0, 0).setDepth(DEPTH.ui);
 
     this.add
-      .text(width / 2, MARGIN + 14, copy.title, { fontFamily: 'system-ui, sans-serif', fontSize: TEXT.size.screen, color: COLORS.text })
+      .text(width / 2, MARGIN + 14, this.tab === 'craft' ? copy.craftTitle : copy.salvageTitle, { fontFamily: 'system-ui, sans-serif', fontSize: TEXT.size.screen, color: COLORS.text })
       .setOrigin(0.5)
       .setDepth(DEPTH.ui + 1);
     this.oreLine = this.add
@@ -140,8 +140,10 @@ export class ForgeScene extends Phaser.Scene {
       .setOrigin(0.5)
       .setDepth(DEPTH.ui + 1);
 
-    TABS.forEach((tab, i) => {
-      const x = width / 2 + (i - 1) * (TAB_WIDTH + 6);
+    // 분해 and 제작 are two screens since 0.141 (the user's ask): 분해's two tabs, or 제작 alone.
+    const tabs = this.tabs;
+    tabs.forEach((tab, i) => {
+      const x = width / 2 + (i - (tabs.length - 1) / 2) * (TAB_WIDTH + 6);
       const active = tab === this.tab;
       const plate = this.add
         .rectangle(x, MARGIN + 54 + TAB_HEIGHT / 2, TAB_WIDTH, TAB_HEIGHT, active ? COLORS.panelActive : COLORS.panel, 1)
@@ -326,10 +328,23 @@ export class ForgeScene extends Phaser.Scene {
       .setOrigin(0, 0)
       .setDepth(DEPTH.ui + 1);
     y += 22;
-    ROSTER().forEach((id) => {
-      const cy = y + ROW_HEIGHT / 2;
+    // Two columns when one would push the button into the hint (0.141: the
+    // roster grew to eight, and lying down that ran off the bottom).
+    const roster = ROSTER();
+    const below = BUTTON_HEIGHT + 10 + 46 + BUTTON_HEIGHT + FOOTER + 30;
+    const columns = roster.length * ROW_HEIGHT > this.scale.height - y - below && width >= 2 * 300 + MARGIN * 2 ? 2 : 1;
+    const colW = columns === 2 ? Math.min((width - MARGIN * 2 - 12) / 2, 340) : w;
+    const rows = Math.ceil(roster.length / columns);
+    const top = y;
+    roster.forEach((id, index) => {
+      const col = Math.floor(index / rows);
+      const row = index % rows;
+      const cy = top + row * ROW_HEIGHT + ROW_HEIGHT / 2;
+      const cx = width / 2 + (columns === 2 ? (col === 0 ? -1 : 1) * (colW / 2 + 6) : 0);
+      const left = cx - colW / 2;
+      const w = colW;
       const plate = this.add
-        .rectangle(width / 2, cy, w, ROW_HEIGHT - 4, COLORS.panel, 1)
+        .rectangle(cx, cy, w, ROW_HEIGHT - 4, COLORS.panel, 1)
         .setStrokeStyle(1, COLORS.panelEdge, 1)
         .setDepth(DEPTH.ui + 1)
         .setInteractive({ useHandCursor: true });
@@ -348,8 +363,8 @@ export class ForgeScene extends Phaser.Scene {
         .setDepth(DEPTH.ui + 2);
       plate.on(Phaser.Input.Events.GAMEOBJECT_POINTER_DOWN, () => this.toggleType(id));
       this.typeRows.set(id, { plate, check, count });
-      y += ROW_HEIGHT;
     });
+    y = top + rows * ROW_HEIGHT;
 
     y += 8;
     const cy = y + BUTTON_HEIGHT / 2;
@@ -569,13 +584,21 @@ export class ForgeScene extends Phaser.Scene {
         this.close();
         return;
       case 'Tab':
-      case 'KeyE':
+      case 'KeyE': {
         event.preventDefault?.();
-        this.openTab(TABS[(TABS.indexOf(this.tab) + 1) % TABS.length]!);
+        const tabs = this.tabs;
+        if (tabs.length > 1) {
+          this.openTab(tabs[(tabs.indexOf(this.tab) + 1) % tabs.length]!);
+        }
         return;
-      case 'KeyQ':
-        this.openTab(TABS[(TABS.indexOf(this.tab) + TABS.length - 1) % TABS.length]!);
+      }
+      case 'KeyQ': {
+        const tabs = this.tabs;
+        if (tabs.length > 1) {
+          this.openTab(tabs[(tabs.indexOf(this.tab) + tabs.length - 1) % tabs.length]!);
+        }
         return;
+      }
       default:
         break;
     }
@@ -619,6 +642,11 @@ export class ForgeScene extends Phaser.Scene {
   }
 
   /** Opens another tab. The screen is measured again for it. Public so a test can. */
+  /** The tabs this screen has: 분해's two, or none on 제작 (0.141). */
+  private get tabs(): readonly ForgeTab[] {
+    return this.tab === 'craft' ? [] : TABS.filter((tab) => tab !== 'craft');
+  }
+
   public openTab(tab: ForgeTab): void {
     if (tab !== this.tab) {
       this.relayout({ tab });
