@@ -132,6 +132,7 @@ export const DIALS: readonly DialSpec[] = [
   { path: 'BONES.skull.fromKill', kind: 'chance', tab: 'drops', max: 0.05 },
   { path: 'BONES.rib.fromKill', kind: 'chance', tab: 'drops', max: 0.05 },
   { path: 'BONES.spine.fromKill', kind: 'chance', tab: 'drops', max: 0.05 },
+  { path: 'BONES.tailbone.fromKill', kind: 'chance', tab: 'drops', max: 0.05 },
   { path: 'GEAR.rustySword.fromKill', kind: 'chance', tab: 'drops', max: 0.05 },
   { path: 'GEAR.ironSword.fromKill', kind: 'chance', tab: 'drops', max: 0.05 },
   { path: 'GEAR.steelSword.fromKill', kind: 'chance', tab: 'drops', max: 0.05 },

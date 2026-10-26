@@ -168,6 +168,11 @@ export interface EnemyKindSpec {
   readonly guaranteedLump?: boolean;
   /** Drawn to be seen: a colour that cycles, and a body that breathes. */
   readonly flashy?: boolean;
+  /**
+   * Wears the 우두머리's health bar and name (0.136, the user's ask: the 키메라
+   * and the 도망자). One with a `lifespanMs` shows the seconds it has left too.
+   */
+  readonly healthBar?: boolean;
   /** Only a 기행종 has one: it does not walk, it hops (EnemyHopSpec). */
   readonly hop?: EnemyHopSpec;
   /** Drawn as a fat giant that strides and spins rather than as a square (EnemyGiantSpec). */
@@ -382,6 +387,7 @@ export const ENEMY_KINDS: Record<EnemyKind, EnemyKindSpec> = {
     lifespanMs: 60_000,
     // A 재능의 덩어리 every time (0.111; a 파편 from 0.102, a skill before).
     guaranteedLump: true,
+    healthBar: true,
     flashy: true,
   },
   /**
@@ -417,6 +423,7 @@ export const ENEMY_KINDS: Record<EnemyKind, EnemyKindSpec> = {
     // Always leaves a skill (0.85), as a 도망자 does.
     // A 재능의 파편 every time, in place of the skill it left until 0.102 (the user's ask).
     guaranteedLump: true,
+    healthBar: true,
   },
   shooter: {
     id: "shooter",

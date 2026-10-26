@@ -841,6 +841,8 @@ export interface Strings {
     readonly boneFound: string;
     /** A run off the ranking keeps nothing it finds (0.134): {item}. */
     readonly lootWithheld: string;
+    /** Beside a 도망자's health: the seconds before it leaves (0.136). */
+    readonly lifeLeft: string;
     /** 하얀 망고: its name on the ground, and what is shouted when eaten. */
     readonly mango: string;
     readonly mangoEaten: string;

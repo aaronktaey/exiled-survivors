@@ -658,6 +658,7 @@ export const ja: Strings = {
     unknownRuneFelt: 'とてつもない力を感じる…',
     boneFound: '{bone} 入手',
     lootWithheld: '{item} — ランキングに載らないプレイのため保管されません',
+    lifeLeft: '残り{seconds}秒',
     pickedUp: '{skill} 習得',
     enhancedPickup: '{skill} 強化',
     altarOffer: '祭壇 · {enemies}',
@@ -839,16 +840,19 @@ export const ja: Strings = {
       skull: '頭蓋骨',
       rib: '肋骨',
       spine: '脊椎',
+      tailbone: '尾骨',
     },
     boneShorts: {
       skull: '頭蓋骨',
       rib: '肋骨',
       spine: '脊椎',
+      tailbone: '尾骨',
     },
     boneDetails: {
       skull: 'レア敵の代わりにボスが現れます',
       rib: '全ての敵の体力 +100%、ドロップ率 +50%',
       spine: 'レア敵の出現確率 2 倍',
+      tailbone: 'ボスはすべてキメラとして現れます',
     },
     passives: { shardDamage: 'ダメージの欠片', shardAttackSpeed: '攻撃速度の欠片', shardMoveSpeed: '移動速度の欠片', shardMaxHp: '最大体力の欠片', shardArea: '効果範囲の欠片' },
     passiveDetails: {

@@ -369,6 +369,51 @@ check('with nothing to spend, the screen is skipped rather than shown empty',
   skipped.bone === false && skipped.game === true,
   `BoneScene active=${skipped.bone}, GameScene active=${skipped.game}`);
 
+// --- 0.136: 꼬리뼈 — every 우두머리 a 키메라 ---
+const tail = await cdp.evaluate(`(() => {
+  const C = window.config, s = window.game.scene.getScene('GameScene');
+  const spec = C.BONES.tailbone;
+  const was = s.boneBonus;
+  const kinds = {};
+  try {
+    s.spawner.clear();
+    s.boneBonus = C.boneBonusFor(['tailbone']);
+    kinds.clock = s.spawner.spawnBoss()?.kind;
+    s.spawner.clear();
+    // A 제단's 우두머리 too.
+    const p = s.player;
+    s.spawner.summon(p.x + 300, p.y, 'bosses');
+    kinds.altar = s.spawner.group.getChildren().filter((e) => e.active).map((e) => e.kind);
+    s.spawner.clear();
+    // And a 두개골's, up to its ceiling, with the 꼬리뼈 beside it.
+    s.boneBonus = C.boneBonusFor(['skull', 'tailbone']);
+    // Through place(), the one way every rare spawn goes.
+    for (let i = 0; i < C.BONE_RUN.maxBosses + 3; i++) {
+      const e = s.spawner.group.get(p.x + 200, p.y);
+      s.spawner.place(e, p.x + 200, p.y + i * 30, 'grunt', true);
+    }
+    const field = s.spawner.group.getChildren().filter((e) => e.active).map((e) => e.kind);
+    kinds.skull = { chimeras: field.filter((k) => k === 'chimera').length, bosses: field.filter((k) => k === 'boss').length };
+    s.spawner.clear();
+    // Without it, a 우두머리 is a 우두머리.
+    s.boneBonus = C.boneBonusFor([]);
+    kinds.plain = s.spawner.spawnBoss()?.kind;
+    s.spawner.clear();
+  } finally {
+    s.boneBonus = was;
+  }
+  return { stackable: spec.stackable, fromKill: spec.fromKill, skull: C.BONES.skull.fromKill, max: C.BONE_RUN.maxBosses,
+           texture: s.textures.exists(spec.texture), kinds };
+})()`);
+console.log('꼬리뼈:', JSON.stringify(tail));
+check('꼬리뼈: one a run, as common as a 두개골, with a picture of its own',
+  tail.stackable === false && tail.fromKill === tail.skull && tail.texture === true, JSON.stringify(tail));
+check('under it every 우두머리 is a 키메라 — the clock’s, a 제단’s, and a 두개골’s up to its ceiling',
+  tail.kinds.clock === 'chimera' && tail.kinds.altar.length > 0 && tail.kinds.altar.every((k) => k === 'chimera') &&
+    tail.kinds.skull.chimeras === tail.max && tail.kinds.skull.bosses === 0,
+  JSON.stringify(tail.kinds));
+check('and without it a 우두머리 is still a 우두머리', tail.kinds.plain === 'boss', JSON.stringify(tail.kinds));
+
 console.log('\n=== SUMMARY ===');
 const failed = results.filter((r) => !r.p);
 console.log(`${results.length - failed.length}/${results.length} passed`);

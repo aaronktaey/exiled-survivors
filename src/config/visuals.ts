@@ -183,6 +183,7 @@ export const TEXTURES = {
   boneSkull: "tex-bone-skull",
   boneRib: "tex-bone-rib",
   boneSpine: "tex-bone-spine",
+  boneTailbone: "tex-bone-tailbone",
   altar: "tex-altar",
   mango: "tex-mango",
   /** 철광석, and the padlock a 잠금 weapon wears in the 분해 grid (0.90). */

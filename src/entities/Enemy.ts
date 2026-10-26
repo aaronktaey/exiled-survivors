@@ -32,7 +32,7 @@ import {
   giantFrame,
   type EnemyGiantSpec,
 } from '@/config';
-import { enemyName } from '@/i18n';
+import { enemyName, fill, t } from '@/i18n';
 import { dailyRules } from '@/systems/DailyRules';
 import { sfx } from '@/systems/Sfx';
 import { silhouetteOf } from '@/systems/Silhouette';
@@ -433,13 +433,19 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
     outline.setPosition(this.x, this.y).setScale(this.scaleX, this.scaleY).setFlipX(this.flipX).setRotation(this.rotation);
   }
 
+  /** A 우두머리, or a kind that wears its bar (the 키메라, the 도망자 — `healthBar`). */
+  private get wearsBar(): boolean {
+    return this.isBoss || this.spec.healthBar === true;
+  }
+
   /**
    * The bar a 우두머리 wears, drawn the way the survivor's own is: a track,
-   * the fill over it, and its name and count on a line above. Nothing below
-   * that rank gets one — a field of forty bars would say nothing at all.
+   * the fill over it, and its name and count on a line above — and, for one
+   * that leaves on its own, the seconds it has left. Nothing below that rank
+   * gets one — a field of forty bars would say nothing at all.
    */
   private drawHealthBar(): void {
-    if (!this.isBoss) {
+    if (!this.wearsBar) {
       this.healthBar?.setVisible(false);
       this.plate?.setVisible(false);
       return;
@@ -472,7 +478,9 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
     this.healthBar.setVisible(true);
 
     // Whole numbers: a hit can take off a fraction (연쇄번개 각성, a crit), the count shows none.
-    this.plate?.setText(`${enemyName(this.kind)}  ${Math.max(0, Math.ceil(this.hp))}/${Math.ceil(this.maxHp)}`);
+    const count = `${enemyName(this.kind)}  ${Math.max(0, Math.ceil(this.hp))}/${Math.ceil(this.maxHp)}`;
+    const leaving = this.lifeLeftMs === Infinity ? '' : `  ${fill(t().game.lifeLeft, { seconds: Math.max(0, Math.ceil(this.lifeLeftMs / 1000)) })}`;
+    this.plate?.setText(count + leaving);
     this.plate?.setPosition(this.x, top - HUD.nameplateGap);
     this.plate?.setVisible(true);
   }
@@ -620,6 +628,13 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
     if (!this.active) {
       return;
     }
+    // A card or a popup holds the run with physics.pause() only, and this
+    // group still updates: every clock here holds with it (0.136). Left to
+    // run, a 사수 kept loosing shots that hung where they were fired and
+    // all came at once when the card closed — and a 우두머리 its rings.
+    if (this.scene.physics.world.isPaused) {
+      return;
+    }
 
     const dt = Math.min(delta, TIMING.maxDeltaMs);
 
@@ -640,7 +655,7 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
 
     this.placeOutline();
     this.placeFootRing();
-    if (this.isBoss) {
+    if (this.wearsBar) {
       this.drawHealthBar();
     }
 

@@ -518,6 +518,38 @@ await run(`
   return 1;
 `);
 
+// --- 0.136: a held run holds the enemies too — no volley stored up behind a card ---
+const heldRun = await cdp.evaluate(`(() => {
+  const s = window.game.scene.getScene('GameScene');
+  s.spawner.clear();
+  s.combat.enemyShots.getChildren().forEach((x) => x.active && x.despawn());
+  const p = s.player;
+  const shooter = s.spawner.group.get(p.x + 160, p.y);
+  shooter.spawn(p.x + 160, p.y, p, 'shooter', s.spawner.hooks);
+  const boss = s.spawner.group.get(p.x - 260, p.y);
+  boss.spawn(p.x - 260, p.y, p, 'boss', s.spawner.hooks);
+  const shots = () => s.combat.enemyShots.getChildren().filter((x) => x.active).length;
+  const fugitive = s.spawner.group.get(p.x, p.y + 300);
+  fugitive.spawn(p.x, p.y + 300, p, 'fugitive', s.spawner.hooks);
+  const lifeBefore = fugitive.lifeLeftMs;
+  s.physics.pause();
+  // Ten seconds behind a card, in frame-sized steps (Enemy.update clamps its delta).
+  for (let t = 0; t < 10000; t += 50) s.spawner.group.getChildren().forEach((e) => e.active && e.update(0, 50));
+  const whilePaused = shots();
+  const lifeHeld = fugitive.lifeLeftMs === lifeBefore;
+  s.physics.resume();
+  // And once it goes on, they fight again.
+  for (let t = 0; t < 6000; t += 50) s.spawner.group.getChildren().forEach((e) => e.active && e.update(0, 50));
+  const after = shots();
+  s.spawner.clear();
+  s.combat.enemyShots.getChildren().forEach((x) => x.active && x.despawn());
+  return { whilePaused, lifeHeld, after };
+})()`);
+console.log('held run:', JSON.stringify(heldRun));
+check('behind a card no 사수 or 우두머리 fires, and a 도망자’s clock holds — nothing comes all at once when it closes',
+  heldRun.whilePaused === 0 && heldRun.lifeHeld === true, JSON.stringify(heldRun));
+check('and when the run goes on they fire again', heldRun.after > 0, JSON.stringify(heldRun));
+
 console.log('\n=== SUMMARY ===');
 const failed = results.filter((r) => !r.p);
 console.log(`${results.length - failed.length}/${results.length} passed`);

@@ -15,6 +15,32 @@ export interface PatchNote {
 
 export const PATCH_NOTES: readonly PatchNote[] = [
   {
+    version: '0.136',
+    date: '2026-10-26',
+    changes: {
+      ko: [
+        '키메라와 도망자도 우두머리처럼 머리 위에 이름과 체력바가 나옵니다. 도망자는 사라지기까지 남은 시간도 함께 나옵니다.',
+        '새 뼈다귀 「꼬리뼈」: 이 판의 모든 우두머리가 키메라로 나옵니다(시간마다 오는 우두머리, 두개골·제단의 우두머리 포함). 한 판에 하나만 쓸 수 있고, 두개골만큼 드물게 떨어집니다.',
+        '스킬·강화 선택지를 고르는 동안에도 사수와 우두머리가 계속 쏘아서, 고르고 나면 그동안 쌓인 투사체가 한꺼번에 날아오던 문제를 고쳤습니다. 선택지가 떠 있는 동안에는 적도 멈춰 있고, 도망자가 사라지기까지 남은 시간도 줄지 않습니다.',
+      ],
+      en: [
+        'The Chimera and the Fugitive now wear a name and health bar overhead, as a Boss does. The Fugitive’s also shows the seconds before it leaves.',
+        'New bone, the Tailbone: every Boss in the run comes as a Chimera (the timed Boss, and a Skull’s or an altar’s too). One a run, as rare as the Skull.',
+        'Fixed a pile of projectiles flying in at once after picking a card: Shooters and Bosses kept firing while the cards were up. Enemies now hold while you choose, and a Fugitive’s time left does not run down.',
+      ],
+      ja: [
+        'キメラと逃亡者にも、ボスと同じく頭上に名前と体力バーが出るようになりました。逃亡者は消えるまでの残り時間も表示されます。',
+        '新しい骨「尾骨」：このプレイのボスがすべてキメラとして現れます（時間ごとのボス、頭蓋骨・祭壇のボスも含む）。1プレイに1つだけ使え、頭蓋骨と同じくらい稀に落ちます。',
+        'スキル・強化の選択肢を選んでいる間も射手とボスが撃ち続け、選んだ後にたまった投射物が一度に飛んできていた問題を修正しました。選択肢が出ている間は敵も止まり、逃亡者が消えるまでの残り時間も減りません。',
+      ],
+      zh: [
+        '奇美拉和逃亡者现在也会像首领一样在头顶显示名字和生命条。逃亡者还会显示离开前的剩余时间。',
+        '新骨头「尾骨」：本局所有首领都会以奇美拉出现（定时出现的首领，以及头骨、祭坛召来的首领）。每局只能使用一个，掉落率与头骨相同。',
+        '修复了选择技能·强化选项时射手和首领仍在射击、选完后积攒的投射物一次性飞来的问题。选项出现期间敌人也会停住，逃亡者离开前的剩余时间也不会减少。',
+      ],
+    },
+  },
+  {
     version: '0.135',
     date: '2026-10-26',
     changes: {

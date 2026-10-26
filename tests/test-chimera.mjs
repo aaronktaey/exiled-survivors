@@ -248,6 +248,29 @@ check('at the cap the weakest of the newcomer’s own kind gives way, not a weak
 check('with none of its kind on the field, the weakest of any gives way',
   ofKind.none.grunt === false && ofKind.none.bigger === true, JSON.stringify(ofKind));
 
+// 0.136: the 키메라 and the 도망자 wear the 우두머리's bar; the 도망자's says how long it has left.
+const bars = await run(`
+  s.spawner.clear();
+  const p = s.player;
+  const put = (kind, dx) => { const e = s.spawner.group.get(p.x + dx, p.y + 400); e.spawn(p.x + dx, p.y + 400, p, kind, s.spawner.hooks, false, 1); return e; };
+  const chimera = put('chimera', -200), fugitive = put('fugitive', 0), grunt = put('grunt', 200);
+  const life = window.config.ENEMY_KINDS.fugitive.lifespanMs;
+  const out = {
+    chimera: { bar: chimera.healthBar?.visible === true, plate: chimera.plate?.text ?? '' },
+    fugitive: { bar: fugitive.healthBar?.visible === true, plate: fugitive.plate?.text ?? '' },
+    grunt: { bar: grunt.healthBar?.visible === true },
+    seconds: Math.ceil(life / 1000),
+  };
+  s.spawner.clear();
+  return out;
+`);
+check('the 키메라 and the 도망자 wear a health bar with their name and health, as a 우두머리 does',
+  bars.chimera.bar && bars.fugitive.bar && /키메라\s+\d+\/\d+/.test(bars.chimera.plate) && /도망자\s+\d+\/\d+/.test(bars.fugitive.plate),
+  JSON.stringify(bars));
+check('the 도망자’s says the seconds before it leaves; the 키메라’s, which stays, says none; a plain enemy has no bar',
+  bars.fugitive.plate.includes(bars.seconds + '초 남음') && !/남음/.test(bars.chimera.plate) && bars.grunt.bar === false,
+  JSON.stringify(bars));
+
 // --- 7. as big as a 우두머리, and posed: leaping mid-hop, casting as it throws (0.87) ---
 const posed = await run(`
   s.spawner.clear();

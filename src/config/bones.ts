@@ -18,7 +18,7 @@ import { TEXTURES } from '@/config/visuals';
  * BootScene — the drawer, the drop, the label and the pick screen all read
  * this table.
  */
-export type BoneId = 'skull' | 'rib' | 'spine';
+export type BoneId = 'skull' | 'rib' | 'spine' | 'tailbone';
 
 /** What one 뼈다귀 does to the run it is spent on. */
 export interface BoneEffect {
@@ -30,6 +30,11 @@ export interface BoneEffect {
   readonly raresBecomeBosses?: boolean;
   /** Multiplies the share of spawns that come up rare. */
   readonly rareChanceScale?: number;
+  /**
+   * Every 우두머리 the run would have — its clock, a 두개골's, a 제단's —
+   * walks in as a 키메라 instead (꼬리뼈, 0.136).
+   */
+  readonly bossesBecomeChimeras?: boolean;
 }
 
 export interface BoneSpec {
@@ -106,6 +111,21 @@ export const BONES: Record<BoneId, BoneSpec> = {
     fromBoss: 0,
     run: { rareChanceScale: 2 },
   },
+  tailbone: {
+    id: 'tailbone',
+    name: '꼬리뼈',
+    short: '꼬리',
+    detail: '모든 우두머리가 키메라로 나옵니다',
+    texture: TEXTURES.boneTailbone,
+    color: 0xdccfb0,
+    tier: 'rare',
+    // Every 우두머리 is already a 키메라 with one (the user's: one a run).
+    stackable: false,
+    // As rare as a 두개골 (the user's ask, 0.136).
+    fromKill: 0.0005,
+    fromBoss: 0,
+    run: { bossesBecomeChimeras: true },
+  },
 };
 
 export const ALL_BONES: readonly BoneSpec[] = Object.values(BONES);
@@ -147,6 +167,7 @@ export interface BoneBonus {
   readonly dropScale: number;
   readonly raresBecomeBosses: boolean;
   readonly rareChanceScale: number;
+  readonly bossesBecomeChimeras: boolean;
 }
 
 export const NO_BONES: BoneBonus = {
@@ -154,6 +175,7 @@ export const NO_BONES: BoneBonus = {
   dropScale: 1,
   raresBecomeBosses: false,
   rareChanceScale: 1,
+  bossesBecomeChimeras: false,
 };
 
 /** Folds a run's 뼈다귀 together. Two 갈비뼈 compound rather than adding. */
@@ -162,6 +184,7 @@ export function boneBonusFor(applied: readonly BoneId[]): BoneBonus {
   let dropScale = 1;
   let raresBecomeBosses = false;
   let rareChanceScale = 1;
+  let bossesBecomeChimeras = false;
 
   for (const id of applied) {
     const effect = BONES[id]?.run;
@@ -173,7 +196,8 @@ export function boneBonusFor(applied: readonly BoneId[]): BoneBonus {
     dropScale *= effect.dropScale ?? 1;
     raresBecomeBosses = raresBecomeBosses || effect.raresBecomeBosses === true;
     rareChanceScale *= effect.rareChanceScale ?? 1;
+    bossesBecomeChimeras = bossesBecomeChimeras || effect.bossesBecomeChimeras === true;
   }
 
-  return { enemyHpScale, dropScale, raresBecomeBosses, rareChanceScale };
+  return { enemyHpScale, dropScale, raresBecomeBosses, rareChanceScale, bossesBecomeChimeras };
 }

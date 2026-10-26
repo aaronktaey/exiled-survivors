@@ -658,6 +658,7 @@ export const en: Strings = {
     unknownRuneFelt: 'An immense power stirs...',
     boneFound: 'Found {bone}',
     lootWithheld: '{item} — not kept: this run goes on no ranking',
+    lifeLeft: '{seconds}s left',
     pickedUp: '{skill} acquired',
     enhancedPickup: '{skill} upgraded',
     altarOffer: 'Altar · {enemies}',
@@ -839,16 +840,19 @@ export const en: Strings = {
       skull: 'Skull',
       rib: 'Rib',
       spine: 'Spine',
+      tailbone: 'Tailbone',
     },
     boneShorts: {
       skull: 'Skull',
       rib: 'Rib',
       spine: 'Spine',
+      tailbone: 'Tail',
     },
     boneDetails: {
       skull: 'Bosses walk in where rares would have',
       rib: 'All enemies +100% health, drop rate +50%',
       spine: 'Rare enemies twice as likely',
+      tailbone: 'Every Boss comes as a Chimera',
     },
     passives: { shardDamage: 'Damage shard', shardAttackSpeed: 'Attack speed shard', shardMoveSpeed: 'Move speed shard', shardMaxHp: 'Max health shard', shardArea: 'Area shard' },
     passiveDetails: {

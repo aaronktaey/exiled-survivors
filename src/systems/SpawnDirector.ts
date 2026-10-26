@@ -234,12 +234,26 @@ export class SpawnDirector {
     return Math.max(0, this.untilBossMs);
   }
 
-  /** How many 우두머리 are on the field. */
+  /** What comes as a 우두머리: a 키메라 under a 꼬리뼈 (0.136). */
+  public get bossKind(): EnemyKind {
+    return this.bones().bossesBecomeChimeras ? 'chimera' : 'boss';
+  }
+
+  /** The horn for a 우두머리, or the 키메라's line when that is what came. */
+  private announceBoss(): void {
+    if (this.bossKind === 'chimera') {
+      this.hooks.onChimeraSpawned?.();
+    } else {
+      this.hooks.onBossSpawned?.();
+    }
+  }
+
+  /** How many 우두머리 are on the field — 키메라, under a 꼬리뼈. */
   public get aliveBosses(): number {
     let count = 0;
     for (const child of this.group.getChildren()) {
       const enemy = child as Enemy;
-      if (enemy.active && enemy.isBoss) {
+      if (enemy.active && enemy.kind === this.bossKind) {
         count += 1;
       }
     }
@@ -260,8 +274,8 @@ export class SpawnDirector {
       return null;
     }
 
-    boss.spawn(x, y, this.target, 'boss', this.hooks, false, this.hpScale);
-    this.hooks.onBossSpawned?.();
+    boss.spawn(x, y, this.target, this.bossKind, this.hooks, false, this.hpScale);
+    this.announceBoss();
     return boss;
   }
 
@@ -363,7 +377,7 @@ export class SpawnDirector {
     // for every minute the run has lasted, whatever kind it turned out to be.
     const rare = Math.random() < this.rareChance;
     if (this.place(enemy, x, y, kind ?? this.pickKind(), rare)) {
-      this.hooks.onBossSpawned?.();
+      this.announceBoss();
     }
     return true;
   }
@@ -381,7 +395,7 @@ export class SpawnDirector {
   private place(enemy: Enemy, x: number, y: number, kind: EnemyKind, rare: boolean): boolean {
     if (rare && this.bones().raresBecomeBosses) {
       if (this.aliveBosses < BONE_RUN.maxBosses) {
-        enemy.spawn(x, y, this.target, 'boss', this.hooks, false, this.hpScale);
+        enemy.spawn(x, y, this.target, this.bossKind, this.hooks, false, this.hpScale);
         return true;
       }
 
@@ -410,6 +424,8 @@ export class SpawnDirector {
 
     let spawned = 0;
     const horn = offer.kind === 'boss';
+    // A 제단's 우두머리 are 키메라 under a 꼬리뼈, like every other.
+    const kind = horn ? this.bossKind : offer.kind;
     // The ring starts at a random turn, so two altars do not line up.
     const turn = Phaser.Math.FloatBetween(0, Math.PI * 2);
     for (let i = 0; i < offer.count; i++) {
@@ -421,7 +437,7 @@ export class SpawnDirector {
         break;
       }
 
-      enemy.spawn(ex, ey, this.target, offer.kind, this.hooks, offer.kind !== 'boss' && offer.rare, this.hpScale);
+      enemy.spawn(ex, ey, this.target, kind, this.hooks, !horn && offer.rare, this.hpScale);
       if (offer.castOnArrival) {
         enemy.castVolleyNow();
       }
@@ -430,7 +446,7 @@ export class SpawnDirector {
 
     // One horn for the lot, not one per 우두머리.
     if (horn) {
-      this.hooks.onBossSpawned?.();
+      this.announceBoss();
     }
     return spawned;
   }

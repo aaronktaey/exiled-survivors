@@ -594,6 +594,11 @@ console.log('standing in a crowd:', JSON.stringify({ before: hurt.before, after:
 check('standing in a crowd still costs health',
   bled.hp < hurt.before, `${hurt.before} -> ${bled.hp} ${JSON.stringify(bled)}`);
 await shot('enemies-05-player-room');
+// The crowd may have taken the survivor's life, and a finished run holds its
+// enemies still (0.136): the rest goes on a fresh run.
+await cdp.send('Page.reload', {});
+await cdp.until(`window.game?.scene.getScene('GameScene')?.player?.active && !window.game.scene.getScene('GameScene').over`, 30000, 200);
+await drain();
 
 // --- 12. 연발 only goes where there is a shot to put it on ---
 // An 속성 that adds bolts means nothing on something that walks up and hits

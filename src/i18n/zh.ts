@@ -658,6 +658,7 @@ export const zh: Strings = {
     unknownRuneFelt: '感受到一股强大的力量……',
     boneFound: '获得{bone}',
     lootWithheld: '{item} — 此局不计入排行榜，不会保留',
+    lifeLeft: '剩余{seconds}秒',
     pickedUp: '获得 {skill}',
     enhancedPickup: '强化 {skill}',
     altarOffer: '祭坛 · {enemies}',
@@ -839,16 +840,19 @@ export const zh: Strings = {
       skull: '头骨',
       rib: '肋骨',
       spine: '脊椎',
+      tailbone: '尾骨',
     },
     boneShorts: {
       skull: '头骨',
       rib: '肋骨',
       spine: '脊椎',
+      tailbone: '尾骨',
     },
     boneDetails: {
       skull: '稀有敌人改为首领出现',
       rib: '所有敌人生命 +100%，掉落率 +50%',
       spine: '稀有敌人出现几率 ×2',
+      tailbone: '所有首领都会以奇美拉出现',
     },
     passives: { shardDamage: '伤害碎片', shardAttackSpeed: '攻击速度碎片', shardMoveSpeed: '移动速度碎片', shardMaxHp: '最大生命碎片', shardArea: '效果范围碎片' },
     passiveDetails: {

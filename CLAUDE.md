@@ -193,6 +193,11 @@ Read `git log` for what changed and when. What is not in the log:
 - **One rule for the 두개골.** Every spawn that rolls rare goes through
   `SpawnDirector.place`: under the skull it is a 우두머리 while fewer than
   `BONE_RUN.maxBosses` are up, and an ordinary enemy after — never a rare.
+  A 꼬리뼈 (0.136, the user's: one a run, as rare as the 두개골) makes every
+  우두머리 a 키메라 — `SpawnDirector.bossKind`, read by the clock, `place`
+  and a 제단's `bosses` offer; `aliveBosses` counts that kind, so the
+  ceiling holds for 키메라 too. A 키메라 is not `isBoss`: it leaves its own
+  drops (skill, 재능의 덩어리, 룬), not a 우두머리's weapon and 제단.
   The one exception is the 제단 (since 2026-10-18): its packs come exactly as
   offered, rare and all — it used to turn them into 우두머리 up to the
   ceiling and leave the rest plain. Do not add another spawn path that skips
@@ -278,7 +283,12 @@ Read `git log` for what changed and when. What is not in the log:
   `Projectile` and `EnemyShot` hold their clocks while
   `scene.physics.world.isPaused` — they used to run out standing still and
   be gone when the cards closed — and so does every `GroundItem` (0.115:
-  a drop's minute, an altar's). Anything new with a life of its own in an
+  a drop's minute, an altar's), and every `Enemy` (0.136: a 사수 and a
+  우두머리 kept firing behind the cards, and the shots, held still, all came
+  at once when they closed — the user saw a flood after every pick; a
+  도망자's lifespan holds too). A probe that steps enemies by hand must do
+  it on a run that is not paused — a dead run is (test-enemies reloads after
+  its crowd check for that). Anything new with a life of its own in an
   update should do the same (test-skills §8).
 - **Three ways to steer on a phone (0.117).** 설정's 모바일 이동 방식
   cycles 터치 위치에 생성 (VirtualJoystick) · 기울이기 (TiltInput) · 탭으로
@@ -370,7 +380,11 @@ Read `git log` for what changed and when. What is not in the log:
   server while `ARENA_LOOK.devOnly` (false since 0.105).
 - **도망자 is table-driven.** `flee`, `lifespanMs`, `guaranteedSkill` and
   `flashy` on an `ENEMY_KINDS` entry give any kind that behaviour; the
-  fugitive is the only one using them. It spawns on `FUGITIVE`'s clock.
+  fugitive is the only one using them. `healthBar` (0.136, the user's ask:
+  키메라 and 도망자) gives a kind the 우두머리's bar and nameplate
+  (`Enemy.wearsBar`); a kind with `lifespanMs` adds the seconds it has left
+  (`game.lifeLeft`). A 우두머리 never leaves on its own, so it shows none —
+  the user asked for one on the 우두머리, read as the 도망자 (2026-10-26). It spawns on `FUGITIVE`'s clock.
 - **생존자 마을 (dev server only, the user's ask, 2026-10-24).** The title
   as a yard to walk, like Path of Exile's hideout: `systems/Village.ts`,
   built by `MenuScene.buildVillage` when `villageOn()` (VILLAGE.devOnly keeps
