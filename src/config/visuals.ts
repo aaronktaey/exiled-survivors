@@ -196,6 +196,7 @@ export const TEXTURES = {
   orbAwaken: "tex-orb-awaken",
   orbExplode: "tex-orb-explode",
   orbMango: "tex-orb-mango",
+  orbEngrave: "tex-orb-engrave",
   passive: "tex-passive",
   trophy: "tex-trophy",
   /** 거미줄's slow, as an icon among the survivor's effects. */

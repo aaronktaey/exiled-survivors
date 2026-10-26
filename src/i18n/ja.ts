@@ -26,6 +26,9 @@ export const ja: Strings = {
       destroy: '{chance} の確率で装備が壊れます — マンゴー状態なら壊れる代わりにマンゴー状態だけ消えます',
       noLines: '属性のない装備には使えません',
       ward: '次の爆発の球 1 回では装備が壊れず、その球で結果に関係なく消えます — すでにマンゴー状態なら使えません',
+      engraveMin: '属性が {min} 個以上の装備にだけ使え、そのうち1つが無作為に刻印されます',
+      engraveKeep: '刻印された属性は永久に変わりません — 変化・混沌の球はその属性を残して残りだけを振り直し、爆発の球はその属性を強化も交換もしません',
+      engraveOnce: '装備1つにつき1回だけ使えます',
     },
   },
 
@@ -292,6 +295,8 @@ export const ja: Strings = {
     orbUpgraded: '{orb} — {from} → {to}',
     orbDestroyed: '{orb} — 装備が壊れました',
     orbWarded: '{orb} — マンゴー状態になりました',
+    orbEngraved: '{orb} — {affix} を刻印',
+    engravedMark: '  [刻印]',
     orbSaved: '{orb} — マンゴーが破壊を防ぎました（マンゴー状態は消えました）',
     mangoState: '🥭 マンゴー状態 — 次の爆発の球 1 回では壊れません',
     mangoSpent: '（マンゴー状態は消えました）',
@@ -811,6 +816,7 @@ export const ja: Strings = {
       awaken: '覚醒の球',
       explode: '爆発の球',
       mango: 'マンゴーの球',
+      engrave: '刻印の球',
     },
     orbShorts: {
       transmute: '変化',
@@ -818,6 +824,7 @@ export const ja: Strings = {
       awaken: '覚醒',
       explode: '爆発',
       mango: 'マンゴー',
+      engrave: '刻印',
     },
     orbDetails: {
       transmute: '属性を 1〜2 個に振り直します',
@@ -825,6 +832,7 @@ export const ja: Strings = {
       awaken: '属性を 1 個追加します（最大 6）',
       explode: '1 ティアでない属性 1 個を一段階上の別の属性に、すべて 1 ティアなら属性 1 個を別の 1 ティア属性に — 20% の確率で装備が壊れます',
       mango: '装備をマンゴー状態に — 次の爆発の球 1 回では壊れず、その球でマンゴー状態は消えます',
+      engrave: '属性が4つ以上の装備の属性1つを無作為に刻印します — 刻印された属性は永久に変わりません（装備ごとに1回）',
     },
     bones: {
       skull: '頭蓋骨',

@@ -26,6 +26,9 @@ export const en: Strings = {
       destroy: '{chance} chance to destroy the weapon — in Mango state only the Mango is lost instead',
       noLines: 'Not usable on a weapon with no modifiers',
       ward: 'The next Explosion Orb cannot destroy the weapon, and spends the Mango whatever it rolls — not usable in Mango state already',
+      engraveMin: 'Usable only on a weapon with {min} or more modifiers; one of them is engraved at random',
+      engraveKeep: 'An engraved modifier never changes — Transmutation and Chaos Orbs keep it and reroll the rest, and an Explosion Orb neither raises nor swaps it',
+      engraveOnce: 'Once per weapon',
     },
   },
 
@@ -292,6 +295,8 @@ export const en: Strings = {
     orbUpgraded: '{orb} — {from} → {to}',
     orbDestroyed: '{orb} — the weapon did not survive it',
     orbWarded: '{orb} — the weapon is in Mango state',
+    orbEngraved: '{orb} — {affix} engraved',
+    engravedMark: '  [engraved]',
     orbSaved: '{orb} — the Mango took the blow; the weapon is whole, the Mango spent',
     mangoState: '🥭 Mango state — the next Explosion Orb cannot destroy it',
     mangoSpent: ' (Mango state spent)',
@@ -811,6 +816,7 @@ export const en: Strings = {
       awaken: 'Awakening Orb',
       explode: 'Explosion Orb',
       mango: 'Mango Orb',
+      engrave: 'Engraving Orb',
     },
     orbShorts: {
       transmute: 'Trans',
@@ -818,6 +824,7 @@ export const en: Strings = {
       awaken: 'Awaken',
       explode: 'Blast',
       mango: 'Mango',
+      engrave: 'Engrave',
     },
     orbDetails: {
       transmute: 'Rerolls the weapon to 1–2 modifiers',
@@ -825,6 +832,7 @@ export const en: Strings = {
       awaken: 'Adds one modifier (up to 6)',
       explode: 'Turns one modifier below tier 1 into another a tier higher; if all are tier 1, swaps one for a different tier-1 modifier — 20% chance to destroy the weapon',
       mango: 'Puts a weapon in Mango state — the next Explosion Orb cannot destroy it, and spends the Mango whatever it rolls',
+      engrave: 'Engraves one random modifier on a weapon with 4 or more — it never changes again (once per weapon)',
     },
     bones: {
       skull: 'Skull',

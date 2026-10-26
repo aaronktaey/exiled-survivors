@@ -1748,6 +1748,13 @@ export class BootScene extends Phaser.Scene {
         const arm = size * 0.07;
         graphics.fillRect(half - arm / 2, size * 0.22, arm, size * 0.56);
         graphics.fillRect(size * 0.22, half - arm / 2, size * 0.56, arm);
+      } else if (orb.id === 'engrave') {
+        // A rune cut into it: an upright stroke with two arms — what stays as it is.
+        const w = size * 0.08;
+        graphics.fillRect(half - w / 2, size * 0.24, w, size * 0.52);
+        graphics.lineStyle(w, 0xffffff, 0.92);
+        graphics.lineBetween(half, size * 0.36, half + size * 0.18, size * 0.24);
+        graphics.lineBetween(half, size * 0.52, half - size * 0.18, size * 0.4);
       } else if (orb.id === 'mango') {
         // A small mango with its leaf: what keeps the weapon whole.
         graphics.fillStyle(0xffb347, 1);

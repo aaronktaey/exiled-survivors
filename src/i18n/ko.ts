@@ -30,6 +30,9 @@ export const ko: Strings = {
       destroy: '{chance} 확률로 장비가 파괴됩니다 — 망고 상태면 파괴 대신 망고 상태만 사라집니다',
       noLines: '속성이 없는 장비에는 쓸 수 없습니다',
       ward: '다음 폭발의 구슬 1회는 장비를 파괴하지 못하고, 그 구슬에 결과와 상관없이 사라집니다 — 이미 망고 상태면 쓸 수 없습니다',
+      engraveMin: '속성이 {min}개 이상인 장비에만 쓸 수 있고, 그중 1개가 무작위로 각인됩니다',
+      engraveKeep: '각인된 속성은 영구히 바뀌지 않습니다 — 변화·혼돈의 구슬은 그 속성을 남기고 나머지만 굴리며, 폭발의 구슬은 그 속성을 강화하거나 바꾸지 않습니다',
+      engraveOnce: '장비 하나에 한 번만 쓸 수 있습니다',
     },
   },
 
@@ -296,6 +299,8 @@ export const ko: Strings = {
     orbUpgraded: '{orb} — {from} → {to}',
     orbDestroyed: '{orb} — 장비가 파괴되었습니다',
     orbWarded: '{orb} — 망고 상태가 되었습니다',
+    orbEngraved: '{orb} — {affix} 각인',
+    engravedMark: '  [각인]',
     orbSaved: '{orb} — 망고가 파괴를 막았습니다 (망고 상태가 사라졌습니다)',
     mangoState: '🥭 망고 상태 — 다음 폭발의 구슬 한 번은 장비를 파괴하지 못합니다',
     mangoSpent: ' (망고 상태가 사라졌습니다)',

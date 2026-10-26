@@ -1110,6 +1110,16 @@ Read `git log` for what changed and when. What is not in the log:
   구슬 are warded against — a failed 합성 still spends its swords. The
   인벤토리 shows it on the cell (`GridItem.badge`) and in `stateLine` under
   the name, not as a read-out line (that block is budgeted to the screen).
+- **각인의 구슬 (0.132, the user's design).** `ORBS.engrave` (as rare as the
+  망고의 구슬, 신화): on a weapon of `engrave.minLines` (4) 속성 or more it
+  marks one line, at random, as `GearItem.engraved` (side, id, tier — the
+  first line on that side matching it is the one; `engravedAt` finds it, and
+  a record whose line is gone loses the mark in `GearStore.sanitise`). Once a
+  weapon, for good: 변화 · 혼돈 keep it and roll the rest
+  (`rollAffixLines(count, keep)`, the kept line counted), 폭발 neither climbs
+  nor swaps it and is refused with nothing else to work on (the destroy roll
+  and the 망고 as ever), 각성 adds as usual, a 합성 comes out bare. The
+  인벤토리 read-out ends the line with `gear.engravedMark`. test-gear §14c.
 - **Swords are taken apart, not sold (0.90, the user's ask).** Selling and
   gold went. The 인벤토리's top-right 분해 · 제작 button (`forgeButton`,
   `openForge`, key F — 0.91 moved it there from the weapon's own row, the

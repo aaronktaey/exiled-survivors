@@ -80,6 +80,10 @@ export interface Strings {
       readonly destroy: string;
       readonly noLines: string;
       readonly ward: string;
+      /** 각인의 구슬 (0.132): {min}. */
+      readonly engraveMin: string;
+      readonly engraveKeep: string;
+      readonly engraveOnce: string;
     };
   };
 
@@ -376,6 +380,10 @@ export interface Strings {
     readonly orbDestroyed: string;
     /** {orb}: the weapon is now in 망고 상태. */
     readonly orbWarded: string;
+    /** 각인의 구슬 (0.132): {orb} {affix}. */
+    readonly orbEngraved: string;
+    /** After the engraved line in the read-out. */
+    readonly engravedMark: string;
     /** {orb}: it would have broken, and the 망고 took the blow. */
     readonly orbSaved: string;
     /** First line of a weapon's read-out while it is in 망고 상태. */

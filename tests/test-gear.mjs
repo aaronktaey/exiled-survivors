@@ -1197,6 +1197,96 @@ check('the 인벤토리 shows it: a 망고 on the cell, and a line under its nam
 await shot('gear-12-mango');
 await ev(`(() => { window.gear.discard('m1'); return 1; })()`);
 
+// --- 14c. 각인의 구슬 (0.132): one line, at random, never changed again ---
+const engrave = await ev(`(() => {
+  const c = window.config, ORBS = c.ORBS;
+  const three = { uid: 'e0', id: 'steelSword', prefixes: [{ id: 'mighty', tier: 3 }, { id: 'cruel', tier: 3 }], suffixes: [{ id: 'swift', tier: 3 }] };
+  const sword = { ...three, uid: 'e1', suffixes: [{ id: 'swift', tier: 3 }, { id: 'vital', tier: 4 }] };
+  const sides = {};
+  for (let i = 0; i < 200; i++) {
+    const o = window.orbApplied(sword, ORBS.engrave);
+    sides[o.item.engraved.prefix ? 'prefix' : 'suffix'] = 1 + (sides[o.item.engraved.prefix ? 'prefix' : 'suffix'] ?? 0);
+  }
+  const done = window.orbApplied(sword, ORBS.engrave);
+  const mark = done.item.engraved;
+  const has = (item) => (mark.prefix ? item.prefixes : item.suffixes).some((l) => l.id === mark.id && l.tier === mark.tier);
+  const lines = (item) => item.prefixes.length + item.suffixes.length;
+  // Rerolls keep it, and count it among the lines they roll.
+  const reroll = {};
+  for (const id of ['transmute', 'chaos']) {
+    let kept = 0, inRange = 0;
+    for (let i = 0; i < 300; i++) {
+      const o = window.orbApplied(done.item, ORBS[id]);
+      if (has(o.item) && o.item.engraved === mark) kept++;
+      const n = lines(o.item);
+      if (n >= ORBS[id].reroll.min && n <= ORBS[id].reroll.max) inRange++;
+    }
+    reroll[id] = { kept, inRange };
+  }
+  // 폭발 never climbs it or trades it away, on a climbing weapon or an all-1티어 one.
+  let explodeKept = 0, explodeSurvived = 0;
+  for (let i = 0; i < 300; i++) {
+    const o = window.orbApplied(done.item, ORBS.explode);
+    if (!o.item) continue;
+    explodeSurvived++;
+    if (has(o.item)) explodeKept++;
+  }
+  const top = { uid: 'e2', id: 'steelSword', prefixes: [{ id: 'mighty', tier: 1 }, { id: 'cruel', tier: 1 }], suffixes: [{ id: 'swift', tier: 1 }, { id: 'vital', tier: 1 }],
+                engraved: { prefix: true, id: 'mighty', tier: 1 } };
+  let swapKept = 0, swapSurvived = 0;
+  for (let i = 0; i < 300; i++) {
+    const o = window.orbApplied(top, ORBS.explode);
+    if (!o.item) continue;
+    swapSurvived++;
+    if (o.item.prefixes.some((l) => l.id === 'mighty' && l.tier === 1)) swapKept++;
+  }
+  // Only the engraved line left to climb: nothing for a 폭발의 구슬 to do.
+  const stuck = { uid: 'e3', id: 'steelSword', prefixes: [{ id: 'mighty', tier: 3 }], suffixes: [], engraved: { prefix: true, id: 'mighty', tier: 3 } };
+  const lone = window.orbApplied(stuck, ORBS.explode);
+  // 각성 adds to it as to any weapon.
+  const awaken = window.orbApplied(done.item, ORBS.awaken);
+  // Kept with the stash.
+  window.gear.add({ ...done.item, uid: 'e1' });
+  const stored = JSON.parse(localStorage.getItem('exiled-survivors:gear:v2')).items.find((i) => i.uid === 'e1');
+  return {
+    chance: ORBS.engrave.chance, mango: ORBS.mango.chance, tier: ORBS.engrave.tier, min: ORBS.engrave.engrave.minLines,
+    onThree: window.orbApplied(three, ORBS.engrave), kind: done.kind, sides,
+    twice: window.orbApplied(done.item, ORBS.engrave),
+    reroll, explodeKept, explodeSurvived, swapKept, swapSurvived, lone,
+    awaken: awaken ? { kept: has(awaken.item), lines: lines(awaken.item) } : null,
+    stored: stored?.engraved ?? null, mark,
+  };
+})()`);
+console.log('각인:', JSON.stringify(engrave));
+check('각인의 구슬 drops as rarely as the 망고의 구슬, labelled 신화',
+  engrave.chance > 0 && engrave.chance === engrave.mango && engrave.tier === 'mythic', `${engrave.chance} vs ${engrave.mango}`);
+check('it needs a weapon of at least ORBS.engrave.engrave.minLines 속성, and only once a weapon',
+  engrave.onThree === null && engrave.kind === 'engrave' && engrave.twice === null, `min ${engrave.min}`);
+check('which line it engraves is random — either side comes up',
+  (engrave.sides.prefix ?? 0) > 30 && (engrave.sides.suffix ?? 0) > 30, JSON.stringify(engrave.sides));
+check('변화 · 혼돈의 구슬 keep the engraved line and roll the rest, the line counted among theirs',
+  ['transmute', 'chaos'].every((id) => engrave.reroll[id].kept === 300 && engrave.reroll[id].inRange === 300),
+  JSON.stringify(engrave.reroll));
+check('a 폭발의 구슬 never climbs or swaps the engraved line (it can still destroy the weapon)',
+  engrave.explodeSurvived > 150 && engrave.explodeKept === engrave.explodeSurvived &&
+    engrave.swapSurvived > 150 && engrave.swapKept === engrave.swapSurvived,
+  `${engrave.explodeKept}/${engrave.explodeSurvived} · all-1티어 ${engrave.swapKept}/${engrave.swapSurvived}`);
+check('and is refused when the engraved line is all there is to work on', engrave.lone === null);
+check('각성의 구슬 adds to an engraved weapon as to any', engrave.awaken?.kept === true && engrave.awaken.lines === 5,
+  JSON.stringify(engrave.awaken));
+check('the engraving is kept with the stash',
+  engrave.stored && engrave.stored.id === engrave.mark.id && engrave.stored.tier === engrave.mark.tier &&
+    engrave.stored.prefix === engrave.mark.prefix, JSON.stringify(engrave.stored));
+await ev(`(() => { window.game.scene.getScene('InventoryScene').scene.restart({ onClose: () => {}, focus: 'e1' }); return 1; })()`);
+await cdp.until(`window.game.scene.getScene('InventoryScene')?.menu?.items?.some((it) => it.id === 'e1')`, 10000, 100);
+const engraveShown = await scene('InventoryScene', `
+  s.menu.focus('e1'); s.showDetails();
+  const rows = s.lines.text.split('\\n');
+  return { marked: rows.filter((r) => r.includes('[각인]')).length };
+`);
+check('the 인벤토리 marks the engraved line, and only it', engraveShown.marked === 1, JSON.stringify(engraveShown));
+await ev(`(() => { window.gear.discard('e1'); return 1; })()`);
+
 // --- 15. a 구슬 says what it did ---
 await ev(`(() => {
   window.gear.reset();

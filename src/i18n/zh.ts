@@ -26,6 +26,9 @@ export const zh: Strings = {
       destroy: '{chance} 概率摧毁装备 — 处于芒果状态时只会失去芒果状态',
       noLines: '无法用于没有词缀的装备',
       ward: '下一次爆炸宝珠无法摧毁装备，且无论结果如何芒果状态都会消失 — 已处于芒果状态时无法使用',
+      engraveMin: '只能用于有 {min} 个及以上词缀的装备，其中1个会被随机刻印',
+      engraveKeep: '被刻印的词缀永不改变——变化·混沌宝珠会保留它只重掷其余词缀，爆炸宝珠不会强化或替换它',
+      engraveOnce: '每件装备只能使用一次',
     },
   },
 
@@ -292,6 +295,8 @@ export const zh: Strings = {
     orbUpgraded: '{orb} — {from} → {to}',
     orbDestroyed: '{orb} — 装备被摧毁了',
     orbWarded: '{orb} — 已进入芒果状态',
+    orbEngraved: '{orb} — 已刻印 {affix}',
+    engravedMark: '  [刻印]',
     orbSaved: '{orb} — 芒果挡下了摧毁（芒果状态已消失）',
     mangoState: '🥭 芒果状态 — 下一次爆炸宝珠无法摧毁该装备',
     mangoSpent: '（芒果状态已消失）',
@@ -811,6 +816,7 @@ export const zh: Strings = {
       awaken: '觉醒宝珠',
       explode: '爆炸宝珠',
       mango: '芒果宝珠',
+      engrave: '刻印宝珠',
     },
     orbShorts: {
       transmute: '变化',
@@ -818,6 +824,7 @@ export const zh: Strings = {
       awaken: '觉醒',
       explode: '爆炸',
       mango: '芒果',
+      engrave: '刻印',
     },
     orbDetails: {
       transmute: '将词缀重新随机为 1~2 条',
@@ -825,6 +832,7 @@ export const zh: Strings = {
       awaken: '追加 1 条词缀（最多 6 条）',
       explode: '把一条非 1 阶的词缀换成高一阶的另一条；若全为 1 阶，则换成另一条 1 阶词缀 — 20% 概率摧毁装备',
       mango: '让装备进入芒果状态 — 下一次爆炸宝珠无法摧毁该装备，且无论结果如何芒果状态都会消失',
+      engrave: '随机刻印词缀数为4个及以上的装备上的1个词缀——被刻印的词缀永不改变（每件装备限1次）',
     },
     bones: {
       skull: '头骨',

@@ -285,6 +285,9 @@ export class OrbScene extends Phaser.Scene {
     if (spec.ward) {
       return [copy.ward];
     }
+    if (spec.engrave) {
+      return [fill(copy.engraveMin, { min: spec.engrave.minLines }), copy.engraveKeep, copy.engraveOnce];
+    }
     return [];
   }
 

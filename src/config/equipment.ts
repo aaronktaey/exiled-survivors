@@ -277,7 +277,7 @@ import { TEXTURES } from '@/config/visuals';
  * Adding one means a line in ORBS, a name in the locales, and nothing else:
  * the stash, the drop, the label and the button all read this table.
  */
-export type OrbId = 'transmute' | 'chaos' | 'awaken' | 'explode' | 'mango';
+export type OrbId = 'transmute' | 'chaos' | 'awaken' | 'explode' | 'mango' | 'engrave';
 
 export interface OrbSpec {
   readonly id: OrbId;
@@ -319,6 +319,12 @@ export interface OrbSpec {
     /** Share of uses that destroy the weapon instead. */
     readonly destroyChance: number;
   };
+  /**
+   * Or engraves one of the weapon's 속성, at random, for good (0.132): no
+   * 구슬 changes it again — a reroll keeps it, a 폭발의 구슬 passes it by.
+   * Only on a weapon with at least `minLines`, and once a weapon.
+   */
+  readonly engrave?: { readonly minLines: number };
 }
 
 export const ORBS: Record<OrbId, OrbSpec> = {
@@ -378,6 +384,18 @@ export const ORBS: Record<OrbId, OrbSpec> = {
     color: 0xffe9a8,
     texture: TEXTURES.orbMango,
     ward: true,
+  },
+  // 0.132 (the user's design): as rare as the 망고의 구슬.
+  engrave: {
+    id: 'engrave',
+    name: '각인의 구슬',
+    short: '각인',
+    detail: '속성이 4개 이상인 장비의 속성 1개를 무작위로 각인합니다 — 각인된 속성은 영구히 바뀌지 않습니다 (장비당 1번)',
+    chance: 0.00032,
+    tier: 'mythic',
+    color: 0xb48cff,
+    texture: TEXTURES.orbEngrave,
+    engrave: { minLines: 4 },
   },
 };
 

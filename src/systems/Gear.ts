@@ -46,6 +46,12 @@ export interface GearItem {
   /** 잠금 (0.90): 분해 passes it by, one at a time or in bulk. */
   readonly locked?: boolean;
   /**
+   * 각인 (각인의 구슬, 0.132): the one 속성 no 구슬 changes again — which
+   * side, which 속성, which rung. The first line on that side matching it is
+   * the engraved one.
+   */
+  readonly engraved?: { readonly prefix: boolean; readonly id: string; readonly tier: number };
+  /**
    * How many rungs its ladders had when its lines were rolled (AFFIX_RUNGS).
    * Missing means before 0.88 — `onCurrentLadder` moves such lines down.
    */
@@ -267,7 +273,14 @@ export function onCurrentLadder<T extends GearItem>(item: T): T {
     (lines ?? []).map((line) =>
       line && typeof line === 'object' ? { ...line, tier: Number(line.tier) + shift } : line,
     );
-  return { ...item, prefixes: move(item.prefixes), suffixes: move(item.suffixes), rungs: AFFIX_RUNGS };
+  const engraved = item.engraved ? { ...item.engraved, tier: Number(item.engraved.tier) + shift } : undefined;
+  return {
+    ...item,
+    prefixes: move(item.prefixes),
+    suffixes: move(item.suffixes),
+    ...(engraved ? { engraved } : {}),
+    rungs: AFFIX_RUNGS,
+  };
 }
 
 /**
@@ -296,14 +309,18 @@ export function tierForLines(lines: number): DropTier {
  * are picked at random between whichever side still has space, so asking for
  * four does not quietly become three prefixes and a dead roll.
  */
-export function rollAffixLines(count: number): {
+export function rollAffixLines(
+  count: number,
+  keep?: { readonly line: AffixLine; readonly prefix: boolean },
+): {
   prefixes: AffixLine[];
   suffixes: AffixLine[];
 } {
-  const prefixes: AffixLine[] = [];
-  const suffixes: AffixLine[] = [];
+  // A kept line (각인) is on its side from the start, and is one of the `count`.
+  const prefixes: AffixLine[] = keep?.prefix ? [keep.line] : [];
+  const suffixes: AffixLine[] = keep && !keep.prefix ? [keep.line] : [];
 
-  for (let i = 0; i < count; i++) {
+  for (let i = keep ? 1 : 0; i < count; i++) {
     const canPrefix = prefixes.length < GEAR_DROP.maxPrefixes && PREFIXES.length > 0;
     const canSuffix = suffixes.length < GEAR_DROP.maxSuffixes && SUFFIXES.length > 0;
     if (!canPrefix && !canSuffix) {
@@ -339,7 +356,7 @@ export interface OrbOutcome {
    * took it instead. `swap`: a 폭발의 구슬 on a weapon all of tier 1 — one
    * line traded for a different tier-1 one.
    */
-  readonly kind: 'reroll' | 'add' | 'upgrade' | 'swap' | 'destroyed' | 'ward' | 'saved';
+  readonly kind: 'reroll' | 'add' | 'upgrade' | 'swap' | 'destroyed' | 'ward' | 'saved' | 'engrave';
   /** The line that came out of it, for an add or an upgrade. */
   readonly line?: AffixLine;
   /** And the one it replaced, for an upgrade. */
@@ -357,6 +374,18 @@ export interface OrbOutcome {
  * worth hesitating over.
  */
 export function orbApplied(item: GearItem, orb: OrbSpec): OrbOutcome | null {
+  if (orb.engrave) {
+    // Once a weapon, and only on one carrying enough to be worth keeping one of.
+    const lines = [...item.prefixes, ...item.suffixes];
+    if (item.engraved || lines.length < orb.engrave.minLines) {
+      return null;
+    }
+    const index = Math.floor(Math.random() * lines.length);
+    const line = lines[index]!;
+    const prefix = index < item.prefixes.length;
+    return { item: { ...item, engraved: { prefix, id: line.id, tier: line.tier } }, kind: 'engrave', line };
+  }
+
   if (orb.ward) {
     // One 망고 at a time: a second would be a 구슬 spent on nothing.
     return item.mango ? null : { item: { ...item, mango: true }, kind: 'ward' };
@@ -365,7 +394,9 @@ export function orbApplied(item: GearItem, orb: OrbSpec): OrbOutcome | null {
   if (orb.reroll) {
     const span = orb.reroll.max - orb.reroll.min + 1;
     const count = orb.reroll.min + Math.floor(Math.random() * span);
-    const rolled = rollAffixLines(Math.min(count, MAX_AFFIX_LINES));
+    // An engraved line stays, and counts as one of the `count` (0.132).
+    const kept = engravedAt(item);
+    const rolled = rollAffixLines(Math.min(count, MAX_AFFIX_LINES), kept ? { line: kept.line, prefix: kept.prefix } : undefined);
     return {
       item: { ...item, prefixes: rolled.prefixes, suffixes: rolled.suffixes },
       kind: 'reroll',
@@ -422,7 +453,13 @@ export function orbApplied(item: GearItem, orb: OrbSpec): OrbOutcome | null {
 function swapTopLine(item: GearItem, destroyChance: number): OrbOutcome | null {
   const lines = [...item.prefixes, ...item.suffixes];
   const held = new Set(lines.map((line) => line.id));
-  const index = Math.floor(Math.random() * lines.length);
+  // The engraved line (각인) is never the one traded.
+  const engraved = engravedAt(item)?.index;
+  const open = lines.map((_, i) => i).filter((i) => i !== engraved);
+  if (open.length === 0) {
+    return null;
+  }
+  const index = open[Math.floor(Math.random() * open.length)]!;
   const from = lines[index]!;
   const fromPrefix = index < item.prefixes.length;
   const pool = (fromPrefix ? PREFIXES : SUFFIXES).filter(
@@ -466,7 +503,11 @@ function explode(
   if (lines.length === 0) {
     return null;
   }
-  const climbable = lines.map((line, index) => ({ line, index })).filter(({ line }) => line.tier > 1);
+  // The engraved line (각인) never climbs: it stays at the rung it was engraved on.
+  const engraved = engravedAt(item)?.index;
+  const climbable = lines
+    .map((line, index) => ({ line, index }))
+    .filter(({ line, index }) => line.tier > 1 && index !== engraved);
   if (climbable.length === 0) {
     return swapTopLine(item, upgrade.destroyChance);
   }
@@ -511,6 +552,24 @@ function explode(
     from,
     ...(warded ? { wardSpent: true } : {}),
   };
+}
+
+/**
+ * Where a weapon's engraved line (각인) sits: its place among prefixes then
+ * suffixes, and which side. Null when it has none — or when the line it
+ * names is not on it any more (a hand-edited record).
+ */
+export function engravedAt(item: GearItem): { index: number; prefix: boolean; line: AffixLine } | null {
+  const mark = item.engraved;
+  if (!mark) {
+    return null;
+  }
+  const side = mark.prefix ? item.prefixes : item.suffixes;
+  const at = side.findIndex((line) => line.id === mark.id && line.tier === mark.tier);
+  if (at < 0) {
+    return null;
+  }
+  return { index: mark.prefix ? at : item.prefixes.length + at, prefix: mark.prefix, line: side[at]! };
 }
 
 /**
@@ -933,11 +992,20 @@ class GearStore {
       )
       .map((stored: GearItem) => {
         const item = fromStorage ? onCurrentLadder(stored) : stored;
+        const prefixes = GearStore.lines(item.prefixes, 'prefix');
+        const suffixes = GearStore.lines(item.suffixes, 'suffix');
+        // An engraving is kept only while the line it names is still on the weapon.
+        const mark = item.engraved;
+        const engraved =
+          mark && typeof mark.id === 'string' && engravedAt({ ...item, prefixes, suffixes, engraved: mark })
+            ? { prefix: mark.prefix === true, id: mark.id, tier: Number(mark.tier) }
+            : null;
         return {
           uid: item.uid,
           id: item.id,
-          prefixes: GearStore.lines(item.prefixes, 'prefix'),
-          suffixes: GearStore.lines(item.suffixes, 'suffix'),
+          prefixes,
+          suffixes,
+          ...(engraved ? { engraved } : {}),
           ...(item.mango === true ? { mango: true } : {}),
           ...(item.locked === true ? { locked: true } : {}),
           rungs: AFFIX_RUNGS,

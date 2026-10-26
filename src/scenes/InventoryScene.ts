@@ -41,6 +41,7 @@ import { sparkleBurst } from '@/systems/Celebrate';
 import { bones } from '@/systems/Bones';
 import {
   dropTierFor,
+  engravedAt,
   gear,
   orbApplied,
   type CombineOutcome,
@@ -776,6 +777,13 @@ export class InventoryScene extends Phaser.Scene {
       return fill(copy.orbWarded, { orb });
     }
 
+    if (outcome.kind === 'engrave' && outcome.line) {
+      return fill(copy.orbEngraved, {
+        orb,
+        affix: `${affixName(outcome.line.id)} ${fill(copy.tier, { tier: outcome.line.tier })}`,
+      });
+    }
+
     if (outcome.kind === 'saved') {
       return fill(copy.orbSaved, { orb });
     }
@@ -886,14 +894,15 @@ export class InventoryScene extends Phaser.Scene {
    * where nothing has been rolled yet. The empty ones are drawn on purpose —
    * what a weapon could still take is as much use to read as what it has.
    */
-  private static slots(lines: readonly AffixLine[], count: number): string[] {
+  private static slots(lines: readonly AffixLine[], count: number, engraved = -1): string[] {
     const copy = t().gear;
     const rows = lines
       .slice(0, count)
       .map(
-        (line) =>
+        (line, i) =>
           `${fill(copy.tier, { tier: line.tier })}  ${affixName(line.id)}   ` +
-          affixGearDetail(line.id, line.tier),
+          affixGearDetail(line.id, line.tier) +
+          (i === engraved ? copy.engravedMark : ''),
       );
 
     while (rows.length < count) {
@@ -919,12 +928,18 @@ export class InventoryScene extends Phaser.Scene {
     const head = fill(copy.attack, { attack: attackForTier(GEAR[item.id].tier) });
     const implicit = gearImplicitText(item.id);
 
+    // The engraved line (각인, 0.132) says so at its end.
+    const engraved = engravedAt(item);
     return [
       implicit ? `${head} · ${fill(copy.implicit, { text: implicit })}` : head,
       copy.prefix,
-      ...InventoryScene.slots(item.prefixes, GEAR_DROP.maxPrefixes),
+      ...InventoryScene.slots(item.prefixes, GEAR_DROP.maxPrefixes, engraved?.prefix ? engraved.index : -1),
       copy.suffix,
-      ...InventoryScene.slots(item.suffixes, GEAR_DROP.maxSuffixes),
+      ...InventoryScene.slots(
+        item.suffixes,
+        GEAR_DROP.maxSuffixes,
+        engraved && !engraved.prefix ? engraved.index - item.prefixes.length : -1,
+      ),
     ].join('\n');
   }
 

@@ -15,6 +15,28 @@ export interface PatchNote {
 
 export const PATCH_NOTES: readonly PatchNote[] = [
   {
+    version: '0.132',
+    date: '2026-10-26',
+    changes: {
+      ko: [
+        '새 구슬 「각인의 구슬」: 망고의 구슬만큼 드물게 떨어지는 신화 구슬입니다. 속성이 4개 이상인 장비에 쓰면 속성 1개가 무작위로 각인되고, 각인된 속성은 영구히 바뀌지 않습니다. 장비 하나에 한 번만 쓸 수 있습니다.',
+        '각인된 장비에 변화·혼돈의 구슬을 쓰면 각인된 속성은 남고 나머지만 다시 굴립니다(각인된 속성도 개수에 포함). 폭발의 구슬은 각인된 속성을 강화하거나 바꾸지 않으며, 파괴 확률은 그대로입니다. 각인된 속성 말고 바꿀 속성이 없으면 폭발의 구슬은 쓸 수 없습니다. 합성으로 나온 장비는 각인 없이 나옵니다.',
+      ],
+      en: [
+        'New orb, the Engraving Orb: a mythic orb as rare as the Mango Orb. Used on a weapon with 4 or more modifiers, it engraves one of them at random, and an engraved modifier never changes again. Once per weapon.',
+        'On an engraved weapon, Transmutation and Chaos Orbs keep the engraved modifier and reroll the rest (it counts among the lines rolled). An Explosion Orb never raises or swaps it, and its destroy chance is unchanged; with nothing else to work on, it cannot be used. A combined weapon comes out without an engraving.',
+      ],
+      ja: [
+        '新しい球「刻印の球」：マンゴーの球と同じくらい稀に落ちる神話の球です。属性が4つ以上の装備に使うと属性1つが無作為に刻印され、刻印された属性は永久に変わりません。装備1つにつき1回だけ使えます。',
+        '刻印された装備に変化・混沌の球を使うと、刻印された属性は残り、残りだけを振り直します（刻印された属性も数に含みます）。爆発の球は刻印された属性を強化も交換もせず、破壊確率はそのままです。刻印された属性のほかに変えられる属性がなければ爆発の球は使えません。合成でできた装備は刻印なしで出ます。',
+      ],
+      zh: [
+        '新宝珠「刻印宝珠」：与芒果宝珠一样稀有的神话宝珠。用于有4个及以上词缀的装备时，会随机刻印其中1个词缀，被刻印的词缀永不改变。每件装备只能使用一次。',
+        '对已刻印的装备使用变化·混沌宝珠时，会保留被刻印的词缀，只重掷其余词缀（被刻印的词缀也计入数量）。爆炸宝珠不会强化或替换被刻印的词缀，破坏概率不变；除刻印词缀外没有可改变的词缀时，无法使用爆炸宝珠。合成得到的装备不带刻印。',
+      ],
+    },
+  },
+  {
     version: '0.131',
     date: '2026-10-25',
     changes: {
