@@ -34,6 +34,8 @@ export function takePendingRank(): RankSubmission | null {
       skill: String(run.skill ?? ''),
       // The server keeps only what it recognises of this.
       detail: run.detail && typeof run.detail === 'object' ? (run.detail as RunDetail) : undefined,
+      // What it found, still to go back if the server turns it down (0.134).
+      loot: run.loot && typeof run.loot === 'object' ? run.loot : undefined,
     };
   } catch {
     return null;

@@ -15,6 +15,24 @@ export interface PatchNote {
 
 export const PATCH_NOTES: readonly PatchNote[] = [
   {
+    version: '0.135',
+    date: '2026-10-26',
+    changes: {
+      ko: [
+        '랭킹 등록이 거부된 판에서 얻은 구슬·뼈다귀·장비도 회수됩니다.',
+      ],
+      en: [
+        'Orbs, bones and weapons found in a run the ranking turns down are taken back too.',
+      ],
+      ja: [
+        'ランキング登録が拒否されたプレイで得た球・骨・装備も回収されます。',
+      ],
+      zh: [
+        '被排行榜拒绝登记的对局中获得的宝珠、骨头和装备也会被收回。',
+      ],
+    },
+  },
+  {
     version: '0.134',
     date: '2026-10-26',
     changes: {

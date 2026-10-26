@@ -743,6 +743,46 @@ check('signed in, it shows the account’s own place that day out of everyone, w
 await ev(`(() => { window.fetch = window.__realFetch; window.config.RANKING.shared.enabled = false;
   window.config.RANKING.shared.podiumSince = window.__podium.since; return 1; })()`);
 
+// --- 0.134: a run the server turns down as impossible gives back what it found ---
+const forfeits = await cdp.send('Runtime.evaluate', { awaitPromise: true, returnByValue: true, expression: `(async () => {
+  const R = window.config.RANKING;
+  const reply = (body, status) => new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
+  let answer = { body: { error: 'refused' }, status: 400 };
+  const sent = [];
+  window.__realFetch ??= window.fetch;
+  window.fetch = async (url, init) => {
+    const path = String(url);
+    if (path === R.shared.url && init?.method === 'POST') { sent.push(JSON.parse(init.body)); return reply(answer.body, answer.status); }
+    if (path === R.shared.url) return reply({ entries: [] }, 200);
+    if (path === '/api/ranking/me') return reply({ best: null, place: 0 }, 200);
+    return reply({ error: 'not found' }, 404);
+  };
+  R.shared.enabled = true;
+  const run = (loot) => ({ name: 'TST', emoji: R.emoji[0], flag: R.flags[0], damage: 123456, level: 5, survivedMs: 300000, skill: 'fireball', detail: {}, loot });
+  const settle = () => new Promise((r) => setTimeout(r, 1500));
+  try {
+    window.orbs.add('chaos', 2);
+    const before = window.orbs.count('chaos');
+    window.ranking.submit(run({ gear: [], orbs: { chaos: 1 }, bones: {} }));
+    await settle();
+    const afterRefused = window.orbs.count('chaos');
+    // Too many runs in a row is not the run's fault: nothing goes back.
+    answer = { body: { error: 'slow down' }, status: 429 };
+    window.ranking.submit(run({ gear: [], orbs: { chaos: 1 }, bones: {} }));
+    await settle();
+    const afterSlow = window.orbs.count('chaos');
+    return { before, afterRefused, afterSlow, sentLoot: sent.some((b) => 'loot' in b), posts: sent.length };
+  } finally {
+    window.fetch = window.__realFetch;
+    R.shared.enabled = false;
+  }
+})()` });
+const fo = forfeits.result?.result?.value ?? {};
+console.log('forfeits:', JSON.stringify(fo));
+check('a run the server refuses as impossible gives back the 구슬 it found, and the loot is never sent',
+  fo.posts === 2 && fo.afterRefused === fo.before - 1 && fo.sentLoot === false, JSON.stringify(fo));
+check('turned away for going too fast (429), it keeps them', fo.afterSlow === fo.afterRefused, JSON.stringify(fo));
+
 console.log('\n=== SUMMARY ===');
 const failed = results.filter((r) => !r.p);
 console.log(`${results.length - failed.length}/${results.length} passed`);

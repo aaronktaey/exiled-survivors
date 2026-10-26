@@ -1,4 +1,6 @@
 import { ACCOUNT, RANKING, STORAGE, rankingDayStart } from '@/config';
+import { forfeitLoot } from '@/systems/RunLoot';
+import type { RunLoot } from '@/systems/SaveGame';
 import { account, accountRequest } from '@/systems/Account';
 import { turnstileToken } from '@/systems/Turnstile';
 
@@ -67,7 +69,16 @@ export interface RankSubmission {
   readonly skill?: string;
   /** What the run says about itself, for the admin's review. */
   readonly detail?: RunDetail;
+  /**
+   * What the run put in the drawers (0.134). Never sent: kept beside the run
+   * (in the outbox, across a sign-in) so the server turning it down as out of
+   * reach takes it back.
+   */
+  readonly loot?: RunLoot;
 }
+
+/** The server's answers that mean the run itself could not have happened: its loot goes back. */
+const FORFEITS = new Set(['refused', 'pace', 'damage', 'level']);
 
 /** Where the board on screen came from. */
 export type RankSource = 'local' | 'shared' | 'offline';
@@ -358,6 +369,7 @@ class RankingStore {
       survivedMs: entry.survivedMs,
       skill: entry.skill,
       detail: run.detail,
+      loot: run.loot,
     };
     // Written down before it goes, so a page that reloads first sends it again.
     if (RANKING.shared.enabled) {
@@ -455,7 +467,8 @@ class RankingStore {
     let reply: { ok: boolean; status: number; body: unknown };
     try {
       const token = await turnstileToken(RANKING.shared.turnstileSiteKey, RANKING.shared.timeoutMs);
-      reply = await this.request('POST', { ...run, token: token ?? '' });
+      const { loot: _kept, ...sent } = run;
+      reply = await this.request('POST', { ...sent, token: token ?? '' });
     } finally {
       this.inFlight = false;
     }
@@ -490,6 +503,11 @@ class RankingStore {
       }
       this.commit(ordered(entries));
       return;
+    }
+    // Turned down as a run that could not have happened: what it found goes back.
+    const error = (reply.body as { error?: unknown } | null)?.error;
+    if (run.loot && typeof error === 'string' && FORFEITS.has(error)) {
+      forfeitLoot(run.loot);
     }
     // Turned down: the server's board, without it, is the one to show.
     await this.refresh();

@@ -644,9 +644,14 @@ Read `git log` for what changed and when. What is not in the log:
   `devRun` (F-keys, a 밸런스 draft) a pickup is not stored (`game.lootWithheld`
   toast); the frame a run becomes one, and at death when `devRun` or the
   tally is `refused`, `forfeitLoot` takes back what it counted
-  (`gear.discardAnyway`, `orbs/bones.takeBack`; what was spent since stays
-  spent). The server's own refusals (pace, `implausible`, the day's banned
-  skill) come after the run and do not take anything back.
+  (`systems/RunLoot.forfeitLoot`: `gear.discardAnyway`, `orbs/bones.takeBack`;
+  what was spent since stays spent). The server turning a run down takes it
+  back too (0.135): the run's `loot` rides on its `RankSubmission` (via
+  `GameOverData.loot`, the outbox and `PendingRank`), is stripped before the
+  POST, and `Ranking.push` forfeits it on an answer in `FORFEITS` (`refused`,
+  `pace`, `damage`, `level` — a run that could not have happened), never on
+  401/403/429 or no connection. Silent, like the refusal itself; only runs
+  that reach the server are judged (signed in, good enough for the board).
 - **The run counts what it gains (0.91, the user's ask).** `systems/RunTally.ts`
   (module scope, like the second clock) counts each level-up
   (`onLevelUp`) and each skill level (`acquire`, and an upgrade that raised

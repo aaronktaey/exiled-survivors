@@ -86,6 +86,7 @@ import { Terrain } from '@/systems/Terrain';
 import { RareTooltip } from '@/systems/RareTooltip';
 import { sfx, effectVolume } from '@/systems/Sfx';
 import { saveGame, type SavedRun, type RunLoot } from '@/systems/SaveGame';
+import { forfeitLoot, hasLoot, noLoot } from '@/systems/RunLoot';
 import { runLedger } from '@/systems/RunLedger';
 import { jackpot, sparkleBurst } from '@/systems/Celebrate';
 import { dailyRules } from '@/systems/DailyRules';
@@ -285,7 +286,7 @@ export class GameScene extends Phaser.Scene {
    * ask): a run that ends off the ranking — the developer tools, a 밸런스
    * draft, levels that do not add up — keeps none of it.
    */
-  private runLoot: RunLoot = GameScene.noLoot();
+  private runLoot: RunLoot = noLoot();
 
   public constructor() {
     super(GameScene.KEY);
@@ -313,7 +314,7 @@ export class GameScene extends Phaser.Scene {
     this.elapsedMs = 0;
     runLedger.begin(0);
     runTally.begin();
-    this.runLoot = GameScene.noLoot();
+    this.runLoot = noLoot();
     // Back from the pause menu: the wait there is not play.
     this.events.off(Phaser.Scenes.Events.RESUME, runLedger.hold);
     this.events.on(Phaser.Scenes.Events.RESUME, runLedger.hold);
@@ -620,7 +621,7 @@ export class GameScene extends Phaser.Scene {
     // The overlay wants the real cost of the frame, not the clamped value.
     this.debug.update(delta);
     // A key or a dial that has just put the run off the ranking takes back what it gained.
-    if (this.devRun && GameScene.hasLoot(this.runLoot)) {
+    if (this.devRun && hasLoot(this.runLoot)) {
       this.forfeitLoot();
     }
 
@@ -1823,26 +1824,10 @@ export class GameScene extends Phaser.Scene {
     }
   }
 
-  private static noLoot(): RunLoot {
-    return { gear: [], orbs: {}, bones: {} };
-  }
-
-  private static hasLoot(loot: RunLoot): boolean {
-    return loot.gear.length > 0 || Object.keys(loot.orbs).length > 0 || Object.keys(loot.bones).length > 0;
-  }
-
   /** Takes back what this run put in the drawers: it ends off the ranking (0.134). */
   private forfeitLoot(): void {
-    for (const uid of this.runLoot.gear) {
-      gear.discardAnyway(uid);
-    }
-    for (const [id, count] of Object.entries(this.runLoot.orbs)) {
-      orbs.takeBack(id as OrbId, count ?? 0);
-    }
-    for (const [id, count] of Object.entries(this.runLoot.bones)) {
-      bones.takeBack(id as BoneId, count ?? 0);
-    }
-    this.runLoot = GameScene.noLoot();
+    forfeitLoot(this.runLoot);
+    this.runLoot = noLoot();
   }
 
   /** Whether the developer tools changed this run, now or before it was saved. */
@@ -1946,6 +1931,8 @@ export class GameScene extends Phaser.Scene {
       devReason: this.devUsedBefore || this.debug.used ? 'debug' : this.tunedRun ? 'draft' : undefined,
       mainSkill: this.mainSkill ?? undefined,
       detail: this.runDetail(),
+      // Handed on with the run: the server turning it down takes it back too.
+      loot: this.runLoot,
       // Explicitly fresh. A restart with no data of its own keeps whatever
       // the scene was last started with, and after 불러오기 that is the
       // loaded run — which would quietly put a death back where it resumed.
