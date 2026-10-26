@@ -103,9 +103,8 @@ await shot('potion-01-dropped');
 await sleep(700);
 const picked = await run(`
   return { hp: s.player.hp, left: s.combat.potions.countActive(true),
-           // A potion is a share of this survivor's own bar, 거대 and all.
-           want: Math.max(1, Math.round(
-             s.player.maxHp * window.config.POTION.healFraction)) };
+           // A potion is a flat POTION.heal (0.140).
+           want: window.config.POTION.heal };
 `);
 console.log('pickup:', JSON.stringify(picked));
 const HEAL = picked.hp - healing.before;
@@ -252,10 +251,10 @@ const scaled = await run(`
   p.applyGear(s.mods.gear);
   p.hp = p.maxHp;
   s.choosing = false;
-  return { plain, big, healed, want: Math.max(1, Math.round(big * window.config.POTION.healFraction)) };
+  return { plain, big, healed, want: window.config.POTION.heal };
 `);
 console.log('scaled potion:', JSON.stringify(scaled));
-check('with 거대 stretching the bar, a potion heals that share of the stretched bar',
+check('with 거대 stretching the bar, a potion still heals its flat amount (0.140)',
   scaled.big > scaled.plain && scaled.healed === scaled.want,
   `+${scaled.healed} of a ${scaled.big} bar (was ${scaled.plain}), wanted +${scaled.want}`);
 

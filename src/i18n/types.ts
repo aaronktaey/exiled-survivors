@@ -68,6 +68,8 @@ export interface Strings {
     /** Why 사용 is greyed: none held, or it would do nothing to this weapon. */
     readonly none: string;
     readonly useless: string;
+    /** The weapon in hand takes no 구슬 (0.140). */
+    readonly equipped: string;
     readonly destroyedTitle: string;
     readonly hintKeyboard: string;
     readonly hintTouch: string;
@@ -123,13 +125,13 @@ export interface Strings {
     /** Why a level-up opened shard cards: the main skill is at its top (0.112). */
     readonly mainMaxed: string;
     /** Each stat's name on its card. */
-    readonly stats: { readonly damage: string; readonly attackSpeed: string; readonly moveSpeed: string; readonly maxHp: string; readonly area: string; };
+    readonly stats: { readonly damage: string; readonly attackSpeed: string; readonly moveSpeed: string; readonly maxHp: string; readonly area: string; readonly potionHeal: string; };
     /** Each stat's shard, by name, on the ground and in the 필터's sense. */
-    readonly drops: { readonly damage: string; readonly attackSpeed: string; readonly moveSpeed: string; readonly maxHp: string; readonly area: string; };
+    readonly drops: { readonly damage: string; readonly attackSpeed: string; readonly moveSpeed: string; readonly maxHp: string; readonly area: string; readonly potionHeal: string; };
     /** What one gives, over the survivor and on its card. */
-    readonly gain: { readonly damage: string; readonly attackSpeed: string; readonly moveSpeed: string; readonly maxHp: string; readonly area: string; };
+    readonly gain: { readonly damage: string; readonly attackSpeed: string; readonly moveSpeed: string; readonly maxHp: string; readonly area: string; readonly potionHeal: string; };
     /** The HUD's short form, for what they add up to. */
-    readonly short: { readonly damage: string; readonly attackSpeed: string; readonly moveSpeed: string; readonly maxHp: string; readonly area: string; };
+    readonly short: { readonly damage: string; readonly attackSpeed: string; readonly moveSpeed: string; readonly maxHp: string; readonly area: string; readonly potionHeal: string; };
     readonly hud: string;
     readonly toast: string;
     /** 재능의 덩어리 (0.111): its name, its name on the ground ({stat}), and the line when it is taken. */

@@ -1626,7 +1626,7 @@ export const SCORE: { readonly byKind: Readonly<Record<EnemyKind, number>> } = {
 
 /** What a 재능의 파편 can give, one of them a shard (TALENT_SHARD). */
 /** 체력회복 (`regen`) was one too, 0.102–0.130; the user took it out in 0.131. */
-export type ShardStat = 'damage' | 'attackSpeed' | 'moveSpeed' | 'maxHp' | 'area';
+export type ShardStat = 'damage' | 'attackSpeed' | 'moveSpeed' | 'maxHp' | 'area' | 'potionHeal';
 
 /**
  * ★ 재능의 파편 (0.102, the user's ask): one roll off every kill at `chance`
@@ -1644,8 +1644,10 @@ export type ShardStat = 'damage' | 'attackSpeed' | 'moveSpeed' | 'maxHp' | 'area
  */
 export const TALENT_SHARD = {
   chance: 0.005,
-  stats: ['damage', 'attackSpeed', 'moveSpeed', 'maxHp', 'area'] as readonly ShardStat[],
+  stats: ['damage', 'attackSpeed', 'moveSpeed', 'maxHp', 'area', 'potionHeal'] as readonly ShardStat[],
   amplify: 0.01,
+  /** 포션 회복량 (0.140, the user's ask): what one shard adds to every potion's heal, flat. */
+  potionHeal: 1,
   choices: 3,
   /** How big it is drawn on the ground. */
   size: 22,
@@ -1672,6 +1674,8 @@ export function shardBonusFor(counts: Partial<Record<ShardStat, number>>): Recor
     moveSpeed: 1 + n('moveSpeed') * TALENT_SHARD.amplify,
     maxHp: 1 + n('maxHp') * TALENT_SHARD.amplify,
     area: 1 + n('area') * TALENT_SHARD.amplify,
+    // Not a multiplier: health added to every potion (0.140).
+    potionHeal: n('potionHeal') * TALENT_SHARD.potionHeal,
   };
 }
 
@@ -1679,8 +1683,8 @@ export function shardBonusFor(counts: Partial<Record<ShardStat, number>>): Recor
 export const POTION = {
   /** Chance that killing an enemy drops one. */
   chance: 0.02,
-  /** Fraction of max HP it restores. */
-  healFraction: 0.2,
+  /** Health one restores, flat (0.140, the user's ask; a fifth of the bar before). */
+  heal: 40,
   /** Drawn size, and the size it is picked up at (24 since 0.111, the user's ask). */
   size: 24,
 } as const;

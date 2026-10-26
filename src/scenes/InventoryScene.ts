@@ -41,6 +41,7 @@ import { sparkleBurst } from '@/systems/Celebrate';
 import { bones } from '@/systems/Bones';
 import {
   dropTierFor,
+  canTakeOrb,
   engravedAt,
   gear,
   orbApplied,
@@ -718,7 +719,7 @@ export class InventoryScene extends Phaser.Scene {
   private canUse(id: OrbId): boolean {
     const item = this.selected();
     const spec = ORBS[id];
-    if (!item || !spec || orbs.count(id) <= 0) {
+    if (!item || !spec || orbs.count(id) <= 0 || !canTakeOrb(item, gear.value.equipped)) {
       return false;
     }
 

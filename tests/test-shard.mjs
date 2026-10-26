@@ -245,6 +245,30 @@ try {
   check('the suite ran to the end', false, String(error?.stack ?? error));
 }
 
+// --- 0.140: 포션 회복량 — each shard adds to every potion's heal ---
+const potionTalent = await cdp.evaluate(`(() => {
+  const s = window.game.scene.getScene('GameScene'), C = window.config, p = s.player;
+  const before = s.shardBonus.potionHeal;
+  s.gainShard('potionHeal', 3);
+  const bonus = s.shardBonus.potionHeal;
+  p.hp = 1;
+  s.combat.potions.getChildren().forEach((d) => d.active && d.collect());
+  s.combat.dropPotionAt(p.x, p.y);
+  const potion = s.combat.potions.getChildren().find((d) => d.active);
+  s.combat.onPotionTouch(p, potion);
+  const healed = p.hp - 1;
+  p.hp = p.maxHp;
+  return { before, bonus, healed, base: C.POTION.heal, per: C.TALENT_SHARD.potionHeal,
+           listed: C.TALENT_SHARD.stats.includes('potionHeal'), line: C.PASSIVES.shardPotionHeal?.shardStat,
+           daily: C.DAILY_RULES.talents.includes('potionHeal') };
+})()`);
+console.log('potion talent:', JSON.stringify(potionTalent));
+check('포션 회복량 파편: each adds its amount to every potion — three heal base + 3 × per shard',
+  potionTalent.listed && potionTalent.line === 'potionHeal' && potionTalent.daily &&
+    potionTalent.bonus - potionTalent.before === 3 * potionTalent.per &&
+    potionTalent.healed === potionTalent.base + potionTalent.bonus,
+  JSON.stringify(potionTalent));
+
 console.log('\n=== SUMMARY ===');
 const failed = results.filter((r) => !r.p);
 console.log(`${results.length - failed.length}/${results.length} passed`);

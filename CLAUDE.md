@@ -1201,6 +1201,18 @@ Read `git log` for what changed and when. What is not in the log:
   낙뢰 감전 효과 +15% · 사거리 +10%; 공허구체 사거리 +20% · 구체로 적 처치 시
   체력 1 회복; 드론 드론 +2 · 폭탄 범위 +20%; 독성폭발 중독 피해 +30% · 사거리
   +20%. Ask the user for its drop rate when it is built.
+- **포션 (0.140, the user's).** A potion heals a flat `POTION.heal` (40; a
+  fifth of the bar before), `HealthPotion.healing(extra)`; the "포션 효과"
+  heal of a maxed skill is the same. The 재능 포션 회복량 (`potionHeal`, a
+  shard stat and the `shardPotionHeal` line) adds `TALENT_SHARD.potionHeal`
+  (1) a shard to it — flat, not a multiplier, through the `potionHeal`
+  combat hook. It joined the 예언's talent pool through
+  `DAILY_RULES.talentsSince` (from 10/27's day), so the day it shipped kept
+  the rules it had shown; a 재능 added later should do the same.
+- **The weapon in hand takes no 구슬 (0.140, the user's ask).**
+  `canTakeOrb` beside `canSalvage`: the 인벤토리's buttons and `OrbScene`
+  (`orbUse.equipped` says why). The one in hand still goes into nothing a
+  구슬 or 분해 could take from it.
 - **Swords are taken apart, not sold (0.90, the user's ask).** Selling and
   gold went. The 인벤토리's top-right 분해 · 제작 button (`forgeButton`,
   `openForge`, key F — 0.91 moved it there from the weapon's own row, the

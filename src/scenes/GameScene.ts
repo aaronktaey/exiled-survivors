@@ -405,6 +405,7 @@ export class GameScene extends Phaser.Scene {
         shardWeight: (stat) => (dailyRules.talentBanned(stat) ? 0 : (this.mods.passive.shardWeights[stat] ?? 1)),
         dropScale: () => this.boneBonus.dropScale,
         potionScale: () => this.heldBonus.potionChanceScale,
+        potionHeal: () => this.shardBonus.potionHeal,
         shatter: () =>
           this.mainSkill === 'iceSpear' && this.masteryOf('iceSpear') >= 2
             ? { radius: SKILL_MASTERY.second.iceShatter.radius * this.heldBonus.areaScale }
@@ -1637,9 +1638,11 @@ export class GameScene extends Phaser.Scene {
   }
 
   /** The numbers a shard line fills in, for `count` shards. */
-  private static shardValues(count: number): { n: number } {
+  private static shardValues(count: number): { n: number; heal: number } {
     return {
       n: Math.round(count * TALENT_SHARD.amplify * 100),
+      // 포션 회복량 is flat, not a share (0.140).
+      heal: count * TALENT_SHARD.potionHeal,
     };
   }
 
@@ -1727,7 +1730,7 @@ export class GameScene extends Phaser.Scene {
   }
 
   private drinkForMaxedSkill(skill: SkillId, why: 'maxed' | 'full' = 'maxed'): void {
-    const healed = this.player.heal(HealthPotion.healingFor(this.player.maxHp));
+    const healed = this.player.heal(HealthPotion.healing(this.shardBonus.potionHeal));
     const { x, y } = this.player;
     // Over the survivor's own name and health, not on them.
     this.damageNumbers.spawn(x, y - 70, 0, { text: t().game.potionEffect, color: COLORS.healText, crit: true });

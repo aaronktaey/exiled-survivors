@@ -84,6 +84,8 @@ export interface CombatHooks {
   readonly dropScale: () => number;
   /** What the held skills multiply the 체력 포션's chance by (0.122: 독성폭발's 보유 효과). */
   readonly potionScale?: () => number;
+  /** Health the run's 포션 회복량 파편 add to a potion (0.140). */
+  readonly potionHeal?: () => number;
   /**
    * 행운 (0.83): what the passive tree multiplies every drop an enemy's
    * 속성 raise by — 1 + its share. What only a 우두머리 leaves, what is
@@ -731,7 +733,7 @@ export class CombatSystem {
     }
 
     potion.collect();
-    const healed = this.player.heal(HealthPotion.healingFor(this.player.maxHp));
+    const healed = this.player.heal(HealthPotion.healing(this.hooks.potionHeal?.() ?? 0));
     this.damageNumbers.spawn(this.player.x, this.player.y - 18, healed, {
       prefix: '+',
       color: COLORS.healText,

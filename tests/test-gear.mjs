@@ -1976,6 +1976,51 @@ check('척추 검: a kill throws the 키메라’s thorn ring, each thorn its sh
 check('a thorn’s own kill throws none, a roll over the chance throws none, and without the sword none',
   effects.fromThorn === 0 && effects.missed === 0 && effects.plain === 0, JSON.stringify(effects));
 
+// --- 0.140: the weapon in hand takes no 구슬, as it is never taken apart ---
+await cdp.send('Page.navigate', { url: 'about:blank' });
+await cdp.send('Page.navigate', { url: 'http://localhost:5173/' });
+await cdp.until(`window.game?.scene.isActive('MenuScene')`, 30000, 200);
+await ev(`(() => {
+  window.gear.add({ uid: 'spare1', id: 'ironSword', prefixes: [{ id: 'mighty', tier: 4 }], suffixes: [], rungs: window.config.AFFIX_RUNGS });
+  window.orbs.add('chaos', 2);
+  window.game.scene.getScene('MenuScene').icons.press('gear');
+  return 1;
+})()`);
+await cdp.until(`window.game.scene.isActive('InventoryScene')`, 10000, 100);
+const inHand = await ev(`(() => {
+  const s = window.game.scene.getScene('InventoryScene');
+  const worn = window.gear.value.equipped;
+  s.menu.focus(worn); s.showDetails();
+  const onWorn = s.canUse('chaos');
+  s.menu.focus('spare1'); s.showDetails();
+  const onSpare = s.canUse('chaos');
+  return { worn, onWorn, onSpare };
+})()`);
+// The popup on the worn one: 사용 is off, and it says why.
+await ev(`(() => {
+  const s = window.game.scene.getScene('InventoryScene');
+  s.menu.focus(window.gear.value.equipped); s.showDetails();
+  s.pressOrb('chaos');
+  return 1;
+})()`);
+await cdp.until(`window.game.scene.isActive('OrbScene')`, 10000, 100);
+const popup = await ev(`(() => {
+  const o = window.game.scene.getScene('OrbScene');
+  const before = window.gear.items.find((i) => i.uid === window.gear.value.equipped);
+  o.use();
+  const after = window.gear.items.find((i) => i.uid === window.gear.value.equipped);
+  const list = o.layer ? o.layer.list : o.children.list;
+  const texts = list.filter((c) => typeof c.text === 'string').map((c) => c.text.replace(/\s+/g, ' '));
+  return { usable: o.usable, said: texts.some((t) => t.includes('착용 중인 장비')), texts: texts.filter((t) => /착용|쓸 수/.test(t)), same: JSON.stringify(before) === JSON.stringify(after),
+           chaos: window.orbs.count('chaos') };
+})()`);
+console.log('in hand:', JSON.stringify({ inHand, popup }));
+check('a 구슬 cannot go on the weapon in hand — on any other it can',
+  inHand.onWorn === false && inHand.onSpare === true, JSON.stringify(inHand));
+check('the 구슬 popup on it is off and says why; pressing 사용 changes nothing and spends nothing',
+  popup.usable === false && popup.said && popup.same && popup.chaos === 2, JSON.stringify(popup));
+await ev(`(() => { window.game.scene.getScene('OrbScene').scene.stop(); window.gear.discard('spare1'); return 1; })()`);
+
 console.log('\n=== SUMMARY ===');
 const failed = results.filter((r) => !r.p);
 console.log(`${results.length - failed.length}/${results.length} passed`);

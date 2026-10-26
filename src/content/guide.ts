@@ -146,6 +146,7 @@ export function guideValues(): Record<string, string | number> {
     passivePoints: PASSIVE_POINTS,
     shardChance: percent(TALENT_SHARD.chance),
     shardAmplify: percent(TALENT_SHARD.amplify),
+    shardPotionHeal: String(TALENT_SHARD.potionHeal),
     lumpShards: TALENT_LUMP.shards,
     // 랭킹 점수 (0.116): each kind and its share, in the roster's order.
     scoreKinds: (Object.keys(SCORE.byKind) as EnemyKind[]).map((kind) => `${enemyName(kind)} ×${SCORE.byKind[kind]}`).join(' · '),
@@ -190,7 +191,7 @@ export function guideValues(): Record<string, string | number> {
     life: seconds(GROUND_ITEM.lifespanMs),
     warning: seconds(GROUND_ITEM.warningMs),
     potionChance: percent(POTION.chance),
-    heal: percent(POTION.healFraction),
+    heal: String(POTION.heal),
     mangoChance: percent(MANGO.chance),
     mangoSecs: seconds(MANGO.durationMs),
     mangoBoost: raise(MANGO.attackSpeedScale),

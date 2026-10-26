@@ -141,6 +141,9 @@ const linesOf = (item: GearItem): number => item.prefixes.length + item.suffixes
 /** Whether 분해 may take it: not in hand, not locked. */
 export const canSalvage = (item: GearItem, equipped: string): boolean => item.uid !== equipped && item.locked !== true;
 
+/** 구슬 go on any weapon but the one in hand (0.140, the user's ask), as 분해 does. */
+export const canTakeOrb = (item: GearItem, equipped: string): boolean => item.uid !== equipped;
+
 /** 분해: the base's 철광석, and the 구슬 its rarity earns (SALVAGE_ORBS). */
 export function salvageFor(item: GearItem): SalvageYield {
   return { ore: GEAR[item.id]?.salvageOre ?? 0, orb: SALVAGE_ORBS[dropTierFor(item)] ?? null };

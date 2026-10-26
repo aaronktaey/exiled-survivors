@@ -1246,7 +1246,9 @@ export const TALENT_SHARD_FX = {
     attackSpeed: 0xffd34d,
     moveSpeed: 0x6fd8ff,
     maxHp: 0x7ef0a0,
-    area: 0xc08cff,
+    area: 0xc08cff,
+    // Pink, apart from 최대체력's green (0.140).
+    potionHeal: 0xff9fd0,
   },
 } as const;
 

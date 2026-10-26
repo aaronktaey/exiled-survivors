@@ -19,7 +19,7 @@ import { fill, gearTitle, orbDetail, orbName, orbShort, t } from '@/i18n';
 import { sparkleBurst } from '@/systems/Celebrate';
 import { InventoryScene } from '@/scenes/InventoryScene';
 import { addBackButton, type BackButton } from '@/systems/BackButton';
-import { MAX_AFFIX_LINES, gear, orbApplied, type GearItem } from '@/systems/Gear';
+import { canTakeOrb, MAX_AFFIX_LINES, gear, orbApplied, type GearItem } from '@/systems/Gear';
 import { fitText } from '@/systems/Layout';
 import { orbs } from '@/systems/Orbs';
 import { prefersTouchControls } from '@/systems/VirtualJoystick';
@@ -103,7 +103,13 @@ export class OrbScene extends Phaser.Scene {
   /** Whether the picked 구슬 would do anything to the weapon, and one is held. Public for tests. */
   public get usable(): boolean {
     const item = this.item;
-    return !this.destroyed && item !== undefined && orbs.count(this.orb) > 0 && orbApplied(item, ORBS[this.orb]) !== null;
+    return (
+      !this.destroyed &&
+      item !== undefined &&
+      canTakeOrb(item, gear.value.equipped) &&
+      orbs.count(this.orb) > 0 &&
+      orbApplied(item, ORBS[this.orb]) !== null
+    );
   }
 
   public create(): void {
@@ -347,7 +353,15 @@ export class OrbScene extends Phaser.Scene {
   private drawFooter(width: number, height: number): void {
     const copy = t().orbUse;
     const item = this.item;
-    const why = !this.usable ? (orbs.count(this.orb) <= 0 ? copy.none : item ? copy.useless : '') : '';
+    const why = !this.usable
+      ? orbs.count(this.orb) <= 0
+        ? copy.none
+        : item && !canTakeOrb(item, gear.value.equipped)
+          ? copy.equipped
+          : item
+            ? copy.useless
+            : ''
+      : '';
     const noteLine = this.add
       .text(width / 2, height - 92, this.note || why, {
         fontFamily: 'system-ui, sans-serif',

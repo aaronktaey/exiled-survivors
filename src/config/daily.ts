@@ -34,7 +34,13 @@ export const DAILY_RULES = {
   /** The skills a day can ban — every one a player can pick. A new skill goes here too. */
   skills: ['meleeStrike', 'fireball', 'chainLightning', 'iceSpear', 'voidOrb', 'thunderStrike', 'drone', 'poisonNova'] as readonly SkillId[],
   /** The 재능 a day can ban: its 파편 stop dropping (TALENT_SHARD.stats). */
-  talents: ['damage', 'attackSpeed', 'moveSpeed', 'maxHp', 'area'] as readonly ShardStat[],
+  talents: ['damage', 'attackSpeed', 'moveSpeed', 'maxHp', 'area', 'potionHeal'] as readonly ShardStat[],
+  /**
+   * A 재능 added after rules began joins the draw only from this ranking day
+   * on, so a day already under way keeps the rules it was shown (0.140:
+   * 포션 회복량, from 2026-10-27 05:00 KST).
+   */
+  talentsSince: { potionHeal: Date.UTC(2026, 9, 26, 20, 0, 0) } as Partial<Record<ShardStat, number>>,
   /**
    * The strengthened enemies a day draws from — only the ones the user picked
    * (2026-10-25). Each one's `scale` and `on` are dials (DIAL tab 'daily'),
@@ -86,9 +92,14 @@ export function dailyRulesFor(dayStart: number): DailyRuleSet | null {
   const first = Math.round(DAILY_RULES.since / DAY_MS);
   const last = Math.round(dayStart / DAY_MS);
   const buffs = DAILY_RULES.enemyBuffs.filter((buff) => buff.on !== 0);
-  const pools = [DAILY_RULES.skills.length, DAILY_RULES.talents.length, buffs.length];
+  // The 재능 a day may ban: those it had, never one added after it began.
+  const talentsOn = (day: number): readonly ShardStat[] =>
+    DAILY_RULES.talents.filter((stat) => (DAILY_RULES.talentsSince[stat] ?? 0) <= day * DAY_MS);
   let picks = [-1, -1, -1];
+  let talents = talentsOn(first);
   for (let day = first; day <= last; day++) {
+    talents = talentsOn(day);
+    const pools = [DAILY_RULES.skills.length, talents.length, buffs.length];
     picks = pools.map((size, i) => {
       if (size === 0) {
         return -1;
@@ -103,7 +114,7 @@ export function dailyRulesFor(dayStart: number): DailyRuleSet | null {
   return {
     day: dayStart,
     bannedSkill: DAILY_RULES.skills[picks[0]!]!,
-    bannedTalent: DAILY_RULES.talents[picks[1]!]!,
+    bannedTalent: talents[picks[1]!]!,
     enemyBuff: buffs[picks[2]!] ?? null,
   };
 }

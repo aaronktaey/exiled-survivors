@@ -15,6 +15,32 @@ export interface PatchNote {
 
 export const PATCH_NOTES: readonly PatchNote[] = [
   {
+    version: '0.140',
+    date: '2026-10-26',
+    changes: {
+      ko: [
+        '체력 포션이 최대 체력의 20% 대신 체력 40을 회복합니다. 강화를 모두 마친 스킬을 다시 얻을 때의 포션 효과도 40입니다.',
+        '새 재능 「포션 회복량」: 포션 회복량 파편 하나마다 그 판의 포션 회복량이 +1 됩니다. 재능 화면에서 이 파편이 나올 확률을 올릴 수 있습니다. 예언의 금지 재능 후보에는 10/27 예언부터 들어갑니다.',
+        '착용 중인 장비에는 구슬을 쓸 수 없습니다(분해처럼). 다른 장비로 바꿔 낀 뒤에 쓰세요.',
+      ],
+      en: [
+        'A health potion now restores 40 health instead of 20% of your maximum. The potion effect from picking up a fully upgraded skill again is 40 too.',
+        'New talent, Potion healing: each potion healing shard adds 1 to every potion that run. Its shard chance can be raised on the Talents screen. It joins the prophecy’s banned talents from the 10/27 prophecy.',
+        'Orbs can no longer be used on the weapon you are wearing (as with salvaging). Swap to another weapon first.',
+      ],
+      ja: [
+        '体力ポーションの回復量が最大体力の20%から体力40になりました。強化を終えたスキルを再び得た時のポーション効果も40です。',
+        '新しい才能「ポーション回復量」：ポーション回復量の欠片1つごとに、そのプレイのポーション回復量が+1されます。才能画面でこの欠片の出現確率を上げられます。予言の禁止才能の候補には10/27の予言から入ります。',
+        '装備中の武器には球を使えなくなりました（分解と同じ）。別の武器に持ち替えてから使ってください。',
+      ],
+      zh: [
+        '生命药水现在恢复40点生命，而不是最大生命的20%。再次获得已满级技能时的药水效果也是40。',
+        '新天赋「药水恢复量」：每个药水恢复量碎片使本局药水恢复量+1。可在天赋界面提高该碎片的出现几率。从10/27的预言起加入禁用天赋的候选。',
+        '无法再对正在装备的武器使用宝珠（与分解相同）。请先换上其他武器再使用。',
+      ],
+    },
+  },
+  {
     version: '0.139',
     date: '2026-10-26',
     changes: {
