@@ -1070,6 +1070,33 @@ Read `git log` for what changed and when. What is not in the log:
   나르실 (`weight` 0, no `fromKill`: never dropped) is only made, for
   `craftOre` 1000 — so the 룬 각인 검 has no 합성 at all. Its 고정 속성 is
   flat attack (`GearImplicit.attack`, added in `gearBonusFor`).
+- **Swords one kind leaves (0.137, the user's).** `GEAR[id].fromKind`
+  ({kind, chance}, flat, nothing raises it; a dial each): the 오니고로시 off a
+  우두머리 (2%, rolled first, in place of the weighted sword a 우두머리
+  always leaves — its `weight` is 0 now), the 척추 검 off a 키메라 (2%), the
+  별 부수는 검 off a 도망자 (2%) — `rollGearFromKind`, through
+  `GameScene.rollGearDrop(fromBoss, bonus, kind)`. Both new ones are tier 1
+  (attack 25, "공격력 +25" in the user's words) and `combineInto: false`.
+  척추 검's `thornBurst` 고정 속성: a kill (`onEnemyKilled` hook) at `chance`
+  throws the 키메라's thorn ring (its `volley` count/speed/lifespan,
+  `TEXTURES.thorn`) from `GameScene.thorns`, a `Projectile` group with a
+  `lifespanMs` override, each thorn `dpsShare` × the main skill's HUD DPS and
+  counted to it; a thorn's kill (`Projectile.thorn`, `CombatSystem.thornKill`)
+  throws none — the user's chain-reaction lesson from 독성폭발. 별 부수는 검's
+  `shardChanceScale` multiplies `TALENT_SHARD.chance` (`shardScale` hook).
+  The filter's sword row and the guide's card read `fromKind` too; the 별
+  부수는 검 is drawn as a thick black 도 (the user's ask).
+- **A 우두머리 picks one of three (0.137, the user's design).** Each time its
+  ring comes round, `Enemy.pickCast` weighs `ENEMY_KINDS.boss.casts` (1/1/1):
+  the ring; a `laser` (its line shown `aimMs` 2s, fixed as it aims, then the
+  ring's damage to the survivor anywhere along `width` 50 × `length`); a
+  `leap` (only with the survivor within `maxDistance` 400 — the user's —
+  the spot the survivor stood on shown 2s, then it is carried there over
+  `leapMs` and deals `contactTimes` 2 × contact within `areaOfBody` 2 × its
+  body's width). Hits go through `EnemyHooks.strikeSurvivor` →
+  `Player.takeDamage`. Warnings are faint red (`BOSS_CAST_FX`, the user:
+  "visibility must not drop much"). test-boss pins `casts` to the ring for
+  its ring checks. The 키메라 has no `casts`: always its ring.
 - **Weapons by tier — 1 is the best**, the same way round as an 속성's
   tier (the user corrected this once). `attackForTier` counts up from the
   weakest tier. A 우두머리 always leaves one, weighted over the whole `GEAR`

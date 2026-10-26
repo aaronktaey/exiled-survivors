@@ -2,6 +2,8 @@ import Phaser from 'phaser';
 
 import {
   BALANCE,
+  BOSS_CAST_FX,
+  PLAYER,
   BOSS,
   CHILL,
   COLORS,
@@ -27,6 +29,7 @@ import {
   type EnemyShotSpec,
   type EnemyVolleySpec,
   type EnemyHopSpec,
+  type EnemyLeapSpec,
   GIANT_STRIDE,
   GIANT_TURN,
   giantFrame,
@@ -84,7 +87,19 @@ export interface EnemyHooks {
   readonly onBossSpawned?: () => void;
   /** A 키메라 came on its clock (SpawnDirector.spawnChimera). */
   readonly onChimeraSpawned?: () => void;
+  /** A 우두머리's laser or landing reached the survivor (0.137). */
+  readonly strikeSurvivor?: (damage: number) => void;
 }
+
+/** A 우두머리's laser or leap under way (0.137). */
+type BossCast =
+  | { kind: 'laser'; leftMs: number; angle: number }
+  | { kind: 'leap'; jumping: boolean; leftMs: number; fromX: number; fromY: number; toX: number; toY: number };
+
+/** What is still seen once one has gone off. */
+type CastFlash =
+  | { kind: 'laser'; leftMs: number; x: number; y: number; angle: number }
+  | { kind: 'leap'; leftMs: number; x: number; y: number; radius: number };
 
 /**
  * A chaser. Which chaser it is comes from its kind: ENEMY_KINDS holds the
@@ -160,6 +175,10 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
   private spin?: Phaser.Tweens.Tween;
   /** 우두머리's health bar and the line above it, made on its first one. */
   private healthBar?: Phaser.GameObjects.Graphics;
+  /** A 우두머리's laser or leap, aimed and not yet gone off (0.137). */
+  private cast?: BossCast;
+  private castFlash?: CastFlash;
+  private castFx?: Phaser.GameObjects.Graphics;
   private plate?: Phaser.GameObjects.Text;
   private hpScale = 1;
   /** Bolts beyond the aimed one, from 연발. */
@@ -492,8 +511,155 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
     return Math.max(1, Math.round(amount));
   }
 
+  /**
+   * Which of its three a 우두머리 does now, by its `casts` weights (0.137).
+   * The leap only with the survivor within its `maxDistance`.
+   */
+  private pickCast(): 'ring' | 'laser' | 'leap' {
+    const casts = this.spec.casts;
+    if (!casts || !this.target) {
+      return 'ring';
+    }
+    const near = this.spec.leap
+      ? Phaser.Math.Distance.Between(this.x, this.y, this.target.x, this.target.y) <= this.spec.leap.maxDistance
+      : false;
+    const weights = { ring: casts.ring, laser: this.spec.laser ? casts.laser : 0, leap: near ? casts.leap : 0 };
+    const total = weights.ring + weights.laser + weights.leap;
+    if (total <= 0) {
+      return 'ring';
+    }
+    let roll = Math.random() * total;
+    for (const kind of ['ring', 'laser', 'leap'] as const) {
+      roll -= weights[kind];
+      if (roll < 0) {
+        return kind;
+      }
+    }
+    return 'ring';
+  }
+
+  /** One frame of an aimed laser or leap: standing, or carried through the air, until it goes off. */
+  private stepCast(dt: number): void {
+    const cast = this.cast;
+    if (!cast) {
+      return;
+    }
+    cast.leftMs -= dt;
+    if (cast.kind === 'laser') {
+      this.setVelocity(0, 0);
+      if (cast.leftMs <= 0) {
+        this.cast = undefined;
+        this.fireLaser(cast.angle);
+      }
+      return;
+    }
+    const leap = this.spec.leap;
+    if (!leap) {
+      this.cast = undefined;
+      return;
+    }
+    if (!cast.jumping) {
+      this.setVelocity(0, 0);
+      if (cast.leftMs <= 0) {
+        cast.jumping = true;
+        cast.leftMs = leap.leapMs;
+        cast.fromX = this.x;
+        cast.fromY = this.y;
+      }
+      return;
+    }
+    const along = Phaser.Math.Clamp(1 - cast.leftMs / leap.leapMs, 0, 1);
+    const body = this.body as Phaser.Physics.Arcade.Body | null;
+    body?.reset(Phaser.Math.Linear(cast.fromX, cast.toX, along), Phaser.Math.Linear(cast.fromY, cast.toY, along));
+    if (cast.leftMs <= 0) {
+      this.cast = undefined;
+      this.land(cast.toX, cast.toY, leap);
+    }
+  }
+
+  /** The laser goes off: the survivor anywhere along it is hit for the ring's damage. */
+  private fireLaser(angle: number): void {
+    const laser = this.spec.laser;
+    const volley = this.spec.volley;
+    if (!laser) {
+      return;
+    }
+    sfx.playEnemy(this.scene, this.kind, 'cast');
+    const target = this.target;
+    if (target && volley) {
+      // How far along the beam the survivor is, and how far off it — with the survivor's own width.
+      const reach = laser.width / 2 + PLAYER.size / 2;
+      const dx = target.x - this.x;
+      const dy = target.y - this.y;
+      const along = dx * Math.cos(angle) + dy * Math.sin(angle);
+      const across = Math.abs(dy * Math.cos(angle) - dx * Math.sin(angle));
+      if (along >= -reach && along <= laser.length + reach && across <= reach) {
+        this.hooks?.strikeSurvivor?.(this.rollDamage(volley.damage));
+      }
+    }
+    this.castFlash = { kind: 'laser', leftMs: laser.flashMs, x: this.x, y: this.y, angle };
+  }
+
+  /** Down from the leap: everything round where it lands, the survivor included, is hit. */
+  private land(x: number, y: number, leap: EnemyLeapSpec): void {
+    sfx.playEnemy(this.scene, this.kind, 'cast');
+    const radius = (this.spec.size * leap.areaOfBody) / 2;
+    const target = this.target;
+    if (target && Phaser.Math.Distance.Between(x, y, target.x, target.y) <= radius + PLAYER.size / 2) {
+      this.hooks?.strikeSurvivor?.(this.rollDamage(this.contactDamage * leap.contactTimes));
+    }
+    this.castFlash = { kind: 'leap', leftMs: BOSS_CAST_FX.landMs, x, y, radius };
+  }
+
+  /** Where a laser or a leap will land, filling as the moment comes; then what it did, fading. */
+  private drawCast(dt: number): void {
+    if (this.castFlash) {
+      this.castFlash.leftMs -= dt;
+      if (this.castFlash.leftMs <= 0) {
+        this.castFlash = undefined;
+      }
+    }
+    if (!this.cast && !this.castFlash) {
+      this.castFx?.clear().setVisible(false);
+      return;
+    }
+    if (!this.castFx) {
+      this.castFx = this.scene.add.graphics().setDepth(DEPTH.enemies - 1);
+    }
+    const g = this.castFx.clear().setVisible(true);
+    const fx = BOSS_CAST_FX;
+    const cast = this.cast;
+    if (cast?.kind === 'laser' && this.spec.laser) {
+      const laser = this.spec.laser;
+      const filled = 1 - Math.max(0, cast.leftMs) / laser.aimMs;
+      g.fillStyle(fx.warn, fx.areaAlpha).fillPoints(beamCorners(this.x, this.y, cast.angle, laser.length, laser.width), true);
+      g.fillStyle(fx.warn, fx.fillAlpha).fillPoints(beamCorners(this.x, this.y, cast.angle, laser.length * filled, laser.width), true);
+      g.lineStyle(fx.edgeWidth, fx.warn, fx.edgeAlpha).strokePoints(beamCorners(this.x, this.y, cast.angle, laser.length, laser.width), true);
+    } else if (cast?.kind === 'leap' && !cast.jumping && this.spec.leap) {
+      const leap = this.spec.leap;
+      const radius = (this.spec.size * leap.areaOfBody) / 2;
+      const filled = 1 - Math.max(0, cast.leftMs) / leap.aimMs;
+      g.fillStyle(fx.warn, fx.areaAlpha).fillCircle(cast.toX, cast.toY, radius);
+      g.fillStyle(fx.warn, fx.fillAlpha).fillCircle(cast.toX, cast.toY, radius * filled);
+      g.lineStyle(fx.edgeWidth, fx.warn, fx.edgeAlpha).strokeCircle(cast.toX, cast.toY, radius);
+    }
+    const flash = this.castFlash;
+    if (flash?.kind === 'laser' && this.spec.laser) {
+      const fade = flash.leftMs / this.spec.laser.flashMs;
+      g.fillStyle(fx.beam, 0.85 * fade).fillPoints(beamCorners(flash.x, flash.y, flash.angle, this.spec.laser.length, this.spec.laser.width), true);
+      g.fillStyle(fx.warn, 0.5 * fade).fillPoints(beamCorners(flash.x, flash.y, flash.angle, this.spec.laser.length, this.spec.laser.width * 1.4), true);
+    } else if (flash?.kind === 'leap') {
+      const fade = flash.leftMs / fx.landMs;
+      g.fillStyle(fx.landColor, 0.35 * fade).fillCircle(flash.x, flash.y, flash.radius);
+      g.lineStyle(3, fx.landColor, fade).strokeCircle(flash.x, flash.y, flash.radius * (1.5 - 0.5 * fade));
+    }
+  }
+
   /** Returns it to the pool without destroying it. */
   public recycle(): void {
+    this.cast = undefined;
+    this.castFlash = undefined;
+    this.castFx?.clear().setVisible(false);
     this.target = undefined;
     this.hooks = undefined;
     this.chillMs = 0;
@@ -520,6 +686,7 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
     this.outline?.destroy(fromScene);
     this.footRing?.destroy(fromScene);
     this.healthBar?.destroy(fromScene);
+    this.castFx?.destroy(fromScene);
     this.plate?.destroy(fromScene);
     this.shockFx?.destroy(fromScene);
     super.destroy(fromScene);
@@ -652,6 +819,7 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
       }
     }
     this.drawShock(dt);
+    this.drawCast(dt);
 
     this.placeOutline();
     this.placeFootRing();
@@ -684,6 +852,12 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
 
     if (this.spec.flee) {
       this.run();
+      return;
+    }
+
+    // A 우두머리 aiming its laser stands; one leaping is carried to where it lands.
+    if (this.cast) {
+      this.stepCast(dt);
       return;
     }
 
@@ -890,6 +1064,18 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
     }
 
     this.volleyCooldownMs = volley.cooldownMs;
+    // A 우두머리 picks one of three each time (0.137): the ring, a laser, a leap.
+    const pick = this.pickCast();
+    if (pick === 'laser' && this.spec.laser && this.target) {
+      this.cast = { kind: 'laser', leftMs: this.spec.laser.aimMs, angle: Phaser.Math.Angle.Between(this.x, this.y, this.target.x, this.target.y) };
+      this.setVelocity(0, 0);
+      return;
+    }
+    if (pick === 'leap' && this.spec.leap && this.target) {
+      this.cast = { kind: 'leap', jumping: false, leftMs: this.spec.leap.aimMs, fromX: this.x, fromY: this.y, toX: this.target.x, toY: this.target.y };
+      this.setVelocity(0, 0);
+      return;
+    }
     sfx.playEnemy(this.scene, this.kind, 'cast');
     if (this.spec.poses) {
       this.castPoseMs = this.spec.poses.castMs;
@@ -1012,4 +1198,19 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
 
     this.clearTint();
   }
+}
+
+/** The four corners of a beam `width` across, from (x, y) along `angle` for `length`. */
+function beamCorners(x: number, y: number, angle: number, length: number, width: number): Phaser.Math.Vector2[] {
+  const ux = Math.cos(angle);
+  const uy = Math.sin(angle);
+  const half = width / 2;
+  const ex = x + ux * length;
+  const ey = y + uy * length;
+  return [
+    new Phaser.Math.Vector2(x - uy * half, y + ux * half),
+    new Phaser.Math.Vector2(ex - uy * half, ey + ux * half),
+    new Phaser.Math.Vector2(ex + uy * half, ey - ux * half),
+    new Phaser.Math.Vector2(x + uy * half, y - ux * half),
+  ];
 }

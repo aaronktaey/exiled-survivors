@@ -215,6 +215,9 @@ await shot('boss-02-live');
 // ten-second step would be one frame's worth of countdown.
 const ring = await run(`
   s.choosing = true;
+  // One of three since 0.137: this section is about the ring.
+  window.__bossCasts ??= window.config.ENEMY_KINDS.boss.casts;
+  window.config.ENEMY_KINDS.boss.casts = { ring: 1, laser: 0, leap: 0 };
   s.spawner.clear();
   s.combat.enemyShots.getChildren().forEach(b => b.active && b.disableBody(true, true));
 
@@ -323,6 +326,8 @@ check('and it goes with the 우두머리 that wore it',
 // --- 6. a fat giant: it strides while it walks, and spins as it throws ---
 const motion = await run(`
   s.choosing = true;
+  window.__bossCasts ??= window.config.ENEMY_KINDS.boss.casts;
+  window.config.ENEMY_KINDS.boss.casts = { ring: 1, laser: 0, leap: 0 };
   s.spawner.clear();
   s.player.setInvulnerable(true);
   const p = s.player;
@@ -437,6 +442,87 @@ check('타격 hits a 우두머리 as soon as the swing reaches its picture, not 
   reach.bossEdgeIn === true && reach.bossR > 0, JSON.stringify(reach));
 check('and nothing past the edge of what is drawn, 우두머리 or not',
   reach.bossOut === false && reach.gruntOut === false && reach.gruntEdgeIn === true, JSON.stringify(reach));
+
+// --- 0.137: each time, the ring, a laser or a leap — the last two shown first ---
+const casts = await run(`
+  s.choosing = true;
+  s.spawner.clear();
+  s.combat.enemyShots.getChildren().forEach(b => b.active && b.disableBody(true, true));
+  const K = window.config.ENEMY_KINDS.boss;
+  if (window.__bossCasts) K.casts = window.__bossCasts;
+  const keep = K.casts;
+  const p = s.player;
+  const struck = [];
+  const hooks = { fireShot: s.combat.fireEnemyShot, strikeSurvivor: (d) => struck.push(d) };
+  const step = (e, ms) => { for (let t = 0; t < ms; t += 40) e.update(0, 40); };
+  const put = (dx, dy) => { const b = s.spawner.group.get(p.x + dx, p.y + dy); b.spawn(p.x + dx, p.y + dy, p, 'boss', hooks); return b; };
+  const out = { weights: { ...keep }, wantLaser: K.volley.damage, wantLeap: K.contactDamage * K.leap.contactTimes };
+  try {
+    // The laser: its line shown for its aim, nothing meanwhile, then the ring's hit all along it.
+    K.casts = { ring: 0, laser: 1, leap: 0 };
+    let b = put(300, 0);
+    b.volleyCooldownMs = 0; b.update(0, 40);
+    const at = { x: b.x, y: b.y };
+    out.laser = { cast: b.cast?.kind };
+    step(b, K.laser.aimMs - 200);
+    out.laser.shown = b.castFx?.visible === true;
+    out.laser.early = struck.length;
+    out.laser.stood = Math.hypot(b.x - at.x, b.y - at.y) < 1;
+    out.laser.bolts = s.combat.enemyShots.countActive(true);
+    step(b, 400);
+    out.laser.hit = struck.splice(0);
+    // Its line is set as it aims: a step aside is a miss.
+    b.volleyCooldownMs = 0; b.update(0, 40);
+    const home = { x: p.x, y: p.y };
+    p.body.reset(p.x, p.y + 200);
+    step(b, K.laser.aimMs + 200);
+    out.laser.dodged = struck.splice(0).length;
+    p.body.reset(home.x, home.y);
+    b.recycle();
+    // The leap: where the survivor stood, shown for its aim; then it lands there and hits round it.
+    K.casts = { ring: 0, laser: 0, leap: 1 };
+    b = put(250, 0);
+    const from = { x: b.x, y: b.y };
+    b.volleyCooldownMs = 0; b.update(0, 40);
+    const spot = { x: b.cast?.toX, y: b.cast?.toY };
+    out.leap = { cast: b.cast?.kind, onSurvivor: Math.hypot(spot.x - p.x, spot.y - p.y) < 1 };
+    step(b, K.leap.aimMs - 200);
+    out.leap.shown = b.castFx?.visible === true;
+    out.leap.early = struck.length;
+    out.leap.waited = Math.hypot(b.x - from.x, b.y - from.y) < 1;
+    step(b, 200 + K.leap.leapMs + 120);
+    out.leap.landed = Math.hypot(b.x - spot.x, b.y - spot.y) < 2;
+    out.leap.hit = struck.splice(0);
+    b.recycle();
+    // Too far for a leap (past its maxDistance): with only the leap to choose, it throws the ring.
+    b = put(K.leap.maxDistance + 150, 0);
+    b.volleyCooldownMs = 0; b.update(0, 40);
+    out.far = { cast: b.cast?.kind ?? 'ring', bolts: s.combat.enemyShots.countActive(true) };
+    b.recycle();
+  } finally {
+    K.casts = keep;
+    s.combat.enemyShots.getChildren().forEach(b => b.active && b.disableBody(true, true));
+    s.spawner.clear();
+    s.choosing = false;
+  }
+  return out;
+`);
+console.log('casts:', JSON.stringify(casts));
+check('a 우두머리 picks the ring, the laser or the leap, each as likely',
+  casts.weights.ring > 0 && casts.weights.ring === casts.weights.laser && casts.weights.laser === casts.weights.leap,
+  JSON.stringify(casts.weights));
+check('its laser shows its line while it aims, standing, hitting nothing yet',
+  casts.laser.cast === 'laser' && casts.laser.shown && casts.laser.early === 0 && casts.laser.stood && casts.laser.bolts === 0,
+  JSON.stringify(casts.laser));
+check('then hits all along it at once for the ring’s damage — and misses one who stepped aside',
+  casts.laser.hit.length === 1 && casts.laser.hit[0] === casts.wantLaser && casts.laser.dodged === 0,
+  JSON.stringify(casts.laser));
+check('its leap marks where the survivor stands and waits out its aim',
+  casts.leap.cast === 'leap' && casts.leap.shown && casts.leap.onSurvivor && casts.leap.early === 0 && casts.leap.waited,
+  JSON.stringify(casts.leap));
+check('then lands there, hitting round it for twice its contact damage',
+  casts.leap.landed && casts.leap.hit.length === 1 && casts.leap.hit[0] === casts.wantLeap, JSON.stringify(casts.leap));
+check('and never leaps at a survivor out of its reach', casts.far.cast === 'ring' && casts.far.bolts > 0, JSON.stringify(casts.far));
 
 console.log('\n=== SUMMARY ===');
 const failed = results.filter((r) => !r.p);

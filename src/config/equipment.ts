@@ -12,12 +12,21 @@
  */
 
 import type { SkillId } from '@/weapons/skills';
+import type { EnemyKind } from '@/config/balance';
 import type { DropTier } from '@/config/system';
 import type { PixelIconId } from '@/config/pixelIcons';
 
 export type GearSlot = 'weapon';
 
-export type GearId = 'onigoroshi' | 'runedSword' | 'steelSword' | 'ironSword' | 'rustySword' | 'narsil';
+export type GearId =
+  | 'onigoroshi'
+  | 'runedSword'
+  | 'steelSword'
+  | 'ironSword'
+  | 'rustySword'
+  | 'narsil'
+  | 'spineSword'
+  | 'starBreaker';
 
 /**
  * 고정 속성 — what every sword of a base does, whatever it rolled. It sits
@@ -43,6 +52,13 @@ export interface GearImplicit {
   readonly skillAttackSpeed?: { readonly skill: SkillId; readonly scale: number };
   /** Flat attack power on top of the base's own (나르실, 0.91). */
   readonly attack?: number;
+  /**
+   * 척추 검 (0.137): a kill sets off the 키메라's thorn ring from where it
+   * fell, at `chance`; each thorn hits for `dpsShare` of the main skill's DPS.
+   */
+  readonly thornBurst?: { readonly chance: number; readonly dpsShare: number };
+  /** 별 부수는 검 (0.137): multiplies the 재능의 파편's drop chance (an 증폭). */
+  readonly shardChanceScale?: number;
 }
 
 export interface GearSpec {
@@ -65,6 +81,13 @@ export interface GearSpec {
    * bonus like any other drop. Unset, only a 우두머리 leaves it.
    */
   readonly fromKill?: number;
+  /**
+   * Only one kind of enemy leaves it, at a flat `chance` a kill that nothing
+   * raises (0.137: the 오니고로시 off a 우두머리 — before the sword a 우두머리
+   * always leaves, in its place — the 척추 검 off a 키메라, the 별 부수는 검
+   * off a 도망자).
+   */
+  readonly fromKind?: { readonly kind: EnemyKind; readonly chance: number };
   /** 고정 속성: on every one of this base, outside the affix slots. */
   readonly implicit?: GearImplicit;
   /** 분해: the 철광석 one gives back when taken apart (0.90). */
@@ -109,7 +132,10 @@ export const GEAR: Record<GearId, GearSpec> = {
     slot: 'weapon',
     tier: 1,
     name: '오니고로시',
-    weight: 0.5,
+    // Off a 우두머리 at its own 2% (0.137, the user's ask): no longer one of
+    // the weighted swords a 우두머리 always leaves (0.5 of them, about 4.8%).
+    weight: 0,
+    fromKind: { kind: 'boss', chance: 0.02 },
     implicit: { detail: '{value} 확률로 적의 투사체를 막아냄', projectileBlock: 0.3 },
   },
   runedSword: {
@@ -179,6 +205,35 @@ export const GEAR: Record<GearId, GearSpec> = {
     name: '나르실',
     weight: 0,
     implicit: { detail: '공격력 +{value}', attack: 15 },
+  },
+  /** 척추 검 (0.137, the user's design): only a 키메라 leaves one. */
+  spineSword: {
+    id: 'spineSword',
+    salvageOre: 50,
+    combineInto: false,
+    icon: 'gear-spineSword',
+    slot: 'weapon',
+    tier: 1,
+    name: '척추 검',
+    weight: 0,
+    fromKind: { kind: 'chimera', chance: 0.02 },
+    implicit: {
+      detail: '적 처치 시 {value} 확률로 가시 폭발 (가시 하나당 메인 스킬 DPS의 {share})',
+      thornBurst: { chance: 0.1, dpsShare: 0.5 },
+    },
+  },
+  /** 별 부수는 검 (0.137, the user's design): only a 도망자 leaves one. */
+  starBreaker: {
+    id: 'starBreaker',
+    salvageOre: 50,
+    combineInto: false,
+    icon: 'gear-starBreaker',
+    slot: 'weapon',
+    tier: 1,
+    name: '별 부수는 검',
+    weight: 0,
+    fromKind: { kind: 'fugitive', chance: 0.02 },
+    implicit: { detail: '재능의 파편 드랍률 {value} 증폭', shardChanceScale: 1.3 },
   },
 };
 

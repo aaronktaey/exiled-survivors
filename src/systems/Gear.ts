@@ -98,6 +98,10 @@ export interface GearBonus {
   readonly regen: number;
   /** 반복: the chance a cast goes off once more. */
   readonly repeatChance: number;
+  /** 척추 검's 가시 폭발 (0.137), or null. */
+  readonly thornBurst: { readonly chance: number; readonly dpsShare: number } | null;
+  /** 별 부수는 검: the 재능의 파편's drop chance × this (0.137). */
+  readonly shardChanceScale: number;
 }
 
 export const NO_BONUS: GearBonus = {
@@ -116,6 +120,8 @@ export const NO_BONUS: GearBonus = {
   extraProjectiles: 0,
   regen: 0,
   repeatChance: 0,
+  thornBurst: null,
+  shardChanceScale: 1,
 };
 
 /** What one sword gives back when taken apart: its 철광석, and maybe one 구슬. */
@@ -252,6 +258,8 @@ export function gearBonusFor(item: GearItem | null): GearBonus {
     skillAttackSpeed,
     projectileBlock: Math.min(1, projectileBlock),
     extraProjectiles: implicit?.extraProjectiles ?? 0,
+    thornBurst: implicit?.thornBurst ?? null,
+    shardChanceScale: implicit?.shardChanceScale ?? 1,
     regen,
     repeatChance: Math.min(1, repeatChance),
   };
@@ -614,6 +622,16 @@ function rollGearBase(): GearSpec {
  * The weapon an ordinary kill leaves, if any: only a base with `fromKill`
  * set can, each on its own roll raised by the kill's `bonus`.
  */
+/** The sword only this kind leaves, at its own flat chance — or null (0.137). */
+export function rollGearFromKind(kind: string): GearItem | null {
+  for (const spec of Object.values(GEAR)) {
+    if (spec.fromKind?.kind === kind && Math.random() < spec.fromKind.chance) {
+      return rollGearItem(spec);
+    }
+  }
+  return null;
+}
+
 export function rollGearFromKill(bonus = 1): GearItem | null {
   for (const spec of Object.values(GEAR)) {
     if (spec.fromKill !== undefined && Math.random() < spec.fromKill * bonus) {

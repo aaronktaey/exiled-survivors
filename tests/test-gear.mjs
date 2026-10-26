@@ -95,11 +95,13 @@ check('a plain sword changes nothing else',
 const tiers = await ev(`(() => {
   const s = window.game.scene.getScene('GameScene');
   const roll = s.rollGearDrop.bind(s);
-  // A base no 우두머리 leaves (weight 0 — the 나르실, only made) is not on it.
-  const roster = Object.keys(window.config.GEAR).filter((id) => window.config.GEAR[id].weight > 0);
+  // A base no 우두머리 leaves (weight 0 — the 나르실, only made) is not on it;
+  // the 오니고로시 is, at its own chance off a 우두머리 (0.137).
+  const G = window.config.GEAR;
+  const roster = Object.keys(G).filter((id) => G[id].weight > 0 || G[id].fromKind?.kind === 'boss');
   const seen = {};
   for (let i = 0; i < 8000 && Object.keys(seen).length < roster.length; i++) {
-    const item = roll(true);
+    const item = roll(true, 1, 'boss');
     seen[item.id] = seen[item.id] ?? { id: item.id };
   }
   return { ids: Object.keys(seen), roster };
@@ -110,7 +112,8 @@ check('a 우두머리 can leave every sword on the roster, 오니고로시 inclu
 
 const attacks = await ev(`(() => {
   // The ladder the drops climb; the 나르실 (made, 고정 속성 공격력) is read on its own.
-  const ids = Object.keys(window.config.GEAR).filter((id) => window.config.GEAR[id].weight > 0)
+  const ids = Object.keys(window.config.GEAR)
+    .filter((id) => window.config.GEAR[id].weight > 0 || window.config.GEAR[id].fromKind?.kind === 'boss')
     .sort((a, b) => window.config.GEAR[a].tier - window.config.GEAR[b].tier);
   const narsil = window.config.GEAR.narsil;
   return {
@@ -160,8 +163,9 @@ const drops = await run(`
   }
   marked.forEach((g, i) => { g.fromKill = was[i]; });
   const allowed = marked.map(g => g.id);
-  const bossOnly = Object.values(G).filter(g => g.fromKill === undefined && g.weight > 0).map(g => g.id);
-  const lowTiers = Object.values(G).filter(g => g.fromKill === undefined && g.weight > 0).map(g => g.tier);
+  const offBosses = (g) => g.weight > 0 || g.fromKind?.kind === 'boss';
+  const bossOnly = Object.values(G).filter(g => g.fromKill === undefined && offBosses(g)).map(g => g.id);
+  const lowTiers = Object.values(G).filter(g => g.fromKill === undefined && offBosses(g)).map(g => g.tier);
   const ordinary = Object.values(ordinaryIds).reduce((a, b) => a + b, 0);
 
   const N = 10;
@@ -1880,6 +1884,97 @@ check('once a run is off the ranking, what it put in the drawers is taken back',
 check('and what it finds after that is not kept, and says so',
   forfeit.after.chaos === forfeit.before.chaos && forfeit.after.skull === forfeit.before.skull && /보관되지 않습니다/.test(forfeit.toast),
   JSON.stringify({ after: forfeit.after, toast: forfeit.toast }));
+
+// --- 0.137: swords only one kind leaves, and what the two new ones do ---
+await cdp.send('Page.navigate', { url: 'about:blank' });
+await cdp.send('Page.navigate', { url: 'http://localhost:5173/#run' });
+await cdp.until(`window.game?.scene.getScene('GameScene')?.player?.active`, 30000, 200);
+const kinds = await ev(`(() => {
+  const s = window.game.scene.getScene('GameScene'), G = window.config.GEAR;
+  const N = 20000;
+  const count = (kind, fromBoss, id) => {
+    let n = 0;
+    for (let i = 0; i < N; i++) if (s.rollGearDrop(fromBoss, 1, kind)?.id === id) n++;
+    return n / N;
+  };
+  return {
+    oni: count('boss', true, 'onigoroshi'), oniWant: G.onigoroshi.fromKind?.chance, oniWeight: G.onigoroshi.weight,
+    spine: count('chimera', false, 'spineSword'), spineWant: G.spineSword.fromKind?.chance,
+    star: count('fugitive', false, 'starBreaker'), starWant: G.starBreaker.fromKind?.chance,
+    // Never off any other kind.
+    stray: count('grunt', false, 'spineSword') + count('grunt', false, 'starBreaker') + count('chimera', false, 'starBreaker') +
+      count('fugitive', false, 'spineSword'),
+    tiers: [G.spineSword.tier, G.starBreaker.tier], attack: window.config.attackForTier(1),
+    combine: [G.spineSword.combineInto, G.starBreaker.combineInto],
+    bonus: {
+      spine: window.gearBonusFor({ uid: 'a', id: 'spineSword', prefixes: [], suffixes: [] }),
+      star: window.gearBonusFor({ uid: 'b', id: 'starBreaker', prefixes: [], suffixes: [] }),
+    },
+  };
+})()`);
+console.log('kinds:', JSON.stringify({ ...kinds, bonus: undefined }));
+const near = (seen, want) => want > 0 && Math.abs(seen - want) < Math.max(0.004, want * 0.2);
+check('오니고로시 comes off a 우두머리 at its own chance, in place of the sword it always leaves',
+  near(kinds.oni, kinds.oniWant) && kinds.oniWeight === 0, `${(kinds.oni * 100).toFixed(2)}% (want ${kinds.oniWant * 100}%)`);
+check('척추 검 only off a 키메라, 별 부수는 검 only off a 도망자, each at its own chance',
+  near(kinds.spine, kinds.spineWant) && near(kinds.star, kinds.starWant) && kinds.stray === 0,
+  `척추 ${(kinds.spine * 100).toFixed(2)}% · 별 ${(kinds.star * 100).toFixed(2)}% · elsewhere ${kinds.stray}`);
+check('both are tier 1 swords (공격력 +' + kinds.attack + ') that no 합성 makes',
+  kinds.tiers.every((t) => t === 1) && kinds.bonus.spine.attack === kinds.attack && kinds.bonus.star.attack === kinds.attack &&
+    kinds.combine.every((c) => c === false), JSON.stringify({ tiers: kinds.tiers, combine: kinds.combine }));
+check('척추 검 carries the thorn burst, 별 부수는 검 the 재능의 파편 amplifier, from their 고정 속성',
+  kinds.bonus.spine.thornBurst?.chance > 0 && kinds.bonus.spine.thornBurst?.dpsShare > 0 && kinds.bonus.star.shardChanceScale > 1 &&
+    kinds.bonus.spine.shardChanceScale === 1 && kinds.bonus.star.thornBurst === null,
+  JSON.stringify({ spine: kinds.bonus.spine.thornBurst, star: kinds.bonus.star.shardChanceScale }));
+
+const effects = await ev(`(() => {
+  const s = window.game.scene.getScene('GameScene'), C = window.config;
+  const spineImplicit = C.GEAR.spineSword.implicit.thornBurst, starImplicit = C.GEAR.starBreaker.implicit.shardChanceScale;
+  const was = s.gearBonus;
+  const out = {};
+  try {
+    s.gearBonus = window.gearBonusFor({ uid: 'b', id: 'starBreaker', prefixes: [], suffixes: [] });
+    out.shardScale = s.combat.hooks.shardScale();
+    out.starWant = starImplicit;
+    s.gearBonus = window.gearBonusFor({ uid: 'a', id: 'spineSword', prefixes: [], suffixes: [] });
+    s.thorns.getChildren().forEach((t) => t.active && t.despawn?.());
+    const main = s.mainSkill;
+    const dps = s.loadout().find((l) => l.id === main)?.dps ?? 0;
+    const real = Math.random;
+    Math.random = () => 0;
+    s.thornBurstAt(s.player.x + 300, s.player.y, false);
+    const fired = s.thorns.getChildren().filter((t) => t.active);
+    out.burst = { count: fired.length, want: C.ENEMY_KINDS.chimera.volley.count,
+                  damage: fired[0]?.damage, wantDamage: Math.max(1, Math.round(dps * spineImplicit.dpsShare)),
+                  skill: fired[0]?.skill, main, thorn: fired.every((t) => t.thorn), texture: fired[0]?.texture.key };
+    fired.forEach((t) => t.despawn?.() ?? t.disableBody(true, true));
+    // A thorn's own kill sets off none; and nothing above the chance either.
+    s.thornBurstAt(s.player.x + 300, s.player.y, true);
+    out.fromThorn = s.thorns.getChildren().filter((t) => t.active).length;
+    Math.random = () => 0.99;
+    s.thornBurstAt(s.player.x + 300, s.player.y, false);
+    out.missed = s.thorns.getChildren().filter((t) => t.active).length;
+    Math.random = real;
+    // Without the sword, no thorns at all.
+    s.gearBonus = window.gearBonusFor({ uid: 'c', id: 'rustySword', prefixes: [], suffixes: [] });
+    Math.random = () => 0;
+    s.thornBurstAt(s.player.x + 300, s.player.y, false);
+    Math.random = real;
+    out.plain = s.thorns.getChildren().filter((t) => t.active).length;
+  } finally {
+    s.gearBonus = was;
+  }
+  return out;
+})()`);
+console.log('effects:', JSON.stringify(effects));
+check('별 부수는 검: the 재능의 파편 drop at its 고정 속성 × their chance',
+  effects.shardScale === effects.starWant && effects.starWant > 1, JSON.stringify(effects));
+check('척추 검: a kill throws the 키메라’s thorn ring, each thorn its share of the main skill’s DPS, counted to it',
+  effects.burst.count === effects.burst.want && effects.burst.damage === effects.burst.wantDamage &&
+    effects.burst.skill === effects.burst.main && effects.burst.thorn && effects.burst.texture === 'tex-thorn',
+  JSON.stringify(effects.burst));
+check('a thorn’s own kill throws none, a roll over the chance throws none, and without the sword none',
+  effects.fromThorn === 0 && effects.missed === 0 && effects.plain === 0, JSON.stringify(effects));
 
 console.log('\n=== SUMMARY ===');
 const failed = results.filter((r) => !r.p);

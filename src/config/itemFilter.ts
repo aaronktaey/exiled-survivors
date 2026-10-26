@@ -53,7 +53,7 @@ export const ITEM_FILTER: readonly FilterSection[] = [
     id: 'bases',
     // Weakest first, the way the eye reads up a ladder.
     entries: Object.values(GEAR)
-      .filter((spec) => spec.weight > 0 || spec.fromKill !== undefined)
+      .filter((spec) => spec.weight > 0 || spec.fromKill !== undefined || spec.fromKind !== undefined)
       .sort((a, b) => b.tier - a.tier)
       .map((spec) => ({ key: `gear:${spec.id}`, texture: gearTexture(spec.id), tier: 'normal' as DropTier })),
   },

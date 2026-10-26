@@ -238,6 +238,7 @@ export const ja: Strings = {
     detailOrb: '{name} — 通常の敵を倒した時に落ちる確率です。レア敵は属性の数だけ、ボスはボーナス分この確率が上がります。',
     detailBone: '{name} — 通常の敵を倒した時に落ちる確率です。レア敵とボスはボーナス倍率が掛かります。',
     detailGear: '{name} — 通常の敵を倒した時に落ちる確率です。レア敵とボスはボーナス倍率が掛かり、ボスはこれとは別に必ず武器を1本残します。',
+    detailGearKind: '{name} — {kind}を倒した時に落ちる確率です。他の敵は落とさず、ボーナス倍率も掛かりません。',
     zoom: { facts: '全体の値 {shared} · 既定値 {base} · 範囲 {min} 〜 {max}', reset: '全体の値へ', close: '閉じる' },
   },
   menu: {
@@ -756,6 +757,8 @@ export const ja: Strings = {
     gear: {
       rustySword: '錆びた剣',
       narsil: 'ナルシル',
+      spineSword: '脊椎の剣',
+      starBreaker: '星砕きの剣',
       onigoroshi: '鬼殺し',
       ironSword: '鉄の剣',
       steelSword: '鋼の剣',
@@ -768,6 +771,8 @@ export const ja: Strings = {
       ironSword: '攻撃速度 +{value}',
       rustySword: '{skill}の攻撃速度 +{value}',
       narsil: '攻撃力 +{value}',
+      spineSword: '敵を倒すと{value}の確率で棘の爆発（棘1本あたりメインスキルDPSの{share}）',
+      starBreaker: '才能の欠片のドロップ率 {value} 増幅',
     },
     affixes: {
       giant: '巨大',
@@ -1306,6 +1311,7 @@ export const ja: Strings = {
       gearBossShare: 'ボスが落とす剣のうち {share}',
       gearFromKill: '通常の敵を倒すと {chance}',
       gearBossOnly: 'ボスだけが落とします',
+      gearFromKind: '{kind}だけが落とします（{chance}）',
       gearSalvage: '分解で鉄鉱石 {ore}',
       gearCraft: '製作: 鉄鉱石 {cost}',
       gearNoCraft: '製作不可',

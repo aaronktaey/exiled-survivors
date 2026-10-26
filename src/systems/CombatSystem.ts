@@ -20,6 +20,7 @@ import { CELEBRATE,
   type AltarOfferId,
   type BoneId,
   type DropTier,
+  type EnemyKind,
   type EnemyShotSpec,
   type OrbId,
   SKILL_MASTERY,
@@ -66,7 +67,11 @@ export interface CombatHooks {
    */
   readonly rollSkillDrop: (bonus: number, guaranteed: boolean) => SkillDefinition | null;
   /** A weapon to leave behind, or null when nothing is owed. */
-  readonly rollGearDrop: (fromBoss: boolean, bonus: number) => GearItem | null;
+  readonly rollGearDrop: (fromBoss: boolean, bonus: number, kind: EnemyKind) => GearItem | null;
+  /** A kill, where it fell, and whether one of 척추 검's thorns made it (0.137). */
+  readonly onEnemyKilled?: (x: number, y: number, byThorn: boolean) => void;
+  /** What the weapon multiplies the 재능의 파편's chance by (0.137: 별 부수는 검). */
+  readonly shardScale?: () => number;
   readonly onGearCollected: (item: GearItem) => void;
   /** Called when the player walks over a 구슬. */
   readonly onOrbCollected: (id: OrbId) => void;
@@ -154,6 +159,8 @@ export class CombatSystem {
   /** The 제단 a 우두머리 left. Never picked up; they wake instead. */
   public readonly altars: Phaser.Physics.Arcade.Group;
 
+  /** Set while one of 척추 검's thorns is landing its hit (0.137). */
+  private thornKill = false;
   private readonly scene: Phaser.Scene;
   private readonly player: Player;
   private readonly progression: Progression;
@@ -613,11 +620,14 @@ export class CombatSystem {
     // shot has to know whether it is done either way.
     const carriesOn = shot.consumePierce();
     const { x, y } = enemy;
+    // A thorn's kill sets off no thorns: in a crowd one burst would chain without end.
+    this.thornKill = shot.thorn;
     this.hit(enemy, shot.damage, shot.skill);
 
     if (shot.blastRadius > 0) {
       this.blast(x, y, shot.blastRadius, shot.damage, enemy, shot.skill);
     }
+    this.thornKill = false;
 
     if (!carriesOn) {
       shot.despawn();
@@ -886,7 +896,7 @@ export class CombatSystem {
     if (certainLump) {
       this.dropTalentShardAt(x + 18, y - 18, this.rollShardStat(), true);
     }
-    if (Math.random() < TALENT_SHARD.chance) {
+    if (Math.random() < TALENT_SHARD.chance * (this.hooks.shardScale?.() ?? 1)) {
       this.dropTalentShardAt(x - 18, y + 18, this.rollShardStat());
     }
 
@@ -901,7 +911,7 @@ export class CombatSystem {
     }
 
     // A 우두머리 always leaves a weapon; anything else, rarely, a good one.
-    const found = this.hooks.rollGearDrop(wasBoss, bonus);
+    const found = this.hooks.rollGearDrop(wasBoss, bonus, kind);
     if (found) {
       this.dropGearAt(x, y, found);
     }
@@ -931,5 +941,7 @@ export class CombatSystem {
         break;
       }
     }
+
+    this.hooks.onEnemyKilled?.(x, y, this.thornKill);
   }
 }

@@ -298,6 +298,8 @@ export interface Strings {
     readonly detailOrb: string;
     readonly detailBone: string;
     readonly detailGear: string;
+    /** A sword only one kind leaves (0.137): {name}, {kind}. */
+    readonly detailGearKind: string;
     /** The magnified dial (0.89). */
     readonly zoom: {
       /** {shared} everyone's value, {base} balance.ts's, {min}–{max} the range. */
@@ -1000,6 +1002,8 @@ export interface Strings {
       readonly gearBossShare: string;
       readonly gearFromKill: string;
       readonly gearBossOnly: string;
+      /** Only {kind} drops it, at {chance} (0.137). */
+      readonly gearFromKind: string;
       /** 분해 and 제작 on a sword's card (0.90): {ore}, {cost}. */
       readonly gearSalvage: string;
       readonly gearCraft: string;

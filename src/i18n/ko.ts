@@ -242,6 +242,7 @@ export const ko: Strings = {
     detailOrb: '{name} — 일반 적을 처치했을 때 떨어질 확률입니다. 희귀 적은 속성 수만큼, 우두머리는 우두머리 보너스만큼 이 확률이 커집니다.',
     detailBone: '{name} — 일반 적을 처치했을 때 떨어질 확률입니다. 희귀 적과 우두머리는 보너스 배수가 곱해집니다.',
     detailGear: '{name} — 일반 적을 처치했을 때 떨어질 확률입니다. 희귀 적과 우두머리는 보너스 배수가 곱해지고, 우두머리는 이와 별개로 항상 무기를 하나 남깁니다.',
+    detailGearKind: '{name} — {kind}를 처치했을 때 떨어질 확률입니다. 다른 적은 떨어뜨리지 않고, 보너스 배수도 받지 않습니다.',
     zoom: { facts: '전체 값 {shared} · 기본값 {base} · 범위 {min} ~ {max}', reset: '전체 값으로', close: '닫기' },
   },
   menu: {
@@ -1162,6 +1163,7 @@ export const ko: Strings = {
       gearBossShare: '우두머리가 떨어뜨리는 검 중 {share}',
       gearFromKill: '일반 적 처치 시 {chance}',
       gearBossOnly: '우두머리만 떨어뜨립니다',
+      gearFromKind: '{kind}만 떨어뜨립니다 ({chance})',
       gearSalvage: '분해 시 철광석 {ore}',
       gearCraft: '제작: 철광석 {cost}',
       gearNoCraft: '제작 불가',

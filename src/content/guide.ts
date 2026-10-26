@@ -490,7 +490,9 @@ function gearCards(): GuideCard[] {
     facts: [fill(g.gearTier, { tier: spec.tier, attack: attackForTier(spec.tier) })],
     lines: [
       ...(spec.implicit ? [fill(g.gearImplicit, { text: gearImplicitText(spec.id) })] : []),
-      ...(spec.weight > 0 || spec.fromKill !== undefined
+      ...(spec.fromKind
+        ? [fill(g.gearFromKind, { kind: enemyName(spec.fromKind.kind), chance: percent(spec.fromKind.chance) })]
+        : spec.weight > 0 || spec.fromKill !== undefined
         ? [
             fill(g.gearBossShare, { share: percent(total > 0 ? spec.weight / total : 0) }),
             spec.fromKill !== undefined ? fill(g.gearFromKill, { chance: percent(spec.fromKill) }) : g.gearBossOnly,

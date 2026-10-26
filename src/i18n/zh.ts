@@ -238,6 +238,7 @@ export const zh: Strings = {
     detailOrb: '{name} — 击杀普通敌人时掉落的几率。稀有敌人按属性数量提高，首领按首领加成提高。',
     detailBone: '{name} — 击杀普通敌人时掉落的几率。稀有敌人和首领会乘以加成倍率。',
     detailGear: '{name} — 击杀普通敌人时掉落的几率。稀有敌人和首领会乘以加成倍率，首领另外总会留下一把武器。',
+    detailGearKind: '{name} — 击杀{kind}时掉落的几率。其他敌人不会掉落，也不受加成倍率影响。',
     zoom: { facts: '全体值 {shared} · 默认值 {base} · 范围 {min} ~ {max}', reset: '恢复全体值', close: '关闭' },
   },
   menu: {
@@ -756,6 +757,8 @@ export const zh: Strings = {
     gear: {
       rustySword: '生锈的剑',
       narsil: '纳希尔',
+      spineSword: '脊椎剑',
+      starBreaker: '碎星剑',
       onigoroshi: '鬼杀',
       ironSword: '铁剑',
       steelSword: '钢剑',
@@ -768,6 +771,8 @@ export const zh: Strings = {
       ironSword: '攻击速度 +{value}',
       rustySword: '{skill}的攻击速度 +{value}',
       narsil: '攻击力 +{value}',
+      spineSword: '击杀敌人时有{value}几率触发棘刺爆发（每根棘刺为主技能DPS的{share}）',
+      starBreaker: '天赋碎片掉落率增幅 {value}',
     },
     affixes: {
       giant: '巨大',
@@ -1300,6 +1305,7 @@ export const zh: Strings = {
       gearBossShare: '首领掉落的剑中占 {share}',
       gearFromKill: '击杀普通敌人时 {chance}',
       gearBossOnly: '只由首领掉落',
+      gearFromKind: '只有{kind}会掉落（{chance}）',
       gearSalvage: '分解得铁矿石 {ore}',
       gearCraft: '制作：铁矿石 {cost}',
       gearNoCraft: '无法制作',

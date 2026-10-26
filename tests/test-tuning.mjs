@@ -60,6 +60,8 @@ const shipped = await ev(`(() => {
     ...Object.keys(c.ORBS).filter((id) => !c.ORBS[id].fromBossOnly).map((id) => 'ORBS.' + id + '.chance'),
     ...Object.keys(c.BONES).filter((id) => c.BONES[id].fromKill > 0).map((id) => 'BONES.' + id + '.fromKill'),
     ...Object.keys(c.GEAR).filter((id) => c.GEAR[id].fromKill !== undefined).map((id) => 'GEAR.' + id + '.fromKill'),
+    // A sword only one kind leaves (0.137).
+    ...Object.keys(c.GEAR).filter((id) => c.GEAR[id].fromKind).map((id) => 'GEAR.' + id + '.fromKind.chance'),
     ...Object.keys(c.SKILL_BASE).flatMap((id) => [
       ...Object.keys(c.SKILL_BASE[id]).filter((stat) => c.SKILL_BASE[id][stat] > 0).map((stat) => 'SKILL_BASE.' + id + '.' + stat),
       'BALANCE.attackCoeff.' + id, 'BALANCE.damageScale.' + id]),

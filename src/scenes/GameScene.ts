@@ -43,10 +43,12 @@ import {
   TALENT_SHARD_FX,
   shardBonusFor,
   type ShardStat,
+  type EnemyKind,
   type ArenaThemeId,
 } from '@/config';
 import type { Enemy } from '@/entities/Enemy';
 import { Player } from '@/entities/Player';
+import { Projectile } from '@/entities/Projectile';
 import {
   affixGearDetail,
   altarOfferText,
@@ -104,6 +106,7 @@ import {
   gearBonusFor,
   onCurrentLadder,
   rollGearFromKill,
+  rollGearFromKind,
   rollGearItem,
   type GearBonus,
   type GearItem,
@@ -249,6 +252,8 @@ export class GameScene extends Phaser.Scene {
   public awakenedTwice = new Set<SkillId>();
   /** 전투 알림, top right. Public for tests. */
   public toasts!: Toasts;
+  /** 척추 검's thorns (0.137). */
+  private thorns!: Phaser.Physics.Arcade.Group;
   /** The last 각성 banner shown. Public for tests. */
   public masteryBanner?: Phaser.GameObjects.Text;
   /** The line under it, cleared with it when the next banner comes. */
@@ -359,6 +364,7 @@ export class GameScene extends Phaser.Scene {
       fireShot: (x, y, angle, spec) => this.combat.fireEnemyShot(x, y, angle, spec),
       onBossSpawned: () => this.announceBoss(),
       onChimeraSpawned: () => this.announce(t().game.chimeraArrived, 'warning'),
+      strikeSurvivor: (damage) => this.player.takeDamage(damage),
     });
     this.separation = new Separation(this.spawner.group, this.player);
     // A resumed run lays the rocks it had; a new one rolls a field of its own.
@@ -381,7 +387,9 @@ export class GameScene extends Phaser.Scene {
       {
         rollSkillDrop: (bonus, guaranteed) => this.rollSkillDrop(bonus, guaranteed),
         onSkillCollected: (skill) => this.onSkillCollected(skill),
-        rollGearDrop: (fromBoss, bonus) => this.rollGearDrop(fromBoss, bonus),
+        rollGearDrop: (fromBoss, bonus, kind) => this.rollGearDrop(fromBoss, bonus, kind),
+        onEnemyKilled: (x, y, byThorn) => this.thornBurstAt(x, y, byThorn),
+        shardScale: () => this.gearBonus.shardChanceScale,
         onGearCollected: (found) => this.onGearCollected(found),
         onOrbCollected: (id) => this.onOrbCollected(id),
         onBoneCollected: (id) => this.onBoneCollected(id),
@@ -405,6 +413,9 @@ export class GameScene extends Phaser.Scene {
         clearOfTerrain: (x, y) => this.terrain?.clear(x, y, DROP_ROOM) ?? [x, y],
       },
     );
+    // 척추 검's 가시 폭발 (0.137): the 키메라's thorn ring, thrown for the survivor.
+    this.thorns = this.physics.add.group({ classType: Projectile, runChildUpdate: true, maxSize: 240 });
+    this.combat.registerProjectiles(this.thorns, this.spawner.group);
     this.hud = new Hud(this, this.progression, (hold) => this.setInspecting('skill', hold));
     this.toasts = new Toasts(this);
     this.debug = new DebugOverlay(this, this.debugActions());
@@ -1114,8 +1125,53 @@ export class GameScene extends Phaser.Scene {
    * that can come off anything. What it is, and what it rolled, is Gear's
    * business.
    */
-  private rollGearDrop(fromBoss: boolean, bonus = 1): GearItem | null {
+  private rollGearDrop(fromBoss: boolean, bonus = 1, kind?: EnemyKind): GearItem | null {
+    // A sword only this kind leaves, at its own chance (0.137): a 우두머리's
+    // 오니고로시 comes in place of the one it always leaves.
+    const own = kind ? rollGearFromKind(kind) : null;
+    if (own) {
+      return own;
+    }
     return fromBoss ? rollGearItem() : rollGearFromKill(bonus);
+  }
+
+  /**
+   * 척추 검's 가시 폭발 (0.137, the user's design): at its chance a kill throws
+   * the 키메라's thorn ring from where it fell, each thorn hitting for its
+   * share of the main skill's DPS and counted to that skill. A thorn's own
+   * kill throws none — in a crowd one ring would set off the next for ever.
+   */
+  private thornBurstAt(x: number, y: number, byThorn: boolean): void {
+    const burst = this.gearBonus.thornBurst;
+    const ring = ENEMY_KINDS.chimera.volley;
+    const main = this.mainSkill;
+    if (!burst || byThorn || !main || !ring || this.over || Math.random() >= burst.chance) {
+      return;
+    }
+    const dps = this.loadout().find((line) => line.id === main)?.dps ?? 0;
+    const damage = Math.max(1, Math.round(dps * burst.dpsShare));
+    const step = (Math.PI * 2) / ring.count;
+    const offset = Math.random() * step;
+    for (let i = 0; i < ring.count; i++) {
+      const thorn = this.thorns.get(x, y) as Projectile | null;
+      if (!thorn) {
+        break;
+      }
+      // As far as the 키메라's own: its speed for its lifespan, the thorn drawn its own size.
+      thorn.launch(x, y, offset + i * step, {
+        damage,
+        speed: ring.speed,
+        range: (ring.speed * ring.lifespanMs) / 1000,
+        pierce: 0,
+        chillMs: 0,
+        texture: TEXTURES.thorn,
+        width: 22,
+        height: 8,
+        lifespanMs: ring.lifespanMs,
+      });
+      thorn.skill = main;
+      thorn.thorn = true;
+    }
   }
 
   /**

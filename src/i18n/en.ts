@@ -238,6 +238,7 @@ export const en: Strings = {
     detailOrb: '{name} — the chance an ordinary kill drops one. A rare raises it by its affixes, a Boss by its bonus.',
     detailBone: '{name} — the chance an ordinary kill drops one. Rares and Bosses multiply it by their bonus.',
     detailGear: '{name} — the chance an ordinary kill drops one. Rares and Bosses multiply it by their bonus, and a Boss always leaves a weapon besides.',
+    detailGearKind: '{name} — the chance a {kind} kill drops one. Nothing else drops it, and no bonus raises it.',
     zoom: { facts: 'Everyone {shared} · Default {base} · Range {min} – {max}', reset: 'Everyone’s value', close: 'Close' },
   },
   menu: {
@@ -756,6 +757,8 @@ export const en: Strings = {
     gear: {
       rustySword: 'Rusty Sword',
       narsil: 'Narsil',
+      spineSword: 'Spine Sword',
+      starBreaker: 'Starbreaker',
       onigoroshi: 'Onigoroshi',
       ironSword: 'Iron Sword',
       steelSword: 'Steel Sword',
@@ -768,6 +771,8 @@ export const en: Strings = {
       ironSword: '+{value} attack speed',
       rustySword: '+{value} {skill} attack speed',
       narsil: 'Attack +{value}',
+      spineSword: '{value} chance on a kill to burst into thorns ({share} of the main skill’s DPS each)',
+      starBreaker: 'Talent shard drop chance amplified {value}',
     },
     affixes: {
       giant: 'Giant',
@@ -1306,6 +1311,7 @@ export const en: Strings = {
       gearBossShare: '{share} of the swords a Boss leaves',
       gearFromKill: '{chance} per ordinary kill',
       gearBossOnly: 'Only Bosses drop it',
+      gearFromKind: 'Only a {kind} drops it ({chance})',
       gearSalvage: 'Salvages for {ore} iron ore',
       gearCraft: 'Craft: {cost} iron ore',
       gearNoCraft: 'Cannot be crafted',

@@ -335,10 +335,15 @@ export function gearImplicitText(id: GearId): string {
               ? pct(implicit.skillAttackSpeed.scale - 1)
               : implicit.attack !== undefined
                 ? String(implicit.attack)
-                : '';
+                : implicit.thornBurst
+                  ? pct(implicit.thornBurst.chance)
+                  : implicit.shardChanceScale !== undefined
+                    ? pct(implicit.shardChanceScale - 1)
+                    : '';
   const skill = implicit.skillAttackSpeed ? skillName(implicit.skillAttackSpeed.skill) : '';
+  const share = implicit.thornBurst ? pct(implicit.thornBurst.dpsShare) : '';
   const template = t().names?.gearImplicits?.[id] ?? implicit.detail;
-  return fill(template, { value, skill });
+  return fill(template, { value, skill, share });
 }
 
 /** "무쇠 검+3" — the base, and how many 속성 it rolled. */

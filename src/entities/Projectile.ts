@@ -23,6 +23,8 @@ export interface LaunchSpec {
   /** Drawn size. Width runs along the flight path. */
   readonly width: number;
   readonly height: number;
+  /** Longest it may fly, in ms, in place of WEAPON.lifespanMs (척추 검's thorns, 0.137). */
+  readonly lifespanMs?: number;
 }
 
 /**
@@ -39,6 +41,8 @@ export class Projectile extends Phaser.Physics.Arcade.Image {
   public freezeMs = 0;
   /** The skill that threw it, so its damage counts to that skill. */
   public skill?: SkillId;
+  /** One of 척추 검's thorns (0.137): what it kills sets off no thorns of its own. */
+  public thorn = false;
 
   private remainingMs = 0;
   /** Enemies left to pass through before it fizzles. */
@@ -62,7 +66,8 @@ export class Projectile extends Phaser.Physics.Arcade.Image {
     // Fizzle at the edge of the skill's range (plus a little overshoot), so a
     // shorter range really is shorter instead of just a smaller target radius.
     const travelMs = ((spec.range * WEAPON.rangeOvershoot) / spec.speed) * 1000;
-    this.remainingMs = Math.min(WEAPON.lifespanMs, travelMs);
+    this.remainingMs = Math.min(spec.lifespanMs ?? WEAPON.lifespanMs, travelMs);
+    this.thorn = false;
 
     this.setTexture(spec.texture);
     this.enableBody(true, x, y, true, true);

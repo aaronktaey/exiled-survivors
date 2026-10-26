@@ -142,6 +142,30 @@ export interface EnemyVolleySpec extends EnemyShotSpec {
   readonly count: number;
 }
 
+/** A 우두머리's laser (0.137): its line shown `aimMs`, then a hit all along it at once. */
+export interface EnemyLaserSpec {
+  readonly aimMs: number;
+  /** Across the beam, px (the user's 50). */
+  readonly width: number;
+  /** How far it reaches from the 우두머리, px. */
+  readonly length: number;
+  /** How long the beam is seen once it fires. */
+  readonly flashMs: number;
+}
+
+/** A 우두머리's leap (0.137): its landing shown `aimMs`, then it jumps there and hits all round. */
+export interface EnemyLeapSpec {
+  readonly aimMs: number;
+  /** How long the jump takes. */
+  readonly leapMs: number;
+  /** The hit, as times its contact damage (the user's 2). */
+  readonly contactTimes: number;
+  /** The landing's width, as times its body's (the user's 2). */
+  readonly areaOfBody: number;
+  /** Only chosen with the survivor this close (the user's 400). */
+  readonly maxDistance: number;
+}
+
 export interface EnemyKindSpec {
   readonly id: EnemyKind;
   readonly name: string;
@@ -155,6 +179,14 @@ export interface EnemyKindSpec {
   readonly shot?: EnemyShotSpec;
   /** Only the kinds that throw a ring outward have one. */
   readonly volley?: EnemyVolleySpec;
+  /**
+   * Each time its ring comes round, which of these it does, by weight (0.137,
+   * the user's: one of three at random). Without it, always the ring.
+   */
+  readonly casts?: { readonly ring: number; readonly laser: number; readonly leap: number };
+  /** The laser; its hit is the ring's (`volley.damage`). */
+  readonly laser?: EnemyLaserSpec;
+  readonly leap?: EnemyLeapSpec;
   /**
    * Only a 도망자 has one: it does not chase. It stands where it is, and each
    * hit sends it running from the survivor until it has gone this far.
@@ -366,6 +398,12 @@ export const ENEMY_KINDS: Record<EnemyKind, EnemyKindSpec> = {
       size: 10,
       lifespanMs: 4000,
     },
+    // 0.137 (the user's design): each ring is one of three, at random — the
+    // ring, a laser shown for two seconds and then all at once, or a leap
+    // onto a spot shown for two seconds.
+    casts: { ring: 1, laser: 1, leap: 1 },
+    laser: { aimMs: 2000, width: 50, length: 1000, flashMs: 220 },
+    leap: { aimMs: 2000, leapMs: 380, contactTimes: 2, areaOfBody: 2, maxDistance: 400 },
   },
   /**
    * 도망자. Not in the spawn table: one turns up on its own clock (FUGITIVE)

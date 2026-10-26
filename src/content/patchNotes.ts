@@ -15,6 +15,36 @@ export interface PatchNote {
 
 export const PATCH_NOTES: readonly PatchNote[] = [
   {
+    version: '0.137',
+    date: '2026-10-26',
+    changes: {
+      ko: [
+        '새 무기 「척추 검」: 키메라만 2% 확률로 떨어뜨리는 1티어 검(공격력 +25). 고정 속성 — 적 처치 시 10% 확률로 키메라의 가시 폭발이 일어나고, 가시 하나가 메인 스킬 DPS의 50% 피해를 줍니다. 가시로 처치한 적은 가시 폭발을 일으키지 않습니다.',
+        '새 무기 「별 부수는 검」: 도망자만 2% 확률로 떨어뜨리는 검은 도(1티어, 공격력 +25). 고정 속성 — 재능의 파편 드랍률 30% 증폭.',
+        '오니고로시는 이제 우두머리가 2% 확률로 떨어뜨립니다(전에는 우두머리가 남기는 무기 중 약 4.8%). 나오지 않으면 우두머리는 전처럼 다른 검 하나를 남깁니다.',
+        '우두머리가 공격할 때마다 고리형 투사체, 레이저, 점프 중 하나를 무작위로 씁니다. 레이저는 2초 동안 방향을 보여준 뒤 폭 50의 직선 전체에 고리형 투사체만큼 피해를 줍니다. 점프는 생존자가 400 거리 안에 있을 때만 쓰며, 생존자가 있던 자리를 2초 동안 보여준 뒤 뛰어올라 착지 지점 주변에 접촉 피해의 2배를 줍니다.',
+      ],
+      en: [
+        'New weapon, the Spine Sword: a tier 1 sword (attack +25) only a Chimera drops, at 2%. Implicit — a kill has a 10% chance to set off the Chimera’s thorn burst, each thorn dealing 50% of the main skill’s DPS. Kills by thorns set off no burst.',
+        'New weapon, the Starbreaker: a black broad blade (tier 1, attack +25) only a Fugitive drops, at 2%. Implicit — talent shard drop chance amplified 30%.',
+        'The Onigoroshi now drops off a Boss at 2% (it was about 4.8% of the weapons a Boss leaves). When it does not, the Boss leaves another sword as before.',
+        'Each time a Boss attacks it uses one of three at random: its ring of bolts, a laser, or a leap. The laser shows its line for 2 seconds, then hits all along a 50-wide line for the ring’s damage. The leap is only used with the survivor within 400: it marks where the survivor stood for 2 seconds, then jumps there and deals twice its contact damage around the landing.',
+      ],
+      ja: [
+        '新しい武器「脊椎の剣」：キメラだけが2%の確率で落とす1ティアの剣（攻撃力+25）。固定属性 — 敵を倒すと10%の確率でキメラの棘の爆発が起き、棘1本がメインスキルDPSの50%のダメージを与えます。棘で倒した敵は棘の爆発を起こしません。',
+        '新しい武器「星砕きの剣」：逃亡者だけが2%の確率で落とす黒い刀（1ティア、攻撃力+25）。固定属性 — 才能の欠片のドロップ率30%増幅。',
+        '鬼殺しはボスが2%の確率で落とすようになりました（以前はボスが残す武器のうち約4.8%）。出なければ、ボスは以前どおり別の剣を1本残します。',
+        'ボスは攻撃のたびにリング状の投射物・レーザー・ジャンプのいずれかを無作為に使います。レーザーは2秒間方向を示した後、幅50の直線全体にリング状の投射物と同じダメージを与えます。ジャンプは生存者が400以内にいる時だけ使い、生存者がいた場所を2秒間示した後に跳び、着地点の周りに接触ダメージの2倍を与えます。',
+      ],
+      zh: [
+        '新武器「脊椎剑」：只有奇美拉会以2%几率掉落的1阶剑（攻击力+25）。固定属性——击杀敌人时有10%几率触发奇美拉的棘刺爆发，每根棘刺造成主技能DPS的50%伤害。被棘刺击杀的敌人不会再触发棘刺爆发。',
+        '新武器「碎星剑」：只有逃亡者会以2%几率掉落的黑色大刀（1阶，攻击力+25）。固定属性——天赋碎片掉落率增幅30%。',
+        '鬼杀现在由首领以2%几率掉落（以前约占首领留下武器的4.8%）。没有掉落时，首领照旧留下另一把剑。',
+        '首领每次攻击时随机使用环形投射物、激光、跳跃三者之一。激光先显示方向2秒，然后对宽50的整条直线造成与环形投射物相同的伤害。跳跃只在幸存者位于400以内时使用：先在幸存者所在位置显示2秒，然后跳过去，对落点周围造成2倍接触伤害。',
+      ],
+    },
+  },
+  {
     version: '0.136',
     date: '2026-10-26',
     changes: {

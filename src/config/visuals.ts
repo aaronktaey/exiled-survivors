@@ -107,6 +107,25 @@ export const COLORS = {
   warnText: '#ff6b6b',
 } as const;
 
+/**
+ * How a 우두머리's laser and leap are shown (0.137): a warning that fills,
+ * then the flash. Red, but faint — the field under it must still read (the
+ * user's ask).
+ */
+export const BOSS_CAST_FX = {
+  warn: 0xff3b30,
+  /** The whole of where it will hit, faint. */
+  areaAlpha: 0.07,
+  /** What fills it as the moment comes. */
+  fillAlpha: 0.14,
+  edgeAlpha: 0.45,
+  edgeWidth: 1.5,
+  beam: 0xffe0d8,
+  /** A landing's dust ring, and how long it is seen. */
+  landMs: 260,
+  landColor: 0xf2e6d0,
+} as const;
+
 export const DEPTH = {
   ground: 0,
   /** 지형지물, on the floor and under everything that moves over it. */

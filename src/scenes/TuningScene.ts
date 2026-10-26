@@ -5,6 +5,7 @@ import { DAILY_RULES,
   COLORS,
   DEPTH,
   DIALS,
+  GEAR,
   SPAWN_TABLE,
   SKILL_BASE,
   SCENES,
@@ -521,7 +522,10 @@ export class TuningScene extends Phaser.Scene {
       return fill(copy.detailBone, { name: boneName(a as BoneId) });
     }
     if (root === 'GEAR') {
-      return fill(copy.detailGear, { name: gearName(a as GearId) });
+      const only = GEAR[a as GearId]?.fromKind;
+      return only
+        ? fill(copy.detailGearKind, { name: gearName(a as GearId), kind: enemyName(only.kind) })
+        : fill(copy.detailGear, { name: gearName(a as GearId) });
     }
     return copy.details[dial.path] ?? '';
   }
