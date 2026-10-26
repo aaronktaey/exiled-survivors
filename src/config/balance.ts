@@ -2029,18 +2029,19 @@ export function xpFor(
 
 /** PoE 경험치 곡선 근사식 (모양 유지, 크기는 SCALE로 조절) */
 export const XP_CURVE = {
-  A: 415, // 0.120: ×10 with XP.scale — the same curve in finer units
-  K: 1.75,
+  /**
+   * The whole curve's size. 0.142 (the user's): SCALE went into it — it was
+   * only ever a second A (A 415 × SCALE 0.01 = 4.15 until then) — and the
+   * user's A 360 (on that old scale) is 3.6.
+   */
+  A: 3.6,
+  K: 2.2, // 0.142: 1.75 → 2.2 (사용자 선택)
   B: 2.41,
-  R: 1.015, // 0.119: 1.0483 (PoE) → 1.015, 후반 레벨업을 완만하게 (사용자 선택)
-  SCALE: 0.01, // 1.0 = PoE 원본 수치
+  R: 1.008, // 0.119: 1.0483 (PoE) → 1.015; 0.142: → 1.008, 후반을 더 빠르게 (사용자 선택)
 } as const;
 
-/** XP needed to leave `level`: 48, 103, 185, 298, 446, ... */
+/** XP needed to leave `level`: 60, 116, 196, 302, 436, ... */
 export function xpToNextLevel(level: number): number {
-  const { A, K, B, R, SCALE } = XP_CURVE;
-  return Math.max(
-    1,
-    Math.round(A * Math.pow(level + K, B) * Math.pow(R, level) * SCALE),
-  );
+  const { A, K, B, R } = XP_CURVE;
+  return Math.max(1, Math.round(A * Math.pow(level + K, B) * Math.pow(R, level)));
 }

@@ -994,7 +994,10 @@ Read `git log` for what changed and when. What is not in the log:
   and a rare's 속성 (`Enemy.hpScale` is the 속성's only), never
   `enemyHpScaleAt` — a 10-minute enemy pays what a first-minute one does.
   The user knows (2026-10-24); scaling it is an open question, not a bug
-  to fix quietly. XP_CURVE is R 1.015 since 0.119 (PoE's 1.0483 before).
+  to fix quietly. XP_CURVE is R 1.015 since 0.119 (PoE's 1.0483 before);
+  0.142 (the user's): A 3.6 · K 2.2 · R 1.008, and no SCALE — it was a
+  second A (415 × 0.01), folded in. A number the user gives for A on the old
+  scale (e.g. "A 360") is that × 0.01.
 - **Upgrade cards carry their numbers.** `upgradeOptionsFor(skill, stats)`
   adds `now`/`next` (the skill's own stat, before its folds — capped at
   `UPGRADE_CAP`) and `taken`/`maxPicks` (`maxPicksFor`: the pick limit or

@@ -82,14 +82,14 @@ const open = await read();
 check('level-up popup opens', open.levelUp === true, `level ${pre.level} -> ${open.level}`);
 const curveCheck = await cdp.evaluate(`(() => {
   const p = window.game.scene.getScene('GameScene').progression;
-  const { A, K, B, R, SCALE } = window.config.XP_CURVE;
+  const { A, K, B, R } = window.config.XP_CURVE;
   const seen = [];
   const want = [];
   const real = p.level;
   for (let lv = 1; lv <= 6; lv++) {
     p.level = lv;
     seen.push(p.xpToNext);
-    want.push(Math.max(1, Math.round(A * Math.pow(lv + K, B) * Math.pow(R, lv) * SCALE)));
+    want.push(Math.max(1, Math.round(A * Math.pow(lv + K, B) * Math.pow(R, lv))));
   }
   p.level = real;
   return { seen, want };

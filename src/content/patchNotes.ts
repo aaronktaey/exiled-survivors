@@ -15,6 +15,24 @@ export interface PatchNote {
 
 export const PATCH_NOTES: readonly PatchNote[] = [
   {
+    version: '0.142',
+    date: '2026-10-26',
+    changes: {
+      ko: [
+        '레벨업 경험치 곡선이 바뀌었습니다. 1레벨만 조금 더 필요하고(48 → 60), 5레벨부터는 덜 필요하며 레벨이 오를수록 더 많이 줄어듭니다 — 10레벨 −11%, 20레벨 −21%, 30레벨 −27%, 50레벨 −37%.',
+      ],
+      en: [
+        'The level-up XP curve has changed. Level 1 takes a little more (48 → 60); from level 5 on it takes less, and less the higher you go — level 10 −11%, level 20 −21%, level 30 −27%, level 50 −37%.',
+      ],
+      ja: [
+        'レベルアップの経験値曲線が変わりました。1レベルだけ少し多く必要になり（48 → 60）、5レベルからは少なくて済み、レベルが上がるほど大きく減ります — 10レベル −11%、20レベル −21%、30レベル −27%、50レベル −37%。',
+      ],
+      zh: [
+        '升级经验曲线已调整。只有1级需要的稍多（48 → 60）；从5级起需要的更少，等级越高减少越多——10级 −11%，20级 −21%，30级 −27%，50级 −37%。',
+      ],
+    },
+  },
+  {
     version: '0.141',
     date: '2026-10-26',
     changes: {
