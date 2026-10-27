@@ -3,7 +3,7 @@ import type { SkillId } from '@/weapons/skills';
 
 /**
  * ★ 오늘의 규칙 (0.126, the user's design, 2026-10-25): every ranking day
- * (it starts at RANKING.dailyReset, 05:00 KST) lays three rules on every
+ * (it starts at RANKING.dailyReset, 03:00 KST — 05:00 until 2026-10-28) lays three rules on every
  * run started that day — one skill nobody may take, one 재능 whose 파편 do
  * not drop, and one kind of enemy made stronger. Nothing good comes with
  * them (the user's word). The same day always draws the same three, on the

@@ -15,6 +15,24 @@ export interface PatchNote {
 
 export const PATCH_NOTES: readonly PatchNote[] = [
   {
+    version: '0.145',
+    date: '2026-10-27',
+    changes: {
+      ko: [
+        '랭킹 초기화 시각이 매일 새벽 3시(한국 시간)로 바뀝니다. 10/27 랭킹은 원래대로 10/28 새벽 5시에 끝나고, 10/28 랭킹은 10/29 새벽 3시에 끝납니다(이날만 22시간). 예언도 같은 시각에 바뀝니다.',
+      ],
+      en: [
+        'The ranking now resets every day at 3:00 Korea time. The 10/27 board still ends at 5:00 on 10/28, and the 10/28 board ends at 3:00 on 10/29 (22 hours, that day only). The prophecy changes at the same time.',
+      ],
+      ja: [
+        'ランキングのリセット時刻が毎日午前3時（韓国時間）に変わります。10/27のランキングは予定どおり10/28午前5時に終わり、10/28のランキングは10/29午前3時に終わります（この日だけ22時間）。予言も同じ時刻に変わります。',
+      ],
+      zh: [
+        '排行榜重置时间改为每天凌晨3点（韩国时间）。10/27的排行榜仍于10/28凌晨5点结束，10/28的排行榜于10/29凌晨3点结束（仅当天为22小时）。预言也在同一时间更换。',
+      ],
+    },
+  },
+  {
     version: '0.144',
     date: '2026-10-27',
     changes: {

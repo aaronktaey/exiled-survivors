@@ -181,9 +181,12 @@ export const RANKING = {
   },
   /**
    * The shared board starts over every day at this hour, in the time zone
-   * `utcOffsetHours` from UTC — 05:00 in Korea. 내 기록 does not.
+   * `utcOffsetHours` from UTC — 03:00 in Korea. 내 기록 does not.
+   * Until `earlier.until` it was `earlier.hour` (05:00); the board that began
+   * then ran its full day, and the next one began as it ended and ran to the
+   * first 03:00 — 22 hours (0.145, the user's ask, 2026-10-27).
    */
-  dailyReset: { hour: 5, utcOffsetHours: 9 },
+  dailyReset: { hour: 3, utcOffsetHours: 9, earlier: { hour: 5, until: Date.UTC(2026, 9, 27, 20, 0, 0) } },
   /**
    * 이상치 검토, for the admin on the 랭킹 screen. Every run still goes on the
    * board at once; one is marked an outlier when its damage is at least
@@ -216,16 +219,42 @@ export const LIVE_UPDATE = {
 
 const DAY_MS = 86_400_000;
 
-/** When the shared board's current day began, in ms since the epoch. */
-export function rankingDayStart(now: number): number {
-  const { hour, utcOffsetHours } = RANKING.dailyReset;
-  const shift = (utcOffsetHours - hour) * 3_600_000;
+/** The start of the day `now` is in, for days that start at `hour` local time. */
+function dayStartAt(now: number, hour: number): number {
+  const shift = (RANKING.dailyReset.utcOffsetHours - hour) * 3_600_000;
   return Math.floor((now + shift) / DAY_MS) * DAY_MS - shift;
+}
+
+/**
+ * When the shared board's current day began, in ms since the epoch. A day is
+ * not always 24 hours (the move to 03:00 made one of 22), so step from one
+ * to the next with nextRankingReset / previousRankingDay, never ± a day.
+ */
+export function rankingDayStart(now: number): number {
+  const { hour, earlier } = RANKING.dailyReset;
+  if (now < earlier.until) {
+    return dayStartAt(now, earlier.hour);
+  }
+  return Math.max(earlier.until, dayStartAt(now, hour));
 }
 
 /** When the shared board next starts over. */
 export function nextRankingReset(now: number): number {
-  return rankingDayStart(now) + DAY_MS;
+  const { hour, earlier } = RANKING.dailyReset;
+  if (now < earlier.until) {
+    return Math.min(earlier.until, dayStartAt(now, earlier.hour) + DAY_MS);
+  }
+  return dayStartAt(now, hour) + DAY_MS;
+}
+
+/** The start of the board's day before the one that starts at `dayStart`. */
+export function previousRankingDay(dayStart: number): number {
+  return rankingDayStart(dayStart - 1);
+}
+
+/** The hour, local to the board, it next starts over at. */
+export function rankingResetHour(now: number): number {
+  return new Date(nextRankingReset(now) + RANKING.dailyReset.utcOffsetHours * 3_600_000).getUTCHours();
 }
 
 /**

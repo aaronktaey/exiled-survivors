@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 
-import { ACCOUNT, COLORS, DEPTH, RANKING, SCENES, SCRIM, TEXT, nextRankingReset, SKILL_ICONS, TEXTURES } from '@/config';
+import { ACCOUNT, COLORS, DEPTH, RANKING, SCENES, SCRIM, TEXT, nextRankingReset, rankingResetHour, SKILL_ICONS, TEXTURES } from '@/config';
 import { affixName, boneName, enemyName, fill, gearName, passiveName, skillName, t } from '@/i18n';
 import type { AffixId, BoneId, EnemyKind, GearId, PassiveId } from '@/config';
 import type { SkillId } from '@/weapons/skills';
@@ -325,7 +325,7 @@ export class RankingScene extends Phaser.Scene {
     const seconds = Math.max(0, Math.floor((this.resetAt - now) / 1000));
     const left = `${Math.floor(seconds / 3600)}:${String(Math.floor(seconds / 60) % 60).padStart(2, '0')}:${String(seconds % 60).padStart(2, '0')}`;
     line.setVisible(this.tab === 'shared');
-    line.setText(fill(t().ranking.resetsIn, { hour: RANKING.dailyReset.hour, left }));
+    line.setText(fill(t().ranking.resetsIn, { hour: rankingResetHour(now), left }));
     fitText(line.setScale(1), this.scale.width);
   }
 

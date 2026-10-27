@@ -37,11 +37,16 @@ const yesterday = Date.now() - 86_400_000;
 const peers = [[90000, 560000], [100000, 580000], [110000, 620000], [120000, 640000]]
   .map(([damage, ms], i) => `('PEE', '', 'KR', ${damage}, 12, ${ms}, '${new Date(yesterday + i).toISOString()}', ${yesterday + i}, 'h', 'peer-user')`)
   .join(', ');
-// Yesterday on the board's clock (05:00 KST), for 어제의 랭킹: four runs, three shown.
+// Yesterday on the board's clock, for 어제의 랭킹: four runs, three shown. The
+// board's days start at 05:00 KST until 10/28 05:00 and at 03:00 after
+// (RANKING.dailyReset — the same rule, written out here as this file runs
+// without the game's TypeScript).
 const DAY = 86_400_000;
-const SHIFT = (9 - 5) * 3_600_000;
-const today = Math.floor((Date.now() + SHIFT) / DAY) * DAY - SHIFT;
-const yday = today - DAY;
+const SWITCH = Date.UTC(2026, 9, 27, 20);
+const startAt = (t, hour) => { const shift = (9 - hour) * 3_600_000; return Math.floor((t + shift) / DAY) * DAY - shift; };
+const dayStart = (t) => (t < SWITCH ? startAt(t, 5) : Math.max(SWITCH, startAt(t, 3)));
+const today = dayStart(Date.now());
+const yday = dayStart(today - 1);
 const podiumSeed =
   `INSERT INTO users (id, created_at, display_name, rank_name, rank_flag) VALUES ` +
   `('y1', 0, 'y1', 'YON', 'KR'), ('y2', 0, 'y2', 'YTW', ''), ('y3', 0, 'y3', 'YTH', ''), ('y4', 0, 'y4', 'YFO', ''); ` +

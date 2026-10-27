@@ -8,6 +8,7 @@ import {
   LOCALE,
   MENU,
   RANKING,
+  previousRankingDay,
   rankingDayStart,
   SCENES,
   SCRIM,
@@ -800,7 +801,7 @@ export class MenuScene extends Phaser.Scene {
       return;
     }
     // Yesterday's board, if it is one the popup covers at all.
-    if (rankingDayStart(Date.now()) - 86_400_000 < RANKING.shared.podiumSince) {
+    if (previousRankingDay(rankingDayStart(Date.now())) < RANKING.shared.podiumSince) {
       return;
     }
     podium.asked = true;

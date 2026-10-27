@@ -437,10 +437,14 @@ Read `git log` for what changed and when. What is not in the log:
   The board reads table `daily_best` (one row per account per day, upserted
   only when a run beats that day's; migration 0004), never the whole
   `entries` history — that scan would spend D1's free daily reads. The day
-  starts at `RANKING.dailyReset` (05:00 KST); `rankingDayStart` /
+  starts at `RANKING.dailyReset` (03:00 KST since 10/28; 05:00 before); `rankingDayStart` /
   `nextRankingReset` in system.ts are shared by the Worker and the client,
   the edge cache key carries the day, and the client store drops entries
-  from before it. The server stores whole numbers
+  from before it. Since 0.145 (the user's ask) the day starts at
+  03:00 KST: `dailyReset.earlier` keeps 05:00 until 10/28 05:00, and the
+  day after ran 22 hours to the first 03:00. Days are not all 24 hours, so
+  step between them with `nextRankingReset` / `previousRankingDay`, never
+  ± 86,400,000; `rankingResetHour` is the hour to show. The server stores whole numbers
   only: a run's time is a float, and 0.30 shipped rejecting every run while
   the client said it was entered. 내 기록 is the client's own
   (`systems/PersonalBest.ts`, `STORAGE.personal`), every run that ends,

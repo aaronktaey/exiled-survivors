@@ -98,12 +98,31 @@ const daily = await ev(`(() => {
   r.loaded = false;
   return out;
 })()`);
-const kst = new Date(daily.start + 9 * 3600000);
 check('a run from before the day’s reset is off the board',
   !daily.names.includes('OLD') && daily.first !== 'OLD' && daily.names.length === 20, JSON.stringify(daily.names.slice(0, 3)));
-check('and the day starts at 05:00 Korean time, a day before the next reset',
-  kst.getUTCHours() === 5 && kst.getUTCMinutes() === 0 && daily.next - daily.start === 86400000,
-  new Date(daily.start).toISOString());
+// 05:00 KST until the board of 10/27 ended, 03:00 after (0.145): the day between is 22 hours.
+const schedule = await ev(`(() => {
+  const C = window.config, H = 3600000, kst = (d, h) => Date.UTC(2026, 9, d, h - 9);
+  const at = (d, h) => { const t = kst(d, h); return [C.rankingDayStart(t), C.nextRankingReset(t)]; };
+  const want = [
+    [at(27, 12), [kst(27, 5), kst(28, 5)]],
+    [at(28, 4), [kst(27, 5), kst(28, 5)]],
+    [at(28, 6), [kst(28, 5), kst(29, 3)]],
+    [at(29, 2), [kst(28, 5), kst(29, 3)]],
+    [at(29, 4), [kst(29, 3), kst(30, 3)]],
+    [at(30, 2), [kst(29, 3), kst(30, 3)]],
+  ];
+  return {
+    bad: want.filter(([got, w]) => got[0] !== w[0] || got[1] !== w[1]).map(([got]) => got.map((t) => new Date(t + 9 * H).toISOString())),
+    prev: [C.previousRankingDay(kst(29, 3)) === kst(28, 5), C.previousRankingDay(kst(28, 5)) === kst(27, 5), C.previousRankingDay(kst(30, 3)) === kst(29, 3)],
+    hours: [C.rankingResetHour(kst(27, 12)), C.rankingResetHour(kst(28, 6)), C.rankingResetHour(kst(31, 12))],
+    now: { start: C.rankingDayStart(Date.now()) === ${daily.start}, next: C.nextRankingReset(Date.now()) === ${daily.next} },
+  };
+})()`);
+check('the day starts at 05:00 Korean time until 10/28 05:00, then at 03:00 — the day between 22 hours long',
+  schedule.bad.length === 0 && schedule.prev.every(Boolean) && schedule.hours.join() === '5,3,3' &&
+    schedule.now.start && schedule.now.next && daily.next - daily.start >= 22 * 3600000,
+  JSON.stringify(schedule));
 
 await scene('MenuScene', `s.icons.press('ranking'); return 1;`);
 await sleep(800);
@@ -267,7 +286,7 @@ await ev(`(() => { for (let i = 1; i <= 3; i++) window.personal.record({ damage:
 await scene('MenuScene', `s.icons.press('ranking'); return 1;`);
 await sleep(800);
 const opened = await scene('RankingScene', `return { tab: s.tab, tabs: s.tabs.size,
-  reset: s.resetLine?.visible ? s.resetLine.text : '', hour: window.config.RANKING.dailyReset.hour };`);
+  reset: s.resetLine?.visible ? s.resetLine.text : '', hour: window.config.rankingResetHour(Date.now()) };`);
 check('the board opens on 전체 랭킹, with a 내 기록 tab beside it', opened.tab === 'shared' && opened.tabs === 2,
   JSON.stringify(opened));
 check('and says when it starts over, counting down to it',
@@ -634,8 +653,7 @@ await cdp.send('Page.reload', {});
 await sleep(4500);
 const PODIUM_STAND_IN = `(() => {
   const R = window.config.RANKING;
-  const DAY = 86400000, shift = (R.dailyReset.utcOffsetHours - R.dailyReset.hour) * 3600000;
-  const today = Math.floor((Date.now() + shift) / DAY) * DAY - shift;
+  const today = window.config.rankingDayStart(Date.now()), yday = window.config.previousRankingDay(today);
   const asked = { podium: 0, seen: 0 };
   const entry = (name, damage, flag, skill) =>
     ({ name, emoji: '', flag, damage, level: 20, survivedMs: 800000, at: new Date(today - 1000).toISOString(), skill, wins: 1, seconds: 0, thirds: 0 });
@@ -646,11 +664,11 @@ const PODIUM_STAND_IN = `(() => {
     const path = String(url);
     if (path === R.shared.podiumUrl) {
       asked.podium += 1;
-      return reply({ day: today - DAY, entries: [entry('ONE', 3000000, 'KR', 'fireball'), entry('TWO', 2000000, 'US', 'iceSpear'), entry('THR', 1000000, '', '')] });
+      return reply({ day: yday, entries: [entry('ONE', 3000000, 'KR', 'fireball'), entry('TWO', 2000000, 'US', 'iceSpear'), entry('THR', 1000000, '', '')] });
     }
     if (path === R.shared.podiumUrl + '/seen') { asked.seen += 1; return reply({ ok: true }); }
     if (path === R.shared.podiumUrl + '/me') {
-      return reply({ day: today - DAY, total: 35, mine: { place: 12, damage: 1234567, level: 15, survivedMs: 500000 } });
+      return reply({ day: yday, total: 35, mine: { place: 12, damage: 1234567, level: 15, survivedMs: 500000 } });
     }
     if (path === R.shared.url) return reply({ entries: [] });
     return reply({ error: 'not found' }, 404);

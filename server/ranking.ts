@@ -5,8 +5,8 @@
  *                          first, cached at the edge briefly
  *   GET  /api/ranking/me   the signed-in account's best today, and where it stands
  *
- * "Today" is the board's day (RANKING.dailyReset): it starts over at 05:00
- * Korean time, and every query is scoped to the day it is asked in.
+ * "Today" is the board's day (RANKING.dailyReset): it starts over at 03:00
+ * Korean time (05:00 until 2026-10-28), and every query is scoped to the day it is asked in.
  *   POST /api/ranking      one run handed in by a signed-in account, with
  *                          what the game says about it (판 내역)
  *   GET  /api/ranking/review   the admin's: today's board with each run's
@@ -20,7 +20,7 @@
  * set by the run it hands in — so a name cannot be worn by a crowd. The
  * rules a run has to pass are the game's own (RANKING) plus RULES.
  */
-import { RANKING, nextRankingReset, rankingDayStart } from '../src/config/system';
+import { RANKING, nextRankingReset, previousRankingDay, rankingDayStart } from '../src/config/system';
 import { dailyRulesFor } from '../src/config/daily';
 import { isAdmin, sessionUser } from './auth';
 import type { Env } from './env';
@@ -139,7 +139,7 @@ const publicRows = (rows: readonly (RankRow & { userId: string })[]): RankRow[] 
  * so two looks at once cannot count the same day twice.
  */
 async function tallyWins(env: Env, today: number): Promise<void> {
-  const lastDone = today - DAY_MS;
+  const lastDone = previousRankingDay(today);
   const row = await env.DB.prepare('SELECT through_day AS through FROM tally WHERE id = 1').first<{ through: number }>();
   const through = row?.through ?? -1;
   if (through >= lastDone) {
@@ -311,7 +311,7 @@ export function brokeDailyRules(raw: unknown, now: number, env?: Env): boolean {
     return !!rules && Array.isArray(detail?.skills) && detail.skills.some((skill: { id?: unknown }) => skill?.id === rules.bannedSkill);
   }
   const today = rankingDayStart(now);
-  const day = said === today || said === today - 86_400_000 ? said : today;
+  const day = said === today || said === previousRankingDay(today) ? said : today;
   const rules = dailyRulesFor(day);
   if (!rules || !Array.isArray(detail?.skills)) {
     return false;
@@ -656,7 +656,7 @@ export async function removeEntry(request: Request, env: Env): Promise<Response>
        SELECT ?1, user_id, id, damage, level, survived_ms, at, skill FROM entries
         WHERE user_id = ?2 AND at_ms >= ?1 AND at_ms < ?3 AND removed_at IS NULL
         ORDER BY damage DESC, at ASC LIMIT 1`,
-    ).bind(day, entry.userId, day + DAY_MS),
+    ).bind(day, entry.userId, nextRankingReset(day)),
   ]);
   // The edge's copy of that day goes, so the next look is the board without
   // it — and of the next day's 어제의 랭킹, which is that day's first three.
@@ -677,7 +677,7 @@ const podiumKey = (request: Request, day: number): string =>
  */
 export async function podium(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
   const now = Date.now();
-  const day = rankingDayStart(now) - DAY_MS;
+  const day = previousRankingDay(rankingDayStart(now));
   const cache = caches.default;
   const key = new Request(podiumKey(request, day), { method: 'GET' });
   const hit = await cache.match(key);
@@ -701,7 +701,7 @@ export async function podium(request: Request, env: Env, ctx: ExecutionContext):
  * Never cached: it is this account's.
  */
 export async function podiumMine(request: Request, env: Env): Promise<Response> {
-  const day = rankingDayStart(Date.now()) - DAY_MS;
+  const day = previousRankingDay(rankingDayStart(Date.now()));
   const counted = await env.DB.prepare('SELECT COUNT(*) AS n FROM daily_best WHERE day = ?1').bind(day).first<{ n: number }>();
   const total = counted?.n ?? 0;
   const user = await sessionUser(request, env);

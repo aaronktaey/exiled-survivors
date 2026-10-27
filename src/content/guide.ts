@@ -21,6 +21,7 @@ import {
   PLAYER,
   POTION,
   RANKING,
+  rankingResetHour,
   RARE,
   SAVE,
   SKILL_BASE,
@@ -217,7 +218,7 @@ export function guideValues(): Record<string, string | number> {
     rows: INVENTORY.rows,
     nameLength: RANKING.nameLength,
     rankSize: RANKING.size,
-    rankResetHour: RANKING.dailyReset.hour,
+    rankResetHour: rankingResetHour(Date.now()),
     masteryLevel: SKILL_MASTERY.level,
     masteryLevel2: SKILL_MASTERY.second.level,
   };
