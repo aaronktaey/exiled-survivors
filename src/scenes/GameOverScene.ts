@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { monsterLook } from '@/systems/MonsterArt';
 
 import { CELEBRATE,
   COLORS,
@@ -328,7 +329,7 @@ export class GameOverScene extends Phaser.Scene {
       y += GAME_OVER.barHeight + 8;
       y += this.lay(
         summary.byKind.map((entry) => ({
-          texture: ENEMY_KINDS[entry.kind]?.texture,
+          texture: ENEMY_KINDS[entry.kind] ? monsterLook(entry.kind, this.payload.survivedMs) : undefined,
           color: ENEMY_KINDS[entry.kind]?.color ?? 0x888888,
           label: `×${grouped(entry.count)}`,
         })),

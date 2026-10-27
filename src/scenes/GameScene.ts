@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { monsterLook } from '@/systems/MonsterArt';
 
 import {
   AFFIXES,
@@ -367,6 +368,7 @@ export class GameScene extends Phaser.Scene {
       onBossSpawned: () => this.announceBoss(),
       onChimeraSpawned: () => this.announce(t().game.chimeraArrived, 'warning'),
       strikeSurvivor: (damage) => this.player.takeDamage(damage),
+      look: (kind) => monsterLook(kind, this.elapsedMs),
     });
     this.separation = new Separation(this.spawner.group, this.player);
     // A resumed run lays the rocks it had; a new one rolls a field of its own.
@@ -1168,7 +1170,7 @@ export class GameScene extends Phaser.Scene {
         range: (ring.speed * ring.lifespanMs) / 1000,
         pierce: 0,
         chillMs: 0,
-        texture: TEXTURES.thorn,
+        texture: TEXTURES.thornPlayer,
         width: 22,
         height: 8,
         lifespanMs: ring.lifespanMs,

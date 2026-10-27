@@ -343,6 +343,36 @@ Read `git log` for what changed and when. What is not in the log:
   unknown id falls back to a square). The 기행종 (0.101) is painted by the
   same `paintWalker` but as a hopper (`createHopperTextures`: standing and
   `leap`, shown by `strikePose` through its `poses`).
+- **시대별 몬스터 (0.146, the user's design).** The same kinds wear three
+  pixel-art looks by when they spawn — `MONSTER_ERAS.fromMs` (visuals.ts):
+  until 7 min the dead, goblins and beasts (좀비, 횃불 든 고블린 사수, 자칼,
+  거대 두꺼비, 곰), until 14 fantasy creatures (붉은 구울, 해골 마법사, 지옥견,
+  기행종, 트롤), then machines (잔해 로봇, 포격 안드로이드, 로봇견, 스프링
+  로봇, 중장갑 메크). The 우두머리 (왕관 거인) and the 키메라 keep one look
+  in every era (the user's word — goblin king, titan, quill boar and mecha
+  chimera were drawn and dropped), and the 도망자 its star, drawn
+  `flashyResolution` (3) times finer. Only the picture changes; ones already
+  on the field keep theirs (the user's pick). `systems/PixelPainter.ts` paints
+  shapes onto a grid, shades and outlines them; `systems/MonsterArt.ts`
+  holds the designs (`ERA_LOOKS`: three looks, or one for every era) and
+  paints every frame at boot on a grid `pixelScale` (0.5, the user's pick: a
+  dot is two game pixels) of the picture, blown up by whole pixels, under
+  `eraTexture(kind.texture, era)` + the usual suffixes. Enemy reads its
+  frames off `look` (the `look` hook, `monsterLook`) and shows whatever it
+  wears at the size of the kind's own picture (`baseScale`; the body is
+  sized by the same, as Arcade scales a body with its sprite). A giant's
+  side view is its front squashed (`Painter.squash`). The end screen shows
+  each kind as it looked when the run ended.
+  **One dot on the field (0.146, the user's ask):** `systems/Pixelate.ts`
+  re-draws at boot, in place, everything else that is on the field — the
+  survivor's looks, every drop, the thorns and shards — to the same dot for
+  the size it is shown at (each dot the commonest solid colour under it, a
+  part-covered dot the darkest, which keeps an outline). Glows, pillars, the
+  enemy bolt and the 도망자 stay smooth. A new thing on the field goes in
+  `pixelateWorld`'s list. The harness and `#run` keep the old art for both
+  unless a page sets `window.__erasOn` / `window.__pixelOn` (test-enemies
+  sets the first); `MONSTER_ERAS.devOnly` (false) keeps both to the dev
+  server when true.
 - **Enemy bolts (0.99).** The plain shot is `ENEMY_SHOT_FX`'s glowing bolt,
   shown `drawnScale` × the shot's size and spinning; `EnemyShot.fire`
   sets the body back to the shot's size (Arcade scales a body with its

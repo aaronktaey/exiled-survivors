@@ -89,6 +89,8 @@ export interface EnemyHooks {
   readonly onChimeraSpawned?: () => void;
   /** A 우두머리's laser or landing reached the survivor (0.137). */
   readonly strikeSurvivor?: (damage: number) => void;
+  /** The base texture a kind spawning now wears (시대별 몬스터, 0.146); the kind's own without it. */
+  readonly look?: (kind: EnemyKind) => string;
 }
 
 /** A 우두머리's laser or leap under way (0.137). */
@@ -133,6 +135,10 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
   public fleeTo?: Phaser.Math.Vector2;
 
   private spec = ENEMY_KINDS.grunt;
+  /** The base texture its frames are read off: the kind's, or its era's (0.146). */
+  private look: string = ENEMY_KINDS.grunt.texture;
+  /** Its scale at rest: what brings the picture it wears to the size of the kind's own. */
+  private baseScale = 1;
   private speed: number = ENEMY.speed;
   private target?: Phaser.GameObjects.Components.Transform;
   private hooks?: EnemyHooks;
@@ -368,9 +374,17 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
     // would go off before the player has seen what arrived.
     this.volleyCooldownMs = spec.volley?.cooldownMs ?? 0;
 
-    this.setTexture(spec.texture);
+    this.look = hooks?.look?.(kind) ?? spec.texture;
+    // Shown at the size of the kind's own picture, whatever it wears: the
+    // 도망자's finer star, a look painted a pixel off it (0.146).
+    const own = this.scene.textures.getFrame(spec.texture);
+    const worn = this.scene.textures.getFrame(this.look);
+    this.baseScale = own && worn && worn.width > 0 ? own.width / worn.width : 1;
+    this.setTexture(this.look);
+    this.setScale(this.baseScale);
     this.enableBody(true, x, y, true, true);
-    this.body?.setSize(spec.size, spec.size, true);
+    // A body scales with its sprite: one drawn finer is given its size at the picture's scale.
+    this.body?.setSize(spec.size / this.baseScale, spec.size / this.baseScale, true);
     this.setVelocity(0, 0);
     this.drawOutline();
     this.drawHealthBar();
@@ -922,17 +936,17 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
     const pace = body ? body.velocity.length() : 0;
     this.castPoseMs = Math.max(0, this.castPoseMs - delta);
     if (this.castPoseMs > 0 && this.spec.poses) {
-      this.showFrame(enemyPose(this.spec.texture, 'cast'));
+      this.showFrame(enemyPose(this.look, 'cast'));
     } else if (pace > 2) {
       this.walkMs += delta * (pace / Math.max(1, this.spec.speed));
       if (this.walkMs >= walk.stepMs) {
         this.walkMs %= walk.stepMs;
         this.walkStep = (this.walkStep + 1) % ENEMY_WALK_STEPS;
       }
-      this.showFrame(enemyWalk(this.spec.texture, this.walkStep));
+      this.showFrame(enemyWalk(this.look, this.walkStep));
     } else {
       this.walkMs = 0;
-      this.showFrame(this.spec.texture);
+      this.showFrame(this.look);
     }
     if (Math.abs(vx) > 1) {
       this.setFlipX(vx < 0);
@@ -952,7 +966,7 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
     if (!moving) {
       this.strideAt = 0;
       this.strideMs = 0;
-      this.showFrame(this.spec.texture);
+      this.showFrame(this.look);
       return;
     }
     this.strideMs += delta;
@@ -960,7 +974,7 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
       this.strideMs -= giant.stepMs;
       this.strideAt = (this.strideAt + 1) % GIANT_STRIDE.length;
     }
-    this.showFrame(giantFrame(this.spec.texture, GIANT_STRIDE[this.strideAt]!));
+    this.showFrame(giantFrame(this.look, GIANT_STRIDE[this.strideAt]!));
   }
 
   /** Every frame asks; only a change of picture swaps it. */
@@ -975,7 +989,7 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
     }
     this.castPoseMs = Math.max(0, this.castPoseMs - dt);
     const pose = this.castPoseMs > 0 ? 'cast' : this.hopping ? 'leap' : 'stand';
-    this.showFrame(enemyPose(this.spec.texture, pose));
+    this.showFrame(enemyPose(this.look, pose));
     const vx = (this.body as Phaser.Physics.Arcade.Body | null)?.velocity.x ?? 0;
     if (Math.abs(vx) > 1) {
       this.setFlipX(vx < 0);
@@ -1024,13 +1038,13 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
       onUpdate: () => {
         const quarter = Math.floor((turn.done % 1) * GIANT_TURN.length);
         const pose = GIANT_TURN[Math.min(quarter, GIANT_TURN.length - 1)]!;
-        this.showFrame(giantFrame(this.spec.texture, pose.frame));
+        this.showFrame(giantFrame(this.look, pose.frame));
         this.setFlipX(pose.mirrored);
       },
       onComplete: () => {
         this.spin = undefined;
         this.setFlipX(false);
-        this.showFrame(this.spec.texture);
+        this.showFrame(this.look);
       },
     });
   }
@@ -1206,7 +1220,7 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
   private shimmer(): void {
     const now = this.scene.time.now;
     const pulse = 1 + 0.12 * Math.sin(now / 140);
-    this.setScale(pulse);
+    this.setScale(pulse * this.baseScale);
     if (this.flashMs <= 0 && this.chillMs <= 0) {
       const hue = (now / 1200) % 1;
       this.setTint(Phaser.Display.Color.HSVToRGB(hue, 0.55, 1).color).setTintMode(Phaser.TintModes.MULTIPLY);

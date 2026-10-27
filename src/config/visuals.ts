@@ -42,7 +42,10 @@ export const COLORS = {
   chimeraTail: 0x4f9a5a,
   /** Its thorns: bone white with a grey spine. */
   thorn: 0xf6f3ea,
-  thornEdge: 0x9a978f,
+  // Red round a 키메라's thorn, green round the survivor's own (척추 검) — they
+  // were the same bone white and read alike (0.146, the user's ask).
+  thornEdge: 0xe03a3a,
+  thornPlayerEdge: 0x3ad86a,
   /** Plain gold: the 랭킹 trophy, and the arrow that points at a 도망자. */
   gold: 0xffe066,
   /** 2위 and 3위's cups. */
@@ -216,6 +219,7 @@ export const TEXTURES = {
   enemyErratic: "tex-enemy-erratic",
   enemyChimera: "tex-enemy-chimera",
   thorn: "tex-thorn",
+  thornPlayer: "tex-thorn-player",
   enemyShot: "tex-enemy-shot",
   projectile: "tex-projectile",
   iceShard: "tex-ice-shard",
@@ -1305,6 +1309,29 @@ export const enemyPose = (texture: string, pose: EnemyPose): string => (pose ===
 
 /** A walking figure's stride (EnemyKindSpec.walk, 0.99): this many pictures, one a step. */
 export const ENEMY_WALK_STEPS = 4;
+
+/**
+ * 시대별 몬스터 (0.146, the user's design; systems/MonsterArt.ts): the same
+ * kinds wear goblins, beasts and the dead until 7 minutes, fantasy creatures
+ * until 14, machines after — pixel art, picked as each one spawns, so the
+ * field changes over as the old ones die. The 우두머리 and the 키메라 keep one
+ * look (the user's word), the 도망자 its star. Dev server only while `devOnly`.
+ */
+export const MONSTER_ERAS = {
+  devOnly: false as boolean,
+  /** The grid each look is painted on, against the size it is shown (0.5: a dot is two game pixels). */
+  pixelScale: 0.5,
+  /** When each era begins, in ms of the run. */
+  fromMs: [0, 7 * 60_000, 14 * 60_000] as readonly number[],
+  /** The 도망자 keeps its star in every era, drawn this many times finer than shown. */
+  flashyResolution: 3,
+} as const;
+
+/** A kind's base texture in an era; its frames hang off it as off the kind's own. */
+export const eraTexture = (texture: string, era: number): string => `${texture}~era${era}`;
+
+/** The 도망자's star drawn finer (MONSTER_ERAS.flashyResolution). */
+export const fineTexture = (texture: string): string => `${texture}~fine`;
 /** Its picture for one step of the stride; standing it wears the plain texture. */
 export const enemyWalk = (texture: string, step: number): string => `${texture}-walk${step}`;
 

@@ -30,6 +30,8 @@ import {
   ENEMY_SHOT_FX,
   ENEMY_WALK_STEPS,
   enemyWalk,
+  fineTexture,
+  MONSTER_ERAS,
   UNKNOWN_RUNE_LOOKS,
   enemyPose,
   unknownRuneTexture,
@@ -46,6 +48,8 @@ import { MENU, SCENES } from '@/config';
 import type { EnemyKindSpec, PixelIcon, PixelIconId } from '@/config';
 import { createPixelTextTexture } from '@/systems/PixelFont';
 import { sfx } from '@/systems/Sfx';
+import { paintEraTextures } from '@/systems/MonsterArt';
+import { pixelateOn, pixelateWorld } from '@/systems/Pixelate';
 
 
 const GRID_TILE = 64;
@@ -82,6 +86,7 @@ export class BootScene extends Phaser.Scene {
     for (const kind of Object.values(ENEMY_KINDS)) {
       if (kind.flashy) {
         this.createFlashyTexture(kind.texture, kind.size);
+        this.createFlashyTexture(fineTexture(kind.texture), kind.size * MONSTER_ERAS.flashyResolution);
       } else if (kind.giant) {
         this.createGiantTextures(kind.texture, kind.giant.drawn, kind.color);
       } else if (kind.id === 'chimera') {
@@ -112,6 +117,10 @@ export class BootScene extends Phaser.Scene {
     this.createCelebrateTextures();
     this.createFlagTextures();
     this.createLookTextures();
+    // 시대별 몬스터 (0.146): painted only where they can be worn.
+    if (!MONSTER_ERAS.devOnly || import.meta.env.DEV) {
+      paintEraTextures(this);
+    }
     this.createDroneTextures();
     this.createVortexTexture();
     this.createMangoTexture();
@@ -126,6 +135,10 @@ export class BootScene extends Phaser.Scene {
     this.createAccountTexture();
     this.createFilterTexture();
     this.createTuningTexture();
+    // One dot size on the field (0.146): the rest re-drawn to the monsters' dot.
+    if (pixelateOn()) {
+      pixelateWorld(this);
+    }
 
 
     createPixelTextTexture(this, TEXTURES.logo, ['EXILED', 'SURVIVORS'], {
@@ -700,16 +713,20 @@ export class BootScene extends Phaser.Scene {
     g.destroy();
   }
 
-  /** A 키메라's thorn: a white spike, its point to the right (the way it flies). */
+  /**
+   * A thorn: a white spike, its point to the right (the way it flies), edged
+   * by whose it is — the 키메라's red, the survivor's own green (0.146).
+   */
   private createThornTexture(): void {
-    const g = this.add.graphics();
-    g.fillStyle(COLORS.thornEdge, 1);
-    g.fillTriangle(0, 1, 22, 4, 0, 7);
-    g.fillStyle(COLORS.thorn, 1);
-    g.fillTriangle(1, 2, 21, 4, 1, 6);
-    g.fillRect(0, 2.5, 4, 3);
-    g.generateTexture(TEXTURES.thorn, 22, 8);
-    g.destroy();
+    for (const [key, edge] of [[TEXTURES.thornPlayer, COLORS.thornPlayerEdge], [TEXTURES.thorn, COLORS.thornEdge]] as const) {
+      const g = this.add.graphics();
+      g.fillStyle(edge, 1);
+      g.fillTriangle(0, 0, 22, 4, 0, 8);
+      g.fillStyle(COLORS.thorn, 1);
+      g.fillTriangle(2, 2.4, 18.5, 4, 2, 5.6);
+      g.generateTexture(key, 22, 8);
+      g.destroy();
+    }
   }
 
   /** The void orb: a hollow violet rim (VOID_ORB_FX). */

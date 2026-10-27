@@ -728,6 +728,51 @@ check('기행종: drawn at its picture size over its own body, crouched until it
   hopper.standing === hopper.stand && hopper.seen.includes(hopper.leap) && hopper.drawn === hopper.want && hopper.body === hopper.size,
   JSON.stringify(hopper));
 
+// --- 시대별 몬스터 (0.146): a look by when it spawns; the 도망자 keeps its star, finer ---
+const eras = await cdp.evaluate(`(() => {
+  const s = window.game.scene.getScene('GameScene'), C = window.config, tx = window.game.textures;
+  window.__erasOn = true;
+  const was = s.elapsedMs;
+  const out = { rows: [], fugitive: [], frames: [] };
+  try {
+    s.spawner.clear();
+    for (const ms of C.MONSTER_ERAS.fromMs) {
+      s.elapsedMs = ms + 1000;
+      const row = {};
+      for (const kind of ['grunt', 'shooter', 'runner', 'erratic', 'brute', 'boss', 'chimera']) {
+        const spec = C.ENEMY_KINDS[kind];
+        const e = s.spawner.group.get(s.player.x + 400, s.player.y);
+        e.spawn(s.player.x + 400, s.player.y, s.player, kind, s.spawner.hooks);
+        const drawn = spec.giant?.drawn ?? spec.drawn ?? spec.size;
+        row[kind] = { tex: e.texture.key, shown: Math.round(e.displayWidth), drawn, body: Math.round(e.body.width), size: spec.size };
+        e.update(0, 50);
+        out.frames.push(tx.exists(e.texture.key) && e.texture.key !== '__MISSING');
+        e.disableBody(true, true);
+      }
+      out.rows.push(row);
+      const f = s.spawner.group.get(s.player.x + 400, s.player.y);
+      f.spawn(s.player.x + 400, s.player.y, s.player, 'fugitive', s.spawner.hooks);
+      out.fugitive.push({ tex: f.texture.key, body: Math.round(f.body.width), size: C.ENEMY_KINDS.fugitive.size, fine: C.fineTexture(C.ENEMY_KINDS.fugitive.texture) });
+      f.disableBody(true, true);
+    }
+  } finally {
+    window.__erasOn = undefined;
+    s.elapsedMs = was;
+  }
+  return out;
+})()`);
+const kindsSeen = Object.keys(eras.rows[0]);
+// The 우두머리 and the 키메라 keep one look in every era (the user's word).
+const steady = ['boss', 'chimera'];
+check('시대별 몬스터: each kind wears a different look in each of the three eras — but the 우두머리 and the 키메라 one throughout',
+  kindsSeen.every((k) => new Set(eras.rows.map((r) => r[k].tex)).size === (steady.includes(k) ? 1 : 3)),
+  JSON.stringify(eras.rows.map((r) => [r.grunt.tex, r.boss.tex])));
+check('and is drawn at its own size, its body the kind’s as before',
+  eras.rows.every((r) => kindsSeen.every((k) => r[k].shown === r[k].drawn && r[k].body === r[k].size)) && eras.frames.every(Boolean),
+  JSON.stringify(eras.rows[2]));
+check('the 도망자 keeps one look in every era — its star drawn finer, at its size, its body the same',
+  eras.fugitive.every((f) => f.tex === f.fine && f.body === f.size), JSON.stringify(eras.fugitive));
+
 console.log('\n=== SUMMARY ===');
 const failed = results.filter((r) => !r.p);
 console.log(`${results.length - failed.length}/${results.length} passed`);

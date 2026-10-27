@@ -15,6 +15,36 @@ export interface PatchNote {
 
 export const PATCH_NOTES: readonly PatchNote[] = [
   {
+    version: '0.146',
+    date: '2026-10-27',
+    changes: {
+      ko: [
+        '몬스터를 픽셀아트로 새로 그렸습니다. 새로 나타나는 몬스터의 모습이 시간에 따라 바뀝니다. 7분 전에는 좀비·고블린·짐승, 7분부터는 판타지 크리쳐, 14분부터는 기계 종족입니다(능력치와 맞는 범위는 그대로).',
+        '우두머리와 키메라는 시간과 관계없이 지금 모습 그대로 픽셀아트로 다시 그렸고, 고블린 사수는 활 대신 횃불을 듭니다. 도망자의 별은 더 선명해졌습니다.',
+        '생존자, 바닥에 떨어지는 아이템, 가시도 몬스터와 같은 크기의 도트로 다시 그렸습니다.',
+        '키메라가 쏘는 가시는 빨간 테두리, 척추 검의 가시는 초록 테두리로 구분됩니다.',
+      ],
+      en: [
+        'Monsters are redrawn as pixel art, and the ones that appear change with time: zombies, goblins and beasts before 7 minutes, fantasy creatures from 7, a machine race from 14 (stats and hit areas unchanged).',
+        'Bosses and Chimeras keep their look at every time, redrawn as pixel art; the goblin Shooter now carries a torch instead of a bow. The Fugitive’s star is sharper.',
+        'The survivor, items on the ground and thorns are redrawn at the same dot size as the monsters.',
+        'Chimera thorns have a red edge, Spine Sword thorns a green one.',
+      ],
+      ja: [
+        'モンスターをピクセルアートで描き直しました。新しく現れるモンスターの姿は時間で変わります。7分まではゾンビ・ゴブリン・獣、7分からはファンタジーの怪物、14分からは機械種族です（能力値と当たり判定はそのまま）。',
+        'ボスとキメラは時間に関係なく今の姿のままピクセルアートで描き直し、ゴブリンの射手は弓の代わりに松明を持ちます。逃亡者の星はより鮮明になりました。',
+        '生存者、床に落ちるアイテム、棘もモンスターと同じドットの大きさで描き直しました。',
+        'キメラの棘は赤い縁、脊椎の剣の棘は緑の縁で区別されます。',
+      ],
+      zh: [
+        '怪物改为像素画重新绘制，新出现的怪物外形会随时间变化：7分钟前是僵尸、哥布林和野兽，7分钟起是奇幻生物，14分钟起是机械种族（属性和受击范围不变）。',
+        '首领和奇美拉在任何时间都保持现在的外形，以像素画重新绘制；哥布林射手改为手持火把而不是弓。逃亡者的星星更清晰了。',
+        '幸存者、掉落在地上的物品和尖刺也按与怪物相同的像素大小重新绘制。',
+        '奇美拉的尖刺为红色边框，脊椎剑的尖刺为绿色边框。',
+      ],
+    },
+  },
+  {
     version: '0.145',
     date: '2026-10-27',
     changes: {

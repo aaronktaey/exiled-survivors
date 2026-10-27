@@ -1950,7 +1950,8 @@ const effects = await ev(`(() => {
     const fired = s.thorns.getChildren().filter((t) => t.active);
     out.burst = { count: fired.length, want: C.ENEMY_KINDS.chimera.volley.count,
                   damage: fired[0]?.damage, wantDamage: Math.max(1, Math.round(dps * spineImplicit.dpsShare)),
-                  skill: fired[0]?.skill, main, thorn: fired.every((t) => t.thorn), texture: fired[0]?.texture.key };
+                  skill: fired[0]?.skill, main, thorn: fired.every((t) => t.thorn), texture: fired[0]?.texture.key,
+                  own: C.TEXTURES.thornPlayer, chimeras: C.ENEMY_KINDS.chimera.volley.texture };
     fired.forEach((t) => t.despawn?.() ?? t.disableBody(true, true));
     // A thorn's own kill sets off none; and nothing above the chance either.
     s.thornBurstAt(s.player.x + 300, s.player.y, true);
@@ -1973,9 +1974,10 @@ const effects = await ev(`(() => {
 console.log('effects:', JSON.stringify(effects));
 check('별 부수는 검: the 재능의 파편 drop at its 고정 속성 × their chance',
   effects.shardScale === effects.starWant && effects.starWant > 1, JSON.stringify(effects));
-check('척추 검: a kill throws the 키메라’s thorn ring, each thorn its share of the main skill’s DPS, counted to it',
+check('척추 검: a kill throws the 키메라’s thorn ring, each thorn its share of the main skill’s DPS, counted to it — in its own green-edged thorn, not the 키메라’s red (0.146)',
   effects.burst.count === effects.burst.want && effects.burst.damage === effects.burst.wantDamage &&
-    effects.burst.skill === effects.burst.main && effects.burst.thorn && effects.burst.texture === 'tex-thorn',
+    effects.burst.skill === effects.burst.main && effects.burst.thorn && effects.burst.texture === effects.burst.own &&
+    effects.burst.own !== effects.burst.chimeras,
   JSON.stringify(effects.burst));
 check('a thorn’s own kill throws none, a roll over the chance throws none, and without the sword none',
   effects.fromThorn === 0 && effects.missed === 0 && effects.plain === 0, JSON.stringify(effects));
