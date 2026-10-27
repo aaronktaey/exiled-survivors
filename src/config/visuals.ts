@@ -205,6 +205,7 @@ export const TEXTURES = {
   /** The 계정 icon on the title: a head and shoulders. */
   account: "tex-account",
   filter: "tex-filter",
+  battlePlan: "tex-battle-plan",
   tuning: "tex-tuning",
   grid: "tex-grid",
   talentShard: "tex-talent-shard",
@@ -364,6 +365,8 @@ export const ICONS = {
   skillOrb: { pixel: 'skill-orb', size: 22 },
   // 무작위 스킬: an open book (0.144).
   randomSkill: { pixel: 'random-book', size: 22 },
+  // 전술 교본 (0.147): a list on a clipboard, the first line starred.
+  battlePlan: { pixel: 'battle-plan', size: 32 },
   // Shown at POTION.size (24 since 0.111, the user's ask; 16 before).
   potion: { pixel: 'potion', size: 24 },
 } as const satisfies Record<string, { readonly pixel: PixelIconId; readonly size: number }>;

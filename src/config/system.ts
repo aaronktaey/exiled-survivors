@@ -53,6 +53,7 @@ export const SCENES = {
   account: "AccountScene",
   conflict: "ConflictScene",
   filter: "FilterScene",
+  autoPick: "AutoPickScene",
   tuning: "TuningScene",
   podium: "PodiumScene",
 } as const;
@@ -116,6 +117,8 @@ export const STORAGE = {
   rankMine: "exiled-survivors:rank-mine:v1",
   /** 아이템 필터: the drops switched off. */
   itemFilter: "exiled-survivors:item-filter:v1",
+  /** 전술 교본 (0.147): the order a run chooses in, and whether runs use it. */
+  autoPick: "exiled-survivors:auto-pick:v1",
   /** Which account this browser's records were last synced with, and when. */
   sync: "exiled-survivors:sync:v1",
   /** That this browser (or account) has had 0.80's gift (ROLLBACK_GIFT). */

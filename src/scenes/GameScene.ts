@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { monsterLook } from '@/systems/MonsterArt';
+import { autoPicks, type AutoPickTab } from '@/systems/AutoPick';
 
 import {
   AFFIXES,
@@ -208,6 +209,8 @@ export class GameScene extends Phaser.Scene {
   /** 지형지물, or null on a run without them. */
   private terrain: Terrain | null = null;
   private terrainSeed = 0;
+  /** 전술 교본 (0.147): every choice taken by the plan, no cards shown. Public for tests. */
+  public autoPick = false;
   /** The run's ground (전투 배경, 0.105), from its terrain seed. Public for tests. */
   public arenaTheme: ArenaThemeId = 'earth';
   private damageNumbers!: DamageNumbers;
@@ -344,6 +347,8 @@ export class GameScene extends Phaser.Scene {
 
     // The ground is the terrain seed's: a resumed run stands on the one it had.
     this.terrainSeed = this.resuming?.terrainSeed ?? Terrain.newSeed();
+    // 전술 교본 (0.147): switched on at 전투 준비, the run chooses by the plan; a resumed one as it did.
+    this.autoPick = this.resuming ? this.resuming.autoPick === true : autoPicks.enabled;
     this.arenaTheme = themeFor(this.terrainSeed);
     this.createFloor();
 
@@ -542,8 +547,31 @@ export class GameScene extends Phaser.Scene {
         }
       },
     };
+    if (this.chooseForPlayer('skills', options, data.onPick, skillName)) {
+      return;
+    }
     this.scene.bringToTop(SkillPickScene.KEY);
     this.scene.launch(SkillPickScene.KEY, data);
+  }
+
+  /**
+   * 전술 교본 (0.147): with the plan on, takes the one of `offered` it ranks
+   * highest — the same hand-off a card would have made — and says so.
+   * False when the plan is off, and the cards are shown.
+   */
+  private chooseForPlayer<T extends string>(tab: AutoPickTab, offered: readonly T[], onPick: (id: T) => void, name?: (id: T) => string): boolean {
+    if (!this.autoPick) {
+      return false;
+    }
+    const choice = autoPicks.choose(tab, offered);
+    if (choice === undefined) {
+      return false;
+    }
+    if (name) {
+      this.announce(fill(t().autoPick.toast, { choice: name(choice) }));
+    }
+    onPick(choice);
+    return true;
   }
 
   /**
@@ -897,6 +925,7 @@ export class GameScene extends Phaser.Scene {
       scoreByKind: this.stats.scoreByKind,
       damageBySkill: this.stats.damageBySkill,
       terrainSeed: this.terrainSeed,
+      autoPick: this.autoPick,
       rulesDay: this.rulesDay,
       shards: { ...this.shards },
     });
@@ -1511,6 +1540,10 @@ export class GameScene extends Phaser.Scene {
       options,
       onPick: (upgrade) => this.onUpgradePicked(request.skill, upgrade as UpgradeId),
     };
+    const labels = new Map(options.map((option) => [option.id, option.label]));
+    if (this.chooseForPlayer('upgrades', options.map((option) => option.id), data.onPick, (id) => `${skillName(request.skill)} ${labels.get(id) ?? id}`)) {
+      return;
+    }
     this.scene.bringToTop(UpgradeScene.KEY);
     this.scene.launch(UpgradeScene.KEY, data);
   }
@@ -1549,6 +1582,9 @@ export class GameScene extends Phaser.Scene {
         this.afterChoice();
       },
     };
+    if (this.chooseForPlayer('skills', options, data.onPick, skillName)) {
+      return;
+    }
     this.scene.bringToTop(SkillPickScene.KEY);
     this.scene.launch(SkillPickScene.KEY, data);
   }
@@ -1638,6 +1674,9 @@ export class GameScene extends Phaser.Scene {
         this.afterChoice();
       },
     };
+    if (this.chooseForPlayer('shards', picks, data.onPick)) {
+      return;
+    }
     this.scene.bringToTop(UpgradeScene.KEY);
     this.scene.launch(UpgradeScene.KEY, data);
   }

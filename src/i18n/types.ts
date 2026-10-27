@@ -139,6 +139,42 @@ export interface Strings {
     readonly lumpDrop: string;
     readonly lumpToast: string;
   };
+  readonly autoPick: {
+    /** Under the title icon. */
+    readonly icon: string;
+    readonly title: string;
+    readonly lead: string;
+    readonly tabs: { readonly skills: string; readonly upgrades: string; readonly shards: string };
+    /** Under the tabs: which choices the shown list decides. */
+    readonly tabLeads: { readonly skills: string; readonly upgrades: string; readonly shards: string };
+    /** Each upgrade by itself, without a skill or a number. */
+    readonly upgrades: {
+      readonly damage: string;
+      readonly attackSpeed: string;
+      readonly range: string;
+      readonly projectileSpeed: string;
+      readonly orbitSpeed: string;
+      readonly chainCount: string;
+      readonly pierceCount: string;
+      readonly orbCount: string;
+      readonly droneCount: string;
+      readonly blastRadius: string;
+      readonly recastChance: string;
+    };
+    /** {state}: on or off. */
+    readonly toggle: string;
+    /** The switch on 전투 준비. {state}: on or off. */
+    readonly prepToggle: string;
+    /** The button beside it that opens the lists. */
+    readonly prepEdit: string;
+    readonly on: string;
+    readonly off: string;
+    readonly reset: string;
+    /** A toast for each choice made by the plan. {choice}: what was taken. */
+    readonly toast: string;
+    readonly hintKeyboard: string;
+    readonly hintTouch: string;
+  };
   readonly filter: {
     readonly title: string;
     /** Under the title icon. */
@@ -509,6 +545,8 @@ export interface Strings {
     readonly sumBosses: string;
     /** {scale}: how many times as likely a rare is. */
     readonly sumRares: string;
+    /** Where the cards go when the drawer is empty (0.147: the screen shows anyway). */
+    readonly empty: string;
     readonly hintKeyboard: string;
     readonly hintTouch: string;
   };

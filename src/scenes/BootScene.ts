@@ -1622,6 +1622,7 @@ export class BootScene extends Phaser.Scene {
       [TEXTURES.projectile, ICONS.projectile.pixel],
       [TEXTURES.skillOrb, ICONS.skillOrb.pixel],
       [TEXTURES.randomSkill, ICONS.randomSkill.pixel],
+      [TEXTURES.battlePlan, ICONS.battlePlan.pixel],
       [TEXTURES.potion, ICONS.potion.pixel],
       ...Object.values(SKILL_ICONS).flatMap((icon): [string, PixelIconId][] => (icon.pixel ? [[icon.key, icon.pixel]] : [])),
       ...Object.values(GEAR).map((spec): [string, PixelIconId] => [gearTexture(spec.id), spec.icon]),

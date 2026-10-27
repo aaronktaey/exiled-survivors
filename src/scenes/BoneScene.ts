@@ -18,6 +18,7 @@ import { bones } from '@/systems/Bones';
 import { centredTop, fitText, fitWidth } from '@/systems/Layout';
 import { prefersTouchControls } from '@/systems/VirtualJoystick';
 import { addBackButton, type BackButton } from '@/systems/BackButton';
+import { autoPicks } from '@/systems/AutoPick';
 
 export interface BoneSceneData {
   /** Starts the run with these, having spent them. */
@@ -27,7 +28,7 @@ export interface BoneSceneData {
 
 /** One thing on the screen that can be pointed at and pressed. */
 export interface BoneChoice {
-  readonly id: BoneId | 'clear' | 'start';
+  readonly id: BoneId | 'auto' | 'plan' | 'clear' | 'start';
   readonly enabled: () => boolean;
   readonly onSelect: () => void;
 }
@@ -79,6 +80,8 @@ export class BoneScene extends Phaser.Scene {
   private counts = new Map<BoneId, Phaser.GameObjects.Text>();
   private cards = new Map<BoneId, Phaser.GameObjects.GameObject[]>();
   private buttonLabels: Phaser.GameObjects.Text[] = [];
+  /** The 전술 교본 switch's words. Public for tests. */
+  public autoLabel?: Phaser.GameObjects.Text;
 
   public constructor() {
     super(BoneScene.KEY);
@@ -98,7 +101,11 @@ export class BoneScene extends Phaser.Scene {
     onStart: (applied: readonly BoneId[]) => void,
     onCancel: () => void,
   ): void {
-    if (bones.total === 0) {
+    // 전투 준비 (0.147): shown before every fresh run, for the 전술 교본 switch as
+    // much as the 뼈다귀 — the harness, with nothing in the drawer, goes
+    // straight on unless a page asks for the screen.
+    const w = window as unknown as { __harness?: boolean; __prepOn?: boolean };
+    if (bones.total === 0 && w.__harness && !w.__prepOn) {
       onStart([]);
       return;
     }
@@ -130,6 +137,7 @@ export class BoneScene extends Phaser.Scene {
     this.counts = new Map();
     this.cards = new Map();
     this.buttonLabels = [];
+    this.autoLabel = undefined;
   }
 
   public create(): void {
@@ -150,7 +158,7 @@ export class BoneScene extends Phaser.Scene {
     const cardH = compact ? Math.floor(CARD.h * 0.88) : CARD.h;
     const gaps = compact ? { lead: 14, cards: 6, detail: 12, slots: 8, summary: 14 } : { lead: 20, cards: 8, detail: 18, slots: 10, summary: 20 };
     const block =
-      34 + 8 + 22 + gaps.lead + cardH + gaps.cards + 20 + gaps.detail + SLOT.size + gaps.slots + 22 + gaps.summary + BUTTON.h;
+      34 + 8 + 22 + gaps.lead + cardH + gaps.cards + 20 + gaps.detail + SLOT.size + gaps.slots + 22 + gaps.summary + BUTTON.h + gaps.summary + BUTTON.h;
     let y = centredTop(height - FOOTER, block, 20);
 
     const text = (x: number, at: number, value: string, size: string, color: string) =>
@@ -164,7 +172,10 @@ export class BoneScene extends Phaser.Scene {
     fitText(text(width / 2, y + 11, fill(copy.lead, { max: BONE_RUN.maxApplied }), TEXT.size.body, COLORS.muted), width - 24);
     y += 22 + gaps.lead;
 
-    // The drawer: a card per 뼈다귀 held.
+    // The drawer: a card per 뼈다귀 held — or a line saying there are none.
+    if (held.length === 0) {
+      text(width / 2, y + cardH / 2, copy.empty, TEXT.size.body, COLORS.muted);
+    }
     const rowWidth = held.length * cardW + (held.length - 1) * CARD.gap;
     held.forEach((bone, index) => {
       const x = (width - rowWidth) / 2 + index * (cardW + CARD.gap) + cardW / 2;
@@ -222,8 +233,26 @@ export class BoneScene extends Phaser.Scene {
     this.summary.setWordWrapWidth(fitWidth(560, width));
     y += 22 + gaps.summary;
 
-    // 모두 빼기 and 이대로 시작, side by side.
     const buttonW = Math.min(BUTTON.w, (width - 32 - BUTTON.gap) / 2);
+    // 전술 교본 (0.147): the switch for this run, and the way to its lists.
+    const planCopy = t().autoPick;
+    const switchW = buttonW * 2 + BUTTON.gap - buttonW * 0.7 - BUTTON.gap;
+    const switchX = width / 2 - (buttonW * 2 + BUTTON.gap) / 2 + switchW / 2;
+    const editW = buttonW * 0.7;
+    const editX = width / 2 + (buttonW * 2 + BUTTON.gap) / 2 - editW / 2;
+    const ay = y + BUTTON.h / 2;
+    const switchPlate = this.plate(switchX, ay, switchW, BUTTON.h, COLORS.panelEdge);
+    this.autoLabel = text(switchX, ay, '', TEXT.size.body, COLORS.text).setDepth(DEPTH.ui + 2);
+    this.addChoice(switchPlate, { id: 'auto', enabled: () => true, onSelect: () => {
+      autoPicks.setEnabled(!autoPicks.enabled);
+      this.refresh();
+    } });
+    const editPlate = this.plate(editX, ay, editW, BUTTON.h, COLORS.panelEdge);
+    fitText(text(editX, ay, planCopy.prepEdit, TEXT.size.body, COLORS.text).setDepth(DEPTH.ui + 2), editW - 10, 0);
+    this.addChoice(editPlate, { id: 'plan', enabled: () => true, onSelect: () => this.openPlan() });
+    y += BUTTON.h + gaps.summary;
+
+    // 모두 빼기 and 이대로 시작, side by side.
     const buttons: Array<Omit<BoneChoice, 'id'> & { id: 'clear' | 'start'; label: string }> = [
       { id: 'clear', label: copy.clear, enabled: () => this.applied.length > 0, onSelect: () => this.clear() },
       { id: 'start', label: copy.start, enabled: () => true, onSelect: () => this.start() },
@@ -245,6 +274,18 @@ export class BoneScene extends Phaser.Scene {
 
     this.armKeys();
     this.refresh();
+  }
+
+  /** 전술 교본's lists, over this screen; back here when it closes. */
+  public openPlan(): void {
+    this.scene.pause();
+    this.scene.bringToTop(SCENES.autoPick);
+    this.scene.launch(SCENES.autoPick, {
+      onClose: () => {
+        this.scene.resume();
+        this.refresh();
+      },
+    });
   }
 
   /** Points the keyboard at a choice, by id. */
@@ -295,7 +336,17 @@ export class BoneScene extends Phaser.Scene {
     if (!keyboard) {
       return;
     }
-    const firstButton = this.choices.findIndex((choice) => choice.id === 'clear');
+    // Three rows: the cards, the 전술 교본 pair, the buttons.
+    const rowOf = (index: number): number => {
+      const id = this.choices[index]?.id;
+      return id === 'auto' || id === 'plan' ? 1 : id === 'clear' || id === 'start' ? 2 : 0;
+    };
+    const toRow = (row: number, prefer: BoneChoice['id']): void => {
+      const preferred = this.choices.findIndex((choice) => choice.id === prefer);
+      const first = this.choices.findIndex((_, index) => rowOf(index) === row);
+      this.focused = preferred >= 0 ? preferred : first >= 0 ? first : this.focused;
+      this.refresh();
+    };
     const move = (by: number): void => {
       this.focused = Phaser.Math.Wrap(this.focused + by, 0, this.choices.length);
       this.refresh();
@@ -312,13 +363,15 @@ export class BoneScene extends Phaser.Scene {
           break;
         case 'ArrowUp':
         case 'KeyW':
-          this.focused = this.focused >= firstButton ? 0 : this.focused;
-          this.refresh();
+          if (rowOf(this.focused) === 2) {
+            toRow(1, 'auto');
+          } else if (rowOf(this.focused) === 1 && rowOf(0) === 0) {
+            toRow(0, this.choices[0]!.id);
+          }
           break;
         case 'ArrowDown':
         case 'KeyS':
-          this.focused = this.focused < firstButton ? firstButton + 1 : this.focused;
-          this.refresh();
+          toRow(rowOf(this.focused) + 1, rowOf(this.focused) === 0 ? 'auto' : 'start');
           break;
         case 'Space':
         case 'Enter':
@@ -435,6 +488,17 @@ export class BoneScene extends Phaser.Scene {
     }
 
     this.summary.setText(parts.length > 0 ? parts.join('  ·  ') : copy.none);
+    if (this.autoLabel) {
+      const plan = t().autoPick;
+      const on = autoPicks.enabled;
+      this.autoLabel.setText(fill(plan.prepToggle, { state: on ? plan.on : plan.off })).setColor(on ? COLORS.text : COLORS.muted);
+      fitText(this.autoLabel.setScale(1), this.plates[this.choices.findIndex((choice) => choice.id === 'auto')]!.width - 12, 0);
+      this.plates[this.choices.findIndex((choice) => choice.id === 'auto')]?.setStrokeStyle(
+        this.choices[this.focused]?.id === 'auto' ? 3 : 2,
+        this.choices[this.focused]?.id === 'auto' ? FOCUS_EDGE : on ? COLORS.accentFill : COLORS.panelEdge,
+        1,
+      );
+    }
     this.summary.setColor(parts.length > 0 ? COLORS.gearText : COLORS.muted);
   }
 }

@@ -25,6 +25,7 @@ import { orbs } from '@/systems/Orbs';
 import { passives } from '@/systems/Passives';
 import { openRecord, sealRecord } from '@/systems/Seal';
 import { itemFilter } from '@/systems/ItemFilter';
+import { autoPicks } from '@/systems/AutoPick';
 import { tuning } from '@/systems/Tuning';
 import { podium } from '@/systems/Podium';
 import { currentCanvasSize, fitStage } from '@/systems/Viewport';
@@ -32,6 +33,7 @@ import {
   AccountScene,
   ConflictScene,
   FilterScene,
+  AutoPickScene,
   TuningScene,
   BootScene,
   ConfirmScene,
@@ -121,6 +123,7 @@ const config: Phaser.Types.Core.GameConfig = {
     AccountScene,
     ConflictScene,
     FilterScene,
+    AutoPickScene,
     TuningScene,
     PodiumScene,
   ],
@@ -172,6 +175,7 @@ if (import.meta.env.DEV) {
     liveUpdate?: typeof liveUpdate;
     personal?: typeof personal;
     itemFilter?: typeof itemFilter;
+    autoPicks?: typeof autoPicks;
     tuning?: typeof tuning;
     account?: typeof account;
     cloudSave?: typeof cloudSave;
@@ -196,6 +200,7 @@ if (import.meta.env.DEV) {
   dev.liveUpdate = liveUpdate;
   dev.personal = personal;
   dev.itemFilter = itemFilter;
+  dev.autoPicks = autoPicks;
   dev.tuning = tuning;
   dev.account = account;
   dev.cloudSave = cloudSave;

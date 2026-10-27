@@ -89,7 +89,7 @@ node run-all.mjs test-full test-skills test-balance test-chain test-ice \
   test-ranking test-skillpick test-mango test-web test-loadout \
   test-carry test-api test-account test-live test-filter test-mastery \
   test-tuning test-terrain test-chimera test-seal test-gift test-held \
-  test-shard test-village test-daily
+  test-shard test-village test-daily test-autopick
 ```
 
 test-i18n and test-locale are left out until the official release (the
@@ -1443,6 +1443,23 @@ Read `git log` for what changed and when. What is not in the log:
   fixed pixel height. `tests/text-check.mjs` (not a suite) walks every
   screen at both shapes and lists labels that cross, run onto a plate's
   edge or leave the screen — run it after anything that moves text.
+- **전술 교본 (0.147, the user's design; Battle Plan · 作戦書 · 作战手册).**
+  An order for every choice a run puts up — `systems/AutoPick.ts`
+  (`autoPicks`, `STORAGE.autoPick`, synced; `window.autoPicks`): skills (the
+  first one and a 무작위 스킬's cards), upgrades (one list for every skill —
+  each skill only offers its own, `allUpgrades`) and 재능의 파편. A list read
+  back keeps what exists and adds anything new at the end. `AutoPickScene`
+  (the title's icon `autoPick`, `TEXTURES.battlePlan`) edits them — ▲▼ a
+  row, Shift+↑↓, Q/E tabs, Space the switch, R 기본 순서로; lying down a long
+  list goes in two columns. The switch is `enabled`; a fresh run reads it in
+  GameScene.init (`autoPick`, kept in the save), and then every choice goes
+  through `chooseForPlayer`: the plan's best of what is offered is handed to
+  the same `onPick` a card would have called, with a `autoPick.toast`
+  (the 파편 says its own line). 전투 준비 (`BoneScene`, retitled from 뼈다귀)
+  carries the switch (`auto`) and a way to the lists (`plan`, `openPlan`),
+  and now shows before every fresh run even with an empty drawer — except on
+  the harness, unless a page sets `window.__prepOn` (test-autopick does).
+  A new kind of choice should go through `chooseForPlayer` too.
 - **Known gaps, left on purpose:**
   - The 뼈다귀 pick screen is reached only on the way into a fresh run (게임
     시작, and 다시하기 after a death — both through `BoneScene.before`).

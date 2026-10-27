@@ -51,6 +51,8 @@ export interface SavedRun {
   readonly damageBySkill?: Partial<Record<SkillId, number>>;
   /** The 지형지물 field's seed, so a resumed run finds its rocks where they were. */
   readonly terrainSeed?: number;
+  /** 전술 교본 (0.147): it chooses by the plan, as it did when it started. */
+  readonly autoPick?: boolean;
   /** The ranking day it was started on, whose 오늘의 규칙 it plays under (0.126); absent, none. */
   readonly rulesDay?: number | null;
   /** The run's 재능의 파편, by stat (0.102). */

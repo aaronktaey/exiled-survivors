@@ -317,6 +317,28 @@ export const PIXEL_ICONS = {
       '.......oo.......',
     ],
   },
+  "battle-plan": {
+    // 전술 교본 (0.147): a clipboard with a ranked list, the first starred.
+    palette: { "c": 0x8a5a2b, "g": 0xffcc33, "k": 0x3a2c1c, "m": 0xb8a888, "o": 0x1a1016, "p": 0xf2e6c8, "r": 0xe0564a, "s": 0xd8c8a0 },
+    rows: [
+      '.....oooooo.....',
+      '.....occcco.....',
+      '..ooocmmmmcooo..',
+      '..opppppppppso..',
+      '..opgpkkkkkpso..',
+      '..opppppppppso..',
+      '..oprpkkkkppso..',
+      '..opppppppppso..',
+      '..oprpkkkkkpso..',
+      '..opppppppppso..',
+      '..oprpkkkpppso..',
+      '..opppppppppso..',
+      '..opppppppppso..',
+      '..osssssssssso..',
+      '..oooooooooooo..',
+      '................',
+    ],
+  },
   "random-book": {
     // An open book (0.144, the user's ask): three skills to pick from, not one.
     palette: { "c": 0x7a4fd0, "l": 0xb9a98a, "o": 0x1a1016, "s": 0xffe27a, "w": 0xfff6dc },

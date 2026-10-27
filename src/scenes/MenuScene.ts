@@ -346,6 +346,12 @@ export class MenuScene extends Phaser.Scene {
         label: () => t().filter.icon,
         onSelect: () => this.openOverlay(SCENES.filter),
       },
+      {
+        id: 'autoPick',
+        texture: TEXTURES.battlePlan,
+        label: () => t().autoPick.icon,
+        onSelect: () => this.openOverlay(SCENES.autoPick),
+      },
       // 밸런스: the admin's dials, and no one else's.
       ...(devToolsAllowed()
         ? [

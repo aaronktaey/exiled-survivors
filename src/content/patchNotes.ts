@@ -15,6 +15,28 @@ export interface PatchNote {
 
 export const PATCH_NOTES: readonly PatchNote[] = [
   {
+    version: '0.147',
+    date: '2026-10-27',
+    changes: {
+      ko: [
+        '새 메뉴 「전술 교본」: 스킬, 레벨업 강화, 재능의 파편의 우선순위를 정해 둘 수 있습니다. 선택지가 나오면 고를 수 있는 것 중 가장 순위가 높은 것을 자동으로 고릅니다.',
+        '게임을 시작하기 전 「전투 준비」 화면에서 전술 교본 자동 선택을 켜고 끌 수 있습니다. 뼈다귀가 없어도 이 화면이 나옵니다.',
+      ],
+      en: [
+        'New menu, Battle Plan: rank skills, level-up upgrades and Talent Shards in advance. When a choice comes up, the highest-ranked option on offer is taken for you.',
+        'Battle Plan auto-pick is switched on or off on the Battle Prep screen before each run, which now shows even with no bones held.',
+      ],
+      ja: [
+        '新メニュー「作戦書」：スキル、レベルアップの強化、才能の欠片の優先順位を決めておけます。選択肢が出ると、選べるものの中で最も順位の高いものを自動で選びます。',
+        'ゲーム開始前の「戦闘準備」画面で作戦書の自動選択をオン/オフできます。骨がなくてもこの画面が出ます。',
+      ],
+      zh: [
+        '新菜单「作战手册」：可以预先设定技能、升级强化和天赋碎片的优先顺序。出现选项时，会自动选择可选项中排名最高的一项。',
+        '开始游戏前可在「战斗准备」界面开启或关闭作战手册自动选择。即使没有骨头也会显示此界面。',
+      ],
+    },
+  },
+  {
     version: '0.146',
     date: '2026-10-27',
     changes: {
