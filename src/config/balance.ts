@@ -313,8 +313,8 @@ export const ENEMY_KINDS: Record<EnemyKind, EnemyKindSpec> = {
     name: "일반",
     texture: TEXTURES.enemy,
     size: ENEMY.size,
-    // A hunched red ghoul, claws out (0.99).
-    drawn: 26,
+    // A hunched red ghoul, claws out (0.99). About ×1.2 in 0.144 (the user's ask; 26 before), its body as it was.
+    drawn: 31,
     walk: { stepMs: 150 },
     color: COLORS.enemy,
     maxHp: ENEMY.maxHp,
@@ -339,8 +339,8 @@ export const ENEMY_KINDS: Record<EnemyKind, EnemyKindSpec> = {
     name: "질주",
     texture: TEXTURES.enemyRunner,
     size: 12,
-    // A lean gold jackal at the gallop (0.99).
-    drawn: 24,
+    // A lean gold jackal at the gallop (0.99). About ×1.2 in 0.144 (24 before).
+    drawn: 29,
     walk: { stepMs: 80 },
     color: COLORS.enemyRunner,
     maxHp: 150,
@@ -472,8 +472,8 @@ export const ENEMY_KINDS: Record<EnemyKind, EnemyKindSpec> = {
     name: "사수",
     texture: TEXTURES.enemyShooter,
     size: 16,
-    // A green goblin with a bow, drawn to its cheek as it looses (0.99).
-    drawn: 26,
+    // A green goblin with a bow, drawn to its cheek as it looses (0.99). About ×1.2 in 0.144 (26 before).
+    drawn: 31,
     walk: { stepMs: 160 },
     poses: { castMs: 280 },
     color: COLORS.enemyShooter,
@@ -896,7 +896,7 @@ export const AFFIXES: Record<AffixId, AffixSpec> = {
     name: "처형",
     detail: "체력이 낮은 적을 즉시 처치",
     gearTiers: tiers(
-      // A hit, not a tick; never a 우두머리, 키메라 or 도망자 (CombatSystem.hit).
+      // A hit, not a tick (CombatSystem.hit); every enemy since 0.144, 우두머리 · 키메라 · 도망자 too.
       (v) => `체력 ${v}% 이하인 적 처형`,
       (v) => ({ cull: v / 100 }),
       [10, 9.3, 8.5, 7.5, 6.5, 5, 3],

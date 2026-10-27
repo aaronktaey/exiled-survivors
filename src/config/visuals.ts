@@ -60,7 +60,7 @@ export const COLORS = {
   rareOutline: 0xffd34d,
   rareText: '#ffd34d',
   projectile: 0xffe9a3,
-  gem: 0x7ef0b0,
+  gem: 0x7fd4ff,
   skillOrb: 0xffc14d,
   panel: 0x141924,
   panelActive: 0x1e2636,
@@ -223,6 +223,7 @@ export const TEXTURES = {
   potion: "tex-potion",
   gem: "tex-gem",
   skillOrb: "tex-skill-orb",
+  randomSkill: "tex-random-skill",
   gear: "tex-gear",
   boneSkull: "tex-bone-skull",
   boneRib: "tex-bone-rib",
@@ -357,6 +358,8 @@ export const ICONS = {
   gem: { pixel: 'xp-gem', size: 14 },
   projectile: { pixel: 'fireball', size: 16 },
   skillOrb: { pixel: 'skill-orb', size: 22 },
+  // 무작위 스킬: an open book (0.144).
+  randomSkill: { pixel: 'random-book', size: 22 },
   // Shown at POTION.size (24 since 0.111, the user's ask; 16 before).
   potion: { pixel: 'potion', size: 24 },
 } as const satisfies Record<string, { readonly pixel: PixelIconId; readonly size: number }>;

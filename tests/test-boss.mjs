@@ -424,7 +424,8 @@ const reach = await run(`
     return before - e.hp > 0;
   };
   const boss = window.config.ENEMY_KINDS.boss, grunt = window.config.ENEMY_KINDS.grunt;
-  const bossR = (boss.giant?.drawn ?? boss.size) / 2, gruntR = grunt.size / 2;
+  // What is drawn is what is reached (MeleeStrike reads Enemy.shownRadius).
+  const bossR = (boss.giant?.drawn ?? boss.size) / 2, gruntR = (grunt.drawn ?? grunt.size) / 2;
   const out = {
     range, bossR, gruntR,
     bossEdgeIn: swingAt('boss', range + bossR * 0.8),

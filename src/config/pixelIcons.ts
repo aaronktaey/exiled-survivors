@@ -191,7 +191,8 @@ export const PIXEL_ICONS = {
     ],
   },
   "xp-gem": {
-    palette: { "d": 0x1f7a3a, "h": 0xd8ffcf, "l": 0x7be66a, "m": 0x38b84a, "o": 0x1a1016 },
+    // Sky blue since 0.144 (the user's ask; green before).
+    palette: { "d": 0x1d5f8f, "h": 0xe6f8ff, "l": 0x8fd8ff, "m": 0x4ab0ec, "o": 0x1a1016 },
     rows: [
       '................',
       '.......oo.......',
@@ -314,6 +315,28 @@ export const PIXEL_ICONS = {
       '...oVVvvvvVVwo..',
       '....oooVVoooo...',
       '.......oo.......',
+    ],
+  },
+  "random-book": {
+    // An open book (0.144, the user's ask): three skills to pick from, not one.
+    palette: { "c": 0x7a4fd0, "l": 0xb9a98a, "o": 0x1a1016, "s": 0xffe27a, "w": 0xfff6dc },
+    rows: [
+      '................',
+      '.......ss.......',
+      '......s..s......',
+      '.oooo......oooo.',
+      'owwwwoo..oowwwwo',
+      'owlllwwoowwlllwo',
+      'owwwwwwoowwwwwwo',
+      'owllllwoowllllwo',
+      'owwwwwwoowwwwwwo',
+      'owlllwwoowwlllwo',
+      'owwwwwwoowwwwwwo',
+      'owwwwoo..oowwwwo',
+      'occcccooooccccco',
+      '.oooooo..oooooo.',
+      '................',
+      '................',
     ],
   },
   "skill-orb": {

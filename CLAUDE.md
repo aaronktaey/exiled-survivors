@@ -1132,9 +1132,9 @@ Read `git log` for what changed and when. What is not in the log:
   look at PoE · Last Epoch · Hero Siege · Torchlight).** Tier odds are now
   `AFFIX_TIER_WEIGHTS` 0.75 · 1.5 · 2.5 · 4.5 · 7 · 9.5 · 11 (tier 1 ≈2%).
   처형 (`culling`, prefix, `cull`): in `CombatSystem.hit`, a blow (`startles`
-  — a poison tick is not one) that leaves an enemy that is not `isBoss` or
-  `precious` at or under that share of `maxHp` kills it (`cullThreshold`
-  hook). 광역 (`wide`, prefix): × `GameScene.areaScale`. 수집 (`gathering`,
+  — a poison tick is not one) that leaves an enemy at or under that share
+  of `maxHp` kills it (`cullThreshold` hook) — any enemy since 0.144 (the
+  user's ask; 0.143 spared 우두머리 · 키메라 · 도망자). 광역 (`wide`, prefix): × `GameScene.areaScale`. 수집 (`gathering`,
   suffix): adds to `GearBonus.shardChanceScale` with the 별 부수는 검's
   implicit. 약사 (`apothecary`, suffix): flat onto every potion beside the
   재능 (`potionHeal` hook). 가시 (`thorny`, suffix, the user named it for

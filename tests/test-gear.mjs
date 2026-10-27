@@ -2109,7 +2109,7 @@ const affixes = await ev(`(() => {
   C.PLAYER.critChance = 0;
   const out = {};
   try {
-    // 처형: a blow that leaves an ordinary enemy under the line kills it; a tick does not; a 우두머리 never.
+    // 처형: a blow that leaves an enemy under the line kills it — a 우두머리 too (0.144); a tick does not.
     s.gearBonus = window.gearBonusFor(sword([{ id: 'culling', tier: 1 }], []));
     const cull = s.gearBonus.cullThreshold;
     const put = (kind) => { const e = s.spawner.group.get(p.x + 300, p.y); e.spawn(p.x + 300, p.y, p, kind, s.spawner.hooks); return e; };
@@ -2122,7 +2122,7 @@ const affixes = await ev(`(() => {
     out.tick = e.active && e.lives === life;
     e = put('boss'); life = e.lives;
     s.combat.hit(e, Math.ceil(e.maxHp * (1 - cull)) + 1);
-    out.boss = e.active && e.lives === life;
+    out.boss = !(e.active && e.lives === life);
     s.spawner.clear();
     out.cull = { cull, want: value('culling') / 100 };
     // 광역: every radius.
@@ -2150,7 +2150,7 @@ const affixes = await ev(`(() => {
   return out;
 })()`);
 console.log('affixes:', JSON.stringify(affixes));
-check('처형: a blow that leaves an ordinary enemy under its line kills it — never a tick, never a 우두머리',
+check('처형: a blow that leaves any enemy under its line kills it, a 우두머리 too — never a tick',
   affixes.blow === true && affixes.tick === true && affixes.boss === true && Math.abs(affixes.cull.cull - affixes.cull.want) < 1e-9,
   JSON.stringify(affixes));
 check('광역 widens every radius by its share', Math.abs(affixes.area.ratio - affixes.area.want) < 1e-9, JSON.stringify(affixes.area));

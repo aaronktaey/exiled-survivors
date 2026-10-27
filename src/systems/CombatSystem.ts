@@ -576,9 +576,9 @@ export class CombatSystem {
       return;
     }
     // 처형 (0.143): a blow — not a tick, which does not startle — that leaves
-    // an ordinary enemy low enough finishes it. Never a 우두머리, 키메라 or 도망자.
+    // an enemy low enough finishes it; any enemy, 우두머리 · 키메라 · 도망자 too (0.144).
     const cull = this.hooks.cullThreshold?.() ?? 0;
-    if (cull > 0 && startles && !enemy.isBoss && !enemy.precious && enemy.hp <= enemy.maxHp * cull) {
+    if (cull > 0 && startles && enemy.hp <= enemy.maxHp * cull) {
       this.stats.recordDamage(enemy.hp, source);
       if (enemy.takeDamage(enemy.hp, false)) {
         this.killEnemy(enemy);

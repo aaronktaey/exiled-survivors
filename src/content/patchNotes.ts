@@ -15,6 +15,32 @@ export interface PatchNote {
 
 export const PATCH_NOTES: readonly PatchNote[] = [
   {
+    version: '0.144',
+    date: '2026-10-27',
+    changes: {
+      ko: [
+        '무작위 스킬이 펼쳐진 책 모양으로 바뀌었습니다. 경험치 젬이 하늘색이 되었습니다.',
+        '일반·질주·사수의 모습이 20% 커졌습니다(맞는 범위는 그대로).',
+        '처형 속성이 이제 우두머리·키메라·도망자에게도 적용됩니다.',
+      ],
+      en: [
+        'The random skill drop is now an open book, and experience gems are sky blue.',
+        'Grunts, Runners and Shooters are drawn 20% larger (their hit area is unchanged).',
+        'Culling now works on Bosses, Chimeras and Fugitives too.',
+      ],
+      ja: [
+        'ランダムスキルが開いた本の形になり、経験値ジェムが空色になりました。',
+        '一般・疾走・射手の見た目が20%大きくなりました（当たり判定はそのまま）。',
+        '処刑属性がボス・キメラ・逃亡者にも適用されるようになりました。',
+      ],
+      zh: [
+        '随机技能变为打开的书本外形，经验宝石变为天蓝色。',
+        '普通、疾走、射手的外形放大了20%（受击范围不变）。',
+        '处决属性现在也对首领、奇美拉和逃亡者生效。',
+      ],
+    },
+  },
+  {
     version: '0.143',
     date: '2026-10-27',
     changes: {
