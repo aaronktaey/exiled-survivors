@@ -58,8 +58,6 @@ export class MenuScene extends Phaser.Scene {
   public village?: Village;
   /** The corner icons. Public so a test can press one. */
   public icons!: IconBar;
-  /** How wide the title's column is: the canvas, or the room left of the corner icons (0.148). */
-  public columnWidth = 0;
   /** First place under the logo, when there is one. Public for tests. */
   public champion?: Phaser.GameObjects.Text;
   private championFlag?: Phaser.GameObjects.Image;
@@ -240,7 +238,12 @@ export class MenuScene extends Phaser.Scene {
     this.add.rectangle(0, 0, width, height, 0x05070b, SCRIM.title).setOrigin(0, 0).setDepth(DEPTH.ground + 1);
 
     // Logo, byline and rows are one block, centred in whatever is there.
-    const listHeight = ROW_COUNT * (MENU.buttonHeight + MENU.buttonGap) - MENU.buttonGap;
+    // On a screen too short for it all (a phone lying down is 420 high, 0.149)
+    // the rows close up, then the logo is drawn smaller — never off the foot.
+    const tight = height < MENU.tightHeight;
+    const rowHeight = tight ? MENU.buttonHeightTight : MENU.buttonHeight;
+    const rowGap = tight ? MENU.buttonGapTight : MENU.buttonGap;
+    const listHeight = ROW_COUNT * (rowHeight + rowGap) - rowGap;
     // Six rows under the logo only just fit a 540-tall canvas, so a short
     // one closes the gap rather than pushing the last row into the hint.
     const gap = height < MENU.shortHeight ? MENU.logoGapShort : MENU.logoGap;
@@ -251,19 +254,26 @@ export class MenuScene extends Phaser.Scene {
     const prophesied = dailyRules.today() !== null;
     const tall = height >= MENU.shortHeight;
     const plateRoom = prophesied && tall ? MENU.prophecy.height + MENU.prophecy.gap : 0;
-    const blockHeight = MENU.logoBlockHeight + MENU.championGap + MENU.podiumGap + plateRoom;
-    const top = centredTop(height, blockHeight + gap + listHeight);
+    const fullBlock = MENU.logoBlockHeight + MENU.championGap + MENU.podiumGap + plateRoom;
+    const over = fullBlock + gap + listHeight - (height - MENU.iconClearBottom);
+    const logoShrink = Math.max(0, Math.min(over, MENU.logoHeight * (1 - MENU.logoMinScale)));
+    const logoScale = (MENU.logoHeight - logoShrink) / MENU.logoHeight;
+    const blockHeight = fullBlock - logoShrink;
+    // Centred, but never so low that the last row meets the hint at the foot.
+    let top = Math.max(8, Math.min(centredTop(height, blockHeight + gap + listHeight), height - MENU.iconClearBottom - (blockHeight + gap + listHeight)));
 
     // Where the logo will stand, so the corner icons can keep clear of it
-    // (0.148): two rows where one would run into it, and where even two
-    // would, the logo, the board and the rows move into the room left of them.
+    // (0.148): two rows where one would run into it. The title stays centred
+    // (0.149 — 0.148 moved it aside, and the user saw it fall apart): where
+    // two rows still meet the logo, the block goes down under them if the
+    // screen has the room (upright), else the logo is drawn smaller.
     const source = this.textures.get(TEXTURES.logo).getSourceImage() as { width: number; height: number };
-    const logoW = Math.min(source.width, width - MENU.logoMargin * 2);
+    const logoW = Math.min(source.width * logoScale, width - MENU.logoMargin * 2);
     const logoH = (source.height * logoW) / source.width;
     const pad = 12;
     const logoArea = new Phaser.Geom.Rectangle(
       width / 2 - logoW / 2 - pad,
-      top + MENU.logoHeight / 2 - logoH / 2 - pad,
+      top + (MENU.logoHeight - logoShrink) / 2 - logoH / 2 - pad,
       logoW + pad * 2,
       logoH + Math.abs(MENU.logoBobPx) + pad * 2,
     );
@@ -330,30 +340,39 @@ export class MenuScene extends Phaser.Scene {
           ]
         : []),
     ], logoArea);
-    const column = Phaser.Geom.Intersects.RectangleToRectangle(this.icons.bounds, logoArea) ? this.icons.bounds.x - pad : width;
-    this.columnWidth = column;
+    let logoRoom = logoW;
+    if (Phaser.Geom.Intersects.RectangleToRectangle(this.icons.bounds, logoArea)) {
+      const lower = this.icons.bounds.bottom - logoArea.y;
+      if (top + lower + blockHeight + gap + listHeight <= height - MENU.iconClearBottom) {
+        top += lower;
+      } else {
+        logoRoom = Math.max(logoW * MENU.logoMinScale, 2 * (this.icons.bounds.x - pad - width / 2));
+      }
+    }
 
-    const logo = this.addLogo(column, top + MENU.logoHeight / 2);
+    const logo = this.addLogo(width, top + (MENU.logoHeight - logoShrink) / 2, logoRoom);
     if (prophesied) {
       const { width: plateW, height: plateH, minCornerWidth } = MENU.prophecy;
-      const side = (column - logo.displayWidth) / 2 - 24;
+      const side = (width - logo.displayWidth) / 2 - 24;
       if (tall) {
-        this.prophecySpot = { x: column / 2, y: top + blockHeight - plateH / 2, w: Math.min(column - 32, plateW), plate: true };
+        this.prophecySpot = { x: width / 2, y: top + blockHeight - plateH / 2, w: Math.min(width - 32, plateW), plate: true };
       } else if (side >= minCornerWidth) {
         // Short and wide: beside the logo, in the top-left corner.
         const w = Math.min(side, plateW);
         this.prophecySpot = { x: 16 + w / 2, y: 16 + plateH / 2, w, plate: true };
       } else {
         // No room for a plate: one line in the gap over the first row.
-        this.prophecySpot = { x: column / 2, y: top + blockHeight + gap - MENU.dailyLineAboveRows, w: column - 32, plate: false };
+        this.prophecySpot = { x: width / 2, y: top + blockHeight + gap - MENU.dailyLineAboveRows, w: width - 32, plate: false };
       }
     }
 
     const saved = saveGame.read();
     this.menu = new MenuList(this, {
       keysElsewhere: () => this.icons?.hasFocus === true,
-      x: column / 2,
-      y: top + blockHeight + gap + MENU.buttonHeight / 2,
+      x: width / 2,
+      y: top + blockHeight + gap + rowHeight / 2,
+      rowHeight,
+      rowGap,
       items: [
         { id: 'start', label: () => t().menu.start, onSelect: () => this.onStart() },
         {
@@ -518,11 +537,11 @@ export class MenuScene extends Phaser.Scene {
   }
 
   /** The pixel logo, drifting slowly up and down. */
-  private addLogo(width: number, y: number): Phaser.GameObjects.Image {
+  private addLogo(width: number, y: number, room = width - MENU.logoMargin * 2): Phaser.GameObjects.Image {
     const logo = this.add.image(width / 2, y, TEXTURES.logo).setDepth(DEPTH.ui);
 
-    // It is baked at a fixed pixel size, which is wider than a phone.
-    const room = width - MENU.logoMargin * 2;
+    // It is baked at a fixed pixel size, which is wider than a phone — and
+    // narrower where the corner icons need the room (0.149).
     if (logo.width > room) {
       logo.setScale(room / logo.width);
     }

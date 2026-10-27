@@ -15,6 +15,28 @@ export interface PatchNote {
 
 export const PATCH_NOTES: readonly PatchNote[] = [
   {
+    version: '0.149',
+    date: '2026-10-28',
+    changes: {
+      ko: [
+        '타이틀 화면이 다시 가운데에 정렬됩니다. 0.148에서 오른쪽 위 아이콘을 피하느라 로고와 메뉴가 한쪽으로 밀리던 문제를 고쳤습니다. 이제 세로 화면에서는 타이틀이 아이콘 아래로 내려가고, 가로 화면에서는 로고만 조금 작아집니다.',
+        '가로로 눕힌 휴대폰에서 타이틀 메뉴의 마지막 줄이 아래 안내문과 겹치던 문제를 고쳤습니다.',
+      ],
+      en: [
+        'The title screen is centred again. In 0.148 the logo and menu were pushed aside to make room for the icons at the top right; now on an upright screen the title moves down below the icons, and on a wide one only the logo gets a little smaller.',
+        'On a phone held sideways, the last title menu row no longer runs into the hint at the bottom.',
+      ],
+      ja: [
+        'タイトル画面が再び中央揃えになりました。0.148で右上のアイコンを避けるためにロゴとメニューが片側へ寄っていた問題を直しました。縦画面ではタイトルがアイコンの下に下がり、横画面ではロゴだけが少し小さくなります。',
+        '横向きのスマートフォンで、タイトルメニューの最後の行が下の案内文と重なっていた問題を直しました。',
+      ],
+      zh: [
+        '标题界面重新居中。修复了 0.148 中为避开右上角图标而把标志和菜单推到一侧的问题：竖屏时标题移到图标下方，横屏时只把标志稍微缩小。',
+        '修复了横握手机时标题菜单最后一行与底部提示重叠的问题。',
+      ],
+    },
+  },
+  {
     version: '0.148',
     date: '2026-10-28',
     changes: {

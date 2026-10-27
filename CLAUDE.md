@@ -1465,9 +1465,16 @@ Read `git log` for what changed and when. What is not in the log:
   as a grid — every slot as wide as the widest caption, every row as tall as
   the tallest, a short last row kept right — on as few rows as stay on the
   screen and clear of `avoid` (the logo's area, worked out in `buildMenu`
-  before the logo is made), at most `ICON_BAR.maxRows` (2) for that. Where
-  two rows still meet the logo, the logo, the board, the 예언 plate and the
-  rows move into the room left of the icons (`MenuScene.columnWidth`).
+  before the logo is made), at most `ICON_BAR.maxRows` (2) for that. The
+  title always stays centred: where two rows still meet the logo, the whole
+  block goes down under the icons if the screen has the room (upright),
+  else the logo alone is drawn smaller (`MENU.logoMinScale`). 0.148 moved
+  the block into the room left of the icons instead, and on a phone held
+  upright that squeezed the title into a sliver — do not bring it back.
+  On a screen under `MENU.tightHeight` (a phone lying down is 420 high) the
+  rows close up (`buttonHeightTight`, MenuList's `rowHeight`/`rowGap`) and
+  the logo shrinks until the last row clears the hint
+  (`MENU.iconClearBottom`); the block is never placed lower than that.
   A caption is kept short (the 전술 교본's is 전술) — the widest sets every slot.
 - **Known gaps, left on purpose:**
   - The 뼈다귀 pick screen is reached only on the way into a fresh run (게임

@@ -32,6 +32,9 @@ export interface MenuListOptions {
   readonly y: number;
   readonly items: readonly MenuItem[];
   readonly width?: number;
+  /** Each row's height and the gap between, when not MENU's (the title on a 420-high screen, 0.149). */
+  readonly rowHeight?: number;
+  readonly rowGap?: number;
   /**
    * At most this many rows on screen at once. Anything past that scrolls
    * under the cursor, with ▲ ▼ to say there is more either way. A windowed
@@ -110,7 +113,8 @@ export class MenuList {
     this.onMove = options.onMove;
 
     const width = fitWidth(options.width ?? MENU.buttonWidth, scene.scale.width);
-    const step = MENU.buttonHeight + MENU.buttonGap;
+    const rowHeight = options.rowHeight ?? MENU.buttonHeight;
+    const step = rowHeight + (options.rowGap ?? MENU.buttonGap);
     this.listX = options.x;
     this.listWidth = width;
     this.tightLayout = scene.scale.width < MENU.tightWidth;
@@ -124,7 +128,7 @@ export class MenuList {
       // No border: a row is just its words, and the one in hand is the one
       // lit up. The panel stays for the hit area and the highlight.
       const panel = scene.add
-        .rectangle(options.x, y, width, MENU.buttonHeight, COLORS.panelActive, 0)
+        .rectangle(options.x, y, width, rowHeight, COLORS.panelActive, 0)
         .setDepth(DEPTH.ui)
         .setInteractive({ useHandCursor: true });
 

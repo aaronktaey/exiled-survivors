@@ -739,6 +739,14 @@ export const MENU = {
   logoHeight: 104,
   /** Air kept either side of it on a screen too narrow for its full size. */
   logoMargin: 20,
+  /** Clear of the corner icons (0.149): the title goes down under them while its foot stays this far off the bottom, */
+  iconClearBottom: 40,
+  /** and where it cannot, the logo is drawn no smaller than this share of itself. */
+  logoMinScale: 0.55,
+  /** Below this height the title's rows close up (a phone lying down, 0.149). */
+  tightHeight: 470,
+  buttonHeightTight: 34,
+  buttonGapTight: 5,
   /** That logo plus the byline under it. */
   logoBlockHeight: 150,
   /** Byline to the 랭킹 first-place line under it, which adds this much. */
