@@ -248,9 +248,9 @@ check('the offensive 속성 roll as 접두어',
   JSON.stringify(rolled.prefixes) === JSON.stringify(rolled.wantPrefixes) &&
     ['critical', 'cruel', 'frenzied', 'mighty'].every((id) => rolled.prefixes.includes(id)),
   rolled.prefixes.join(' / '));
-check('the defensive and utility ones roll as 접미어',
+check('the defensive and utility ones roll as 접미어 — and 회피 no more (0.143)',
   JSON.stringify(rolled.suffixes) === JSON.stringify(rolled.wantSuffixes) &&
-    ['evasive', 'giant', 'magnetic', 'swift'].every((id) => rolled.suffixes.includes(id)),
+    ['giant', 'magnetic', 'swift'].every((id) => rolled.suffixes.includes(id)) && !rolled.suffixes.includes('evasive'),
   rolled.suffixes.join(' / '));
 check('and every line comes out at one of the rungs, every rung turning up',
   JSON.stringify(rolled.tiers) === JSON.stringify(rolled.wantTiers),
@@ -2095,6 +2095,72 @@ check('제작 is a screen of its own, with no tabs; 분해 has its two',
     salvageScreen.title && JSON.stringify(salvageScreen.tabs) === JSON.stringify(['낱개 분해', '일괄 분해']),
   JSON.stringify({ craftScreen, salvageScreen }));
 await ev(`(() => { for (let i = 0; i < 80; i++) window.gear.discard('pg' + i); return 1; })()`);
+
+// --- 0.143: 처형 · 광역 · 수집 · 약사 · 가시, and 회피 kept where it was ---
+await cdp.send('Page.navigate', { url: 'about:blank' });
+await cdp.send('Page.navigate', { url: 'http://localhost:5173/#run' });
+await cdp.until(`window.game?.scene.getScene('GameScene')?.player?.active`, 30000, 200);
+const affixes = await ev(`(() => {
+  const s = window.game.scene.getScene('GameScene'), C = window.config, p = s.player;
+  const sword = (prefixes, suffixes) => ({ uid: 'aff', id: 'rustySword', prefixes, suffixes, rungs: C.AFFIX_RUNGS });
+  const value = (id) => C.AFFIXES[id].gearTiers[0].value;
+  const was = s.gearBonus;
+  const crit = C.PLAYER.critChance;
+  C.PLAYER.critChance = 0;
+  const out = {};
+  try {
+    // 처형: a blow that leaves an ordinary enemy under the line kills it; a tick does not; a 우두머리 never.
+    s.gearBonus = window.gearBonusFor(sword([{ id: 'culling', tier: 1 }], []));
+    const cull = s.gearBonus.cullThreshold;
+    const put = (kind) => { const e = s.spawner.group.get(p.x + 300, p.y); e.spawn(p.x + 300, p.y, p, kind, s.spawner.hooks); return e; };
+    s.spawner.clear();
+    let e = put('grunt'); let life = e.lives;
+    s.combat.hit(e, Math.ceil(e.maxHp * (1 - cull)) + 1);
+    out.blow = !(e.active && e.lives === life);
+    e = put('grunt'); life = e.lives;
+    s.combat.hit(e, Math.ceil(e.maxHp * (1 - cull)) + 1, undefined, false);
+    out.tick = e.active && e.lives === life;
+    e = put('boss'); life = e.lives;
+    s.combat.hit(e, Math.ceil(e.maxHp * (1 - cull)) + 1);
+    out.boss = e.active && e.lives === life;
+    s.spawner.clear();
+    out.cull = { cull, want: value('culling') / 100 };
+    // 광역: every radius.
+    const areaBefore = (s.gearBonus = was, s.areaScale);
+    s.gearBonus = window.gearBonusFor(sword([{ id: 'wide', tier: 1 }], []));
+    out.area = { ratio: s.areaScale / areaBefore, want: 1 + value('wide') / 100 };
+    // 수집 · 약사: the shards' chance and the potion's heal.
+    s.gearBonus = window.gearBonusFor(sword([], [{ id: 'gathering', tier: 1 }, { id: 'apothecary', tier: 1 }]));
+    out.shards = { scale: s.combat.hooks.shardScale(), want: 1 + value('gathering') / 100 };
+    out.potion = { extra: s.combat.hooks.potionHeal() - s.shardBonus.potionHeal, want: value('apothecary') };
+    // 가시: a hit taken casts the main skill at once (its clock run out).
+    s.gearBonus = { ...window.gearBonusFor(sword([], [{ id: 'thorny', tier: 1 }])), counterCast: 1 };
+    const main = s.weapons.find((w) => w.definition.id === s.mainSkill);
+    main.sinceSwingMs = 0;
+    p.setInvulnerable(false); p.invulnerableUntil = 0;
+    p.takeContact(1);
+    out.thorny = { clock: main.sinceSwingMs === Infinity, chance: window.gearBonusFor(sword([], [{ id: 'thorny', tier: 1 }])).counterCast, want: value('thorny') / 100 };
+    p.hp = p.maxHp;
+    // 회피: no more rolls, but a weapon that has it keeps its window.
+    out.evasive = { pool: C.SUFFIXES.some((a) => a.id === 'evasive'), kept: window.gearBonusFor(sword([], [{ id: 'evasive', tier: 1 }])).invulnerableScale };
+  } finally {
+    s.gearBonus = was;
+    C.PLAYER.critChance = crit;
+  }
+  return out;
+})()`);
+console.log('affixes:', JSON.stringify(affixes));
+check('처형: a blow that leaves an ordinary enemy under its line kills it — never a tick, never a 우두머리',
+  affixes.blow === true && affixes.tick === true && affixes.boss === true && Math.abs(affixes.cull.cull - affixes.cull.want) < 1e-9,
+  JSON.stringify(affixes));
+check('광역 widens every radius by its share', Math.abs(affixes.area.ratio - affixes.area.want) < 1e-9, JSON.stringify(affixes.area));
+check('수집 raises the 재능의 파편’s chance; 약사 adds to every potion',
+  Math.abs(affixes.shards.scale - affixes.shards.want) < 1e-9 && affixes.potion.extra === affixes.potion.want,
+  JSON.stringify({ shards: affixes.shards, potion: affixes.potion }));
+check('가시: a hit taken casts the main skill at once, at its chance',
+  affixes.thorny.clock === true && Math.abs(affixes.thorny.chance - affixes.thorny.want) < 1e-9, JSON.stringify(affixes.thorny));
+check('회피 rolls no more, and a weapon that has it keeps its window',
+  affixes.evasive.pool === false && affixes.evasive.kept > 1, JSON.stringify(affixes.evasive));
 
 console.log('\n=== SUMMARY ===');
 const failed = results.filter((r) => !r.p);

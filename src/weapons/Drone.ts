@@ -56,6 +56,13 @@ export class Drone implements Weapon {
     this.lines = scene.add.graphics().setDepth(DEPTH.vfx);
   }
 
+  /** 가시 (0.143): every one goes off again at once. */
+  public castNow(): void {
+    for (const drone of this.drones) {
+      drone.readyAt = 0;
+    }
+  }
+
   public update(delta: number, context: WeaponContext): void {
     this.elapsedMs += delta;
     this.spin = Phaser.Math.Angle.Wrap(this.spin + (delta / 1000) * 1.6);

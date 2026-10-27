@@ -1128,6 +1128,23 @@ Read `git log` for what changed and when. What is not in the log:
   holds that), 활력
   (suffix, `regen` every `AFFIX_TIMING.regenEveryMs`, `GameScene.regenerate`)
   and 기교 (suffix, `projectileBlock` added to the base's own).
+- **Five more weapon 속성, and 회피 retired (0.143, the user's picks after a
+  look at PoE · Last Epoch · Hero Siege · Torchlight).** Tier odds are now
+  `AFFIX_TIER_WEIGHTS` 0.75 · 1.5 · 2.5 · 4.5 · 7 · 9.5 · 11 (tier 1 ≈2%).
+  처형 (`culling`, prefix, `cull`): in `CombatSystem.hit`, a blow (`startles`
+  — a poison tick is not one) that leaves an enemy that is not `isBoss` or
+  `precious` at or under that share of `maxHp` kills it (`cullThreshold`
+  hook). 광역 (`wide`, prefix): × `GameScene.areaScale`. 수집 (`gathering`,
+  suffix): adds to `GearBonus.shardChanceScale` with the 별 부수는 검's
+  implicit. 약사 (`apothecary`, suffix): flat onto every potion beside the
+  재능 (`potionHeal` hook). 가시 (`thorny`, suffix, the user named it for
+  what it does when hit): `Player.HURT` (every hit that gets through) rolls
+  `counterCast` and calls the main weapon's `castNow()` — every `Weapon` has
+  one: the cast clock run out, the 드론's `readyAt` cleared, 공허구체's
+  `hits` cleared. A crowd's contact hits roll it often; no cooldown on it,
+  as asked. 회피 has `retired: true`: out of `PREFIXES`/`SUFFIXES` (every
+  roll, 구슬 and swap draws from them), still in `AFFIXES`, so a weapon that
+  has it keeps it and the guide says it no longer rolls (`affixRetired`).
 - **Damage is 플랫 × 증가 × 증폭 (0.93, the user's rule).** `damageFor`
   (Modifiers.ts, `damageParts` for the HUD): (SKILL_BASE damage + the
   weapon's attack, 고정 속성 included) × (1 + every 증가, added: the run's

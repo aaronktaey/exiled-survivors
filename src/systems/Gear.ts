@@ -100,8 +100,16 @@ export interface GearBonus {
   readonly repeatChance: number;
   /** 척추 검's 가시 폭발 (0.137), or null. */
   readonly thornBurst: { readonly chance: number; readonly dpsShare: number } | null;
-  /** 별 부수는 검: the 재능의 파편's drop chance × this (0.137). */
+  /** 별 부수는 검: the 재능의 파편's drop chance × this (0.137); 수집 lines add to it (0.143). */
   readonly shardChanceScale: number;
+  /** 처형 (0.143): an ordinary enemy hit down to this share of its health dies. 0 for none. */
+  readonly cullThreshold: number;
+  /** 광역 (0.143): × every radius. */
+  readonly areaScale: number;
+  /** 약사 (0.143): health added to every potion. */
+  readonly potionHeal: number;
+  /** 가시 (0.143): the chance a hit taken casts the main skill at once. */
+  readonly counterCast: number;
 }
 
 export const NO_BONUS: GearBonus = {
@@ -122,6 +130,10 @@ export const NO_BONUS: GearBonus = {
   repeatChance: 0,
   thornBurst: null,
   shardChanceScale: 1,
+  cullThreshold: 0,
+  areaScale: 1,
+  potionHeal: 0,
+  counterCast: 0,
 };
 
 /** What one sword gives back when taken apart: its 철광석, and maybe one 구슬. */
@@ -223,6 +235,11 @@ export function gearBonusFor(item: GearItem | null): GearBonus {
   let critMultiplierBonus = 0;
   let regen = 0;
   let repeatChance = 0;
+  let cull = 0;
+  let area = 0;
+  let shardChance = (GEAR[item.id].implicit?.shardChanceScale ?? 1) - 1;
+  let potionHeal = 0;
+  let counterCast = 0;
 
   const implicit = GEAR[item.id].implicit;
   attackSpeed += (implicit?.attackSpeedScale ?? 1) - 1;
@@ -245,6 +262,11 @@ export function gearBonusFor(item: GearItem | null): GearBonus {
     regen += effect.regen ?? 0;
     repeatChance += effect.repeatChance ?? 0;
     projectileBlock += effect.projectileBlock ?? 0;
+    cull += effect.cull ?? 0;
+    area += (effect.areaScale ?? 1) - 1;
+    shardChance += (effect.shardChanceScale ?? 1) - 1;
+    potionHeal += effect.potionHeal ?? 0;
+    counterCast += effect.counterCast ?? 0;
   }
 
   return {
@@ -262,9 +284,13 @@ export function gearBonusFor(item: GearItem | null): GearBonus {
     projectileBlock: Math.min(1, projectileBlock),
     extraProjectiles: implicit?.extraProjectiles ?? 0,
     thornBurst: implicit?.thornBurst ?? null,
-    shardChanceScale: implicit?.shardChanceScale ?? 1,
+    shardChanceScale: 1 + shardChance,
     regen,
     repeatChance: Math.min(1, repeatChance),
+    cullThreshold: Math.min(1, cull),
+    areaScale: 1 + area,
+    potionHeal,
+    counterCast: Math.min(1, counterCast),
   };
 }
 

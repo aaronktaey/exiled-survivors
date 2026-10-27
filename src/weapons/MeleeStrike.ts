@@ -42,6 +42,11 @@ export class MeleeStrike implements Weapon {
     this.flash = scene.add.graphics().setDepth(DEPTH.vfx).setAlpha(0);
   }
 
+  /** 가시 (0.143): the next update casts, the cooldown run out. */
+  public castNow(): void {
+    this.sinceSwingMs = Number.POSITIVE_INFINITY;
+  }
+
   public update(delta: number, context: WeaponContext): void {
     this.sinceSwingMs += delta;
     if (this.sinceSwingMs < context.cooldownMs) {

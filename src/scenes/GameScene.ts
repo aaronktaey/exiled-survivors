@@ -356,6 +356,8 @@ export class GameScene extends Phaser.Scene {
 
     this.player = new Player(this, WORLD.width / 2, WORLD.height / 2);
     this.player.applyGear(this.gearBonus);
+    // 가시 (0.143): every hit the survivor takes rolls for a cast of the main skill.
+    this.player.on(Player.HURT, () => this.counterCast());
     this.cameras.main.startFollow(this.player, true, 0.12, 0.12);
 
     this.progression = new Progression();
@@ -405,7 +407,8 @@ export class GameScene extends Phaser.Scene {
         shardWeight: (stat) => (dailyRules.talentBanned(stat) ? 0 : (this.mods.passive.shardWeights[stat] ?? 1)),
         dropScale: () => this.boneBonus.dropScale,
         potionScale: () => this.heldBonus.potionChanceScale,
-        potionHeal: () => this.shardBonus.potionHeal,
+        potionHeal: () => this.shardBonus.potionHeal + this.gearBonus.potionHeal,
+        cullThreshold: () => this.gearBonus.cullThreshold,
         shatter: () =>
           this.mainSkill === 'iceSpear' && this.masteryOf('iceSpear') >= 2
             ? { radius: SKILL_MASTERY.second.iceShatter.radius * this.heldBonus.areaScale }
@@ -1605,7 +1608,7 @@ export class GameScene extends Phaser.Scene {
 
   /** Every radius the run widens: the held 화염구's, and the shards' 효과범위 (0.102). */
   private get areaScale(): number {
-    return this.heldBonus.areaScale * this.shardBonus.area;
+    return this.heldBonus.areaScale * this.shardBonus.area * this.gearBonus.areaScale;
   }
 
   /**
@@ -1730,7 +1733,7 @@ export class GameScene extends Phaser.Scene {
   }
 
   private drinkForMaxedSkill(skill: SkillId, why: 'maxed' | 'full' = 'maxed'): void {
-    const healed = this.player.heal(HealthPotion.healing(this.shardBonus.potionHeal));
+    const healed = this.player.heal(HealthPotion.healing(this.shardBonus.potionHeal + this.gearBonus.potionHeal));
     const { x, y } = this.player;
     // Over the survivor's own name and health, not on them.
     this.damageNumbers.spawn(x, y - 70, 0, { text: t().game.potionEffect, color: COLORS.healText, crit: true });
@@ -1881,6 +1884,15 @@ export class GameScene extends Phaser.Scene {
     if (!this.held) {
       this.physics.resume();
     }
+  }
+
+  /** 가시 (0.143): a hit taken may cast the main skill at once, out of its turn. */
+  private counterCast(): void {
+    const chance = this.gearBonus.counterCast;
+    if (this.over || chance <= 0 || Math.random() >= chance) {
+      return;
+    }
+    this.weapons.find((weapon) => weapon.definition.id === this.mainSkill)?.castNow?.();
   }
 
   /** Takes back what this run put in the drawers: it ends off the ranking (0.134). */

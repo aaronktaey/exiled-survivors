@@ -13,6 +13,8 @@ type WasdKeys = Record<'W' | 'A' | 'S' | 'D', Phaser.Input.Keyboard.Key>;
  */
 export class Player extends Phaser.Physics.Arcade.Sprite {
   public static readonly DIED = 'player-died';
+  /** A hit got through (0.143: 가시 casts on it). */
+  public static readonly HURT = 'hurt';
 
   public hp: number = PLAYER.maxHp;
 
@@ -369,6 +371,8 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
 
   private hurt(amount: number): void {
     this.hp = Math.max(0, this.hp - amount);
+    // Said to whoever listens (가시, 0.143) — every hit that got through.
+    this.emit(Player.HURT, amount);
 
     // A short blink, restarted rather than stacked when hits come together.
     this.scene.tweens.killTweensOf(this);

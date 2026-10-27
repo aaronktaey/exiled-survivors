@@ -110,6 +110,11 @@ export class PoisonNova implements Weapon {
     this.marks = scene.add.graphics().setDepth(DEPTH.vfx);
   }
 
+  /** 가시 (0.143): the next update casts, the cooldown run out. */
+  public castNow(): void {
+    this.sinceCastMs = Number.POSITIVE_INFINITY;
+  }
+
   public update(delta: number, context: WeaponContext): void {
     this.clockMs += delta;
     this.sinceCastMs += delta;

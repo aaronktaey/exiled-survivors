@@ -14,6 +14,11 @@ export interface Weapon {
   readonly projectiles?: Phaser.Physics.Arcade.Group;
   /** Advance the cooldown and fire if it is ready. */
   update(delta: number, context: WeaponContext): void;
+  /**
+   * Go off on the next update, whatever the cooldown says (가시, 0.143). It
+   * still needs a target, as any cast does; the cooldown starts again from it.
+   */
+  castNow?(): void;
 }
 
 export interface WeaponContext {

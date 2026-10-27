@@ -35,6 +35,11 @@ export class ThunderStrike implements Weapon {
     this.bolt = scene.add.graphics().setDepth(DEPTH.vfx).setAlpha(0);
   }
 
+  /** 가시 (0.143): the next update casts, the cooldown run out. */
+  public castNow(): void {
+    this.sinceCastMs = Number.POSITIVE_INFINITY;
+  }
+
   public update(delta: number, context: WeaponContext): void {
     this.sinceCastMs += delta;
     if (this.sinceCastMs < context.cooldownMs) {

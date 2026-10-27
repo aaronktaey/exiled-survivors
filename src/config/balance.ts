@@ -523,7 +523,12 @@ export type AffixId =
   | "vital"
   | "deft"
   | "volleying"
-  | "spider";
+  | "spider"
+  | "culling"
+  | "wide"
+  | "gathering"
+  | "apothecary"
+  | "thorny";
 
 export type AffixKind = "prefix" | "suffix";
 
@@ -577,6 +582,16 @@ export interface GearAffixEffect {
   readonly regen?: number;
   /** 기교: the chance an enemy's shot that reaches the survivor is stopped — added to the base's own. */
   readonly projectileBlock?: number;
+  /** 처형 (0.143): a hit that leaves an ordinary enemy at or under this share of its health kills it. */
+  readonly cull?: number;
+  /** 광역 (0.143): multiplies every radius, as the run's other area scales do. */
+  readonly areaScale?: number;
+  /** 수집 (0.143): multiplies the 재능의 파편's drop chance. */
+  readonly shardChanceScale?: number;
+  /** 약사 (0.143): health added to every potion, flat. */
+  readonly potionHeal?: number;
+  /** 가시 (0.143): the chance a hit taken casts the main skill at once. */
+  readonly counterCast?: number;
 }
 
 /**
@@ -620,6 +635,12 @@ export interface AffixSpec {
   readonly rangedOnly?: boolean;
   /** What it does on a weapon, rung by rung. Tier 1 first. */
   readonly gearTiers?: readonly AffixTierSpec[];
+  /**
+   * No longer rolls on a weapon (0.143: 회피, the user's ask) — out of the
+   * 접두어/접미어 pools every roll and 구슬 draws from — while a weapon that
+   * has it keeps it and what it does.
+   */
+  readonly retired?: boolean;
 }
 
 /**
@@ -629,7 +650,7 @@ export interface AffixSpec {
  * about one roll in thirty-five, tier 1 one in a hundred and fifty. A 구슬
  * is how a weapon climbs there.
  */
-export const AFFIX_TIER_WEIGHTS: readonly number[] = [0.25, 0.5, 1, 3, 6, 10, 15];
+export const AFFIX_TIER_WEIGHTS: readonly number[] = [0.75, 1.5, 2.5, 4.5, 7, 9.5, 11];
 
 /** How many rungs every ladder has. */
 export const AFFIX_RUNGS = AFFIX_TIER_WEIGHTS.length;
@@ -825,6 +846,8 @@ export const AFFIXES: Record<AffixId, AffixSpec> = {
     kind: "suffix",
     name: "회피",
     detail: "피격 후 무적 시간 +30%",
+    // 0.143 (the user's ask): rolls no more; a weapon that has it keeps it.
+    retired: true,
     gearTiers: tiers(
       (v) => `무적 시간 +${v}%`,
       (v) => ({ invulnerableScale: 1 + v / 100 }),
@@ -864,6 +887,63 @@ export const AFFIXES: Record<AffixId, AffixSpec> = {
       (v) => `${v}% 확률로 적의 투사체를 막아냄`,
       (v) => ({ projectileBlock: v / 100 }),
       [18, 17, 15, 13, 11, 8, 5],
+    ),
+  },
+  // 0.143 (the user's picks, after PoE · Last Epoch · Hero Siege · Torchlight).
+  culling: {
+    id: "culling",
+    kind: "prefix",
+    name: "처형",
+    detail: "체력이 낮은 적을 즉시 처치",
+    gearTiers: tiers(
+      // A hit, not a tick; never a 우두머리, 키메라 or 도망자 (CombatSystem.hit).
+      (v) => `체력 ${v}% 이하인 적 처형`,
+      (v) => ({ cull: v / 100 }),
+      [10, 9.3, 8.5, 7.5, 6.5, 5, 3],
+    ),
+  },
+  wide: {
+    id: "wide",
+    kind: "prefix",
+    name: "광역",
+    detail: "효과 범위 증가",
+    gearTiers: tiers(
+      (v) => `효과 범위 +${v}%`,
+      (v) => ({ areaScale: 1 + v / 100 }),
+      [20, 18, 15.5, 13, 10, 7, 4],
+    ),
+  },
+  gathering: {
+    id: "gathering",
+    kind: "suffix",
+    name: "수집",
+    detail: "재능의 파편 드랍률 증가",
+    gearTiers: tiers(
+      (v) => `재능의 파편 드랍률 +${v}%`,
+      (v) => ({ shardChanceScale: 1 + v / 100 }),
+      [20, 18, 15.5, 13, 10, 7, 4],
+    ),
+  },
+  apothecary: {
+    id: "apothecary",
+    kind: "suffix",
+    name: "약사",
+    detail: "포션 회복량 증가",
+    gearTiers: tiers(
+      (v) => `포션 회복량 +${v}`,
+      (v) => ({ potionHeal: v }),
+      [10, 9, 8, 7, 6, 4, 2],
+    ),
+  },
+  thorny: {
+    id: "thorny",
+    kind: "suffix",
+    name: "가시",
+    detail: "피격 시 메인 스킬 발동",
+    gearTiers: tiers(
+      (v) => `피격 시 ${v}% 확률로 메인 스킬 발동`,
+      (v) => ({ counterCast: v / 100 }),
+      [12, 11, 10, 8.5, 7, 5, 3],
     ),
   },
 };
@@ -908,11 +988,11 @@ export const ENEMY_AFFIXES: readonly AffixSpec[] = Object.values(
 ).filter((affix) => affix.enemy !== undefined);
 
 export const PREFIXES: readonly AffixSpec[] = Object.values(AFFIXES).filter(
-  (affix) => affix.kind === "prefix" && affix.gearTiers !== undefined,
+  (affix) => affix.kind === "prefix" && affix.gearTiers !== undefined && !affix.retired,
 );
 
 export const SUFFIXES: readonly AffixSpec[] = Object.values(AFFIXES).filter(
-  (affix) => affix.kind === "suffix" && affix.gearTiers !== undefined,
+  (affix) => affix.kind === "suffix" && affix.gearTiers !== undefined && !affix.retired,
 );
 
 export const RARE = {

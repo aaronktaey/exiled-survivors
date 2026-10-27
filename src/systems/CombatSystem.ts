@@ -72,6 +72,8 @@ export interface CombatHooks {
   readonly onEnemyKilled?: (x: number, y: number, byThorn: boolean) => void;
   /** What the weapon multiplies the 재능의 파편's chance by (0.137: 별 부수는 검). */
   readonly shardScale?: () => number;
+  /** 처형 (0.143): the share of its health an ordinary enemy dies at when hit. */
+  readonly cullThreshold?: () => number;
   readonly onGearCollected: (item: GearItem) => void;
   /** Called when the player walks over a 구슬. */
   readonly onOrbCollected: (id: OrbId) => void;
@@ -571,6 +573,16 @@ export class CombatSystem {
 
     if (enemy.takeDamage(dealt, startles)) {
       this.killEnemy(enemy);
+      return;
+    }
+    // 처형 (0.143): a blow — not a tick, which does not startle — that leaves
+    // an ordinary enemy low enough finishes it. Never a 우두머리, 키메라 or 도망자.
+    const cull = this.hooks.cullThreshold?.() ?? 0;
+    if (cull > 0 && startles && !enemy.isBoss && !enemy.precious && enemy.hp <= enemy.maxHp * cull) {
+      this.stats.recordDamage(enemy.hp, source);
+      if (enemy.takeDamage(enemy.hp, false)) {
+        this.killEnemy(enemy);
+      }
     }
   };
 

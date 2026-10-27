@@ -15,6 +15,40 @@ export interface PatchNote {
 
 export const PATCH_NOTES: readonly PatchNote[] = [
   {
+    version: '0.143',
+    date: '2026-10-27',
+    changes: {
+      ko: [
+        '무기 속성의 높은 티어가 더 자주 나옵니다(1티어 0.7% → 2.0%, 2티어 1.4% → 4.1%, 3티어 2.8% → 6.8%, 7티어 42% → 30%). 드랍과 변화·혼돈·각성의 구슬에 모두 적용됩니다.',
+        '새 접두어 「처형」: 맞은 적의 체력이 일정 비율 이하로 남으면 즉시 처치합니다(1티어 10% ~ 7티어 3%). 우두머리·키메라·도망자와 중독 피해에는 적용되지 않습니다.',
+        '새 접두어 「광역」: 모든 스킬의 효과 범위 증가(1티어 +20% ~ 7티어 +4%).',
+        '새 접미어 「수집」: 재능의 파편 드랍률 증가(1티어 +20% ~ 7티어 +4%). 「약사」: 포션 회복량 증가(1티어 +10 ~ 7티어 +2). 「가시」: 피격 시 확률로 메인 스킬이 즉시 발동(1티어 12% ~ 7티어 3%).',
+        '접미어 「회피」는 더 이상 새로 붙지 않습니다. 이미 회피가 붙은 무기는 그대로 효과가 있습니다.',
+      ],
+      en: [
+        'Higher weapon modifier tiers come up more often (tier 1 0.7% → 2.0%, tier 2 1.4% → 4.1%, tier 3 2.8% → 6.8%, tier 7 42% → 30%), on drops and on Transmutation, Chaos and Awakening Orbs alike.',
+        'New prefix, Culling: a hit that leaves an enemy at or under a share of its health kills it (tier 1 10% to tier 7 3%). Not on Bosses, Chimeras or Fugitives, and not from poison.',
+        'New prefix, Sweeping: every skill’s area of effect (tier 1 +20% to tier 7 +4%).',
+        'New suffixes: Gathering, talent shard drop chance (+20% to +4%); Apothecary, potion healing (+10 to +2); Thorned, a chance on being hit to cast the main skill at once (12% to 3%).',
+        'The Evasive suffix no longer rolls. Weapons that already have it keep it.',
+      ],
+      ja: [
+        '武器属性の高いティアがより出やすくなりました（1ティア 0.7% → 2.0%、2ティア 1.4% → 4.1%、3ティア 2.8% → 6.8%、7ティア 42% → 30%）。ドロップと変化・混沌・覚醒の球のすべてに適用されます。',
+        '新しい接頭辞「処刑」：攻撃を受けた敵の体力が一定割合以下になると即座に倒します（1ティア 10% ～ 7ティア 3%）。ボス・キメラ・逃亡者と毒ダメージには適用されません。',
+        '新しい接頭辞「広域」：すべてのスキルの効果範囲増加（1ティア +20% ～ 7ティア +4%）。',
+        '新しい接尾辞「収集」：才能の欠片のドロップ率増加（+20% ～ +4%）。「薬師」：ポーション回復量増加（+10 ～ +2）。「棘」：被弾時に確率でメインスキルが即座に発動（12% ～ 3%）。',
+        '接尾辞「回避」はもう新しく付きません。既に回避が付いた武器はそのまま効果があります。',
+      ],
+      zh: [
+        '武器词缀的高阶层更常出现（1阶 0.7% → 2.0%，2阶 1.4% → 4.1%，3阶 2.8% → 6.8%，7阶 42% → 30%），掉落与变化·混沌·觉醒宝珠均适用。',
+        '新前缀「处决」：被击中的敌人生命低于一定比例时立即击杀（1阶 10% ～ 7阶 3%）。对首领、奇美拉、逃亡者以及中毒伤害无效。',
+        '新前缀「广域」：所有技能的效果范围提高（1阶 +20% ～ 7阶 +4%）。',
+        '新后缀「收集」：天赋碎片掉落率提高（+20% ～ +4%）；「药师」：药水恢复量提高（+10 ～ +2）；「荆棘」：受击时有几率立即触发主技能（12% ～ 3%）。',
+        '后缀「闪避」不再生成。已拥有闪避的武器效果不变。',
+      ],
+    },
+  },
+  {
     version: '0.142',
     date: '2026-10-26',
     changes: {

@@ -60,6 +60,12 @@ export class VoidOrb implements Weapon {
     return this.orbs.filter((orb) => orb.visible);
   }
 
+  /** 가시 (0.143): every one goes off again at once. */
+  public castNow(): void {
+    // Every orb may strike every enemy again at once.
+    this.hits.clear();
+  }
+
   public update(delta: number, context: WeaponContext): void {
     this.elapsedMs += delta;
 

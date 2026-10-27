@@ -470,6 +470,7 @@ function affixCards(): GuideCard[] {
         affixKindName(spec.kind),
         ...(where ? [where] : []),
         ...(spec.rangedOnly ? [g.affixRangedOnly] : []),
+        ...(spec.retired ? [g.affixRetired] : []),
       ],
       lines: [
         ...(spec.enemy ? [fill(g.affixEnemy, { detail: affixDetail(id) })] : []),

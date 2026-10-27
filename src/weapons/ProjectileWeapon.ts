@@ -31,6 +31,11 @@ export abstract class ProjectileWeapon implements Weapon {
     });
   }
 
+  /** 가시 (0.143): the next update casts, the cooldown run out. */
+  public castNow(): void {
+    this.sinceShotMs = Number.POSITIVE_INFINITY;
+  }
+
   public update(delta: number, context: WeaponContext): void {
     this.sinceShotMs += delta;
     if (this.sinceShotMs < context.cooldownMs) {

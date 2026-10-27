@@ -1157,6 +1157,7 @@ export const ko: Strings = {
       affixWeapon: '무기: {ladder}',
       affixRung: '{tier}티어 {value}',
       affixRangedOnly: '탄을 쏘는 적에게만 붙습니다',
+      affixRetired: '더 이상 새로 붙지 않음 (이미 붙은 무기는 그대로)',
       affixWeaponOnly: '무기에만 붙습니다',
       affixEnemyOnly: '희귀 적에게만 붙습니다',
       chanceKill: '적 처치 시 {chance}',

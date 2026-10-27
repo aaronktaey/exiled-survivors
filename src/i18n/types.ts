@@ -996,6 +996,8 @@ export interface Strings {
       /** One rung of that ladder: {tier}, {value}. */
       readonly affixRung: string;
       readonly affixRangedOnly: string;
+      /** An 속성 that no longer rolls (0.143: 회피). */
+      readonly affixRetired: string;
       readonly affixWeaponOnly: string;
       readonly affixEnemyOnly: string;
       /** Drop chances: off any kill, off a 우두머리 only. */
