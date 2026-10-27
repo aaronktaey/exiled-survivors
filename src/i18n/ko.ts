@@ -72,7 +72,7 @@ export const ko: Strings = {
   },
 
   autoPick: {
-    icon: '전술 교본',
+    icon: '전술',
     title: '전술 교본',
     lead: '선택지가 나오면 고를 수 있는 것 중 목록에서 가장 위에 있는 것을 자동으로 고릅니다. 전투 준비에서 켜고 시작한 판에만 적용됩니다.',
     tabs: { skills: '스킬', upgrades: '강화', shards: '재능' },

@@ -364,12 +364,13 @@ Read `git log` for what changed and when. What is not in the log:
   side view is its front squashed (`Painter.squash`). The end screen shows
   each kind as it looked when the run ended.
   **One dot on the field (0.146, the user's ask):** `systems/Pixelate.ts`
-  re-draws at boot, in place, everything else that is on the field — the
-  survivor's looks, every drop, the thorns and shards — to the same dot for
-  the size it is shown at (each dot the commonest solid colour under it, a
-  part-covered dot the darkest, which keeps an outline). Glows, pillars, the
-  enemy bolt and the 도망자 stay smooth. A new thing on the field goes in
-  `pixelateWorld`'s list. The harness and `#run` keep the old art for both
+  re-draws at boot, in place, the survivor's looks, the thorns, the ice
+  shard and the drones to the same dot for the size each is shown at (each
+  dot the commonest solid colour under it, a part-covered dot the darkest,
+  which keeps an outline). The icons — skills, swords, bones, 구슬, every
+  drop — were too in 0.146–0.147 and went back to their own pictures in
+  0.148 (the user: mush at that size); keep them out of `pixelateWorld`.
+  Glows, pillars, the enemy bolt and the 도망자 stay smooth. The harness and `#run` keep the old art for both
   unless a page sets `window.__erasOn` / `window.__pixelOn` (test-enemies
   sets the first); `MONSTER_ERAS.devOnly` (false) keeps both to the dev
   server when true.
@@ -1460,6 +1461,14 @@ Read `git log` for what changed and when. What is not in the log:
   and now shows before every fresh run even with an empty drawer — except on
   the harness, unless a page sets `window.__prepOn` (test-autopick does).
   A new kind of choice should go through `chooseForPlayer` too.
+- **The title's corner icons (0.148, the user's ask).** `IconBar` lays them
+  as a grid — every slot as wide as the widest caption, every row as tall as
+  the tallest, a short last row kept right — on as few rows as stay on the
+  screen and clear of `avoid` (the logo's area, worked out in `buildMenu`
+  before the logo is made), at most `ICON_BAR.maxRows` (2) for that. Where
+  two rows still meet the logo, the logo, the board, the 예언 plate and the
+  rows move into the room left of the icons (`MenuScene.columnWidth`).
+  A caption is kept short (the 전술 교본's is 전술) — the widest sets every slot.
 - **Known gaps, left on purpose:**
   - The 뼈다귀 pick screen is reached only on the way into a fresh run (게임
     시작, and 다시하기 after a death — both through `BoneScene.before`).

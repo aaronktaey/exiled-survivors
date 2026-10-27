@@ -68,7 +68,7 @@ export const ja: Strings = {
   },
 
   autoPick: {
-    icon: '作戦書',
+    icon: '作戦',
     title: '作戦書',
     lead: '選択肢が出ると、選べるものの中でここで最も上にあるものを自動で選びます。戦闘準備でオンにして始めた回だけに適用されます。',
     tabs: { skills: 'スキル', upgrades: '強化', shards: '才能' },

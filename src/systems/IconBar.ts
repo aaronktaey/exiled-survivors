@@ -36,12 +36,19 @@ export class IconBar {
   public readonly views: IconView[] = [];
   /** Which one Tab has walked to; -1 is none of them. */
   private focused = -1;
+  /** How many rows they took: two where one would run into `avoid` (more only where the screen is too narrow). Public for tests. */
+  public rows = 1;
+  /** Where the icons stand, captions and all. */
+  public bounds = new Phaser.Geom.Rectangle();
 
-  public constructor(scene: Phaser.Scene, buttons: readonly IconButton[]) {
+  /**
+   * `avoid`: what the icons must stay clear of (the title's logo); where one
+   * row would run into it they wrap onto more, right-aligned (0.148).
+   */
+  public constructor(scene: Phaser.Scene, buttons: readonly IconButton[], avoid?: Phaser.Geom.Rectangle) {
     this.scene = scene;
 
-    const { size, gap, margin, labelGap } = ICON_BAR;
-    const right = scene.scale.width - margin;
+    const { size, margin, labelGap } = ICON_BAR;
     const y = margin + size / 2;
 
     // Built at x = 0 and placed afterwards: a slot is as wide as its icon or
@@ -108,22 +115,56 @@ export class IconBar {
       this.views.push({ button, image, plate, label, badge, ring });
     });
 
-    let edge = right;
-    for (let i = this.views.length - 1; i >= 0; i--) {
-      const view = this.views[i]!;
-      const slot = Math.max(size, Math.ceil(view.label.width) + 6);
-      const x = edge - slot / 2;
-      view.plate.setX(x);
-      view.image.setX(x);
-      view.label.setX(x);
-      view.badge.setX(x + size / 2 - 2);
-      view.ring?.setX(x);
-      edge -= slot + gap;
-    }
+    this.layOut(avoid);
 
     scene.input.keyboard?.on('keydown', this.onKeyDown, this);
     scene.events.once(Phaser.Scenes.Events.SHUTDOWN, this.destroy, this);
     this.refresh();
+  }
+
+  /**
+   * A grid in the corner, every slot as wide as the widest caption and every
+   * row as tall as the tallest (0.148, the user's ask: the gaps were uneven,
+   * each slot as wide as its own caption). One row while it stays clear of
+   * `avoid`, else as many as it takes; a short last row keeps to the right.
+   */
+  private layOut(avoid?: Phaser.Geom.Rectangle): void {
+    const { size, gap, rowGap, margin, labelGap } = ICON_BAR;
+    const width = this.scene.scale.width;
+    const count = this.views.length;
+    if (count === 0) {
+      return;
+    }
+    const slot = Math.max(size, ...this.views.map((view) => Math.ceil(view.label.width) + 6));
+    const rowH = size + labelGap + Math.max(...this.views.map((view) => Math.ceil(view.label.height)));
+    const block = (rows: number): Phaser.Geom.Rectangle => {
+      const cols = Math.ceil(count / rows);
+      const w = cols * slot + (cols - 1) * gap;
+      return new Phaser.Geom.Rectangle(width - margin - w, margin, w, rows * rowH + (rows - 1) * rowGap);
+    };
+    // As few rows as stay on the screen and clear of what is to be avoided —
+    // but no more than ICON_BAR.maxRows for that: past it the title makes
+    // room instead (MenuScene moves its column left).
+    const offScreen = (rows: number): boolean => block(rows).x < margin;
+    const overlaps = (rows: number): boolean => avoid !== undefined && Phaser.Geom.Intersects.RectangleToRectangle(block(rows), avoid);
+    this.rows = 1;
+    while (this.rows < count && (offScreen(this.rows) || (this.rows < ICON_BAR.maxRows && overlaps(this.rows)))) {
+      this.rows += 1;
+    }
+    this.bounds = block(this.rows);
+    const cols = Math.ceil(count / this.rows);
+    this.views.forEach((view, index) => {
+      const row = Math.floor(index / cols);
+      const inRow = Math.min(cols, count - row * cols);
+      const col = cols - inRow + (index % cols);
+      const x = width - margin - slot / 2 - (cols - 1 - col) * (slot + gap);
+      const y = margin + size / 2 + row * (rowH + rowGap);
+      view.plate.setPosition(x, y).setSize(slot, size);
+      view.image.setPosition(x, y);
+      view.label.setPosition(x, y + size / 2 + labelGap);
+      view.badge.setPosition(x + size / 2 - 2, y - size / 2 + 2);
+      view.ring?.setPosition(x, y);
+    });
   }
 
   /** Opens one by name, the way a tap on it would. */

@@ -58,6 +58,8 @@ export class MenuScene extends Phaser.Scene {
   public village?: Village;
   /** The corner icons. Public so a test can press one. */
   public icons!: IconBar;
+  /** How wide the title's column is: the canvas, or the room left of the corner icons (0.148). */
+  public columnWidth = 0;
   /** First place under the logo, when there is one. Public for tests. */
   public champion?: Phaser.GameObjects.Text;
   private championFlag?: Phaser.GameObjects.Image;
@@ -252,67 +254,19 @@ export class MenuScene extends Phaser.Scene {
     const blockHeight = MENU.logoBlockHeight + MENU.championGap + MENU.podiumGap + plateRoom;
     const top = centredTop(height, blockHeight + gap + listHeight);
 
-    const logo = this.addLogo(width, top + MENU.logoHeight / 2);
-    if (prophesied) {
-      const { width: plateW, height: plateH, minCornerWidth } = MENU.prophecy;
-      const side = (width - logo.displayWidth) / 2 - 24;
-      if (tall) {
-        this.prophecySpot = { x: width / 2, y: top + blockHeight - plateH / 2, w: Math.min(width - 32, plateW), plate: true };
-      } else if (side >= minCornerWidth) {
-        // Short and wide: beside the logo, in the top-left corner.
-        const w = Math.min(side, plateW);
-        this.prophecySpot = { x: 16 + w / 2, y: 16 + plateH / 2, w, plate: true };
-      } else {
-        // No room for a plate: one line in the gap over the first row.
-        this.prophecySpot = { x: width / 2, y: top + blockHeight + gap - MENU.dailyLineAboveRows, w: width - 32, plate: false };
-      }
-    }
-
-    const saved = saveGame.read();
-    this.menu = new MenuList(this, {
-      keysElsewhere: () => this.icons?.hasFocus === true,
-      x: width / 2,
-      y: top + blockHeight + gap + MENU.buttonHeight / 2,
-      items: [
-        { id: 'start', label: () => t().menu.start, onSelect: () => this.onStart() },
-        {
-          id: 'load',
-          label: () => t().menu.load,
-          detail: () => (saved ? saveGame.describe(saved) : t().menu.noSave),
-          enabled: () => saved !== null,
-          onSelect: () => this.startRun(true),
-        },
-        {
-          id: 'settings',
-          // Always "Settings", like the Language row it leads to — while there
-          // is one to find (LOCALE.choosable); in the game's own words until then.
-          label: () => (LOCALE.choosable ? 'Settings' : t().menu.settings),
-          onSelect: () => this.openOverlay(SCENES.settings, { allowLanguage: true }),
-        },
-        {
-          id: 'guide',
-          label: () => t().menu.guide,
-          onSelect: () => this.openOverlay(SCENES.info, { topic: 'guide' }),
-        },
-        {
-          id: 'patch',
-          label: () => t().menu.patch,
-          detail: () => `v${PATCH_NOTES[0]?.version ?? ''}`,
-          onSelect: () => this.openOverlay(SCENES.info, { topic: 'patch' }),
-        },
-      ],
-    });
-
-    this.add
-      .text(
-        width / 2,
-        height - 26,
-        prefersTouchControls() ? t().menu.hintTouch : t().menu.hintKeyboard,
-        { fontFamily: 'system-ui, sans-serif', fontSize: TEXT.size.hint, color: COLORS.muted },
-      )
-      .setOrigin(0.5)
-      .setDepth(DEPTH.ui);
-
+    // Where the logo will stand, so the corner icons can keep clear of it
+    // (0.148): two rows where one would run into it, and where even two
+    // would, the logo, the board and the rows move into the room left of them.
+    const source = this.textures.get(TEXTURES.logo).getSourceImage() as { width: number; height: number };
+    const logoW = Math.min(source.width, width - MENU.logoMargin * 2);
+    const logoH = (source.height * logoW) / source.width;
+    const pad = 12;
+    const logoArea = new Phaser.Geom.Rectangle(
+      width / 2 - logoW / 2 - pad,
+      top + MENU.logoHeight / 2 - logoH / 2 - pad,
+      logoW + pad * 2,
+      logoH + Math.abs(MENU.logoBobPx) + pad * 2,
+    );
     // 인벤토리 and 패시브 live in the corner rather than in the list: they are
     // where you go between runs, not a way out of the title.
     this.icons = new IconBar(this, [
@@ -375,7 +329,71 @@ export class MenuScene extends Phaser.Scene {
             },
           ]
         : []),
-    ]);
+    ], logoArea);
+    const column = Phaser.Geom.Intersects.RectangleToRectangle(this.icons.bounds, logoArea) ? this.icons.bounds.x - pad : width;
+    this.columnWidth = column;
+
+    const logo = this.addLogo(column, top + MENU.logoHeight / 2);
+    if (prophesied) {
+      const { width: plateW, height: plateH, minCornerWidth } = MENU.prophecy;
+      const side = (column - logo.displayWidth) / 2 - 24;
+      if (tall) {
+        this.prophecySpot = { x: column / 2, y: top + blockHeight - plateH / 2, w: Math.min(column - 32, plateW), plate: true };
+      } else if (side >= minCornerWidth) {
+        // Short and wide: beside the logo, in the top-left corner.
+        const w = Math.min(side, plateW);
+        this.prophecySpot = { x: 16 + w / 2, y: 16 + plateH / 2, w, plate: true };
+      } else {
+        // No room for a plate: one line in the gap over the first row.
+        this.prophecySpot = { x: column / 2, y: top + blockHeight + gap - MENU.dailyLineAboveRows, w: column - 32, plate: false };
+      }
+    }
+
+    const saved = saveGame.read();
+    this.menu = new MenuList(this, {
+      keysElsewhere: () => this.icons?.hasFocus === true,
+      x: column / 2,
+      y: top + blockHeight + gap + MENU.buttonHeight / 2,
+      items: [
+        { id: 'start', label: () => t().menu.start, onSelect: () => this.onStart() },
+        {
+          id: 'load',
+          label: () => t().menu.load,
+          detail: () => (saved ? saveGame.describe(saved) : t().menu.noSave),
+          enabled: () => saved !== null,
+          onSelect: () => this.startRun(true),
+        },
+        {
+          id: 'settings',
+          // Always "Settings", like the Language row it leads to — while there
+          // is one to find (LOCALE.choosable); in the game's own words until then.
+          label: () => (LOCALE.choosable ? 'Settings' : t().menu.settings),
+          onSelect: () => this.openOverlay(SCENES.settings, { allowLanguage: true }),
+        },
+        {
+          id: 'guide',
+          label: () => t().menu.guide,
+          onSelect: () => this.openOverlay(SCENES.info, { topic: 'guide' }),
+        },
+        {
+          id: 'patch',
+          label: () => t().menu.patch,
+          detail: () => `v${PATCH_NOTES[0]?.version ?? ''}`,
+          onSelect: () => this.openOverlay(SCENES.info, { topic: 'patch' }),
+        },
+      ],
+    });
+
+    this.add
+      .text(
+        width / 2,
+        height - 26,
+        prefersTouchControls() ? t().menu.hintTouch : t().menu.hintKeyboard,
+        { fontFamily: 'system-ui, sans-serif', fontSize: TEXT.size.hint, color: COLORS.muted },
+      )
+      .setOrigin(0.5)
+      .setDepth(DEPTH.ui);
+
   }
 
   /**
@@ -457,7 +475,7 @@ export class MenuScene extends Phaser.Scene {
             },
           ]
         : []),
-    ]);
+    ], MenuScene.clearOf(logo));
 
     // First place's name on the board, and the dots, kept current.
     const unwatch = ranking.onChange(() => this.village?.refresh());
@@ -488,6 +506,15 @@ export class MenuScene extends Phaser.Scene {
       .setDepth(DEPTH.ui + 51);
     this.input.keyboard?.removeAllListeners();
     this.time.delayedCall(LIVE_UPDATE.noticeMs, () => liveUpdate.apply());
+  }
+
+  /** Where the corner icons must not go: the logo, its drift and a margin round it (0.148). */
+  private static clearOf(logo: Phaser.GameObjects.Image): Phaser.Geom.Rectangle {
+    const pad = 12;
+    const bob = Math.abs(MENU.logoBobPx);
+    const left = logo.x - logo.displayWidth / 2 - pad;
+    const top = logo.y - logo.displayHeight / 2 - pad;
+    return new Phaser.Geom.Rectangle(left, top, logo.displayWidth + pad * 2, logo.displayHeight + bob + pad * 2);
   }
 
   /** The pixel logo, drifting slowly up and down. */

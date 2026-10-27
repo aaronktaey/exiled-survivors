@@ -690,6 +690,10 @@ export const SCRIM = {
 export const ICON_BAR = {
   size: 38,
   gap: 12,
+  /** Between rows, where they wrap clear of the logo (0.148). */
+  rowGap: 10,
+  /** The most rows they wrap onto to clear the logo; past it the title moves over instead. */
+  maxRows: 2,
   margin: 18,
   /** The caption under each one. */
   labelGap: 6,

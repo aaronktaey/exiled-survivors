@@ -1,39 +1,15 @@
 /**
  * One dot size for the whole field (0.146, the user's ask): the monsters are
  * painted with a dot two game pixels across (MONSTER_ERAS.pixelScale), and
- * everything else that lies or moves on the field — the survivor, the drops,
- * the thorns and shards — is re-drawn at boot to the same dot for the size it
- * is shown at. Each dot takes the commonest solid colour under it, so a
+ * the survivor, the thorns and shards and the drones are re-drawn at boot to
+ * the same dot for the size they are shown at (the icons and drops were too,
+ * for a day, and went back — `pixelateWorld`). Each dot takes the commonest solid colour under it, so a
  * picture keeps its own colours; a dot only partly covered takes the darkest,
  * which keeps an outline. Soft things (glows, pillars, the 도망자's star, the
  * enemy bolt's halo) are left smooth.
  */
 import Phaser from 'phaser';
-import {
-  ALTAR,
-  BONE_RUN,
-  BONES,
-  GEAR,
-  GEAR_DROP,
-  ICONS,
-  MAGNET,
-  MANGO,
-  MONSTER_ERAS,
-  ORB_DROP,
-  ORBS,
-  PLAYER_LOOK,
-  POTION,
-  DRONE,
-  SKILL_ICON_SIZE,
-  SKILL_ICONS,
-  TALENT_LUMP,
-  TALENT_SHARD,
-  TEXTURES,
-  UNKNOWN_RUNE,
-  UNKNOWN_RUNE_LOOKS,
-  gearTexture,
-  unknownRuneTexture,
-} from '@/config';
+import { DRONE, MONSTER_ERAS, PLAYER_LOOK, TEXTURES } from '@/config';
 
 /** Re-draws one canvas texture in place, a dot `1 / pixelScale` game pixels across at `shownW` × `shownH`. */
 export function pixelateTexture(scene: Phaser.Scene, key: string, shownW: number, shownH = shownW): void {
@@ -121,24 +97,14 @@ export function pixelateTexture(scene: Phaser.Scene, key: string, shownW: number
   (texture as Phaser.Textures.CanvasTexture).refresh?.();
 }
 
-/** Everything on the field but the monsters (painted at the dot already) and the soft things. */
+/**
+ * What on the field is re-drawn to the monsters' dot: the survivor, the
+ * thorns, the ice spear's shard and the drones. The icons — skills, swords,
+ * bones, 구슬 and every drop — keep their own pictures (0.148, the user's
+ * word: at the dot they were mush).
+ */
 export function pixelateWorld(scene: Phaser.Scene): void {
   const shown: [string, number, number?][] = [
-    [TEXTURES.gem, ICONS.gem.size],
-    [TEXTURES.projectile, ICONS.projectile.size],
-    [TEXTURES.skillOrb, SKILL_ICON_SIZE.drop],
-    [TEXTURES.randomSkill, SKILL_ICON_SIZE.drop],
-    [TEXTURES.potion, POTION.size],
-    ...Object.values(SKILL_ICONS).map((icon): [string, number] => [icon.key, SKILL_ICON_SIZE.drop]),
-    ...Object.values(GEAR).map((spec): [string, number] => [gearTexture(spec.id), GEAR_DROP.size]),
-    ...Object.values(ORBS).map((spec): [string, number] => [spec.texture, ORB_DROP.size]),
-    ...Object.values(BONES).map((spec): [string, number] => [spec.texture, BONE_RUN.size]),
-    ...UNKNOWN_RUNE_LOOKS.map((_, i): [string, number] => [unknownRuneTexture(i), UNKNOWN_RUNE.size]),
-    [TEXTURES.altar, ALTAR.size],
-    [TEXTURES.mango, MANGO.size],
-    [TEXTURES.magnet, MAGNET.size],
-    [TEXTURES.talentShard, TALENT_SHARD.size],
-    [TEXTURES.talentLump, TALENT_LUMP.size],
     [TEXTURES.drone, DRONE.size],
     [TEXTURES.thorn, 22, 8],
     [TEXTURES.thornPlayer, 22, 8],

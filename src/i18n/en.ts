@@ -68,7 +68,7 @@ export const en: Strings = {
   },
 
   autoPick: {
-    icon: 'Battle Plan',
+    icon: 'Plan',
     title: 'Battle Plan',
     lead: 'When a choice comes up, the option ranked highest here among those on offer is taken for you. Only runs started with it switched on at Battle Prep use it.',
     tabs: { skills: 'Skills', upgrades: 'Upgrades', shards: 'Talents' },

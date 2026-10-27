@@ -68,7 +68,7 @@ export const zh: Strings = {
   },
 
   autoPick: {
-    icon: '作战手册',
+    icon: '作战',
     title: '作战手册',
     lead: '出现选项时，自动选择可选项中在此排名最高的一项。只对在战斗准备中开启后开始的对局生效。',
     tabs: { skills: '技能', upgrades: '强化', shards: '天赋' },

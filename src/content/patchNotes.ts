@@ -15,6 +15,32 @@ export interface PatchNote {
 
 export const PATCH_NOTES: readonly PatchNote[] = [
   {
+    version: '0.148',
+    date: '2026-10-28',
+    changes: {
+      ko: [
+        '스킬, 장비, 뼈다귀, 구슬과 바닥에 떨어지는 아이템 아이콘을 도트로 다시 찍기 전의 그림으로 되돌렸습니다.',
+        '타이틀 오른쪽 위 아이콘들의 간격을 가로·세로 모두 똑같이 맞췄습니다. 로고와 겹치면 두 줄로 놓이고, 두 줄로도 부족한 좁은 화면에서는 로고와 메뉴가 왼쪽으로 비켜섭니다.',
+        '전술 교본 아이콘의 이름을 「전술」로 줄였습니다.',
+      ],
+      en: [
+        'Skill, weapon, bone and orb icons and every item on the ground are back to their pictures from before the dot redraw.',
+        'The icons at the top right of the title are now evenly spaced across and down. Where they would run into the logo they wrap onto two rows, and on screens too narrow even for that the logo and menu move over to the left.',
+        'The Battle Plan icon is now labelled “Plan”.',
+      ],
+      ja: [
+        'スキル、装備、骨、球と床に落ちるアイテムのアイコンを、ドットで描き直す前の絵に戻しました。',
+        'タイトル右上のアイコンの間隔を縦横ともに揃えました。ロゴと重なる場合は2段になり、それでも足りない狭い画面ではロゴとメニューが左に寄ります。',
+        '作戦書アイコンの名前を「作戦」に短くしました。',
+      ],
+      zh: [
+        '技能、装备、骨头、宝珠以及地上掉落物品的图标已恢复为像素重绘之前的样子。',
+        '标题界面右上角图标的横向和纵向间距现已完全一致。与标志重叠时会排成两行，屏幕窄到两行也放不下时，标志和菜单会向左让开。',
+        '作战手册图标的名称缩短为「作战」。',
+      ],
+    },
+  },
+  {
     version: '0.147',
     date: '2026-10-27',
     changes: {
