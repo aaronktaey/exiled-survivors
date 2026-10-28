@@ -967,9 +967,9 @@ Read `git log` for what changed and when. What is not in the log:
 - **스킬 각성.** `SKILL_MASTERY` (balance.ts): only the main skill awakens
   (0.83, `GameScene.masteryOf`: 0, 1 or 2 — a skill found later never does).
   At `level` it gets one more effect — `WeaponContext.mastered` is true and each weapon does its own
-  (타격's every `meleeShotClearEvery`-th (3) swing clears every enemy shot
-  within its reach, all round — 0.153, the user's ask; every swing cleared
-  those in its arc before; 화염구's burst is `fireBlastScale`
+  (타격's every `meleeShotClearEvery`-th (3) swing clears the enemy shots in
+  its arc — 0.153–0.154, the user's ask: no circle drawn, not all round;
+  every swing cleared them before; 화염구's burst is `fireBlastScale`
   wider (0.84), 연쇄번개 amplifies each
   strike by `chainBonusPerJump` for every jump still to come (it never
   doubles back — that was the old awakening),

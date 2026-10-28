@@ -149,7 +149,7 @@ export const en: Strings = {
     title: '{skill} Awakened!',
     card: 'Awakened — {effect}',
     effects: {
-      meleeStrike: 'Once every {every} swings, destroys every enemy projectile within its reach',
+      meleeStrike: 'Once every {every} swings, destroys every enemy projectile in the arc it swings',
       fireball: 'Its burst is {blastScale}× as wide',
       chainLightning: 'Each strike deals {bonus} more for every jump still to come',
       iceSpear: 'Freezes an already chilled enemy solid for {freeze}s',

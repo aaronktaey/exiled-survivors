@@ -149,7 +149,7 @@ export const zh: Strings = {
     title: '{skill} 觉醒！',
     card: '觉醒 — {effect}',
     effects: {
-      meleeStrike: '每第 {every} 次攻击摧毁攻击范围内的所有敌方投射物',
+      meleeStrike: '每第 {every} 次攻击摧毁挥击范围内的所有敌方投射物',
       fireball: '爆炸范围扩大到 {blastScale} 倍',
       chainLightning: '每剩余一次连锁，伤害提高 {bonus}',
       iceSpear: '命中已被冷却的敌人时使其冻结 {freeze} 秒',

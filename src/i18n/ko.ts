@@ -153,7 +153,7 @@ export const ko: Strings = {
     title: '{skill} 각성!',
     card: '각성 — {effect}',
     effects: {
-      meleeStrike: '{every}번째 공격마다 공격 범위 안의 적 투사체를 모두 파괴합니다',
+      meleeStrike: '{every}번째 공격마다 휘두른 범위 안의 적 투사체를 모두 파괴합니다',
       fireball: '폭발 범위가 {blastScale}배로 넓어집니다',
       chainLightning: '남은 연쇄 횟수 1회당 피해가 {bonus} 증폭됩니다',
       iceSpear: '이미 냉각된 적을 맞히면 {freeze}초 동안 얼어붙습니다',

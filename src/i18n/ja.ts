@@ -149,7 +149,7 @@ export const ja: Strings = {
     title: '{skill} 覚醒!',
     card: '覚醒 — {effect}',
     effects: {
-      meleeStrike: '{every}回目の攻撃ごとに、攻撃範囲内の敵の投射物をすべて破壊します',
+      meleeStrike: '{every}回目の攻撃ごとに、振った範囲内の敵の投射物をすべて破壊します',
       fireball: '爆発範囲が {blastScale} 倍に広がります',
       chainLightning: '残り連鎖回数 1 回につきダメージが {bonus} 増幅されます',
       iceSpear: 'すでに冷却された敵に当たると {freeze} 秒間凍りつきます',

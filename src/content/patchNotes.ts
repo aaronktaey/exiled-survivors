@@ -15,6 +15,16 @@ export interface PatchNote {
 
 export const PATCH_NOTES: readonly PatchNote[] = [
   {
+    version: '0.154',
+    date: '2026-10-28',
+    changes: {
+      ko: ['타격의 1차 각성은 3번째 공격마다 휘두른 범위(부채꼴) 안의 적 투사체만 파괴합니다. 몸 둘레 전체를 지우던 것과 사거리 원 표시는 없어졌습니다.'],
+      en: ['Strike’s first awakening now destroys, once every 3 swings, only the enemy projectiles inside the arc it swings — no longer all round you, and the reach circle is gone.'],
+      ja: ['打撃の1次覚醒は、3回目の攻撃ごとに振った範囲（扇形）内の敵の投射物だけを破壊します。周囲すべてを消すことと射程の円の表示はなくなりました。'],
+      zh: ['打击的一次觉醒改为每第 3 次攻击只摧毁挥击范围（扇形）内的敌方投射物。不再清除身体周围全部投射物，射程圆圈的显示也已移除。'],
+    },
+  },
+  {
     version: '0.153',
     date: '2026-10-28',
     changes: {

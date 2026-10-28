@@ -115,7 +115,7 @@ const effects = await run(`
   const weapon = (id) => { s.acquire(id); return s.weapons.find((w) => w.definition.id === id); };
   const out = {};
 
-  // 타격 (0.153): every meleeShotClearEvery-th awakened swing clears every shot within reach, all round.
+  // 타격 (0.154): every meleeShotClearEvery-th awakened swing clears the shots inside its arc — not one behind it.
   const melee = weapon('meleeStrike');
   const target = put(60, 0);
   c.fireEnemyShot(p.x + 40, p.y, Math.PI, window.config.ENEMY_KINDS.shooter.shot);
@@ -242,10 +242,10 @@ const effects = await run(`
   return out;
 `);
 console.log('effects:', JSON.stringify(effects));
-check('타격: every Nth awakened swing destroys every enemy shot within reach, behind it too — and no other swing does',
+check('타격: every Nth awakened swing destroys the enemy shots in its arc, not one behind it — and no other swing does',
   effects.shotsBefore >= 2 && effects.shotsPlain === effects.shotsBefore &&
-    effects.shotsEarly.every((n) => n === effects.shotsBefore) && effects.shotsAfter === effects.shotsBefore - 2 &&
-    effects.strikes === 2, JSON.stringify(effects));
+    effects.shotsEarly.every((n) => n === effects.shotsBefore) && effects.shotsAfter === effects.shotsBefore - 1 &&
+    effects.strikes === 1, JSON.stringify(effects));
 // chainCount 4 is five links: the first has four jumps still to come, the last none.
 check('연쇄번개: each strike is amplified by the jumps still to come, and still never strikes one twice',
   effects.chainPlain.length === 5 && effects.chainPlain.every((d) => d === 10) &&
