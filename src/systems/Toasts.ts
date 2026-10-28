@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 
 import { COLORS, DEPTH, HUD, TEXT, TOAST } from '@/config';
+import { prefersTouchControls } from '@/systems/VirtualJoystick';
 
 /** How a toast is dressed: an ordinary line, something rare, a warning, or health back. */
 export type ToastTone = 'normal' | 'rare' | 'warning' | 'heal';
@@ -48,7 +49,8 @@ export class Toasts {
   public show(message: string, tone: ToastTone = 'normal'): void {
     const { width } = this.scene.cameras.main;
     const narrow = width < HUD.narrowWidth;
-    const maxWidth = Math.min(narrow ? TOAST.narrowMaxWidth : TOAST.maxWidth, width - 24);
+    const touch = prefersTouchControls();
+    const maxWidth = Math.min(touch ? TOAST.touch.maxWidth : narrow ? TOAST.narrowMaxWidth : TOAST.maxWidth, width - 24);
     const text = this.scene.add
       .text(0, 0, message, {
         fontFamily: 'system-ui, sans-serif',
@@ -57,15 +59,19 @@ export class Toasts {
         wordWrap: { width: maxWidth - TOAST.padding * 2 },
       })
       .setOrigin(1, 0);
+    if (touch) {
+      Toasts.clip(text, TOAST.touch.maxLines);
+      text.setAlpha(TOAST.touch.textAlpha);
+    }
     const boxW = Math.ceil(text.width) + TOAST.padding * 2;
     const boxH = Math.ceil(text.height) + TOAST.padding * 1.4;
     text.setPosition(-TOAST.padding, TOAST.padding * 0.7);
     // Drawn rather than a Rectangle: a stroked Rectangle with its origin
     // moved draws slanted edges inside a Container under Phaser 4.
     const plate = this.scene.add.graphics();
-    plate.fillStyle(0x0b0e14, 0.86);
+    plate.fillStyle(0x0b0e14, touch ? TOAST.touch.plateAlpha : 0.86);
     plate.fillRoundedRect(-boxW, 0, boxW, boxH, 6);
-    plate.lineStyle(2, EDGE[tone], 1);
+    plate.lineStyle(2, EDGE[tone], touch ? TOAST.touch.edgeAlpha : 1);
     plate.strokeRoundedRect(-boxW, 0, boxW, boxH, 6);
     const box = this.scene.add
       .container(width - TOAST.margin + 40, 0, [plate, text])
@@ -76,7 +82,8 @@ export class Toasts {
     this.live.push(toast);
 
     // Past the ceiling, the oldest goes now.
-    while (this.live.filter((t) => !t.leaving).length > TOAST.max) {
+    const most = touch ? TOAST.touch.max : TOAST.max;
+    while (this.live.filter((t) => !t.leaving).length > most) {
       const oldest = this.live.find((t) => !t.leaving);
       if (oldest) {
         this.dismiss(oldest, 120);
@@ -85,6 +92,22 @@ export class Toasts {
     this.layout();
     this.scene.tweens.add({ targets: box, x: width - TOAST.margin, alpha: 1, duration: 160, ease: 'Quad.easeOut' });
     this.scene.time.delayedCall(TOAST.lifeMs, () => this.dismiss(toast, TOAST.fadeMs));
+  }
+
+  /** No more than `lines` lines: what runs past them is cut, the last kept ending in …. */
+  private static clip(text: Phaser.GameObjects.Text, lines: number): void {
+    const wrapped = text.getWrappedText(text.text);
+    if (wrapped.length <= lines) {
+      return;
+    }
+    const kept = wrapped.slice(0, lines).map((line) => line.trimEnd());
+    let last = kept[lines - 1] ?? '';
+    const shown = (): string => [...kept.slice(0, lines - 1), `${last}…`].join('\n');
+    text.setText(shown());
+    while (last.length > 0 && text.getWrappedText(text.text).length > lines) {
+      last = last.slice(0, -1).trimEnd();
+      text.setText(shown());
+    }
   }
 
   /** Every toast at once, gone. */

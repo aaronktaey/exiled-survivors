@@ -156,6 +156,66 @@ await cdp.until(`window.game.scene.isActive('SkillPickScene')`, 15000);
 const manual = await scene('GameScene', `return { auto: s.autoPick, pick: window.game.scene.isActive('SkillPickScene') };`);
 check('with it off, a run shows the cards as before', manual.auto === false && manual.pick === true, JSON.stringify(manual));
 
+// --- 10. mid-run (0.151, the user's ask): the pause menu switches it and opens the lists ---
+await cdp.until(`window.game.scene.getScene('SkillPickScene').unlocked`, 8000, 100);
+await scene('SkillPickScene', `s.pick(0); return 1;`);
+await cdp.until(`!window.game.scene.isActive('SkillPickScene') && window.game.scene.getScene('GameScene').mainSkill`, 8000);
+await sleep(300);
+// The run's own level-ups may have put a card up: close them, and stop more coming.
+await scene('GameScene', `s.player.setInvulnerable(true); s.__addXp = s.progression.addXp.bind(s.progression); s.progression.addXp = () => {}; return 1;`);
+for (let i = 0; i < 40; i++) {
+  const busy = await scene('GameScene', `const u = window.game.scene.getScene('UpgradeScene');
+    if (u.sys.settings.status === 5 && u.payload?.options?.[0]) { u.pick(u.payload.options[0].id); return true; }
+    return s.choosing || s.pendingChoices.length > 0;`);
+  if (!busy && i > 3) break;
+  await sleep(250);
+}
+await scene('GameScene', `s.pauseRun(); return 1;`);
+await cdp.until(`window.game.scene.isActive('PauseScene') && !!window.game.scene.getScene('PauseScene').menu`, 8000);
+await sleep(300);
+const pauseRow = await scene('PauseScene', `const r = s.menu.rows.find((x) => x.item.id === 'autoPick');
+  const before = r.item.detail(); r.item.onSelect(); return { label: r.item.label(), before };`);
+await cdp.until(`window.game.scene.isActive('AutoPickScene')`, 8000);
+await sleep(300);
+const midRun = await scene('AutoPickScene', `const was = s.toggleLabel.text; s.flip();
+  return { was, now: s.toggleLabel.text, run: window.game.scene.getScene('GameScene').autoPick, kept: window.autoPicks.enabled };`);
+check('the pause menu has 전술 교본, saying it is off, and its switch turns this run on (kept for later runs too)',
+  pauseRow.label === '전술 교본' && pauseRow.before === '끔' && midRun.was.includes('끔') && midRun.now.includes('켬') &&
+    midRun.run === true && midRun.kept === true, JSON.stringify({ pauseRow, midRun }));
+
+// Carried by its grip with the mouse: the first row down to third place.
+const box = await ev(`(() => { const r = window.game.canvas.getBoundingClientRect(); return { l: r.left, t: r.top, k: r.width / window.game.scale.width }; })()`);
+const page = (x, y) => ({ x: box.l + x * box.k, y: box.t + y * box.k });
+const geo = await scene('AutoPickScene', `s.openTab('skills');
+  const g = s.grips[0], d = s.slots[2];
+  return { gx: g.x, gy: g.y, tx: d.centerX, ty: d.centerY, order: [...window.autoPicks.value.skills] };`);
+const mouse = (type, x, y) => cdp.send('Input.dispatchMouseEvent', { type, ...page(x, y), button: 'left', buttons: type === 'mouseReleased' ? 0 : 1, clickCount: 1 });
+await mouse('mouseMoved', geo.gx, geo.gy);
+await mouse('mousePressed', geo.gx, geo.gy);
+await sleep(100);
+const held = await scene('AutoPickScene', `return s.dragging;`);
+for (let k = 1; k <= 6; k++) {
+  await mouse('mouseMoved', geo.gx, geo.gy + ((geo.ty - geo.gy) * k) / 6);
+  await sleep(40);
+}
+await mouse('mouseReleased', geo.gx, geo.ty);
+await sleep(200);
+const dragged = await scene('AutoPickScene', `return { order: [...window.autoPicks.value.skills], dragging: s.dragging, first: s.rowNames[2].text };`);
+check('a row carried by its grip lands where it is let go, the rest moving up',
+  held === 0 && dragged.dragging === null && dragged.order[2] === geo.order[0] && dragged.order[0] === geo.order[1] && dragged.order[1] === geo.order[2],
+  JSON.stringify({ held, before: geo.order.slice(0, 3), after: dragged.order.slice(0, 3) }));
+await shot('autopick-05-midrun');
+
+await scene('AutoPickScene', `s.close(); return 1;`);
+await cdp.until(`!window.game.scene.isActive('AutoPickScene')`, 8000);
+const rowAfter = await scene('PauseScene', `return s.menu.rows.find((x) => x.item.id === 'autoPick').item.detail();`);
+await scene('PauseScene', `s.resume(); return 1;`);
+await sleep(300);
+const resumed = await scene('GameScene', `s.__addXp(s.progression.xpToNext);
+  return { card: window.game.scene.isActive('UpgradeScene'), choosing: s.choosing };`);
+check('back in the run, the pause row says 켬 and the next level-up is taken by the plan',
+  rowAfter === '켬' && resumed.card === false && resumed.choosing === false, JSON.stringify({ rowAfter, resumed }));
+
 console.log('\n=== SUMMARY ===');
 const failed = results.filter((r) => !r.p);
 console.log(`${results.length - failed.length}/${results.length} passed`);

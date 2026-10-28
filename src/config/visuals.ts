@@ -591,6 +591,12 @@ export const TOAST = {
   narrowMaxWidth: 220,
   padding: 10,
   gap: 6,
+  /**
+   * On a phone (0.151, the user's ask: they covered too much of the field):
+   * narrower, at most `maxLines` a toast (the rest cut to …), fewer at once,
+   * and see-through.
+   */
+  touch: { maxWidth: 200, maxLines: 2, max: 3, plateAlpha: 0.4, edgeAlpha: 0.5, textAlpha: 0.9 },
 } as const;
 
 export const HUD = {

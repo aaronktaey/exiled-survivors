@@ -1054,7 +1054,15 @@ Read `git log` for what changed and when. What is not in the log:
 - **Touch never holds the run.** A phone fires a pretend mouse event after a
   tap; landing on a rare under a just-closed card used to set `inspecting`
   and freeze the arena and the pad. `setInspecting` ignores it on touch
-  screens, and the pad is released whenever a popup opens or closes.
+  screens. A choice's cards do not release the steering (0.151, the user's
+  ask: one hand holds the stick, the other taps a card, and the run goes on
+  the way it was heading); the cards pick on press, so a steering finger
+  sliding over one picks nothing. A finger lifted while the cards had the
+  touch is caught by `VirtualJoystick.read` (its pointer no longer down, or
+  another touch on it). Only the pause's 계속하기 still releases the pad.
+  CDP multi-touch in a suite: every event lists the points still down, and
+  a `touchMove` that leaves one out lifts it — a `touchEnd` with points lifts
+  the wrong one (test-touch).
 - **Bots.** `public/robots.txt` keeps crawlers off `/api/`. Static assets
   cost nothing; only `/api/*` counts against the Workers free plan (100k
   requests a day, 429 past it, reset at 00:00 UTC). Dashboard-side defences
@@ -1311,6 +1319,9 @@ Read `git log` for what changed and when. What is not in the log:
   `systems/Toasts.ts`: top-right (under the HUD on a narrow screen),
   `TOAST.lifeMs` each, at most `TOAST.max`, oldest out first. A toast's text
   is inside its container, not in `scene.children`; read `toasts.lines`.
+  On a touch screen (0.151, the user's ask: they covered the field)
+  `TOAST.touch` takes over: narrower, cut to `maxLines` with …
+  (`Toasts.clip`), fewer at once, and see-through.
 - **Each sword has its own picture.** `GEAR[id].icon` (a grid in
   `PIXEL_ICONS`, 0.109) is painted as `gearTexture(id)`; the 인벤토리 grid, the drop on
   the ground, the 합성 result and the 필터 all draw it. `TEXTURES.gear` is
@@ -1463,9 +1474,11 @@ Read `git log` for what changed and when. What is not in the log:
   and now shows before every fresh run even with an empty drawer — except on
   the harness, unless a page sets `window.__prepOn` (test-autopick does).
   A new kind of choice should go through `chooseForPlayer` too, and put its
-  cards up through `GameScene.showChoice`: only a choice that shows cards
-  lets go of the stick (0.150 — releasing on every level-up dropped the
-  finger steering whenever the plan picked, with only the toast to show).
+  cards up through `GameScene.showChoice`. Mid-run (0.151) the pause has a
+  전술 교본 row (켬/끔) opening `AutoPickScene` with `run`: its switch is then
+  the run's `autoPick` (and the stored one), and the lists are read live by
+  every later choice. Each row has a grip (≡, `grips`) to drag it by;
+  `slots` are where a carried row lands (`dragging` while one is).
 - **The title is 게임 시작 and icons (0.150, the user's ask).** 설정 · 가이드 ·
   패치노트 are icons with the rest (`MenuScene.titleIcons`; captions
   `menu.guideIcon`/`patchIcon`, drawn in `BootScene.createMenuIconTextures`),

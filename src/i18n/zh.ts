@@ -70,7 +70,7 @@ export const zh: Strings = {
   autoPick: {
     icon: '作战',
     title: '作战手册',
-    lead: '出现选项时，自动选择可选项中在此排名最高的一项。只对在战斗准备中开启后开始的对局生效。',
+    lead: '出现选项时，自动选择可选项中在此排名最高的一项。战斗中也可以在暂停菜单里开关或调整顺序。',
     tabs: { skills: '技能', upgrades: '强化', shards: '天赋' },
     tabLeads: { skills: '初始技能与随机技能卡', upgrades: '升级强化卡（每个技能只出现自己的强化）', shards: '天赋碎片卡' },
     upgrades: {
@@ -93,8 +93,8 @@ export const zh: Strings = {
     off: '关',
     reset: '默认顺序',
     toast: '自动选择 · {choice}',
-    hintKeyboard: '↑↓ 选择 · Shift+↑↓ 移动 · Q/E 标签 · Space 开/关 · R 默认顺序 · Esc 返回',
-    hintTouch: '点按行来选择，用▲▼移动顺序',
+    hintKeyboard: '↑↓ 选择 · Shift+↑↓ 或拖动 ≡ 移动 · Q/E 标签 · Space 开/关 · R 默认顺序 · Esc 返回',
+    hintTouch: '按住左侧 ≡ 拖动，或用▲▼移动顺序',
   },
   filter: {
     title: '物品过滤',
@@ -427,6 +427,7 @@ export const zh: Strings = {
     title: '暂停',
     survived: '生存 {time}    Lv {level}',
     resume: '继续',
+    autoPick: '作战手册',
     quit: '保存并返回标题',
     hint: 'Esc 或返回键继续   ·   指向稀有敌人可查看属性',
   },

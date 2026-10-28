@@ -13,6 +13,8 @@ export interface AutoPickSceneData {
   readonly onClose: () => void;
   /** The list to open on. */
   readonly tab?: AutoPickTab;
+  /** Opened from a run's pause (0.151): the switch is that run's, and is kept for runs after. */
+  readonly run?: { readonly on: () => boolean; readonly set: (on: boolean) => void };
 }
 
 const TABS: readonly AutoPickTab[] = ['skills', 'upgrades', 'shards'];
@@ -21,6 +23,8 @@ const FOOTER = 34;
 const ROW = { max: 36, min: 24, gap: 4, width: 460 };
 const BUTTON = { h: 34, w: 150 };
 const FOCUS_EDGE = 0xf4f1e8;
+/** The grip's three bars (0.151): the colour of muted text. */
+const GRIP = 0xa9b3c9;
 
 /**
  * 전술 교본 (0.147, the user's design) — the order a run chooses in, list by
@@ -30,7 +34,8 @@ const FOCUS_EDGE = 0xf4f1e8;
  * it as it starts.
  *
  * A row per entry, its place, its name and ▲ ▼ to move it; the keyboard
- * walks the rows with ↑ ↓ and carries the one it is on with Shift.
+ * walks the rows with ↑ ↓ and carries the one it is on with Shift. Each row
+ * has a grip (≡) on its left to carry it by, finger or mouse (0.151).
  */
 export class AutoPickScene extends Phaser.Scene {
   public static readonly KEY = SCENES.autoPick;
@@ -44,6 +49,12 @@ export class AutoPickScene extends Phaser.Scene {
   public rowNames: Phaser.GameObjects.Text[] = [];
   /** The switch: whether runs use the lists. Public for tests. */
   public toggleLabel!: Phaser.GameObjects.Text;
+  /** The row being carried by its grip, while one is. Public for tests. */
+  public dragging: number | null = null;
+  /** Each row's place on the screen, top first: where a carried row would land. Public for tests. */
+  public slots: Phaser.Geom.Rectangle[] = [];
+  /** Each row's grip, top first. Public for tests. */
+  public grips: Phaser.GameObjects.Rectangle[] = [];
 
   private payload!: AutoPickSceneData;
   private rowParts: Phaser.GameObjects.GameObject[] = [];
@@ -66,6 +77,9 @@ export class AutoPickScene extends Phaser.Scene {
     this.rowParts = [];
     this.rowPlates = [];
     this.tabPlates = new Map();
+    this.dragging = null;
+    this.slots = [];
+    this.grips = [];
   }
 
   public create(): void {
@@ -118,7 +132,34 @@ export class AutoPickScene extends Phaser.Scene {
     );
 
     this.armKeys();
+    // A row carried by its grip follows the pointer from slot to slot, and is
+    // put down where it is let go.
+    this.input.on(Phaser.Input.Events.POINTER_MOVE, (pointer: Phaser.Input.Pointer) => this.carry(pointer));
+    this.input.on(Phaser.Input.Events.POINTER_UP, () => this.putDown());
+    this.input.on(Phaser.Input.Events.POINTER_UP_OUTSIDE, () => this.putDown());
     this.drawList();
+  }
+
+  private carry(pointer: Phaser.Input.Pointer): void {
+    if (this.dragging === null || !pointer.isDown) {
+      return;
+    }
+    const to = this.slots.findIndex((slot) => slot.contains(pointer.x, pointer.y));
+    if (to < 0 || to === this.dragging) {
+      return;
+    }
+    if (autoPicks.move(this.tab, this.dragging, to - this.dragging)) {
+      this.dragging = to;
+      this.selected = to;
+      this.drawList();
+    }
+  }
+
+  private putDown(): void {
+    if (this.dragging !== null) {
+      this.dragging = null;
+      this.drawList();
+    }
   }
 
   /** Shows another list. Public so a test can switch. */
@@ -145,7 +186,12 @@ export class AutoPickScene extends Phaser.Scene {
 
   /** Switches runs choosing by the lists on or off. Public for tests. */
   public flip(): void {
-    autoPicks.setEnabled(!autoPicks.enabled);
+    const { run } = this.payload;
+    if (run) {
+      run.set(!run.on());
+    } else {
+      autoPicks.setEnabled(!autoPicks.enabled);
+    }
     this.drawList();
   }
 
@@ -185,7 +231,7 @@ export class AutoPickScene extends Phaser.Scene {
   private drawList(): void {
     const copy = t().autoPick;
     const { width } = this.scale;
-    const on = autoPicks.enabled;
+    const on = this.payload.run ? this.payload.run.on() : autoPicks.enabled;
     this.toggleLabel.setText(fill(copy.toggle, { state: on ? copy.on : copy.off }));
     this.toggle.setStrokeStyle(2, on ? COLORS.accentFill : COLORS.panelEdge, 1);
     this.toggleLabel.setColor(on ? COLORS.text : COLORS.muted);
@@ -199,6 +245,8 @@ export class AutoPickScene extends Phaser.Scene {
     this.rowParts = [];
     this.rowPlates = [];
     this.rowNames = [];
+    this.slots = [];
+    this.grips = [];
     const order = autoPicks.value[this.tab] as readonly string[];
     // One column while the rows fit at their smallest; two side by side when not (lying down, the 강화 list).
     const room = this.listBottom - this.listTop;
@@ -207,14 +255,17 @@ export class AutoPickScene extends Phaser.Scene {
     const rowH = Math.max(ROW.min, Math.min(ROW.max, Math.floor(room / perColumn) - ROW.gap));
     const rowW = Math.min(ROW.width, (width - 32 - (columns - 1) * 12) / columns);
     const arrowW = Math.min(44, rowH + 8);
+    const gripW = Math.min(30, rowH + 4);
     order.forEach((id, index) => {
       const column = Math.floor(index / perColumn);
       const left = width / 2 - (columns * rowW + (columns - 1) * 12) / 2 + column * (rowW + 12);
       const y = this.listTop + (index % perColumn) * (rowH + ROW.gap) + rowH / 2;
       const selected = index === this.selected;
+      const carried = index === this.dragging;
+      this.slots.push(new Phaser.Geom.Rectangle(left, y - (rowH + ROW.gap) / 2, rowW, rowH + ROW.gap));
       const plate = this.add
         .rectangle(left + rowW / 2, y, rowW, rowH, selected ? COLORS.panelActive : COLORS.panel, 1)
-        .setStrokeStyle(selected ? 2 : 1, selected ? FOCUS_EDGE : COLORS.panelEdge, 1)
+        .setStrokeStyle(selected ? 2 : 1, carried ? COLORS.accentFill : selected ? FOCUS_EDGE : COLORS.panelEdge, 1)
         .setDepth(DEPTH.ui + 1)
         .setData('flat', true)
         .setInteractive({ useHandCursor: true });
@@ -223,11 +274,30 @@ export class AutoPickScene extends Phaser.Scene {
         this.drawList();
       });
       const { name, icon, tint } = this.entry(id);
-      const rank = this.label(left + 18, y, String(index + 1), TEXT.size.body, index === 0 ? COLORS.gearText : COLORS.muted).setDepth(DEPTH.ui + 2);
-      const parts: Phaser.GameObjects.GameObject[] = [plate, rank];
-      let textX = left + 38;
+      // The grip: three bars, pressed to carry the row (0.151, the user's ask).
+      const grip = this.add
+        .rectangle(left + gripW / 2 + 2, y, gripW, rowH - 4, COLORS.panel, carried ? 1 : 0.01)
+        .setDepth(DEPTH.ui + 2)
+        .setData('flat', true)
+        .setInteractive({ useHandCursor: true });
+      grip.on(Phaser.Input.Events.GAMEOBJECT_POINTER_DOWN, (_p: unknown, _x: unknown, _y: unknown, event: Phaser.Types.Input.EventData) => {
+        event?.stopPropagation?.();
+        this.selected = index;
+        this.dragging = index;
+        this.drawList();
+      });
+      const bars = this.add.graphics().setDepth(DEPTH.ui + 3);
+      bars.fillStyle(carried ? COLORS.accentFill : GRIP, 1);
+      for (const dy of [-5, 0, 5]) {
+        bars.fillRect(left + gripW / 2 + 2 - 7, y + dy - 1, 14, 2);
+      }
+      this.grips.push(grip);
+      const rankX = left + gripW + 14;
+      const rank = this.label(rankX, y, String(index + 1), TEXT.size.body, index === 0 ? COLORS.gearText : COLORS.muted).setDepth(DEPTH.ui + 2);
+      const parts: Phaser.GameObjects.GameObject[] = [plate, grip, bars, rank];
+      let textX = rankX + 20;
       if (icon && this.textures.exists(icon)) {
-        const image = this.add.image(left + 38 + (rowH - 8) / 2, y, icon).setDisplaySize(rowH - 8, rowH - 8).setDepth(DEPTH.ui + 2);
+        const image = this.add.image(textX + (rowH - 8) / 2, y, icon).setDisplaySize(rowH - 8, rowH - 8).setDepth(DEPTH.ui + 2);
         if (tint !== undefined) {
           image.setTint(tint);
         }

@@ -277,12 +277,6 @@ export class GameScene extends Phaser.Scene {
   private pendingChoices: ChoiceRequest[] = [];
   private choosing = false;
   /**
-   * Whether the choice under way put cards on screen. The 전술 교본 takes
-   * most without any; then the finger steering keeps the stick, which a
-   * release would have dropped mid-stride with only a toast to show for it.
-   */
-  private choiceShown = false;
-  /**
    * What the mouse is reading: a skill's card, a rare's 속성. Either holds
    * the run still until the pointer moves off it.
    */
@@ -336,7 +330,6 @@ export class GameScene extends Phaser.Scene {
     this.sinceSaveMs = 0;
     this.pendingChoices = [];
     this.choosing = false;
-    this.choiceShown = false;
     this.inspecting = { skill: false, rare: false };
     this.over = false;
     this.invulnerable = false;
@@ -542,7 +535,6 @@ export class GameScene extends Phaser.Scene {
       owned: [...this.owned],
       onPick: (skill) => {
         this.choosing = false;
-        this.choiceShown = false;
         if (!this.held) {
           this.physics.resume();
         }
@@ -1913,10 +1905,13 @@ export class GameScene extends Phaser.Scene {
     }
   }
 
-  /** Puts a choice's cards up: the finger steering now goes to them, so the stick lets it go. */
+  /**
+   * Puts a choice's cards up. The steering is not let go (0.151, the user's
+   * ask): a finger can hold the stick while another taps a card, and the run
+   * goes on the way it was heading. A finger that lifts meanwhile is
+   * noticed by the stick itself (VirtualJoystick.read).
+   */
   private showChoice(key: string, data: object): void {
-    this.choiceShown = true;
-    this.analog?.release?.();
     this.scene.bringToTop(key);
     this.scene.launch(key, data);
   }
@@ -1924,10 +1919,6 @@ export class GameScene extends Phaser.Scene {
   /** One popup is done: open the next, or let the run go on. */
   private afterChoice(): void {
     this.choosing = false;
-    if (this.choiceShown) {
-      this.choiceShown = false;
-      this.analog?.release?.();
-    }
 
     if (this.pendingChoices.length > 0) {
       // Let the scene manager finish stopping the popup before relaunching it.

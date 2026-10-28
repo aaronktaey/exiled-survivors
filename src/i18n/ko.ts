@@ -74,7 +74,7 @@ export const ko: Strings = {
   autoPick: {
     icon: '전술',
     title: '전술 교본',
-    lead: '선택지가 나오면 고를 수 있는 것 중 목록에서 가장 위에 있는 것을 자동으로 고릅니다. 전투 준비에서 켜고 시작한 판에만 적용됩니다.',
+    lead: '선택지가 나오면 고를 수 있는 것 중 목록에서 가장 위에 있는 것을 자동으로 고릅니다. 전투 중에도 일시정지 메뉴에서 켜고 끄거나 순서를 바꿀 수 있습니다.',
     tabs: { skills: '스킬', upgrades: '강화', shards: '재능' },
     tabLeads: { skills: '시작 스킬과 무작위 스킬 카드', upgrades: '레벨업 강화 카드 (스킬마다 자기 강화만 나옵니다)', shards: '재능의 파편 카드' },
     upgrades: {
@@ -97,8 +97,8 @@ export const ko: Strings = {
     off: '끔',
     reset: '기본 순서로',
     toast: '자동 선택 · {choice}',
-    hintKeyboard: '↑↓ 고르기 · Shift+↑↓ 순서 옮기기 · Q/E 탭 · Space 켜기/끄기 · R 기본 순서 · Esc 돌아가기',
-    hintTouch: '줄을 눌러 고르고 ▲▼로 순서를 옮깁니다',
+    hintKeyboard: '↑↓ 고르기 · Shift+↑↓ 또는 ≡를 끌어 순서 옮기기 · Q/E 탭 · Space 켜기/끄기 · R 기본 순서 · Esc 돌아가기',
+    hintTouch: '왼쪽 ≡를 잡고 끌거나 ▲▼로 순서를 옮깁니다',
   },
   filter: {
     title: '아이템 필터',
@@ -431,6 +431,7 @@ export const ko: Strings = {
     title: '일시정지',
     survived: '생존 {time}    Lv {level}',
     resume: '계속하기',
+    autoPick: '전술 교본',
     quit: '저장하고 타이틀로',
     hint: 'Esc 또는 뒤로가기로 이어서 진행   ·   희귀 적을 가리키면 속성이 보입니다',
   },

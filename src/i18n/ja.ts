@@ -70,7 +70,7 @@ export const ja: Strings = {
   autoPick: {
     icon: '作戦',
     title: '作戦書',
-    lead: '選択肢が出ると、選べるものの中でここで最も上にあるものを自動で選びます。戦闘準備でオンにして始めた回だけに適用されます。',
+    lead: '選択肢が出ると、選べるものの中でここで最も上にあるものを自動で選びます。戦闘中も一時停止メニューからオン/オフや順番の変更ができます。',
     tabs: { skills: 'スキル', upgrades: '強化', shards: '才能' },
     tabLeads: { skills: '開始スキルとランダムスキルのカード', upgrades: 'レベルアップの強化カード（スキルごとに自分の強化だけが出ます）', shards: '才能の欠片のカード' },
     upgrades: {
@@ -93,8 +93,8 @@ export const ja: Strings = {
     off: 'オフ',
     reset: '初期の順番',
     toast: '自動選択 · {choice}',
-    hintKeyboard: '↑↓ 選ぶ · Shift+↑↓ 移動 · Q/E タブ · Space オン/オフ · R 初期順 · Esc 戻る',
-    hintTouch: '行を押して選び、▲▼で順番を移動します',
+    hintKeyboard: '↑↓ 選ぶ · Shift+↑↓ または ≡ をドラッグで移動 · Q/E タブ · Space オン/オフ · R 初期順 · Esc 戻る',
+    hintTouch: '左の ≡ をつかんでドラッグするか、▲▼で順番を移動します',
   },
   filter: {
     title: 'アイテムフィルター',
@@ -427,6 +427,7 @@ export const ja: Strings = {
     title: '一時停止',
     survived: '生存 {time}    Lv {level}',
     resume: 'つづける',
+    autoPick: '作戦書',
     quit: 'セーブしてタイトルへ',
     hint: 'Esc または戻るでつづける   ·   レア敵を指すと属性が見えます',
   },

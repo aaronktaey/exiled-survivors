@@ -562,6 +562,8 @@ export interface Strings {
     readonly title: string;
     readonly survived: string;
     readonly resume: string;
+    /** 전술 교본 in a run (0.151): the row's name; its value is autoPick.on / off. */
+    readonly autoPick: string;
     readonly quit: string;
     readonly hint: string;
   };

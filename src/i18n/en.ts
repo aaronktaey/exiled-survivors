@@ -70,7 +70,7 @@ export const en: Strings = {
   autoPick: {
     icon: 'Plan',
     title: 'Battle Plan',
-    lead: 'When a choice comes up, the option ranked highest here among those on offer is taken for you. Only runs started with it switched on at Battle Prep use it.',
+    lead: 'When a choice comes up, the option ranked highest here among those on offer is taken for you. Mid-run, the pause menu switches it on or off and reorders it too.',
     tabs: { skills: 'Skills', upgrades: 'Upgrades', shards: 'Talents' },
     tabLeads: { skills: 'The starting skill and Random Skill cards', upgrades: 'Level-up upgrade cards (each skill offers only its own)', shards: 'Talent Shard cards' },
     upgrades: {
@@ -93,8 +93,8 @@ export const en: Strings = {
     off: 'Off',
     reset: 'Default order',
     toast: 'Auto-pick · {choice}',
-    hintKeyboard: '↑↓ select · Shift+↑↓ move · Q/E tabs · Space on/off · R default · Esc back',
-    hintTouch: 'Tap a row to select it, ▲▼ to move it',
+    hintKeyboard: '↑↓ select · Shift+↑↓ or drag ≡ to move · Q/E tabs · Space on/off · R default · Esc back',
+    hintTouch: 'Drag a row by its ≡, or use ▲▼, to move it',
   },
   filter: {
     title: 'Item Filter',
@@ -427,6 +427,7 @@ export const en: Strings = {
     title: 'PAUSED',
     survived: 'Survived {time}    Lv {level}',
     resume: 'Resume',
+    autoPick: 'Battle Plan',
     quit: 'Save and quit to title',
     hint: 'Esc or Back to carry on   ·   point at a rare to see what it carries',
   },

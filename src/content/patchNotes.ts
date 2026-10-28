@@ -15,6 +15,36 @@ export interface PatchNote {
 
 export const PATCH_NOTES: readonly PatchNote[] = [
   {
+    version: '0.151',
+    date: '2026-10-28',
+    changes: {
+      ko: [
+        '모바일에서 카드를 고르는 동안에도 조이스틱을 놓지 않습니다. 한 손으로 조이스틱을 잡은 채 다른 손으로 카드를 고르면, 고르자마자 가던 방향으로 계속 움직입니다.',
+        '모바일의 전투 알림이 화면을 덜 가립니다. 폭이 좁아지고 두 줄까지만 보이며, 한 번에 세 개까지만 뜨고 더 투명해졌습니다.',
+        '전투 중에도 일시정지 메뉴의 「전술 교본」에서 자동 선택을 켜고 끄거나 우선순위를 바꿀 수 있습니다.',
+        '전술 교본의 각 줄 왼쪽 손잡이(≡)를 잡고 끌어서 순서를 옮길 수 있습니다.',
+      ],
+      en: [
+        'On a phone the stick is no longer let go while cards are up: hold it with one hand, pick a card with the other, and you keep going the way you were heading.',
+        'Battle notices on a phone cover less of the field: narrower, at most two lines, three at a time, and more see-through.',
+        'Mid-run, Battle Plan in the pause menu switches auto-pick on or off and changes its order.',
+        'Battle Plan rows can be dragged into a new order by the grip (≡) on their left.',
+      ],
+      ja: [
+        'スマートフォンでカードを選んでいる間もスティックを離しません。片手でスティックを握ったまま、もう片手でカードを選ぶと、選んですぐ元の方向へ動き続けます。',
+        'スマートフォンの戦闘通知が画面を隠しにくくなりました。幅が狭くなり、2行まで、同時に3つまで表示され、より透明になりました。',
+        '戦闘中も一時停止メニューの「作戦書」から自動選択のオン/オフや優先順位の変更ができます。',
+        '作戦書の各行の左にあるつまみ(≡)をドラッグして順番を移動できます。',
+      ],
+      zh: [
+        '手机上选择卡牌时不再松开摇杆：一只手按住摇杆，另一只手选卡，选完立刻沿原方向继续移动。',
+        '手机上的战斗提示不再过多遮挡画面：更窄，最多两行，同时最多三条，并且更透明。',
+        '战斗中也可以在暂停菜单的「作战手册」里开关自动选择或调整优先顺序。',
+        '作战手册每行左侧的手柄(≡)可以拖动来调整顺序。',
+      ],
+    },
+  },
+  {
     version: '0.150',
     date: '2026-10-28',
     changes: {

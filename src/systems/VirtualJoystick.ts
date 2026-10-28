@@ -42,6 +42,8 @@ export class VirtualJoystick implements AnalogInput {
   private readonly direction = new Phaser.Math.Vector2();
 
   private activePointerId: number | null = null;
+  /** The touch that finger is, so a new finger on the same Pointer is not taken for it. */
+  private activeTouch = -1;
   private tilt = 0;
   /** Everything about the ring scales with this. */
   private readonly scale: number;
@@ -80,6 +82,15 @@ export class VirtualJoystick implements AnalogInput {
   }
 
   public read(out: Phaser.Math.Vector2): number {
+    // The stick is kept while a choice's cards are up (0.151, the user's ask:
+    // one hand steers, the other picks), and the cards may have had the
+    // finger's lift: a finger no longer down lets go here instead.
+    if (this.activePointerId !== null) {
+      const held = this.scene.input.manager.pointers.find((p) => p.id === this.activePointerId);
+      if (!held?.isDown || held.identifier !== this.activeTouch) {
+        this.release();
+      }
+    }
     out.copy(this.direction);
     return this.tilt;
   }
@@ -121,6 +132,7 @@ export class VirtualJoystick implements AnalogInput {
     this.thumb.setPosition(pointer.x, pointer.y).setVisible(true);
 
     this.activePointerId = pointer.id;
+    this.activeTouch = pointer.identifier;
     this.apply(pointer);
   }
 

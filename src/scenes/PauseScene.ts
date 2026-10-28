@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 
-import { COLORS, DEPTH, SCENES, SCRIM, TEXT } from '@/config';
+import { COLORS, DEPTH, MENU, SCENES, SCRIM, TEXT } from '@/config';
 import { fill, t } from '@/i18n';
 import type { GameScene } from '@/scenes/GameScene';
 import { MenuList } from '@/systems/MenuList';
@@ -8,6 +8,7 @@ import { RareTooltip } from '@/systems/RareTooltip';
 import { devToolsAllowed } from '@/systems/DevAccess';
 import { addBackButton, type BackButton } from '@/systems/BackButton';
 import { fitText } from '@/systems/Layout';
+import { autoPicks } from '@/systems/AutoPick';
 import type { SkillId } from '@/weapons/skills';
 
 
@@ -68,12 +69,36 @@ export class PauseScene extends Phaser.Scene {
       .setOrigin(0.5)
       .setDepth(DEPTH.ui + 1);
 
+    const run = this.run();
+    // A phone lying down is 420 high: the rows close up to stay clear of the hint.
+    const tight = height < MENU.tightHeight;
     this.menu = new MenuList(this, {
       x: width / 2,
       y: height / 2 - 50,
+      rowHeight: tight ? MENU.buttonHeightTight : MENU.buttonHeight,
+      rowGap: tight ? MENU.buttonGapTight : MENU.buttonGap,
       onCancel: () => this.resume(),
       items: [
         { id: 'resume', label: () => t().pause.resume, onSelect: () => this.resume() },
+        // 전술 교본 mid-run (0.151, the user's ask): this run's switch, and the
+        // lists, which every choice from here on reads.
+        {
+          id: 'autoPick',
+          label: () => t().pause.autoPick,
+          detail: () => (run?.autoPick ? t().autoPick.on : t().autoPick.off),
+          onSelect: () =>
+            this.openOverlay(SCENES.autoPick, {
+              run: {
+                on: () => run?.autoPick === true,
+                set: (on: boolean) => {
+                  if (run) {
+                    run.autoPick = on;
+                  }
+                  autoPicks.setEnabled(on);
+                },
+              },
+            }),
+        },
         { id: 'guide', label: () => t().menu.guide, onSelect: () => this.openOverlay(SCENES.info, { topic: 'guide' }) },
         { id: 'patch', label: () => t().menu.patch, onSelect: () => this.openOverlay(SCENES.info, { topic: 'patch' }) },
         {
@@ -114,7 +139,6 @@ export class PauseScene extends Phaser.Scene {
     // be read at leisure. The panel is this scene's own: drawn by the paused
     // run it would sit under this screen's dimmer, borrowing that run's
     // camera and enemies to know where everything is.
-    const run = this.run();
     if (run) {
       this.tooltip = new RareTooltip(this, run.enemyGroup, run.cameras.main);
       this.input.on(Phaser.Input.Events.POINTER_MOVE, this.onInspect, this);

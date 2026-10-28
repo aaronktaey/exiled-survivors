@@ -518,6 +518,62 @@ check('전술 교본: a level-up it picks itself does not take the stick from th
     afterAuto.tilt > 0.8 && afterAuto.dirY < -0.9 && afterAuto.card === false,
   JSON.stringify({ autoLevel, afterAuto }));
 
+// --- 0.151 (the user's ask): one hand on the stick, the other on the cards ---
+// Every touch point down at once, as CDP wants it on each event.
+const fingers = (type, points) => cdp.send('Input.dispatchTouchEvent', {
+  type, touchPoints: points.map(([gx, gy, id]) => ({ ...toPage(gx, gy), id })),
+});
+const cardUp = async () => {
+  await cdp.evaluate(`(() => { const s = window.game.scene.getScene('GameScene'); s.autoPick = false; s.__addXp(s.progression.xpToNext + 1); return 1; })()`);
+  await cdp.until(`(() => { const u = window.game.scene.getScene('UpgradeScene'); return u.sys.settings.status === 5 && u.unlocked && u.cards?.length > 0; })()`, 10000, 100);
+  return cdp.evaluate(`(() => { const c = window.game.scene.getScene('UpgradeScene').cards[0]; return { x: c.x, y: c.y }; })()`);
+};
+const stick = () => cdp.evaluate(`(() => { const s = window.game.scene.getScene('GameScene'); const j = s.player.analog;
+  return { tilt: +j.tilt.toFixed(2), dirX: +j.direction.x.toFixed(2), vx: Math.round(s.player.body.velocity.x), card: window.game.scene.isActive('UpgradeScene') }; })()`);
+const R = [geom.baseX, geom.baseY, 1];
+const R2 = [geom.baseX + 50, geom.baseY, 1];
+await fingers('touchStart', [R]);
+await fingers('touchMove', [R2]);
+await sleep(200);
+const card = await cardUp();
+const holding = await stick();
+await fingers('touchStart', [R2, [card.x, card.y, 2]]);
+// Only the card's finger lifts: CDP works out the change from the points still down.
+await fingers('touchMove', [R2]);
+await sleep(400);
+const twoHands = await stick();
+console.log('two hands:', JSON.stringify({ holding, twoHands }));
+check('a card up keeps the stick in the steering hand',
+  holding.card === true && holding.tilt > 0.8 && holding.dirX > 0.9, JSON.stringify(holding));
+check('and the other hand picks a card, the survivor going on the way it was heading',
+  twoHands.card === false && twoHands.tilt > 0.8 && twoHands.dirX > 0.9 && twoHands.vx > 100, JSON.stringify(twoHands));
+// A finger that lifts while the cards are up is let go once they close.
+const card2 = await cardUp();
+await fingers('touchEnd', []);
+await sleep(150);
+await fingers('touchStart', [[card2.x, card2.y, 3]]);
+await fingers('touchEnd', []);
+await sleep(400);
+const lifted = await stick();
+check('a steering finger lifted behind the cards does not leave the survivor walking',
+  lifted.card === false && lifted.tilt === 0 && lifted.vx === 0, JSON.stringify(lifted));
+
+// Toasts on a phone (0.151): at most two lines, at most TOAST.touch.max, see-through.
+const toastLook = await cdp.evaluate(`(() => {
+  const s = window.game.scene.getScene('GameScene');
+  s.toasts.clear();
+  for (let i = 0; i < 6; i++) s.announce('아주 긴 알림 문장입니다 — 화면을 가리지 않도록 두 줄까지만 보여주고 나머지는 잘라야 합니다 ' + i);
+  const C = window.config.TOAST.touch;
+  const texts = s.toasts.boxes.map((b) => b.getAt(1));
+  return { count: s.toasts.lines.length, max: C.max, maxLines: C.maxLines,
+    lines: Math.max(...texts.map((t) => t.getWrappedText(t.text).length)), ends: texts[0].text.endsWith('…'),
+    alpha: +texts[0].alpha.toFixed(2), width: Math.max(...s.toasts.boxes.map((b) => Math.round(b.getBounds().width))), cap: C.maxWidth };
+})()`);
+console.log('phone toasts:', JSON.stringify(toastLook));
+check('on a phone a long toast is cut to its two lines, fewer at once, narrower and see-through',
+  toastLook.count <= toastLook.max && toastLook.lines <= toastLook.maxLines && toastLook.ends &&
+    toastLook.alpha < 1 && toastLook.width <= toastLook.cap + 8, JSON.stringify(toastLook));
+
 // --- 탭으로 이동 (0.117): the survivor walks to where the screen was pressed ---
 await cdp.evaluate(`(() => {
   const raw = localStorage.getItem('exiled-survivors:settings:v1');
