@@ -15,6 +15,28 @@ export interface PatchNote {
 
 export const PATCH_NOTES: readonly PatchNote[] = [
   {
+    version: '0.155',
+    date: '2026-10-28',
+    changes: {
+      ko: [
+        'PC에서도 타이틀의 메뉴 아이콘이 게임 시작 버튼 아래에 놓입니다.',
+        '타이틀의 패치노트 아이콘 모서리에 최신 버전 번호가 작게 표시됩니다.',
+      ],
+      en: [
+        'On a PC too, the title’s menu icons now sit under the New Run button.',
+        'The title’s Updates icon shows the latest version number, small, in its corner.',
+      ],
+      ja: [
+        'PC でもタイトルのメニューアイコンがゲーム開始ボタンの下に並びます。',
+        'タイトルのパッチアイコンの隅に最新のバージョン番号を小さく表示します。',
+      ],
+      zh: [
+        '在 PC 上，标题画面的菜单图标也排在开始游戏按钮下方。',
+        '标题画面的“更新”图标角落会以小字显示最新版本号。',
+      ],
+    },
+  },
+  {
     version: '0.154',
     date: '2026-10-28',
     changes: {

@@ -11,6 +11,8 @@ export interface IconButton {
   readonly badge?: () => boolean;
   /** A ring pulsing round it while true: something new behind it (ICON_SPOTLIGHT, 0.102). */
   readonly spotlight?: () => boolean;
+  /** A few small letters over the picture's lower-right corner (0.155: the latest version on 패치노트). */
+  readonly corner?: () => string;
 }
 
 interface IconView {
@@ -20,6 +22,7 @@ interface IconView {
   readonly label: Phaser.GameObjects.Text;
   readonly badge: Phaser.GameObjects.Arc;
   readonly ring?: Phaser.GameObjects.Arc;
+  readonly corner?: Phaser.GameObjects.Text;
 }
 
 /**
@@ -100,6 +103,13 @@ export class IconBar {
         label.setColor(Phaser.Display.Color.IntegerToColor(ICON_SPOTLIGHT.color).rgba);
       }
 
+      const corner = button.corner
+        ? scene.add
+            .text(x + size / 2 - 2, y + size / 2 - 1, button.corner(), { fontFamily: 'system-ui, sans-serif', ...ICON_BAR.corner })
+            .setOrigin(1, 1)
+            .setDepth(DEPTH.ui + 2)
+        : undefined;
+
       plate.on(Phaser.Input.Events.GAMEOBJECT_POINTER_OVER, () => this.focus(index));
       // Leaving it hands the keyboard back, or Space would stay the icon's.
       plate.on(Phaser.Input.Events.GAMEOBJECT_POINTER_OUT, () => {
@@ -112,7 +122,7 @@ export class IconBar {
         button.onSelect();
       });
 
-      this.views.push({ button, image, plate, label, badge, ring });
+      this.views.push({ button, image, plate, label, badge, ring, corner });
     });
 
     this.layCorner(avoid);
@@ -176,6 +186,7 @@ export class IconBar {
     view.label.setPosition(x, y + size / 2 + labelGap);
     view.badge.setPosition(x + size / 2 - 2, y - size / 2 + 2);
     view.ring?.setPosition(x, y);
+    view.corner?.setPosition(x + size / 2 - 2, y + size / 2 - 1);
   }
 
   /** How many to a row, and how many rows, laid centred in `maxWidth`: rows as even as they go. */

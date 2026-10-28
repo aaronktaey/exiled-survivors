@@ -1508,14 +1508,15 @@ Read `git log` for what changed and when. What is not in the log:
   패치노트 are icons with the rest (`MenuScene.titleIcons`; captions
   `menu.guideIcon`/`patchIcon`, drawn in `BootScene.createMenuIconTextures`),
   and 불러오기 went: 게임 시작 asks, with a run saved, 이어서 하기 · 새 게임 시작
-  · 취소 (`ConfirmScene`, `onLoad`). On a phone (`prefersTouchControls`, or a
-  screen taller than wide — `MenuScene.iconsBelow`) the icons are a centred
-  grid under 게임 시작 (`IconBar.layCentred`, `centredHeight` first so the
-  block centres), and the hint gives way where they reach it; on a desktop
-  they keep the corner, as below. Suites reach 설정 · 가이드 · 패치노트 with
+  · 취소 (`ConfirmScene`, `onLoad`). Everywhere — a phone since 0.150, a PC
+  too since 0.155 (the user's ask) — the icons are a centred grid under 게임
+  시작 (`IconBar.layCentred`, `centredHeight` first so the block centres),
+  and the hint gives way where they reach it. 패치노트's icon carries the
+  latest version in its corner (`IconButton.corner`, `ICON_BAR.corner`,
+  0.155). Suites reach 설정 · 가이드 · 패치노트 with
   `icons.press(id)`, and a keyboard row after an icon press needs
   `icons.focus(-1)` first (a pressed icon keeps Space).
-- **The title's corner icons (0.148, the user's ask).** `IconBar` lays them
+- **The corner icons (0.148, the user's ask; the title's until 0.155, the village's still).** `IconBar.layCorner` lays them
   as a grid — every slot as wide as the widest caption, every row as tall as
   the tallest, a short last row kept right — on as few rows as stay on the
   screen and clear of `avoid` (the logo's area, worked out in `buildMenu`

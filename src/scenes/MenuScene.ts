@@ -276,9 +276,9 @@ export class MenuScene extends Phaser.Scene {
     this.add.tileSprite(0, 0, width, height, floor).setOrigin(0, 0).setDepth(DEPTH.ground);
     this.add.rectangle(0, 0, width, height, 0x05070b, SCRIM.title).setOrigin(0, 0).setDepth(DEPTH.ground + 1);
 
-    // Logo, byline, ranking, prophecy and 게임 시작 are one block, centred in
-    // whatever is there — on a phone with the icons under it (0.150, the
-    // user's ask), elsewhere with them in the corner. On a screen too short
+    // Logo, byline, ranking, prophecy, 게임 시작 and the icons under it are one
+    // block, centred in whatever is there — on a phone since 0.150, on a PC
+    // too since 0.155 (the user's ask; the corner before). On a screen too short
     // for it all (a phone lying down is 420 high, 0.149) the row closes up,
     // then the logo is drawn smaller — never off the foot.
     const tight = height < MENU.tightHeight;
@@ -294,8 +294,7 @@ export class MenuScene extends Phaser.Scene {
     // 인벤토리, 재능 and the rest are icons rather than rows: places you go
     // between runs, not ways out of the title (설정 · 가이드 · 패치노트 too since 0.150).
     this.icons = new IconBar(this, this.titleIcons());
-    const below = MenuScene.iconsBelow(width, height);
-    const iconsRoom = below ? MENU.iconsGap + this.icons.centredHeight(width - 32) : 0;
+    const iconsRoom = MENU.iconsGap + this.icons.centredHeight(width - 32);
 
     const content = fullBlock + gap + rowHeight + iconsRoom;
     const over = content - (height - MENU.iconClearBottom);
@@ -304,36 +303,11 @@ export class MenuScene extends Phaser.Scene {
     const blockHeight = fullBlock - logoShrink;
     const total = content - logoShrink;
     // Centred, but never so low that the last row meets the hint at the foot.
-    let top = Math.max(8, Math.min(centredTop(height, total), height - MENU.iconClearBottom - total));
+    const top = Math.max(8, Math.min(centredTop(height, total), height - MENU.iconClearBottom - total));
 
     const source = this.textures.get(TEXTURES.logo).getSourceImage() as { width: number; height: number };
     const logoW = Math.min(source.width * logoScale, width - MENU.logoMargin * 2);
-    let logoRoom = logoW;
-    if (!below) {
-      // Where the logo will stand, so the corner icons can keep clear of it
-      // (0.148): two rows where one would run into it. The title stays
-      // centred (0.149): where two rows still meet the logo, the block goes
-      // down under them if the screen has the room, else the logo is smaller.
-      const logoH = (source.height * logoW) / source.width;
-      const pad = 12;
-      const logoArea = new Phaser.Geom.Rectangle(
-        width / 2 - logoW / 2 - pad,
-        top + (MENU.logoHeight - logoShrink) / 2 - logoH / 2 - pad,
-        logoW + pad * 2,
-        logoH + Math.abs(MENU.logoBobPx) + pad * 2,
-      );
-      this.icons.layCorner(logoArea);
-      if (Phaser.Geom.Intersects.RectangleToRectangle(this.icons.bounds, logoArea)) {
-        const lower = this.icons.bounds.bottom - logoArea.y;
-        if (top + lower + total <= height - MENU.iconClearBottom) {
-          top += lower;
-        } else {
-          logoRoom = Math.max(logoW * MENU.logoMinScale, 2 * (this.icons.bounds.x - pad - width / 2));
-        }
-      }
-    }
-
-    this.addLogo(width, top + (MENU.logoHeight - logoShrink) / 2, logoRoom);
+    this.addLogo(width, top + (MENU.logoHeight - logoShrink) / 2, logoW);
     this.placeProphecy(width / 2, top + blockHeight - prophecyRoom + prophecyH / 2);
 
     const rowY = top + blockHeight + gap;
@@ -347,9 +321,7 @@ export class MenuScene extends Phaser.Scene {
       // a saved run, whether to carry on with it or start a new one.
       items: [{ id: 'start', label: () => t().menu.start, onSelect: () => this.onStart() }],
     });
-    if (below) {
-      this.icons.layCentred(width / 2, rowY + rowHeight + MENU.iconsGap, width - 32);
-    }
+    this.icons.layCentred(width / 2, rowY + rowHeight + MENU.iconsGap, width - 32);
 
     const hint = this.add
       .text(
@@ -362,7 +334,7 @@ export class MenuScene extends Phaser.Scene {
       .setDepth(DEPTH.ui);
     fitText(hint, width, 8);
     // A phone lying down has the icons down to its foot: the hint gives way to them.
-    if (below && this.icons.bounds.bottom > hint.y - hint.displayHeight / 2) {
+    if (this.icons.bounds.bottom > hint.y - hint.displayHeight / 2) {
       hint.setVisible(false);
     }
   }
@@ -400,7 +372,14 @@ export class MenuScene extends Phaser.Scene {
         onSelect: () => this.openOverlay(SCENES.settings, { allowLanguage: true }),
       },
       { id: 'guide', texture: TEXTURES.guide, label: () => t().menu.guideIcon, onSelect: () => this.openOverlay(SCENES.info, { topic: 'guide' }) },
-      { id: 'patch', texture: TEXTURES.patchNotes, label: () => t().menu.patchIcon, onSelect: () => this.openOverlay(SCENES.info, { topic: 'patch' }) },
+      {
+        id: 'patch',
+        texture: TEXTURES.patchNotes,
+        label: () => t().menu.patchIcon,
+        // The latest version, small on the icon's corner (0.155, the user's ask).
+        corner: () => `v${PATCH_NOTES[0]?.version ?? ''}`,
+        onSelect: () => this.openOverlay(SCENES.info, { topic: 'patch' }),
+      },
       // 밸런스: the admin's dials, and no one else's.
       ...(devToolsAllowed()
         ? [{ id: 'tuning', texture: TEXTURES.tuning, label: () => t().tuning.icon, onSelect: () => this.openOverlay(SCENES.tuning) }]
@@ -418,11 +397,6 @@ export class MenuScene extends Phaser.Scene {
           ]
         : []),
     ];
-  }
-
-  /** A phone (a finger, or a screen held upright) lays the icons under 게임 시작 (0.150); a desktop keeps the corner. */
-  private static iconsBelow(width: number, height: number): boolean {
-    return prefersTouchControls() || height > width;
   }
 
   /**

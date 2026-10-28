@@ -715,6 +715,8 @@ export const ICON_BAR = {
   labelGap: 6,
   /** A dot in the corner when one of them has something waiting. */
   badgeRadius: 7,
+  /** A few small letters over the picture's lower-right corner (0.155: 패치노트's version). */
+  corner: { fontSize: '11px', color: '#ffd27a', stroke: '#05070b', strokeThickness: 3 },
 } as const;
 
 /** Where the shell screens — title, settings, credits, pause — are tuned. */
