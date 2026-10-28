@@ -198,6 +198,19 @@ export function dailyRuleText(rules: DailyRuleSet): { title: string; lines: stri
   };
 }
 
+/**
+ * 전술 교본's switches in a word (0.152): on with every list on, off with
+ * none, else the lists that are on — 전투 준비's button and the pause's row.
+ */
+export function autoPickState(on: Readonly<Record<'skills' | 'upgrades' | 'shards', boolean>>): string {
+  const copy = t().autoPick;
+  const lists = (['skills', 'upgrades', 'shards'] as const).filter((tab) => on[tab]);
+  if (lists.length === 3) {
+    return copy.on;
+  }
+  return lists.length === 0 ? copy.off : lists.map((tab) => copy.tabs[tab]).join('·');
+}
+
 /** What holding a skill gives every skill and the survivor (SKILL_HELD_BONUS), as one line. */
 export function heldBonusText(id: SkillId): string {
   const bonus = SKILL_HELD_BONUS[id];

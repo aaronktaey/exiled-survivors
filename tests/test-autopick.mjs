@@ -67,9 +67,18 @@ check('the 강화 and 재능 tabs list every upgrade and every 재능', tabs.up 
   JSON.stringify(tabs));
 await shot('autopick-02-shards');
 
-// --- 3. the switch, here ---
-const flipped = await scene('AutoPickScene', `s.flip(); return { on: window.autoPicks.enabled, text: s.toggleLabel.text };`);
-check('the switch turns runs choosing by the plan on', flipped.on === true && flipped.text.includes('켬'), JSON.stringify(flipped));
+// --- 3. the switch, here: each list its own (0.152, the user's ask) ---
+const flipped = await scene('AutoPickScene', `
+  s.openTab('upgrades'); s.flip();
+  const one = { on: { ...window.autoPicks.value.on }, text: s.toggleLabel.text };
+  s.openTab('skills'); const skillsText = s.toggleLabel.text;
+  s.flip(); s.openTab('shards'); s.flip();
+  return { one, skillsText, all: { ...window.autoPicks.value.on }, text: s.toggleLabel.text };`);
+check('each list has its own switch: 강화 on leaves 스킬 and 재능 off, and the switch names its list',
+  flipped.one.on.upgrades === true && flipped.one.on.skills === false && flipped.one.on.shards === false &&
+    flipped.one.text.includes('강화') && flipped.one.text.includes('켬') && flipped.skillsText.includes('스킬') && flipped.skillsText.includes('끔'),
+  JSON.stringify(flipped));
+check('and all three can be on', flipped.all.skills && flipped.all.upgrades && flipped.all.shards && flipped.text.includes('켬'), JSON.stringify(flipped.all));
 await scene('AutoPickScene', `s.backButton.press?.() ?? s.input.keyboard.emit('keydown', { code: 'Escape', preventDefault() {} }); return 1;`);
 await cdp.until(`!window.game.scene.isActive('AutoPickScene') && window.game.scene.isActive('MenuScene')`, 8000);
 check('and the way back returns to the title', (await active('AutoPickScene')) === false && (await active('MenuScene')) === true);
@@ -111,7 +120,7 @@ await sleep(300);
 const started = await scene('GameScene', `return { auto: s.autoPick, main: s.mainSkill, pick: window.game.scene.isActive('SkillPickScene'),
   toasts: s.toasts?.lines ?? [] };`);
 check('a run started with it on chooses its first skill by the plan — no cards, a toast saying so',
-  started.auto === true && started.main === 'iceSpear' && started.pick === false && started.toasts.some((line) => line.includes('자동 선택')),
+  started.auto.skills === true && started.main === 'iceSpear' && started.pick === false && started.toasts.some((line) => line.includes('자동 선택')),
   JSON.stringify(started));
 
 // --- 6. a level-up takes the top-ranked upgrade among those offered ---
@@ -148,13 +157,13 @@ await shot('autopick-04-run');
 
 // --- 9. switched off, the cards come back ---
 await toTitle();
-await ev(`(() => { window.autoPicks.setEnabled(false); window.config.SKILL_PICK.atRunStart = true; return 1; })()`);
+await ev(`(() => { window.autoPicks.setAll(false); window.config.SKILL_PICK.atRunStart = true; return 1; })()`);
 await scene('MenuScene', `s.onStart(); return 1;`);
 await cdp.until(`window.game.scene.isActive('BoneScene')`, 8000);
 await scene('BoneScene', `s.choices.find((c) => c.id === 'start').onSelect(); return 1;`);
 await cdp.until(`window.game.scene.isActive('SkillPickScene')`, 15000);
 const manual = await scene('GameScene', `return { auto: s.autoPick, pick: window.game.scene.isActive('SkillPickScene') };`);
-check('with it off, a run shows the cards as before', manual.auto === false && manual.pick === true, JSON.stringify(manual));
+check('with it off, a run shows the cards as before', Object.values(manual.auto).every((on) => on === false) && manual.pick === true, JSON.stringify(manual));
 
 // --- 10. mid-run (0.151, the user's ask): the pause menu switches it and opens the lists ---
 await cdp.until(`window.game.scene.getScene('SkillPickScene').unlocked`, 8000, 100);
@@ -177,11 +186,13 @@ const pauseRow = await scene('PauseScene', `const r = s.menu.rows.find((x) => x.
   const before = r.item.detail(); r.item.onSelect(); return { label: r.item.label(), before };`);
 await cdp.until(`window.game.scene.isActive('AutoPickScene')`, 8000);
 await sleep(300);
-const midRun = await scene('AutoPickScene', `const was = s.toggleLabel.text; s.flip();
-  return { was, now: s.toggleLabel.text, run: window.game.scene.getScene('GameScene').autoPick, kept: window.autoPicks.enabled };`);
-check('the pause menu has 전술 교본, saying it is off, and its switch turns this run on (kept for later runs too)',
+// 강화 alone, for this run: level-ups choose themselves, a 무작위 스킬 still shows its cards.
+const midRun = await scene('AutoPickScene', `s.openTab('upgrades'); const was = s.toggleLabel.text; s.flip();
+  return { was, now: s.toggleLabel.text, run: { ...window.game.scene.getScene('GameScene').autoPick }, kept: { ...window.autoPicks.value.on } };`);
+check('the pause menu has 전술 교본, saying it is off, and a list switched there is this run’s (kept for later runs too)',
   pauseRow.label === '전술 교본' && pauseRow.before === '끔' && midRun.was.includes('끔') && midRun.now.includes('켬') &&
-    midRun.run === true && midRun.kept === true, JSON.stringify({ pauseRow, midRun }));
+    midRun.run.upgrades === true && midRun.run.skills === false && midRun.kept.upgrades === true && midRun.kept.skills === false,
+  JSON.stringify({ pauseRow, midRun }));
 
 // Carried by its grip with the mouse: the first row down to third place.
 const box = await ev(`(() => { const r = window.game.canvas.getBoundingClientRect(); return { l: r.left, t: r.top, k: r.width / window.game.scale.width }; })()`);
@@ -213,8 +224,12 @@ await scene('PauseScene', `s.resume(); return 1;`);
 await sleep(300);
 const resumed = await scene('GameScene', `s.__addXp(s.progression.xpToNext);
   return { card: window.game.scene.isActive('UpgradeScene'), choosing: s.choosing };`);
-check('back in the run, the pause row says 켬 and the next level-up is taken by the plan',
-  rowAfter === '켬' && resumed.card === false && resumed.choosing === false, JSON.stringify({ rowAfter, resumed }));
+check('back in the run, the pause row names the list that is on, and the next level-up is taken by the plan',
+  rowAfter === '강화' && resumed.card === false && resumed.choosing === false, JSON.stringify({ rowAfter, resumed }));
+await scene('GameScene', `s.queueChoice({ kind: 'pick' }); return 1;`);
+const cards = { pick: (await cdp.until(`window.game.scene.isActive('SkillPickScene') || window.game.scene.isActive('UpgradeScene')`, 5000, 100)) === true,
+  toasts: await scene('GameScene', `return s.toasts.lines;`) };
+check('with 스킬 off, a 무작위 스킬 still shows its cards', cards.pick === true, JSON.stringify(cards));
 
 console.log('\n=== SUMMARY ===');
 const failed = results.filter((r) => !r.p);

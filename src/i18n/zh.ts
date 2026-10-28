@@ -86,7 +86,7 @@ export const zh: Strings = {
       blastRadius: '爆炸范围',
       recastChance: '击杀时再次施放',
     },
-    toggle: '战斗中自动选择：{state}',
+    toggle: '{list}自动选择：{state}',
     prepToggle: '作战手册自动选择：{state}',
     prepEdit: '作战手册',
     on: '开',

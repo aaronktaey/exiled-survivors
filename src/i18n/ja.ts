@@ -86,7 +86,7 @@ export const ja: Strings = {
       blastRadius: '爆発範囲',
       recastChance: '撃破時再詠唱',
     },
-    toggle: '戦闘で自動選択: {state}',
+    toggle: '{list}の自動選択: {state}',
     prepToggle: '作戦書の自動選択: {state}',
     prepEdit: '作戦書',
     on: 'オン',

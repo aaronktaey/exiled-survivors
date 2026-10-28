@@ -1,14 +1,14 @@
 import Phaser from 'phaser';
 
 import { COLORS, DEPTH, MENU, SCENES, SCRIM, TEXT } from '@/config';
-import { fill, t } from '@/i18n';
+import { autoPickState, fill, t } from '@/i18n';
 import type { GameScene } from '@/scenes/GameScene';
 import { MenuList } from '@/systems/MenuList';
 import { RareTooltip } from '@/systems/RareTooltip';
 import { devToolsAllowed } from '@/systems/DevAccess';
 import { addBackButton, type BackButton } from '@/systems/BackButton';
 import { fitText } from '@/systems/Layout';
-import { autoPicks } from '@/systems/AutoPick';
+import { allSwitches, autoPicks, type AutoPickTab } from '@/systems/AutoPick';
 import type { SkillId } from '@/weapons/skills';
 
 
@@ -85,16 +85,16 @@ export class PauseScene extends Phaser.Scene {
         {
           id: 'autoPick',
           label: () => t().pause.autoPick,
-          detail: () => (run?.autoPick ? t().autoPick.on : t().autoPick.off),
+          detail: () => autoPickState(run?.autoPick ?? allSwitches(false)),
           onSelect: () =>
             this.openOverlay(SCENES.autoPick, {
               run: {
-                on: () => run?.autoPick === true,
-                set: (on: boolean) => {
+                on: (tab: AutoPickTab) => run?.autoPick[tab] === true,
+                set: (tab: AutoPickTab, on: boolean) => {
                   if (run) {
-                    run.autoPick = on;
+                    run.autoPick = { ...run.autoPick, [tab]: on };
                   }
-                  autoPicks.setEnabled(on);
+                  autoPicks.setOn(tab, on);
                 },
               },
             }),

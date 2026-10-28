@@ -13,7 +13,7 @@ import {
   boneBonusFor,
   type BoneId,
 } from '@/config';
-import { boneDetail, boneName, boneShort, fill, t } from '@/i18n';
+import { autoPickState, boneDetail, boneName, boneShort, fill, t } from '@/i18n';
 import { bones } from '@/systems/Bones';
 import { centredTop, fitText, fitWidth } from '@/systems/Layout';
 import { prefersTouchControls } from '@/systems/VirtualJoystick';
@@ -244,7 +244,8 @@ export class BoneScene extends Phaser.Scene {
     const switchPlate = this.plate(switchX, ay, switchW, BUTTON.h, COLORS.panelEdge);
     this.autoLabel = text(switchX, ay, '', TEXT.size.body, COLORS.text).setDepth(DEPTH.ui + 2);
     this.addChoice(switchPlate, { id: 'auto', enabled: () => true, onSelect: () => {
-      autoPicks.setEnabled(!autoPicks.enabled);
+      // Every list at once here; each one on its own in the 전술 교본 (0.152).
+      autoPicks.setAll(!autoPicks.enabled);
       this.refresh();
     } });
     const editPlate = this.plate(editX, ay, editW, BUTTON.h, COLORS.panelEdge);
@@ -491,7 +492,7 @@ export class BoneScene extends Phaser.Scene {
     if (this.autoLabel) {
       const plan = t().autoPick;
       const on = autoPicks.enabled;
-      this.autoLabel.setText(fill(plan.prepToggle, { state: on ? plan.on : plan.off })).setColor(on ? COLORS.text : COLORS.muted);
+      this.autoLabel.setText(fill(plan.prepToggle, { state: autoPickState(autoPicks.value.on) })).setColor(on ? COLORS.text : COLORS.muted);
       fitText(this.autoLabel.setScale(1), this.plates[this.choices.findIndex((choice) => choice.id === 'auto')]!.width - 12, 0);
       this.plates[this.choices.findIndex((choice) => choice.id === 'auto')]?.setStrokeStyle(
         this.choices[this.focused]?.id === 'auto' ? 3 : 2,

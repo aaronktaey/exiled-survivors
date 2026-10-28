@@ -90,7 +90,7 @@ export const ko: Strings = {
       blastRadius: '폭발 범위',
       recastChance: '처치 시 재시전',
     },
-    toggle: '전투에서 자동 선택: {state}',
+    toggle: '{list} 자동 선택: {state}',
     prepToggle: '전술 교본 자동 선택: {state}',
     prepEdit: '전술 교본',
     on: '켬',

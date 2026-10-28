@@ -502,7 +502,7 @@ await sleep(200);
 const autoLevel = await cdp.evaluate(`(() => {
   const s = window.game.scene.getScene('GameScene'); const j = s.player.analog;
   const before = { kind: j.constructor.name, tilt: +j.tilt.toFixed(2) };
-  s.autoPick = true;
+  s.autoPick = { skills: true, upgrades: true, shards: true };
   s.__addXp(s.progression.xpToNext + 1);
   return { before, toasts: s.toasts.lines.length, card: window.game.scene.isActive('UpgradeScene') };
 })()`);
@@ -524,7 +524,7 @@ const fingers = (type, points) => cdp.send('Input.dispatchTouchEvent', {
   type, touchPoints: points.map(([gx, gy, id]) => ({ ...toPage(gx, gy), id })),
 });
 const cardUp = async () => {
-  await cdp.evaluate(`(() => { const s = window.game.scene.getScene('GameScene'); s.autoPick = false; s.__addXp(s.progression.xpToNext + 1); return 1; })()`);
+  await cdp.evaluate(`(() => { const s = window.game.scene.getScene('GameScene'); s.autoPick = { skills: false, upgrades: false, shards: false }; s.__addXp(s.progression.xpToNext + 1); return 1; })()`);
   await cdp.until(`(() => { const u = window.game.scene.getScene('UpgradeScene'); return u.sys.settings.status === 5 && u.unlocked && u.cards?.length > 0; })()`, 10000, 100);
   return cdp.evaluate(`(() => { const c = window.game.scene.getScene('UpgradeScene').cards[0]; return { x: c.x, y: c.y }; })()`);
 };

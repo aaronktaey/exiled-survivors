@@ -161,9 +161,9 @@ export interface Strings {
       readonly blastRadius: string;
       readonly recastChance: string;
     };
-    /** {state}: on or off. */
+    /** The shown list's switch (0.152): {list} its tab's name, {state} on or off. */
     readonly toggle: string;
-    /** The switch on 전투 준비. {state}: on or off. */
+    /** The switch on 전투 준비, every list at once. {state}: on, off, or the lists that are on. */
     readonly prepToggle: string;
     /** The button beside it that opens the lists. */
     readonly prepEdit: string;

@@ -15,6 +15,24 @@ export interface PatchNote {
 
 export const PATCH_NOTES: readonly PatchNote[] = [
   {
+    version: '0.152',
+    date: '2026-10-28',
+    changes: {
+      ko: [
+        '전술 교본의 자동 선택을 스킬, 강화, 재능 목록마다 따로 켜고 끌 수 있습니다. 탭마다 켜진 목록에 빨간 점이 붙고, 전투 준비의 버튼은 세 목록을 한꺼번에 켜고 끕니다.',
+      ],
+      en: [
+        'Battle Plan auto-pick is now switched list by list — Skills, Upgrades and Talents each on or off. A red dot marks each list that is on, and the Battle Prep button switches all three at once.',
+      ],
+      ja: [
+        '作戦書の自動選択をスキル、強化、才能のリストごとに個別にオン/オフできるようになりました。オンのリストのタブには赤い点が付き、戦闘準備のボタンは3つまとめて切り替えます。',
+      ],
+      zh: [
+        '作战手册的自动选择现在可以按技能、强化、天赋列表分别开关。开启的列表标签上有红点，战斗准备的按钮会一次开关全部三个。',
+      ],
+    },
+  },
+  {
     version: '0.151',
     date: '2026-10-28',
     changes: {

@@ -2,7 +2,7 @@ import Phaser from 'phaser';
 
 import { COLORS, DEPTH, SCENES, SCRIM, SKILL_ICONS, TALENT_SHARD_FX, TEXT, TEXTURES, type ShardStat } from '@/config';
 import { fill, skillName, t } from '@/i18n';
-import { autoPicks, type AutoPickTab } from '@/systems/AutoPick';
+import { AUTO_PICK_TABS, autoPicks, type AutoPickTab } from '@/systems/AutoPick';
 import { addBackButton, type BackButton } from '@/systems/BackButton';
 import { fitText } from '@/systems/Layout';
 import type { UpgradeId } from '@/systems/Progression';
@@ -13,11 +13,11 @@ export interface AutoPickSceneData {
   readonly onClose: () => void;
   /** The list to open on. */
   readonly tab?: AutoPickTab;
-  /** Opened from a run's pause (0.151): the switch is that run's, and is kept for runs after. */
-  readonly run?: { readonly on: () => boolean; readonly set: (on: boolean) => void };
+  /** Opened from a run's pause (0.151): the switches are that run's, and are kept for runs after. */
+  readonly run?: { readonly on: (tab: AutoPickTab) => boolean; readonly set: (tab: AutoPickTab, on: boolean) => void };
 }
 
-const TABS: readonly AutoPickTab[] = ['skills', 'upgrades', 'shards'];
+const TABS = AUTO_PICK_TABS;
 const TITLE_Y = 34;
 const FOOTER = 34;
 const ROW = { max: 36, min: 24, gap: 4, width: 460 };
@@ -30,8 +30,9 @@ const GRIP = 0xa9b3c9;
  * 전술 교본 (0.147, the user's design) — the order a run chooses in, list by
  * list: the skills (the run's first, and a 무작위 스킬's cards), the upgrades a
  * level-up offers, the 재능의 파편. The top of each list is taken first among
- * what is offered. Switched on here or at 전투 준비 (BoneScene); a run reads
- * it as it starts.
+ * what is offered. Each list is switched on or off here, list by list
+ * (0.152), or all at once at 전투 준비 (BoneScene); a run reads them as it
+ * starts, and its pause opens this screen on the run's own.
  *
  * A row per entry, its place, its name and ▲ ▼ to move it; the keyboard
  * walks the rows with ↑ ↓ and carries the one it is on with Shift. Each row
@@ -60,6 +61,7 @@ export class AutoPickScene extends Phaser.Scene {
   private rowParts: Phaser.GameObjects.GameObject[] = [];
   private rowPlates: Phaser.GameObjects.Rectangle[] = [];
   private tabPlates = new Map<AutoPickTab, Phaser.GameObjects.Rectangle>();
+  private tabMarks = new Map<AutoPickTab, Phaser.GameObjects.Arc>();
   private toggle!: Phaser.GameObjects.Rectangle;
   private tabLead!: Phaser.GameObjects.Text;
   private listTop = 0;
@@ -77,6 +79,7 @@ export class AutoPickScene extends Phaser.Scene {
     this.rowParts = [];
     this.rowPlates = [];
     this.tabPlates = new Map();
+    this.tabMarks = new Map();
     this.dragging = null;
     this.slots = [];
     this.grips = [];
@@ -115,6 +118,7 @@ export class AutoPickScene extends Phaser.Scene {
       plate.on(Phaser.Input.Events.GAMEOBJECT_POINTER_DOWN, () => this.openTab(tab));
       fitText(this.label(x, y, copy.tabs[tab], TEXT.size.body, COLORS.text).setDepth(DEPTH.ui + 2), tabW - 10, 0);
       this.tabPlates.set(tab, plate);
+      this.tabMarks.set(tab, this.add.circle(x - tabW / 2 + 12, y, 5, COLORS.panelEdge).setDepth(DEPTH.ui + 2));
     });
     y += BUTTON.h / 2 + 8;
     this.tabLead = this.label(width / 2, y + 9, '', TEXT.size.hint, COLORS.muted);
@@ -184,13 +188,18 @@ export class AutoPickScene extends Phaser.Scene {
     this.drawList();
   }
 
-  /** Switches runs choosing by the lists on or off. Public for tests. */
+  /** Whether the list `tab` chooses for the player — the run's, opened from its pause. */
+  private isOn(tab: AutoPickTab): boolean {
+    return this.payload.run ? this.payload.run.on(tab) : autoPicks.isOn(tab);
+  }
+
+  /** Switches the shown list choosing by itself on or off (0.152: each list its own). Public for tests. */
   public flip(): void {
-    const { run } = this.payload;
-    if (run) {
-      run.set(!run.on());
+    const on = !this.isOn(this.tab);
+    if (this.payload.run) {
+      this.payload.run.set(this.tab, on);
     } else {
-      autoPicks.setEnabled(!autoPicks.enabled);
+      autoPicks.setOn(this.tab, on);
     }
     this.drawList();
   }
@@ -231,13 +240,15 @@ export class AutoPickScene extends Phaser.Scene {
   private drawList(): void {
     const copy = t().autoPick;
     const { width } = this.scale;
-    const on = this.payload.run ? this.payload.run.on() : autoPicks.enabled;
-    this.toggleLabel.setText(fill(copy.toggle, { state: on ? copy.on : copy.off }));
+    const on = this.isOn(this.tab);
+    this.toggleLabel.setText(fill(copy.toggle, { list: copy.tabs[this.tab], state: on ? copy.on : copy.off }));
     this.toggle.setStrokeStyle(2, on ? COLORS.accentFill : COLORS.panelEdge, 1);
     this.toggleLabel.setColor(on ? COLORS.text : COLORS.muted);
+    // Each tab says whether its list is on, a mark in the switch's colour.
     this.tabPlates.forEach((plate, tab) =>
       plate.setFillStyle(tab === this.tab ? COLORS.panelActive : COLORS.panel, 1).setStrokeStyle(2, tab === this.tab ? FOCUS_EDGE : COLORS.panelEdge, 1),
     );
+    this.tabMarks.forEach((mark, tab) => mark.setFillStyle(this.isOn(tab) ? COLORS.accentFill : COLORS.panelEdge, 1));
     this.tabLead.setText(copy.tabLeads[this.tab]);
     fitText(this.tabLead.setScale(1), width - 24);
 

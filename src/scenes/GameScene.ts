@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import { monsterLook } from '@/systems/MonsterArt';
-import { autoPicks, type AutoPickTab } from '@/systems/AutoPick';
+import { allSwitches, autoPicks, switchesFrom, type AutoPickSwitches, type AutoPickTab } from '@/systems/AutoPick';
 
 import {
   AFFIXES,
@@ -210,7 +210,7 @@ export class GameScene extends Phaser.Scene {
   private terrain: Terrain | null = null;
   private terrainSeed = 0;
   /** 전술 교본 (0.147): every choice taken by the plan, no cards shown. Public for tests. */
-  public autoPick = false;
+  public autoPick: AutoPickSwitches = allSwitches(false);
   /** The run's ground (전투 배경, 0.105), from its terrain seed. Public for tests. */
   public arenaTheme: ArenaThemeId = 'earth';
   private damageNumbers!: DamageNumbers;
@@ -348,7 +348,7 @@ export class GameScene extends Phaser.Scene {
     // The ground is the terrain seed's: a resumed run stands on the one it had.
     this.terrainSeed = this.resuming?.terrainSeed ?? Terrain.newSeed();
     // 전술 교본 (0.147): switched on at 전투 준비, the run chooses by the plan; a resumed one as it did.
-    this.autoPick = this.resuming ? this.resuming.autoPick === true : autoPicks.enabled;
+    this.autoPick = this.resuming ? switchesFrom(this.resuming.autoPick) : { ...autoPicks.value.on };
     this.arenaTheme = themeFor(this.terrainSeed);
     this.createFloor();
 
@@ -559,7 +559,7 @@ export class GameScene extends Phaser.Scene {
    * False when the plan is off, and the cards are shown.
    */
   private chooseForPlayer<T extends string>(tab: AutoPickTab, offered: readonly T[], onPick: (id: T) => void, name?: (id: T) => string): boolean {
-    if (!this.autoPick) {
+    if (!this.autoPick[tab]) {
       return false;
     }
     const choice = autoPicks.choose(tab, offered);
@@ -924,7 +924,7 @@ export class GameScene extends Phaser.Scene {
       scoreByKind: this.stats.scoreByKind,
       damageBySkill: this.stats.damageBySkill,
       terrainSeed: this.terrainSeed,
-      autoPick: this.autoPick,
+      autoPick: { ...this.autoPick },
       rulesDay: this.rulesDay,
       shards: { ...this.shards },
     });

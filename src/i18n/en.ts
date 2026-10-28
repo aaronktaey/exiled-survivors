@@ -86,7 +86,7 @@ export const en: Strings = {
       blastRadius: 'Blast radius',
       recastChance: 'Recast on kill',
     },
-    toggle: 'Auto-pick in battle: {state}',
+    toggle: '{list} auto-pick: {state}',
     prepToggle: 'Battle Plan auto-pick: {state}',
     prepEdit: 'Battle Plan',
     on: 'On',

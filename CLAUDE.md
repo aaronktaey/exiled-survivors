@@ -1465,9 +1465,13 @@ Read `git log` for what changed and when. What is not in the log:
   back keeps what exists and adds anything new at the end. `AutoPickScene`
   (the title's icon `autoPick`, `TEXTURES.battlePlan`) edits them — ▲▼ a
   row, Shift+↑↓, Q/E tabs, Space the switch, R 기본 순서로; lying down a long
-  list goes in two columns. The switch is `enabled`; a fresh run reads it in
-  GameScene.init (`autoPick`, kept in the save), and then every choice goes
-  through `chooseForPlayer`: the plan's best of what is offered is handed to
+  list goes in two columns. Each list has its own switch since 0.152 (the
+  user's ask; `AutoPlan.on`, `isOn`/`setOn`, `setAll` for 전투 준비's one
+  press; `enabled` is "any on"; a stored or saved single boolean reads as
+  every list — `switchesFrom`); the screen's switch is the shown tab's, and
+  a dot on each tab says which are on. A fresh run copies them in
+  GameScene.init (`autoPick`, a record, kept in the save), and then every
+  choice on a switched-on list goes through `chooseForPlayer`: the plan's best of what is offered is handed to
   the same `onPick` a card would have called, with a `autoPick.toast`
   (the 파편 says its own line). 전투 준비 (`BoneScene`, retitled from 뼈다귀)
   carries the switch (`auto`) and a way to the lists (`plan`, `openPlan`),
