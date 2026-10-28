@@ -360,7 +360,8 @@ export class SkillPickScene extends Phaser.Scene {
       })
       .setOrigin(origin, 0)
       .setDepth(DEPTH.ui + 1);
-    ty += name.height + 2;
+    fitText(name, textWidth, 0);
+    ty += name.displayHeight + 2;
 
     const level = this.payload.levels?.[skill];
     const badge = owned ? fill(copy.upgrade, { level: level ?? 1 }) : copy.new;
@@ -370,16 +371,28 @@ export class SkillPickScene extends Phaser.Scene {
         fontFamily: 'system-ui, sans-serif',
         fontSize: TEXT.size.hint,
         color: owned ? COLORS.accent : COLORS.gearText,
-        wordWrap: { width: textWidth },
       })
       .setOrigin(origin, 0)
       .setDepth(DEPTH.ui + 1);
-    ty += meta.height + 6;
+    // One line, shrunk to fit (0.153): wrapped, a longer language's tags took
+    // three lines and pushed the rest out of the card.
+    fitText(meta, textWidth, 0);
+    ty += meta.displayHeight + 6;
 
     const note = this.payload.notes?.[skill];
+    // What holding it gives is a line of its own, never cut: as part of the
+    // body it was the first thing the line cap took ("Held — 10% less").
+    const held = note ? '' : heldBonusText(skill);
+    if (held) {
+      const heldLine = this.add
+        .text(textX, ty, held, { fontFamily: 'system-ui, sans-serif', fontSize: TEXT.size.hint, color: COLORS.muted })
+        .setOrigin(origin, 0)
+        .setDepth(DEPTH.ui + 1);
+      fitText(heldLine, textWidth, 0);
+      ty += heldLine.displayHeight + 2;
+    }
     const body = this.add
-      .text(textX, ty, note ? note.text : `${heldBonusText(skill)}
-${skillSummary(skill)}`, {
+      .text(textX, ty, note ? note.text : skillSummary(skill), {
         fontFamily: 'system-ui, sans-serif',
         fontSize: TEXT.size.hint,
         color: note?.warn ? COLORS.warnText : note ? COLORS.text : COLORS.muted,
@@ -391,7 +404,12 @@ ${skillSummary(skill)}`, {
     // As many lines as the card has room left for, by the font's own line
     // height (a fixed 17px let the game font's last line out of the card).
     const lineHeight = body.style.getTextMetrics().fontSize + body.lineSpacing;
-    body.setMaxLines(Math.max(1, Math.min(4, Math.floor((y + h / 2 - 8 - ty) / lineHeight))));
+    const room = Math.floor((y + h / 2 - 8 - ty) / lineHeight);
+    if (room < 1) {
+      body.setVisible(false);
+    } else {
+      body.setMaxLines(Math.min(4, room));
+    }
 
     panel.on(Phaser.Input.Events.GAMEOBJECT_POINTER_OVER, () => {
       if (!this.picked) {

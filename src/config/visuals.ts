@@ -310,6 +310,12 @@ export const TEXT = {
    */
   fontFamily: '"ExiledPixel", "Galmuri11", system-ui, sans-serif' as string,
   /**
+   * The same in Chinese (0.153): 갈무리 has only part of Simplified Chinese,
+   * so the hanzi come from Fusion Pixel 12px, cut to what the game writes
+   * (tools/make-zh-font.py); 갈무리 still draws Hangul (a player's name).
+   */
+  fontFamilyZh: '"ExiledPixel", "FusionPixelZh", "Galmuri11", system-ui, sans-serif',
+  /**
    * Where the game font sits in a label's box, as shares of the font size
    * (0.110): room above the baseline and below it. 갈무리's Hangul reaches
    * 0.94 up and nothing down, the logo letters 0.7 up; these put the box's

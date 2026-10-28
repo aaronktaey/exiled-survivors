@@ -149,7 +149,7 @@ export const en: Strings = {
     title: '{skill} Awakened!',
     card: 'Awakened — {effect}',
     effects: {
-      meleeStrike: 'Also destroys enemy projectiles within its reach',
+      meleeStrike: 'Once every {every} swings, destroys every enemy projectile within its reach',
       fireball: 'Its burst is {blastScale}× as wide',
       chainLightning: 'Each strike deals {bonus} more for every jump still to come',
       iceSpear: 'Freezes an already chilled enemy solid for {freeze}s',
@@ -247,7 +247,7 @@ export const en: Strings = {
       'SPAWN.startIntervalMs': 'The gap between spawns as a run starts. Shorter means a crowd from the first second.',
       'SPAWN.minIntervalMs': 'The shortest the gap between spawns can get: the ceiling on late-game numbers.',
       'SPAWN.rampPerMinute': 'How much of the way to the shortest gap is closed each minute. At 10% the difference left shrinks by a tenth a minute.',
-      'SPAWN.maxAlive': 'How many enemies can be alive at once. At the cap the one with the least health left vanishes for each newcomer (never an Ancient Weapon, Chimera or Fugitive).',
+      'SPAWN.maxAlive': 'How many enemies can be alive at once. At the cap the one with the least health left vanishes for each newcomer (never an Ancient Weapon, Chimera or Runaway).',
       'RARE.chance': 'The base chance a new enemy comes up rare, with affixes.',
       'DIFFICULTY.rareChancePerMinute': 'Added to the rare chance every minute (in points).',
       'DIFFICULTY.lateFromMinute': 'The minute the late game starts: from then each minute’s rare step is multiplied by the late multiplier.',
@@ -466,22 +466,35 @@ export const en: Strings = {
     tips: [
       'Your score is the health of every enemy you killed, added up. The longer you last, the tougher they get and the more each one is worth.',
       'Each enemy kind counts for its own share: {scoreKinds}.',
-      'A Fugitive turns up every {fugEvery}s. Catch it for a Talent Chunk ({lumpShards} shards’ worth) and 1.5× score.',
+      'A Runaway turns up every {fugEvery}s. Catch it for a Talent Chunk ({lumpShards} shards’ worth) and ×{scoreFugitive} score.',
       'Your main skill awakens at Lv {masteryLevel} and again at Lv {masteryLevel2}. Every level-up goes into it.',
       'Taking a skill you already hold from a Random Skill upgrades it. You can hold {subSkillsMax} skills besides your main one.',
       'Every skill you hold gives a held effect to all of them — the Fireball, for one, widens every skill’s area.',
       'Share out your {passivePoints} Talent points on the title screen to make the stats you want come up more often as Talent Shards.',
       'Once your main skill is at its top, every level-up lets you pick a Talent Shard and keep growing.',
-      'Walk up to an altar and it calls up a pack. A Chimera from a Chimera altar is worth 2× score.',
+      'Walk up to an altar and it calls up a pack. A Chimera from a Chimera altar is worth ×{scoreChimera} score.',
       'Rare enemies (with an outline) drop more for each modifier they carry. Point at one to read them.',
       'A Magnet pulls in nearly every XP gem and item on the ground at once.',
       'A White Mango makes you attack ×{mangoRate} as fast for {mangoSecs}s.',
-      'Start with a Skull and Ancient Weapons (1.5× score) come instead of rare enemies — {maxBosses} at a time at most.',
+      'Start with a Skull and Ancient Weapons (×{scoreBoss} score) come instead of rare enemies — {maxBosses} at a time at most.',
       'On a weapon, Echoing suits a slow skill, Frenzied a fast one.',
       'Salvage the swords you will not use for Iron ore, and craft the one you want.',
       'A weapon with a Mango Orb on it survives one Explosion Orb that would have destroyed it.',
       'Point at a skill’s icon to see how its DPS adds up.',
-      'Save and quit from the pause menu to carry the run on next time.',
+      'Save and quit from the pause menu, and New Run offers to carry the run on next time.',
+      'Switch the Battle Plan on and it picks skills, upgrades and Talent Shards for you in the order you set. Each list has its own switch, and the pause menu changes them mid-run.',
+      'Today’s prophecy changes every day at {rankResetHour}:00 Korea time. The banned skill is never offered in a run started that day.',
+      'When an Ancient Weapon shows a faint red aiming line, step off it: the laser reaches the edge of the world.',
+      'A red mark under your feet near an Ancient Weapon means it is about to land right there.',
+      'Swords only one kind drops: {swordBoss} from an Ancient Weapon ({swordBossChance}), {swordChimera} from a Chimera ({swordChimeraChance}), {swordFugitive} from a Runaway ({swordFugitiveChance}).',
+      'An {engraveOrb} carves one line of a weapon with {engraveMin} or more affixes in for good: other orbs reroll around it.',
+      '{cullAffix} kills outright any enemy a hit leaves under a share of its health — Ancient Weapons included.',
+      '{thornyAffix} gives every hit you take a chance to cast your main skill at once. The more of them around you, the more often it goes off.',
+      'On a phone, Settings → Controls switches how you move: Pad under finger, Tilt or Tap to move.',
+      'On a phone the stick stays held when cards come up: steer with one hand and pick with the other.',
+      'Finish first, second or third on a day and a gold, silver or bronze cup goes on your account on the board.',
+      'A potion restores {heal} health, and each potion healing Talent Shard adds +{shardPotionHeal}.',
+      'Enemies change their looks at {eraMid} and {eraLate} minutes. Only the looks: what makes them tougher is the clock.',
     ],
     survived: 'Survived {time}    Lv {level}',
     retry: 'Run again',
@@ -953,6 +966,8 @@ export const en: Strings = {
     passives: 'Talents',
     inventory: 'Inventory',
     ranking: 'Ranking',
+    autoPick: 'Battle Plan',
+    prophecy: 'Prophecy',
   },
 
   guide: {
@@ -969,10 +984,10 @@ export const en: Strings = {
         {
           title: 'How a run goes',
           lines: [
-            'New Run → pick Bones (if you have any) → pick one of {choices} skill cards → fight.',
+            'New Run → Prepare for battle (put in Bones, switch the Battle Plan) → pick the first skill → fight. With a run saved, New Run first asks whether to carry it on or start afresh.',
             'The first Ancient Weapon arrives at {bossFirst}s, then one every {bossEvery}s.',
-            'The longer it lasts, the tougher new enemies are and the more of them come up rare.',
-            'When you die, the results screen sums the run up, and you leave by Run again, the title screen or Settings.',
+            'The longer it lasts, the tougher new enemies are and the more of them come up rare. At {eraMid} and {eraLate} minutes the enemies change their looks.',
+            'When you die, the results screen shows the score and sums the run up, and you leave by Run again or the title screen.',
           ],
         },
       ],
@@ -982,7 +997,7 @@ export const en: Strings = {
           lines: [
             'WASD or the arrow keys to move.',
             'Esc or the button at the top left to pause.',
-            'Hover a skill icon at the top left for how its DPS is worked out, or a rare for its affixes. The fight waits while you read.',
+            'Hover a skill icon at the top left for how its DPS is worked out, an effect icon beside them (weapon, Bones, Talent Shards, the prophecy…) for what it does, or a rare for its affixes. The fight waits while you read.',
           ],
         },
         {
@@ -1005,15 +1020,17 @@ export const en: Strings = {
         {
           title: 'Moving',
           lines: [
-            'Choose one of two in Settings.',
+            'Choose one of three on the Controls tab of Settings.',
             'Pad where you touch — nothing is shown until a finger lands, and the pad appears there. Its size is in Settings.',
             'Tilt — tilt the device to move. The angle it first reads is neutral, so hold it however is comfortable.',
+            'Tap to move — walks to where you press, and follows a finger held down. Let go and it walks on to the last point and stops.',
           ],
         },
         {
           title: 'Touch',
           lines: [
             'Tapping a skill icon or a rare shows the same as hovering does. That finger is also steering, so the fight does not wait.',
+            'Skill and upgrade cards do not let go of the stick: steer with one hand and tap a card with the other, and you carry on the way you were going.',
             'The device’s back button pauses.',
           ],
         },
@@ -1023,7 +1040,7 @@ export const en: Strings = {
           title: 'Autosave',
           lines: [
             'The run saves every {autosave}s and every time you pause.',
-            'Leave with "Save and quit to title" on the pause menu, then pick it up again with Continue on the title screen.',
+            'Leave with "Save and quit to title" on the pause menu; next time New Run asks whether to carry it on or start afresh.',
             'Dying deletes the save. A save is for stopping for a while, not for taking a death back.',
           ],
         },
@@ -1031,14 +1048,14 @@ export const en: Strings = {
           title: 'While a run is saved',
           lines: [
             'You can still swap the weapon in hand: the run you load keeps the effect of the sword it went out with.',
-            'The language cannot be changed mid-run.',
+            'The language is changed on the Display tab of Settings, from the title screen; not mid-run.',
           ],
         },
         {
           title: 'Account',
           lines: [
             'Signing in is optional. Sign in from Account on the title screen with a social account such as Google, and your records (gear, talents, orbs, Bones, the saved run, settings) are kept on your account, so you can carry on from another device.',
-            'If this device and your account hold different records, you are asked which to keep. The other set is lost.',
+            'Signing in brings your account’s records to this device (or, with the account empty, uploads this device’s), and you are told first what becomes of what this device holds. If two signed-in devices have each changed the records, you are asked which to keep; the other set is lost.',
             'Signing in uses only your account’s ID and display name — no email. You can sign out or delete the account from the Account screen.',
           ],
         },
@@ -1054,10 +1071,11 @@ export const en: Strings = {
         {
           title: 'Levelling up',
           lines: [
-            'On a level up you choose an upgrade for your main skill, the one you picked at the start of the run. A skill found later is upgraded by picking it up again. A skill with every upgrade taken heals you a potion’s worth instead, on a level-up or a pickup.',
+            'On a level up you choose an upgrade for your main skill, the one you picked at the start of the run. A skill found later is upgraded by picking it up again.',
             'Upgrades stay on their own skill: raising Fireball leaves Strike as it was.',
             'Number upgrades add a share of the base each time: three picks of +20% are +60% of the base.',
-            'Damage and attack speed can each be taken {maxPicks} times per skill, and chains go up to {chainCap}. A maxed upgrade is no longer offered.',
+            'Each upgrade can be taken a set number of times (damage and attack speed {maxPicks}). Its card shows the value now and next and how many you have taken; a maxed upgrade is no longer offered.',
+            'Once your main skill has every upgrade, each level-up lets you pick a Talent Shard instead. Picking up a skill with every upgrade taken heals you a potion’s worth.',
           ],
         },
         {
@@ -1077,13 +1095,14 @@ export const en: Strings = {
       getSkills: [
         {
           title: 'The first skill',
-          lines: ['A run starts by choosing one of {choices} skill cards. There is no basic attack.'],
+          lines: ['A run starts by choosing any one skill. There is no basic attack: this is the run’s main skill. The skill banned by today’s prophecy shows as a grey card that cannot be taken.'],
         },
         {
           title: 'Skill drops',
           lines: [
             'Enemies drop a skill {skillChance} of the time. Ancient Weapons always drop one.',
             'A skill you do not have comes in at its base stats; one you have opens its upgrade choice.',
+            'Besides the main skill you can hold {subSkillsMax} more. With every slot full only skills you hold are offered, and picking up any other heals you a potion’s worth.',
           ],
         },
         {
@@ -1091,6 +1110,14 @@ export const en: Strings = {
           lines: [
             'Enemies drop one {randomSkillChance} of the time. Walking over it offers {choices} skill cards to choose from.',
             'Choosing a skill you already have goes straight on to its upgrade.',
+            'If every skill it could offer has every upgrade, you pick a Talent Shard instead.',
+          ],
+        },
+        {
+          title: 'Held effects',
+          lines: [
+            'Just holding a skill gives every skill, or you, something — the Fireball, for one, widens every area. Main and found skills alike.',
+            'Each skill’s held effect is on its card under Skills, and on its icon mid-run.',
           ],
         },
       ],
@@ -1098,7 +1125,7 @@ export const en: Strings = {
         {
           title: 'One hit',
           lines: [
-            '(skill base damage + weapon attack) × increased × amplified × per-skill balance.',
+            '(skill base damage + weapon attack × attack coefficient) × increased × amplified × per-skill balance. The coefficient is the skill’s own, on its card under Skills.',
             'Increases (run upgrades) add together; amplifies (Talent Shards, Mighty, implicits, held skills) multiply each other.',
           ],
         },
@@ -1131,6 +1158,8 @@ export const en: Strings = {
             'They appear off screen and close in, and more kinds join as the run goes on.',
             'Each body hurts on its own when it touches you, so being surrounded hurts all at once.',
             'The gap between spawns starts at {spawnStart}s and shrinks to {spawnMin}s, with at most {maxAlive} on the field.',
+            'Until {eraMid} minutes they come as the dead, goblins and beasts, until {eraLate} as fantasy creatures, then as machines. Only the looks change; those already out keep theirs.',
+            'When the field is full, a newcomer takes the place of the one of its kind with the least health left, which vanishes (never an Ancient Weapon, Chimera or Runaway).',
           ],
         },
       ],
@@ -1140,6 +1169,15 @@ export const en: Strings = {
           lines: [
             'A skill and a sword every time, and an altar {altarBoss} of the time.',
             'Every other drop is {bossBonus} more likely.',
+          ],
+        },
+        {
+          title: 'How an Ancient Weapon attacks',
+          lines: [
+            'Each time it attacks it picks one of three.',
+            'Ring — bolts thrown out all around.',
+            'Laser — a faint red aiming line for {laserAim}s, then a laser down it that never ends. It keeps walking as it aims.',
+            'Leap — with you within {leapRange}px, it marks where you stood for {leapAim}s, then jumps and lands there. In the air its body does not hurt.',
           ],
         },
       ],
@@ -1176,8 +1214,9 @@ export const en: Strings = {
         {
           title: 'When they arrive',
           lines: [
-            'Runners from {runnerAt}s, Shooters from {shooterAt}s, Brutes from {bruteAt}s.',
+            'Runners from {runnerAt}s, Shooters from {shooterAt}s, Brutes from {bruteAt}s, Oddities from {erraticAt}s.',
             'The first Ancient Weapon at {bossFirst}s, then every {bossEvery}s. The first Runaway at {fugFirst}s, then every {fugEvery}s.',
+            'Chimeras come from {chimeraFirst} minutes, one every {chimeraEvery}.',
           ],
         },
       ],
@@ -1188,6 +1227,7 @@ export const en: Strings = {
             'Each affix on a rare raises every drop chance by {dropBonus}, and an Ancient Weapon raises them by {bossBonus}.',
             'What only an Ancient Weapon leaves, and what is certain anyway, does not get this bonus.',
             'A run with Ribs in it raises every drop chance further.',
+            'Swords, orbs and Bones found in a run that cannot go on the ranking (debug keys or a balance draft) are not kept.',
           ],
         },
         {
@@ -1216,7 +1256,7 @@ export const en: Strings = {
         {
           title: 'Health potion',
           lines: [
-            '{potionChance} of the time. Restores {heal} health.',
+            '{potionChance} of the time. Restores {heal} health, and potion healing Talent Shards and {apothecaryAffix} on the weapon add to it. Holding {poisonNova} makes them come more often.',
             'At full health it is left where it is rather than wasted.',
           ],
         },
@@ -1236,7 +1276,7 @@ export const en: Strings = {
           title: 'Item Filter',
           lines: [
             'Filter on the title screen switches each kind of drop on or off. Anything switched off still drops, but it is neither seen nor heard on the ground; walking over it or a Magnet still picks it up.',
-            'A weapon shows only when both its rarity (Normal, Magic, Rare) and its kind are on. The filter is kept with your account.',
+            'A weapon shows only when both its rarity (Normal, Magic, Rare, Mythic) and its kind are on. The filter is kept with your account.',
           ],
         },
         {
@@ -1247,6 +1287,19 @@ export const en: Strings = {
             'What it can call: {altarOffers}.',
           ],
         },
+        {
+          title: 'Talent Shard',
+          lines: [
+            '{shardChance} of kills. While the run lasts it raises its stat, and the number on its effect icon goes up. Which stat it is follows your talents.',
+            'A Runaway and a Chimera always leave a Talent Chunk, worth {lumpShards} shards.',
+          ],
+        },
+        {
+          title: 'Unknown Rune',
+          lines: [
+            'A Chimera leaves one {runeChance} of the time. Nothing comes of picking it up yet, but an immense power stirs in it.',
+          ],
+        },
       ],
       gear: [
         {
@@ -1254,11 +1307,12 @@ export const en: Strings = {
           lines: [
             'Every Ancient Weapon drops a sword. Tier {fromKillTiers} swords also rarely drop from ordinary enemies.',
             'The lower a sword’s tier number, the stronger it is. Its attack power is added to every skill’s hit.',
-            'Damage is (the skill’s base damage + attack) × increased × amplified. Effects marked increased (upgrades) add together; effects marked amplified (Talent Shards, Mighty, implicits, held skills) multiply each other. One weapon’s Mighty and implicit add up first.',
+            'Damage is (the skill’s base damage + attack × attack coefficient) × increased × amplified. Effects marked increased (upgrades) add together; effects marked amplified (Talent Shards, Mighty, implicits, held skills) multiply each other. One weapon’s Mighty and implicit add up first.',
             'Swords you pick up go to the stash; you equip them from the Inventory on the title screen.',
-            'A sword can carry up to {maxPrefix} prefixes (offence) and {maxPrefix} suffixes (defence and movement). Each line is a {affixChance} roll, and every success rolls for another.',
+            'A sword can carry up to {maxPrefix} prefixes (offence) and {maxPrefix} suffixes (defence and utility). Each line is a {affixChance} roll, and every success rolls for another.',
             'The implicit is fixed by the kind of sword, and is always there however many prefixes and suffixes it has.',
             'Combining — combine {combineCount} of the same sword (not the one in hand) in the Inventory for a {combineChance} chance at the sword one tier up, with no affixes. The swords are spent even if it fails.',
+            'The sword in hand takes no orbs and is never salvaged: equip another first.',
           ],
         },
       ],
@@ -1266,7 +1320,7 @@ export const en: Strings = {
         {
           title: 'Affixes',
           lines: [
-            'Rares and weapons share the same affixes. Prefixes are offence; suffixes are defence and movement.',
+            'Rares and weapons share the same affixes. Prefixes are offence; suffixes are defence and utility.',
             'On a weapon an affix comes in {tierCount} tiers, and tier 1 is the strongest and the rarest.',
           ],
         },
@@ -1285,7 +1339,7 @@ export const en: Strings = {
           lines: [
             'Before a run, put in up to {maxBones} to change that run. Bones put in are spent.',
             'Press a bone to drop it into a slot below; press a slot to take it back out. What it does, and what they add up to, is shown right under them.',
-            'Both New Run and Run again go through the Bones screen; with none to spend it is skipped.',
+            'Both New Run and Run again go through Prepare for battle: put Bones in there, and switch every Battle Plan list on or off at once.',
             'A loaded run keeps the Bones it was started with.',
             'Even with a Skull, only {maxBosses} Ancient Weapons are out at once; past that the rare spawns are ordinary enemies.',
           ],
@@ -1296,7 +1350,7 @@ export const en: Strings = {
           title: 'Talents',
           lines: [
             'Every player holds {passivePoints} talent points. Share them out among the stats from Talents on the title screen.',
-            'A Talent Shard drops off {shardChance} of kills. A Fugitive or a Chimera leaves a Talent Chunk instead, worth {lumpShards} shards of one stat. Which stat it carries follows your talents: the more points in a stat, the more often its shard comes, and the others that much less.',
+            'A Talent Shard drops off {shardChance} of kills. A Runaway or a Chimera leaves a Talent Chunk instead, worth {lumpShards} shards of one stat. Which stat it carries follows your talents: the more points in a stat, the more often its shard comes, and the others that much less.',
             'Each shard amplifies its stat by {shardAmplify} (a potion healing shard adds +{shardPotionHeal} to every potion) until the run ends.',
             'Reset gives every point back, at any time.',
           ],
@@ -1306,9 +1360,9 @@ export const en: Strings = {
         {
           title: 'Gear tab',
           lines: [
-            'Your swords sit in a {cols}×{rows} grid. Pick a cell and its attack power, implicit and affixes are read out beside it.',
+            'Your swords sit in a {cols}×{rows} grid, and ◀ ▶ beside the page count turn the page. Pick a cell and its attack power, implicit and affixes are read out beside it.',
             'Equip, orbs and combine are the buttons beside it, or Space. The Salvage and Craft buttons, top-right, open their own screens.',
-            'An orb button opens Use an Orb: every rule of the orb beside the selected sword, used as many times in a row as you like, and a notice right there if the sword is destroyed.',
+            'Use an Orb opens a window: every rule of the orb beside the selected sword, used as many times in a row as you like, and a notice right there if the sword is destroyed. Not on the sword in hand.',
             'On the Salvage screen, take swords apart one at a time, or by type and affix count, for iron ore and orbs — and craft swords with no affixes from the ore. The sword in hand and locked swords are never salvaged.',
           ],
         },
@@ -1323,8 +1377,42 @@ export const en: Strings = {
           lines: [
             'Only signed-in accounts can put runs on the ranking, ranked by a score: the health of every enemy killed, times its kind’s share ({scoreKinds}). Pick a {nameLength}-letter name, an icon and a flag; each account has one name and one best run on the board.',
             'It shows the top {rankSize}, and the board is shared with other players. It starts over every day at {rankResetHour}:00 Korea time; signed in, you also see your own best today and where it stands.',
-            'Prophecy: each time the board starts over, the day draws three rules — one banned skill (never offered), one banned talent (its shards do not drop) and one stronger enemy. They apply to every run started that day, and a run that goes past the reset keeps the rules it began with. The title screen and an effect icon in battle show them.',
+            'Each day’s first, second and third earn a gold, silver or bronze cup, kept on the account and shown on the board. The first time you come to the title on a new day it shows yesterday’s top three.',
             'The My runs tab keeps your own top {rankSize} runs, signed in or not, with the date, level and time survived. ← → switches tabs.',
+          ],
+        },
+      ],
+      autoPick: [
+        {
+          title: 'Battle Plan',
+          lines: [
+            'Makes the run’s choices for you — the first skill and Random Skills, upgrades, Talent Shards — in the order you set: of the cards offered, it takes the one highest on the list, and a notice says what it took.',
+            'There are three lists — Skills, Upgrades and Talents — each switched on or off on its own, with a dot lit on the tab of each one on. A list that is off leaves its choices to you, as cards.',
+          ],
+        },
+        {
+          title: 'Setting the order',
+          lines: [
+            'Open it from the Plan icon on the title screen. Drag a row by the ≡ at its left, or move it with ▲▼ (Shift+↑↓ on a keyboard); R puts the default order back.',
+            'Every skill shares the one Upgrades list. Each offers only its own upgrades, so the highest of those on the list is taken.',
+          ],
+        },
+        {
+          title: 'In a run',
+          lines: [
+            'Prepare for battle switches all three lists on or off at once.',
+            'Mid-run, Battle Plan on the pause menu switches each list and changes the order; it holds at once, for this run and the ones after.',
+          ],
+        },
+      ],
+      prophecy: [
+        {
+          title: 'Today’s prophecy',
+          lines: [
+            'Each time the board starts over (every day at {rankResetHour}:00 Korea time) the day draws three rules: one banned skill, one banned talent, and one stronger enemy. None of them helps.',
+            'The banned skill is never offered, and shows as a grey card on the first skill’s screen. The banned talent’s shards do not drop. The stronger enemy has one of its stats raised.',
+            'They hold for every run started that day, and a run that goes past the reset keeps the rules it began with.',
+            'See them on the title screen’s prophecy line (press it for the whole of it), on the first skill’s screen, and as an effect icon in battle.',
           ],
         },
       ],
@@ -1347,9 +1435,9 @@ export const en: Strings = {
         runner: 'Frail and fast. Running away does not shake it.',
         shooter: 'Stops at a distance and fires. Walk it down, or bring something with reach.',
         boss: 'The first arrives at {first}s, then one every {every}s. Very tough and very painful.',
-        fugitive: 'Never fights back. Tough and very fast; every hit sends it running off, and it stops a way on. The first turns up at {first}s, then every {every}s, and each is gone {life}s later. Catch it for a sure skill.',
+        fugitive: 'Never fights back. Tough and very fast; every hit sends it running off, and it stops a way on. The first turns up at {first}s, then every {every}s, and each is gone {life}s later. A bar over it shows its health and the seconds it has left. Catch it for a sure skill and Talent Chunk.',
         erratic: 'A plain enemy’s health, but it never walks: it hops far and fast. Within one hop of you it leaps straight at you; further off it hops about, and now and then at you anyway.',
-        chimera: 'From {minute} minutes, one comes every {every} min, off screen like an Ancient Weapon. It hops like an Oddity, throws white thorns all around like an Ancient Weapon, and has an Ancient Weapon’s health. Freezing does not stop it. It always leaves a skill.',
+        chimera: 'From {minute} minutes, one comes every {every} min, off screen like an Ancient Weapon. It hops like an Oddity, throws white thorns all around like an Ancient Weapon, and has an Ancient Weapon’s health. Freezing does not stop it. It always leaves a skill and a Talent Chunk, and now and then an Unknown Rune.',
       },
       affixEnemy: 'On a rare: {detail}',
       affixWeapon: 'On a weapon: {ladder}',

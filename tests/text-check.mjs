@@ -4,7 +4,8 @@ import { writeFileSync } from 'node:fs';
 // Not a suite (0.110): every screen, lying down and upright, with each label's
 // box measured — two labels whose boxes cross, a label running onto the edge
 // of a plate, or one off the screen are listed, and every screen is shot.
-//   SHOW_OUT=1 SHOTS=<dir> node run-all.mjs text-check     (FONT=system to compare)
+//   SHOW_OUT=1 SHOTS=<dir> node run-all.mjs text-check     (FONT=system to compare,
+//   LANG_PICK=en|ja|zh for another language — 0.153)
 // "Lv 1 240/240" off the screen is the survivor's own label, in the world.
 const cdp = await connect();
 const SP = process.env.SHOTS ?? '.';
@@ -90,6 +91,7 @@ for (const [w, h, shape] of [[0, 0, 'wide'], [420, 860, 'tall']]) {
   await cdp.send('Page.navigate', { url: 'http://localhost:5173/' });
   await sleep(800);
   await ev(`(() => { localStorage.clear(); ${process.env.FONT ? `localStorage.setItem('dev-font', '${process.env.FONT}');` : ''}
+    ${/^(en|ja|zh)$/.test(process.env.LANG_PICK ?? '') ? `localStorage.setItem('exiled-survivors:settings:v1', JSON.stringify({ language: '${process.env.LANG_PICK}' }));` : ''}
     localStorage.setItem('exiled-survivors:bones:v1', JSON.stringify({ rib: 2, skull: 1 }));
     localStorage.setItem('exiled-survivors:orbs:v1', JSON.stringify({ transmute: 3, chaos: 2 }));
     return 1; })()`);

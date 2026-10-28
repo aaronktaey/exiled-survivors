@@ -36,6 +36,8 @@ export class MeleeStrike implements Weapon {
   private readonly repeat = new CastRepeat();
   /** Enemy shots struck down by the 각성 swing. Public for tests. */
   public strikes = 0;
+  /** Swings since awakening; every SKILL_MASTERY.meleeShotClearEvery-th clears the shots. Public for tests. */
+  public awakenedSwings = 0;
 
   public constructor(scene: Phaser.Scene) {
     this.scene = scene;
@@ -90,7 +92,9 @@ export class MeleeStrike implements Weapon {
     const arc = context.masteredTwice ? Phaser.Math.DegToRad(SKILL_MASTERY.second.meleeArcDegrees) : MELEE.arcRadians;
     const halfArc = arc / 2;
 
-    this.showFlash(origin.x, origin.y, angle, halfArc, range);
+    // 각성 (0.153): every third swing (SKILL_MASTERY.meleeShotClearEvery) clears the shots round it.
+    const clears = context.mastered && ++this.awakenedSwings % SKILL_MASTERY.meleeShotClearEvery === 0;
+    this.showFlash(origin.x, origin.y, angle, halfArc, range, clears);
     sfx.playSkill(this.scene, this.definition.id);
 
     // Copy first: a kill destroys the enemy and mutates the group's list.
@@ -115,8 +119,8 @@ export class MeleeStrike implements Weapon {
       context.hit(enemy, context.damage);
     }
 
-    // 각성: an enemy's shot inside the swing is struck out of the air.
-    if (context.mastered) {
+    // 각성: on a clearing swing, every enemy shot within reach is struck out of the air.
+    if (clears) {
       for (const child of [...context.enemyShots.getChildren()]) {
         const shot = child as Phaser.Physics.Arcade.Image & { despawn?: () => void };
         if (!shot.active) {
@@ -125,21 +129,22 @@ export class MeleeStrike implements Weapon {
         if (Phaser.Math.Distance.Between(origin.x, origin.y, shot.x, shot.y) > range) {
           continue;
         }
-        const toShot = Math.atan2(shot.y - origin.y, shot.x - origin.x);
-        if (Math.abs(Phaser.Math.Angle.Wrap(toShot - angle)) > halfArc) {
-          continue;
-        }
         shot.despawn?.();
         this.strikes += 1;
       }
     }
   }
 
-  private showFlash(x: number, y: number, angle: number, halfArc: number, reach: number): void {
+  private showFlash(x: number, y: number, angle: number, halfArc: number, reach: number, clears = false): void {
     this.flash.clear();
     this.flash.fillStyle(COLORS.meleeArc, 0.3);
     this.flash.slice(x, y, reach, angle - halfArc, angle + halfArc, false);
     this.flash.fillPath();
+    // A clearing swing shows the reach it cleared, all round.
+    if (clears) {
+      this.flash.lineStyle(3, COLORS.meleeArc, 0.7);
+      this.flash.strokeCircle(x, y, reach);
+    }
 
     this.scene.tweens.killTweensOf(this.flash);
     this.flash.setAlpha(1);

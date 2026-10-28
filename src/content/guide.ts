@@ -31,13 +31,16 @@ import {
   SPAWN,
   SPAWN_TABLE,
   CHIMERA,
+  MONSTER_ERAS,
+  ORBS,
+  UNKNOWN_RUNE,
   STATS,
-  UPGRADE_CAP,
   UPGRADE_MAX_PICKS,
   attackForTier,
   xpFor,
   type AffixId,
   type AltarOfferId,
+  type GearSpec,
   type EnemyKind,
   type GuideTone,
   MAGNET,
@@ -140,6 +143,15 @@ export function guideValues(): Record<string, string | number> {
   const affixTierCount = Math.max(
     ...Object.values(AFFIXES).map((affix) => affix.gearTiers?.length ?? 0),
   );
+  // The sword only one kind leaves (0.137), by the kind.
+  const swordOf = (kind: EnemyKind): GearSpec | undefined =>
+    Object.values(GEAR).find((spec) => spec.fromKind?.kind === kind);
+  const sword = (kind: EnemyKind): string => {
+    const spec = swordOf(kind);
+    return spec ? gearName(spec.id) : '';
+  };
+  const swordChance = (kind: EnemyKind): string => percent(swordOf(kind)?.fromKind?.chance ?? 0);
+  const { laser, leap } = ENEMY_KINDS.boss;
 
   return {
     hp: PLAYER.maxHp,
@@ -151,6 +163,31 @@ export function guideValues(): Record<string, string | number> {
     lumpShards: TALENT_LUMP.shards,
     // 랭킹 점수 (0.116): each kind and its share, in the roster's order.
     scoreKinds: (Object.keys(SCORE.byKind) as EnemyKind[]).map((kind) => `${enemyName(kind)} ×${SCORE.byKind[kind]}`).join(' · '),
+    scoreBoss: SCORE.byKind.boss,
+    scoreChimera: SCORE.byKind.chimera,
+    scoreFugitive: SCORE.byKind.fugitive,
+    // 시대별 몬스터 (0.146): the minutes the second and third looks begin.
+    eraMid: round((MONSTER_ERAS.fromMs[1] ?? 0) / 60_000),
+    eraLate: round((MONSTER_ERAS.fromMs[2] ?? 0) / 60_000),
+    // The 고대병기's laser and leap (0.137).
+    laserAim: seconds(laser?.aimMs ?? 0),
+    leapAim: seconds(leap?.aimMs ?? 0),
+    leapRange: leap?.maxDistance ?? 0,
+    swordBoss: sword('boss'),
+    swordBossChance: swordChance('boss'),
+    swordChimera: sword('chimera'),
+    swordChimeraChance: swordChance('chimera'),
+    swordFugitive: sword('fugitive'),
+    swordFugitiveChance: swordChance('fugitive'),
+    chimeraFirst: round(CHIMERA.firstMs / 60_000),
+    chimeraEvery: round(CHIMERA.intervalMs / 60_000),
+    runeChance: percent(UNKNOWN_RUNE.chance),
+    engraveOrb: orbName('engrave'),
+    engraveMin: ORBS.engrave.engrave?.minLines ?? 0,
+    cullAffix: affixName('culling'),
+    thornyAffix: affixName('thorny'),
+    apothecaryAffix: affixName('apothecary'),
+    poisonNova: skillName('poisonNova'),
     subSkillsMax: SUB_SKILLS.max,
     choices: SKILL_PICK.choices,
     bossFirst: seconds(BOSS.firstMs),
@@ -160,7 +197,6 @@ export function guideValues(): Record<string, string | number> {
     autosave: seconds(SAVE.autosaveMs),
     pickup: PLAYER.pickupRadius,
     maxPicks: Math.max(UPGRADE_MAX_PICKS.damage ?? 0, UPGRADE_MAX_PICKS.attackSpeed ?? 0),
-    chainCap: UPGRADE_CAP.chainCount ?? 0,
     skillChance: percent(SKILL_DROP.chance),
     randomSkillChance: percent(SKILL_PICK.dropChance),
     critChance: percent(PLAYER.critChance),
@@ -189,6 +225,7 @@ export function guideValues(): Record<string, string | number> {
     runnerAt: unlockOf('runner'),
     shooterAt: unlockOf('shooter'),
     bruteAt: unlockOf('brute'),
+    erraticAt: unlockOf('erratic'),
     life: seconds(GROUND_ITEM.lifespanMs),
     warning: seconds(GROUND_ITEM.warningMs),
     potionChance: percent(POTION.chance),
@@ -280,6 +317,7 @@ export function guideChapters(): readonly GuideChapter[] {
     chapter('combat', [
       tab('levels', prose('levels', numbers)),
       tab('getSkills', prose('getSkills', numbers)),
+      tab('autoPick', prose('autoPick', numbers)),
       tab('damage', prose('damage', numbers)),
     ]),
     chapter(
@@ -310,6 +348,7 @@ export function guideChapters(): readonly GuideChapter[] {
       tab('passives', [...prose('passives', numbers), ...passiveCards()]),
       tab('inventory', prose('inventory', numbers)),
       tab('ranking', prose('ranking', numbers)),
+      tab('prophecy', prose('prophecy', numbers)),
     ]),
   ];
 }

@@ -148,8 +148,9 @@ export function masteryText(id: SkillId, tier: 1 | 2 = 1): string {
   if (!line) {
     return '';
   }
-  const { fireBlastScale, freezeMs, chainBonusPerJump, thunderShock, voidVortex, droneTimes } = SKILL_MASTERY;
+  const { fireBlastScale, freezeMs, chainBonusPerJump, thunderShock, voidVortex, droneTimes, meleeShotClearEvery } = SKILL_MASTERY;
   return fill(line, {
+    every: meleeShotClearEvery,
     bonus: pct(chainBonusPerJump),
     blastScale: fireBlastScale,
     freeze: freezeMs / 1000,

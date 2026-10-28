@@ -75,7 +75,7 @@ wrong shape.
 ## The test harness
 
 `tests/` drives a real Chrome over CDP against the dev server and checks the
-running game, not units. 48 suites (46 in the run below), ~1200 checks. It is the only thing that has
+running game, not units. 52 suites, all in the run below, ~1500 checks. It is the only thing that has
 caught most of what has gone wrong here, so run all of it before every commit.
 
 ```sh
@@ -89,13 +89,16 @@ node run-all.mjs test-full test-skills test-balance test-chain test-ice \
   test-ranking test-skillpick test-mango test-web test-loadout \
   test-carry test-api test-account test-live test-filter test-mastery \
   test-tuning test-terrain test-chimera test-seal test-gift test-held \
-  test-shard test-village test-daily test-autopick
+  test-shard test-village test-daily test-autopick test-i18n test-locale
 ```
 
-test-i18n and test-locale are left out until the official release (the
-user's word, 2026-10-20): the language choice is off (`LOCALE`, below), and
-the language checks inside other suites are skipped while
-`window.config.LOCALE.choosable` is false. Put both back when it is on.
+test-i18n and test-locale came back with the language choice (0.153).
+test-i18n also checks, without a browser, that the Chinese font holds every
+character the Chinese text uses, and in the page that en · ja · zh have
+every line ko has (as many tips, cards and lines, the same `{numbers}`, no
+Hangul) and a name for every table entry. test-locale walks every screen in
+en · ja · zh and fails on Hangul left on one — or on a screen it could not
+open, so a renamed method cannot make it see nothing and pass.
 
 `run-all.mjs` runs the suites three at a time (`WORKERS=n` to change it):
 one muted Chrome per worker (`CHROME_PATH` overrides where it looks), each
@@ -827,13 +830,18 @@ Read `git log` for what changed and when. What is not in the log:
   `randomSkills` offer only skills held, and a skill picked up that was
   not (it dropped before the slots filled, or a debug key) is a potion
   instead (`drinkForMaxedSkill(skill, 'full')`, `game.subSkillsFullHeal`).
-- **The language choice is off until release (`LOCALE`, system.ts).** While
-  `LOCALE.choosable` is false the game shows `LOCALE.fixed` (ko) whatever a
-  browser stored (`Settings` keeps the stored choice, `shownLanguage` picks),
-  설정 has no Language row and the title says 설정, not "Settings". The code
-  stays built for every language: every word through `t()`, all four
-  locales kept in step with types.ts, patch notes in all four. Turning the
-  flag on is the whole of putting it back.
+- **The language choice is on (0.153, the user's ask; off 2026-10-20 → 0.152).**
+  `LOCALE.choosable` (system.ts): 설정's 화면 tab opens on a Language row
+  (always "Language"), the title's 설정 icon says "Settings" in every language
+  so a player lost in one can find it; locked mid-run (`allowLanguage`
+  false), the "title only" hint shows on that row alone. Every word goes
+  through `t()`, all four locales kept in step with types.ts (test-i18n
+  holds them to it), patch notes in all four. Japanese and Chinese have no
+  spaces, and Phaser's plain wrap breaks only at spaces: in those two
+  `useGameFont` turns on `useAdvancedWrap` for every wrapped label (and
+  `setWordWrapWidth`), or a long line runs off its card. Longer languages
+  overflow fixed boxes: fit a label (`fitText`) rather than trust its
+  Korean width — `LANG_PICK=en|ja|zh` runs text-check in one.
 - **재능의 파편 (0.102, the user's design).** `TALENT_SHARD` (balance.ts):
   one shard a stat (`stats`: 피해량 · 공격속도 · 이동속도 · 최대체력 ·
   효과범위; 체력회복 was one too until the user took it out in 0.131 — a
@@ -959,7 +967,9 @@ Read `git log` for what changed and when. What is not in the log:
 - **스킬 각성.** `SKILL_MASTERY` (balance.ts): only the main skill awakens
   (0.83, `GameScene.masteryOf`: 0, 1 or 2 — a skill found later never does).
   At `level` it gets one more effect — `WeaponContext.mastered` is true and each weapon does its own
-  (타격 strikes `enemyShots` in the swing, 화염구's burst is `fireBlastScale`
+  (타격's every `meleeShotClearEvery`-th (3) swing clears every enemy shot
+  within its reach, all round — 0.153, the user's ask; every swing cleared
+  those in its arc before; 화염구's burst is `fireBlastScale`
   wider (0.84), 연쇄번개 amplifies each
   strike by `chainBonusPerJump` for every jump still to come (it never
   doubles back — that was the old awakening),
@@ -1337,7 +1347,10 @@ Read `git log` for what changed and when. What is not in the log:
   lays the next lot under them (`showMore`, `pending`). The guide's tabs are
   short and still drawn whole. Anything that lists a growing history should
   page the same way.
-- **The guide is chapters → tabs → cards** (`src/content/guide.ts`,
+- **The guide is chapters → tabs → cards** (전술 교본 · 예언 tabs since 0.153;
+  the copy was brought up to the game then — keep it so: a feature that
+  changes what a player does gets its line in the guide, a tip if it is a
+  trick) (`src/content/guide.ts`,
   `InfoScene`). Prose lives in each locale's `guide.cards[tab]` with
   `{placeholders}` that `values()` in guide.ts fills from config — a new
   number needs a key there, never a literal in the copy. Lists (skills,
@@ -1442,8 +1455,13 @@ Read `git log` for what changed and when. What is not in the log:
   (`public/fonts/galmuri/`, SIL OFL 1.1, © Lee Minseo — its LICENSE.txt
   must ship beside it, and the credits name it, `credits.roleFont`).
   `loadGameFonts` loads all three faces before the game is made (5 s at
-  most). Simplified Chinese is only partly in 갈무리: when the language
-  choice opens, add a Chinese pixel font as a third family. A glyph the
+  most). Simplified Chinese is only partly in 갈무리, so in Chinese
+  (`TEXT.fontFamilyZh`, picked per style by `gameFamily`) the hanzi come
+  from Fusion Pixel Font 12px (© TakWolf, SIL OFL 1.1, licences in
+  `public/fonts/fusion/`, credited), cut to the characters the game writes
+  by `tools/make-zh-font.py` (source in `assets-src/fonts/fusion`, ~54 KB,
+  always loaded). **Rerun it after adding Chinese text** — test-i18n fails
+  on a character it left out. A glyph the
   logo font should have is a grid in the tool's `EXTRA`, then a rerun.
   On the dev server, `systems/DevFonts.ts` (a dynamic import, never in the
   bundle) puts a 폰트 비교 picker bottom-left: it sets `TEXT.fontFamily` to
@@ -1456,7 +1474,10 @@ Read `git log` for what changed and when. What is not in the log:
   layout that counts lines should read `style.getTextMetrics()`, not a
   fixed pixel height. `tests/text-check.mjs` (not a suite) walks every
   screen at both shapes and lists labels that cross, run onto a plate's
-  edge or leave the screen — run it after anything that moves text.
+  edge or leave the screen — run it after anything that moves text
+  (`LANG_PICK=en` for another language; run-all keeps only its last 12
+  lines, so for the whole list keep a Chrome — `KEEP_CHROME=1` — and run
+  `CDP_PORT=9333 node text-check.mjs`).
 - **전술 교본 (0.147, the user's design; Battle Plan · 作戦書 · 作战手册).**
   An order for every choice a run puts up — `systems/AutoPick.ts`
   (`autoPicks`, `STORAGE.autoPick`, synced; `window.autoPicks`): skills (the

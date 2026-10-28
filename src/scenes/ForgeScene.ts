@@ -98,6 +98,8 @@ export class ForgeScene extends Phaser.Scene {
   private payload!: ForgeSceneData;
   private heading?: Phaser.GameObjects.Text;
   private lines?: Phaser.GameObjects.Text;
+  /** The height the read-out is given (READ_OUT_LINES of it). */
+  private linesBudget = 0;
   private yieldLine?: Phaser.GameObjects.Text;
   private typeRows = new Map<GearId, { plate: Phaser.GameObjects.Rectangle; check: Phaser.GameObjects.Text; count: Phaser.GameObjects.Text }>();
   private maxLabel?: Phaser.GameObjects.Text;
@@ -256,6 +258,7 @@ export class ForgeScene extends Phaser.Scene {
     y += headingBlock;
     this.lines = this.add.text(x, y, '', { ...linesStyle, wordWrap: { width: paneWidth } }).setOrigin(0.5, 0).setDepth(DEPTH.ui + 1);
     y += linesHeight + 8;
+    this.linesBudget = linesHeight;
     this.yieldLine = this.add
       .text(x, y, '', { fontFamily: 'system-ui, sans-serif', fontSize: TEXT.size.hint, color: COLORS.text, align: 'center' })
       .setOrigin(0.5, 0)
@@ -482,7 +485,11 @@ export class ForgeScene extends Phaser.Scene {
       const item = this.selected();
       this.heading.setText(item ? gearTitle(item) : t().inventory.empty);
       fitText(this.heading.setScale(1), this.scale.width / (this.scale.width < INVENTORY.sideBySideFrom ? 1 : 2) - 16, 0);
-      this.lines.setText(item ? InventoryScene.describe(item) : '');
+      this.lines.setScale(1).setText(item ? InventoryScene.describe(item) : '');
+      // A wrapped base line would run onto the line under it: drawn smaller (0.153).
+      if (this.linesBudget > 0 && this.lines.height > this.linesBudget) {
+        this.lines.setScale(this.linesBudget / this.lines.height);
+      }
       const open = item !== undefined && canSalvage(item, gear.value.equipped);
       this.yieldLine.setText(
         !item ? '' : item.locked ? copy.lockedNote : !open ? copy.equippedNote : fill(copy.yields, { what: ForgeScene.yieldText(salvageFor(item)) }),

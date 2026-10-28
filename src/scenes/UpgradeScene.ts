@@ -219,7 +219,7 @@ export class UpgradeScene extends Phaser.Scene {
       .setDepth(DEPTH.ui);
     fitText(label, cardWidth - 12, 0);
 
-    this.add
+    const detail = this.add
       .text(x, y - 8, option.detail, {
         fontFamily: 'system-ui, sans-serif',
         fontSize: TEXT.size.hint,
@@ -262,6 +262,15 @@ export class UpgradeScene extends Phaser.Scene {
     if (picks) {
       fitText(picks, cardWidth - 12, 0);
     }
+    // The detail between the label and the numbers, drawn smaller where it
+    // would reach either (0.153: a longer language's ran over both).
+    const top = label.y + label.displayHeight / 2 + 4;
+    const bottom = values ? values.y - values.displayHeight / 2 - 4 : y + CARD_HEIGHT / 2 - 8;
+    const room = bottom - top;
+    if (detail.height > room && room > 0) {
+      detail.setScale(room / detail.height);
+    }
+    detail.setY((top + bottom) / 2);
 
     // Touch (and mouse) players pick by tapping the card directly; hovering
     // moves the caret, so the space bar takes whatever is under the cursor.

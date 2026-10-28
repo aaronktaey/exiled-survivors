@@ -29,6 +29,8 @@ export type GuideTabId =
   | 'levels'
   | 'getSkills'
   | 'damage'
+  /** 전술 교본 (0.153's guide). */
+  | 'autoPick'
   | 'common'
   | 'boss'
   | 'fugitive'
@@ -42,7 +44,9 @@ export type GuideTabId =
   | 'bones'
   | 'passives'
   | 'inventory'
-  | 'ranking';
+  | 'ranking'
+  /** 오늘의 예언 (0.153's guide). */
+  | 'prophecy';
 
 export interface Strings {
   /** What this language calls itself, for the 설정 row. */

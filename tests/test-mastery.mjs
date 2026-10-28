@@ -115,15 +115,20 @@ const effects = await run(`
   const weapon = (id) => { s.acquire(id); return s.weapons.find((w) => w.definition.id === id); };
   const out = {};
 
-  // 타격: a shot inside the swing is struck down.
+  // 타격 (0.153): every meleeShotClearEvery-th awakened swing clears every shot within reach, all round.
   const melee = weapon('meleeStrike');
   const target = put(60, 0);
   c.fireEnemyShot(p.x + 40, p.y, Math.PI, window.config.ENEMY_KINDS.shooter.shot);
+  c.fireEnemyShot(p.x - 40, p.y, 0, window.config.ENEMY_KINDS.shooter.shot);   // behind the swing
   const shotsUp = () => c.enemyShots.getChildren().filter((x) => x.active).length;
+  out.every = window.config.SKILL_MASTERY.meleeShotClearEvery;
   out.shotsBefore = shotsUp();
   melee.strikes = 0;
+  melee.awakenedSwings = 0;
   melee.swing(ctx({ mastered: false }), target);
   out.shotsPlain = shotsUp();
+  out.shotsEarly = [];
+  for (let i = 1; i < out.every; i++) { melee.swing(ctx({}), target); out.shotsEarly.push(shotsUp()); }
   melee.swing(ctx({}), target);
   out.shotsAfter = shotsUp();
   out.strikes = melee.strikes;
@@ -237,9 +242,10 @@ const effects = await run(`
   return out;
 `);
 console.log('effects:', JSON.stringify(effects));
-check('타격: an enemy shot inside the swing is destroyed — only when awakened',
-  effects.shotsBefore >= 1 && effects.shotsPlain === effects.shotsBefore && effects.shotsAfter === effects.shotsBefore - 1 &&
-    effects.strikes === 1, JSON.stringify(effects));
+check('타격: every Nth awakened swing destroys every enemy shot within reach, behind it too — and no other swing does',
+  effects.shotsBefore >= 2 && effects.shotsPlain === effects.shotsBefore &&
+    effects.shotsEarly.every((n) => n === effects.shotsBefore) && effects.shotsAfter === effects.shotsBefore - 2 &&
+    effects.strikes === 2, JSON.stringify(effects));
 // chainCount 4 is five links: the first has four jumps still to come, the last none.
 check('연쇄번개: each strike is amplified by the jumps still to come, and still never strikes one twice',
   effects.chainPlain.length === 5 && effects.chainPlain.every((d) => d === 10) &&

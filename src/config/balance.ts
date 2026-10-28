@@ -1312,7 +1312,12 @@ export const FIREBALL = {
 export const SKILL_MASTERY = {
   // 20 until 2026-10-16.
   level: 10,
-  /** 타격: an enemy's shot inside the swing is struck out of the air. */
+  /**
+   * 타격 (0.153, the user's ask): every this-many-th swing clears every enemy
+   * shot within its reach, all round the survivor. Every swing struck the
+   * shots inside its arc until then.
+   */
+  meleeShotClearEvery: 3,
   /** 화염구: its burst is this many times as wide (0.84; it left burning ground before; 2 in 0.84). */
   fireBlastScale: 1.5,
   /**

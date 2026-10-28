@@ -360,6 +360,7 @@ export class MenuScene extends Phaser.Scene {
       )
       .setOrigin(0.5)
       .setDepth(DEPTH.ui);
+    fitText(hint, width, 8);
     // A phone lying down has the icons down to its foot: the hint gives way to them.
     if (below && this.icons.bounds.bottom > hint.y - hint.displayHeight / 2) {
       hint.setVisible(false);

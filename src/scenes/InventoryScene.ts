@@ -160,6 +160,8 @@ export class InventoryScene extends Phaser.Scene {
   public stateLine?: Phaser.GameObjects.Text;
   /** The lines of whatever is under the cursor. Public for tests. */
   public lines!: Phaser.GameObjects.Text;
+  /** The height the read-out is given on the 장비 tab (READ_OUT_LINES of it). */
+  private linesBudget = 0;
   /** The edges round the read-out's three parts (0.141). */
   private readFrames?: Phaser.GameObjects.Graphics;
   /** 착용, 버리기, and the plates behind them. Public so a test can press them. */
@@ -245,7 +247,7 @@ export class InventoryScene extends Phaser.Scene {
 
     this.add.rectangle(0, 0, width, height, 0x05070b, SCRIM.reading).setOrigin(0, 0).setDepth(DEPTH.ui);
 
-    this.add
+    const title = this.add
       .text(width / 2, MARGIN + 14, copy.title, {
         fontFamily: 'system-ui, sans-serif',
         fontSize: TEXT.size.screen,
@@ -253,6 +255,10 @@ export class InventoryScene extends Phaser.Scene {
       })
       .setOrigin(0.5)
       .setDepth(DEPTH.ui + 1);
+    // Between the back button and 분해 · 제작, whatever the language makes of them (0.153).
+    const corner = this.forgeButton ? this.forgeButton.x - this.forgeButton.width / 2 : width;
+    const back = PAUSE_BUTTON.margin + PAUSE_BUTTON.size;
+    fitText(title, 2 * Math.min(width / 2 - back, corner - width / 2) - 16, 0);
 
     // The details go beside the grid when there is the width, and under it
     // on a phone held upright — where they are set tighter, because the
@@ -271,6 +277,7 @@ export class InventoryScene extends Phaser.Scene {
     const probe = this.add.text(0, 0, Array(READ_OUT_LINES).fill('가').join('\n'), linesStyle);
     const linesHeight = Math.ceil(probe.height);
     probe.destroy();
+    this.linesBudget = linesHeight;
     // What the details pane costs on the 장비 tab: the name, the read-out,
     // two rows of buttons and the line under them. Nothing in it scrolls.
     const detailHeight = headingBlock + linesHeight + (BUTTON_HEIGHT + this.rowGap) * 2 + 30;
@@ -429,14 +436,18 @@ export class InventoryScene extends Phaser.Scene {
         .setStrokeStyle(2, active ? COLORS.accentFill : COLORS.panelEdge, 1)
         .setDepth(DEPTH.ui + 1)
         .setInteractive({ useHandCursor: true });
-      this.add
-        .text(x, y, tab === 'gear' ? copy.tabGear : copy.tabConsumables, {
-          fontFamily: 'system-ui, sans-serif',
-          fontSize: TEXT.size.body,
-          color: active ? COLORS.text : COLORS.muted,
-        })
-        .setOrigin(0.5)
-        .setDepth(DEPTH.ui + 2);
+      fitText(
+        this.add
+          .text(x, y, tab === 'gear' ? copy.tabGear : copy.tabConsumables, {
+            fontFamily: 'system-ui, sans-serif',
+            fontSize: TEXT.size.body,
+            color: active ? COLORS.text : COLORS.muted,
+          })
+          .setOrigin(0.5)
+          .setDepth(DEPTH.ui + 2),
+        TAB_WIDTH - 8,
+        0,
+      );
       plate.on(Phaser.Input.Events.GAMEOBJECT_POINTER_DOWN, () => this.openTab(tab));
       this.tabs.set(tab, plate);
     });
@@ -611,7 +622,12 @@ export class InventoryScene extends Phaser.Scene {
       if (this.stateLine) {
         fitText(this.stateLine.setScale(1), this.lines.style.wordWrapWidth ?? this.scale.width / 2, 0);
       }
-      this.lines.setText(item ? InventoryScene.describe(item) : '');
+      this.lines.setScale(1).setText(item ? InventoryScene.describe(item) : '');
+      // A base line that wraps (a longer language's 고정 속성) is a line over
+      // the budget, and the read-out ran into the buttons: drawn smaller (0.153).
+      if (this.linesBudget > 0 && this.lines.height > this.linesBudget) {
+        this.lines.setScale(this.linesBudget / this.lines.height);
+      }
       this.frameReadOut();
       this.refreshEquip();
       this.refreshOrbs();
@@ -676,8 +692,8 @@ export class InventoryScene extends Phaser.Scene {
     if (prefix <= 0 || suffix <= prefix) {
       return;
     }
-    const lineH = this.lines.height / wrapped.length;
-    const w = this.lines.width + READ_FRAME.pad * 2;
+    const lineH = this.lines.displayHeight / wrapped.length;
+    const w = this.lines.displayWidth + READ_FRAME.pad * 2;
     const x = this.lines.x - w / 2;
     [
       [0, prefix],

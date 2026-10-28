@@ -72,7 +72,7 @@ export const SCENES = {
  * through t() — so turning this back on is the only step at launch.
  */
 export const LOCALE = {
-  choosable: false,
+  choosable: true,
   fixed: 'ko',
 } as const;
 

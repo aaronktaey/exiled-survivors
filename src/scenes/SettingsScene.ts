@@ -363,7 +363,8 @@ export class SettingsScene extends Phaser.Scene {
   }
 
   private writeHint(): void {
-    if (this.payload.allowLanguage === false) {
+    // Only on the locked row itself (0.153): mid-run it used to stand in for every tab's hint.
+    if (this.payload.allowLanguage === false && this.menu.selectedId === 'language') {
       this.hint.setText(t().settings.languageTitleOnly);
       return;
     }

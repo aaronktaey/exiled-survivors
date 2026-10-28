@@ -15,6 +15,36 @@ export interface PatchNote {
 
 export const PATCH_NOTES: readonly PatchNote[] = [
   {
+    version: '0.153',
+    date: '2026-10-28',
+    changes: {
+      ko: [
+        '언어 설정이 다시 열렸습니다. 타이틀 화면의 설정 → 화면 탭에서 한국어 · English · 日本語 · 中文 중에 고를 수 있습니다. 중국어는 중국어 픽셀 폰트(Fusion Pixel Font)로 표시되며, 제작자 정보에 폰트 저작권을 함께 적었습니다.',
+        '영어 · 일본어 · 중국어 번역을 점검했습니다. 일본어와 중국어의 긴 문장이 줄바꿈되지 않고 화면 밖으로 나가던 문제, 긴 문장이 스킬 카드 · 강화 카드 · 인벤토리 · 분해 화면 · 제작자 정보에서 넘치던 문제를 고쳤습니다.',
+        '게임 가이드를 지금의 게임에 맞게 고쳤습니다. 전술 교본과 예언 탭이 생겼고, 고대병기의 세 가지 공격, 재능의 파편과 알수없는 룬, 시간에 따라 바뀌는 적의 모습, 보조 스킬 수와 보유 효과, 무기 공격력 계수 등이 들어갔습니다. 결과 화면의 TIP도 13개 늘었습니다.',
+        '타격의 1차 각성이 바뀌었습니다: 3번째 공격마다 공격 범위 안의 적 투사체를 모두 파괴합니다(전에는 매 공격마다 휘두른 방향의 투사체만 파괴).',
+      ],
+      en: [
+        'Language choice is back: pick Korean, English, Japanese or Chinese on the Display tab of Settings, from the title screen. Chinese is drawn in a Chinese pixel font (Fusion Pixel Font), credited in the credits.',
+        'English, Japanese and Chinese were checked over. Long Japanese and Chinese lines no longer run off the screen unwrapped, and long lines no longer spill out of skill cards, upgrade cards, the Inventory, the Salvage screen or the credits.',
+        'The guide is brought up to date: new Battle Plan and Prophecy tabs, and the Ancient Weapon’s three attacks, Talent Shards and the Unknown Rune, the enemies’ changing looks, the number of side skills and held effects, the attack coefficient and more. The results screen has 13 more tips.',
+        'Strike’s first awakening has changed: once every 3 swings it destroys every enemy projectile within its reach (before, every swing destroyed those in the arc it swung).',
+      ],
+      ja: [
+        '言語設定が戻りました。タイトル画面の 設定 → 画面 タブで韓国語・英語・日本語・中国語から選べます。中国語は中国語のピクセルフォント（Fusion Pixel Font）で表示され、制作者情報にフォントの著作権を記載しました。',
+        '英語・日本語・中国語の翻訳を見直しました。日本語と中国語の長い文が折り返されずに画面の外へ出ていた問題と、長い文がスキルカード・強化カード・インベントリ・分解画面・制作者情報からはみ出していた問題を直しました。',
+        'ゲームガイドを今のゲームに合わせて直しました。作戦書と予言のタブが加わり、古代兵器の3つの攻撃、才能の欠片と謎のルーン、時間で変わる敵の姿、サブスキルの数と保有効果、武器攻撃力係数などを載せました。結果画面の TIP も13個増えました。',
+        '打撃の1次覚醒が変わりました：3回目の攻撃ごとに、攻撃範囲内の敵の投射物をすべて破壊します（以前は毎回、振った方向の投射物だけを破壊）。',
+      ],
+      zh: [
+        '语言设置重新开放。可在标题画面的 设置 → 画面 标签中选择韩语 · 英语 · 日语 · 中文。中文使用中文像素字体（Fusion Pixel Font）显示，并在制作信息中注明了字体版权。',
+        '检查了英语、日语和中文的翻译。修复了日语和中文的长句不换行而超出画面的问题，以及长句在技能卡片、强化卡片、背包、分解界面和制作信息中溢出的问题。',
+        '游戏指南已按现在的游戏更新：新增作战手册和预言标签，并加入古代兵器的三种攻击、天赋碎片与未知符文、随时间变化的敌人外观、副技能数量与持有效果、武器攻击力系数等。结算画面的 TIP 也增加了 13 条。',
+        '打击的一次觉醒改为：每第 3 次攻击摧毁攻击范围内的所有敌方投射物（以前每次攻击只摧毁挥击方向上的投射物）。',
+      ],
+    },
+  },
+  {
     version: '0.152',
     date: '2026-10-28',
     changes: {

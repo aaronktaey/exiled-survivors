@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 
 import { COLORS, DEPTH, MENU, SCENES, SCRIM, TEXT } from '@/config';
-import { centredTop } from '@/systems/Layout';
+import { centredTop, fitText } from '@/systems/Layout';
 import { t } from '@/i18n';
 import { MenuList } from '@/systems/MenuList';
 import { addBackButton, type BackButton } from '@/systems/BackButton';
@@ -18,7 +18,8 @@ function lines(): readonly (readonly [string, string])[] {
     [copy.roleDev, 'Claude Code (Anthropic)'],
     [copy.roleEngine, 'Phaser 4 · Vite · TypeScript'],
     // Galmuri is SIL OFL 1.1: its copyright is shown here, its licence ships in public/fonts/galmuri.
-    [copy.roleFont, 'Galmuri © Lee Minseo (SIL OFL 1.1)'],
+    // Fusion Pixel draws the Chinese (0.153), the same licence, in public/fonts/fusion.
+    [copy.roleFont, 'Galmuri © Lee Minseo · Fusion Pixel Font © TakWolf (SIL OFL 1.1)'],
     // CC BY 4.0 asks for the title, the author, the source and the licence.
     [copy.roleMusic, '"Constance" Kevin MacLeod (incompetech.com) · Licensed under Creative Commons: By Attribution 4.0 (creativecommons.org/licenses/by/4.0)'],
   ];
@@ -61,6 +62,8 @@ export class CreditsScene extends Phaser.Scene {
         })
         .setOrigin(0, 0)
         .setDepth(DEPTH.ui + 1);
+      // The role in its column, however long the language makes it (0.153).
+      fitText(roleText, whoX - left - 8, 0);
       const whoText = this.add
         .text(whoX, 0, who, {
           fontFamily: 'system-ui, sans-serif',
