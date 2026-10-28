@@ -22,7 +22,7 @@ import {
   giantFrame,
   type EnemyKind,
 } from '@/config';
-import { Painter, darker, ramp, type Ramp } from '@/systems/PixelPainter';
+import { Painter, darker, ramp } from '@/systems/PixelPainter';
 
 export interface ArtFrame {
   /** Legs forward (1), back (-1) or under (0). */
@@ -54,11 +54,8 @@ const GOLDJ = ramp(0x3a2408, 0xb07818, 0xf2b134, 0xffd36e, 0xfff0b0);
 const JDARK = ramp(0x2a1806, 0x5c3a0e, 0x8a5a18, 0xa87a2a, 0xc89a40);
 const PURP = ramp(0x1c1040, 0x5a3cb0, 0x9b6bff, 0xc0a0ff, 0xe6dbff);
 const TROLL = ramp(0x260a30, 0x7a2a90, 0xb44bd1, 0xd57de8, 0xf0b8f8);
-const GREY = ramp(0x14161b, 0x50555f, 0x7d838f, 0xa4aab5, 0xd0d5dd);
 const STEEL = ramp(0x101216, 0x3c424c, 0x646c78, 0x949ca8, 0xd4dae2);
-const CROWN = ramp(0x3a2400, 0xb8860b, 0xffcc33, 0xffe680, 0xfff6cc);
 const BLACK = ramp(0x08080a, 0x1a1b20, 0x2a2c33, 0x3c3f48, 0x555a66);
-const BOOT = ramp(0x050506, 0x101114, 0x1c1d22, 0x2c2e36, 0x40434e);
 const LION = ramp(0x2e1f08, 0x9a7638, 0xc9a25a, 0xe2c27e, 0xf6e0a8);
 const MANE = ramp(0x1e0f04, 0x4a2a10, 0x6b3f1f, 0x8a5730, 0xa87040);
 const SNAKE = ramp(0x0a2412, 0x2a6a3a, 0x4a9a52, 0x78c070, 0xb0e0a0);
@@ -83,6 +80,8 @@ const DARK = 0x1a0a0a;
 const CYAN = 0x40e0ff;
 const ORANGE = 0xff8a1a;
 const RED_GLOW = 0xff3030;
+const RUST = ramp(0x2a1408, 0x6e3a1c, 0x9a5a2e, 0xc07a40, 0xe0a060);
+const IRON = ramp(0x101214, 0x343a40, 0x545c64, 0x7a828a, 0xa8b0b8);
 
 const bobOf = (f: ArtFrame): number => (f.passing ? -1 : 0);
 
@@ -251,16 +250,6 @@ const bear: Paint = (s, f) => {
   for (let k = 0; k < 3; k++) {
     s.pxs([[16 + k * 2, 21 + b], [17 + k * 2, 22 + b], [18 + k * 2, 23 + b]], 0xd09a60);
   }
-};
-
-/** Legs and boots of a giant seen from the front: frame 1 lifts the left, 2 the right. */
-const giantLegs = (s: Painter, f: ArtFrame, legs: Ramp, boots: Ramp, rad = 5.5) => {
-  const l = f.step === 1 ? -2.5 : 0;
-  const r = f.step === 2 ? -2.5 : 0;
-  s.capsule(28, 52, 28, 61 + l, rad, legs);
-  s.capsule(44, 52, 44, 61 + r, rad, legs);
-  s.ellipse(27, 64 + l, 7.5, 3.6, boots);
-  s.ellipse(45, 64 + r, 7.5, 3.6, boots);
 };
 
 const sideOn = (s: Painter, f: ArtFrame) => {
@@ -441,69 +430,90 @@ const troll: Paint = (s, f) => {
   s.pxs([[15, 14 + b], [16, 15 + b], [17, 14 + b], [18, 15 + b], [19, 14 + b]], 0xf0b8f8);
 };
 
-const crownedGiant: Paint = (s, f) => {
+/**
+ * 고대병기 (the 우두머리 renamed, its look since 0.150, the user's design): a
+ * rusted war machine — a small head on a barrel chest, a waist no thicker
+ * than a pipe, and arms so long their claws hang past its knees. Moss where
+ * it stood still for an age; one slit of an eye still lit.
+ */
+const ancientWeapon: Paint = (s, f) => {
   sideOn(s, f);
   const back = f.view === 'back';
-  s.ground(36, 67.5, 22, 2.6);
-  giantLegs(s, f, BLACK, BOOT);
-  // Arms hanging, iron bracers, big fists.
-  for (const side of [-1, 1]) {
-    const ax = 36 + side * 22;
-    s.capsule(36 + side * 15, 30, ax, 46, 6, GREY);
-    s.rect(ax - 6.5, 42, ax + 6.5, 46, STEEL);
-    s.pxs([[ax - 4, 44], [ax, 44], [ax + 4, 44]], 0xd4dae2);
-    s.circle(ax, 51, 6.6, GREY);
-    for (let k = 0; k < 3; k++) {
-      s.px(ax - 3 + 3 * k, 55, 0x50555f);
+  s.ground(36, 67.5, 20, 2.6);
+  // Legs: thin struts, knee joints, wide flat feet; a step lifts one.
+  for (const [x, lift] of [[30, f.step === 1 ? -2.5 : 0], [42, f.step === 2 ? -2.5 : 0]] as const) {
+    s.capsule(x, 46, x, 60 + lift, 2.4, IRON);
+    s.circle(x, 53 + lift / 2, 3, RUST);
+    s.px(x - 1, 52 + lift / 2, 0xe0a060);
+    s.ellipse(x + (x < 36 ? -1 : 1), 63 + lift, 6, 2.6, RUST);
+    s.pxs([[x - 4, 64 + lift], [x + 4, 64 + lift]], 0x2a1408);
+  }
+  // Hips, and the pipe of a waist up to the chest, ringed.
+  s.rect(28, 42, 44, 47, RUST);
+  s.pxs([[30, 44], [42, 44]], 0xe0a060, 0x2a1408);
+  s.capsule(36, 31, 36, 43, 2.2, IRON);
+  for (let y = 33; y < 43; y += 3) {
+    s.pxs([[35, y], [36, y], [37, y]], 0x7a828a);
+  }
+  // Arms: long and thin, swinging against the stride; three-clawed hands.
+  for (const side of [-1, 1] as const) {
+    const swing = f.step === 0 ? 0 : (f.step === 1) === (side < 0) ? 1.5 : -1.5;
+    const sx = 36 + side * 15;
+    const ex = 36 + side * 20;
+    const wx = 36 + side * 21;
+    const wy = 54 + swing;
+    s.circle(sx, 19, 3.8, IRON);
+    s.capsule(sx, 20, ex, 36, 2.1, RUST);
+    s.circle(ex, 36.5, 2.6, IRON);
+    s.capsule(ex, 37, wx, wy, 2.5, RUST);
+    s.rect(wx - 2.5, wy - 6, wx + 2.5, wy - 4.5, IRON);
+    for (const dx of [-2, 0, 2]) {
+      s.chain([[wx, wy + 1], [wx + dx * 1.2, wy + 5], [wx + dx * 0.8, wy + 7.5]], 0.7, IRON);
     }
   }
-  for (const side of [-1, 1]) {
-    s.ellipse(36 + side * 17, 28, 8, 5.2, STEEL);
-    s.px(36 + side * 17, 26, 0xd4dae2);
-    s.px(36 + side * 17 - 3, 27, 0xd4dae2);
-  }
-  s.ellipse(36, 41, 20, 17, GREY);
+  // The barrel chest: a seam, rivets, rust running down, moss on a shoulder.
+  s.ellipse(36, 24, 13, 9, RUST);
+  s.rect(24, 26, 48, 28, darker(RUST));
   if (back) {
-    for (let y = 30; y < 50; y += 2) {
-      s.px(36, y, 0x50555f);
+    for (let y = 18; y < 31; y += 3) {
+      s.pxs([[31, y], [32, y], [33, y], [39, y], [40, y], [41, y]], 0x2a1408);
     }
+    s.capsule(36, 16, 36, 31, 1, IRON);
   } else {
-    s.ellipse(36, 45, 13, 10, ramp(0x14161b, 0x7d838f, 0x9aa0ac, 0xb6bcc6, 0xd8dde4));
-    s.pxs([[33, 45], [34, 46], [35, 45], [36, 46], [37, 45], [38, 46], [39, 45]], 0x7d838f);
-    for (let i = 0; i < 7; i++) {
-      s.px(23 + i, 32 + (i % 2), 0xd0d5dd);
+    for (let y = 17; y < 32; y++) {
+      s.px(36, y, 0x6e3a1c);
+    }
+    for (const [x, y] of [[28, 21], [44, 21], [30, 30], [42, 30], [33, 18], [39, 18]] as const) {
+      s.px(x, y, 0xe0a060, 0x2a1408);
+    }
+    // A hatch over the core, a dim light behind its grille.
+    s.rect(32, 22, 40, 26, IRON);
+    for (const x of [33, 35, 37, 39]) {
+      s.pxs([[x, 23], [x, 24]], 0xff7a2a);
     }
   }
-  s.rect(16.5, 51, 55.5, 55, BLACK);
-  for (let x = 19; x < 54; x += 4) {
-    s.px(x, 53, 0x555a66);
+  for (const [x, y, len] of [[27, 27, 4], [31, 29, 3], [44, 26, 5], [40, 29, 3]] as const) {
+    for (let k = 0; k < len; k++) {
+      s.px(x, y + k, 0x4a240e);
+    }
   }
+  s.pxs([[23, 17], [24, 16], [25, 16], [26, 17], [24, 17], [25, 17], [22, 18]], 0x6a8a3a);
+  s.pxs([[24, 15], [26, 16]], 0x9aba5a);
+  // A short neck and a small head: one lit slit of an eye, a stub of an antenna.
+  s.rect(34, 13, 38, 16, IRON);
+  s.ellipse(36, 10, 4.6, 3.8, RUST);
+  s.pxs([[35, 5], [36, 5], [36, 6]], 0x545c64);
+  s.px(36, 4, RED_GLOW);
   if (!back) {
-    s.rect(32, 50, 40, 56, CROWN);
-    s.pxs([[35, 52], [36, 52], [35, 53], [36, 53]], 0x3a2400);
-  }
-  // Head: a heavy brow, yellow eyes, tusks, the crown.
-  s.circle(36, 19, 10.5, GREY);
-  if (!back) {
-    s.ellipse(36, 25, 7.5, 3.6, darker(GREY));
-    for (const ex of [31, 40]) {
-      s.pxs([[ex, 16], [ex + 1, 16], [ex + 2, 16]], 0x14161b);
-      s.pxs([[ex, 18], [ex + 1, 18], [ex, 19], [ex + 1, 19]], EYE_Y);
-      s.px(ex + 1, 19, 0x3a2400);
-      s.px(ex, 18, 0xffffff);
+    for (let x = 33; x < 40; x++) {
+      s.pxs([[x, 10], [x, 11]], 0x1a0a06);
     }
-    s.pxs([[35, 21], [36, 21]], 0x3c424c);
-    for (let x = 31; x < 42; x++) s.px(x, 25, 0x1a0606);
-    for (let x = 32; x < 41; x++) s.px(x, 26, 0x1a0606);
-    for (const tx of [32, 40]) {
-      s.pxs([[tx, 25], [tx, 24], [tx, 23]], 0xf6efe0, 0x3a2c1c);
-      s.px(tx, 22, 0xffffff, 0x3a2c1c);
-    }
+    s.pxs([[35, 10], [36, 10], [37, 10]], 0xff7a2a);
+    s.px(36, 10, 0xffe0b0);
+  } else {
+    s.pxs([[34, 9], [35, 11], [38, 10]], 0x4a240e);
   }
-  s.poly([[26.5, 11], [27.5, 3], [31, 8], [36, 1.5], [41, 8], [44.5, 3], [45.5, 11]], CROWN);
-  s.rect(26.5, 9, 45.5, 12, CROWN);
-  s.pxs([[35, 6], [36, 6], [35, 7], [36, 7]], 0xe0304a, 0x3a2400);
-  s.pxs([[29, 10], [43, 10]], 0x30a0e0);
+  s.pxs([[33, 7], [34, 7]], 0x6a8a3a);
 };
 
 const lionChimera: Paint = (s, f) => {
@@ -705,7 +715,7 @@ export const ERA_LOOKS: Partial<Record<EnemyKind, readonly Look[]>> = {
   runner: [{ design: 32, paint: jackal }, { design: 32, paint: hellhound }, { design: 32, paint: roboHound }],
   erratic: [{ design: 32, paint: toad }, { design: 32, paint: aberration }, { design: 32, paint: springBot }],
   brute: [{ design: 42, paint: bear }, { design: 42, paint: troll }, { design: 42, paint: heavyMech }],
-  boss: [{ design: 72, paint: crownedGiant }],
+  boss: [{ design: 72, paint: ancientWeapon }],
   chimera: [{ design: 72, paint: lionChimera }],
 };
 

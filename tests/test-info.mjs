@@ -24,14 +24,18 @@ const active = () => cdp.evaluate(`(() => {
   };
 })()`);
 const choose = async (key, id) => {
-  await cdp.evaluate(`(() => {
+  const index = await cdp.evaluate(`(() => {
     const s = window.game.scene.getScene('${key}');
     const i = s.menu.rows.findIndex((r) => r.item.id === '${id}');
+    // 설정, 가이드 and 패치노트 are title icons since 0.150.
+    if (i < 0 && s.icons?.press('${id}')) return -2;
+    // A row taken by keyboard: an icon pressed earlier lets go of Space.
+    s.icons?.focus(-1);
     s.menu.selected = i;
     s.menu.refresh();
     return i;
   })()`);
-  await cdp.tap('Space', 32, ' ');
+  if (index !== -2) await cdp.tap('Space', 32, ' ');
   await sleep(500);
 };
 /** What the info page is showing, and where it is scrolled to. */
@@ -91,17 +95,14 @@ await ev(`(() => {
 })()`);
 
 // --- 1. both entries are on the title ---
+// 0.150: icons on the title rather than rows.
 const rows = await scene('MenuScene', `
-  return { ids: s.menu.rows.map(r => r.item.id), labels: s.menu.rows.map(r => r.item.label()),
-           details: s.menu.rows.map(r => r.item.detail ? r.item.detail() : '') };
+  return { ids: s.icons.views.map(v => v.button.id), labels: s.icons.views.map(v => v.label.text),
+           inside: s.icons.views.every(v => { const b = v.label.getBounds(); return b.left >= 0 && b.right <= s.scale.width; }) };
 `);
-console.log('title rows:', JSON.stringify(rows.labels));
-check('the title lists 게임 가이드 and 패치노트',
-  rows.ids.includes('guide') && rows.ids.includes('patch'), rows.labels.join(' / '));
-check('패치노트 shows the newest version', /^v\d/.test(rows.details[rows.ids.indexOf('patch')]),
-  rows.details[rows.ids.indexOf('patch')]);
-check('the rows still fit on screen',
-  rows.ids.length === 5, `${rows.ids.length} rows`);
+console.log('title icons:', JSON.stringify(rows.labels));
+check('the title has 게임 가이드 and 패치노트 icons, captions on the screen',
+  rows.ids.includes('guide') && rows.ids.includes('patch') && rows.inside, rows.labels.join(' / '));
 await shot('info-01-title');
 
 // --- 2. the patch notes open and read ---

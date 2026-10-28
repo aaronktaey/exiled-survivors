@@ -99,14 +99,14 @@ await sleep(1600);
 const menu = await ev(`(() => {
   const s = window.game.scene.getScene('MenuScene');
   const w = s.scale.width, h = s.scale.height;
-  const rows = s.menu.rows;
-  const last = rows[rows.length - 1];
+  const row = s.menu.rows[0];
+  const b = s.icons.bounds;
   return {
     w, h,
-    rowWidth: Math.round(rows[0].panel.width),
-    firstY: Math.round(rows[0].panel.y),
-    lastY: Math.round(last.panel.y),
-    labelOrigin: rows.find(r => r.item.id === 'patch').label.originX,
+    rowWidth: Math.round(row.panel.width),
+    firstY: Math.round(row.panel.y),
+    rowBottom: Math.round(row.panel.y + row.panel.height / 2),
+    icons: { top: Math.round(b.y), bottom: Math.round(b.bottom), left: Math.round(b.x), right: Math.round(b.right) },
     logo: Math.round(s.children.list.find(o => o.type === 'Image').displayWidth),
   };
 })()`);
@@ -114,11 +114,12 @@ console.log('title:', JSON.stringify(menu));
 check('a row fits inside the screen', menu.rowWidth <= menu.w - 20,
   `${menu.rowWidth} of ${menu.w}`);
 check('the logo fits too', menu.logo <= menu.w, `${menu.logo} of ${menu.w}`);
-check('the rows are centred rather than bunched at the top',
-  menu.firstY > menu.h * 0.25 && menu.lastY < menu.h * 0.85,
-  `rows span ${menu.firstY}..${menu.lastY} of ${menu.h}`);
-check('a row with a value puts its name on the left, clear of it',
-  menu.labelOrigin === 0, `originX=${menu.labelOrigin}`);
+check('the title is centred rather than bunched at the top',
+  menu.firstY > menu.h * 0.25 && menu.icons.bottom < menu.h * 0.92,
+  `게임 시작 at ${menu.firstY}, icons down to ${menu.icons.bottom} of ${menu.h}`);
+// 0.150 (the user's ask): on a phone the icons sit in the room under 게임 시작.
+check('on a phone the icons sit under 게임 시작, inside the screen',
+  menu.icons.top > menu.rowBottom && menu.icons.left >= 0 && menu.icons.right <= menu.w, JSON.stringify(menu.icons));
 await shot('resp-02-title');
 
 // --- 4. a phone on its side, and a small one ---

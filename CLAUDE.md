@@ -348,7 +348,8 @@ Read `git log` for what changed and when. What is not in the log:
   until 7 min the dead, goblins and beasts (좀비, 횃불 든 고블린 사수, 자칼,
   거대 두꺼비, 곰), until 14 fantasy creatures (붉은 구울, 해골 마법사, 지옥견,
   기행종, 트롤), then machines (잔해 로봇, 포격 안드로이드, 로봇견, 스프링
-  로봇, 중장갑 메크). The 우두머리 (왕관 거인) and the 키메라 keep one look
+  로봇, 중장갑 메크). The 우두머리 (녹슨 고대병기 since 0.150 — `ancientWeapon`:
+  a small head, a pipe of a waist, arms past its knees; 왕관 거인 before) and the 키메라 keep one look
   in every era (the user's word — goblin king, titan, quill boar and mecha
   chimera were drawn and dropped), and the 도망자 its star, drawn
   `flashyResolution` (3) times finer. Only the picture changes; ones already
@@ -543,12 +544,13 @@ Read `git log` for what changed and when. What is not in the log:
   run's set (module scope): GameScene.init `begin`s it with the day the run
   started (`SavedRun.rulesDay`, so a run crossing 05:00 keeps its rules), and
   Enemy (hp, speed at spawn; contact; the 사수's shot speed; hop distance) and
-  SpawnDirector (rare chance) ask `enemyScale(kind, stat)`. Shown (0.127,
-  the user's ask: easy to see) on the title as a framed plate (`MENU.prophecy`:
-  over the menu when the screen is `shortHeight` or taller, else in the
-  top-left corner beside the logo, else one line over the first row; the
-  village's at the bottom; `dailyLine` is its words, the frame grows to
-  fit), on the first skill's screen as the banned skill's own card, greyed
+  SpawnDirector (rare chance) ask `enemyScale(kind, stat)`. Shown on the
+  title as one thin framed line over 게임 시작 (0.150, the user's ask: 0.127's
+  plate took too much of the screen) — the debuff icon, then
+  `dailyRuleText(...).compact` (예언 · X 금지 · Y 파편 없음 · the buff), a second
+  line only where one does not fit; a tap toasts the whole prophecy
+  (`MENU.prophecy`, `MenuScene.addProphecyLine`; the village's line is at
+  the bottom; `dailyLine` is its words either way), on the first skill's screen as the banned skill's own card, greyed
   and not takeable, with the prophecy written over it
   (`SkillPickData.prophecy`, `SkillPickScene.bannedCard`), in the start
   pick's subtitle, and as a HUD debuff icon (`TEXTURES.dailyRules`).
@@ -1460,7 +1462,21 @@ Read `git log` for what changed and when. What is not in the log:
   carries the switch (`auto`) and a way to the lists (`plan`, `openPlan`),
   and now shows before every fresh run even with an empty drawer — except on
   the harness, unless a page sets `window.__prepOn` (test-autopick does).
-  A new kind of choice should go through `chooseForPlayer` too.
+  A new kind of choice should go through `chooseForPlayer` too, and put its
+  cards up through `GameScene.showChoice`: only a choice that shows cards
+  lets go of the stick (0.150 — releasing on every level-up dropped the
+  finger steering whenever the plan picked, with only the toast to show).
+- **The title is 게임 시작 and icons (0.150, the user's ask).** 설정 · 가이드 ·
+  패치노트 are icons with the rest (`MenuScene.titleIcons`; captions
+  `menu.guideIcon`/`patchIcon`, drawn in `BootScene.createMenuIconTextures`),
+  and 불러오기 went: 게임 시작 asks, with a run saved, 이어서 하기 · 새 게임 시작
+  · 취소 (`ConfirmScene`, `onLoad`). On a phone (`prefersTouchControls`, or a
+  screen taller than wide — `MenuScene.iconsBelow`) the icons are a centred
+  grid under 게임 시작 (`IconBar.layCentred`, `centredHeight` first so the
+  block centres), and the hint gives way where they reach it; on a desktop
+  they keep the corner, as below. Suites reach 설정 · 가이드 · 패치노트 with
+  `icons.press(id)`, and a keyboard row after an icon press needs
+  `icons.focus(-1)` first (a pressed icon keeps Space).
 - **The title's corner icons (0.148, the user's ask).** `IconBar` lays them
   as a grid — every slot as wide as the widest caption, every row as tall as
   the tallest, a short last row kept right — on as few rows as stay on the
@@ -1476,6 +1492,10 @@ Read `git log` for what changed and when. What is not in the log:
   the logo shrinks until the last row clears the hint
   (`MENU.iconClearBottom`); the block is never placed lower than that.
   A caption is kept short (the 전술 교본's is 전술) — the widest sets every slot.
+- **우두머리 is 고대병기 to players (0.150, the user's word).** Every locale
+  says 고대병기 · Ancient Weapon · 古代兵器 (ja and zh alike); the code, ids
+  (`boss`), tables and comments still say 우두머리/boss. Not in the patch
+  notes, on the user's word — and neither is its new look.
 - **Known gaps, left on purpose:**
   - The 뼈다귀 pick screen is reached only on the way into a fresh run (게임
     시작, and 다시하기 after a death — both through `BoneScene.before`).

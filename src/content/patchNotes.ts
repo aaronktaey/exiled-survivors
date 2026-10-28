@@ -15,6 +15,36 @@ export interface PatchNote {
 
 export const PATCH_NOTES: readonly PatchNote[] = [
   {
+    version: '0.150',
+    date: '2026-10-28',
+    changes: {
+      ko: [
+        '타이틀 화면의 설정, 게임 가이드, 패치노트가 다른 메뉴처럼 작은 아이콘이 됐습니다. 모바일에서는 아이콘들이 게임 시작 버튼 아래에 놓입니다.',
+        '불러오기 버튼을 없앴습니다. 지난 게임이 남아 있으면 게임 시작을 누를 때 이어서 할지, 새 게임을 시작할지 묻습니다.',
+        '타이틀 화면의 예언을 한 줄로 줄였습니다. 누르면 전체 내용을 보여줍니다.',
+        '모바일에서 전술 교본이 레벨업 강화를 자동으로 고를 때, 알림이 뜨면서 이동 터치가 끊기던 문제를 고쳤습니다.',
+      ],
+      en: [
+        'Settings, How to Play and Patch Notes on the title are now small icons like the rest. On a phone the icons sit under the Start button.',
+        'The Continue button is gone. With a run saved, Start asks whether to carry on with it or start a new one.',
+        'The prophecy on the title is down to one line. Tap it to read the whole of it.',
+        'On a phone, when the Battle Plan picked a level-up upgrade for you, its notice no longer cuts off the finger you are steering with.',
+      ],
+      ja: [
+        'タイトル画面の設定、遊び方、パッチノートがほかのメニューと同じ小さなアイコンになりました。スマートフォンではアイコンがゲーム開始ボタンの下に並びます。',
+        '「つづきから」ボタンをなくしました。前回のゲームが残っていれば、ゲーム開始を押したときにつづけるか新しく始めるかを聞きます。',
+        'タイトル画面の予言を1行に短くしました。押すと全文を表示します。',
+        'スマートフォンで作戦書がレベルアップの強化を自動で選んだとき、通知と同時に移動のタッチが切れていた問題を直しました。',
+      ],
+      zh: [
+        '标题界面的设置、游戏指南、更新日志改为和其他菜单一样的小图标。手机上这些图标排在开始游戏按钮下方。',
+        '移除了“继续”按钮。有存档时，按开始游戏会询问是继续上一局还是开始新游戏。',
+        '标题界面的预言缩短为一行，点击可查看全文。',
+        '修复了手机上作战手册自动选择升级强化时，弹出提示的同时移动触控被中断的问题。',
+      ],
+    },
+  },
+  {
     version: '0.149',
     date: '2026-10-28',
     changes: {

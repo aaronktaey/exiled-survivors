@@ -178,7 +178,7 @@ check('and the card being pointed at says what it does',
   applied.detail.includes('갈비뼈') && applied.detail.includes('%'), applied.detail);
 check('and the total compounds rather than adding up',
   applied.summary.includes('+300%') && applied.summary.includes('+125%') &&
-    applied.summary.includes('우두머리'),
+    applied.summary.includes('고대병기'),
   applied.summary);
 check('nothing is spent until the run starts',
   applied.held.rib === 4 && applied.held.skull === 2,

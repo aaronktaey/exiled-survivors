@@ -135,6 +135,7 @@ export class BootScene extends Phaser.Scene {
     this.createAccountTexture();
     this.createFilterTexture();
     this.createTuningTexture();
+    this.createMenuIconTextures();
     // One dot size on the field (0.146): the rest re-drawn to the monsters' dot.
     if (pixelateOn()) {
       pixelateWorld(this);
@@ -254,6 +255,85 @@ export class BootScene extends Phaser.Scene {
     g.lineStyle(4, COLORS.textFill, 1);
     g.lineBetween(half, half, half + size * 0.22, half - size * 0.2);
     g.generateTexture(TEXTURES.tuning, size, size);
+    g.destroy();
+  }
+
+  /**
+   * 설정, 게임 가이드 and 패치노트 as title icons (0.150, the user's ask: rows
+   * on the menu before) — a cog, a closed book, a page of notes, in the
+   * menu's own pale colour like the rest of the corner.
+   */
+  private createMenuIconTextures(): void {
+    const size = 48;
+    const half = size / 2;
+    const pale = COLORS.textFill;
+
+    // 설정: a cog with a hole through it, drawn on a canvas so the hole can be cut.
+    const cog = this.textures.createCanvas(TEXTURES.settings, size, size);
+    const ctx = cog?.getContext();
+    if (cog && ctx) {
+      ctx.fillStyle = `#${pale.toString(16).padStart(6, '0')}`;
+      const teeth = 8;
+      for (let i = 0; i < teeth; i++) {
+        const a = (i / teeth) * Math.PI * 2;
+        ctx.save();
+        ctx.translate(half, half);
+        ctx.rotate(a);
+        ctx.fillRect(size * 0.22, -size * 0.065, size * 0.2, size * 0.13);
+        ctx.restore();
+      }
+      ctx.beginPath();
+      ctx.arc(half, half, size * 0.3, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.globalCompositeOperation = 'destination-out';
+      ctx.beginPath();
+      ctx.arc(half, half, size * 0.12, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.globalCompositeOperation = 'source-over';
+      cog.refresh();
+    }
+
+    // 게임 가이드: a closed book, its spine on the left and a ribbon hanging out.
+    let g = this.add.graphics();
+    g.fillStyle(pale, 1);
+    g.fillRoundedRect(size * 0.2, size * 0.12, size * 0.6, size * 0.74, 4);
+    g.fillStyle(0x8a8478, 1);
+    g.fillRect(size * 0.2, size * 0.12, size * 0.1, size * 0.74);
+    g.fillRect(size * 0.36, size * 0.3, size * 0.34, size * 0.05);
+    g.fillRect(size * 0.36, size * 0.4, size * 0.26, size * 0.05);
+    g.fillStyle(COLORS.dailyFill, 1);
+    g.fillPoints(
+      [
+        new Phaser.Math.Vector2(size * 0.6, size * 0.86),
+        new Phaser.Math.Vector2(size * 0.7, size * 0.86),
+        new Phaser.Math.Vector2(size * 0.7, size * 0.98),
+        new Phaser.Math.Vector2(size * 0.65, size * 0.93),
+        new Phaser.Math.Vector2(size * 0.6, size * 0.98),
+      ],
+      true,
+    );
+    g.generateTexture(TEXTURES.guide, size, size);
+    g.destroy();
+
+    // 패치노트: a page with its corner folded down and lines of writing.
+    g = this.add.graphics();
+    g.fillStyle(pale, 1);
+    g.fillPoints(
+      [
+        new Phaser.Math.Vector2(size * 0.22, size * 0.1),
+        new Phaser.Math.Vector2(size * 0.62, size * 0.1),
+        new Phaser.Math.Vector2(size * 0.8, size * 0.28),
+        new Phaser.Math.Vector2(size * 0.8, size * 0.9),
+        new Phaser.Math.Vector2(size * 0.22, size * 0.9),
+      ],
+      true,
+    );
+    g.fillStyle(0x8a8478, 1);
+    g.fillTriangle(size * 0.62, size * 0.1, size * 0.62, size * 0.28, size * 0.8, size * 0.28);
+    for (const [y, w] of [[0.42, 0.44], [0.54, 0.44], [0.66, 0.44], [0.78, 0.28]] as const) {
+      g.fillRect(size * 0.3, size * y, size * w, size * 0.045);
+    }
+    g.generateTexture(TEXTURES.patchNotes, size, size);
     g.destroy();
   }
 

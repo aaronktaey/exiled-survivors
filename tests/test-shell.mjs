@@ -29,11 +29,16 @@ const choose = async (key, id) => {
   const index = await cdp.evaluate(`(() => {
     const s = window.game.scene.getScene('${key}');
     const i = s.menu.rows.findIndex((r) => r.item.id === '${id}');
+    // 설정, 가이드 and 패치노트 are title icons since 0.150.
+    if (i < 0 && s.icons?.press('${id}')) return -2;
+    // A row taken by keyboard: an icon pressed earlier lets go of Space.
+    s.icons?.focus(-1);
     s.menu.selected = i;
     s.menu.refresh();
     return i;
   })()`.replace("${key}", key).replace("${id}", id));
-  await space();
+  if (index !== -2) await space();
+  else await sleep(500);
   return index;
 };
 const selectRow = (key, id) => cdp.evaluate(`(() => {
@@ -72,17 +77,22 @@ const menu = await scene('MenuScene', `
   const rows = s.menu.rows.map(r => ({ id: r.item.id, label: r.item.label(),
     detail: r.item.detail ? r.item.detail() : '', enabled: r.item.enabled ? r.item.enabled() : true }));
   const logo = s.children.list.find(o => o.texture && o.texture.key === 'tex-logo');
-  return { rows, logo: logo ? { y: logo.y, w: Math.round(logo.displayWidth), h: Math.round(logo.displayHeight) } : null };
+  const icons = s.icons.views.map(v => ({ id: v.button.id, label: v.label.text }));
+  return { rows, icons, logo: logo ? { y: logo.y, w: Math.round(logo.displayWidth), h: Math.round(logo.displayHeight) } : null };
 `);
 console.log('menu:', JSON.stringify(menu));
 // "Settings" stays English while there is a Language row to find there (LOCALE.choosable).
 const choosable = await ev(`(() => window.config.LOCALE.choosable)()`);
-check('every entry is there, in order',
-  JSON.stringify(menu.rows.map(r => r.label)) ===
-    JSON.stringify(['게임 시작', '불러오기', choosable ? 'Settings' : '설정', '게임 가이드', '패치노트']),
+// 0.150: 게임 시작 alone on the list; 설정 · 가이드 · 패치노트 are icons, 불러오기 went.
+check('게임 시작 is the one row left',
+  JSON.stringify(menu.rows.map(r => r.label)) === JSON.stringify(['게임 시작']),
   menu.rows.map(r => r.label).join(' / '));
-check('불러오기 is dim and says so with no save',
-  menu.rows[1].enabled === false && menu.rows[1].detail === '저장 없음', menu.rows[1].detail);
+const iconIds = menu.icons.map(i => i.id);
+check('설정, 가이드 and 패치노트 are icons, after the rest of the corner',
+  ['settings', 'guide', 'patch'].every(id => iconIds.includes(id)) &&
+    iconIds.indexOf('settings') > iconIds.indexOf('autoPick') &&
+    menu.icons.find(i => i.id === 'settings').label === (choosable ? 'Settings' : '설정'),
+  menu.icons.map(i => i.label).join(' / '));
 
 // --- 2. the logo is a pixel-art texture, and it drifts ---
 const logoTex = await scene('MenuScene', `
@@ -134,11 +144,15 @@ check('the ad columns wear the logo instead of a label',
 check('a banner dropped in takes the watermark away', columns.filled === 'none',
   `background with a child: ${columns.filled}`);
 
-// --- 3. the keyboard walks the list, skipping what it cannot use ---
+// --- 3. Tab walks the icons, and ↓ hands the keyboard back to the list ---
+await cdp.tap('Tab', 9, 'Tab');
+await sleep(200);
+const tabbed = await scene('MenuScene', `return { icons: s.icons.hasFocus };`);
 await down();
-const afterOneDown = await scene('MenuScene', `return { id: s.menu.selectedId };`);
-check('down skips the disabled 불러오기 row', afterOneDown.id === 'settings',
-  `landed on ${afterOneDown.id}`);
+const afterOneDown = await scene('MenuScene', `return { id: s.menu.selectedId, icons: s.icons.hasFocus };`);
+check('Tab walks onto the icons, and ↓ hands the keyboard back to 게임 시작',
+  tabbed.icons === true && afterOneDown.icons === false && afterOneDown.id === 'start',
+  JSON.stringify({ tabbed, afterOneDown }));
 
 // --- 4. 제작자 정보, now one level down under Settings ---
 await choose('MenuScene', 'settings');
@@ -337,14 +351,16 @@ check('the quit save holds the run that was played',
   Boolean(savedRun.skills.fireball),
   `lv ${savedRun.level} hp ${savedRun.hp} dmg ${savedRun.skills.meleeStrike.damage} skills ${Object.keys(savedRun.skills)}`);
 
-// --- 9. 불러오기 ---
-const loadRow = await scene('MenuScene', `
-  return { detail: s.menu.rows[1].item.detail(), enabled: s.menu.rows[1].item.enabled() };
+// --- 9. 이어서 하기: 게임 시작 asks, with the save summarised (0.150: 불러오기 went) ---
+await choose('MenuScene', 'start');
+await cdp.until(`window.game.scene.isActive('ConfirmScene')`, 10000, 100);
+const loadRow = await scene('ConfirmScene', `
+  return { rows: s.menu.items.map((i) => i.id), texts: s.children.list.filter((o) => o.type === 'Text').map((o) => o.text) };
 `);
-check('불러오기 lights up and summarises the save',
-  loadRow.enabled === true && /Lv 6/.test(loadRow.detail), loadRow.detail);
+check('게임 시작 with a save asks first, carrying on offered first and the save summarised',
+  loadRow.rows[0] === 'load' && loadRow.texts.some((t) => /Lv 6/.test(t)), JSON.stringify(loadRow));
 
-await choose('MenuScene', 'load');
+await choose('ConfirmScene', 'load');
 await sleep(1400);
 const loaded = await scene('GameScene', `
   return {

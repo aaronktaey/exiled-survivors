@@ -375,7 +375,7 @@ export const ENEMY_KINDS: Record<EnemyKind, EnemyKindSpec> = {
    */
   boss: {
     id: "boss",
-    name: "우두머리",
+    name: "고대병기",
     texture: TEXTURES.enemyBoss,
     size: 44,
     color: COLORS.enemyBoss,

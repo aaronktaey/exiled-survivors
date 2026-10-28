@@ -559,7 +559,7 @@ const reviewOpen = await scene('RankingScene', `
 console.log('popup:', JSON.stringify(reviewOpen));
 check('a row pressed opens what the run said about itself: how it stands, version, kills, 우두머리, 뼈다귀, weapon, skills, 재능 (패시브 before 0.110)',
   reviewOpen.open && reviewOpen.who === 'CHT' && /이상치/.test(reviewOpen.text) && /58\.8배|59배/.test(reviewOpen.text) &&
-    /0\.62/.test(reviewOpen.text) && /abc123/.test(reviewOpen.text) && /우두머리 처치 3/.test(reviewOpen.text) &&
+    /0\.62/.test(reviewOpen.text) && /abc123/.test(reviewOpen.text) && /고대병기 처치 3/.test(reviewOpen.text) &&
     /이어서/.test(reviewOpen.text) && /뼈다귀:/.test(reviewOpen.text) && /장비:/.test(reviewOpen.text) && /1티어/.test(reviewOpen.text) &&
     /Lv 30/.test(reviewOpen.text) && /재능:/.test(reviewOpen.text),
   reviewOpen.text.split('\n').join(' | '));

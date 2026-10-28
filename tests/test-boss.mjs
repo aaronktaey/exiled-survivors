@@ -137,7 +137,7 @@ const arrival = await run(`
   // it does not count as one here.
   const words = () => s.children.list.filter(o => o.type === 'Text')
     .map(o => o.text)
-    .filter(w => !(w.indexOf('우두머리') === 0 && w.indexOf('/') > 0));
+    .filter(w => !(w.indexOf('고대병기') === 0 && w.indexOf('/') > 0));
 
   window.__played = [];
   const mgr = s.sound;
@@ -160,7 +160,7 @@ const arrival = await run(`
 console.log('arrival:', JSON.stringify(arrival));
 // The toast's own text sits inside its box, not loose on the screen.
 check('a 우두머리 is announced by a toast, and nothing else is put on the screen',
-  JSON.stringify(arrival.after) === JSON.stringify(arrival.before) && arrival.toasts.filter((l) => /우두머리/.test(l)).length >= 2,
+  JSON.stringify(arrival.after) === JSON.stringify(arrival.before) && arrival.toasts.filter((l) => /고대병기/.test(l)).length >= 2,
   `${arrival.before.length} → ${arrival.after.length} labels; toasts: ${arrival.toasts.join(' | ')}`);
 check('and the toasts sit in the top-right corner, out of the middle of the field',
   arrival.corner.length >= 1 && arrival.corner.every((c) => c.x > arrival.width * 0.6 && c.y < arrival.height * 0.4),
@@ -183,8 +183,8 @@ const debug = await run(`
   return out;
 `);
 check('F10 sends one in', debug.bosses === 1, `${debug.bosses} on the field`);
-check('the overlay counts them', /우두머리 \d+/.test(debug.text),
-  debug.text.split('\n').find(l => /우두머리/.test(l))?.trim());
+check('the overlay counts them', /고대병기 \d+/.test(debug.text),
+  debug.text.split('\n').find(l => /고대병기/.test(l))?.trim());
 await shot('boss-01-overlay');
 await fkey('F1', 112);
 
@@ -296,14 +296,16 @@ const plate = await run(`
   return { full, hurt, ordinary };
 `);
 console.log('boss plate:', JSON.stringify(plate));
+// The name as players read it (고대병기 since 0.150), off the page rather than written here.
+const BOSS_NAME = await cdp.evaluate(`window.config.ENEMY_KINDS.boss.name`);
 check('a 우두머리 carries a bar and a line, the way the survivor does',
   plate.full.plate === true && plate.full.bar === true && plate.full.above === true,
   `"${plate.full.text}" above it`);
 check('which reads its name, and only that — the bar says what is left (0.139)',
-  plate.full.text === '우두머리',
+  plate.full.text === BOSS_NAME,
   plate.full.text);
 check('and empties as it is worn down',
-  plate.hurt.text === '우두머리' &&
+  plate.hurt.text === BOSS_NAME &&
     plate.hurt.hp < plate.full.hp,
   `${plate.full.hp} -> ${plate.hurt.hp} of ${plate.hurt.max}`);
 check('nothing below that rank carries one',
@@ -391,7 +393,7 @@ const wholeHp = await run(`
   s.choosing = false;
   return { text, hp: boss.hp };
 `);
-check('the 우두머리’s line shows no number, however its health stands', wholeHp.text === '우두머리' && !/\d/.test(wholeHp.text),
+check('the 우두머리’s line shows no number, however its health stands', wholeHp.text === BOSS_NAME && !/\d/.test(wholeHp.text),
   wholeHp.text);
 
 // --- 타격 reaches what is drawn: a 우두머리's picture is far wider than its

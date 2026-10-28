@@ -1832,7 +1832,7 @@ check('인벤토리 borders: 2 속성 blue (마법), 3–4 yellow (희귀), 5–
   borders.two === borders.want.magic && borders.three === borders.want.rare && borders.five === borders.want.mythic &&
     borders.want.rare !== borders.want.mythic, JSON.stringify(borders));
 
-// The title's 불러오기 row: its name never runs into the run read out beside it.
+// 게임 시작 with a run saved (0.150: 불러오기 went): it asks to carry on or start anew, every line on the screen.
 for (const [w, h, shape] of [[0, 0, 'landscape'], [360, 740, 'narrow phone']]) {
   if (w) await cdp.send('Emulation.setDeviceMetricsOverride', { width: w, height: h, deviceScaleFactor: 1, mobile: true });
   else await cdp.send('Emulation.clearDeviceMetricsOverride', {});
@@ -1844,12 +1844,18 @@ for (const [w, h, shape] of [[0, 0, 'landscape'], [360, 740, 'narrow phone']]) {
     s.runGear = { uid: 'long', id: 'runedSword', prefixes: [{ id: 'mighty', tier: 1 }], suffixes: [{ id: 'vital', tier: 1 }], rungs: window.config.AFFIX_RUNGS };
     s.writeSave(); s.scene.start('MenuScene'); return 1; })()`);
   await sleep(1500);
-  const row = await scene('MenuScene', `
-    const r = s.menu.rows.find((x) => x.item.id === 'load');
-    const a = r.label.getBounds(), b = r.detail.getBounds();
-    return { label: r.label.text, detail: r.detail.text, gap: Math.round(b.left - a.right), inside: b.right <= s.scale.width && a.left >= 0 };
+  await scene('MenuScene', `s.menu.items.find((i) => i.id === 'start').onSelect(); return 1;`);
+  await cdp.until(`window.game.scene.isActive('ConfirmScene')`, 10000, 100);
+  await sleep(300);
+  const row = await scene('ConfirmScene', `
+    const texts = s.children.list.filter((o) => o.type === 'Text' && o.visible && o.text);
+    const outside = texts.filter((o) => { const b = o.getBounds(); return b.left < 0 || b.right > s.scale.width; }).map((o) => o.text);
+    const out = { rows: s.menu.items.map((i) => i.id), texts: texts.length, outside };
+    s.menu.items.find((i) => i.id === 'cancel').onSelect();
+    return out;
   `);
-  check(`${shape}: the title’s 불러오기 name and its run read-out do not touch`, row.gap >= 8 && row.inside, JSON.stringify(row));
+  check(`${shape}: 게임 시작 with a run saved asks to carry on or start anew, every line inside the screen`,
+    row.rows.join() === 'load,overwrite,cancel' && row.texts >= 4 && row.outside.length === 0, JSON.stringify(row));
 }
 await cdp.send('Emulation.clearDeviceMetricsOverride', {});
 

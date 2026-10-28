@@ -104,8 +104,11 @@ await ev(`(() => {
 })()`);
 await toTitle();
 await sleep(1000);
-const old = await scene('MenuScene', `return { load: s.menu.rows[1].item.enabled ? s.menu.rows[1].item.enabled() : true, kept: localStorage.getItem(window.config.STORAGE.save) };`);
-check('a run saved with a 0.71–0.79 kit is thrown away, not offered', old.load === false && old.kept === null, JSON.stringify(old));
+// 게임 시작 is what reads the save since 0.150 (불러오기 went): it finds none to offer.
+const old = await scene('MenuScene', `s.menu.items.find((i) => i.id === 'start').onSelect();
+  const kept = localStorage.getItem(window.config.STORAGE.save);
+  return { asked: window.game.scene.isActive('ConfirmScene') || window.game.scene.getScene('ConfirmScene').sys.settings.status === 2, kept };`);
+check('a run saved with a 0.71–0.79 kit is thrown away, not offered', old.asked === false && old.kept === null, JSON.stringify(old));
 
 const failed = results.filter((r) => !r.p);
 console.log(`${results.length - failed.length}/${results.length} passed`);

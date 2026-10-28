@@ -178,7 +178,7 @@ export function dailyEnemyText(buff: DailyEnemyBuff): string {
 }
 
 /** 오늘의 규칙 written out: a heading with the date, and a line each. */
-export function dailyRuleText(rules: DailyRuleSet): { title: string; lines: string[]; short: string } {
+export function dailyRuleText(rules: DailyRuleSet): { title: string; lines: string[]; short: string; compact: string[] } {
   const copy = t().daily;
   const skill = skillName(rules.bannedSkill);
   const talent = t().shard.stats[rules.bannedTalent];
@@ -193,6 +193,8 @@ export function dailyRuleText(rules: DailyRuleSet): { title: string; lines: stri
     short: enemy
       ? fill(copy.titleLine, { date: dailyDate(rules.day), skill, talent, enemy })
       : fill(copy.titleLineNoEnemy, { date: dailyDate(rules.day), skill, talent }),
+    // The title's small line (0.150): the word, then each rule as briefly as it goes.
+    compact: [copy.compactLabel, fill(copy.compactSkill, { skill }), fill(copy.compactTalent, { talent }), ...(enemy ? [enemy] : [])],
   };
 }
 

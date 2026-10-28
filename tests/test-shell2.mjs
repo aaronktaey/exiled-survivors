@@ -27,6 +27,8 @@ const choose = async (key, id) => {
   await ev(`(() => {
     const s = window.game.scene.getScene('${key}');
     const i = s.menu.rows.findIndex((r) => r.item.id === '${id}');
+    // 설정, 가이드 and 패치노트 are title icons since 0.150.
+    if (i < 0 && s.icons?.press('${id}')) return -2;
     s.menu.selected = i;
     s.menu.refresh();
     // The row's own action, the one Space runs: a key sent while the page
@@ -130,7 +132,7 @@ const dialog = await scene('ConfirmScene', `
 `);
 console.log('dialog:', JSON.stringify(dialog.texts));
 check('it says what is at stake',
-  dialog.texts.some(line => /진행 중인 기록/.test(line)) &&
+  dialog.texts.some(line => /지난 게임/.test(line)) &&
   dialog.texts.some(line => /Lv 7/.test(line)),
   dialog.texts.filter(Boolean).join(' | '));
 await shot('shell2-02-confirm');
@@ -184,7 +186,10 @@ await ev(`(() => {
 })()`);
 await cdp.send('Page.reload', {});
 await sleep(4600);
-await choose('MenuScene', 'load');
+// 불러오기 went in 0.150: 게임 시작 asks, and 이어서 하기 carries on.
+await choose('MenuScene', 'start');
+await cdp.until(`window.game.scene.isActive('ConfirmScene')`, 10000, 100);
+await choose('ConfirmScene', 'load');
 await sleep(2600);
 const resumed = await scene('GameScene', `
   return { elapsed: Math.round(s.elapsedMs / 1000), level: s.progression.level,

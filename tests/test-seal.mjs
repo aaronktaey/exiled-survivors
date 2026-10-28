@@ -19,9 +19,19 @@ const reload = async () => {
   await cdp.send('Page.reload', {});
   await sleep(4200);
 };
+// 게임 시작 offers the save (0.150: 불러오기 went) — asked with the run's start held back.
 const loadOffered = () => ev(`(() => {
   const m = window.game.scene.getScene('MenuScene');
-  return m.menu.items.find((i) => i.id === 'load').enabled();
+  const held = { startRun: m.startRun, launch: m.scene.launch, pause: m.scene.pause };
+  let asked = false;
+  m.startRun = () => {};
+  m.scene.pause = () => m.scene;
+  m.scene.launch = (key) => { asked = key === 'ConfirmScene'; return m.scene; };
+  m.onStart();
+  Object.assign(m, { startRun: held.startRun });
+  m.scene.launch = held.launch;
+  m.scene.pause = held.pause;
+  return asked;
 })()`);
 const legacyRun = { version: 1, savedAt: 1, elapsedMs: 120000, level: 4, xp: 2, hp: 50,
   skills: { meleeStrike: { damage: 201, attackSpeed: 1, range: 71.2, projectileSpeed: 0, chainCount: 0, pierceCount: 0, orbCount: 0, orbitSpeed: 0 } },
@@ -51,7 +61,7 @@ check('the saved run and the tree are written sealed', written.save && written.t
 // --- 2. a saved run changed outside the game is not offered, and goes ---
 await ev(`(() => { window.game.scene.getScene('GameScene').scene.start('MenuScene'); return 1; })()`);
 await sleep(1500);
-check('a sealed save is offered to 불러오기', (await loadOffered()) === true);
+check('a sealed save is offered when 게임 시작 is pressed', (await loadOffered()) === true);
 await ev(`(() => {
   const raw = JSON.parse(localStorage.getItem('${SAVE}'));
   raw.skills.meleeStrike.damage = 99999;

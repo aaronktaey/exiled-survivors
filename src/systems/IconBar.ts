@@ -115,7 +115,7 @@ export class IconBar {
       this.views.push({ button, image, plate, label, badge, ring });
     });
 
-    this.layOut(avoid);
+    this.layCorner(avoid);
 
     scene.input.keyboard?.on('keydown', this.onKeyDown, this);
     scene.events.once(Phaser.Scenes.Events.SHUTDOWN, this.destroy, this);
@@ -128,15 +128,14 @@ export class IconBar {
    * each slot as wide as its own caption). One row while it stays clear of
    * `avoid`, else as many as it takes; a short last row keeps to the right.
    */
-  private layOut(avoid?: Phaser.Geom.Rectangle): void {
-    const { size, gap, rowGap, margin, labelGap } = ICON_BAR;
+  public layCorner(avoid?: Phaser.Geom.Rectangle): void {
+    const { size, gap, rowGap, margin } = ICON_BAR;
     const width = this.scene.scale.width;
     const count = this.views.length;
     if (count === 0) {
       return;
     }
-    const slot = Math.max(size, ...this.views.map((view) => Math.ceil(view.label.width) + 6));
-    const rowH = size + labelGap + Math.max(...this.views.map((view) => Math.ceil(view.label.height)));
+    const { slot, rowH } = this.cell();
     const block = (rows: number): Phaser.Geom.Rectangle => {
       const cols = Math.ceil(count / rows);
       const w = cols * slot + (cols - 1) * gap;
@@ -157,13 +156,65 @@ export class IconBar {
       const row = Math.floor(index / cols);
       const inRow = Math.min(cols, count - row * cols);
       const col = cols - inRow + (index % cols);
-      const x = width - margin - slot / 2 - (cols - 1 - col) * (slot + gap);
-      const y = margin + size / 2 + row * (rowH + rowGap);
-      view.plate.setPosition(x, y).setSize(slot, size);
-      view.image.setPosition(x, y);
-      view.label.setPosition(x, y + size / 2 + labelGap);
-      view.badge.setPosition(x + size / 2 - 2, y - size / 2 + 2);
-      view.ring?.setPosition(x, y);
+      this.place(view, width - margin - slot / 2 - (cols - 1 - col) * (slot + gap), margin + size / 2 + row * (rowH + rowGap), slot);
+    });
+  }
+
+  /** Every slot as wide as the widest caption, every row as tall as the tallest. */
+  private cell(): { slot: number; rowH: number } {
+    const { size, labelGap } = ICON_BAR;
+    return {
+      slot: Math.max(size, ...this.views.map((view) => Math.ceil(view.label.width) + 6)),
+      rowH: size + labelGap + Math.max(...this.views.map((view) => Math.ceil(view.label.height))),
+    };
+  }
+
+  private place(view: IconView, x: number, y: number, slot: number): void {
+    const { size, labelGap } = ICON_BAR;
+    view.plate.setPosition(x, y).setSize(slot, size);
+    view.image.setPosition(x, y);
+    view.label.setPosition(x, y + size / 2 + labelGap);
+    view.badge.setPosition(x + size / 2 - 2, y - size / 2 + 2);
+    view.ring?.setPosition(x, y);
+  }
+
+  /** How many to a row, and how many rows, laid centred in `maxWidth`: rows as even as they go. */
+  private centredGrid(maxWidth: number): { cols: number; rows: number } {
+    const { slot } = this.cell();
+    const count = Math.max(1, this.views.length);
+    const fit = Math.max(1, Math.floor((maxWidth + ICON_BAR.gap) / (slot + ICON_BAR.gap)));
+    const rows = Math.ceil(count / fit);
+    return { cols: Math.ceil(count / rows), rows };
+  }
+
+  /** How tall the centred grid comes out in `maxWidth`, before it is placed. */
+  public centredHeight(maxWidth: number): number {
+    const { rowH } = this.cell();
+    const { rows } = this.centredGrid(maxWidth);
+    return rows * rowH + (rows - 1) * ICON_BAR.rowGap;
+  }
+
+  /**
+   * On a phone, under 게임 시작 rather than in the corner (0.150, the user's
+   * ask): a grid centred on `centreX` from `top`, each row centred.
+   */
+  public layCentred(centreX: number, top: number, maxWidth: number): void {
+    const { size, gap, rowGap } = ICON_BAR;
+    const count = this.views.length;
+    if (count === 0) {
+      return;
+    }
+    const { slot, rowH } = this.cell();
+    const { cols, rows } = this.centredGrid(maxWidth);
+    this.rows = rows;
+    const full = cols * slot + (cols - 1) * gap;
+    this.bounds = new Phaser.Geom.Rectangle(centreX - full / 2, top, full, rows * rowH + (rows - 1) * rowGap);
+    this.views.forEach((view, index) => {
+      const row = Math.floor(index / cols);
+      const inRow = Math.min(cols, count - row * cols);
+      const w = inRow * slot + (inRow - 1) * gap;
+      const x = centreX - w / 2 + slot / 2 + (index % cols) * (slot + gap);
+      this.place(view, x, top + size / 2 + row * (rowH + rowGap), slot);
     });
   }
 

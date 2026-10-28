@@ -420,9 +420,8 @@ await ev(`(() => {
 })()`);
 await sleep(1700);
 await ev(`(() => {
-  const s = window.game.scene.getScene('MenuScene');
-  const i = s.menu.rows.findIndex(r => r.item.id === 'settings');
-  s.menu.selected = i; s.menu.refresh(); s.menu.rows[i].item.onSelect(); return i;
+  // 설정 is a title icon since 0.150.
+  return window.game.scene.getScene('MenuScene').icons.press('settings');
 })()`);
 await sleep(1200);
 const row = await ev(`(() => {
@@ -476,6 +475,48 @@ check('and says why instead',
 check('and the hint fits across a phone instead of running off both sides',
   row.left >= 0 && row.right <= row.canvas,
   `${row.left}..${row.right} of ${row.canvas}`);
+
+// --- 전술 교본 (0.150): a choice it takes on its own shows no card, so the stick
+// under a finger keeps going — it used to let go, the toast the only sign ---
+await cdp.evaluate(`(() => {
+  const raw = localStorage.getItem('exiled-survivors:settings:v1');
+  localStorage.setItem('exiled-survivors:settings:v1', JSON.stringify({ ...(raw ? JSON.parse(raw) : {}), movementMode: 'floating' }));
+  return 1;
+})()`);
+await cdp.send('Page.navigate', { url: 'about:blank' });
+await cdp.send('Page.navigate', { url: 'http://localhost:5173/#run' });
+await cdp.until(`window.game?.scene.getScene('GameScene')?.player?.analog`, 30000, 200);
+await cdp.evaluate(`(() => { const s = window.game.scene.getScene('GameScene');
+  s.__addXp = s.progression.addXp.bind(s.progression); s.progression.addXp = () => {}; s.player.setInvulnerable(true); return 1; })()`);
+// The run's own level-ups may have a card up: close them all first.
+for (let i = 0; i < 40; i++) {
+  const busy = await cdp.evaluate(`(() => { const g = window.game.scene.getScene('GameScene'); const u = window.game.scene.getScene('UpgradeScene');
+    if (u.sys.settings.status === 5 && u.payload?.options?.[0]) { u.pick(u.payload.options[0].id); return true; }
+    return g.choosing || g.pendingChoices.length > 0; })()`);
+  if (!busy && i > 3) break;
+  await sleep(250);
+}
+await touch('touchStart', geom.baseX, geom.baseY);
+await touch('touchMove', geom.baseX + 50, geom.baseY);
+await sleep(200);
+const autoLevel = await cdp.evaluate(`(() => {
+  const s = window.game.scene.getScene('GameScene'); const j = s.player.analog;
+  const before = { kind: j.constructor.name, tilt: +j.tilt.toFixed(2) };
+  s.autoPick = true;
+  s.__addXp(s.progression.xpToNext + 1);
+  return { before, toasts: s.toasts.lines.length, card: window.game.scene.isActive('UpgradeScene') };
+})()`);
+await sleep(300);
+await touch('touchMove', geom.baseX, geom.baseY - 50);
+await sleep(200);
+const afterAuto = await cdp.evaluate(`(() => { const j = window.game.scene.getScene('GameScene').player.analog;
+  return { tilt: +j.tilt.toFixed(2), dirY: +j.direction.y.toFixed(2), card: window.game.scene.isActive('UpgradeScene') }; })()`);
+await touch('touchEnd', 0, 0);
+console.log('auto-picked level-up under a finger:', JSON.stringify({ autoLevel, afterAuto }));
+check('전술 교본: a level-up it picks itself does not take the stick from the finger steering',
+  autoLevel.before.kind === 'VirtualJoystick' && autoLevel.before.tilt > 0.8 && autoLevel.card === false && autoLevel.toasts > 0 &&
+    afterAuto.tilt > 0.8 && afterAuto.dirY < -0.9 && afterAuto.card === false,
+  JSON.stringify({ autoLevel, afterAuto }));
 
 // --- 탭으로 이동 (0.117): the survivor walks to where the screen was pressed ---
 await cdp.evaluate(`(() => {

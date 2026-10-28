@@ -277,6 +277,12 @@ export class GameScene extends Phaser.Scene {
   private pendingChoices: ChoiceRequest[] = [];
   private choosing = false;
   /**
+   * Whether the choice under way put cards on screen. The 전술 교본 takes
+   * most without any; then the finger steering keeps the stick, which a
+   * release would have dropped mid-stride with only a toast to show for it.
+   */
+  private choiceShown = false;
+  /**
    * What the mouse is reading: a skill's card, a rare's 속성. Either holds
    * the run still until the pointer moves off it.
    */
@@ -330,6 +336,7 @@ export class GameScene extends Phaser.Scene {
     this.sinceSaveMs = 0;
     this.pendingChoices = [];
     this.choosing = false;
+    this.choiceShown = false;
     this.inspecting = { skill: false, rare: false };
     this.over = false;
     this.invulnerable = false;
@@ -535,6 +542,7 @@ export class GameScene extends Phaser.Scene {
       owned: [...this.owned],
       onPick: (skill) => {
         this.choosing = false;
+        this.choiceShown = false;
         if (!this.held) {
           this.physics.resume();
         }
@@ -550,8 +558,7 @@ export class GameScene extends Phaser.Scene {
     if (this.chooseForPlayer('skills', options, data.onPick, skillName)) {
       return;
     }
-    this.scene.bringToTop(SkillPickScene.KEY);
-    this.scene.launch(SkillPickScene.KEY, data);
+    this.showChoice(SkillPickScene.KEY, data);
   }
 
   /**
@@ -1512,8 +1519,6 @@ export class GameScene extends Phaser.Scene {
     this.choosing = true;
     // Freeze the arena so enemies do not close in while choosing.
     this.physics.pause();
-    // The finger steering now goes to the cards; the stick lets it go.
-    this.analog?.release?.();
 
     if (request.kind === 'pick') {
       this.openPick();
@@ -1544,8 +1549,7 @@ export class GameScene extends Phaser.Scene {
     if (this.chooseForPlayer('upgrades', options.map((option) => option.id), data.onPick, (id) => `${skillName(request.skill)} ${labels.get(id) ?? id}`)) {
       return;
     }
-    this.scene.bringToTop(UpgradeScene.KEY);
-    this.scene.launch(UpgradeScene.KEY, data);
+    this.showChoice(UpgradeScene.KEY, data);
   }
 
   /**
@@ -1585,8 +1589,7 @@ export class GameScene extends Phaser.Scene {
     if (this.chooseForPlayer('skills', options, data.onPick, skillName)) {
       return;
     }
-    this.scene.bringToTop(SkillPickScene.KEY);
-    this.scene.launch(SkillPickScene.KEY, data);
+    this.showChoice(SkillPickScene.KEY, data);
   }
 
   private onUpgradePicked(skill: SkillId, upgrade: UpgradeId): void {
@@ -1677,8 +1680,7 @@ export class GameScene extends Phaser.Scene {
     if (this.chooseForPlayer('shards', picks, data.onPick)) {
       return;
     }
-    this.scene.bringToTop(UpgradeScene.KEY);
-    this.scene.launch(UpgradeScene.KEY, data);
+    this.showChoice(UpgradeScene.KEY, data);
   }
 
   /** The numbers a shard line fills in, for `count` shards. */
@@ -1911,10 +1913,21 @@ export class GameScene extends Phaser.Scene {
     }
   }
 
+  /** Puts a choice's cards up: the finger steering now goes to them, so the stick lets it go. */
+  private showChoice(key: string, data: object): void {
+    this.choiceShown = true;
+    this.analog?.release?.();
+    this.scene.bringToTop(key);
+    this.scene.launch(key, data);
+  }
+
   /** One popup is done: open the next, or let the run go on. */
   private afterChoice(): void {
     this.choosing = false;
-    this.analog?.release?.();
+    if (this.choiceShown) {
+      this.choiceShown = false;
+      this.analog?.release?.();
+    }
 
     if (this.pendingChoices.length > 0) {
       // Let the scene manager finish stopping the popup before relaunching it.

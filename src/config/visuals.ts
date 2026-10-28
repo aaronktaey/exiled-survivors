@@ -207,6 +207,10 @@ export const TEXTURES = {
   filter: "tex-filter",
   battlePlan: "tex-battle-plan",
   tuning: "tex-tuning",
+  /** 설정 · 게임 가이드 · 패치노트 as title icons (0.150): a cog, a book, a page of notes. */
+  settings: "tex-settings",
+  guide: "tex-guide",
+  patchNotes: "tex-patch-notes",
   grid: "tex-grid",
   talentShard: "tex-talent-shard",
   talentLump: "tex-talent-lump",
@@ -723,16 +727,17 @@ export const MENU = {
   /** Six rows have to fit under the logo, so the buttons are compact. */
   buttonHeight: 40,
   buttonGap: 8,
-  /** 예언's line (0.126) where there is no room for its plate: over the first row, this far above it; in the village, this far above the bottom. */
-  dailyLineAboveRows: 16,
+  /** 예언's line in the village (0.126), this far above the bottom. */
   dailyLineFromBottom: 50,
   /**
-   * 예언's plate (0.127, the user's ask: easy to see on the main screen): a
-   * framed card with the date and a line a rule. Over the menu when the
-   * screen is tall enough, else in the top-left corner beside the logo
-   * when that leaves `minCornerWidth`, else the one line above.
+   * 예언 on the title (0.150, the user's ask: the 0.127 plate took too much of
+   * the screen): one framed line under the ranking, a second only where one
+   * would not fit, as wide as it needs up to `maxWidth`. Tapping it says the
+   * whole prophecy in a toast.
    */
-  prophecy: { width: 420, height: 104, gap: 10, minCornerWidth: 230, pad: 8, pulseMs: 900 },
+  prophecy: { maxWidth: 560, gap: 12, padX: 10, padY: 5, icon: 18, pulseMs: 900 },
+  /** On a phone the corner icons sit under 게임 시작 (0.150), this far below it. */
+  iconsGap: 18,
   /** Side of one logo pixel, in screen px. */
   logoPixel: 6,
   /** Roughly how tall the baked logo comes out, for centring the title. */

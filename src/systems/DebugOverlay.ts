@@ -149,7 +149,7 @@ export class DebugOverlay {
       `FPS ${this.scene.game.loop.actualFps.toFixed(1)}   frame ${avg.toFixed(1)}ms avg / ${worst.toFixed(1)}ms peak`,
       `delta cap ${TIMING.maxDeltaMs}ms`,
       `enemies ${c.enemies} (pool ${c.enemyPool})   projectiles ${c.projectiles}   gems ${c.gems}`,
-      `  ${this.kindBreakdown(c)}   희귀 ${c.rares}   우두머리 ${c.bosses}   enemy shots ${c.enemyShots}`,
+      `  ${this.kindBreakdown(c)}   희귀 ${c.rares}   고대병기 ${c.bosses}   enemy shots ${c.enemyShots}`,
       `  난이도 체력 x${c.hpScale.toFixed(2)}   희귀 확률 ${(c.rareChance * 100).toFixed(0)}%`,
       `drops ${c.drops}   potions ${c.potions}   damage numbers ${c.damageNumbers}`,
       '',

@@ -227,6 +227,12 @@ export interface Strings {
     readonly titleLine: string;
     /** The same, on a day with every strengthened enemy switched off: {date} {skill} {talent}. */
     readonly titleLineNoEnemy: string;
+    /** 예언 on the title, small (0.150): the word before the rules, */
+    readonly compactLabel: string;
+    /** the banned skill ({skill}) */
+    readonly compactSkill: string;
+    /** and the banned talent ({talent}), each short. */
+    readonly compactTalent: string;
     /** On the first skill's cards: {skill}. */
     readonly startBanned: string;
     /** A strengthened enemy by stat: {kind} {n}. */
@@ -351,8 +357,6 @@ export interface Strings {
     readonly updating: string;
     readonly byline: string;
     readonly start: string;
-    readonly load: string;
-    readonly noSave: string;
     readonly settings: string;
     /** 0.80's gift, said once on the title: {gear} the pieces ("오니고로시 2개"), {orbs} how many of each 구슬. */
     readonly gift: string;
@@ -365,6 +369,9 @@ export interface Strings {
     readonly gear: string;
     readonly guide: string;
     readonly patch: string;
+    /** 게임 가이드 and 패치노트 under their title icons (0.150): a word or two, as the slots are as wide as the widest. */
+    readonly guideIcon: string;
+    readonly patchIcon: string;
     readonly credits: string;
     readonly hintKeyboard: string;
     readonly hintTouch: string;

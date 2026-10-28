@@ -21,7 +21,7 @@ import { dailyRuleText, fill, gearName, t } from '@/i18n';
 import { arenaLookOn, ensureArenaFloor, themeFor } from '@/systems/Arena';
 import { dailyRules } from '@/systems/DailyRules';
 import { bgm } from '@/systems/Bgm';
-import { IconBar } from '@/systems/IconBar';
+import { IconBar, type IconButton } from '@/systems/IconBar';
 import { BoneScene } from '@/scenes/BoneScene';
 import { orbs } from '@/systems/Orbs';
 import { passives } from '@/systems/Passives';
@@ -42,9 +42,6 @@ import { Village, VILLAGE_TEXTURE, villageOn } from '@/systems/Village';
 
 /** Syncing starts once per page, the first time the title finds someone signed in. */
 let syncStarted = false;
-
-/** How many rows the title lists, for centring it before they are built. */
-const ROW_COUNT = 5;
 
 /** How big 2위's and 3위's cups are drawn beside them on the title. */
 const PODIUM_CUP = 16;
@@ -94,13 +91,15 @@ export class MenuScene extends Phaser.Scene {
     const { width, height } = this.scale;
 
     // 생존자 마을 on the dev server (VILLAGE.devOnly); the menu everywhere else.
-    this.prophecySpot = undefined;
+    this.dailyLine = undefined;
+    this.prophecyFrame = undefined;
+    this.prophecyIcon = undefined;
     if (villageOn()) {
       this.buildVillage();
+      this.addVillageProphecy(width, height);
     } else {
       this.buildMenu(width, height);
     }
-    this.addProphecy(width, height);
 
     // The title is drawn before the account is known; when it turns out to be
     // the admin's (or stops being), the 밸런스 icon comes or goes.
@@ -152,15 +151,16 @@ export class MenuScene extends Phaser.Scene {
   }
 
   /**
-   * 예언 (0.126; a plate since 0.127): what a run started now plays under.
-   * `dailyLine` is its words — the plate's rules, or the one line where
-   * there is no room for a plate. Public for tests.
+   * 예언 (0.126): what a run started now plays under. On the title one small
+   * framed line since 0.150 (the user's ask: the 0.127 plate took too much of
+   * the screen); in the village a line at the foot. `dailyLine` is its words.
+   * Public for tests.
    */
   public dailyLine?: Phaser.GameObjects.Text;
-  public prophecyTitle?: Phaser.GameObjects.Text;
   private prophecyFrame?: Phaser.GameObjects.Rectangle;
-  /** Where the screen leaves room for it, worked out while the menu is laid. */
-  private prophecySpot?: { readonly x: number; readonly y: number; readonly w: number; readonly plate: boolean };
+  private prophecyIcon?: Phaser.GameObjects.Image;
+  /** How wide the title's line may grow. */
+  private prophecyRoom = 0;
 
   /** The prophecy reworded, after the dials it reads have moved. */
   private refreshDailyLine(): void {
@@ -168,65 +168,104 @@ export class MenuScene extends Phaser.Scene {
     if (!this.dailyLine || !rules) {
       return;
     }
-    const text = dailyRuleText(rules);
-    const room = this.prophecySpot?.plate ? this.prophecySpot.w - MENU.prophecy.pad * 2 : this.scale.width - 40;
-    this.dailyLine.setScale(1).setText(this.prophecySpot?.plate ? text.lines.join('\n') : text.short);
-    fitText(this.dailyLine, room, 0);
+    if (this.prophecyFrame) {
+      const { x, y } = this.prophecyFrame;
+      this.setProphecyText();
+      this.placeProphecy(x, y);
+      return;
+    }
+    this.dailyLine.setScale(1).setText(dailyRuleText(rules).short);
+    fitText(this.dailyLine, this.scale.width - 40, 0);
   }
 
-  private addProphecy(width: number, height: number): void {
-    this.dailyLine = undefined;
-    this.prophecyTitle = undefined;
-    this.prophecyFrame = undefined;
+  /** The village's line, at the foot of the yard. */
+  private addVillageProphecy(width: number, height: number): void {
     const rules = dailyRules.today();
     if (!rules) {
       return;
     }
-    const spot = this.prophecySpot ?? { x: width / 2, y: height - MENU.dailyLineFromBottom, w: width - 32, plate: false };
-    const text = dailyRuleText(rules);
-    if (!spot.plate) {
-      this.dailyLine = fitText(
-        this.add
-          .text(spot.x, spot.y, text.short, { fontFamily: 'system-ui, sans-serif', fontSize: TEXT.size.hint, color: COLORS.daily })
-          .setOrigin(0.5)
-          .setDepth(DEPTH.ui),
-        width,
-      );
-      return;
-    }
-    const { height: h, pad, pulseMs } = MENU.prophecy;
-    const top = spot.y - h / 2;
-    this.prophecyFrame = this.add
-      .rectangle(spot.x, spot.y, spot.w, h, COLORS.panel, 0.9)
-      .setStrokeStyle(2, COLORS.dailyFill, 1)
-      .setDepth(DEPTH.ui);
-    // A slow glow on the frame, so the eye finds it.
-    this.tweens.add({ targets: this.prophecyFrame, strokeAlpha: 0.35, duration: pulseMs, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
-    this.prophecyTitle = fitText(
-      this.add
-        .text(spot.x, top + pad, text.title, { fontFamily: 'system-ui, sans-serif', fontSize: TEXT.size.label, color: COLORS.daily })
-        .setOrigin(0.5, 0)
-        .setDepth(DEPTH.ui + 1),
-      spot.w - pad * 2,
-      0,
-    );
     this.dailyLine = fitText(
       this.add
-        .text(spot.x, top + pad + this.prophecyTitle.displayHeight + 4, text.lines.join('\n'), {
+        .text(width / 2, height - MENU.dailyLineFromBottom, dailyRuleText(rules).short, {
           fontFamily: 'system-ui, sans-serif',
           fontSize: TEXT.size.hint,
-          color: COLORS.text,
-          align: 'center',
+          color: COLORS.daily,
         })
-        .setOrigin(0.5, 0)
-        .setDepth(DEPTH.ui + 1),
-      spot.w - pad * 2,
-      0,
+        .setOrigin(0.5)
+        .setDepth(DEPTH.ui),
+      width,
     );
-    // The frame is as tall as what it holds (a font's lines run taller than
-    // their size), its top where the screen left room for it.
-    const held = this.dailyLine.y + this.dailyLine.displayHeight + pad - top;
-    this.prophecyFrame.setSize(spot.w, held).setPosition(spot.x, top + held / 2);
+  }
+
+  /**
+   * The title's prophecy: the day's mark, then the rules in a word or two
+   * each, in a thin frame — on two lines only where one will not fit. A tap
+   * says the whole of it. Built before the title is laid, so its height is
+   * known; returns it (0 on a day without rules).
+   */
+  private addProphecyLine(maxWidth: number): number {
+    const rules = dailyRules.today();
+    if (!rules) {
+      return 0;
+    }
+    this.prophecyRoom = maxWidth;
+    this.prophecyFrame = this.add
+      .rectangle(0, 0, 10, 10, COLORS.panel, 0.85)
+      .setStrokeStyle(2, COLORS.dailyFill, 1)
+      .setDepth(DEPTH.ui)
+      .setData('flat', true);
+    this.tweens.add({ targets: this.prophecyFrame, strokeAlpha: 0.35, duration: MENU.prophecy.pulseMs, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+    this.prophecyIcon = this.add.image(0, 0, TEXTURES.dailyRules).setDepth(DEPTH.ui + 1);
+    this.dailyLine = this.add
+      .text(0, 0, '', { fontFamily: 'system-ui, sans-serif', fontSize: TEXT.size.hint, color: COLORS.daily, align: 'center' })
+      .setOrigin(0.5)
+      .setDepth(DEPTH.ui + 1);
+    this.setProphecyText();
+    this.prophecyFrame.setInteractive({ useHandCursor: true });
+    this.prophecyFrame.on(Phaser.Input.Events.GAMEOBJECT_POINTER_DOWN, () => {
+      const today = dailyRules.today();
+      if (today) {
+        const text = dailyRuleText(today);
+        this.toast([text.title, ...text.lines].join('\n'));
+      }
+    });
+    return this.prophecyFrame.height;
+  }
+
+  /** Words into the frame, and the frame round them. */
+  private setProphecyText(): void {
+    const rules = dailyRules.today();
+    const line = this.dailyLine;
+    const frame = this.prophecyFrame;
+    if (!rules || !line || !frame) {
+      return;
+    }
+    const { padX, padY, icon } = MENU.prophecy;
+    const room = this.prophecyRoom - padX * 2 - icon - 6;
+    const { compact } = dailyRuleText(rules);
+    line.setScale(1).setText(compact.join(' · '));
+    // Too wide for one line: as much as fits on the first, the rest under it.
+    let first = compact.length;
+    while (line.width > room && first > 1) {
+      first -= 1;
+      line.setText(`${compact.slice(0, first).join(' · ')}\n${compact.slice(first).join(' · ')}`);
+    }
+    fitText(line, room, 0);
+    const w = Math.min(this.prophecyRoom, line.displayWidth + icon + 6 + padX * 2);
+    const h = Math.max(icon, line.displayHeight) + padY * 2;
+    frame.setSize(w, h);
+    (frame.input?.hitArea as Phaser.Geom.Rectangle | undefined)?.setTo(0, 0, w, h);
+  }
+
+  private placeProphecy(x: number, y: number): void {
+    const frame = this.prophecyFrame;
+    if (!frame || !this.dailyLine || !this.prophecyIcon) {
+      return;
+    }
+    const { padX, icon } = MENU.prophecy;
+    frame.setPosition(x, y);
+    this.prophecyIcon.setDisplaySize(icon, icon).setPosition(x - frame.width / 2 + padX + icon / 2, y);
+    this.dailyLine.setPosition(x + (icon + 6) / 2, y);
   }
 
   /** The title as a list under the logo, with the corner icons — the title everywhere but the village. */
@@ -237,49 +276,99 @@ export class MenuScene extends Phaser.Scene {
     this.add.tileSprite(0, 0, width, height, floor).setOrigin(0, 0).setDepth(DEPTH.ground);
     this.add.rectangle(0, 0, width, height, 0x05070b, SCRIM.title).setOrigin(0, 0).setDepth(DEPTH.ground + 1);
 
-    // Logo, byline and rows are one block, centred in whatever is there.
-    // On a screen too short for it all (a phone lying down is 420 high, 0.149)
-    // the rows close up, then the logo is drawn smaller — never off the foot.
+    // Logo, byline, ranking, prophecy and 게임 시작 are one block, centred in
+    // whatever is there — on a phone with the icons under it (0.150, the
+    // user's ask), elsewhere with them in the corner. On a screen too short
+    // for it all (a phone lying down is 420 high, 0.149) the row closes up,
+    // then the logo is drawn smaller — never off the foot.
     const tight = height < MENU.tightHeight;
     const rowHeight = tight ? MENU.buttonHeightTight : MENU.buttonHeight;
-    const rowGap = tight ? MENU.buttonGapTight : MENU.buttonGap;
-    const listHeight = ROW_COUNT * (rowHeight + rowGap) - rowGap;
-    // Six rows under the logo only just fit a 540-tall canvas, so a short
-    // one closes the gap rather than pushing the last row into the hint.
     const gap = height < MENU.shortHeight ? MENU.logoGapShort : MENU.logoGap;
     // First place on the board takes a line under the byline, once there is one.
     // The line is kept even before anyone is on the board: the shared board
     // arrives a moment later, and the menu must not jump when it does.
-    // 예언 (0.127): on a tall screen its plate joins the block, over the rows.
-    const prophesied = dailyRules.today() !== null;
-    const tall = height >= MENU.shortHeight;
-    const plateRoom = prophesied && tall ? MENU.prophecy.height + MENU.prophecy.gap : 0;
-    const fullBlock = MENU.logoBlockHeight + MENU.championGap + MENU.podiumGap + plateRoom;
-    const over = fullBlock + gap + listHeight - (height - MENU.iconClearBottom);
+    const prophecyH = this.addProphecyLine(Math.min(width - 32, MENU.prophecy.maxWidth));
+    const prophecyRoom = prophecyH > 0 ? prophecyH + MENU.prophecy.gap : 0;
+    const fullBlock = MENU.logoBlockHeight + MENU.championGap + MENU.podiumGap + prophecyRoom;
+
+    // 인벤토리, 재능 and the rest are icons rather than rows: places you go
+    // between runs, not ways out of the title (설정 · 가이드 · 패치노트 too since 0.150).
+    this.icons = new IconBar(this, this.titleIcons());
+    const below = MenuScene.iconsBelow(width, height);
+    const iconsRoom = below ? MENU.iconsGap + this.icons.centredHeight(width - 32) : 0;
+
+    const content = fullBlock + gap + rowHeight + iconsRoom;
+    const over = content - (height - MENU.iconClearBottom);
     const logoShrink = Math.max(0, Math.min(over, MENU.logoHeight * (1 - MENU.logoMinScale)));
     const logoScale = (MENU.logoHeight - logoShrink) / MENU.logoHeight;
     const blockHeight = fullBlock - logoShrink;
+    const total = content - logoShrink;
     // Centred, but never so low that the last row meets the hint at the foot.
-    let top = Math.max(8, Math.min(centredTop(height, blockHeight + gap + listHeight), height - MENU.iconClearBottom - (blockHeight + gap + listHeight)));
+    let top = Math.max(8, Math.min(centredTop(height, total), height - MENU.iconClearBottom - total));
 
-    // Where the logo will stand, so the corner icons can keep clear of it
-    // (0.148): two rows where one would run into it. The title stays centred
-    // (0.149 — 0.148 moved it aside, and the user saw it fall apart): where
-    // two rows still meet the logo, the block goes down under them if the
-    // screen has the room (upright), else the logo is drawn smaller.
     const source = this.textures.get(TEXTURES.logo).getSourceImage() as { width: number; height: number };
     const logoW = Math.min(source.width * logoScale, width - MENU.logoMargin * 2);
-    const logoH = (source.height * logoW) / source.width;
-    const pad = 12;
-    const logoArea = new Phaser.Geom.Rectangle(
-      width / 2 - logoW / 2 - pad,
-      top + (MENU.logoHeight - logoShrink) / 2 - logoH / 2 - pad,
-      logoW + pad * 2,
-      logoH + Math.abs(MENU.logoBobPx) + pad * 2,
-    );
-    // 인벤토리 and 패시브 live in the corner rather than in the list: they are
-    // where you go between runs, not a way out of the title.
-    this.icons = new IconBar(this, [
+    let logoRoom = logoW;
+    if (!below) {
+      // Where the logo will stand, so the corner icons can keep clear of it
+      // (0.148): two rows where one would run into it. The title stays
+      // centred (0.149): where two rows still meet the logo, the block goes
+      // down under them if the screen has the room, else the logo is smaller.
+      const logoH = (source.height * logoW) / source.width;
+      const pad = 12;
+      const logoArea = new Phaser.Geom.Rectangle(
+        width / 2 - logoW / 2 - pad,
+        top + (MENU.logoHeight - logoShrink) / 2 - logoH / 2 - pad,
+        logoW + pad * 2,
+        logoH + Math.abs(MENU.logoBobPx) + pad * 2,
+      );
+      this.icons.layCorner(logoArea);
+      if (Phaser.Geom.Intersects.RectangleToRectangle(this.icons.bounds, logoArea)) {
+        const lower = this.icons.bounds.bottom - logoArea.y;
+        if (top + lower + total <= height - MENU.iconClearBottom) {
+          top += lower;
+        } else {
+          logoRoom = Math.max(logoW * MENU.logoMinScale, 2 * (this.icons.bounds.x - pad - width / 2));
+        }
+      }
+    }
+
+    this.addLogo(width, top + (MENU.logoHeight - logoShrink) / 2, logoRoom);
+    this.placeProphecy(width / 2, top + blockHeight - prophecyRoom + prophecyH / 2);
+
+    const rowY = top + blockHeight + gap;
+    this.menu = new MenuList(this, {
+      keysElsewhere: () => this.icons?.hasFocus === true,
+      x: width / 2,
+      y: rowY + rowHeight / 2,
+      rowHeight,
+      rowGap: tight ? MENU.buttonGapTight : MENU.buttonGap,
+      // 불러오기 went in 0.150 (the user's ask): 게임 시작 asks, when there is
+      // a saved run, whether to carry on with it or start a new one.
+      items: [{ id: 'start', label: () => t().menu.start, onSelect: () => this.onStart() }],
+    });
+    if (below) {
+      this.icons.layCentred(width / 2, rowY + rowHeight + MENU.iconsGap, width - 32);
+    }
+
+    const hint = this.add
+      .text(
+        width / 2,
+        height - 26,
+        prefersTouchControls() ? t().menu.hintTouch : t().menu.hintKeyboard,
+        { fontFamily: 'system-ui, sans-serif', fontSize: TEXT.size.hint, color: COLORS.muted },
+      )
+      .setOrigin(0.5)
+      .setDepth(DEPTH.ui);
+    // A phone lying down has the icons down to its foot: the hint gives way to them.
+    if (below && this.icons.bounds.bottom > hint.y - hint.displayHeight / 2) {
+      hint.setVisible(false);
+    }
+  }
+
+  /** The title's icons, in the order they are laid. */
+  private titleIcons(): IconButton[] {
+    return [
       {
         id: 'gear',
         texture: TEXTURES.gear,
@@ -298,34 +387,22 @@ export class MenuScene extends Phaser.Scene {
         spotlight: () => Date.now() < ICON_SPOTLIGHT.passives,
         onSelect: () => this.openOverlay(SCENES.passives),
       },
+      { id: 'ranking', texture: TEXTURES.trophy, label: () => t().ranking.icon, onSelect: () => this.openOverlay(SCENES.ranking) },
+      { id: 'filter', texture: TEXTURES.filter, label: () => t().filter.icon, onSelect: () => this.openOverlay(SCENES.filter) },
+      { id: 'autoPick', texture: TEXTURES.battlePlan, label: () => t().autoPick.icon, onSelect: () => this.openOverlay(SCENES.autoPick) },
       {
-        id: 'ranking',
-        texture: TEXTURES.trophy,
-        label: () => t().ranking.icon,
-        onSelect: () => this.openOverlay(SCENES.ranking),
+        id: 'settings',
+        texture: TEXTURES.settings,
+        // Always "Settings", like the Language row it leads to — while there
+        // is one to find (LOCALE.choosable); in the game's own words until then.
+        label: () => (LOCALE.choosable ? 'Settings' : t().menu.settings),
+        onSelect: () => this.openOverlay(SCENES.settings, { allowLanguage: true }),
       },
-      {
-        id: 'filter',
-        texture: TEXTURES.filter,
-        label: () => t().filter.icon,
-        onSelect: () => this.openOverlay(SCENES.filter),
-      },
-      {
-        id: 'autoPick',
-        texture: TEXTURES.battlePlan,
-        label: () => t().autoPick.icon,
-        onSelect: () => this.openOverlay(SCENES.autoPick),
-      },
+      { id: 'guide', texture: TEXTURES.guide, label: () => t().menu.guideIcon, onSelect: () => this.openOverlay(SCENES.info, { topic: 'guide' }) },
+      { id: 'patch', texture: TEXTURES.patchNotes, label: () => t().menu.patchIcon, onSelect: () => this.openOverlay(SCENES.info, { topic: 'patch' }) },
       // 밸런스: the admin's dials, and no one else's.
       ...(devToolsAllowed()
-        ? [
-            {
-              id: 'tuning',
-              texture: TEXTURES.tuning,
-              label: () => t().tuning.icon,
-              onSelect: () => this.openOverlay(SCENES.tuning),
-            },
-          ]
+        ? [{ id: 'tuning', texture: TEXTURES.tuning, label: () => t().tuning.icon, onSelect: () => this.openOverlay(SCENES.tuning) }]
         : []),
       ...(ACCOUNT.enabled
         ? [
@@ -339,80 +416,12 @@ export class MenuScene extends Phaser.Scene {
             },
           ]
         : []),
-    ], logoArea);
-    let logoRoom = logoW;
-    if (Phaser.Geom.Intersects.RectangleToRectangle(this.icons.bounds, logoArea)) {
-      const lower = this.icons.bounds.bottom - logoArea.y;
-      if (top + lower + blockHeight + gap + listHeight <= height - MENU.iconClearBottom) {
-        top += lower;
-      } else {
-        logoRoom = Math.max(logoW * MENU.logoMinScale, 2 * (this.icons.bounds.x - pad - width / 2));
-      }
-    }
+    ];
+  }
 
-    const logo = this.addLogo(width, top + (MENU.logoHeight - logoShrink) / 2, logoRoom);
-    if (prophesied) {
-      const { width: plateW, height: plateH, minCornerWidth } = MENU.prophecy;
-      const side = (width - logo.displayWidth) / 2 - 24;
-      if (tall) {
-        this.prophecySpot = { x: width / 2, y: top + blockHeight - plateH / 2, w: Math.min(width - 32, plateW), plate: true };
-      } else if (side >= minCornerWidth) {
-        // Short and wide: beside the logo, in the top-left corner.
-        const w = Math.min(side, plateW);
-        this.prophecySpot = { x: 16 + w / 2, y: 16 + plateH / 2, w, plate: true };
-      } else {
-        // No room for a plate: one line in the gap over the first row.
-        this.prophecySpot = { x: width / 2, y: top + blockHeight + gap - MENU.dailyLineAboveRows, w: width - 32, plate: false };
-      }
-    }
-
-    const saved = saveGame.read();
-    this.menu = new MenuList(this, {
-      keysElsewhere: () => this.icons?.hasFocus === true,
-      x: width / 2,
-      y: top + blockHeight + gap + rowHeight / 2,
-      rowHeight,
-      rowGap,
-      items: [
-        { id: 'start', label: () => t().menu.start, onSelect: () => this.onStart() },
-        {
-          id: 'load',
-          label: () => t().menu.load,
-          detail: () => (saved ? saveGame.describe(saved) : t().menu.noSave),
-          enabled: () => saved !== null,
-          onSelect: () => this.startRun(true),
-        },
-        {
-          id: 'settings',
-          // Always "Settings", like the Language row it leads to — while there
-          // is one to find (LOCALE.choosable); in the game's own words until then.
-          label: () => (LOCALE.choosable ? 'Settings' : t().menu.settings),
-          onSelect: () => this.openOverlay(SCENES.settings, { allowLanguage: true }),
-        },
-        {
-          id: 'guide',
-          label: () => t().menu.guide,
-          onSelect: () => this.openOverlay(SCENES.info, { topic: 'guide' }),
-        },
-        {
-          id: 'patch',
-          label: () => t().menu.patch,
-          detail: () => `v${PATCH_NOTES[0]?.version ?? ''}`,
-          onSelect: () => this.openOverlay(SCENES.info, { topic: 'patch' }),
-        },
-      ],
-    });
-
-    this.add
-      .text(
-        width / 2,
-        height - 26,
-        prefersTouchControls() ? t().menu.hintTouch : t().menu.hintKeyboard,
-        { fontFamily: 'system-ui, sans-serif', fontSize: TEXT.size.hint, color: COLORS.muted },
-      )
-      .setOrigin(0.5)
-      .setDepth(DEPTH.ui);
-
+  /** A phone (a finger, or a screen held upright) lays the icons under 게임 시작 (0.150); a desktop keeps the corner. */
+  private static iconsBelow(width: number, height: number): boolean {
+    return prefersTouchControls() || height > width;
   }
 
   /**
