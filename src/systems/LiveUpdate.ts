@@ -16,6 +16,7 @@ import type Phaser from 'phaser';
 
 import { LIVE_UPDATE, SCENES } from '@/config';
 import { ranking } from '@/systems/Ranking';
+import { PLATFORM } from '@/systems/Platform';
 
 declare const __BUILD_ID__: string;
 
@@ -39,9 +40,13 @@ class LiveUpdateStore {
     return this.latest !== null && this.latest !== this.current && this.tried() !== this.latest;
   }
 
-  /** Starts asking. Off on the dev server, where there is no version.json to ask for. */
+  /**
+   * Starts asking. Off on the dev server, where there is no version.json to
+   * ask for, and in the PC build (0.160), which carries its own files and is
+   * updated by its store, not by a reload.
+   */
   public start(): void {
-    if (this.started || this.current === 'dev') {
+    if (this.started || this.current === 'dev' || PLATFORM === 'desktop') {
       return;
     }
     this.started = true;

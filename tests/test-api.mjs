@@ -164,6 +164,53 @@ try {
   check('the account named in ADMIN_USERS is', bossIs.body?.user?.id === 'admin-user' && bossIs.body?.user?.admin === true,
     JSON.stringify(bossIs.body?.user));
 
+  // --- 오류 수집 (0.160): anyone reports, the admin reads, an account comes along when signed in ---
+  const report = (who, over = {}, headers = {}) => (who ? who.call : (p, i) => fetch(`${BASE}${p}`, i))('/api/errors', {
+    method: 'POST', headers: { 'Content-Type': 'application/json', ...headers },
+    body: JSON.stringify({ message: 'TypeError: x is undefined', source: 'index.js:1:2', stack: 'at a\nat b', platform: 'web',
+      build: 'test-build', version: '0.160', scene: 'GameScene', screen: '960x540', lang: 'ko', agent: 'test', ...over }),
+  });
+  const anon = await read(await report(null, { message: 'anonymous error' }));
+  const own = await read(await report(alice, { message: 'alice error' }));
+  const badReport = await read(await report(null, { message: "" }));
+  check('an error report is taken signed in or out, and one with no message is refused',
+    anon.status === 201 && anon.body?.kept === true && own.status === 201 && badReport.status === 400,
+    `${anon.status} ${own.status} ${badReport.status}`);
+  const notAdmin = await read(await alice.call('/api/errors'));
+  const listed = await read(await boss.call('/api/errors'));
+  const mineErr = listed.body?.errors?.find((e) => e.message === 'alice error');
+  const anonErr = listed.body?.errors?.find((e) => e.message === 'anonymous error');
+  check('only the admin reads them, with the account of a signed-in player and none for the rest',
+    notAdmin.status === 403 && listed.status === 200 && mineErr?.userId === who.body?.user?.id && anonErr && anonErr.userId === null &&
+      mineErr.build === 'test-build' && mineErr.scene === 'GameScene',
+    `${notAdmin.status} ${listed.status} ${JSON.stringify(mineErr)}`);
+
+  // --- the PC build (0.160): CORS for app://nox only, and a session as a bearer token ---
+  const preflight = await fetch(`${BASE}/api/errors`, { method: 'OPTIONS', headers: { Origin: 'app://nox', 'Access-Control-Request-Method': 'POST' } });
+  const strange = await fetch(`${BASE}/api/errors`, { method: 'OPTIONS', headers: { Origin: 'https://evil.example', 'Access-Control-Request-Method': 'POST' } });
+  const boardFromApp = await fetch(`${BASE}/api/ranking`, { headers: { Origin: 'app://nox' } });
+  const boardFromElsewhere = await fetch(`${BASE}/api/ranking`, { headers: { Origin: 'https://evil.example' } });
+  check('the PC build’s origin may call the API; no other origin is let in',
+    preflight.status === 204 && preflight.headers.get('access-control-allow-origin') === 'app://nox' &&
+      strange.status === 403 && !strange.headers.get('access-control-allow-origin') &&
+      boardFromApp.ok && boardFromApp.headers.get('access-control-allow-origin') === 'app://nox' &&
+      !boardFromElsewhere.headers.get('access-control-allow-origin'),
+    `${preflight.status} ${strange.status} ${boardFromApp.headers.get('access-control-allow-origin')}`);
+  const token = alice.jar.get('es_session');
+  const asBearer = await read(await fetch(`${BASE}/api/me`, { headers: { Authorization: `Bearer ${token}`, Origin: 'app://nox' } }));
+  const wrongBearer = await read(await fetch(`${BASE}/api/me`, { headers: { Authorization: 'Bearer nonsense' } }));
+  check('a session handed over as a bearer token is the same account, and a made-up one is no one',
+    asBearer.body?.user?.id === who.body?.user?.id && wrongBearer.body?.user === null,
+    `${JSON.stringify(asBearer.body?.user?.id)} ${JSON.stringify(wrongBearer.body?.user)}`);
+
+  let capped = 0;
+  for (let i = 0; i < 80 && !capped; i++) {
+    const one = await read(await report(null, { message: `flood ${i}` }));
+    if (one.body?.kept === false) capped = i + 1;
+  }
+  check('one address cannot fill the table: past its daily share a report is answered and dropped',
+    capped > 0, `dropped from report ${capped}`);
+
   // --- 밸런스: everyone's values, set by the admin only, on the listed paths only ---
   const tuned0 = await read(await fetch(`${BASE}/api/balance`));
   check('everyone’s balance values start empty', tuned0.status === 200 && JSON.stringify(tuned0.body?.overrides) === '{}',

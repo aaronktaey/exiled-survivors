@@ -77,7 +77,7 @@ wrong shape.
 ## The test harness
 
 `tests/` drives a real Chrome over CDP against the dev server and checks the
-running game, not units. 51 suites, all in the run below, ~1500 checks. It is the only thing that has
+running game, not units. 52 suites, all in the run below, ~1500 checks. It is the only thing that has
 caught most of what has gone wrong here, so run all of it before every commit.
 
 ```sh
@@ -91,7 +91,7 @@ node run-all.mjs test-full test-skills test-balance test-chain test-ice \
   test-ranking test-skillpick test-mango test-web test-loadout \
   test-carry test-api test-account test-live test-filter test-mastery \
   test-tuning test-terrain test-chimera test-seal test-gift test-held \
-  test-shard test-village test-daily test-autopick test-i18n test-locale
+  test-shard test-village test-daily test-autopick test-i18n test-locale \n  test-errors
 ```
 
 test-i18n and test-locale came back with the language choice (0.153).
@@ -1312,6 +1312,37 @@ Read `git log` for what changed and when. What is not in the log:
   keys F and R) and two screens: `ForgeScene` reads its mode off its tab —
   `craft` alone, or 낱개/일괄 분해 (`tabs`). 일괄 분해 lays the bases in two
   columns when one would run into the bottom.
+- **The PC build (desktop/, 0.160 — the Steam build before Steamworks).**
+  Electron (`desktop/main.cjs`) serves the built game from `app://nox` out of
+  `desktop/app`; `npm run desktop` opens it from this checkout,
+  `npm run desktop:build` (`desktop/build.mjs`) makes
+  `desktop/release/Nox Survivors <version>.exe` (portable; not on CI, not
+  signed). The build is told by `VITE_PLATFORM=desktop` and
+  `VITE_API_BASE=https://exiledsurvivors.com` (`systems/Platform.ts`:
+  `PLATFORM`, `apiUrl` — every /api call goes through it, so a new one must
+  too). There it has no sign-in (the user's pick: records stay on the PC;
+  Steam sign-in comes with a Steam app id, and so do the overlay and
+  achievements), no live update, and Alt+Enter is full screen (F11 is the
+  game's debug key). The Worker answers `app://nox` with CORS
+  (`CROSS_ORIGINS`, `corsHeaders` in server/http.ts — keep it in step with
+  main.cjs) and takes a session as `Authorization: Bearer` as well as the
+  cookie (`bearer`, `sessionUser`), ready for an app's sign-in.
+- **오류 수집 (0.160, the user's ask).** `systems/ErrorReport.ts` posts an
+  uncaught error or unhandled rejection to `POST /api/errors`
+  (server/errors.ts, D1 table `errors`, migration 0010): message, source,
+  stack, build, version, platform, the scenes running, window size,
+  language, browser — and the account when signed in (the user's pick;
+  cleared by `removeAccount`). Each kind once a page, ten at most; the
+  Worker keeps 30 days and takes 60 a day from one address. Off on the dev
+  server and the harness unless a page sets `window.__errorsOn`
+  (test-errors). `GET /api/errors` is the admin's: open it signed in as the
+  admin, or `npm run db -- "SELECT * FROM errors ORDER BY at DESC LIMIT 20"`.
+  The privacy policy says what is sent; keep it true.
+- **갈무리 is cut too (0.160).** `tools/make-ko-font.py` keeps what src/
+  writes plus printable ASCII and the 2,350 KS X 1001 syllables (a sign-in
+  name still draws), from the full files in `assets-src/fonts/galmuri`
+  (~670 KB → ~130 KB). Rerun it after text in a new character, like the zh
+  tool; test-i18n fails on one left out.
 - **Nox Survivors (0.158, the user's word).** The name changed only where a
   player sees it: the logo, the page `<title>`, the privacy and
   data-deletion pages, the bridge. exiledsurvivors.com, the `exiled-survivors:`

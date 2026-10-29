@@ -3,6 +3,7 @@ import { forfeitLoot } from '@/systems/RunLoot';
 import type { RunLoot } from '@/systems/SaveGame';
 import { account, accountRequest } from '@/systems/Account';
 import { turnstileToken } from '@/systems/Turnstile';
+import { apiUrl } from '@/systems/Platform';
 
 /** One place on the board. */
 export interface RankEntry {
@@ -531,7 +532,7 @@ class RankingStore {
     const controller = typeof AbortController === 'function' ? new AbortController() : undefined;
     const timer = setTimeout(() => controller?.abort(), RANKING.shared.timeoutMs);
     try {
-      const response = await fetch(RANKING.shared.url, {
+      const response = await fetch(apiUrl(RANKING.shared.url), {
         method,
         // Never the browser's copy: an old board kept for hours was what a PC showed.
         cache: 'no-store',

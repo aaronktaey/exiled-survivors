@@ -39,3 +39,8 @@ tests/shots/
 
 # wrangler's local state: the local D1 database and dev caches.
 .wrangler/
+
+# The PC build (desktop/): its dependencies, the game copied in, and the executables.
+desktop/node_modules/
+desktop/app/
+desktop/release/

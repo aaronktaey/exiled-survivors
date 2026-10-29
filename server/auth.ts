@@ -14,6 +14,7 @@
  */
 import type { Env } from './env';
 import {
+  bearer,
   cookie,
   fromBase64Url,
   hex,
@@ -245,7 +246,8 @@ export async function callback(request: Request, env: Env, id: string): Promise<
 
 /** The account this request is signed in as, or null. */
 export async function sessionUser(request: Request, env: Env): Promise<SessionUser | null> {
-  const token = cookie(request, SESSION_COOKIE);
+  // The cookie on the web; an app hands the same session over as a bearer token (0.160).
+  const token = cookie(request, SESSION_COOKIE) ?? bearer(request);
   if (!token) {
     return null;
   }
@@ -310,6 +312,8 @@ export async function removeAccount(env: Env, userId: string): Promise<void> {
     env.DB.prepare('DELETE FROM saves WHERE user_id = ?1').bind(userId),
     env.DB.prepare('DELETE FROM sessions WHERE user_id = ?1').bind(userId),
     env.DB.prepare('DELETE FROM identities WHERE user_id = ?1').bind(userId),
+    // Error reports keep what went wrong, not whose it was any more.
+    env.DB.prepare('UPDATE errors SET user_id = NULL WHERE user_id = ?1').bind(userId),
     env.DB.prepare('DELETE FROM users WHERE id = ?1').bind(userId),
   ]);
 }

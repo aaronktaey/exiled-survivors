@@ -1,0 +1,29 @@
+{
+  "name": "nox-survivors-desktop",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Nox Survivors for PC: the web game in an Electron window (the Steam build, before Steamworks).",
+  "main": "main.cjs",
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder --win portable"
+  },
+  "build": {
+    "appId": "com.whitemango.noxsurvivors",
+    "productName": "Nox Survivors",
+    "files": [
+      "main.cjs",
+      "app/**"
+    ],
+    "directories": {
+      "output": "release"
+    },
+    "win": {
+      "target": "portable"
+    }
+  },
+  "devDependencies": {
+    "electron": "^45.1.0",
+    "electron-builder": "^26.18.0"
+  }
+}

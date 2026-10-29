@@ -7,6 +7,7 @@
  * game draws anything, and kept for the title screen to say.
  */
 import { ACCOUNT } from '@/config';
+import { apiUrl } from '@/systems/Platform';
 
 export type ProviderId = 'google' | 'facebook' | 'twitter' | 'test';
 
@@ -34,7 +35,7 @@ async function request(
   const controller = typeof AbortController === 'function' ? new AbortController() : undefined;
   const timer = setTimeout(() => controller?.abort(), ACCOUNT.timeoutMs);
   try {
-    const response = await fetch(path, { credentials: 'same-origin', ...init, signal: controller?.signal });
+    const response = await fetch(apiUrl(path), { credentials: 'same-origin', ...init, signal: controller?.signal });
     const body: unknown = await response.json().catch(() => null);
     return { ok: response.ok, status: response.status, body };
   } catch {

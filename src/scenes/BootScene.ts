@@ -50,6 +50,7 @@ import { createGlowLogoTexture } from '@/systems/PixelFont';
 import { sfx } from '@/systems/Sfx';
 import { paintEraTextures } from '@/systems/MonsterArt';
 import { pixelateOn, pixelateWorld } from '@/systems/Pixelate';
+import { PLATFORM } from '@/systems/Platform';
 
 
 const GRID_TILE = 64;
@@ -177,6 +178,11 @@ export class BootScene extends Phaser.Scene {
       if (!(window as { __giftOn?: boolean }).__giftOn) {
         ROLLBACK_GIFT.enabled = false;
       }
+    }
+    if (PLATFORM === 'desktop') {
+      // The PC build has no sign-in yet (0.160, the user's pick): its records
+      // stay on the PC, and a Steam sign-in comes with a Steam app id.
+      (ACCOUNT as { enabled: boolean }).enabled = false;
     }
     if (import.meta.env.DEV && (skipMenu || harness)) {
       // And no sign-in: the dev server has no /api of its own unless

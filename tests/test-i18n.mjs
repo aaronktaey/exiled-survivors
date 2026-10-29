@@ -56,6 +56,20 @@ const titleWords = () => ev(`(() => { const m = window.game.scene.getScene('Menu
   check('and has a glyph for every hanzi the game writes', noGlyph.length === 0, noGlyph.join(''));
 }
 
+// --- 0b. 갈무리 is cut to what the source writes too (0.160) ---
+{
+  const written = new Set();
+  for (const file of ['../src/i18n/ko.ts', '../src/i18n/ja.ts', '../src/content/patchNotes.ts', '../src/content/guide.ts']) {
+    for (const c of readFileSync(new URL(file, import.meta.url), 'utf8')) {
+      if (c.codePointAt(0) > 0x7f) written.add(c);
+    }
+  }
+  const kept = new Set(readFileSync(new URL('../assets-src/fonts/galmuri/chars.txt', import.meta.url), 'utf8'));
+  const missing = [...written].filter((c) => !kept.has(c));
+  check('갈무리 was cut after the last text in a new character (python tools/make-ko-font.py)',
+    missing.length === 0, missing.join(''));
+}
+
 await ev(`(() => { localStorage.clear(); return 1; })()`);
 await load();
 await ev(`(() => {

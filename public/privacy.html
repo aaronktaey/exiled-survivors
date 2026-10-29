@@ -19,7 +19,7 @@
   <body>
     <main>
       <h1>개인정보처리방침</h1>
-      <p class="muted">Nox Survivors · 시행일 2026-10-15 · <a href="#en">English below</a></p>
+      <p class="muted">Nox Survivors · 시행일 2026-10-29 · <a href="#en">English below</a></p>
 
       <p>Nox Survivors(이하 "게임")는 로그인 없이도 플레이할 수 있습니다. 로그인은 선택이며, 로그인하면 기록을 서버에 보관해 다른 기기에서도 이어서 할 수 있고 랭킹에 기록을 올릴 수 있습니다. 이 방침은 게임이 어떤 정보를 왜, 얼마나 보관하는지 설명합니다.</p>
 
@@ -28,7 +28,8 @@
         <li><strong>로그인 정보</strong> — 선택한 로그인 서비스(Google, Facebook, X)의 계정 고유 식별자와 표시 이름(닉네임). 이메일, 전화번호, 친구 목록, 프로필 사진은 요청하지 않으며 수집하지 않습니다.</li>
         <li><strong>게임 기록</strong> — 로그인한 경우, 브라우저에 저장된 게임 기록(장비, 패시브, 구슬, 뼈다귀, 저장된 판, 설정)의 사본.</li>
         <li><strong>랭킹 기록</strong> — 랭킹에 올린 기록의 이름(영문 3글자), 이모지, 국기, 피해량, 레벨, 생존 시간, 메인 스킬, 등록 시각. 그리고 그 판의 내역(게임 버전, 적 종류별 처치 수, 사용한 뼈다귀, 장비, 스킬과 레벨, 패시브, 저장 후 이어서 했는지 여부) — 비정상 기록을 가려내는 데만 쓰이며 다른 플레이어에게는 보이지 않습니다.</li>
-        <li><strong>부정 방지 정보</strong> — 랭킹 등록 시 접속 IP 주소를 비밀 값과 섞어 되돌릴 수 없게 만든 해시. 원래 IP 주소는 저장하지 않습니다.</li>
+        <li><strong>오류 보고</strong> — 게임에서 처리되지 않은 오류가 나면 자동으로 보내는 보고: 오류 메시지, 오류가 난 코드 위치, 게임 버전, 열려 있던 화면, 창 크기, 언어 설정, 브라우저 정보(User-Agent). 로그인한 경우 계정 식별자가 함께 남습니다. 게임 기록이나 입력한 내용은 담기지 않습니다.</li>
+        <li><strong>부정 방지 정보</strong> — 랭킹 등록과 오류 보고 시 접속 IP 주소를 비밀 값과 섞어 되돌릴 수 없게 만든 해시. 원래 IP 주소는 저장하지 않습니다.</li>
         <li><strong>쿠키</strong> — 로그인 상태를 유지하는 세션 쿠키(최대 60일)와, 로그인 과정에서만 쓰는 임시 쿠키(10분). 광고·추적 쿠키는 쓰지 않습니다.</li>
       </ul>
       <p>로그인하지 않은 경우의 게임 기록은 사용자의 브라우저에만 저장되며 서버로 전송되지 않습니다.</p>
@@ -38,10 +39,11 @@
         <li>로그인 상태 유지와 계정 확인</li>
         <li>기기 간 게임 기록 동기화</li>
         <li>랭킹 운영, 그리고 자동 등록·조작 같은 부정 이용 방지</li>
+        <li>게임 오류의 원인 파악과 수정</li>
       </ul>
 
       <h2>3. 보관 기간과 파기</h2>
-      <p>정보는 계정을 삭제할 때까지 보관하며, 삭제하면 계정, 로그인 연결, 게임 기록 사본, 랭킹 기록을 즉시 파기합니다. 세션은 최대 60일 뒤 만료됩니다.</p>
+      <p>정보는 계정을 삭제할 때까지 보관하며, 삭제하면 계정, 로그인 연결, 게임 기록 사본, 랭킹 기록을 즉시 파기합니다. 세션은 최대 60일 뒤 만료됩니다. 오류 보고는 30일 뒤 자동으로 지워지며, 계정을 삭제하면 그 계정의 오류 보고에서 계정 식별자를 지웁니다.</p>
 
       <h2>4. 제3자 제공과 처리 위탁</h2>
       <p>개인정보를 제3자에게 판매하거나 제공하지 않습니다. 게임의 서버, 데이터베이스, 자동화 방지(Turnstile)는 Cloudflare, Inc.가 운영하는 인프라에서 처리됩니다. 로그인 과정에서는 사용자가 선택한 로그인 서비스의 개인정보처리방침이 함께 적용됩니다.</p>
@@ -58,7 +60,7 @@
       <hr />
 
       <h1 id="en">Privacy Policy</h1>
-      <p class="muted">Nox Survivors · Effective 2026-10-15</p>
+      <p class="muted">Nox Survivors · Effective 2026-10-29</p>
 
       <p>Nox Survivors (the "game") can be played without signing in. Signing in is optional: it keeps your records on the server so you can continue on another device, and lets you put runs on the ranking. This policy explains what the game keeps, why, and for how long.</p>
 
@@ -67,7 +69,8 @@
         <li><strong>Sign-in information</strong> — the unique account identifier and display name from the sign-in service you choose (Google, Facebook, X). We do not request or collect email addresses, phone numbers, friend lists or profile pictures.</li>
         <li><strong>Game records</strong> — if you sign in, a copy of the game records kept in your browser (gear, passives, orbs, bones, saved run, settings).</li>
         <li><strong>Ranking records</strong> — for runs you put on the ranking: a three-letter name, emoji, flag, damage, level, time survived, main skill and when it was set; and that run's detail (game version, kills by enemy kind, the bones used, the weapon, skills and their levels, passives, and whether it was resumed from a save), used only to spot records that are out of line and never shown to other players.</li>
-        <li><strong>Abuse prevention</strong> — when you submit to the ranking, a one-way hash of your IP address mixed with a secret value. The IP address itself is not stored.</li>
+        <li><strong>Error reports</strong> — when the game hits an error it did not handle, it sends a report on its own: the error message, where in the code it happened, the game version, the screens that were open, the window size, the language setting and your browser (User-Agent). If you are signed in, your account identifier is kept with it. Reports never contain your game records or anything you typed.</li>
+        <li><strong>Abuse prevention</strong> — when you submit to the ranking or an error report is sent, a one-way hash of your IP address mixed with a secret value. The IP address itself is not stored.</li>
         <li><strong>Cookies</strong> — a session cookie that keeps you signed in (up to 60 days), and a temporary cookie used only during sign-in (10 minutes). No advertising or tracking cookies.</li>
       </ul>
       <p>If you do not sign in, your game records stay in your browser only and are never sent to the server.</p>
@@ -77,10 +80,11 @@
         <li>Keeping you signed in and identifying your account</li>
         <li>Syncing your game records between devices</li>
         <li>Running the ranking and preventing automated or fraudulent entries</li>
+        <li>Finding and fixing what goes wrong in the game</li>
       </ul>
 
       <h2>3. Retention and deletion</h2>
-      <p>Data is kept until you delete your account. Deleting it immediately removes the account, its sign-in links, the copy of your game records and your ranking records. Sessions expire after at most 60 days.</p>
+      <p>Data is kept until you delete your account. Deleting it immediately removes the account, its sign-in links, the copy of your game records and your ranking records. Sessions expire after at most 60 days. Error reports are deleted automatically after 30 days, and deleting your account removes your account identifier from its error reports.</p>
 
       <h2>4. Sharing and processors</h2>
       <p>We do not sell or share personal data with third parties. The game's servers, database and bot protection (Turnstile) run on infrastructure operated by Cloudflare, Inc. During sign-in, the privacy policy of the sign-in service you chose also applies.</p>

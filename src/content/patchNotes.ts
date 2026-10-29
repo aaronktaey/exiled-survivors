@@ -15,6 +15,28 @@ export interface PatchNote {
 
 export const PATCH_NOTES: readonly PatchNote[] = [
   {
+    version: '0.160',
+    date: '2026-10-29',
+    changes: {
+      ko: [
+        '첫 로딩이 빨라졌습니다. 한글·일본어 글꼴 파일을 약 670 KB에서 130 KB로 줄였습니다.',
+        '게임에서 오류가 나면 자동으로 보고되어 더 빨리 고칠 수 있습니다. 무엇을 보내는지는 개인정보처리방침에 적었습니다.',
+      ],
+      en: [
+        'The first load is faster: the Korean and Japanese font files went from about 670 KB to 130 KB.',
+        'When the game hits an error it now reports it on its own, so it can be fixed sooner. The privacy policy says what is sent.',
+      ],
+      ja: [
+        '最初の読み込みが速くなりました。韓国語・日本語のフォントファイルを約 670 KB から 130 KB に減らしました。',
+        'ゲームでエラーが起きると自動で報告され、より早く直せるようになりました。送る内容はプライバシーポリシーに記しています。',
+      ],
+      zh: [
+        '首次加载更快了：韩文和日文字体文件从约 670 KB 缩减到 130 KB。',
+        '游戏出错时会自动上报，以便更快修复。上报的内容写在隐私政策中。',
+      ],
+    },
+  },
+  {
     version: '0.159',
     date: '2026-10-29',
     changes: {

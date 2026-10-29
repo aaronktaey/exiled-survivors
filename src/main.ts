@@ -55,6 +55,7 @@ import {
   SkillPickScene,
   PodiumScene,
 } from '@/scenes';
+import { installErrorReport } from '@/systems/ErrorReport';
 
 // What nothing reads any more goes, so it is not synced about for ever.
 for (const key of RETIRED_STORAGE) {
@@ -146,6 +147,8 @@ window.visualViewport?.addEventListener('resize', () => game.scale.refresh());
 
 // Asks, now and then, whether a newer version is out (never on the dev server).
 liveUpdate.start();
+// What breaks on a player's device is sent to the server (0.160; not on the dev server).
+installErrorReport(() => game);
 // Everyone's 밸런스 values, laid over balance.ts before the first run; and the
 // admin's own draft over those once the account says it is the admin's.
 void tuning.load(game);
