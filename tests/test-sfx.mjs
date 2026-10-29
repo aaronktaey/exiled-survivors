@@ -300,6 +300,22 @@ check('loud enough to notice',
   horn.played.find(x => x.key === 'sfx-boss-alert')?.volume === 0.6,
   `volume=${horn.played.find(x => x.key === 'sfx-boss-alert')?.volume}`);
 
+// --- 10. a choice coming up mid-run (0.157) ---
+await run(`
+  window.__played = [];
+  const mgr = s.sound;
+  window.__origPlay = mgr.play.bind(mgr);
+  mgr.play = (key, cfg) => { window.__played.push(key); return window.__origPlay(key, cfg); };
+  s.player.setInvulnerable(true);
+  s.progression.addXp(s.progression.xpToNext);
+  return 1;
+`);
+const chime = await cdp.until(`window.game.scene.isActive('UpgradeScene') && window.__played.includes('sfx-choice') ? window.__played.slice() : null`, 5000, 100);
+await run(`s.sound.play = window.__origPlay; return 1;`);
+console.log('choice:', JSON.stringify(chime));
+check('a level-up\'s cards come up on the choice chime',
+  Array.isArray(chime) && chime.filter(k => k === 'sfx-choice').length === 1,
+  JSON.stringify(chime));
 
 console.log('\n=== SUMMARY ===');
 const failed = results.filter((r) => !r.p);

@@ -46,7 +46,6 @@ export const SCENES = {
   orb: "OrbScene",
   bones: "BoneScene",
   passives: "PassiveScene",
-  slot: "SlotScene",
   ranking: "RankingScene",
   skillPick: "SkillPickScene",
   rankEntry: "RankEntryScene",
@@ -455,18 +454,14 @@ export const AUDIO = {
     volume: 0.6,
   },
   /**
-   * The 슬롯머신, as one file in two parts: the spin (a seamless loop, for as
-   * long as the reel turns) and the clunk when 확정 is pressed. Mixed from
-   * the slotrunning and slotending clips in assets-src/slot by
-   * tools/mix-slot.py, which prints these offsets — re-run it and copy them
-   * here if the clips change. The jackpot clips there are kept for later.
+   * A choice coming up mid-run (0.157, the user's ask): a level-up's cards,
+   * a 무작위 스킬's, a 재능의 파편's — and the same when 전술 교본 takes it
+   * for the player. Not the run's first skill. Levelled to sit with the drops.
    */
-  slot: {
-    key: 'sfx-slot',
-    file: 'assets/slot.mp3',
-    volume: 0.5,
-    run: { start: 0, duration: 3.5 },
-    stop: { start: 3.8, duration: 0.8 },
+  choice: {
+    key: 'sfx-choice',
+    file: 'assets/powerUp.mp3',
+    volume: 0.3,
   },
 } as const;
 

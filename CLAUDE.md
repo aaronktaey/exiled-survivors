@@ -75,7 +75,7 @@ wrong shape.
 ## The test harness
 
 `tests/` drives a real Chrome over CDP against the dev server and checks the
-running game, not units. 52 suites, all in the run below, ~1500 checks. It is the only thing that has
+running game, not units. 51 suites, all in the run below, ~1500 checks. It is the only thing that has
 caught most of what has gone wrong here, so run all of it before every commit.
 
 ```sh
@@ -85,7 +85,7 @@ node run-all.mjs test-full test-skills test-balance test-chain test-ice \
   test-void test-enemies test-rare test-boss test-potion test-sfx test-perf \
   test-hud test-expiry test-audio test-touch test-shell test-shell2 test-info \
   test-gear test-passive test-responsive test-stats test-bones \
-  test-altar test-slot test-inventory test-back test-fugitive \
+  test-altar test-inventory test-back test-fugitive \
   test-ranking test-skillpick test-mango test-web test-loadout \
   test-carry test-api test-account test-live test-filter test-mastery \
   test-tuning test-terrain test-chimera test-seal test-gift test-held \
@@ -228,13 +228,6 @@ Read `git log` for what changed and when. What is not in the log:
   choice off (`#run`, the harness) a run starts on `UNSPUN_SKILL` (타격) so
   suites have something deterministic. A 무작위 스킬 on the ground opens the
   same three cards; taking one already held queues its upgrade next.
-- **The slot sound is one file in two parts** (`AUDIO.slot`: run / stop),
-  levelled quiet on purpose — the user found the first mix far too loud.
-  `tools/mix-slot.py` rebuilds `public/assets/slot.mp3` from
-  `assets-src/slot` and prints the offsets to copy into config. The jackpot
-  clips in `assets-src/slot` are kept for later: do not use or delete them
-  (their copies in `public/assets` went in 0.109, with everything else the
-  game did not load).
 - **Every other language is checked for Korean.** Data tables are written in
   Korean and a locale renames what it knows (`names.*`); `test-locale` walks
   every screen in en/ja/zh and fails on any Hangul left on it. A new name,
@@ -264,11 +257,13 @@ Read `git log` for what changed and when. What is not in the log:
   ordinary kills leave one at `ALTAR.fromKill`, and a 제단 can call up 우두머리, which leave 제단. It is opt-in — nothing
   happens until the survivor walks up — so it is not capped. An altar arms only
   after the survivor has been outside its radius once.
-- **The 슬롯머신 is generic, and unused for now.** `SlotScene` takes labels,
-  icons, an optional `choose()` and an `onResult(index)`; `SlotReel` is the
-  reel on its own. Runs no longer start on it (that is three cards now); it
-  is kept for the equipment work the user has in mind. Phaser 4 has no
-  `setMask` under WebGL — the reel fades its edges instead of clipping them.
+- **No 슬롯머신 since 0.157 (the user's word).** `SlotScene`, `SlotReel`, its
+  sound and test-slot went; they are in git (9ebde06 and before) if a reel is
+  ever wanted again. Runs start on three cards (`SkillPickScene`).
+- **A choice mid-run chimes (0.157).** `sfx.playChoice` (`AUDIO.choice`,
+  powerUp.mp3) before every in-run `chooseForPlayer` — a level-up, a 무작위
+  스킬, a 재능의 파편 — whether the cards show or 전술 교본 takes it; the
+  run's first skill is silent. A new kind of mid-run choice should chime too.
 - **What the harness switches off.** `cdp-lib` marks every page with
   `window.__harness`, and on the dev server that (or `#run`) turns off
   `SKILL_PICK.atRunStart`, `RANKING.promptOnDeath` and `RANKING.shared` —
@@ -1016,7 +1011,7 @@ Read `git log` for what changed and when. What is not in the log:
   clock. Pointing at one opens the skills' card and the same hold
   (`Hud.pointEffect`). A new buff or debuff is one more push there.
 - **효과음 음량.** `settings.sfxVolume` scales every effect through
-  `effectVolume()` in Sfx.ts — skills, drops, the horn, the slot, the
+  `effectVolume()` in Sfx.ts — skills, drops, the horn, the choice chime, the
   인벤토리's. A new sound that bypasses it ignores the player's setting.
 - **자석 takes everything at once.** Picking one up calls
   `CombatSystem.collectEverything`, which runs each gem and item through its
@@ -1088,8 +1083,8 @@ Read `git log` for what changed and when. What is not in the log:
   (CC0 or CC BY 4.0 — a CC BY one owes its author a line in 제작자 정보: the
   효과음 row, `credits.roleSfx`, 0.156), the user's rule;
   `public/assets/CREDITS.txt` lists every clip, its use, and its source and
-  licence where known (normalDrop, extremeRareDrop, the 키메라's hydra and the
-  slot's three are still unrecorded — ask the user before guessing). The
+  licence where known (only the 키메라's hydra is still unrecorded — ask the user
+  before guessing). The
   pictures are all drawn by code: the swords, the 경험치 보석, the 화염구
   shot, the skill orb, the 체력 포션 (a green flask since 0.110 — the red
   square read as an enemy bolt) and four skills' icons are 16x16 grids in

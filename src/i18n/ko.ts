@@ -647,14 +647,6 @@ export const ko: Strings = {
     hintTouch: '원하는 카드를 누르세요',
   },
 
-  slot: {
-    startTitle: '시작 스킬',
-    startSubtitle: '이번 판에 가지고 들어갈 스킬 하나',
-    confirm: '확정',
-    hintKeyboard: 'Space 또는 Enter로 확정',
-    hintTouch: '확정을 눌러 멈추기',
-    won: '{skill} 획득',
-  },
 
   upgrade: {
     levelUp: 'LEVEL UP',

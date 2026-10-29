@@ -28,11 +28,20 @@ bossAlert.mp3          a 우두머리 (고대병기) arriving
     "Creature Scurry" by RyanTheBlockhead, CC0
     https://freesound.org/people/RyanTheBlockhead/sounds/872940/
 chainLightening1.mp3   연쇄번개 and 낙뢰
-    "Sound Design Impact 2" by CAT-FOX_ALEX, CC0
-    https://freesound.org/people/CAT-FOX_ALEX/sounds/872155/
+    "Sound Design Impact 1" by CAT-FOX_ALEX, CC0
+    https://freesound.org/people/CAT-FOX_ALEX/sounds/871710/
+normalDrop.mp3         an ordinary drop landing
+    "sfx_rpg_ui_back" by MATUSTRM, CC0
+    https://freesound.org/people/MATUSTRM/sounds/848973/
 magicDrop.mp3          a 마법 / 희귀 drop landing, an awakening, a 합성 success
     "Unsheathe (Fantasy UI SFX Free)" by heyheytheree, CC BY 4.0
     https://freesound.org/people/heyheytheree/sounds/872699/
+extremeRareDrop.mp3    the rarest drops (cut from assets-src/drops/extremeRareDrop.ogg)
+    "Unsheathed blade" by deleted_user_2906614, CC0
+    https://freesound.org/people/deleted_user_2906614/sounds/320521/
+powerUp.mp3            a choice coming up mid-run (from assets-src/sfx/powerUp.wav)
+    "Upgrade/Powerup Sound Effect" by hotpin7, CC0
+    https://freesound.org/people/hotpin7/sounds/875131/
 rareDrop.mp3           a 신화 drop landing, two recordings mixed down to one:
     "bulletcasing1" by LittleLuigi, CC BY 4.0
     https://freesound.org/people/LittleLuigi/sounds/873127/
@@ -41,15 +50,8 @@ rareDrop.mp3           a 신화 drop landing, two recordings mixed down to one:
     https://freesound.org/people/TommasoMotteran/sounds/853303/
 
 Source not yet recorded (to be filled in):
-normalDrop.mp3         an ordinary drop landing (a sound by MATUSTRM,
-                       https://freesound.org/people/MATUSTRM/ — its own page
-                       has since been taken down; licence to be confirmed)
-extremeRareDrop.mp3    the rarest drops (cut from assets-src/drops/extremeRareDrop.ogg)
 chimera*.mp3           the 키메라: appear, cast, death (cut from assets-src/chimera/hydra.mp3
                        by tools/make-chimera-sfx.py)
-slot.mp3               the 슬롯머신 (mixed from assets-src/slot by tools/mix-slot.py:
-                       slotrunning.mp3, slotrunning2.wav, slotending.mp3)
-(assets-src/slot/jackpot*.wav are not shipped.)
 
 Pictures
 --------

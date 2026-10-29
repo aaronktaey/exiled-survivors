@@ -643,14 +643,6 @@ export const en: Strings = {
     hintTouch: 'Tap the card you want',
   },
 
-  slot: {
-    startTitle: 'Starting skill',
-    startSubtitle: 'One skill to take into this run',
-    confirm: 'Stop',
-    hintKeyboard: 'Space or Enter to stop',
-    hintTouch: 'Tap Stop to stop the reel',
-    won: '{skill} acquired',
-  },
 
   upgrade: {
     levelUp: 'LEVEL UP',

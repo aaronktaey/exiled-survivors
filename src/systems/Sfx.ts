@@ -29,12 +29,12 @@ const readyAt = new Map<SkillId, number>();
  * once a second does not turn into a metronome.
  */
 export const sfx = {
-  /** Queues every skill clip, and the boss horn. Called from BootScene. */
+  /** Queues every skill clip, the boss horn and the choice chime. Called from BootScene. */
   preload(scene: Phaser.Scene): void {
     const base = import.meta.env.BASE_URL;
 
     scene.load.audio(AUDIO.bossAlert.key, `${base}${AUDIO.bossAlert.file}`);
-    scene.load.audio(AUDIO.slot.key, `${base}${AUDIO.slot.file}`);
+    scene.load.audio(AUDIO.choice.key, `${base}${AUDIO.choice.file}`);
 
     for (const [skill, clip] of Object.entries(AUDIO.skills)) {
       if (!clip) {
@@ -112,30 +112,13 @@ export const sfx = {
     scene.sound.play(AUDIO.bossAlert.key, { volume: effectVolume(AUDIO.bossAlert.volume) });
   },
 
-  /**
-   * The 슬롯머신's spin: one section of the slot file, looping, handed back
-   * so the reel can fade it when it stops. Null when the file did not load.
-   */
-  startSlotSpin(scene: Phaser.Scene): Phaser.Sound.BaseSound | null {
-    const clip = AUDIO.slot;
-    if (!scene.cache.audio.exists(clip.key)) {
-      return null;
-    }
-
-    const spin = scene.sound.add(clip.key, { volume: effectVolume(clip.volume) });
-    spin.addMarker({ name: 'run', ...clip.run, config: { loop: true, volume: effectVolume(clip.volume) } });
-    spin.play('run');
-    return spin;
-  },
-
-  /** The slot file's one-shot: the clunk on 확정. */
-  playSlot(scene: Phaser.Scene, part: 'stop'): void {
-    const clip = AUDIO.slot;
-    if (!scene.cache.audio.exists(clip.key)) {
+  /** A choice coming up mid-run, shown or taken by 전술 교본. */
+  playChoice(scene: Phaser.Scene): void {
+    if (!scene.cache.audio.exists(AUDIO.choice.key)) {
       return;
     }
 
-    scene.sound.play(clip.key, { name: part, ...clip[part], config: { volume: effectVolume(clip.volume) } });
+    scene.sound.play(AUDIO.choice.key, { volume: effectVolume(AUDIO.choice.volume) });
   },
 
   /** A random variant, avoiding an immediate repeat when there is a choice. */

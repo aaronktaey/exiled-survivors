@@ -643,14 +643,6 @@ export const zh: Strings = {
     hintTouch: '点击想要的卡片',
   },
 
-  slot: {
-    startTitle: '初始技能',
-    startSubtitle: '本局带入的一个技能',
-    confirm: '确定',
-    hintKeyboard: '按 Space 或 Enter 确定',
-    hintTouch: '点击确定停下',
-    won: '获得 {skill}',
-  },
 
   upgrade: {
     levelUp: 'LEVEL UP',

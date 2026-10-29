@@ -1538,6 +1538,8 @@ export class GameScene extends Phaser.Scene {
       onPick: (upgrade) => this.onUpgradePicked(request.skill, upgrade as UpgradeId),
     };
     const labels = new Map(options.map((option) => [option.id, option.label]));
+    // A choice mid-run chimes, shown or taken by 전술 교본 (0.157); the first skill does not.
+    sfx.playChoice(this);
     if (this.chooseForPlayer('upgrades', options.map((option) => option.id), data.onPick, (id) => `${skillName(request.skill)} ${labels.get(id) ?? id}`)) {
       return;
     }
@@ -1578,6 +1580,7 @@ export class GameScene extends Phaser.Scene {
         this.afterChoice();
       },
     };
+    sfx.playChoice(this);
     if (this.chooseForPlayer('skills', options, data.onPick, skillName)) {
       return;
     }
@@ -1669,6 +1672,7 @@ export class GameScene extends Phaser.Scene {
         this.afterChoice();
       },
     };
+    sfx.playChoice(this);
     if (this.chooseForPlayer('shards', picks, data.onPick)) {
       return;
     }

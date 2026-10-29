@@ -643,14 +643,6 @@ export const ja: Strings = {
     hintTouch: '欲しいカードを押してください',
   },
 
-  slot: {
-    startTitle: '開始スキル',
-    startSubtitle: 'この回に持ち込むスキルをひとつ',
-    confirm: '決定',
-    hintKeyboard: 'Space または Enter で決定',
-    hintTouch: '決定を押して止める',
-    won: '{skill} を獲得',
-  },
 
   upgrade: {
     levelUp: 'LEVEL UP',

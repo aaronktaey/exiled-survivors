@@ -15,6 +15,24 @@ export interface PatchNote {
 
 export const PATCH_NOTES: readonly PatchNote[] = [
   {
+    version: '0.157',
+    date: '2026-10-29',
+    changes: {
+      ko: [
+        '판 도중 레벨업·무작위 스킬·재능의 파편 선택지가 나오면 효과음이 납니다. 전술 교본이 대신 고를 때도 납니다.',
+      ],
+      en: [
+        'A sound now plays when a choice comes up mid-run (a level-up, a Random Skill or a Talent Shard), also when the Battle Plan picks for you.',
+      ],
+      ja: [
+        'プレイ中にレベルアップ・ランダムスキル・才能の欠片の選択肢が出ると効果音が鳴ります。作戦書が代わりに選ぶときも鳴ります。',
+      ],
+      zh: [
+        '对局中出现升级、随机技能或天赋碎片的选项时会播放音效，作战手册代为选择时也会播放。',
+      ],
+    },
+  },
+  {
     version: '0.156',
     date: '2026-10-29',
     changes: {
