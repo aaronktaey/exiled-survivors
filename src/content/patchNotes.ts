@@ -15,6 +15,28 @@ export interface PatchNote {
 
 export const PATCH_NOTES: readonly PatchNote[] = [
   {
+    version: '0.158',
+    date: '2026-10-29',
+    changes: {
+      ko: [
+        '게임 이름이 Nox Survivors로 바뀌었습니다. 새 로고와 함께, 타이틀 배경이 별이 반짝이는 밤하늘이 되었습니다.',
+        '메뉴 화면의 강조색이 빨강에서 보라로 바뀌고, 패널과 버튼이 로고에 맞춘 남보라 톤이 되었습니다. 화면 제목과 선택한 버튼에는 보랏빛 빛무리가 생깁니다.',
+      ],
+      en: [
+        'The game is now called Nox Survivors. With the new logo, the title screen is a starry night sky.',
+        'Menus take the logo’s colours: the accent is violet instead of red, panels and buttons are indigo, and screen titles and the button in focus glow violet.',
+      ],
+      ja: [
+        'ゲーム名が Nox Survivors に変わりました。新しいロゴとともに、タイトル画面の背景が星のまたたく夜空になりました。',
+        'メニュー画面の強調色が赤から紫に変わり、パネルとボタンがロゴに合わせた藍紫のトーンになりました。画面のタイトルと選んだボタンには紫の光が灯ります。',
+      ],
+      zh: [
+        '游戏更名为 Nox Survivors。随新标志一起，标题画面的背景换成了繁星闪烁的夜空。',
+        '菜单画面的强调色由红色改为紫色，面板和按钮改为与标志相配的靛紫色调。画面标题和选中的按钮会发出紫色光晕。',
+      ],
+    },
+  },
+  {
     version: '0.157',
     date: '2026-10-29',
     changes: {

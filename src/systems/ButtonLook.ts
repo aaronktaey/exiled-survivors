@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 
-import { BUTTON_LOOK } from '@/config';
+import { BUTTON_LOOK, COLORS } from '@/config';
 
 /**
  * Every button looks like one you could press (0.141, the user's ask): a
@@ -89,6 +89,15 @@ function raise(rect: Phaser.GameObjects.Rectangle): void {
     under.setDepth(rect.depth - 0.5);
     over.setDepth(rect.depth + 0.5);
 
+    // In focus — a menu's row under the cursor, or anything wearing the accent ring — it glows (0.158).
+    const focused = rect.getData('focus') === true || (rect.isStroked && rect.strokeColor === COLORS.accentFill);
+    if (focused) {
+      const { rings, step, alpha } = look.focusGlow;
+      for (let i = 1; i <= rings; i++) {
+        const out = i * step;
+        under.lineStyle(2, COLORS.glow, alpha * (1 - (i - 1) / rings)).strokeRect(b.x - out, b.y - out, b.width + out * 2, b.height + out * 2);
+      }
+    }
     // Its shadow, below it — shorter while pressed, as if it went down.
     const drop = pressed ? 1 : look.shadowDrop;
     under.fillStyle(look.shadow, look.shadowAlpha).fillRect(b.x + 1, b.bottom, b.width - 1, drop);

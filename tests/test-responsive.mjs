@@ -107,7 +107,7 @@ const menu = await ev(`(() => {
     firstY: Math.round(row.panel.y),
     rowBottom: Math.round(row.panel.y + row.panel.height / 2),
     icons: { top: Math.round(b.y), bottom: Math.round(b.bottom), left: Math.round(b.x), right: Math.round(b.right) },
-    logo: Math.round(s.children.list.find(o => o.type === 'Image').displayWidth),
+    logo: Math.round(s.children.list.find(o => o.type === 'Image' && o.texture?.key === window.config.TEXTURES.logo).displayWidth),
   };
 })()`);
 console.log('title:', JSON.stringify(menu));

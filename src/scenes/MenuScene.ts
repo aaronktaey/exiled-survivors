@@ -11,14 +11,13 @@ import {
   previousRankingDay,
   rankingDayStart,
   SCENES,
-  SCRIM,
   TEXT,
   TEXTURES,
   ICON_SPOTLIGHT,
 } from '@/config';
 import { PATCH_NOTES } from '@/content/patchNotes';
 import { dailyRuleText, fill, gearName, t } from '@/i18n';
-import { arenaLookOn, ensureArenaFloor, themeFor } from '@/systems/Arena';
+import { drawNightSky } from '@/systems/NightSky';
 import { dailyRules } from '@/systems/DailyRules';
 import { bgm } from '@/systems/Bgm';
 import { IconBar, type IconButton } from '@/systems/IconBar';
@@ -270,11 +269,9 @@ export class MenuScene extends Phaser.Scene {
 
   /** The title as a list under the logo, with the corner icons — the title everywhere but the village. */
   private buildMenu(width: number, height: number): void {
-    // One of the battle grounds at random each time, as a run lays one (0.141,
-    // the user's ask) — the old grid where 맵 디자인 is off, and on the harness.
-    const floor = arenaLookOn() ? ensureArenaFloor(this, themeFor(Math.floor(Math.random() * 0xffffffff))) : TEXTURES.grid;
-    this.add.tileSprite(0, 0, width, height, floor).setOrigin(0, 0).setDepth(DEPTH.ground);
-    this.add.rectangle(0, 0, width, height, 0x05070b, SCRIM.title).setOrigin(0, 0).setDepth(DEPTH.ground + 1);
+    // A night sky to go with the Nox Survivors logo (0.158, the user's ask; a
+    // battle ground at random from 0.141 until then).
+    drawNightSky(this, width, height);
 
     // Logo, byline, ranking, prophecy, 게임 시작 and the icons under it are one
     // block, centred in whatever is there — on a phone since 0.150, on a PC
@@ -539,7 +536,8 @@ export class MenuScene extends Phaser.Scene {
       repeat: -1,
     });
 
-    const bylineY = y + logo.displayHeight / 2 + 26;
+    // Under the letters, not under the glow round them.
+    const bylineY = y + logo.displayHeight / 2 - MENU.logoGlowPad * logo.scaleY + 26;
     this.add
       .text(width / 2, bylineY, t().menu.byline, {
         fontFamily: 'system-ui, sans-serif',

@@ -40,74 +40,115 @@ const GLYPH_H = 7;
 const LETTER_GAP = 1;
 const LINE_GAP = 2;
 
-export interface PixelTextOptions {
-  /** Side of one pixel, in screen px. */
-  readonly pixel: number;
-  readonly color: number;
-  /** Drawn one pixel down-right, behind the face. Omit for no shadow. */
-  readonly shadow?: number;
-}
-
 const lineWidth = (line: string): number =>
   line.length * (GLYPH_W + LETTER_GAP) - LETTER_GAP;
 
+export interface GlowLogoOptions {
+  /** Side of one unit cell, in screen px. A line's `scale` makes its glyph cells that many units. */
+  readonly pixel: number;
+  readonly face: string;
+  /** The bottom half of a scaled-up line, so its letters read in two tones. */
+  readonly lower: string;
+  /** The drop under every letter, and the colour of the glow. */
+  readonly shade: string;
+  readonly outline: string;
+  /** Blur of the glow, in px; the texture keeps `pad` px of room round the letters for it. */
+  readonly glow: number;
+  readonly pad: number;
+}
+
 /**
- * Bakes `lines` into a texture and returns its size in screen px. Unknown
- * characters are drawn as blanks, which keeps a typo from throwing.
+ * The Nox Survivors logo (0.158, the user's pick of the sheet: C-2 with
+ * a halo): the same 5x7 letters, a line drawn larger by `scale`, a dark
+ * outline round every letter, a drop of `shade` under it, and the whole
+ * thing glowing `shade`. Drawn on a canvas, as the glow is a canvas blur.
  */
-export function createPixelTextTexture(
+export function createGlowLogoTexture(
   scene: Phaser.Scene,
   key: string,
-  lines: readonly string[],
-  options: PixelTextOptions,
+  lines: readonly { readonly text: string; readonly scale: number }[],
+  options: GlowLogoOptions,
 ): { width: number; height: number } {
-  const { pixel, color, shadow } = options;
-  const cellsWide = Math.max(...lines.map(lineWidth));
-  const cellsHigh = lines.length * GLYPH_H + (lines.length - 1) * LINE_GAP;
-  // Room for the shadow, which sits one cell down and right.
-  const pad = shadow === undefined ? 0 : 1;
-
-  const graphics = scene.add.graphics();
-
-  const paint = (fill: number, offset: number): void => {
-    graphics.fillStyle(fill, 1);
-    lines.forEach((line, lineIndex) => {
-      // Centre each line within the widest one.
-      const indent = Math.round((cellsWide - lineWidth(line)) / 2);
-      const top = lineIndex * (GLYPH_H + LINE_GAP);
-
-      [...line.toUpperCase()].forEach((character, charIndex) => {
-        const glyph = GLYPHS[character];
-        if (!glyph) {
-          return;
-        }
-
-        const left = indent + charIndex * (GLYPH_W + LETTER_GAP);
-        glyph.forEach((row, rowIndex) => {
-          [...row].forEach((cell, colIndex) => {
-            if (cell === '1') {
-              graphics.fillRect(
-                (left + colIndex + offset) * pixel,
-                (top + rowIndex + offset) * pixel,
-                pixel,
-                pixel,
-              );
+  const { pixel, pad } = options;
+  const lineUnits = (line: { text: string; scale: number }): number => lineWidth(line.text) * line.scale;
+  const unitsWide = Math.max(...lines.map(lineUnits));
+  const cells: { x: number; y: number; line: number; upper: boolean }[] = [];
+  let top = 0;
+  lines.forEach((line, lineIndex) => {
+    const s = line.scale;
+    const indent = Math.round((unitsWide - lineUnits(line)) / 2);
+    [...line.text.toUpperCase()].forEach((character, charIndex) => {
+      GLYPHS[character]?.forEach((row, rowIndex) => {
+        [...row].forEach((cell, colIndex) => {
+          if (cell !== '1') {
+            return;
+          }
+          for (let dy = 0; dy < s; dy++) {
+            for (let dx = 0; dx < s; dx++) {
+              cells.push({
+                x: indent + (charIndex * (GLYPH_W + LETTER_GAP) + colIndex) * s + dx,
+                y: top + rowIndex * s + dy,
+                line: lineIndex,
+                upper: rowIndex * s + dy < (GLYPH_H * s) / 2,
+              });
             }
-          });
+          }
         });
       });
     });
-  };
+    top += GLYPH_H * s + (lineIndex < lines.length - 1 ? LINE_GAP : 0);
+  });
 
-  if (shadow !== undefined) {
-    paint(shadow, 1);
+  // One unit of outline all round, and one more under for the drop.
+  const unitsHigh = top + 3;
+  const width = (unitsWide + 2) * pixel + pad * 2;
+  const height = unitsHigh * pixel + pad * 2;
+  const art = document.createElement('canvas');
+  art.width = width;
+  art.height = height;
+  const ctx = art.getContext('2d')!;
+  const at = (x: number, y: number): void => ctx.fillRect(pad + (x + 1) * pixel, pad + (y + 1) * pixel, pixel, pixel);
+  const key2 = (x: number, y: number): string => `${x},${y}`;
+  const on = new Set(cells.map((c) => key2(c.x, c.y)));
+
+  ctx.fillStyle = options.outline;
+  const ring = new Set<string>();
+  cells.forEach((c) => {
+    for (let dy = -1; dy <= 2; dy++) {
+      for (let dx = -1; dx <= 1; dx++) {
+        const k = key2(c.x + dx, c.y + dy);
+        if (!on.has(k) && !ring.has(k)) {
+          ring.add(k);
+          at(c.x + dx, c.y + dy);
+        }
+      }
+    }
+  });
+  ctx.fillStyle = options.shade;
+  cells.forEach((c) => {
+    if (!on.has(key2(c.x, c.y + 1))) {
+      at(c.x, c.y + 1);
+    }
+  });
+  cells.forEach((c) => {
+    ctx.fillStyle = lines[c.line]!.scale > 1 && !c.upper ? options.lower : options.face;
+    at(c.x, c.y);
+  });
+
+  // The halo: the art laid down twice with a blur of its shade behind it, then once plain.
+  const texture = scene.textures.createCanvas(key, width, height);
+  if (!texture) {
+    return { width, height };
   }
-  paint(color, 0);
-
-  const width = (cellsWide + pad) * pixel;
-  const height = (cellsHigh + pad) * pixel;
-  graphics.generateTexture(key, width, height);
-  graphics.destroy();
+  const out = texture.getContext();
+  out.shadowColor = options.shade;
+  out.shadowBlur = options.glow;
+  out.drawImage(art, 0, 0);
+  out.shadowBlur = options.glow * 0.4;
+  out.drawImage(art, 0, 0);
+  out.shadowBlur = 0;
+  out.drawImage(art, 0, 0);
+  texture.refresh();
 
   return { width, height };
 }

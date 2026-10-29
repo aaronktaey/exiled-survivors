@@ -1,6 +1,8 @@
-# Exiled Survivors — working notes
+# Nox Survivors — working notes
 
 Vampire-Survivors-like, in the browser. Vite + TypeScript + Phaser 4.
+Called Exiled Survivors until 0.158; the code, the domain and the storage
+keys still say that (see "Nox Survivors" below).
 
 Live at <https://exiledsurvivors.com>: one Cloudflare Worker
 (`wrangler.jsonc`, `server/`) serves the game and its API, deployed on every
@@ -1306,9 +1308,29 @@ Read `git log` for what changed and when. What is not in the log:
   keys F and R) and two screens: `ForgeScene` reads its mode off its tab —
   `craft` alone, or 낱개/일괄 분해 (`tabs`). 일괄 분해 lays the bases in two
   columns when one would run into the bottom.
-- **The title stands on a battle floor (0.141, the user's ask):** one of
-  `ARENA_THEMES` at random each visit (`ensureArenaFloor`), while
-  `arenaLookOn()` — the grid on the harness.
+- **Nox Survivors (0.158, the user's word).** The name changed only where a
+  player sees it: the logo, the page `<title>`, the privacy and
+  data-deletion pages, the bridge. exiledsurvivors.com, the `exiled-survivors:`
+  storage keys, the Worker, the repo and the `ExiledPixel` font name stay (the
+  user's pick; moving any of them breaks records or sign-in). The Google and
+  Facebook sign-in apps carry the old name in their consoles — the user's to
+  change. The look went with the logo (the user picked C-2 with a halo off a
+  sheet of 25):
+  - The logo is baked by `createGlowLogoTexture` (PixelFont.ts): NOX at three
+    units a cell over SURVIVORS, an indigo outline, a violet drop and lower
+    half, and a canvas-blur glow; the texture keeps `MENU.logoGlowPad` round
+    the letters, so place things by the letters (`addLogo`'s byline does).
+    `public/assets/logo.png` (the tab icon) is that texture saved out.
+  - The menus took the logo's colours (COLORS: background, text, muted,
+    accent, panel*, BUTTON_LOOK.body). What the run shows was left as it was,
+    on the user's word: health red, enemies, skills, drop tiers.
+  - A screen's title or a banner glows (`SharpText`: a Glow filter on any
+    text made at `TEXT.size.screen` / `banner`), and so does the button in
+    focus (`ButtonLook`: rings of COLORS.glow round a rectangle with
+    `setData('focus', true)` — MenuList's current row — or the accent stroke).
+  - The title is a night sky (`systems/NightSky.ts`, `NIGHT_SKY`): a
+    gradient, a violet haze, still stars and a few that twinkle. It replaced
+    0.141's random battle floor, everywhere, the harness too.
 - **Swords are taken apart, not sold (0.90, the user's ask).** Selling and
   gold went. The 인벤토리's top-right 분해 · 제작 button (`forgeButton`,
   `openForge`, key F — 0.91 moved it there from the weapon's own row, the

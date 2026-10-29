@@ -281,6 +281,8 @@ export class MenuList {
         row.panel.setStrokeStyle();
       }
       row.panel.setAlpha(enabled ? 1 : 0.45);
+      // The row under the cursor glows (ButtonLook, 0.158).
+      row.panel.setData('focus', active);
 
       // Centred normally; a row with a value on its right moves its name to
       // the left when the two would meet — on a narrow screen always, and on

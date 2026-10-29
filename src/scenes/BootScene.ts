@@ -46,7 +46,7 @@ import {
 } from '@/config';
 import { MENU, SCENES } from '@/config';
 import type { EnemyKindSpec, PixelIcon, PixelIconId } from '@/config';
-import { createPixelTextTexture } from '@/systems/PixelFont';
+import { createGlowLogoTexture } from '@/systems/PixelFont';
 import { sfx } from '@/systems/Sfx';
 import { paintEraTextures } from '@/systems/MonsterArt';
 import { pixelateOn, pixelateWorld } from '@/systems/Pixelate';
@@ -142,10 +142,15 @@ export class BootScene extends Phaser.Scene {
     }
 
 
-    createPixelTextTexture(this, TEXTURES.logo, ['EXILED', 'SURVIVORS'], {
+    // Nox Survivors (0.158): NOX three times over, SURVIVORS under it, glowing.
+    createGlowLogoTexture(this, TEXTURES.logo, [{ text: 'NOX', scale: 3 }, { text: 'SURVIVORS', scale: 1 }], {
       pixel: MENU.logoPixel,
-      color: COLORS.logo,
-      shadow: COLORS.logoShadow,
+      face: COLORS.logo,
+      lower: COLORS.logoLower,
+      shade: COLORS.logoShadow,
+      outline: COLORS.logoOutline,
+      glow: MENU.logoGlow,
+      pad: MENU.logoGlowPad,
     });
 
     this.paintAdColumns();

@@ -28,7 +28,6 @@ export {
 export { saveGame, type SavedRun } from '@/systems/SaveGame';
 export { bgm } from '@/systems/Bgm';
 export { sfx } from '@/systems/Sfx';
-export { createPixelTextTexture } from '@/systems/PixelFont';
 export { RareTooltip } from '@/systems/RareTooltip';
 export { canvasSizeFor, currentCanvasSize, type CanvasSize } from '@/systems/Viewport';
 export { centredTop, fitText, fitWidth } from '@/systems/Layout';

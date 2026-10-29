@@ -7,17 +7,22 @@ import type { PixelIconId } from '@/config/pixelIcons';
 import type { DropTier } from '@/config/system';
 
 export const COLORS = {
-  background: "#0b0d12",
-  text: "#f4f1e8",
+  // Nox Survivors (0.158, the user's ask): the screens took the logo's night — an indigo ground,
+  // the logo's cool white for ink, its violet for the accent. What the run itself shows stays as it was.
+  background: "#0a0a16",
+  text: "#eef0ff",
   /** Same ink as a number, for shapes. */
-  textFill: 0xf4f1e8,
-  muted: "#a9b3c9",
+  textFill: 0xeef0ff,
+  muted: "#a7a9d4",
   /** 오늘의 규칙 (0.126): a warning amber, so the day's line reads as a condition, not a menu item. */
   daily: "#f0a24a",
   dailyFill: 0xf0a24a,
-  accent: "#e0564a",
+  /** Light enough to read as text on the night ground; the fill is nearer the logo's own violet. */
+  accent: "#a397ff",
   /** Same accent as a number, for shapes (text takes the string form). */
-  accentFill: 0xe0564a,
+  accentFill: 0x7b6cf0,
+  /** The halo round a screen's title and the button in focus (0.158). */
+  glow: 0x6a5af0,
   grid: 0x1a1f2b,
   /** 지형지물: a dark stone with a lit top and rim, over its shadow. */
   rockShadow: 0x000000,
@@ -65,17 +70,19 @@ export const COLORS = {
   projectile: 0xffe9a3,
   gem: 0x7fd4ff,
   skillOrb: 0xffc14d,
-  panel: 0x141924,
-  panelActive: 0x1e2636,
-  panelEdge: 0x2b3445,
+  panel: 0x15142c,
+  panelActive: 0x231f48,
+  panelEdge: 0x3a3570,
   hpFill: 0xe0564a,
   xpFill: 0x7ef0b0,
   barTrack: 0x222a38,
   stick: 0xf4f1e8,
   meleeArc: 0xdfe7f5,
-  /** The pixel logo: bone white over a red offset, like a stamped sign. */
-  logo: 0xf4f1e8,
-  logoShadow: 0xe0564a,
+  /** The logo (0.158, C-2 with a halo): cool white, a violet lower half and drop, a deep indigo outline, glowing violet. */
+  logo: "#eef0ff",
+  logoLower: "#a29cf0",
+  logoShadow: "#5b4bd6",
+  logoOutline: "#1c1450",
   damageText: "#ffe9a3",
   debugText: "#7ef0b0",
   /** "막음" over the survivor when 오니고로시 turns a shot aside. */
@@ -137,7 +144,7 @@ export const BOSS_CAST_FX = {
  */
 export const BUTTON_LOOK = {
   /** Its body, where the button's own fill is see-through. */
-  body: 0x1f2a3d,
+  body: 0x24204a,
   bodyAlpha: 0.92,
   /** The light along its top. */
   light: 0xffffff,
@@ -152,6 +159,8 @@ export const BUTTON_LOOK = {
   shadowDrop: 3,
   /** How long a press shows. */
   pressMs: 120,
+  /** The button in focus glows (0.158): rings of COLORS.glow this far apart, fading out. */
+  focusGlow: { rings: 4, step: 2, alpha: 0.3 },
 } as const;
 
 export const DEPTH = {
@@ -194,6 +203,25 @@ export const EDGE_MARKERS = {
   alpha: 0.9,
   /** Anything this far outside the view is too far to bother pointing at. */
   rangePx: 1400,
+} as const;
+
+/** The title's night sky (0.158, systems/NightSky.ts). */
+export const NIGHT_SKY = {
+  /** Its colour at the top and at the foot. */
+  top: 0x05051a,
+  bottom: 0x16123c,
+  /** A violet haze low on the sky, this far down and this strong. */
+  hazeAt: 0.95,
+  hazeAlpha: 0.28,
+  /** One still star to this many px² of sky; a few of them two px wide. */
+  areaPerStar: 2400,
+  bigShare: 0.12,
+  dimmest: 0.2,
+  paleStar: 0xc9c2ff,
+  /** Stars that twinkle, in the top share of the sky, each over this many ms. */
+  twinkles: 14,
+  twinkleBand: 0.75,
+  twinkleMs: [1400, 3200] as const,
 } as const;
 
 /** Texture keys generated at boot — placeholder art until real sprites land. */
@@ -366,6 +394,8 @@ export const TEXT = {
     minPx: 2,
     maxPx: 5,
   },
+  /** The halo round a screen's title or a banner (0.158), in COLORS.glow: Phaser's Glow filter. */
+  titleGlow: { strength: 2.5, distance: 12 },
 } as const;
 
 /** The pickups and the shot drawn from PIXEL_ICONS, and the size each is shown at. */
@@ -695,8 +725,6 @@ export const SCRIM = {
   pause: 0.88,
   upgrade: 0.86,
   gameOver: 0.92,
-  /** The grid behind the title. */
-  title: 0.62,
 } as const;
 
 /**
@@ -752,10 +780,13 @@ export const MENU = {
   prophecy: { maxWidth: 560, gap: 12, padX: 10, padY: 5, icon: 18, pulseMs: 900 },
   /** On a phone the corner icons sit under 게임 시작 (0.150), this far below it. */
   iconsGap: 18,
-  /** Side of one logo pixel, in screen px. */
-  logoPixel: 6,
-  /** Roughly how tall the baked logo comes out, for centring the title. */
-  logoHeight: 104,
+  /** Side of one logo unit, in screen px (NOX is three units a cell, SURVIVORS one). */
+  logoPixel: 4,
+  /** The logo's glow, and the room the baked texture keeps round the letters for it. */
+  logoGlow: 22,
+  logoGlowPad: 22,
+  /** How tall the logo's letters come out (33 units), for centring the title; the glow spills past it. */
+  logoHeight: 132,
   /** Air kept either side of it on a screen too narrow for its full size. */
   logoMargin: 20,
   /** Clear of the corner icons (0.149): the title goes down under them while its foot stays this far off the bottom, */
@@ -767,7 +798,7 @@ export const MENU = {
   buttonHeightTight: 34,
   buttonGapTight: 5,
   /** That logo plus the byline under it. */
-  logoBlockHeight: 150,
+  logoBlockHeight: 178,
   /** Byline to the 랭킹 first-place line under it, which adds this much. */
   championGap: 28,
   /** First place to the line under it with second and third, which adds this much. */

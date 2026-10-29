@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 
-import { TEXT } from '@/config';
+import { COLORS, TEXT } from '@/config';
 
 /** The `scene.add.text(...)` signature, as the factory prototype holds it. */
 type TextFactory = (
@@ -61,6 +61,11 @@ export function registerSharpText(): void {
     const asked = style?.strokeThickness !== undefined || style?.stroke !== undefined;
     if (!asked) {
       text.setStroke(TEXT.outline.color, outlineWidth(style?.fontSize));
+    }
+    // A screen's title and a banner glow like the logo (0.158).
+    if (style?.fontSize === TEXT.size.screen || style?.fontSize === TEXT.size.banner) {
+      text.enableFilters();
+      text.filters?.external.addGlow(COLORS.glow, TEXT.titleGlow.strength, 0, 1, false, 10, TEXT.titleGlow.distance);
     }
 
     return text;
