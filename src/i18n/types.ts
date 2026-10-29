@@ -947,6 +947,8 @@ export interface Strings {
     readonly roleFont: string;
     /** 음악 (0.109): the music's CC BY credit. */
     readonly roleMusic: string;
+    /** 효과음 (0.156): the CC BY sound effects' authors. */
+    readonly roleSfx: string;
   };
 
   /** The one question the game asks before throwing a save away. */

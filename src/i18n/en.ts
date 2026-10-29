@@ -737,6 +737,7 @@ export const en: Strings = {
     roleEngine: 'Engine',
     roleFont: 'Font',
     roleMusic: 'Music',
+    roleSfx: 'Sound',
   },
 
   confirm: {

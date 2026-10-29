@@ -87,6 +87,11 @@ check('it credits the music as its licence asks, and names no icon pack',
   /incompetech\.com/.test(creditLines.text) && /Attribution 4\.0/.test(creditLines.text) &&
   !/Raven Fantasy/.test(creditLines.text),
   creditLines.text);
+// The CC BY effects (0.156) owe their authors a line too.
+check('it credits the authors of the CC BY sound effects',
+  /freesound\.org/.test(creditLines.text) && /heyheytheree/.test(creditLines.text) &&
+  /LittleLuigi/.test(creditLines.text) && /Coghezzi/.test(creditLines.text) && /CC BY 4\.0/.test(creditLines.text),
+  creditLines.text);
 await shot('shell2-01-credits');
 
 await cdp.tap('Escape', 27, 'Escape');

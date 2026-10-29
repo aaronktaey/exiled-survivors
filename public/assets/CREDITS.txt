@@ -9,21 +9,47 @@ Constance.mp3
 Sound
 -----
 Every effect comes from freesound.org, taken only from sounds marked
-"Approved for Free Cultural Works" (CC0 or CC BY 4.0).
+"Approved for Free Cultural Works" (CC0 or CC BY 4.0). A CC BY one is
+credited in the game's 제작자 정보 as well as here.
 
 attack1-3.mp3          타격
+    "More Metal Imapcts - Various" by mihnelis, CC0
+    https://freesound.org/people/mihnelis/sounds/867743/
 fireball.mp3           화염구
+    "RetroSFX_ModelD_Short_Fire" by loganzsound, CC0
+    https://freesound.org/people/loganzsound/sounds/872788/
 iceSpear.mp3           얼음창, and the 드론's shot
+    "glacierCalving.mp3" by CCCanary, CC0
+    https://freesound.org/people/CCCanary/sounds/271008/
+voidSphere.mp3         공허구체, and 독성폭발
+    "Low_Mid_End_Void_Energy_Blast_Punch_01" by The_Elementus, CC0
+    https://freesound.org/people/The_Elementus/sounds/873747/
+bossAlert.mp3          a 우두머리 (고대병기) arriving
+    "Creature Scurry" by RyanTheBlockhead, CC0
+    https://freesound.org/people/RyanTheBlockhead/sounds/872940/
 chainLightening1.mp3   연쇄번개 and 낙뢰
-voidSphere.mp3         공허구체
-bossAlert.mp3          a 우두머리 arriving
-normalDrop.mp3         an ordinary drop landing
-magicDrop.mp3          a 마법 / 희귀 drop landing
-rareDrop.mp3           a 신화 drop landing (two recordings mixed down to one)
+    "Sound Design Impact 2" by CAT-FOX_ALEX, CC0
+    https://freesound.org/people/CAT-FOX_ALEX/sounds/872155/
+magicDrop.mp3          a 마법 / 희귀 drop landing, an awakening, a 합성 success
+    "Unsheathe (Fantasy UI SFX Free)" by heyheytheree, CC BY 4.0
+    https://freesound.org/people/heyheytheree/sounds/872699/
+rareDrop.mp3           a 신화 drop landing, two recordings mixed down to one:
+    "bulletcasing1" by LittleLuigi, CC BY 4.0
+    https://freesound.org/people/LittleLuigi/sounds/873127/
+    "Magic Healing Spell SFX - Fantasy RPG Restore Effect" by TommasoMotteran
+    (credited as "Coghezzi - Freesound.org", as the page asks), CC BY 4.0
+    https://freesound.org/people/TommasoMotteran/sounds/853303/
+
+Source not yet recorded (to be filled in):
+normalDrop.mp3         an ordinary drop landing (a sound by MATUSTRM,
+                       https://freesound.org/people/MATUSTRM/ — its own page
+                       has since been taken down; licence to be confirmed)
 extremeRareDrop.mp3    the rarest drops (cut from assets-src/drops/extremeRareDrop.ogg)
 chimera*.mp3           the 키메라: appear, cast, death (cut from assets-src/chimera/hydra.mp3
                        by tools/make-chimera-sfx.py)
-slot.mp3               the 슬롯머신 (mixed from assets-src/slot by tools/mix-slot.py)
+slot.mp3               the 슬롯머신 (mixed from assets-src/slot by tools/mix-slot.py:
+                       slotrunning.mp3, slotrunning2.wav, slotending.mp3)
+(assets-src/slot/jackpot*.wav are not shipped.)
 
 Pictures
 --------
@@ -34,3 +60,5 @@ Font
 ----
 public/fonts/exiled-pixel.woff2 is the logo's lettering (tools/make-logo-font.py).
 public/fonts/galmuri/ is Galmuri © Lee Minseo, SIL Open Font License 1.1 (LICENSE.txt there).
+public/fonts/fusion/ is Fusion Pixel Font © TakWolf, SIL Open Font License 1.1 (OFL.txt there),
+cut to the characters the Chinese text uses (tools/make-zh-font.py).

@@ -741,6 +741,7 @@ export const ko: Strings = {
     roleEngine: '엔진',
     roleFont: '폰트',
     roleMusic: '음악',
+    roleSfx: '효과음',
   },
 
   confirm: {

@@ -15,6 +15,24 @@ export interface PatchNote {
 
 export const PATCH_NOTES: readonly PatchNote[] = [
   {
+    version: '0.156',
+    date: '2026-10-29',
+    changes: {
+      ko: [
+        '제작자 정보에 효과음 항목이 생겨, CC BY 4.0 효과음의 작성자를 표기합니다.',
+      ],
+      en: [
+        'Credits has a Sound row naming the authors of the CC BY 4.0 sound effects.',
+      ],
+      ja: [
+        'クレジットに効果音の項目を追加し、CC BY 4.0 の効果音の作者を表記しました。',
+      ],
+      zh: [
+        '制作人员中新增“音效”一项，标注 CC BY 4.0 音效的作者。',
+      ],
+    },
+  },
+  {
     version: '0.155',
     date: '2026-10-28',
     changes: {

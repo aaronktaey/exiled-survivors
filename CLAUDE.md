@@ -1085,8 +1085,11 @@ Read `git log` for what changed and when. What is not in the log:
 - **What ships is what is used (0.109).** `public/` holds only files the
   game loads; originals and sources live in `assets-src/` (not shipped).
   Sound effects are only freesound.org's "Approved for Free Cultural Works"
-  (CC0 or CC BY 4.0 — a CC BY one owes its author a line in 제작자 정보), the
-  user's rule; `public/assets/CREDITS.txt` lists every clip and its use. The
+  (CC0 or CC BY 4.0 — a CC BY one owes its author a line in 제작자 정보: the
+  효과음 row, `credits.roleSfx`, 0.156), the user's rule;
+  `public/assets/CREDITS.txt` lists every clip, its use, and its source and
+  licence where known (normalDrop, extremeRareDrop, the 키메라's hydra and the
+  slot's three are still unrecorded — ask the user before guessing). The
   pictures are all drawn by code: the swords, the 경험치 보석, the 화염구
   shot, the skill orb, the 체력 포션 (a green flask since 0.110 — the red
   square read as an enemy bolt) and four skills' icons are 16x16 grids in

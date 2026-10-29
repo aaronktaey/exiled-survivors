@@ -22,6 +22,9 @@ function lines(): readonly (readonly [string, string])[] {
     [copy.roleFont, 'Galmuri © Lee Minseo · Fusion Pixel Font © TakWolf (SIL OFL 1.1)'],
     // CC BY 4.0 asks for the title, the author, the source and the licence.
     [copy.roleMusic, '"Constance" Kevin MacLeod (incompetech.com) · Licensed under Creative Commons: By Attribution 4.0 (creativecommons.org/licenses/by/4.0)'],
+    // The CC BY effects owe their authors a line; the CC0 ones owe nothing. Titles and links are in public/assets/CREDITS.txt.
+    // Coghezzi is the credit TommasoMotteran's page asks for.
+    [copy.roleSfx, 'freesound.org · heyheytheree · LittleLuigi · Coghezzi (TommasoMotteran) · CC BY 4.0'],
   ];
 }
 

@@ -737,6 +737,7 @@ export const ja: Strings = {
     roleEngine: 'エンジン',
     roleFont: 'フォント',
     roleMusic: '音楽',
+    roleSfx: '効果音',
   },
 
   confirm: {
