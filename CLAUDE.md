@@ -574,6 +574,10 @@ Read `git log` for what changed and when. What is not in the log:
   timings — the user's rule: an upgrade picked (`onUpgradePicked`), a 파편,
   a 합성 (COMBINE_FX under a second in all) and a 구슬 (ORB_FX). A new
   exciting moment should use these, and a new repeated one stay quick.
+  A skill taken or raised mid-run pops its icon over the survivor with NEW
+  or its level (`skillPop`, `CELEBRATE.skillPop`, `GameScene.popSkill`,
+  0.159, the user's ask) — staggered when several land at once; not the
+  run's first skill nor a resumed run's (`skillPops` counts, for tests).
 - **랭킹 검토 (the admin's, 0.62).** Every run handed in carries a 판 내역
   (`RunDetail`, built by `GameScene.runDetail`: build, version, kills by
   kind, 뼈다귀, weapon, skills, 패시브, resumed), kept by the Worker in
