@@ -4,6 +4,7 @@ import { COLORS, DEPTH, RANKING, SCENES, SCRIM, SKILL_ICONS, TEXT, TEXTURES } fr
 import { fill, t } from '@/i18n';
 import { addBackButton, type BackButton } from '@/systems/BackButton';
 import { fitText } from '@/systems/Layout';
+import { PLATFORM } from '@/systems/Platform';
 import type { PodiumMine } from '@/systems/Podium';
 import { flagTexture, rankLabel, type RankEntry } from '@/systems/Ranking';
 
@@ -119,8 +120,9 @@ export class PodiumScene extends Phaser.Scene {
     // Where this player placed that day — or why that cannot be said.
     const mine = this.payload.mine;
     const total = this.payload.total ?? 0;
+    // The PC build has no sign-in yet (0.160): there is nothing to suggest.
     const own = !this.payload.signedIn
-      ? copy.mineSignedOut
+      ? PLATFORM === 'desktop' ? '' : copy.mineSignedOut
       : mine
         ? fill(copy.mine, {
             place: mine.place,

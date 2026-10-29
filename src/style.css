@@ -94,6 +94,11 @@ body {
   opacity: 0.6;
 }
 
+/* The PC build (0.160) has no ads: the game takes the whole window. */
+html.desktop .ad-slot {
+  display: none;
+}
+
 /* A phone, or a narrow window, gives the game everything. */
 @media (max-width: 1180px) {
   .ad-slot {

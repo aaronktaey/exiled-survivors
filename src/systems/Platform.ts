@@ -9,6 +9,11 @@
  */
 export const PLATFORM: 'web' | 'desktop' = import.meta.env.VITE_PLATFORM === 'desktop' ? 'desktop' : 'web';
 
+if (typeof document !== 'undefined') {
+  // The page's own styles tell the PC build apart (no ad columns there).
+  document.documentElement.classList.toggle('desktop', PLATFORM === 'desktop');
+}
+
 const API_BASE: string = typeof import.meta.env.VITE_API_BASE === 'string' ? import.meta.env.VITE_API_BASE : '';
 
 /** `path` (an /api route) at the address this build calls. */
