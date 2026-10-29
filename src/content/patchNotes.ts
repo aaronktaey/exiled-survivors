@@ -15,6 +15,24 @@ export interface PatchNote {
 
 export const PATCH_NOTES: readonly PatchNote[] = [
   {
+    version: '0.159',
+    date: '2026-10-29',
+    changes: {
+      ko: [
+        '판 도중 스킬을 새로 얻거나 강화하면 생존자 머리 위로 그 스킬 아이콘이 떠올랐다가 사라집니다. 새 스킬은 NEW, 강화는 새 레벨이 함께 표시됩니다.',
+      ],
+      en: [
+        'When you take or upgrade a skill mid-run, its icon pops up over the survivor and fades away, marked NEW or with its new level.',
+      ],
+      ja: [
+        'プレイ中にスキルを新しく得たり強化したりすると、生存者の頭上にそのスキルのアイコンが浮かび上がって消えます。新しいスキルは NEW、強化は新しいレベルが一緒に表示されます。',
+      ],
+      zh: [
+        '对局中获得或强化技能时，该技能图标会从幸存者头顶弹出并渐渐消失，新技能标注 NEW，强化则显示新等级。',
+      ],
+    },
+  },
+  {
     version: '0.158',
     date: '2026-10-29',
     changes: {

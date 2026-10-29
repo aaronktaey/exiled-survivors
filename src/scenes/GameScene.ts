@@ -25,6 +25,7 @@ import {
   SAVE,
   SCENES,
   SKILL_BASE,
+  SKILL_ICONS,
   SKILL_DROP,
   SKILL_PICK,
   CELEBRATE,
@@ -92,7 +93,7 @@ import { sfx, effectVolume } from '@/systems/Sfx';
 import { saveGame, type SavedRun, type RunLoot } from '@/systems/SaveGame';
 import { forfeitLoot, hasLoot, noLoot } from '@/systems/RunLoot';
 import { runLedger } from '@/systems/RunLedger';
-import { jackpot, sparkleBurst } from '@/systems/Celebrate';
+import { jackpot, skillPop, sparkleBurst } from '@/systems/Celebrate';
 import { dailyRules } from '@/systems/DailyRules';
 import { runTally } from '@/systems/RunTally';
 import { skillOffered } from '@/systems/SkillGate';
@@ -302,6 +303,8 @@ export class GameScene extends Phaser.Scene {
   }
 
   public init(data?: GameSceneData): void {
+    this.popFreeAt = 0;
+    this.skillPops = 0;
     this.resuming = data?.save ?? null;
     this.devUsedBefore = data?.save?.devUsed === true;
     this.tunedRun = tuning.drafting;
@@ -1086,6 +1089,26 @@ export class GameScene extends Phaser.Scene {
       .setDepth(DEPTH.ground);
   }
 
+  /** When the next skill pop may start, so several at once go one after another (0.159). */
+  private popFreeAt = 0;
+  /** How many have popped this run. Public for tests. */
+  public skillPops = 0;
+
+  /**
+   * A skill taken or raised mid-run: its icon pops over the survivor's head
+   * with NEW or its new level (0.159, the user's ask). Not the run's first
+   * skill, and not a resumed run's skills coming back.
+   */
+  private popSkill(skill: SkillId, taken: boolean): void {
+    const now = this.time.now;
+    const delay = Math.max(0, this.popFreeAt - now);
+    this.popFreeAt = now + delay + CELEBRATE.skillPop.staggerMs;
+    this.skillPops++;
+    const copy = t().game;
+    const label = taken ? copy.popNew : fill(copy.popLevel, { level: this.progression.levelFor(skill) });
+    skillPop(this, this.player, SKILL_ICONS[skill]?.key ?? TEXTURES.skillOrb, label, taken ? CELEBRATE.skillPop.newColor : COLORS.text, delay);
+  }
+
   /** Adds a skill's weapon and wires whatever collisions it needs. */
   private acquire(skill: SkillId): void {
     if (this.owned.has(skill)) {
@@ -1124,6 +1147,9 @@ export class GameScene extends Phaser.Scene {
       return;
     }
     this.acquire(skill);
+    if (isNew) {
+      this.popSkill(skill, true);
+    }
 
     const name = skillName(skill);
     const copy = t().game;
@@ -1575,6 +1601,7 @@ export class GameScene extends Phaser.Scene {
           this.drinkForMaxedSkill(skill, 'full');
         } else {
           this.acquire(skill);
+          this.popSkill(skill, true);
           this.announce(fill(t().game.pickedUp, { skill: skillName(skill) }));
         }
         this.afterChoice();
@@ -1593,6 +1620,7 @@ export class GameScene extends Phaser.Scene {
     const before = this.progression.levelFor(skill);
     this.progression.apply(skill, upgrade);
     runTally.skillLevel(this.progression.levelFor(skill) - before);
+    this.popSkill(skill, false);
     this.afterChoice();
     const tier = this.masteryOf(skill);
     if (tier >= 1 && !this.awakened.has(skill)) {

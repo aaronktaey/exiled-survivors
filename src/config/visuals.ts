@@ -596,6 +596,23 @@ export const CELEBRATE = {
   mythicColor: 0xff6a5a,
   /** A new best on 내 기록: the burst over the score, a moment after the screen opens. */
   recordDelayMs: 250,
+  /**
+   * A skill taken or raised mid-run (0.159, the user's ask): its icon pops up
+   * over the survivor's head with NEW or its level under it, rises and fades.
+   * Several at once (a plan taking a few level-ups) go one after another.
+   */
+  skillPop: {
+    size: 28,
+    /** How far over the top of the survivor's picture it starts, and how far it rises. */
+    above: 26,
+    rise: 30,
+    popMs: 180,
+    holdMs: 380,
+    fadeMs: 620,
+    staggerMs: 200,
+    labelSize: '14px',
+    newColor: '#ffe066',
+  },
 } as const;
 
 export const ORB_FX = {

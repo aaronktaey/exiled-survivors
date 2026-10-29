@@ -704,6 +704,8 @@ export const en: Strings = {
     lootWithheld: '{item} — not kept: this run goes on no ranking',
     pickedUp: '{skill} acquired',
     enhancedPickup: '{skill} upgraded',
+    popNew: 'NEW',
+    popLevel: 'Lv {level}',
     altarOffer: 'Altar · {enemies}',
     altarCrowd: '{count} × {kind}',
     altarCrowdRare: '{count} × Rare {kind}',

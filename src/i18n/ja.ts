@@ -704,6 +704,8 @@ export const ja: Strings = {
     lootWithheld: '{item} — ランキングに載らないプレイのため保管されません',
     pickedUp: '{skill} 習得',
     enhancedPickup: '{skill} 強化',
+    popNew: 'NEW',
+    popLevel: 'Lv {level}',
     altarOffer: '祭壇 · {enemies}',
     altarCrowd: '{kind} ×{count}',
     altarCrowdRare: 'レア{kind} ×{count}',

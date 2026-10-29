@@ -704,6 +704,8 @@ export const zh: Strings = {
     lootWithheld: '{item} — 此局不计入排行榜，不会保留',
     pickedUp: '获得 {skill}',
     enhancedPickup: '强化 {skill}',
+    popNew: 'NEW',
+    popLevel: 'Lv {level}',
     altarOffer: '祭坛 · {enemies}',
     altarCrowd: '{kind} ×{count}',
     altarCrowdRare: '稀有{kind} ×{count}',

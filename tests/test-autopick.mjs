@@ -118,10 +118,13 @@ await scene('BoneScene', `s.choices.find((c) => c.id === 'start').onSelect(); re
 await cdp.until(`window.game.scene.getScene('GameScene')?.mainSkill`, 15000);
 await sleep(300);
 const started = await scene('GameScene', `return { auto: s.autoPick, main: s.mainSkill, pick: window.game.scene.isActive('SkillPickScene'),
-  toasts: s.toasts?.lines ?? [] };`);
+  toasts: s.toasts?.lines ?? [], pops: s.skillPops };`);
 check('a run started with it on chooses its first skill by the plan — no cards, a toast saying so',
   started.auto.skills === true && started.main === 'iceSpear' && started.pick === false && started.toasts.some((line) => line.includes('자동 선택')),
   JSON.stringify(started));
+
+// The skill icon pop (0.159) is for mid-run gains: the first skill does not pop.
+check('the first skill of a run does not pop its icon', started.pops === 0, `pops=${started.pops}`);
 
 // --- 6. a level-up takes the top-ranked upgrade among those offered ---
 const levelled = await scene('GameScene', `
@@ -130,9 +133,14 @@ const levelled = await scene('GameScene', `
   s.progression.addXp(s.progression.xpToNext);
   const after = s.progression.statsFor('iceSpear');
   return { speed: after.attackSpeed > before.attackSpeed, damage: after.damage === before.damage,
-           upgrade: window.game.scene.isActive('UpgradeScene'), choosing: s.choosing, paused: s.physics.world.isPaused };`);
+           upgrade: window.game.scene.isActive('UpgradeScene'), choosing: s.choosing, paused: s.physics.world.isPaused,
+           pops: s.skillPops, level: s.progression.levelFor('iceSpear'),
+           icon: s.children.list.some((o) => o.type === 'Image' && o.texture?.key === window.config.SKILL_ICONS.iceSpear.key && o.y < s.player.y),
+           label: s.children.list.find((o) => o.type === 'Text' && o.text === 'Lv ' + s.progression.levelFor('iceSpear'))?.text ?? null };`);
 check('a level-up takes the plan’s first upgrade (공격속도) by itself, and the run goes on',
   levelled.speed && levelled.damage && !levelled.upgrade && !levelled.choosing, JSON.stringify(levelled));
+check('the upgrade pops the 얼음창 icon over the survivor, with its new level under it',
+  levelled.pops === 1 && levelled.icon && levelled.label === 'Lv ' + levelled.level, JSON.stringify(levelled));
 
 // --- 7. a 무작위 스킬 takes the plan's best of its cards ---
 const picked = await scene('GameScene', `
@@ -140,10 +148,12 @@ const picked = await scene('GameScene', `
   P.setOrder('skills', ['iceSpear', 'chainLightning', ...P.value.skills.filter((id) => id !== 'iceSpear' && id !== 'chainLightning')]);
   s.randomSkills = () => ['fireball', 'chainLightning', 'drone'];
   s.queueChoice({ kind: 'pick' });
-  return { owned: [...s.owned], pick: window.game.scene.isActive('SkillPickScene') };`);
+  return { owned: [...s.owned], pick: window.game.scene.isActive('SkillPickScene'), pops: s.skillPops,
+    fresh: s.children.list.some((o) => o.type === 'Text' && o.text === 'NEW') };`);
 check('a 무작위 스킬 takes the highest-ranked of its cards (연쇄번개 over 화염구 and 드론)',
   picked.owned.includes('chainLightning') && !picked.owned.includes('fireball') && !picked.owned.includes('drone') && !picked.pick,
   JSON.stringify(picked));
+check('a skill newly taken pops its icon with NEW', picked.pops === 2 && picked.fresh, JSON.stringify(picked));
 
 // --- 8. 재능의 파편 cards take the plan's first ---
 const shard = await scene('GameScene', `

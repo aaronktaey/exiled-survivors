@@ -708,6 +708,8 @@ export const ko: Strings = {
     lootWithheld: '{item} — 랭킹에 오르지 않는 판이라 보관되지 않습니다',
     pickedUp: '{skill} 획득',
     enhancedPickup: '{skill} 강화',
+    popNew: 'NEW',
+    popLevel: 'Lv {level}',
     altarOffer: '제단 · {enemies}',
     altarCrowd: '{kind} {count}마리',
     altarCrowdRare: '희귀 {kind} {count}마리',

@@ -73,3 +73,52 @@ export function jackpot(scene: Phaser.Scene, at: At, color: number = CELEBRATE.s
   glowPulse(scene, at, color, CELEBRATE.jackpotGlow);
   sparkleBurst(scene, at, color, false, true);
 }
+
+/**
+ * A skill's icon popping up over the survivor (0.159, the user's ask): it
+ * swells out of the head, holds a moment and rises fading, `label` under
+ * it. It rides with `over` as it moves, so a running survivor keeps it.
+ */
+export function skillPop(
+  scene: Phaser.Scene,
+  over: { readonly x: number; readonly y: number; readonly displayHeight: number },
+  icon: string,
+  label: string,
+  labelColor: string,
+  delayMs = 0,
+): void {
+  const spec = CELEBRATE.skillPop;
+  const depth = DEPTH.healthBar + 1;
+  const image = scene.add.image(over.x, over.y, icon).setDisplaySize(spec.size, spec.size).setDepth(depth).setAlpha(0);
+  const full = image.scaleX;
+  const text = scene.add
+    .text(over.x, over.y, label, {
+      fontFamily: 'system-ui, sans-serif',
+      fontSize: spec.labelSize,
+      color: labelColor,
+    })
+    .setOrigin(0.5, 0)
+    .setDepth(depth)
+    .setAlpha(0);
+  const state = { rise: 0, alpha: 0, swell: 0.4 };
+  const place = (): void => {
+    const top = over.y - over.displayHeight / 2 - spec.above - spec.size / 2 - state.rise;
+    image.setPosition(over.x, top).setScale(full * state.swell).setAlpha(state.alpha);
+    text.setPosition(over.x, top + spec.size / 2 + 1).setAlpha(state.alpha);
+  };
+  place();
+  scene.tweens.chain({
+    targets: state,
+    delay: delayMs,
+    onUpdate: place,
+    tweens: [
+      { swell: 1, alpha: 1, duration: spec.popMs, ease: 'Back.easeOut', onUpdate: place },
+      { rise: spec.rise * 0.3, duration: spec.holdMs, ease: 'Sine.easeOut', onUpdate: place },
+      { rise: spec.rise, alpha: 0, duration: spec.fadeMs, ease: 'Sine.easeIn', onUpdate: place },
+    ],
+    onComplete: () => {
+      image.destroy();
+      text.destroy();
+    },
+  });
+}

@@ -900,6 +900,9 @@ export interface Strings {
     readonly magnetPulled: string;
     readonly pickedUp: string;
     readonly enhancedPickup: string;
+    /** Under a skill's icon as it pops over the survivor (0.159): taken, or raised to {level}. */
+    readonly popNew: string;
+    readonly popLevel: string;
     /** The plate over a 제단: {enemies} is what it will call up. */
     readonly altarOffer: string;
     /** One offer's crowd: {kind} is the enemy's name, {count} how many. */
