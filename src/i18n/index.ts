@@ -70,10 +70,14 @@ export function onLanguageChange(listener: () => void): () => void {
   return () => listeners.delete(listener);
 }
 
-/** The browser's preference, if we speak it. */
+/**
+ * The browser's preference, if we speak it — else English (0.162, the
+ * user's ask: Korean before, which met a player on itch.io whose browser
+ * spoke none of the four in a language they could not read).
+ */
 export function detectLanguage(): Language {
   if (typeof navigator === 'undefined') {
-    return 'ko';
+    return 'en';
   }
 
   for (const tag of navigator.languages ?? [navigator.language]) {
@@ -84,7 +88,7 @@ export function detectLanguage(): Language {
     }
   }
 
-  return 'ko';
+  return 'en';
 }
 
 /**

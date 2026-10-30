@@ -291,6 +291,25 @@ await ev(`(() => { localStorage.clear(); return 1; })()`);
 const thrown = await ev('window.__errors || []');
 check('nothing threw along the way', thrown.length === 0, thrown.join(' | '));
 
+// --- a first visit follows the browser, and English where it speaks none of the four (0.162) ---
+const firstVisit = async (languages) => {
+  const hook = await cdp.send('Page.addScriptToEvaluateOnNewDocument', {
+    source: `Object.defineProperty(navigator, 'languages', { get: () => ${JSON.stringify(languages)} });
+             Object.defineProperty(navigator, 'language', { get: () => ${JSON.stringify(languages[0])} });`,
+  });
+  await ev(`(() => { localStorage.clear(); return 1; })()`);
+  await load();
+  const shown = await ev(`window.settings.value.language`);
+  await cdp.send('Page.removeScriptToEvaluateOnNewDocument', { identifier: hook.result?.identifier });
+  return shown;
+};
+const german = await firstVisit(['de-DE', 'fr']);
+const japanese = await firstVisit(['de-DE', 'ja-JP']);
+check('a browser that speaks none of the four starts in English; one that speaks one starts in it',
+  german === 'en' && japanese === 'ja', `${german} ${japanese}`);
+await ev(`(() => { localStorage.clear(); return 1; })()`);
+await load();
+
 console.log('\n=== SUMMARY ===');
 const failed = results.filter((r) => !r.p);
 console.log(`${results.length - failed.length}/${results.length} passed`);

@@ -15,6 +15,24 @@ export interface PatchNote {
 
 export const PATCH_NOTES: readonly PatchNote[] = [
   {
+    version: '0.162',
+    date: '2026-10-30',
+    changes: {
+      ko: [
+        '처음 접속할 때 브라우저 언어가 한국어·영어·일본어·중국어 중 어느 것도 아니면 영어로 시작합니다(이전에는 한국어). 언어는 설정 → 화면에서 바꿀 수 있습니다.',
+      ],
+      en: [
+        'On a first visit from a browser set to none of Korean, English, Japanese or Chinese, the game now starts in English (it was Korean). Change it under Settings → Display.',
+      ],
+      ja: [
+        '初めての訪問でブラウザの言語が韓国語・英語・日本語・中国語のいずれでもない場合、英語で始まるようになりました（以前は韓国語）。言語は設定 → 画面で変えられます。',
+      ],
+      zh: [
+        '首次访问时，如果浏览器语言不是韩语、英语、日语或中文，游戏将以英语开始（之前为韩语）。可在设置 → 画面中更改语言。',
+      ],
+    },
+  },
+  {
     version: '0.161',
     date: '2026-10-30',
     changes: {

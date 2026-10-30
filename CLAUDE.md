@@ -24,7 +24,9 @@ each context small and fast. That means:
 - **Finish a batch end to end before stopping**: implement → verify with the
   harness → patch note → `npx tsc --noEmit` → `npx vite build` → full
   regression → commit → push → wait for the Pages deploy → check it live →
-  report in Korean.
+  `npm run itch:build` (the zip itch.io needs, `release/nox-survivors-itch.zip`)
+  → report in Korean, saying the itch.io upload is due when the game itself
+  changed (the user uploads it; server-side changes reach itch.io by themselves).
 - **The user tunes `src/config/balance.ts` in parallel**, between batches and
   sometimes during one. Never assume a number there is what you last saw:
   re-read it, and never hard-code one in a test (see below).
@@ -842,7 +844,9 @@ Read `git log` for what changed and when. What is not in the log:
   `useGameFont` turns on `useAdvancedWrap` for every wrapped label (and
   `setWordWrapWidth`), or a long line runs off its card. Longer languages
   overflow fixed boxes: fit a label (`fitText`) rather than trust its
-  Korean width — `LANG_PICK=en|ja|zh` runs text-check in one.
+  Korean width — `LANG_PICK=en|ja|zh` runs text-check in one. A first
+  visit takes the browser's language if it is one of the four, else English
+  (`detectLanguage`; Korean until 0.162 — the user's ask, for itch.io).
 - **재능의 파편 (0.102, the user's design).** `TALENT_SHARD` (balance.ts):
   one shard a stat (`stats`: 피해량 · 공격속도 · 이동속도 · 최대체력 ·
   효과범위; 체력회복 was one too until the user took it out in 0.131 — a
