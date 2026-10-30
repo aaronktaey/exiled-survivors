@@ -16,7 +16,7 @@ import type Phaser from 'phaser';
 
 import { LIVE_UPDATE, SCENES } from '@/config';
 import { ranking } from '@/systems/Ranking';
-import { PLATFORM } from '@/systems/Platform';
+import { OFFSITE } from '@/systems/Platform';
 
 declare const __BUILD_ID__: string;
 
@@ -42,11 +42,11 @@ class LiveUpdateStore {
 
   /**
    * Starts asking. Off on the dev server, where there is no version.json to
-   * ask for, and in the PC build (0.160), which carries its own files and is
-   * updated by its store, not by a reload.
+   * ask for, and off the game's own site (the PC build, itch.io — 0.160),
+   * where a new version arrives as a new upload, not by a reload.
    */
   public start(): void {
-    if (this.started || this.current === 'dev' || PLATFORM === 'desktop') {
+    if (this.started || this.current === 'dev' || OFFSITE) {
       return;
     }
     this.started = true;

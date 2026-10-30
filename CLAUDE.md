@@ -1327,6 +1327,19 @@ Read `git log` for what changed and when. What is not in the log:
   (`CROSS_ORIGINS`, `corsHeaders` in server/http.ts — keep it in step with
   main.cjs) and takes a session as `Authorization: Bearer` as well as the
   cookie (`bearer`, `sessionUser`), ready for an app's sign-in.
+- **itch.io (0.161, the user's ask: played in itch.io's page).**
+  `npm run itch:build` (`tools/build-itch.mjs`) builds with
+  `VITE_PLATFORM=itch`, `BASE_PATH=./` (itch.io serves an upload under
+  html-classic.itch.zone/html/<id>/, so every file is linked relatively) and
+  the live API, into `release/itch`, and zips it to
+  `release/nox-survivors-itch.zip` — written by the script itself, as
+  Windows PowerShell's Compress-Archive puts backslashes in the paths.
+  `release/` is not in git; the page's cover, screenshots (ko · en) and copy
+  are in `release/itch-page` when made. Off its own site the game is
+  `OFFSITE` (Platform.ts: the PC build and itch.io alike): no sign-in, no
+  live update, no ad columns, no podium sign-in hint. itch.io's hosts are in
+  `CROSS_ORIGINS`. The upload itself is the user's (their itch.io account);
+  a new version is a new upload.
 - **오류 수집 (0.160, the user's ask).** `systems/ErrorReport.ts` posts an
   uncaught error or unhandled rejection to `POST /api/errors`
   (server/errors.ts, D1 table `errors`, migration 0010): message, source,

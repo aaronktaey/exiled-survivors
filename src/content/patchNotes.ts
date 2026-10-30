@@ -15,6 +15,24 @@ export interface PatchNote {
 
 export const PATCH_NOTES: readonly PatchNote[] = [
   {
+    version: '0.161',
+    date: '2026-10-30',
+    changes: {
+      ko: [
+        'itch.io에서도 브라우저로 바로 플레이할 수 있게 준비했습니다. itch.io에서는 로그인 없이 기록이 그 브라우저에만 저장되며, 랭킹 등록과 클라우드 저장은 이 사이트에서 로그인하면 할 수 있습니다.',
+      ],
+      en: [
+        'Nox Survivors can now be played in the browser on itch.io too. There, records stay in that browser without signing in; to put runs on the ranking and save to the cloud, sign in on this site.',
+      ],
+      ja: [
+        'itch.io でもブラウザですぐ遊べるよう準備しました。itch.io ではログインなしで記録がそのブラウザにだけ保存されます。ランキング登録とクラウド保存はこのサイトでログインすると使えます。',
+      ],
+      zh: [
+        '已可在 itch.io 的浏览器中直接游玩。在 itch.io 上无需登录，记录只保存在该浏览器中；登录本网站即可上传排行榜和云端存档。',
+      ],
+    },
+  },
+  {
     version: '0.160',
     date: '2026-10-29',
     changes: {

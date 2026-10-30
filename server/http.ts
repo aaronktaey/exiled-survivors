@@ -110,10 +110,11 @@ export function sameOrigin(request: Request): boolean {
 }
 
 /**
- * Pages on another origin that may call /api (0.160): the PC build (desktop/,
- * Electron) serves the game from app://nox. Keep in step with desktop/main.cjs.
+ * Pages on another origin that may call /api: the PC build (desktop/,
+ * Electron, 0.160) serves the game from app://nox — keep in step with
+ * desktop/main.cjs — and itch.io (0.161) from its own game hosts.
  */
-export const CROSS_ORIGINS: readonly string[] = ['app://nox'];
+export const CROSS_ORIGINS: readonly string[] = ['app://nox', 'https://html-classic.itch.zone', 'https://html.itch.zone'];
 
 /** The CORS headers for a request from one of CROSS_ORIGINS, or null for any other. */
 export function corsHeaders(request: Request): Record<string, string> | null {

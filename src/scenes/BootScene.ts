@@ -50,7 +50,7 @@ import { createGlowLogoTexture } from '@/systems/PixelFont';
 import { sfx } from '@/systems/Sfx';
 import { paintEraTextures } from '@/systems/MonsterArt';
 import { pixelateOn, pixelateWorld } from '@/systems/Pixelate';
-import { PLATFORM } from '@/systems/Platform';
+import { OFFSITE } from '@/systems/Platform';
 
 
 const GRID_TILE = 64;
@@ -179,9 +179,9 @@ export class BootScene extends Phaser.Scene {
         ROLLBACK_GIFT.enabled = false;
       }
     }
-    if (PLATFORM === 'desktop') {
-      // The PC build has no sign-in yet (0.160, the user's pick): its records
-      // stay on the PC, and a Steam sign-in comes with a Steam app id.
+    if (OFFSITE) {
+      // The PC build and itch.io's have no sign-in (0.160–0.161, the user's
+      // pick): records stay on the device; a Steam sign-in comes with a Steam app id.
       (ACCOUNT as { enabled: boolean }).enabled = false;
     }
     if (import.meta.env.DEV && (skipMenu || harness)) {

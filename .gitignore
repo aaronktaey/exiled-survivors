@@ -44,3 +44,6 @@ tests/shots/
 desktop/node_modules/
 desktop/app/
 desktop/release/
+
+# The itch.io build and its zip (npm run itch:build).
+release/
