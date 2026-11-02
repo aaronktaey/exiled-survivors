@@ -160,8 +160,7 @@ export function masteryText(id: SkillId, tier: 1 | 2 = 1): string {
     freeze: freezeMs / 1000,
     shockSecs: thunderShock.durationMs / 1000,
     shockAmp: pct(thunderShock.amplify),
-    heal: voidVortex.healPerEnemy,
-    healSecs: voidVortex.healEveryMs / 1000,
+    heal: voidVortex.healPerKill,
     droneTimes,
     stacks: POISON_NOVA.stacksPerHitAwakened,
   });

@@ -1332,10 +1332,11 @@ export const SKILL_MASTERY = {
    * a hit): every `everyMs` a 공허 opens where the enemies stand thickest —
    * on the enemy, within `searchShare` × the orbit's radius of the survivor,
    * with the most others within its `reach` — and for `lifeMs` draws every
-   * enemy within `reach` toward its middle at `pullSpeed` px/s. Every
-   * `healEveryMs` it gives `healPerEnemy` health for each enemy inside it.
+   * enemy within `reach` toward its middle at `pullSpeed` px/s. An enemy
+   * that dies inside one, to anything, gives `healPerKill` health (0.163,
+   * the user's ask; until then 1 a head inside every second).
    */
-  voidVortex: { everyMs: 5000, lifeMs: 2000, searchShare: 2, reach: 100, pullSpeed: 140, healEveryMs: 1000, healPerEnemy: 1 },
+  voidVortex: { everyMs: 5000, lifeMs: 2000, searchShare: 2, reach: 100, pullSpeed: 140, healPerKill: 5 },
   /** 드론 (0.98, the 2차 각성's until then): this many times the drones. */
   droneTimes: 2,
   /**

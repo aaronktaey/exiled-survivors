@@ -15,6 +15,24 @@ export interface PatchNote {
 
 export const PATCH_NOTES: readonly PatchNote[] = [
   {
+    version: '0.163',
+    date: '2026-11-02',
+    changes: {
+      ko: [
+        '공허구체 1차 각성: 공허 안에서 적이 처치되면 체력을 5 회복합니다. 어떤 스킬로 처치하든 적용됩니다(이전에는 공허 안의 적 1마리당 1초마다 체력 1 회복). 적을 끌어당기는 공허는 그대로입니다.',
+      ],
+      en: [
+        'Void Orb’s first awakening: each enemy that dies inside the void now gives back 5 health, whatever skill kills it (it was 1 health a second for each enemy inside). The void still pulls enemies in.',
+      ],
+      ja: [
+        '虚無球の1次覚醒：虚空の中で敵が倒れるたびに体力を5回復するようになりました。どのスキルで倒しても回復します（以前は虚空の中の敵1体につき1秒ごとに体力1回復）。敵を引き寄せる虚空はそのままです。',
+      ],
+      zh: [
+        '虚空球的一次觉醒：虚空内每有1个敌人被击败，恢复5点生命，无论用哪个技能击败都有效（之前为虚空内每有1个敌人，每秒恢复1点生命）。吸引敌人的虚空保持不变。',
+      ],
+    },
+  },
+  {
     version: '0.162',
     date: '2026-10-30',
     changes: {

@@ -19,6 +19,11 @@ export interface Weapon {
    * still needs a target, as any cast does; the cooldown starts again from it.
    */
   castNow?(): void;
+  /**
+   * Health a kill where (x, y) fell gives back, whatever made it (0.163:
+   * 공허구체's 각성 for one inside its 공허). 0 or absent gives none.
+   */
+  healForKill?(x: number, y: number): number;
 }
 
 export interface WeaponContext {
@@ -76,8 +81,6 @@ export interface WeaponContext {
   readonly repeatChance?: number;
   /** 드론 in the air (0.94). Ignored unless the skill flies drones. */
   readonly droneCount?: number;
-  /** Gives the survivor health back (0.94: 공허구체's 각성). */
-  readonly heal?: (amount: number) => void;
 }
 
 /**

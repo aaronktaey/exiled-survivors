@@ -827,8 +827,8 @@ Read `git log` for what changed and when. What is not in the log:
   `contactDamageScale` (받는 접촉 피해 감폭, `Player.takeContact`; 0.8, then 0.9
   since 0.131),
   the move speed went to the 드론. 0.95–0.97 its 1차 각성 healed a point a
-  hit; 0.98 put the 공허 back (below), now healing by the head
-  (`WeaponContext.heal`), uncapped.
+  hit; 0.98 put the 공허 back (below), healing by the head inside it;
+  since 0.163 a kill inside it heals instead (below).
 - **보조 스킬 stop at `SUB_SKILLS.max` (0.84).** Besides the main skill, at
   most three: once full (`GameScene.subSkillsFull`) `rollSkillDrop` and
   `randomSkills` offer only skills held, and a skill picked up that was
@@ -986,8 +986,12 @@ Read `git log` for what changed and when. What is not in the log:
   (`VoidOrb.vortices`, the purple `TEXTURES.voidVortex`). Since 0.98 (the
   user's ask) it opens on the thickest crowd — the enemy within
   `searchShare` × the orbit radius with the most others within `reach`
-  (`VoidOrb.thickest`), waiting if none is near — and heals `healPerEnemy`
-  a head inside every `healEveryMs`,
+  (`VoidOrb.thickest`), waiting if none is near. Since 0.163 (the user's
+  ask; 1 a head inside every second before) an enemy that dies inside an
+  open 공허, to anything, heals `healPerKill` (5) — once however many
+  overlap: `Weapon.healForKill(x, y)`, asked by `GameScene.onEnemyKilled`
+  (CombatSystem's kill hook) of every weapon — a new heal on a kill goes
+  there,
   낙뢰 leaves what it hits 감전 (`Enemy.shock`, `thunderShock`: every hit on
   it × 1 + `amplify` in `CombatSystem.hit`, sparks drawn by
   `Enemy.drawShock` from `SHOCK_FX`). Reaching it calls `GameScene.celebrateMastery`

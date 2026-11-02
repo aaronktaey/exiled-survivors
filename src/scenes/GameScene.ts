@@ -400,7 +400,7 @@ export class GameScene extends Phaser.Scene {
         rollSkillDrop: (bonus, guaranteed) => this.rollSkillDrop(bonus, guaranteed),
         onSkillCollected: (skill) => this.onSkillCollected(skill),
         rollGearDrop: (fromBoss, bonus, kind) => this.rollGearDrop(fromBoss, bonus, kind),
-        onEnemyKilled: (x, y, byThorn) => this.thornBurstAt(x, y, byThorn),
+        onEnemyKilled: (x, y, byThorn) => this.onEnemyKilled(x, y, byThorn),
         shardScale: () => this.gearBonus.shardChanceScale,
         onGearCollected: (found) => this.onGearCollected(found),
         onOrbCollected: (id) => this.onOrbCollected(id),
@@ -722,7 +722,6 @@ export class GameScene extends Phaser.Scene {
         onCast: id === this.mainSkill ? this.castLook : undefined,
         repeatChance: this.gearBonus.repeatChance,
         droneCount: stats.droneCount,
-        heal: this.healBy,
       });
     }
 
@@ -2015,10 +2014,20 @@ export class GameScene extends Phaser.Scene {
     }
   }
 
-  /** Health back from a skill (0.94: 공허구체's 각성). Bound, so a weapon can hold it. */
-  private healBy = (amount: number): void => {
-    this.player.heal(amount);
-  };
+  /**
+   * A kill, from CombatSystem: 척추 검's thorns, and the health a weapon gives
+   * back for it (0.163: one inside 공허구체's 공허).
+   */
+  private onEnemyKilled(x: number, y: number, byThorn: boolean): void {
+    this.thornBurstAt(x, y, byThorn);
+    if (this.over) {
+      return;
+    }
+    const healed = this.weapons.reduce((sum, weapon) => sum + (weapon.healForKill?.(x, y) ?? 0), 0);
+    if (healed > 0) {
+      this.player.heal(healed);
+    }
+  }
 
   /** Every held skill's level, added up — what the run's tally counts toward. */
   private totalSkillLevels(): number {

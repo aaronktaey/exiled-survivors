@@ -153,7 +153,7 @@ export const en: Strings = {
       fireball: 'Its burst is {blastScale}× as wide',
       chainLightning: 'Each strike deals {bonus} more for every jump still to come',
       iceSpear: 'Freezes an already chilled enemy solid for {freeze}s',
-      voidOrb: 'Opens a void where the enemies are thickest; every {healSecs}s it gives back {heal} health for each enemy inside',
+      voidOrb: 'Opens a void where the enemies are thickest; each enemy that dies inside it gives back {heal} health',
       thunderStrike: 'What it hits is shocked for {shockSecs}s, taking {shockAmp} more damage',
       drone: '{droneTimes} times as many drones',
       poisonNova: 'Poison stacks {stacks} at a time',

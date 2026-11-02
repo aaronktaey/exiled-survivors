@@ -157,7 +157,7 @@ export const ko: Strings = {
       fireball: '폭발 범위가 {blastScale}배로 넓어집니다',
       chainLightning: '남은 연쇄 횟수 1회당 피해가 {bonus} 증폭됩니다',
       iceSpear: '이미 냉각된 적을 맞히면 {freeze}초 동안 얼어붙습니다',
-      voidOrb: '적이 가장 많은 곳에 공허 생성, 공허 안의 적 1마리당 {healSecs}초마다 체력 {heal} 회복',
+      voidOrb: '적이 가장 많은 곳에 공허 생성, 공허 안에서 적이 처치되면 체력 {heal} 회복',
       thunderStrike: '맞은 적이 {shockSecs}초 동안 감전되어 받는 피해가 {shockAmp} 늘어납니다',
       drone: '드론 수가 {droneTimes}배가 됩니다',
       poisonNova: '중독이 {stacks}중첩씩 쌓입니다',

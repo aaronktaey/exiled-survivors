@@ -153,7 +153,7 @@ export const zh: Strings = {
       fireball: '爆炸范围扩大到 {blastScale} 倍',
       chainLightning: '每剩余一次连锁，伤害提高 {bonus}',
       iceSpear: '命中已被冷却的敌人时使其冻结 {freeze} 秒',
-      voidOrb: '在敌人最密集处生成虚空，虚空内每有1个敌人，每{healSecs}秒恢复 {heal} 点生命',
+      voidOrb: '在敌人最密集处生成虚空，虚空内每有1个敌人被击败，恢复 {heal} 点生命',
       thunderStrike: '被击中的敌人感电 {shockSecs} 秒，受到的伤害提高 {shockAmp}',
       drone: '无人机数量变为 {droneTimes} 倍',
       poisonNova: '中毒每次叠加 {stacks} 层',

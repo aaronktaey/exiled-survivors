@@ -297,7 +297,7 @@ const numbers = await run(`
   s.player.setInvulnerable(true);
   s.player.hp = s.player.maxHp - 50;
   const h0 = count();
-  s.healBy(10);
+  s.player.heal(10);
   const heal = count() - h0;
   window.settings.update({ damageNumbers: true });
   s.spawner.clear();

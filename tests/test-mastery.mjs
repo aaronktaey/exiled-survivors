@@ -179,14 +179,12 @@ const effects = await run(`
   s.spawner.clear();
 
   // 공허구체 (0.98): awakened, a 공허 opens on the thickest crowd near the survivor, draws enemies in,
-  // heals healPerEnemy a head inside every healEveryMs, then closes. Orbs far out, so none hits.
+  // and (0.163) an enemy that dies inside it, to anything, heals healPerKill; one outside, nothing. Orbs far out, so none hits.
   const orb = weapon('voidOrb');
   const V = window.config.SKILL_MASTERY.voidVortex;
   const lone = put(60, 0);
   const crowd = [put(-150, 0), put(-160, 20), put(-140, -20)];
-  let healed = 0;
-  const heal = (n) => { healed += n; };
-  const orbCtx = (over) => ctx({ range: 120, damage: 0, heal, ...over });
+  const orbCtx = (over) => ctx({ range: 120, damage: 0, ...over });
   for (let t = 0; t < V.everyMs + 100; t += 50) orb.update(50, orbCtx({ mastered: false }));
   out.vortexPlain = orb.vortices.length;
   // Its clock runs only once awakened.
@@ -197,11 +195,19 @@ const effects = await run(`
   if (vortex) {
     const edge = crowd[1];
     const d0 = Math.hypot(edge.x - vortex.view.x, edge.y - vortex.view.y);
-    for (let t = 0; t < V.healEveryMs; t += 50) orb.update(50, orbCtx({}));
+    for (let t = 0; t < 500; t += 50) orb.update(50, orbCtx({}));
     out.vortexPulled = d0 > 2 ? d0 - Math.hypot(edge.x - vortex.view.x, edge.y - vortex.view.y) : -1;
-    out.vortexHealed = healed;
-    out.vortexWantHeal = crowd.length * V.healPerEnemy;
     out.loneLeft = Math.hypot(lone.x - vortex.view.x, lone.y - vortex.view.y) > vortex.reach;
+    // Killed through the run's own path (c.hit → killEnemy → the scene's kill hook), with room to heal.
+    const hpWas = p.hp;
+    p.hp = 1;
+    c.hit(edge, 1e12);
+    out.vortexKillHeal = p.hp - 1;
+    p.hp = 1;
+    c.hit(lone, 1e12);
+    out.outsideKillHeal = p.hp - 1;
+    p.hp = hpWas;
+    out.vortexWantHeal = V.healPerKill;
     for (let t = 0; t < V.lifeMs; t += 50) orb.update(50, orbCtx({ mastered: false }));
     out.vortexGone = orb.vortices.length;
   }
@@ -260,8 +266,9 @@ check('얼음창: an enemy already chilled is frozen; one that was not, is not',
 check('공허구체: awakened, a 공허 opens on the thickest crowd, not the nearest enemy, draws enemies in, then closes',
   effects.vortexPlain === 0 && effects.vortexOpen === 1 && effects.vortexOnCrowd && effects.vortexPulled > 0 && effects.vortexGone === 0,
   JSON.stringify({ plain: effects.vortexPlain, open: effects.vortexOpen, onCrowd: effects.vortexOnCrowd, pulled: effects.vortexPulled, gone: effects.vortexGone }));
-check('and every healEveryMs it heals healPerEnemy for each enemy inside it',
-  effects.vortexHealed === effects.vortexWantHeal && effects.loneLeft, `${effects.vortexHealed} vs ${effects.vortexWantHeal}`);
+check('and an enemy killed inside it heals healPerKill; one killed outside heals nothing',
+  effects.vortexWantHeal > 0 && effects.vortexKillHeal === effects.vortexWantHeal && effects.outsideKillHeal === 0 && effects.loneLeft,
+  JSON.stringify({ inside: effects.vortexKillHeal, outside: effects.outsideKillHeal, want: effects.vortexWantHeal, loneLeft: effects.loneLeft }));
 check('낙뢰: awakened, what it hits is 감전, takes more from every hit, and it wears off',
   effects.shockPlain === false && effects.shocked === true && effects.shockHit.took === effects.shockHit.want && effects.shockLater === false,
   JSON.stringify({ shocked: effects.shocked, hit: effects.shockHit, later: effects.shockLater }));

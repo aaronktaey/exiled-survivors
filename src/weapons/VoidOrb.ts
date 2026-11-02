@@ -43,7 +43,7 @@ export class VoidOrb implements Weapon {
   /** Where the first orb is on the circle, in radians. */
   private angle = 0;
   /** 각성's 공허: the ones open now, and the time since the last opened. Public for tests. */
-  public readonly vortices: { view: Phaser.GameObjects.Image; leftMs: number; reach: number; sinceHealMs: number }[] = [];
+  public readonly vortices: { view: Phaser.GameObjects.Image; leftMs: number; reach: number }[] = [];
   private sinceVortexMs = 0;
   /** What an orb's radius is now, after the held 효과범위. */
   private orbRadius: number = VOID_ORB.radius;
@@ -109,15 +109,14 @@ export class VoidOrb implements Weapon {
   }
 
   /**
-   * 각성 (0.84; placed and healing since 0.98): every
-   * SKILL_MASTERY.voidVortex.everyMs a 공허 opens where the enemies stand
-   * thickest near the survivor (`thickest`), and for `lifeMs` draws every
-   * enemy within its reach toward its middle — moving x/y the way
-   * Separation does — and every `healEveryMs` heals `healPerEnemy` for each
-   * enemy inside. Stepped by the run, so a pause holds it.
+   * 각성 (0.84; placed since 0.98): every SKILL_MASTERY.voidVortex.everyMs
+   * a 공허 opens where the enemies stand thickest near the survivor
+   * (`thickest`), and for `lifeMs` draws every enemy within its reach toward
+   * its middle — moving x/y the way Separation does. What dies inside heals
+   * (`healForKill`). Stepped by the run, so a pause holds it.
    */
   private tickVortices(context: WeaponContext, delta: number): void {
-    const { everyMs, lifeMs, searchShare, reach, pullSpeed, healEveryMs, healPerEnemy } = SKILL_MASTERY.voidVortex;
+    const { everyMs, lifeMs, searchShare, reach, pullSpeed } = SKILL_MASTERY.voidVortex;
     const area = context.areaScale ?? 1;
     const step = (pullSpeed * delta) / 1000;
     for (let i = this.vortices.length - 1; i >= 0; i--) {
@@ -132,7 +131,6 @@ export class VoidOrb implements Weapon {
         this.vortices.splice(i, 1);
         continue;
       }
-      let inside = 0;
       for (const child of context.enemies.getChildren()) {
         const enemy = child as Enemy;
         if (!enemy.active) {
@@ -142,20 +140,12 @@ export class VoidOrb implements Weapon {
         if (dist > vortex.reach) {
           continue;
         }
-        inside++;
         if (dist <= 1) {
           continue;
         }
         const move = Math.min(step, dist);
         enemy.x += ((x - enemy.x) / dist) * move;
         enemy.y += ((y - enemy.y) / dist) * move;
-      }
-      vortex.sinceHealMs += delta;
-      if (vortex.sinceHealMs >= healEveryMs) {
-        vortex.sinceHealMs -= healEveryMs;
-        if (inside > 0) {
-          context.heal?.(inside * healPerEnemy);
-        }
       }
     }
     // A new one opens after the rest have aged: it does not lose this frame.
@@ -171,10 +161,19 @@ export class VoidOrb implements Weapon {
             .setDepth(DEPTH.pickups - 1)
             .setDisplaySize(reach * area * 2, reach * area * 2)
             .setAlpha(0);
-          this.vortices.push({ view, leftMs: lifeMs, reach: reach * area, sinceHealMs: 0 });
+          this.vortices.push({ view, leftMs: lifeMs, reach: reach * area });
         }
       }
     }
+  }
+
+  /**
+   * 각성 (0.163, the user's ask): an enemy that dies inside an open 공허, to
+   * anything, gives `healPerKill` health — once, however many overlap.
+   */
+  public healForKill(x: number, y: number): number {
+    const inside = this.vortices.some((vortex) => Phaser.Math.Distance.Between(x, y, vortex.view.x, vortex.view.y) <= vortex.reach);
+    return inside ? SKILL_MASTERY.voidVortex.healPerKill : 0;
   }
 
   /**

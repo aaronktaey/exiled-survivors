@@ -153,7 +153,7 @@ export const ja: Strings = {
       fireball: '爆発範囲が {blastScale} 倍に広がります',
       chainLightning: '残り連鎖回数 1 回につきダメージが {bonus} 増幅されます',
       iceSpear: 'すでに冷却された敵に当たると {freeze} 秒間凍りつきます',
-      voidOrb: '敵が最も多い場所に虚空を生成し、虚空の中の敵1体につき{healSecs}秒ごとに体力を {heal} 回復',
+      voidOrb: '敵が最も多い場所に虚空を生成し、虚空の中で敵が倒れるたびに体力を {heal} 回復',
       thunderStrike: '当たった敵が {shockSecs} 秒間感電し、受けるダメージが {shockAmp} 増えます',
       drone: 'ドローンの数が {droneTimes} 倍になります',
       poisonNova: '毒が {stacks} 重ずつ重なります',

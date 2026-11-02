@@ -254,7 +254,7 @@ export interface Strings {
     readonly title: string;
     /** On the skill's card: "각성 — {effect}". */
     readonly card: string;
-    /** One line a skill. {bonus} {blastScale} {freeze} {shockSecs} {shockAmp} {heal} {healSecs} {droneTimes} filled from SKILL_MASTERY. */
+    /** One line a skill. {bonus} {blastScale} {freeze} {shockSecs} {shockAmp} {heal} {droneTimes} filled from SKILL_MASTERY. */
     readonly effects: {
       readonly meleeStrike: string;
       readonly fireball: string;
