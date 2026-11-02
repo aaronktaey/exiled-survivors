@@ -23,7 +23,7 @@ each context small and fast. That means:
   would need and cannot read off the code, add it here in the same commit.
 - **Finish a batch end to end before stopping**: implement → verify with the
   harness → patch note → `npx tsc --noEmit` → `npx vite build` → full
-  regression → commit → push → wait for the Pages deploy → check it live →
+  regression → commit → push → wait for the Cloudflare deploy → check it live →
   `npm run itch:build` (the zip itch.io needs, `release/nox-survivors-itch.zip`)
   → report in Korean, saying the itch.io upload is due when the game itself
   changed (the user uploads it; server-side changes reach itch.io by themselves).
@@ -93,7 +93,8 @@ node run-all.mjs test-full test-skills test-balance test-chain test-ice \
   test-ranking test-skillpick test-mango test-web test-loadout \
   test-carry test-api test-account test-live test-filter test-mastery \
   test-tuning test-terrain test-chimera test-seal test-gift test-held \
-  test-shard test-village test-daily test-autopick test-i18n test-locale \n  test-errors
+  test-shard test-village test-daily test-autopick test-i18n test-locale \
+  test-errors
 ```
 
 test-i18n and test-locale came back with the language choice (0.153).
@@ -168,7 +169,7 @@ set takes about six minutes. One suite on its own: `node run-all.mjs test-gear`.
    the entry below. Read every number off config, not memory. Never append
    to a version that has already deployed. (The user asked for this on
    2026-10-14, after 0.20 had grown into a log of intermediate states.)
-5. commit, push, wait for the Pages run, then load the live site and look
+5. commit, push, wait for the Cloudflare run, then load the live site and look
 
 Commit messages are Korean, and say *why* rather than restating the diff.
 
