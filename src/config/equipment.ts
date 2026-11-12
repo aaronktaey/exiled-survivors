@@ -11,22 +11,22 @@
  * Adding a sword means a line in GEAR and a name in the locales.
  */
 
-import type { SkillId } from '@/weapons/skills';
-import type { EnemyKind } from '@/config/balance';
-import type { DropTier } from '@/config/system';
-import type { PixelIconId } from '@/config/pixelIcons';
+import type { SkillId } from "@/weapons/skills";
+import type { EnemyKind } from "@/config/balance";
+import type { DropTier } from "@/config/system";
+import type { PixelIconId } from "@/config/pixelIcons";
 
-export type GearSlot = 'weapon';
+export type GearSlot = "weapon";
 
 export type GearId =
-  | 'onigoroshi'
-  | 'runedSword'
-  | 'steelSword'
-  | 'ironSword'
-  | 'rustySword'
-  | 'narsil'
-  | 'spineSword'
-  | 'starBreaker';
+  | "onigoroshi"
+  | "runedSword"
+  | "steelSword"
+  | "ironSword"
+  | "rustySword"
+  | "narsil"
+  | "spineSword"
+  | "starBreaker";
 
 /**
  * 고정 속성 — what every sword of a base does, whatever it rolled. It sits
@@ -49,7 +49,10 @@ export interface GearImplicit {
   /** Multiplies every skill's attack speed. */
   readonly attackSpeedScale?: number;
   /** Multiplies one skill's attack speed. */
-  readonly skillAttackSpeed?: { readonly skill: SkillId; readonly scale: number };
+  readonly skillAttackSpeed?: {
+    readonly skill: SkillId;
+    readonly scale: number;
+  };
   /** Flat attack power on top of the base's own (나르실, 0.91). */
   readonly attack?: number;
   /**
@@ -125,68 +128,71 @@ export const GEAR_BASE = {
 
 export const GEAR: Record<GearId, GearSpec> = {
   onigoroshi: {
-    id: 'onigoroshi',
+    id: "onigoroshi",
     combineInto: false,
     salvageOre: 50,
-    icon: 'gear-onigoroshi',
-    slot: 'weapon',
+    icon: "gear-onigoroshi",
+    slot: "weapon",
     tier: 1,
-    name: '오니고로시',
+    name: "오니고로시",
     // Off a 우두머리 at its own 2% (0.137, the user's ask): no longer one of
     // the weighted swords a 우두머리 always leaves (0.5 of them, about 4.8%).
     weight: 0,
-    fromKind: { kind: 'boss', chance: 0.02 },
-    implicit: { detail: '{value} 확률로 적의 투사체를 막아냄', projectileBlock: 0.3 },
+    fromKind: { kind: "boss", chance: 0.02 },
+    implicit: {
+      detail: "{value} 확률로 적의 투사체를 막아냄",
+      projectileBlock: 0.3,
+    },
   },
   runedSword: {
-    id: 'runedSword',
+    id: "runedSword",
     salvageOre: 20,
     craftOre: 100,
-    icon: 'gear-runedSword',
-    slot: 'weapon',
+    icon: "gear-runedSword",
+    slot: "weapon",
     tier: 2,
-    name: '룬 각인 검',
+    name: "룬 각인 검",
     weight: 1,
-    implicit: { detail: '스킬의 투사체 +{value}개', extraProjectiles: 1 },
+    implicit: { detail: "스킬의 투사체 +{value}개", extraProjectiles: 1 },
   },
   // From tier 3 down, any kill can leave one too — rarely.
   steelSword: {
-    id: 'steelSword',
+    id: "steelSword",
     salvageOre: 9,
     craftOre: 45,
-    icon: 'gear-steelSword',
-    slot: 'weapon',
+    icon: "gear-steelSword",
+    slot: "weapon",
     tier: 3,
-    name: '강철 검',
+    name: "강철 검",
     weight: 2,
     fromKill: 0.0007,
-    implicit: { detail: '피해 증폭 +{value}', damageScale: 1.1 },
+    implicit: { detail: "피해 증폭 +{value}", damageScale: 1.1 },
   },
   ironSword: {
-    id: 'ironSword',
+    id: "ironSword",
     salvageOre: 3,
     craftOre: 15,
-    icon: 'gear-ironSword',
-    slot: 'weapon',
+    icon: "gear-ironSword",
+    slot: "weapon",
     tier: 4,
-    name: '무쇠 검',
+    name: "무쇠 검",
     weight: 3,
     fromKill: 0.001,
-    implicit: { detail: '공격속도 +{value}', attackSpeedScale: 1.1 },
+    implicit: { detail: "공격속도 +{value}", attackSpeedScale: 1.1 },
   },
   rustySword: {
-    id: 'rustySword',
+    id: "rustySword",
     salvageOre: 1,
     craftOre: 5,
-    icon: 'gear-rustySword',
-    slot: 'weapon',
+    icon: "gear-rustySword",
+    slot: "weapon",
     tier: 5,
-    name: '녹슨 검',
+    name: "녹슨 검",
     weight: 4,
     fromKill: 0.002,
     implicit: {
-      detail: '{skill}의 공격속도 +{value}',
-      skillAttackSpeed: { skill: 'meleeStrike', scale: 1.2 },
+      detail: "{skill}의 공격속도 +{value}",
+      skillAttackSpeed: { skill: "meleeStrike", scale: 1.2 },
     },
   },
   /**
@@ -195,45 +201,48 @@ export const GEAR: Record<GearId, GearSpec> = {
    * attack power on top as its 고정 속성.
    */
   narsil: {
-    id: 'narsil',
+    id: "narsil",
     salvageOre: 50,
     craftOre: 1000,
     combineInto: false,
-    icon: 'gear-narsil',
-    slot: 'weapon',
+    icon: "gear-narsil",
+    slot: "weapon",
     tier: 1,
-    name: '나르실',
+    name: "나르실",
     weight: 0,
-    implicit: { detail: '공격력 +{value}', attack: 15 },
+    implicit: { detail: "공격력 +{value}", attack: 15 },
   },
   /** 척추 검 (0.137, the user's design): only a 키메라 leaves one. */
   spineSword: {
-    id: 'spineSword',
+    id: "spineSword",
     salvageOre: 50,
     combineInto: false,
-    icon: 'gear-spineSword',
-    slot: 'weapon',
+    icon: "gear-spineSword",
+    slot: "weapon",
     tier: 1,
-    name: '척추 검',
+    name: "척추 검",
     weight: 0,
-    fromKind: { kind: 'chimera', chance: 0.02 },
+    fromKind: { kind: "chimera", chance: 0.02 },
     implicit: {
-      detail: '적 처치 시 {value} 확률로 가시 폭발',
+      detail: "적 처치 시 {value} 확률로 가시 폭발",
       thornBurst: { chance: 0.1, dpsShare: 0.5 },
     },
   },
   /** 별 부수는 검 (0.137, the user's design): only a 도망자 leaves one. */
   starBreaker: {
-    id: 'starBreaker',
+    id: "starBreaker",
     salvageOre: 50,
     combineInto: false,
-    icon: 'gear-starBreaker',
-    slot: 'weapon',
+    icon: "gear-starBreaker",
+    slot: "weapon",
     tier: 1,
-    name: '별 부수는 검',
+    name: "별 부수는 검",
     weight: 0,
-    fromKind: { kind: 'fugitive', chance: 0.02 },
-    implicit: { detail: '재능의 파편 드랍률 {value} 증폭', shardChanceScale: 1.3 },
+    fromKind: { kind: "fugitive", chance: 0.02 },
+    implicit: {
+      detail: "재능의 파편 드랍률 {value} 증폭",
+      shardChanceScale: 1.5,
+    },
   },
 };
 
@@ -244,17 +253,21 @@ export const GEAR: Record<GearId, GearSpec> = {
  * 각성. An 일반 one gives only the ore.
  */
 export const SALVAGE_ORBS: Partial<Record<DropTier, OrbId>> = {
-  magic: 'transmute',
-  rare: 'chaos',
-  mythic: 'awaken',
+  magic: "transmute",
+  rare: "chaos",
+  mythic: "awaken",
 };
 
 /** What a 합성 of this base can make: the bases a tier up that a 합성 may make (0.91). */
 export const combineTargets = (id: GearId): GearSpec[] =>
-  Object.values(GEAR).filter((spec) => spec.tier === GEAR[id].tier - 1 && spec.combineInto !== false);
+  Object.values(GEAR).filter(
+    (spec) => spec.tier === GEAR[id].tier - 1 && spec.combineInto !== false,
+  );
 
 /** The weakest tier on the roster — the one worth GEAR_BASE.lowestAttack. */
-export const LOWEST_GEAR_TIER = Math.max(...Object.values(GEAR).map((spec) => spec.tier));
+export const LOWEST_GEAR_TIER = Math.max(
+  ...Object.values(GEAR).map((spec) => spec.tier),
+);
 
 /** Attack power for a tier, so the roster stays in step with the dial. */
 export const attackForTier = (tier: number): number =>
@@ -263,7 +276,7 @@ export const attackForTier = (tier: number): number =>
 export const ALL_GEAR: readonly GearSpec[] = Object.values(GEAR);
 
 /** What every survivor starts out holding. */
-export const STARTING_GEAR: GearId = 'rustySword';
+export const STARTING_GEAR: GearId = "rustySword";
 
 /**
  * ★ 0.80's gift (the user's word, 2026-10-20). The game went back to 0.67's
@@ -318,7 +331,7 @@ export const GEAR_DROP = {
   size: 20,
 } as const;
 
-import { TEXTURES } from '@/config/visuals';
+import { TEXTURES } from "@/config/visuals";
 
 /**
  * ★ 구슬 — the consumables a weapon is rerolled with.
@@ -332,7 +345,13 @@ import { TEXTURES } from '@/config/visuals';
  * Adding one means a line in ORBS, a name in the locales, and nothing else:
  * the stash, the drop, the label and the button all read this table.
  */
-export type OrbId = 'transmute' | 'chaos' | 'awaken' | 'explode' | 'mango' | 'engrave';
+export type OrbId =
+  | "transmute"
+  | "chaos"
+  | "awaken"
+  | "explode"
+  | "mango"
+  | "engrave";
 
 export interface OrbSpec {
   readonly id: OrbId;
@@ -384,70 +403,73 @@ export interface OrbSpec {
 
 export const ORBS: Record<OrbId, OrbSpec> = {
   transmute: {
-    id: 'transmute',
-    name: '변화의 구슬',
-    short: '변화',
-    detail: '속성을 1~2개로 다시 굴립니다',
+    id: "transmute",
+    name: "변화의 구슬",
+    short: "변화",
+    detail: "속성을 1~2개로 다시 굴립니다",
     chance: 0.005,
-    tier: 'normal',
+    tier: "normal",
     color: 0x6aa9ff,
     texture: TEXTURES.orbTransmute,
     reroll: { min: 1, max: 2 },
   },
   chaos: {
-    id: 'chaos',
-    name: '혼돈의 구슬',
-    short: '혼돈',
-    detail: '속성을 2~4개로 다시 굴립니다',
+    id: "chaos",
+    name: "혼돈의 구슬",
+    short: "혼돈",
+    detail: "속성을 2~4개로 다시 굴립니다",
     chance: 0.001,
-    tier: 'magic',
+    tier: "magic",
     color: 0xd45fd0,
     texture: TEXTURES.orbChaos,
     reroll: { min: 2, max: 4 },
   },
   awaken: {
-    id: 'awaken',
-    name: '각성의 구슬',
-    short: '각성',
-    detail: '속성 1개를 더합니다 (최대 6)',
+    id: "awaken",
+    name: "각성의 구슬",
+    short: "각성",
+    detail: "속성 1개를 더합니다 (최대 6)",
     chance: 0.001,
-    tier: 'magic',
+    tier: "magic",
     color: 0xffd34d,
     texture: TEXTURES.orbAwaken,
     add: 1,
   },
   explode: {
-    id: 'explode',
-    name: '폭발의 구슬',
-    short: '폭발',
-    detail: '1티어가 아닌 속성 1개를 한 단계 높은 것으로, 모두 1티어면 속성 1개를 다른 1티어 속성으로 — 20% 확률로 장비 파괴',
+    id: "explode",
+    name: "폭발의 구슬",
+    short: "폭발",
+    detail:
+      "1티어가 아닌 속성 1개를 한 단계 높은 것으로, 모두 1티어면 속성 1개를 다른 1티어 속성으로 — 20% 확률로 장비 파괴",
     // Off any kill now, raised like the rest — it was a 우두머리's only.
     chance: 0.0005,
-    tier: 'rare',
+    tier: "rare",
     color: 0xff7a3d,
     texture: TEXTURES.orbExplode,
     upgrade: { steps: 1, destroyChance: 0.2 },
   },
   // A tenth as common as the 폭발의 구슬 it guards against.
   mango: {
-    id: 'mango',
-    name: '망고의 구슬',
-    short: '망고',
-    detail: '장비를 망고 상태로 — 다음 폭발의 구슬 한 번은 장비를 파괴하지 못하고, 그 구슬에 망고 상태가 사라집니다',
+    id: "mango",
+    name: "망고의 구슬",
+    short: "망고",
+    detail:
+      "장비를 망고 상태로 — 다음 폭발의 구슬 한 번은 장비를 파괴하지 못하고, 그 구슬에 망고 상태가 사라집니다",
     chance: 0.0002,
-    tier: 'mythic',
+    tier: "mythic",
     color: 0xffe9a8,
     texture: TEXTURES.orbMango,
     ward: true,
   },
   // 0.132 (the user's design): as rare as the 망고의 구슬.
   engrave: {
-    id: 'engrave',
-    name: '각인의 구슬',
-    short: '각인',
-    detail: '속성이 4개 이상인 장비의 속성 1개를 무작위로 각인합니다 — 각인된 속성은 영구히 바뀌지 않습니다 (장비당 1번)',
+    id: "engrave",
+    name: "각인의 구슬",
+    short: "각인",
+    detail:
+      "속성이 4개 이상인 장비의 속성 1개를 무작위로 각인합니다 — 각인된 속성은 영구히 바뀌지 않습니다 (장비당 1번)",
     chance: 0.0002,
-    tier: 'mythic',
+    tier: "mythic",
     color: 0xb48cff,
     texture: TEXTURES.orbEngrave,
     engrave: { minLines: 4 },
@@ -460,4 +482,3 @@ export const ORB_DROP = {
   /** How big one is drawn on the ground. */
   size: 16,
 } as const;
-
